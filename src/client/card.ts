@@ -47,6 +47,7 @@ export function ensureDefs(): void {
     <pattern id="pat-D" width="18" height="18" patternUnits="userSpaceOnUse"><rect width="18" height="18" fill="#3fae9f"/><path d="M0,18 L18,0 M-2,2 L2,-2 M16,20 L20,16" stroke="${PAPER}" stroke-width="1.5"/><path d="M0,0 L18,18" stroke="${INK}" stroke-width="0.8" opacity="0.55"/></pattern>
     <pattern id="pat-C" width="22" height="18" patternUnits="userSpaceOnUse"><rect width="22" height="18" fill="#8d8b7e"/><circle cx="4" cy="5" r="1.4" fill="${INK}"/><circle cx="14" cy="3" r="0.9" fill="${INK}"/><circle cx="9" cy="12" r="1.6" fill="${INK}"/><circle cx="18" cy="13" r="1" fill="${INK}"/><path d="M0,17.2 H22" stroke="${PAPER}" stroke-width="1.3"/></pattern>
     <pattern id="pat-back" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${PAPER}" stroke-width="1" opacity="0.5"/><rect x="8" y="8" width="4" height="4" fill="${PAPER}"/></pattern>
+    <pattern id="pat-back-ink" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${INK}" stroke-width="1" opacity="0.45"/><rect x="8" y="8" width="4" height="4" fill="${INK}"/></pattern>
     <pattern id="pat-haz" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="20" height="20" fill="#f2b90f"/><rect width="10" height="20" fill="${INK}"/></pattern>
   </defs></svg>`;
   document.body.appendChild(holder.firstElementChild!);
@@ -243,18 +244,46 @@ function jokerArt(): string {
     </svg>`;
 }
 
-const BACK = `
-  <svg viewBox="0 0 250 350" aria-hidden="true">
+// ── dorsos: cada baraja inicial tiene el suyo ──
+
+interface BackDef {
+  field: string;
+  /** Celosía clara (sobre fondo oscuro) u oscura. */
+  dark: boolean;
+  diamond: string;
+  emblem: string;
+}
+const TOWER = `<path d="M101,214 h48 v-24 h-8 v-24 h-8 v-26 h-16 v26 h-8 v24 h-8 Z" fill="${PAPER}"/><path d="M125,140 l-5,22 l8,10 l-6,18 l7,10 l-3,14" fill="none" stroke="${INK}" stroke-width="2.4"/>`;
+const inDiamond = (glyph: string) => `<svg x="85" y="135" width="80" height="80" viewBox="0 0 100 100">${GLYPH[glyph]}</svg>`;
+const BACKS: Record<string, BackDef> = {
+  obra: { field: INK, dark: true, diamond: '#e2231a', emblem: TOWER },
+  acero: { field: 'url(#pat-S)', dark: true, diamond: INK, emblem: `<g transform="translate(125 158) scale(2.5)" fill="${PAPER}">${PIP.S}</g><g transform="translate(125 206) scale(1.7)" fill="${PAPER}">${PIP.C}</g>` },
+  prestamista: { field: '#f0b415', dark: false, diamond: INK, emblem: `<ellipse cx="125" cy="204" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><ellipse cx="125" cy="188" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><ellipse cx="125" cy="172" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><circle cx="125" cy="140" r="17" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><path d="M125,130 V150" stroke="${INK}" stroke-width="4"/>` },
+  ases: { field: '#e2231a', dark: true, diamond: PAPER, emblem: `<text x="125" y="208" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#e2231a">${PIP.S}</g>` },
+  corta: { field: PAPER, dark: false, diamond: '#f0b415', emblem: inDiamond('sierra') },
+  caos: { field: '#3fae9f', dark: false, diamond: PAPER, emblem: inDiamond('incognita') },
+};
+let currentBack = 'obra';
+/** Dorso con el que se dibujan las cartas a partir de ahora (la baraja de la campaña en curso). */
+export function setDeckBack(id: string): void {
+  currentBack = BACKS[id] ? id : 'obra';
+}
+export function backSvg(id = currentBack): string {
+  const b = BACKS[id] ?? BACKS.obra;
+  const line = b.dark ? PAPER : INK;
+  return `
+  <svg class="art" viewBox="0 0 250 350" aria-hidden="true">
     <rect width="250" height="350" fill="${INK}"/>
-    <rect x="16" y="16" width="218" height="318" fill="url(#pat-back)"/>
+    <rect x="10" y="10" width="230" height="330" fill="${b.field}"/>
+    <rect x="16" y="16" width="218" height="318" fill="url(#pat-back${b.dark ? '' : '-ink'})"/>
     <rect x="16" y="16" width="218" height="20" fill="url(#pat-haz)"/><rect x="16" y="314" width="218" height="20" fill="url(#pat-haz)"/>
     <g filter="url(#rough)">
-      <rect x="10" y="10" width="230" height="330" fill="none" stroke="${PAPER}" stroke-width="3"/>
-      <path d="M125,84 L196,175 L125,266 L54,175 Z" fill="#e2231a" stroke="${PAPER}" stroke-width="4"/>
-      <path d="M101,214 h48 v-24 h-8 v-24 h-8 v-26 h-16 v26 h-8 v24 h-8 Z" fill="${PAPER}"/>
-      <path d="M125,140 l-5,22 l8,10 l-6,18 l7,10 l-3,14" fill="none" stroke="${INK}" stroke-width="2.4"/>
+      <rect x="10" y="10" width="230" height="330" fill="none" stroke="${line}" stroke-width="3"/>
+      <path d="M125,84 L196,175 L125,266 L54,175 Z" fill="${b.diamond}" stroke="${b.diamond === PAPER || b.diamond === '#f0b415' ? INK : PAPER}" stroke-width="4"/>
+      ${b.emblem}
     </g>
   </svg>`;
+}
 
 // ───────────────────────── Cartas especiales, herramientas y el Ferretero ─────────────────────────
 
@@ -268,11 +297,11 @@ function specialArt(card: Card): string {
   return `<svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
     <g filter="url(#rough)">
       <rect class="ink" x="10" y="10" width="230" height="330"/>
-      <g transform="translate(125 142)"><g class="pp burst">${RAYS}</g><circle class="pp" r="70"/><circle class="sp-ring" r="62"/></g>
-      <path class="${s.locked ? 'rd' : 'gd'}" d="M24,246 L226,236 L223,273 L21,283 Z"/>
+      ${PORTRAIT[s.id] ? '<rect class="pp" x="44" y="22" width="162" height="212"/>' : `<g transform="translate(125 142)"><g class="pp burst">${RAYS}</g><circle class="pp" r="70"/><circle class="sp-ring" r="62"/></g>`}
       ${PORTRAIT[s.id] ? '' : `<svg x="67" y="84" width="116" height="116" viewBox="0 0 100 100">${GLYPH[s.id] ?? ''}</svg>`}
     </g>
-    ${PORTRAIT[s.id] ? `<svg x="55" y="44" width="140" height="196" viewBox="0 0 250 350" class="mini-port">${portraitArt(s.id, false)}</svg>` : ''}
+    ${PORTRAIT[s.id] ? `<svg x="50" y="28" width="150" height="200" viewBox="10 10 230 302" preserveAspectRatio="xMidYMid slice">${portraitBody(s.id)}</svg>` : ''}
+    <g filter="url(#rough)"><path class="${s.locked ? 'rd' : 'gd'}" d="M24,246 L226,236 L223,273 L21,283 Z"/></g>
     ${nameText(s.name, s.locked ? 'on-red' : 'on-gold')}
   </svg><div class="ly sp-desc">${s.desc}</div>`;
 }
@@ -295,12 +324,14 @@ export function tileEl(glyph: string, name: string, kind: 'relic' | 'service'): 
         ${nameText(name, 'on-ink').replace('y="264"', 'y="271"').replace('124 258', '124 265')}
       </svg>
       <div class="ly grain"></div><div class="ly glare"></div>
-    </div><div class="card-back">${BACK}</div></div>`;
+    </div><div class="card-back">${backSvg()}</div></div>`;
   attachTilt(el);
   return el;
 }
 
-// ── retratos: el Ferretero y los jefes de obra comparten plantilla (cabeza de perfil, tocado, fondo y emblema) ──
+// ── retratos: el Ferretero y los jefes de obra. Cada uno tiene su propia silueta ──
+// (perfil o de frente, máscara, casco, hocico…) para reconocerlo de un vistazo.
+// `still` pasa por el filtro de gubia; `live` son los ojos, que siguen al puntero.
 
 const HEAD_OLD = `
     <path class="ink" d="M94,70 L89,96 L77,113 L88,117 L86,125 L92,129 L82,136 C74,146 72,164 80,172 C80,184 88,192 98,190 C104,200 118,202 124,194 C134,198 146,190 146,180 C156,172 160,160 158,146 L162,104 L158,70 Z"/>
@@ -309,43 +340,140 @@ const HEAD_OLD = `
     <path class="cut" d="M116,104 C122,110 124,116 122,120 M148,96 c-7,-2 -10,8 -4,13 c3,2 6,0 5,-4 M84,113 l5,-1"/>
     <path class="cut heavy" d="M93,89 L120,85"/>`;
 const HEAD_YOUNG = `
-    <path class="ink" d="M140,66 L170,72 C179,96 181,124 175,150 C169,162 152,160 146,150 Z"/>
     <path class="ink" d="M96,72 L91,97 L80,111 L90,116 L88,123 L93,127 L90,134 C92,142 100,148 112,150 L118,186 L152,186 L156,140 L160,100 L156,70 Z"/>
-    <path class="cut" d="M152,86 C163,104 166,126 162,146 M84,111 l5,-1 M116,106 C121,111 122,117 120,122"/>
-    <path class="rd" d="M86.5,121.5 L96,120 L93.5,127 L97,133 L89,135.5 L91.5,128 Z"/>
+    <path class="cut" d="M84,111 l5,-1 M116,106 C121,111 122,117 120,122"/>
     <path class="cut heavy" d="M94,90 L120,84"/>`;
+const CLOAK = (fill: string, d: string) => `<path ${fill.startsWith('url') ? `fill="${fill}"` : `class="${fill}"`} stroke="#151311" stroke-width="4" stroke-linejoin="round" d="${d}"/>`;
+const iris = (x: number, y: number) => `<g transform="translate(${x} ${y})"><g class="lid"><g class="iris"><circle class="rd" r="6"/><circle class="pp" r="2.2"/></g></g></g>`;
+const mirrored = (body: string, live = false) => `<g transform="translate(250 0) scale(-1 1)"${live ? ' data-sx="-1" data-sy="1"' : ''}><g transform="translate(-52 -50) scale(1.5)">${body}</g></g>`;
 
 interface Portrait {
-  head: 'old' | 'young';
   bg: string;
-  robe: string;
-  hat: string;
-  glyph: string;
+  rays: boolean;
+  still: string;
+  live: string;
 }
 const PORTRAIT: Record<string, Portrait> = {
-  ferretero: { head: 'old', bg: 'gl', robe: 'pp', glyph: 'maza', hat: '<path class="rd ol" d="M82,77 C79,50 112,37 146,41 C167,45 175,61 171,77 Z"/><path class="ink" d="M58,72 H173 V82 H58 Z"/><path class="thin" d="M98,54 C118,45 144,46 160,57"/>' },
-  'j-doble': { head: 'young', bg: 'rd', robe: 'url(#pat-D)', glyph: 'sordina', hat: '<path class="gd ol" d="M92,74 L60,34 L104,52 Z M160,74 L196,34 L150,52 Z"/><path class="ink" d="M84,68 H166 V80 H84 Z"/><circle class="gd ol" cx="125" cy="62" r="9"/>' },
-  'j-escasez': { head: 'old', bg: 'gd', robe: 'url(#pat-C)', glyph: 'hucha', hat: '<rect class="ink" x="96" y="22" width="60" height="50"/><rect class="rd" x="96" y="56" width="60" height="9"/><rect class="ink" x="76" y="68" width="100" height="11"/>' },
-  'j-sequia': { head: 'young', bg: 'pp', robe: 'url(#pat-H)', glyph: 'botiquin', hat: '<path class="pp ol" d="M82,80 C82,36 170,36 170,80 Z"/><path class="rd" d="M120,46 h12 v9 h9 v12 h-9 v9 h-12 v-9 h-9 v-12 h9 Z"/>' },
-  'j-intemperie': { head: 'young', bg: 'gl', robe: 'url(#pat-S)', glyph: 'sacos', hat: '<path class="pp ol" d="M82,80 L92,40 L104,66 L114,26 L126,66 L138,26 L148,66 L160,40 L170,80 Z"/>' },
-  'j-blindaje': { head: 'old', bg: 'rd', robe: 'url(#pat-S)', glyph: 'encofrado', hat: '<path class="ink" d="M78,84 V52 C78,28 174,28 174,52 V84 Z"/><path class="cut" d="M78,64 H174 M100,74 h6 M120,74 h6 M140,74 h6"/><rect class="gd ol" x="119" y="24" width="14" height="46"/>' },
-  'j-furia': { head: 'young', bg: 'gd', robe: 'url(#pat-H)', glyph: 'dinamita', hat: '<path class="rd ol" d="M82,80 C74,56 92,52 90,32 C104,42 106,54 112,58 C112,42 124,34 126,20 C138,34 136,50 142,58 C148,48 158,44 160,32 C174,48 174,64 172,80 Z"/>' },
-  'j-inestable': { head: 'old', bg: 'gl', robe: 'url(#pat-C)', glyph: 'piqueta', hat: '<path class="gd ol" d="M80,80 C80,44 172,44 172,80 Z"/><rect class="ink" x="72" y="76" width="108" height="10"/><circle class="pp ol" cx="94" cy="62" r="11"/><path class="thin" d="M50,56 L78,60 M54,74 L80,66"/>' },
+  // El Ferretero: perfil con barba, boina y delantal
+  ferretero: {
+    bg: 'gl',
+    rays: false,
+    still: `<path class="thin" d="M10,66 H240 M10,124 H240"/>
+      <rect class="rd ol" x="24" y="24" width="24" height="40"/><rect class="pp ol" x="52" y="34" width="18" height="30"/><rect class="ink" x="182" y="28" width="30" height="36"/><rect class="gd ol" x="216" y="38" width="16" height="26"/>
+      ${CLOAK('ink', 'M14,312 L40,216 C70,192 180,192 210,216 L236,312 Z')}
+      <path class="pp ol" d="M68,312 L78,234 H172 L182,312 Z"/>
+      ${mirrored(HEAD_OLD + '<path class="rd ol" d="M82,77 C79,50 112,37 146,41 C167,45 175,61 171,77 Z"/><path class="ink" d="M58,72 H173 V82 H58 Z"/><path class="thin" d="M98,54 C118,45 144,46 160,57"/>')}
+      <g transform="translate(46 250) rotate(-10)"><rect class="pp ol" x="-5" y="-98" width="10" height="112"/><rect class="ink" x="-32" y="-126" width="64" height="32" rx="3"/><path class="cut" d="M-22,-118 V-102 M22,-118 V-102"/>${FIST}</g>`,
+    live: mirrored(eye(106, 99), true),
+  },
+  // La Sirena: grita por un megáfono, con la melena al viento
+  'j-doble': {
+    bg: 'rd',
+    rays: false,
+    still: `<path class="ink" d="M150,66 C204,58 236,110 228,170 C224,220 236,270 240,312 H146 C170,262 160,200 150,170 Z"/>
+      <path class="cut" d="M178,90 C208,122 206,182 200,232 C198,262 206,290 214,308 M162,112 C188,142 186,202 180,252 C178,276 182,296 188,310"/>
+      ${CLOAK('url(#pat-D)', 'M60,312 L84,240 C110,222 180,222 206,244 L226,312 Z')}
+      <g transform="translate(10 -42) scale(1.45)">${HEAD_YOUNG}<path class="rd" d="M88,120 L99,118 L99,132 L90,135 Z"/><path class="gd ol" d="M92,72 L96,52 L106,66 L114,46 L124,66 L134,46 L142,66 L152,52 L158,72 Z"/></g>
+      <path class="gd ol" d="M134,126 L134,156 L46,200 V84 Z"/><path class="ink" d="M36,76 H50 V208 H36 Z"/><path class="thin" d="M72,100 V184 M102,114 V170"/>
+      <path class="thin" d="M28,108 C19,126 19,158 28,176 M19,92 C6,120 6,164 19,192"/>
+      <g transform="translate(116 186)">${FIST}</g>`,
+    live: `<g transform="translate(10 -42) scale(1.45)">${eye(107, 99, 10, 7)}</g>`,
+  },
+  // El Usurero: de frente, gordo, con chistera, monóculo y bigote
+  'j-escasez': {
+    bg: 'gd',
+    rays: true,
+    still: `${CLOAK('url(#pat-C)', 'M20,312 L40,238 C70,216 180,216 210,238 L230,312 Z')}
+      <path class="ink" d="M98,226 L125,292 L152,226 L172,312 H78 Z"/>
+      <ellipse class="ink" cx="125" cy="152" rx="68" ry="70"/>
+      <rect class="ink" x="82" y="16" width="86" height="72"/><rect class="rd" x="82" y="66" width="86" height="12"/><rect class="ink" x="54" y="84" width="142" height="15" rx="4"/>
+      <path class="cut" d="M70,176 C80,208 110,220 125,220 C140,220 170,208 180,176 M118,162 C118,148 132,148 132,162 M80,120 L112,124 M138,114 L172,110"/>
+      <path class="cut heavy" d="M84,134 H110"/>
+      <path class="pp" d="M125,170 C108,158 84,162 68,182 C90,174 108,180 125,188 C142,180 160,174 182,182 C166,162 142,158 125,170 Z"/>
+      <path class="rd ol" d="M103,230 L125,242 L147,230 V256 L125,244 L103,256 Z"/>
+      <circle cx="154" cy="136" r="21" fill="none" stroke="#f0b415" stroke-width="5.5"/><path d="M171,150 C188,172 188,204 178,228" fill="none" stroke="#f0b415" stroke-width="3" stroke-dasharray="4 3"/>
+      <rect class="gd ol" x="22" y="284" width="48" height="11" rx="4"/><rect class="gd ol" x="26" y="272" width="48" height="11" rx="4"/><rect class="gd ol" x="20" y="260" width="48" height="11" rx="4"/><circle class="gd ol" cx="54" cy="244" r="12"/>`,
+    live: eye(154, 136, 13, 10),
+  },
+  // El Matasanos: máscara de pico, gafas redondas y sombrero de ala
+  'j-sequia': {
+    bg: 'pp',
+    rays: true,
+    still: `${CLOAK('url(#pat-H)', 'M28,312 L52,234 C80,214 170,214 196,238 L216,312 Z')}
+      <path class="ink" d="M68,240 C54,182 60,112 110,94 C150,84 174,110 174,150 V184 C152,202 132,216 128,242 Z"/>
+      <path class="pp ol" d="M150,128 C192,134 224,160 237,198 C204,190 176,182 152,178 Z"/><path class="thin" d="M160,154 C190,162 212,176 228,192"/><circle class="ink" cx="178" cy="150" r="3.4"/>
+      <circle class="pp ol" cx="134" cy="138" r="21"/>
+      <path class="cut" d="M96,152 C110,172 130,180 152,178 M86,202 C100,216 116,224 128,228"/>
+      <path class="ink" d="M36,94 H204 V110 H36 Z M76,96 C76,36 164,36 164,96 Z"/>
+      <path class="pp" d="M108,50 h24 v16 h16 v22 h-16 v8 h-24 v-8 h-16 v-22 h16 Z"/><path class="rd" d="M112,54 h16 v16 h16 v14 h-16 v8 h-16 v-8 h-16 v-14 h16 Z"/>
+      <path class="thin" d="M34,150 V312"/><rect class="gd ol" x="22" y="150" width="24" height="34"/><path class="thin" d="M34,150 V138"/>`,
+    live: eye(134, 138, 12, 12),
+  },
+  // La Ventisca: de frente, solo dos ojos en el fondo de una capucha helada
+  'j-intemperie': {
+    bg: 'gl',
+    rays: false,
+    still: `<path class="thin" d="M14,62 L72,40 M176,30 L236,12 M14,206 L48,192 M198,98 L236,84 M20,130 L44,122"/>
+      <circle class="pp" cx="40" cy="92" r="4"/><circle class="pp" cx="214" cy="56" r="5"/><circle class="pp" cx="206" cy="150" r="3.5"/><circle class="pp" cx="30" cy="166" r="3"/>
+      ${CLOAK('url(#pat-S)', 'M22,312 L46,232 C80,208 170,208 204,232 L228,312 Z')}
+      <path class="pp ol" d="M96,48 L104,10 L114,38 L125,4 L136,38 L146,10 L154,48 Z"/>
+      <path class="pp ol" d="M125,30 C70,50 50,120 56,192 C60,226 84,246 125,248 C166,246 190,226 194,192 C200,120 180,50 125,30 Z"/>
+      <path class="ink" d="M125,62 C92,78 78,124 82,178 C86,208 102,224 125,226 C148,224 164,208 168,178 C172,124 158,78 125,62 Z"/>
+      <path class="thin" d="M64,120 l10,6 M60,150 l11,3 M186,120 l-10,6 M190,150 l-11,3 M125,36 V56"/>
+      <path class="pp ol" d="M58,198 l8,36 l8,-32 Z M84,230 l7,30 l8,-26 Z M152,232 l8,30 l7,-28 Z M176,202 l8,36 l8,-34 Z"/>
+      <path class="cut" d="M110,198 q15,10 30,0"/>`,
+    live: eye(104, 142, 11, 8) + eye(146, 142, 11, 8),
+  },
+  // El Coloso: yelmo cerrado, hombreras enormes y dos brasas en la visera
+  'j-blindaje': {
+    bg: 'rd',
+    rays: true,
+    still: `${CLOAK('url(#pat-S)', 'M12,312 V252 C12,214 62,206 94,222 V312 Z')}${CLOAK('url(#pat-S)', 'M238,312 V252 C238,214 188,206 156,222 V312 Z')}
+      <circle class="pp" cx="36" cy="246" r="4"/><circle class="pp" cx="64" cy="236" r="4"/><circle class="pp" cx="214" cy="246" r="4"/><circle class="pp" cx="186" cy="236" r="4"/>
+      <path class="ink" d="M80,312 L88,214 H162 L170,312 Z"/><path class="cut" d="M125,224 V312 M100,254 H150"/>
+      <path class="rd ol" d="M125,26 C152,0 194,10 204,42 C178,30 156,38 138,54 Z"/>
+      <path class="ink" d="M66,216 V98 C66,38 184,38 184,98 V216 Z"/>
+      <path class="gd ol" d="M112,54 C112,22 138,22 138,54 V100 H112 Z"/>
+      <path class="cut" d="M66,114 H184"/>
+      <path class="pp" d="M82,126 H168 V144 H133 V204 H117 V144 H82 Z"/>
+      <circle class="pp" cx="96" cy="172" r="3.4"/><circle class="pp" cx="96" cy="188" r="3.4"/><circle class="pp" cx="154" cy="172" r="3.4"/><circle class="pp" cx="154" cy="188" r="3.4"/>`,
+    live: iris(102, 135) + iris(148, 135),
+  },
+  // La Furia: de frente, melena de llamas, boca abierta y puños en alto
+  'j-furia': {
+    bg: 'gd',
+    rays: true,
+    still: `${CLOAK('url(#pat-H)', 'M22,312 L28,208 H54 L72,312 Z')}${CLOAK('url(#pat-H)', 'M228,312 L222,208 H196 L178,312 Z')}
+      ${CLOAK('url(#pat-H)', 'M56,312 L70,238 C96,222 154,222 180,238 L194,312 Z')}
+      <g transform="translate(41 192) scale(1.5)">${FIST}</g><g transform="translate(209 192) scale(1.5)">${FIST}</g>
+      <path class="rd ol" d="M58,152 C40,112 62,98 56,58 C76,72 84,88 90,98 C88,64 108,46 106,14 C128,34 132,64 138,82 C146,60 164,48 166,24 C188,52 186,86 182,102 C192,92 204,86 208,72 C218,106 206,136 192,152 Z"/>
+      <path class="ink" d="M64,142 C64,112 186,112 186,142 V208 C186,238 64,238 64,208 Z"/>
+      <path class="cut heavy" d="M80,138 L114,152 M170,138 L136,152"/>
+      <path class="rd" d="M90,186 H160 V214 C160,226 90,226 90,214 Z"/>
+      <path class="pp" d="M90,186 H160 L152,200 L143,186 L134,200 L125,186 L116,200 L107,186 L98,200 Z M100,224 L107,212 L116,224 L125,212 L134,224 L143,212 L150,224 Z"/>`,
+    live: eye(100, 164, 10, 7) + eye(150, 164, 10, 7),
+  },
+  // El Topo: hocico largo, gafitas, dientes y casco de minero con lámpara
+  'j-inestable': {
+    bg: 'gl',
+    rays: false,
+    still: `<path class="pp" d="M160,78 L238,36 V104 L164,96 Z"/>
+      ${CLOAK('url(#pat-C)', 'M18,312 L44,238 C70,216 150,216 176,238 L198,312 Z')}
+      <path class="ink" d="M54,240 C38,172 58,104 116,100 C150,98 170,116 184,136 C206,146 228,158 236,172 C228,186 204,192 182,192 C170,216 150,234 126,242 Z"/>
+      <circle class="rd ol" cx="230" cy="170" r="9"/>
+      <path class="pp ol" d="M184,190 h10 v18 h-10 Z M197,189 h10 v15 h-10 Z"/>
+      <path class="thin" d="M206,160 L238,138 M208,174 L240,190 M202,150 L230,120"/>
+      <circle class="pp ol" cx="146" cy="142" r="17"/><path class="cut" d="M129,140 L98,132 M84,152 c-10,-4 -14,10 -6,16"/>
+      <path class="gd ol" d="M50,118 C50,58 152,54 174,112 Z"/><rect class="ink" x="42" y="108" width="144" height="13" rx="4"/><circle class="pp ol" cx="152" cy="84" r="13"/>
+      <circle class="pp ol" cx="44" cy="270" r="30"/><svg x="22" y="248" width="44" height="44" viewBox="0 0 100 100">${GLYPH.piqueta}</svg>`,
+    live: eye(146, 142, 9, 9),
+  },
 };
 
-/** Dibujo de un retrato (250 × 350). Con `frame` lleva fondo y mostrador; sin él, solo el busto. */
-function portraitArt(id: string, frame: boolean): string {
+/** Cuerpo de un retrato para incrustarlo donde haga falta (250 × 312, sin la banda del nombre). */
+function portraitBody(id: string): string {
   const p = PORTRAIT[id];
-  const robe = p.robe.startsWith('url') ? `fill="${p.robe}"` : `class="${p.robe}"`;
-  const face = (body: string, live = false) => `<g transform="translate(250 0) scale(-1 1)"${live ? ' data-sx="-1" data-sy="1"' : ''}><g transform="translate(-52 -50) scale(1.5)">${body}</g></g>`;
-  return `<g filter="url(#rough)">
-      ${frame ? `<rect class="${p.bg}" x="10" y="10" width="230" height="330"/><g transform="translate(125 150)" class="ink port-rays">${RAYS}</g>` : ''}
-      <path ${robe} stroke="#151311" stroke-width="4" stroke-linejoin="round" d="M14,340 L40,216 C70,192 180,192 210,216 L236,340 Z"/>
-      <path class="ink" d="M92,340 L100,214 H150 L158,340 Z"/>
-      ${face((p.head === 'old' ? HEAD_OLD : HEAD_YOUNG) + p.hat)}
-      ${frame ? `<circle class="pp ol" cx="52" cy="262" r="34"/><svg x="27" y="237" width="50" height="50" viewBox="0 0 100 100">${GLYPH[p.glyph] ?? ''}</svg><path class="ink" d="M10,312 H240 V340 H10 Z"/>` : ''}
-    </g>
-    ${face(eye(106, 99), true)}`;
+  return `<g filter="url(#rough)"><rect class="${p.bg}" x="10" y="10" width="230" height="330"/>${p.rays ? `<g transform="translate(125 150)" class="${p.bg === 'rd' ? 'ink' : 'pp'} port-rays">${RAYS}${RAYS.replace(/rotate\\((\\d+\\.?\\d*)\\)/g, (_, a) => `rotate(${Number(a) + 11.25}) scale(1.45)`)}</g>` : ''}${p.still}</g>${p.live}`;
 }
 
 /** Carta de personaje: el Ferretero ('ferretero') o un jefe de obra ('j-' + id del jefe). */
@@ -356,10 +484,11 @@ export function portraitEl(id: string, name: string): HTMLDivElement {
   el.innerHTML = `
     <div class="card-in"><div class="card-front">
       <div class="ly paper"></div>
-      <svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">${portraitArt(id, true)}
+      <svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">${portraitBody(id)}
+        <g filter="url(#rough)"><path class="ink" d="M10,312 H240 V340 H10 Z"/></g>
         <text class="banner-txt on-ink" x="125" y="332" text-anchor="middle"${name.length > 12 ? ' textLength="200" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text></svg>
       <div class="ly grain"></div><div class="ly glare"></div>
-    </div><div class="card-back">${BACK}</div></div>`;
+    </div><div class="card-back">${backSvg()}</div></div>`;
   attachTilt(el);
   return el;
 }
@@ -389,17 +518,17 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
         <div class="ly grain"></div>
         <div class="ly glare"></div>
       </div>
-      <div class="card-back">${BACK}</div>
+      <div class="card-back">${backSvg()}</div>
     </div>`;
   if (opts.tilt !== false) attachTilt(el);
   return el;
 }
 
-export function backEl(): HTMLDivElement {
+export function backEl(deck?: string): HTMLDivElement {
   ensureDefs();
   const el = document.createElement('div');
   el.className = 'card flipped';
-  el.innerHTML = `<div class="card-in"><div class="card-front"><div class="ly paper"></div></div><div class="card-back">${BACK}</div></div>`;
+  el.innerHTML = `<div class="card-in"><div class="card-front"><div class="ly paper"></div></div><div class="card-back">${backSvg(deck)}</div></div>`;
   return el;
 }
 

@@ -12,9 +12,9 @@ import { SPECIAL, SPECIALS } from '../rules/specials';
 import { glyphSvg } from './glyphs';
 import { TUTORIAL_INTRO, TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial } from '../rules/tutorial';
 import type { ClientMsg, LobbyInfo, ServerMsg } from '../shared/protocol';
-import { ALL_CARDS, backEl, bindEyes, cardEl, ensureDefs, ferreteroEl, portraitEl, suitSvg, tileEl } from './card';
+import { ALL_CARDS, backEl, bindEyes, cardEl, ensureDefs, ferreteroEl, portraitEl, setDeckBack, suitSvg, tileEl } from './card';
 import { bunkerArt, rubble, skyline, strip } from './art';
-import { musicIsOn, setTension, sfx, soundOn, startMusic, toggleMusic, toggleSound } from './audio';
+import { musicIsOn, setScene, setTension, sfx, soundOn, startMusic, toggleMusic, toggleSound } from './audio';
 import { rulesHtml } from './rules-text';
 
 // ───────────────────────── Estado ─────────────────────────
@@ -47,7 +47,11 @@ interface Tutorial {
   step: number;
   intro: number;
   mode: 'intro' | 'do' | 'explain' | 'free';
+  /** Qué hacer al terminar (o saltar) el tutorial; por ejemplo, empezar la primera campaña. */
+  then?: () => void;
 }
+const TUTO_KEY = 'derrumbe:tutorial';
+const tutorialDone = () => localStorage.getItem(TUTO_KEY) === '1';
 let tutorial: Tutorial | null = null;
 const guidedStep = () => (tutorial && tutorial.mode === 'do' ? TUTORIAL_STEPS[tutorial.step] : null);
 
@@ -169,6 +173,7 @@ function setScreen(next: Screen): void {
   if (screen === next && next === 'table') return;
   screen = next;
   document.querySelectorAll('.end, .banner, .fly, .flash').forEach((e) => e.remove());
+  if (next !== 'table' && next !== 'run') setScene('menu');
   if (next === 'home') renderHome();
   else if (next === 'deck') renderDeck();
   else if (next === 'camp') renderCamp();
@@ -185,33 +190,18 @@ function renderHome(): void {
     <section class="home-left">
       ${skyline('hero-bg')}
       <h1 class="title"><span>Derr</span><span class="cut">umbe</span></h1>
-      <div class="home-foot"><p class="tagline">Cuatro torres. Doce pisos. Un búnker que se agrieta con cada sirena. Demoledlo todo antes de quedar sepultados.</p><div class="fan"></div></div>
     </section>
     <section class="home-right">
       <h2>Entrar a la obra</h2>
       <button class="primary big" id="camp">Campaña<small>roguelike · en solitario</small></button>
       <button id="tutorial">Partida guiada (tutorial)</button>
       <div class="or">en línea, 1 a 4</div>
-      <div class="row"><input id="name" maxlength="12" autocomplete="off" placeholder="TU NOMBRE" value="${savedName.replace(/"/g, '')}" /><button id="create">Crear sala</button></div>
+      <div class="row"><input id="name" maxlength="12" autocomplete="off" placeholder="NOMBRE" value="${savedName.replace(/"/g, '')}" /><button id="create">Crear sala</button></div>
       <div class="row"><input id="code" maxlength="4" autocomplete="off" placeholder="CÓDIGO" value="${code.replace(/[^A-Za-z]/g, '').slice(0, 4)}" /><button id="join">Unirse</button></div>
-      <div class="row"><button class="ghost" id="rules">Reglas</button><button class="ghost" id="deck">Ver la baraja</button><button class="ghost" id="music"></button></div>
+      <div class="row"><button class="ghost" id="rules">Reglas</button><button class="ghost" id="deck">Colección</button><button class="ghost" id="music"></button></div>
       <p class="conn"></p>
     </section>
   </div>`;
-  const fan = $('.fan');
-  const show: Card[] = [
-    { id: 'S1', suit: 'S', rank: 1 },
-    { id: 'H13', suit: 'H', rank: 13 },
-    { id: 'D7', suit: 'D', rank: 7 },
-    { id: 'C12', suit: 'C', rank: 12 },
-    { id: 'H9', suit: 'H', rank: 9 },
-    { id: 'X1', suit: 'X', rank: 0 },
-  ];
-  show.forEach((c, i) => {
-    const el = cardEl(c);
-    dealIn(el, i * 110);
-    fan.appendChild(el);
-  });
   const name = () => {
     const v = $<HTMLInputElement>('#name').value.trim();
     localStorage.setItem('derrumbe:name', v);
@@ -223,7 +213,7 @@ function renderHome(): void {
   $('#code').onkeydown = (e) => e.key === 'Enter' && join();
   $('#rules').onclick = showRules;
   $('#deck').onclick = () => setScreen('deck');
-  $('#tutorial').onclick = startTutorial;
+  $('#tutorial').onclick = () => startTutorial();
   $('#camp').onclick = () => setScreen('camp');
   const music = $('#music');
   const musicLabel = () => (music.textContent = musicIsOn() ? 'Música: sí' : 'Música: no');
@@ -289,6 +279,8 @@ function renderLobby(): void {
 // ───────────────────────── Mesa ─────────────────────────
 
 function buildTable(): void {
+  setDeckBack(campaign?.run.deckId ?? 'obra');
+  setScene('battle', campaign ? campaign.run.stage : tutorial ? 1 : 3, !!campaign?.run.boss);
   handEls.clear();
   selected.clear();
   app.innerHTML = `
@@ -369,8 +361,16 @@ function buildTable(): void {
   };
   $('#btn-rules').onclick = showRules;
   const leave = $('#btn-leave');
+  if (tutorial?.then) leave.textContent = 'Saltar tutorial';
   leave.onclick = () => {
     if (campaign && !campaign.online) return setScreen('camp');
+    if (tutorial?.then) {
+      // saltar el tutorial previo a la campaña
+      const go = tutorial.then;
+      localStorage.setItem(TUTO_KEY, '1');
+      tutorial = null;
+      return go();
+    }
     if (leave.dataset.sure) return tutorial ? forget() : sendMsg({ t: 'leave' });
     leave.dataset.sure = '1';
     leave.textContent = '¿Seguro?';
@@ -1001,20 +1001,41 @@ function showEnd(): void {
 }
 
 function renderDeck(): void {
+  const have = (list: string[], id: string) => list.includes(id);
+  const achName = (id: string | null | undefined) => ACHIEVEMENTS.find((a) => a.id === id)?.name ?? '';
+  const sec = (title: string, n: number, of: number, note: string) =>
+    `<section class="col-sec"><h3 class="sec">${title} <span>${n}/${of}</span></h3><p class="col-note">${note}</p><div class="deck-grid"></div></section>`;
+  const seenSp = SPECIALS.filter((s) => have(meta.seen.specials, s.id)).length;
+  const seenRel = RELICS.filter((r) => have(meta.seen.relics, r.id)).length;
+  const seenBoss = BOSSES.filter((b) => have(meta.seen.bosses, b.id)).length;
   app.innerHTML = `
   <div class="deck">
-    <header class="deck-head"><div><div class="meta"><span class="hot">54 CARTAS · 24 ESPECIALES · 22 HERRAMIENTAS · 8 PERSONAJES</span><span>LINOGRABADO DIGITAL</span></div><h1>La baraja</h1></div><button id="back">Volver</button></header>
-    <div class="deck-grid"></div>
+    <header class="deck-head"><div><h1>Colección</h1><p class="sub">Lo que has descubierto jugando. Lo que falta espera boca abajo.</p></div><button id="back">Volver</button></header>
+    ${sec('Barajas', DECKS.filter((d) => deckUnlocked(meta, d.id)).length, DECKS.length, 'Cada baraja inicial tiene su dorso. Se desbloquean con logros y se eligen en el gremio.')}
+    ${sec('Baraja francesa', 54, 54, 'Las 52 cartas de siempre y dos comodines.')}
+    ${sec('Cartas especiales', seenSp, SPECIALS.length, 'Aparecen aquí cuando te tocan en una campaña. Las ocho últimas son legendarias.')}
+    ${sec('Herramientas', seenRel, RELICS.length, 'Las que has llevado alguna vez. Llévalas todas y el Ferretero se unirá a tu mazo.')}
+    ${sec('Personajes', 1 + seenBoss, 1 + BOSSES.length, 'El Ferretero y los jefes de obra que has derrotado.')}
   </div>`;
-  const grid = $('.deck-grid');
-  const order = (c: Card) => (c.rank > 10 ? 0 : c.rank === 1 ? 1 : c.rank === 0 ? 2 : 3);
-  [...ALL_CARDS].sort((a, b) => order(a) - order(b)).forEach((c) => grid.appendChild(cardEl(c)));
-  grid.appendChild(backEl());
-  SPECIALS.forEach((s) => grid.appendChild(cardEl({ id: `g-${s.id}`, suit: 'X', rank: 0, sp: s.id })));
-  grid.appendChild(tileEl('incognita', 'Incógnita', 'service'));
-  RELICS.forEach((r) => grid.appendChild(tileEl(r.id, r.name, 'relic')));
-  grid.appendChild(ferreteroEl());
-  BOSSES.forEach((b) => grid.appendChild(portraitEl(`j-${b.id}`, b.who)));
+  const grids = app.querySelectorAll<HTMLElement>('.deck-grid');
+  const hidden = (title: string, desc: string, deck?: string) => {
+    const box = choice(backEl(deck), title, desc, null, null);
+    box.classList.add('unknown');
+    return box;
+  };
+  for (const d of DECKS) {
+    grids[0].appendChild(deckUnlocked(meta, d.id) ? choice(backEl(d.id), d.name, d.desc, null, null) : hidden(d.name, `Bloqueada. Logro: ${achName(d.unlock)}.`, d.id));
+  }
+  const order = (c: Card) => (c.rank > 10 ? 0 : c.rank === 1 ? 1 : c.rank === 0 ? 3 : 2);
+  [...ALL_CARDS].sort((a, b) => order(a) - order(b)).forEach((c) => grids[1].appendChild(cardEl(c)));
+  for (const s of SPECIALS) {
+    grids[2].appendChild(
+      have(meta.seen.specials, s.id) ? choice(cardEl({ id: `g-${s.id}`, suit: 'X', rank: 0, sp: s.id }), s.name, s.desc, null, null) : hidden(s.locked ? 'Legendaria' : '???', s.locked ? `Logro: ${achName(s.locked)}.` : 'Aún no te ha tocado.'),
+    );
+  }
+  for (const r of RELICS) grids[3].appendChild(have(meta.seen.relics, r.id) ? choice(tileEl(r.id, r.name, 'relic'), r.name, r.desc, null, null) : hidden('???', 'Aún no la has llevado.'));
+  grids[4].appendChild(choice(ferreteroEl(), 'El Ferretero', 'Vende, gruñe y cobra.', null, null));
+  for (const b of BOSSES) grids[4].appendChild(have(meta.seen.bosses, b.id) ? choice(portraitEl(`j-${b.id}`, b.who), b.who, `${b.name}: ${b.desc}`, null, null) : hidden('???', 'Un jefe de obra que aún no has derrotado.'));
   $('#back').onclick = () => setScreen('home');
 }
 
@@ -1026,8 +1047,8 @@ connect();
 
 // ───────────────────────── Partida guiada ─────────────────────────
 
-function startTutorial(): void {
-  tutorial = { state: createTutorial(), step: 0, intro: 0, mode: 'intro' };
+function startTutorial(then?: () => void): void {
+  tutorial = { state: createTutorial(), step: 0, intro: 0, mode: 'intro', then };
   session = null;
   lobby = null;
   shown = null;
@@ -1110,10 +1131,17 @@ function showTutorialEnd(): void {
     ${won ? rubble('D', 'end-art') : skyline('end-art')}
     <h1>${won ? 'Listo para<br>la obra' : 'Sepultados'}</h1>
     <p>${won ? 'Ya conoces los golpes, los materiales, los poderes de cada palo, la sirena, el muro, el golpe limpio y la huelga. En una obra real las torres tienen tres pisos y pegan más fuerte: coordina con tu cuadrilla.' : 'Pasa hasta en las mejores cuadrillas. Repite el tutorial con calma.'}</p>
-    <div class="row"><button class="primary" id="t-home">Jugar de verdad</button><button id="t-again">Repetir tutorial</button><button id="t-rules">Reglas</button></div>`;
+    <div class="row"><button class="primary" id="t-home">${tutorial?.then ? 'A la campaña' : 'Jugar de verdad'}</button><button id="t-again">Repetir tutorial</button><button id="t-rules">Reglas</button></div>`;
   document.body.appendChild(el);
-  $('#t-home', el).onclick = forget;
-  $('#t-again', el).onclick = startTutorial;
+  const then = tutorial?.then;
+  if (won) localStorage.setItem(TUTO_KEY, '1');
+  $('#t-home', el).onclick = () => {
+    if (!then) return forget();
+    localStorage.setItem(TUTO_KEY, '1');
+    tutorial = null;
+    then();
+  };
+  $('#t-again', el).onclick = () => startTutorial(then);
   $('#t-rules', el).onclick = showRules;
 }
 
@@ -1168,6 +1196,14 @@ function saveCampaign(): void {
 }
 const isRunHost = () => !!campaign && (!campaign.online || lobby?.host === session?.playerId);
 const runOpts = () => ({ up: meta.up, ascension: Math.min(ascensionPick, meta.ascMax), deck: deckUnlocked(meta, deckPick) ? deckPick : 'obra', pool: unlockedPool(meta) });
+
+const UP_GLYPH: Record<string, string> = { cimientos: 'encofrado', caja: 'hucha', seguro: 'puntales', interes: 'chatarrero', tienda: 'cinta', manos: 'gemelo' };
+const ACH_GLYPH: Record<string, string> = {
+  primera: 'maza', capataz: 'casco', media: 'andamio', madre: 'estandarte', asc3: 'plomada', doblepar: 'gemelos', color: 'cortavidrios', full: 'dados',
+  poker: 'comodin', golpe100: 'bola', golpe300: 'nitro', limpio10: 'cincel', pisos100: 'taladro', pisos500: 'dinamita', intacto: 'sacos', rico: 'hucha',
+  coleccion: 'incognita', ferretero: 'paleta', jefes: 'metralla', 'j-doble': 'sordina', 'j-escasez': 'chatarrero', 'j-sequia': 'botiquin',
+  'j-intemperie': 'acido', 'j-blindaje': 'encofrado', 'j-furia': 'dinamita', 'j-inestable': 'piqueta',
+};
 
 /** Abona el renombre de una campaña terminada, una sola vez por campaña. */
 function maybeSettle(run: Run): void {
@@ -1225,7 +1261,7 @@ function renderCamp(): void {
     const level = meta.up[u.id] ?? 0;
     const cost = u.costs[level];
     const pips = u.costs.map((_, i) => `<i class="${i < level ? 'on' : ''}"></i>`).join('');
-    return `<div class="up"><div><b>${u.name}</b><span>${u.desc}</span><div class="pips">${pips}</div></div>
+    return `<div class="up">${glyphSvg(UP_GLYPH[u.id] ?? 'encofrado', 'badge')}<div><b>${u.name}</b><span>${u.desc}</span><div class="pips">${pips}</div></div>
       <button data-up="${u.id}" ${cost === undefined || meta.renown < cost ? 'disabled' : ''}>${cost === undefined ? 'Máx.' : `${cost} ✦`}</button></div>`;
   }).join('');
   const done = ACHIEVEMENTS.filter((a) => meta.ach[a.id]).length;
@@ -1233,14 +1269,14 @@ function renderCamp(): void {
     const [now, goal] = a.progress(meta);
     const ok = !!meta.ach[a.id];
     const unlock = unlocksOf(a.id);
-    return `<div class="ach ${ok ? 'ok' : ''}"><div><b>${a.name}</b><span>${a.desc}${unlock ? ` <em>Desbloquea: ${unlock}.</em>` : ''}</span>
+    return `<div class="ach ${ok ? 'ok' : ''}">${glyphSvg(ACH_GLYPH[a.id] ?? 'estandarte', 'badge')}<div><b>${a.name}</b><span>${a.desc}${unlock ? ` <em>Desbloquea: ${unlock}.</em>` : ''}</span>
       <div class="bar-prog"><i style="width:${Math.round((Math.min(now, goal) / goal) * 100)}%"></i></div></div>
       <div class="ach-r">${ok ? 'Hecho' : goal > 1 ? `${now}/${goal}` : ''}<b>+${a.renown} ✦</b></div></div>`;
   }).join('');
   const decks = DECKS.map((d) => {
     const open = deckUnlocked(meta, d.id);
     const need = d.unlock ? ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name : '';
-    return `<button class="deck-opt ${d.id === deckPick ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><b>${d.name}</b><span>${open ? d.desc : `Bloqueada. Logro: ${need}.`}</span></button>`;
+    return `<button class="deck-opt ${d.id === deckPick ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><span class="deck-back" data-back="${d.id}"></span><span class="deck-txt"><b>${d.name}</b><span>${open ? d.desc : `Bloqueada. Logro: ${need}.`}</span></span></button>`;
   }).join('');
   const asc = meta.ascMax > 0 ? `<div class="asc"><span>Ascenso</span>${Array.from({ length: meta.ascMax + 1 }, (_, i) => `<button data-asc="${i}" class="${i === ascensionPick ? 'on' : ''}">${i}</button>`).join('')}<small>Cada ascenso: torres +15 % y renombre +25 %.</small></div>` : '';
   app.innerHTML = `
@@ -1267,6 +1303,7 @@ function renderCamp(): void {
     </div>
   </div>`;
   $('#back').onclick = () => setScreen('home');
+  app.querySelectorAll<HTMLElement>('[data-back]').forEach((slot) => slot.appendChild(backEl(slot.dataset.back)));
   const on = (sel: string, fn: (b: HTMLButtonElement) => void) => app.querySelectorAll<HTMLButtonElement>(sel).forEach((b) => (b.onclick = () => fn(b)));
   on('[data-up]', (b) => {
     if (buyUpgrade(meta, b.dataset.up!)) {
@@ -1300,10 +1337,15 @@ function renderCamp(): void {
       saved.run.phase = 'lost'; // abandonar cobra el renombre de lo ya superado
       maybeSettle(saved.run);
     }
-    campaign = { run: newRun(runOpts(), (Math.random() * 2 ** 31) | 0), online: false, state: null };
-    lastGold = -1;
-    saveCampaign();
-    setScreen('run');
+    const begin = () => {
+      campaign = { run: newRun(runOpts(), (Math.random() * 2 ** 31) | 0), online: false, state: null };
+      lastGold = -1;
+      saveCampaign();
+      setScreen('run');
+    };
+    // la primera campaña empieza por la partida guiada (se puede saltar)
+    if (tutorialDone()) begin();
+    else startTutorial(begin);
   };
 }
 
@@ -1422,19 +1464,18 @@ function campaignAct(action: Action): void {
 
 const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
 
-/** Una opción uniforme: carta o ficha arriba, nombre y texto debajo, botón al pie. */
-function choice(el: HTMLElement, title: string, desc: string, button: string | null, onClick: (() => void) | null, cls = ''): HTMLElement {
+/** Una opción uniforme: carta o ficha arriba, nombre y texto debajo. Si se puede elegir, se pulsa la carta. */
+function choice(el: HTMLElement, title: string, desc: string, tag: string | null, onClick: (() => void) | null, cls = ''): HTMLElement {
   const box = document.createElement('div');
   box.className = `choice ${cls}`;
   box.appendChild(el);
-  box.insertAdjacentHTML('beforeend', `<h4>${title}</h4><p>${desc}</p>`);
-  if (button !== null) {
-    const b = document.createElement('button');
-    b.textContent = button;
-    b.disabled = !onClick;
-    if (onClick) b.onclick = onClick;
-    box.appendChild(b);
-  }
+  box.insertAdjacentHTML('beforeend', `<h4>${title}</h4><p>${desc}</p>${tag ? `<span class="tag-act">${tag}</span>` : ''}`);
+  if (onClick) {
+    box.classList.add('pick');
+    box.tabIndex = 0;
+    box.onclick = onClick;
+    box.onkeydown = (e) => (e.key === 'Enter' || e.key === ' ') && onClick();
+  } else if (tag) box.classList.add('no-pick');
   return box;
 }
 
@@ -1505,6 +1546,8 @@ function renderRun(): void {
   const c = campaign;
   if (!c) return setScreen('camp');
   const run = c.run;
+  setDeckBack(run.deckId);
+  setScene(run.phase === 'won' || run.phase === 'lost' ? 'menu' : 'shop');
   const host = isRunHost();
   const wait = host ? '' : '<p class="wait">El anfitrión decide por la cuadrilla.</p>';
   const head = (h1: string, sub: string) =>

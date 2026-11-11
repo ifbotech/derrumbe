@@ -52,7 +52,9 @@ Balance medido con `npm run simulate:run 200 0 1 todas` (bot de referencia, una 
 
 ### Aprender a jugar
 
-En la portada, **Partida guiada (tutorial)** abre una obra de prácticas que corre en local: un capataz explica, jugada a jugada, los golpes, los materiales, los poderes, la sirena, el muro, el golpe limpio y la huelga. **Ver la baraja** muestra las 54 cartas.
+En la portada, **Partida guiada (tutorial)** abre una obra de prácticas que corre en local: un capataz explica, jugada a jugada, los golpes, los materiales, los poderes, la sirena, el muro, el golpe limpio y la huelga. La primera campaña empieza por esa partida guiada (se puede saltar).
+
+**Colección** reúne por categorías lo que has descubierto: barajas (cada una con su dorso), baraja francesa, cartas especiales, herramientas y personajes. Lo que aún no tienes aparece boca abajo.
 
 ### Jugar con amigos
 
@@ -98,7 +100,7 @@ scripts/     Simulador de balance
 - **Determinismo.** Semilla + lista de acciones reproducen cualquier partida.
 - **Cartas.** Ilustradas a mano en SVG (`client/card.ts`) con estética de linograbado: figuras de doble cabeza unidas por una costura, tintas planas por material, bordes irregulares y grano de imprenta. Los ojos siguen al puntero, las armas se mueven, las pintas se estampan al repartir y los pisos se rasgan por la costura al caer.
 
-- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio (`client/audio.ts`). La música es una marcha fúnebre en re menor armónico con bordón grave, tambores, laúd, coro, cuernos y campana; los tambores redoblan cuando el búnker está en peligro.
+- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio (`client/audio.ts`). La música es una marcha en re menor armónico con bordón, tambores, laúd, coro, cuernos y campana, organizada en escenas: portada y gremio, ferretería, y una por obra de la campaña (cada obra cambia de tono, tempo y ritmo de tambor, y los jefes entran con coro y tambores de guerra). Los tambores redoblan cuando el búnker está en peligro.
 - **Interfaz.** Los rótulos, botones y marcos comparten el borde de gubia y el grano de la baraja; `client/art.ts` contiene las ilustraciones (torres, escombros, búnker).
 
 Todo el stack es open source: TypeScript, Vite, ws, Vitest, esbuild y las tipografías UnifrakturCook, Grenze Gotisch, Archivo, Archivo Black y Space Mono (OFL).

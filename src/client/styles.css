@@ -880,3 +880,49 @@ button:disabled { opacity: 0.5; }
   .tray { min-width: 0; }
   .actions button { min-width: 0; }
 }
+
+/* ───────────── PORTADA LIMPIA ───────────── */
+input { color: var(--ink); }
+input::placeholder { color: #8d8a83; opacity: 1; }
+.home-left .title { background: none; padding: 0; font-size: min(12.5vw, 26vh); text-shadow: 0.035em 0.035em 0 var(--ink), -0.035em 0.035em 0 var(--ink), 0.035em -0.035em 0 var(--ink), -0.035em -0.035em 0 var(--ink), 0 0.05em 0 var(--ink), 0 -0.05em 0 var(--ink), 0.05em 0 0 var(--ink), -0.05em 0 0 var(--ink), 0.09em 0.09em 0 var(--ink); }
+
+/* ───────────── ELEGIR PULSANDO LA CARTA ───────────── */
+.choice { grid-template-rows: auto auto 1fr auto; }
+.choice .card { transition: transform 0.14s ease; }
+.choice.pick { cursor: pointer; outline: none; }
+.choice.pick:hover .card, .choice.pick:focus-visible .card { transform: translateY(-8px) rotate(-1.5deg); }
+.choice.pick:hover h4, .choice.pick:focus-visible h4 { color: var(--red); }
+.tag-act { justify-self: start; font-family: var(--display); text-transform: uppercase; font-size: clamp(10px, 1.4vh, 14px); line-height: 1; background: var(--ink); color: var(--card-paper); padding: 4px 8px; }
+.choice.pick .tag-act { background: var(--red); }
+.choice.no-pick .tag-act { opacity: 0.55; }
+
+/* ───────────── EMBLEMAS EN EL GREMIO ───────────── */
+.emblem.badge { width: clamp(34px, 5.2vh, 54px); height: clamp(34px, 5.2vh, 54px); flex: none; background: var(--card-paper); border: 3px solid var(--ink); padding: 3px; box-shadow: 3px 3px 0 var(--ink); }
+.up { grid-template-columns: auto minmax(0, 1fr) auto; }
+.up .badge { background: var(--hazard); }
+.ach { grid-template-columns: auto minmax(0, 1fr) auto; }
+.ach .badge { filter: grayscale(1); opacity: 0.55; box-shadow: none; }
+.ach.ok { opacity: 1; }
+.ach.ok .badge { filter: none; opacity: 1; background: var(--hazard); box-shadow: 3px 3px 0 var(--red); transform: rotate(-4deg); }
+.ach.ok span { opacity: 0.7; }
+.deck-opts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.deck-opt { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; height: clamp(74px, 13vh, 122px); padding: 6px 10px; }
+.deck-back { display: block; }
+.deck-back .card { --w: clamp(36px, 6.4vh, 62px); }
+.deck-back .card .card-back { border-width: 2px; box-shadow: -3px 3px 0 var(--ink); }
+.deck-txt { display: grid; gap: 2px; min-width: 0; }
+.deck-opt:disabled .deck-back { filter: grayscale(1); }
+.deck-opt.on .deck-back .card { transform: rotate(-6deg); }
+
+/* ───────────── COLECCIÓN ───────────── */
+.col-sec { margin-bottom: clamp(18px, 3.5vh, 40px); }
+.col-sec h3.sec { border-bottom: 4px solid var(--ink); padding-bottom: 4px; margin-bottom: 4px; font-size: clamp(26px, 4.4vh, 46px); display: flex; justify-content: space-between; align-items: baseline; }
+.col-sec h3.sec span { font-family: var(--display); font-size: 0.5em; color: var(--red); }
+.col-note { text-transform: none; font-size: clamp(12px, 1.6vh, 15px); margin-bottom: clamp(8px, 1.6vh, 16px); }
+.col-sec .deck-grid { gap: clamp(10px, 1.4vw, 20px); }
+.col-sec .deck-grid > .card { --w: clamp(72px, 7.4vw, 120px); }
+.col-sec .choice { --cw: clamp(96px, 9.4vw, 150px); width: var(--cw); }
+.col-sec .choice .card { --w: var(--cw); }
+.unknown h4, .unknown p { opacity: 0.6; }
+.unknown .card { filter: grayscale(1) contrast(0.85); }
+.deck .deck-head h1 { font-size: min(9vw, 13vh); line-height: 0.95; }

@@ -188,8 +188,28 @@ const F: Record<string, number> = {
   D2: 73.42, G2: 98, A2: 110, Bb2: 116.54, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196, A3: 220, Bb3: 233.08,
   'C#4': 277.18, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440,
 };
-const BPM = 74;
-const STEP = 60 / BPM / 2; // corchea
+/**
+ * Escena musical. La música no es un bucle fijo: cada lugar del juego tiene su tempo, su tono,
+ * su ritmo de tambor y sus instrumentos, y cada obra de la campaña suena distinta a la anterior.
+ */
+interface Scene {
+  kind: 'menu' | 'shop' | 'battle';
+  bpm: number;
+  /** Transporte en semitonos sobre re menor. */
+  shift: number;
+  drums: number[];
+  /** Qué línea lleva la melodía principal. */
+  lead: 'a' | 'b';
+  boss: boolean;
+}
+const D_MARCH = [1, 0, 0, 1, 0, 0, 1, 0]; // 3 + 3 + 2
+const D_SLOW = [1, 0, 0, 0, 1, 0, 0, 0];
+const D_GALLOP = [1, 0, 1, 1, 0, 1, 1, 0];
+const D_WAR = [1, 1, 0, 1, 1, 0, 1, 1];
+const D_SHOP = [1, 0, 0, 0, 0, 0, 1, 0];
+let scene: Scene = { kind: 'menu', bpm: 66, shift: 0, drums: D_SLOW, lead: 'a', boss: false };
+const stepLen = () => 60 / scene.bpm / 2; // corchea
+const tr = () => 2 ** (scene.shift / 12);
 // Melodía (8 compases de 8 corcheas). '.' = silencio.
 // Re menor armónico: el si bemol y el do sostenido le dan el color sombrío.
 const MELODY = [
@@ -224,41 +244,73 @@ let tense = false;
 
 function schedule(t: number, s: number): void {
   const out = musicBus!;
+  const sc = scene;
+  const k = tr();
+  const STEP = stepLen();
   const bar = Math.floor(s / 8) % 8;
   const pos = s % 8;
   const loop = Math.floor(s / 64);
-  const section = loop % 4; // 0 entrada · 1 laúd · 2 laúd + coro · 3 segunda voz grave
-  // tambores de piel floja, graves
-  const fill = bar === 7 && pos >= 5;
-  if (DRUM[pos] || fill || (tense && pos % 2 === 0)) {
-    note(out, pos === 0 ? 92 : 74, t, 0.6, { type: 'sine', vol: pos === 0 ? 0.62 : 0.4, slide: 30 });
-    noise(out, t, 0.14, 0.24, 'lowpass', 170);
+  const battle = sc.kind === 'battle';
+  // 0 entrada · 1 laúd · 2 laúd + coro · 3 segunda voz. Un jefe no da tregua: empieza ya con coro.
+  const section = sc.boss ? 2 + (loop % 2) : sc.kind === 'menu' ? 1 + (loop % 2) * 2 : loop % 4;
+  // tambores de piel floja, graves (en la ferretería, apenas un pulso)
+  const fill = battle && bar === 7 && pos >= 5;
+  if (sc.drums[pos] || fill || (battle && tense && pos % 2 === 0)) {
+    const soft = battle ? 1 : 0.45;
+    note(out, pos === 0 ? 92 : 74, t, 0.6, { type: 'sine', vol: (pos === 0 ? 0.62 : 0.4) * soft, slide: 30 });
+    noise(out, t, 0.14, 0.24 * soft, 'lowpass', 170);
   }
   // cadenas: un roce metálico apagado en los contratiempos
-  if (section > 0 && pos % 4 === 2) noise(out, t, 0.09, tense ? 0.07 : 0.04, 'bandpass', 820);
-  // campana a lo lejos al abrir cada vuelta
-  if (s % 64 === 0) [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(out, 73.42 * m, t, 4.5 - i * 0.6, { type: 'sine', vol: 0.11 / (i + 1) }));
-  // cuernos graves: fundamental y quinta por compás
-  if (pos === 0) {
+  if (battle && section > 0 && pos % 4 === 2) noise(out, t, 0.09, tense ? 0.07 : 0.04, 'bandpass', 820);
+  // campana a lo lejos al abrir cada vuelta (con jefe, cada cuatro compases)
+  if (sc.kind !== 'shop' && (s % 64 === 0 || (sc.boss && s % 32 === 0))) [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(out, 73.42 * k * m, t, 4.5 - i * 0.6, { type: 'sine', vol: 0.11 / (i + 1) }));
+  // cuernos graves: fundamental y quinta por compás (la ferretería va sin cuernos)
+  if (pos === 0 && sc.kind !== 'shop') {
     const [root, fifth] = CHORDS[bar];
     const dur = STEP * 8 * 0.97;
+    const loud = sc.boss ? 1.35 : battle ? 1 : 0.6;
     for (const [n, vol] of [[root, 0.075], [fifth, 0.045]] as [string, number][]) {
-      note(out, F[n], t, dur, { type: 'sawtooth', vol, attack: 0.45, cutoff: 380, detune: -7 });
-      note(out, F[n], t, dur, { type: 'sawtooth', vol, attack: 0.45, cutoff: 380, detune: 7 });
+      note(out, F[n] * k, t, dur, { type: 'sawtooth', vol: vol * loud, attack: 0.45, cutoff: sc.boss ? 460 : 380, detune: -7 });
+      note(out, F[n] * k, t, dur, { type: 'sawtooth', vol: vol * loud, attack: 0.45, cutoff: sc.boss ? 460 : 380, detune: 7 });
     }
   }
+  // en la ferretería el bajo lo lleva un laúd grave, a contratiempo
+  if (sc.kind === 'shop' && (pos === 0 || pos === 3 || pos === 6)) note(out, F[CHORDS[bar][pos === 0 ? 0 : 1]] * k, t, 0.7, { type: 'triangle', vol: 0.11, cutoff: 900 });
   // melodía
   if (section === 0) return;
-  const line = section === 3 ? SECOND : MELODY;
-  const n = line[s % 64];
+  const main = sc.lead === 'a' ? MELODY : SECOND;
+  const other = sc.lead === 'a' ? SECOND : MELODY;
+  const n = (section === 3 ? other : main)[s % 64];
   if (n === '.') return;
-  note(out, F[n], t, 1.1, { type: 'triangle', vol: 0.12, cutoff: 1500 }); // laúd, apagado
-  note(out, F[n] / 2, t, 0.9, { type: 'triangle', vol: 0.05, cutoff: 900 });
+  const bright = sc.kind === 'shop' ? 2600 : 1500;
+  note(out, F[n] * k, t, 1.1, { type: 'triangle', vol: 0.12, cutoff: bright }); // laúd
+  note(out, (F[n] * k) / 2, t, 0.9, { type: 'triangle', vol: 0.05, cutoff: 900 });
+  if (sc.kind === 'shop') note(out, F[n] * k * 2, t, 0.35, { type: 'sine', vol: 0.03 }); // un punteo agudo, de mercado
   // coro de monjes: la misma línea, una octava abajo, con ataque lento
-  if (section >= 2) {
-    note(out, F[n] / 2, t, STEP * 2.6, { type: 'sawtooth', vol: 0.035, attack: 0.18, cutoff: 520, vibrato: 2.5, detune: -5 });
-    note(out, F[n] / 2, t, STEP * 2.6, { type: 'sine', vol: 0.06, attack: 0.18, vibrato: 2.5, detune: 5 });
+  if (section >= 2 && sc.kind !== 'shop') {
+    note(out, (F[n] * k) / 2, t, STEP * 2.6, { type: 'sawtooth', vol: 0.035, attack: 0.18, cutoff: 520, vibrato: 2.5, detune: -5 });
+    note(out, (F[n] * k) / 2, t, STEP * 2.6, { type: 'sine', vol: 0.06, attack: 0.18, vibrato: 2.5, detune: 5 });
   }
+}
+
+const DRONE = [36.71, 73.42, 110];
+/** Transportes de las 8 obras: ninguna suena en el mismo tono que la anterior. */
+const STAGE_SHIFT = [0, 2, -2, 3, 5, -3, 7, 0];
+const STAGE_DRUMS = [D_SLOW, D_MARCH, D_MARCH, D_GALLOP, D_MARCH, D_GALLOP, D_WAR, D_WAR];
+
+/** Cambia la escena musical: 'menu' (portada, gremio, sala), 'shop' (campaña entre obras) o 'battle'. */
+export function setScene(kind: Scene['kind'], stage = 3, boss = false): void {
+  const i = Math.max(0, Math.min(7, stage - 1));
+  const next: Scene =
+    kind === 'menu'
+      ? { kind, bpm: 66, shift: 0, drums: D_SLOW, lead: 'a', boss: false }
+      : kind === 'shop'
+        ? { kind, bpm: 86, shift: 5, drums: D_SHOP, lead: 'b', boss: false }
+        : { kind, bpm: 72 + i * 3 + (boss ? 6 : 0), shift: STAGE_SHIFT[i], drums: boss ? D_WAR : STAGE_DRUMS[i], lead: i % 2 ? 'b' : 'a', boss };
+  if (next.kind === scene.kind && next.bpm === scene.bpm && next.shift === scene.shift && next.boss === scene.boss) return;
+  scene = next;
+  step = 0; // la escena nueva entra por su principio
+  if (ctx) drone.forEach((o, n) => o.frequency.setTargetAtTime(DRONE[n] * tr(), ctx!.currentTime, 0.6));
 }
 
 function startLoop(): void {
@@ -267,7 +319,8 @@ function startLoop(): void {
   musicBus.gain.cancelScheduledValues(a.currentTime);
   musicBus.gain.setTargetAtTime(0.55, a.currentTime, 0.8);
   // bordón de quinta: re + la
-  drone = [36.71, 73.42, 110].map((f, i) => {
+  drone = DRONE.map((base, i) => {
+    const f = base * tr();
     const o = a.createOscillator();
     const lp = a.createBiquadFilter();
     const g = a.createGain();
@@ -287,7 +340,7 @@ function startLoop(): void {
   const tick = () => {
     while (nextTime < a.currentTime + 1.6) {
       schedule(nextTime, step++);
-      nextTime += STEP;
+      nextTime += stepLen();
     }
   };
   tick();
