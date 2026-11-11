@@ -26,16 +26,28 @@ export function rulesHtml(cfg: Config = DIFFICULTY.obra): string {
 
   <h3>Tu turno</h3>
   <ul>
-    <li><b>1 · Golpea</b> una torre con una <b>formación</b>: una carta sola, un <b>grupo</b> (2-4 cartas del mismo número)
-    o una <b>escalera</b> (3 o más números consecutivos, de cualquier palo).</li>
+    <li><b>1 · Golpea</b> una torre con una <b>formación</b> (tabla de abajo).</li>
     <li>En vez de golpear puedes <b>descartar</b> las cartas que quieras, o jugar un <b>comodín</b>.</li>
     <li><b>2 · Suena la sirena</b>: se voltea la carta superior de la cantera. La torre de ese palo golpea al búnker con la amenaza de su piso actual.
     El muro absorbe primero; el resto baja la integridad. Si esa torre ya es ruina o sale un comodín, no pasa nada.</li>
     <li><b>3 · Roba</b> hasta completar tu mano. Turno del siguiente.</li>
   </ul>
 
+  <h3>Formaciones</h3>
+  <table>
+    <tr><th>Formación</th><th>Cartas</th><th>Golpe</th></tr>
+    <tr><td>Carta sola</td><td>1 carta</td><td>×1</td></tr>
+    <tr><td>Grupo</td><td>2 o 3 del mismo número</td><td>×1</td></tr>
+    <tr><td>Escalera</td><td>3 o más números seguidos, de cualquier palo</td><td>×1</td></tr>
+    <tr><td>Doble par</td><td>2 parejas</td><td>×1,25</td></tr>
+    <tr><td>Color</td><td>5 o más del mismo palo</td><td>×1,5</td></tr>
+    <tr><td>Full</td><td>un trío y una pareja</td><td>×1,5</td></tr>
+    <tr><td>Escalera de color</td><td>3 o más seguidas del mismo palo</td><td>×1,5</td></tr>
+    <tr><td>Póker</td><td>4 del mismo número</td><td>×2</td></tr>
+  </table>
+
   <h3>Daño y materiales</h3>
-  <p>Cada carta hace tanto daño como su número. El material de la torre lo modifica:</p>
+  <p>Cada carta hace tanto daño como su número. El <b>As</b> es la carta fuerte: vale <b>11</b> y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A). El material de la torre modifica el daño:</p>
   <table>
     <tr><th>Torre</th><th>Daño doble (×2)</th><th>Sin daño (×0)</th></tr>
     <tr><td>${S} ACERO</td><td>${C} tréboles</td><td>${S} picas</td></tr>

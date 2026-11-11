@@ -1,9 +1,9 @@
 // Simula partidas con el bot para medir el balance: npm run simulate [partidas]
-import { DEFAULT_CONFIG, applyAction, createGame, currentPlayer, SUITS } from '../src/rules/engine';
+import { DIFFICULTY, applyAction, createGame, currentPlayer, SUITS } from '../src/rules/engine';
 import { chooseAction } from '../src/rules/bot';
 
 const games = Number(process.argv[2] ?? 2000);
-const CFG = { ...DEFAULT_CONFIG, ...JSON.parse(process.env.CFG ?? '{}') };
+const CFG = { ...DIFFICULTY[process.env.MODO === 'brutal' ? 'brutal' : 'obra'], ...JSON.parse(process.env.CFG ?? '{}') };
 for (let n = 1; n <= 4; n++) {
   let wins = 0;
   let turns = 0;

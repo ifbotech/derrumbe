@@ -5,11 +5,14 @@ import '@fontsource/archivo/500.css';
 import '@fontsource/archivo/700.css';
 import '@fontsource/space-mono/700.css';
 import './styles.css';
-import { Action, BEATS, Card, GameEvent, GameState, MATERIAL, PlayerView, RANK_LABEL, RuleError, SUITS, SUIT_GLYPH, Suit, applyAction, cardValue, classify, previewStrike, viewFor } from '../rules/engine';
-import { BOSS, Meta, RELIC, RELIC_SLOTS, RUN_PLAYER, Run, STAGES, UPGRADES, advance, buy, buyUpgrade, completeStage, newMeta, newRun, renownFor, rerollCost, reroll, settle, stagesCleared, startStage } from '../rules/run';
+import { Action, BEATS, Card, GameEvent, GameState, MATERIAL, PlayerView, RANK_LABEL, FORMATION_NAME, RuleError, SUITS, SUIT_GLYPH, Suit, applyAction, cardValue, classify, previewStrike, viewFor } from '../rules/engine';
+import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool, unlocksOf } from '../rules/achievements';
+import { BOSS, BOSSES, DECK, DECKS, Meta, RELIC, RELICS, RELIC_SLOTS, Run, RunAction, STAGES, UPGRADES, buyUpgrade, finishBattle, newMeta, newRun, removeCost, rerollCost, runAction, settle, stagesCleared, startStage, trackEvents } from '../rules/run';
+import { SPECIAL, SPECIALS } from '../rules/specials';
+import { glyphSvg } from './glyphs';
 import { TUTORIAL_INTRO, TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial } from '../rules/tutorial';
 import type { ClientMsg, LobbyInfo, ServerMsg } from '../shared/protocol';
-import { ALL_CARDS, backEl, bindEyes, cardEl, ensureDefs, suitSvg } from './card';
+import { ALL_CARDS, backEl, bindEyes, cardEl, ensureDefs, ferreteroEl, portraitEl, suitSvg, tileEl } from './card';
 import { bunkerArt, rubble, skyline, strip } from './art';
 import { musicIsOn, setTension, sfx, soundOn, startMusic, toggleMusic, toggleSound } from './audio';
 import { rulesHtml } from './rules-text';
@@ -27,7 +30,8 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = 
 let session: Session | null = JSON.parse(sessionStorage.getItem('derrumbe') ?? 'null');
 let lobby: LobbyInfo | null = null;
 let shown: PlayerView | null = null;
-type Screen = 'home' | 'lobby' | 'table' | 'deck' | 'camp' | 'shop';
+type Screen = 'home' | 'lobby' | 'table' | 'deck' | 'camp' | 'run';
+const RUN_PLAYER = 'tu';
 let screen: Screen | null = null;
 let connected = false;
 let busy = false;
@@ -51,7 +55,7 @@ const WEAK_TO = Object.fromEntries(SUITS.map((s) => [BEATS[s], s])) as Record<Su
 const FLOOR = (r: number) => RANK_LABEL[r];
 /** 'ACERO' → 'Acero': la gótica solo se lee bien en caja baja. */
 const cap = (s: string) => s[0] + s.slice(1).toLowerCase();
-const fmt = (cards: Card[]) => cards.map((c) => `${RANK_LABEL[c.rank]}${SUIT_GLYPH[c.suit]}${c.plus ? `+${c.plus}` : ''}`).join(' ');
+const fmt = (cards: Card[]) => cards.map((c) => (c.sp ? `[${SPECIAL[c.sp].name}]` : `${RANK_LABEL[c.rank]}${SUIT_GLYPH[c.suit]}${c.plus ? `+${c.plus}` : ''}`)).join(' ');
 const nameOf = (id: string) => (shown?.players.find((p) => p.id === id) ?? lobby?.players.find((p) => p.id === id))?.name ?? '???';
 const speed = () => (queue.length > 0 ? 0.3 : 1);
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms * speed()));
@@ -104,9 +108,13 @@ function onMsg(msg: ServerMsg): void {
       sessionStorage.setItem('derrumbe', JSON.stringify(session));
       history.replaceState(null, '', `?sala=${msg.room}`);
       break;
+    case 'run':
+      applyRun(msg.run);
+      break;
     case 'lobby':
       lobby = msg.lobby;
       if (!lobby.inGame) {
+        if (campaign?.online) campaign = null;
         shown = null;
         queue.length = 0;
         screen = null;
@@ -164,7 +172,7 @@ function setScreen(next: Screen): void {
   if (next === 'home') renderHome();
   else if (next === 'deck') renderDeck();
   else if (next === 'camp') renderCamp();
-  else if (next === 'shop') renderShop();
+  else if (next === 'run') renderRun();
   else if (next === 'lobby') renderLobby();
   else buildTable();
 }
@@ -175,10 +183,9 @@ function renderHome(): void {
   app.innerHTML = `
   <div class="home">
     <section class="home-left">
-      <div class="meta"><span class="hot">COOPERATIVO</span><span>1–4 JUGADORES</span><span>BARAJA FRANCESA</span><span>ONLINE</span></div>
+      ${skyline('hero-bg')}
       <h1 class="title"><span>Derr</span><span class="cut">umbe</span></h1>
-      <div class="mid"><p class="tagline">Cuatro torres. Doce pisos. Un búnker que se agrieta con cada sirena. Demoledlo todo antes de quedar sepultados.</p>${skyline('hero')}</div>
-      <div class="fan"></div>
+      <div class="home-foot"><p class="tagline">Cuatro torres. Doce pisos. Un búnker que se agrieta con cada sirena. Demoledlo todo antes de quedar sepultados.</p><div class="fan"></div></div>
     </section>
     <section class="home-right">
       <h2>Entrar a la obra</h2>
@@ -248,6 +255,14 @@ function renderLobby(): void {
     <div class="seats">${seats}</div>
     <div class="lobby-side">
       <div class="panel">
+        <h3>Modo</h3>
+        <div class="row">
+          <button data-m="clasica" class="${lobby.mode === 'clasica' ? 'on' : ''}" ${isHost ? '' : 'disabled'}>Clásica</button>
+          <button data-m="campana" class="${lobby.mode === 'campana' ? 'on' : ''}" ${isHost ? '' : 'disabled'}>Campaña</button>
+        </div>
+        <p class="note">${lobby.mode === 'campana' ? 'Roguelike cooperativo: 8 obras con mazo, oro y herramientas compartidos. Se juega con las mejoras y la baraja del anfitrión (' + DECK[runOpts().deck].name + '), y todos ganáis renombre y logros.' : 'Una sola obra: cuatro torres de tres pisos.'}</p>
+      </div>
+      <div class="panel" ${lobby.mode === 'campana' ? 'hidden' : ''}>
         <h3>Dificultad</h3>
         <div class="row">
           <button data-d="obra" class="${lobby.difficulty === 'obra' ? 'on' : ''}" ${isHost ? '' : 'disabled'}>Obra</button>
@@ -261,7 +276,8 @@ function renderLobby(): void {
     </div>
   </div>`;
   app.querySelectorAll<HTMLButtonElement>('[data-d]').forEach((b) => (b.onclick = () => sendMsg({ t: 'difficulty', value: b.dataset.d as 'obra' | 'brutal' })));
-  $('#start').onclick = () => sendMsg({ t: 'start' });
+  app.querySelectorAll<HTMLButtonElement>('[data-m]').forEach((b) => (b.onclick = () => sendMsg({ t: 'mode', value: b.dataset.m as 'clasica' | 'campana' })));
+  $('#start').onclick = () => sendMsg({ t: 'start', ...runOpts() });
   $('#copy').onclick = () => {
     void navigator.clipboard?.writeText(`${location.origin}/?sala=${lobby!.room}`);
     toast('Enlace copiado');
@@ -280,7 +296,7 @@ function buildTable(): void {
     <header class="bar">
       <div class="brand">Derrumbe</div>
       <div class="room">${tutorial ? 'TUTORIAL' : campaign ? `OBRA ${campaign.run.stage}/${STAGES.length} · ${STAGES[campaign.run.stage - 1].name}` : `SALA ${session?.room ?? ''}`}</div>
-      ${campaign ? `<div class="chip gold"><span>Oro</span><b>${campaign.run.gold}</b></div>` : ''}
+      ${campaign ? `<div class="chip gold"><span>Oro</span><b id="gold-n">${campaign.run.gold}</b></div>` : ''}
       <div class="players" id="players"></div>
       <button id="btn-music"></button>
       <button id="btn-sound"></button>
@@ -354,7 +370,7 @@ function buildTable(): void {
   $('#btn-rules').onclick = showRules;
   const leave = $('#btn-leave');
   leave.onclick = () => {
-    if (campaign) return setScreen('camp');
+    if (campaign && !campaign.online) return setScreen('camp');
     if (leave.dataset.sure) return tutorial ? forget() : sendMsg({ t: 'leave' });
     leave.dataset.sure = '1';
     leave.textContent = '¿Seguro?';
@@ -380,7 +396,7 @@ const selCards = () => (shown ? shown.hand.filter((c) => selected.has(c.id)) : [
 
 function act(msg: ClientMsg): void {
   if (tutorial && msg.t === 'action') return tutorialAct(msg.action);
-  if (campaign && msg.t === 'action') return campaignAct(msg.action);
+  if (campaign && !campaign.online && msg.t === 'action') return campaignAct(msg.action);
   waiting = true;
   sendMsg(msg);
   selected.clear();
@@ -395,7 +411,7 @@ function onTower(s: Suit): void {
     const ok = step.target === s && cards.length === step.cards!.length && cards.every((c) => step.cards!.includes(c.id));
     if (!ok) return toast(cards.length === step.cards!.length ? 'Casi: golpea la torre marcada' : 'Primero selecciona las cartas marcadas');
   }
-  if (cards.length === 1 && cards[0].suit === 'X') return act({ t: 'action', action: { type: 'joker', card: cards[0].id, target: s } });
+  if (cards.length === 1 && cards[0].suit === 'X' && !cards[0].sp) return act({ t: 'action', action: { type: 'joker', card: cards[0].id, target: s } });
   if (!classify(cards)) return;
   act({ t: 'action', action: { type: 'attack', cards: cards.map((c) => c.id), target: s } });
 }
@@ -544,7 +560,7 @@ function renderInteractive(): void {
   const status = $('#status');
   const can = canAct();
   const cards = selCards();
-  const joker = cards.length === 1 && cards[0].suit === 'X';
+  const joker = cards.length === 1 && cards[0].suit === 'X' && !cards[0].sp;
   const formation = classify(cards);
   document.querySelectorAll('.preview').forEach((p) => p.remove());
   for (const s of SUITS) towerEls[s].classList.remove('targetable');
@@ -556,12 +572,15 @@ function renderInteractive(): void {
   else if (!can) status.innerHTML = '<span class="tag">Tu turno</span><span class="hint">…</span>';
   else if (cards.length === 0)
     status.innerHTML = shown.hand.length
-      ? '<span class="tag go">Tu turno</span><span class="hint">Elige 1 carta, un grupo del mismo número o una escalera de 3+, y pulsa una torre.</span>'
+      ? '<span class="tag go">Tu turno</span><span class="hint">Elige cartas (sola, grupo, doble par, full, póker, escalera o color) y pulsa una torre.</span>'
       : '<span class="tag go">Tu turno</span><span class="hint">No tienes cartas: pulsa PASAR.</span>';
   else if (joker) status.innerHTML = '<span class="tag go">Huelga</span><span class="hint">Pulsa una torre: su piso queda desarmado y la sirena no suena.</span>';
   else if (formation) {
-    const total = cards.reduce((a, c) => a + cardValue(c), 0);
-    status.innerHTML = `<span class="tag go">${formation} · ${total}</span><span class="hint">Pulsa una torre para golpear.</span>`;
+    const total = cards.reduce((a, c) => a + (c.sp ? 0 : cardValue(c)), 0);
+    const target = SUITS.find((s) => shown!.towers[s].floors.length > 0)!;
+    const mult = previewStrike(shown.towers, cards, target, shown.config).mult;
+    const sp = cards.filter((c) => c.sp).map((c) => `<b>${SPECIAL[c.sp!].name}:</b> ${SPECIAL[c.sp!].desc}`).join(' ');
+    status.innerHTML = `<span class="tag go">${FORMATION_NAME[formation]}${mult !== 1 ? ` ×${mult}` : ''} · ${total}</span><span class="hint">${sp || 'Pulsa una torre para golpear.'}</span>`;
   } else status.innerHTML = '<span class="tag">Formación inválida</span><span class="hint">No es grupo ni escalera. Puedes descartarlas.</span>';
 
   if (can && (joker || formation)) {
@@ -756,7 +775,7 @@ async function animate(ev: GameEvent): Promise<void> {
   const v = shown!;
   switch (ev.e) {
     case 'play':
-      log(`<b>${nameOf(ev.player)}</b> golpea ${MATERIAL[ev.target]} con ${fmt(ev.cards)} <i>(${ev.formation})</i>`);
+      log(`<b>${nameOf(ev.player)}</b> golpea ${MATERIAL[ev.target]} con ${fmt(ev.cards)} <i>(${FORMATION_NAME[ev.formation].toLowerCase()})</i>`);
       await flyCards(ev.player, ev.cards, $('.floor-slot', towerEls[ev.target]));
       v.discardCount += ev.cards.length;
       break;
@@ -818,6 +837,21 @@ async function animate(ev: GameEvent): Promise<void> {
       sfx.build();
       log(`Muro +${ev.amount} (${ev.total})`, 'dim');
       await wait(220);
+      break;
+    case 'hurt':
+      v.integrity = ev.integrity;
+      renderBunker();
+      restart($('#bunker'), 'shake');
+      floatText($('#bunker'), `−${ev.amount}`);
+      log(`La carga le cuesta ${ev.amount} al búnker.`, 'red');
+      await wait(300);
+      break;
+    case 'gold':
+      if (campaign?.online) campaign.run.gold += ev.amount;
+      refreshRunHud();
+      sfx.coin();
+      log(`+${ev.amount} de oro`, 'yel');
+      await wait(200);
       break;
     case 'repair':
       v.integrity = ev.total;
@@ -907,6 +941,7 @@ async function pump(): Promise<void> {
     waiting = false;
     if (shown && batch.events.length && screen === 'table') {
       renderInteractive(); // bloquea la mano mientras se anima
+      if (campaign) noteEvents(meta, batch.events);
       for (const ev of batch.events) {
         try {
           await animate(ev);
@@ -926,13 +961,21 @@ async function pump(): Promise<void> {
   if (!shown || screen !== 'table') return;
   renderCoach();
   renderInteractive();
+  if (campaign) {
+    trackMeta();
+    bossIntro();
+  }
+  if (campaign && campaign.run.phase !== 'battle') {
+    setTimeout(routeRun, 900); // deja ver el último derrumbe antes de cambiar de pantalla
+    return;
+  }
   if (shown.phase !== 'playing') showEnd();
 }
 
 function showEnd(): void {
   if (!shown || document.querySelector('.end')) return;
   if (tutorial) return showTutorialEnd();
-  if (campaign) return campaignStageEnd();
+  if (campaign || lobby?.mode === 'campana') return; // en campaña el final lo pinta la pantalla de campaña
   const won = shown.phase === 'won';
   won ? sfx.win() : sfx.lose();
   const floors = 12 - SUITS.reduce((a, s) => a + shown!.towers[s].floors.length, 0);
@@ -960,13 +1003,18 @@ function showEnd(): void {
 function renderDeck(): void {
   app.innerHTML = `
   <div class="deck">
-    <header class="deck-head"><div><div class="meta"><span class="hot">54 CARTAS</span><span>LINOGRABADO DIGITAL</span></div><h1>La baraja</h1></div><button id="back">Volver</button></header>
+    <header class="deck-head"><div><div class="meta"><span class="hot">54 CARTAS · 24 ESPECIALES · 22 HERRAMIENTAS · 8 PERSONAJES</span><span>LINOGRABADO DIGITAL</span></div><h1>La baraja</h1></div><button id="back">Volver</button></header>
     <div class="deck-grid"></div>
   </div>`;
   const grid = $('.deck-grid');
   const order = (c: Card) => (c.rank > 10 ? 0 : c.rank === 1 ? 1 : c.rank === 0 ? 2 : 3);
   [...ALL_CARDS].sort((a, b) => order(a) - order(b)).forEach((c) => grid.appendChild(cardEl(c)));
   grid.appendChild(backEl());
+  SPECIALS.forEach((s) => grid.appendChild(cardEl({ id: `g-${s.id}`, suit: 'X', rank: 0, sp: s.id })));
+  grid.appendChild(tileEl('incognita', 'Incógnita', 'service'));
+  RELICS.forEach((r) => grid.appendChild(tileEl(r.id, r.name, 'relic')));
+  grid.appendChild(ferreteroEl());
+  BOSSES.forEach((b) => grid.appendChild(portraitEl(`j-${b.id}`, b.who)));
   $('#back').onclick = () => setScreen('home');
 }
 
@@ -1070,19 +1118,30 @@ function showTutorialEnd(): void {
 }
 
 // ───────────────────────── Campaña (roguelike) ─────────────────────────
-// Corre en local, como el tutorial. El progreso permanente (gremio) y la campaña en curso
-// se guardan en localStorage, así que se puede cerrar la pestaña y seguir otro día.
+// En solitario corre en local (como el tutorial) y se guarda en localStorage; en sala online
+// la lleva el servidor y aquí solo se pinta lo que llega. El gremio (mejoras, logros, colección)
+// vive siempre en el navegador de cada jugador.
 
 const META_KEY = 'derrumbe:meta';
 const RUN_KEY = 'derrumbe:run';
+const SETTLED_KEY = 'derrumbe:settled';
+const DECK_KEY = 'derrumbe:deck';
 
 interface Campaign {
   run: Run;
+  online: boolean;
   state: GameState | null;
-  cleans: number;
 }
 let campaign: Campaign | null = null;
 let ascensionPick = 0;
+let deckPick = localStorage.getItem(DECK_KEY) ?? 'obra';
+let hubTab: 'ups' | 'ach' = 'ups';
+let lastGold = -1;
+let lastGain = 0;
+/** Para descubrir cartas nuevas y presentar al jefe una sola vez. */
+let seenRun = 0;
+let seenSerial = 0;
+let seenStage = 0;
 
 function loadJson<T>(key: string): T | null {
   try {
@@ -1091,26 +1150,77 @@ function loadJson<T>(key: string): T | null {
     return null;
   }
 }
-const meta: Meta = { ...newMeta(), ...(loadJson<Meta>(META_KEY) ?? {}) };
+const meta: Meta = (() => {
+  const base = newMeta();
+  const old = loadJson<Partial<Meta>>(META_KEY) ?? {};
+  return { ...base, ...old, ach: { ...old.ach }, stats: { ...base.stats, ...old.stats }, seen: { ...base.seen, ...old.seen } };
+})();
 const saveMeta = () => localStorage.setItem(META_KEY, JSON.stringify(meta));
-const savedCampaign = () => loadJson<Campaign>(RUN_KEY);
+function savedCampaign(): Campaign | null {
+  const c = loadJson<Campaign>(RUN_KEY);
+  return c && c.run && Array.isArray(c.run.pool) ? c : null; // descarta guardados de versiones viejas
+}
 function saveCampaign(): void {
-  if (campaign && (campaign.run.phase === 'battle' || campaign.run.phase === 'shop')) localStorage.setItem(RUN_KEY, JSON.stringify(campaign));
-  else localStorage.removeItem(RUN_KEY);
+  const c = campaign;
+  if (!c || c.online) return;
+  if (c.run.phase === 'won' || c.run.phase === 'lost') localStorage.removeItem(RUN_KEY);
+  else localStorage.setItem(RUN_KEY, JSON.stringify(c));
+}
+const isRunHost = () => !!campaign && (!campaign.online || lobby?.host === session?.playerId);
+const runOpts = () => ({ up: meta.up, ascension: Math.min(ascensionPick, meta.ascMax), deck: deckUnlocked(meta, deckPick) ? deckPick : 'obra', pool: unlockedPool(meta) });
+
+/** Abona el renombre de una campaña terminada, una sola vez por campaña. */
+function maybeSettle(run: Run): void {
+  if (run.phase !== 'won' && run.phase !== 'lost') return;
+  if (localStorage.getItem(SETTLED_KEY) === String(run.id)) return;
+  localStorage.setItem(SETTLED_KEY, String(run.id));
+  lastGain = settle(meta, run);
+  saveMeta();
 }
 
-function toolsPanel(run: Run): string {
-  const boss = run.boss ? BOSS[run.boss] : null;
-  const tools = run.relics.map((id) => `<li title="${RELIC[id].desc}"><b>${RELIC[id].name}</b><span>${RELIC[id].desc}</span></li>`).join('');
-  return `<div class="panel tools"><h3><span>Herramientas</span><span>${run.relics.length}/${RELIC_SLOTS}</span></h3>
-    ${boss ? `<p class="boss"><b>Jefe · ${boss.name}</b> ${boss.desc}</p>` : ''}
-    <ul>${tools || '<li class="none">Aún no tienes ninguna. Se compran en la ferretería.</li>'}</ul></div>`;
+/** Pasa al gremio lo que ha ocurrido y avisa de los logros nuevos. */
+function trackMeta(): void {
+  if (campaign) noteRun(meta, campaign.run);
+  const fresh = claim(meta);
+  saveMeta();
+  fresh.forEach((a, i) => setTimeout(() => achToast(a.name, a.renown, unlocksOf(a.id)), i * 900));
 }
+
+function achToast(name: string, renown: number, unlock: string | null): void {
+  let stack = $('.ach-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'ach-stack';
+    document.body.appendChild(stack);
+  }
+  const el = document.createElement('div');
+  el.className = 'ach-toast';
+  el.innerHTML = `<small>Logro</small><b>${name}</b><span>+${renown} ✦${unlock ? ` · ${unlock}` : ''}</span>`;
+  stack.appendChild(el);
+  sfx.coin();
+  setTimeout(() => el.remove(), 5200);
+}
+
+function toolsPanel(run: Run, withBoss = true): string {
+  const boss = withBoss && run.boss ? BOSS[run.boss] : null;
+  const tools = run.relics.map((id) => `<li title="${RELIC[id].desc}">${glyphSvg(id, 'ico')}<div><b>${RELIC[id].name}</b><span>${RELIC[id].desc}</span></div></li>`).join('');
+  return `<div class="panel tools"><h3><span>Herramientas</span><span>${run.relics.length}/${RELIC_SLOTS}</span></h3>
+    ${boss ? `<p class="boss"><b>${boss.who} · ${boss.name}</b> ${boss.desc}</p>` : ''}
+    <ul>${tools || '<li class="none">Aún no tienes ninguna.</li>'}</ul></div>`;
+}
+
+function refreshRunHud(): void {
+  const el = $('#gold-n');
+  if (el && campaign) el.textContent = String(campaign.run.gold);
+}
+
+// ── gremio ──
 
 function renderCamp(): void {
   campaign = null;
   const saved = savedCampaign();
   ascensionPick = Math.min(ascensionPick, meta.ascMax);
+  if (!deckUnlocked(meta, deckPick)) deckPick = 'obra';
   const ups = UPGRADES.map((u) => {
     const level = meta.up[u.id] ?? 0;
     const cost = u.costs[level];
@@ -1118,62 +1228,166 @@ function renderCamp(): void {
     return `<div class="up"><div><b>${u.name}</b><span>${u.desc}</span><div class="pips">${pips}</div></div>
       <button data-up="${u.id}" ${cost === undefined || meta.renown < cost ? 'disabled' : ''}>${cost === undefined ? 'Máx.' : `${cost} ✦`}</button></div>`;
   }).join('');
+  const done = ACHIEVEMENTS.filter((a) => meta.ach[a.id]).length;
+  const achs = ACHIEVEMENTS.map((a) => {
+    const [now, goal] = a.progress(meta);
+    const ok = !!meta.ach[a.id];
+    const unlock = unlocksOf(a.id);
+    return `<div class="ach ${ok ? 'ok' : ''}"><div><b>${a.name}</b><span>${a.desc}${unlock ? ` <em>Desbloquea: ${unlock}.</em>` : ''}</span>
+      <div class="bar-prog"><i style="width:${Math.round((Math.min(now, goal) / goal) * 100)}%"></i></div></div>
+      <div class="ach-r">${ok ? 'Hecho' : goal > 1 ? `${now}/${goal}` : ''}<b>+${a.renown} ✦</b></div></div>`;
+  }).join('');
+  const decks = DECKS.map((d) => {
+    const open = deckUnlocked(meta, d.id);
+    const need = d.unlock ? ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name : '';
+    return `<button class="deck-opt ${d.id === deckPick ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><b>${d.name}</b><span>${open ? d.desc : `Bloqueada. Logro: ${need}.`}</span></button>`;
+  }).join('');
   const asc = meta.ascMax > 0 ? `<div class="asc"><span>Ascenso</span>${Array.from({ length: meta.ascMax + 1 }, (_, i) => `<button data-asc="${i}" class="${i === ascensionPick ? 'on' : ''}">${i}</button>`).join('')}<small>Cada ascenso: torres +15 % y renombre +25 %.</small></div>` : '';
   app.innerHTML = `
   <div class="camp">
-    <header class="deck-head"><div><div class="meta"><span class="hot">CAMPAÑA</span><span>ROGUELIKE · ${STAGES.length} OBRAS</span><span>${meta.renown} ✦ RENOMBRE</span></div><h1>El gremio</h1></div><button id="back">Volver</button></header>
+    <header class="deck-head"><div><h1>El gremio</h1></div><div class="purse"><b>${meta.renown} ✦</b><span>renombre · ${meta.runs} campañas · ${meta.wins} ganadas</span></div></header>
     <div class="camp-grid">
-      <section class="panel camp-run">
-        <h3><span>La campaña</span><span>${meta.runs} jugadas · ${meta.wins} ganadas</span></h3>
-        <p>Ocho obras, cada una más dura. Entre obra y obra cobras <b>oro</b> y compras en la <b>ferretería</b>: herramientas que cambian las reglas, forja de cartas y planos de formación. El búnker no se repara solo. Ganes o pierdas, vuelves al gremio con <b>renombre</b> para mejoras que duran para siempre.</p>
+      <section class="panel camp-run"><div class="scroll">
+        <p>Abres un <b>sobre</b> de cartas especiales y sales a demoler <b>ocho obras</b>. Tras cada una cobras oro, te llevas una carta incógnita y pasas por la <b>ferretería</b>. Ganes o pierdas, vuelves con <b>renombre</b>.</p>
         <div class="route">${STAGES.map((s, i) => `<div class="stop ${i < meta.best ? 'done' : ''} ${s.boss ? 'boss' : ''}" title="${s.name}"><b>${i + 1}</b><span>${s.name}</span></div>`).join('')}</div>
+        <h3 class="sec">Baraja inicial</h3>
+        <div class="deck-opts">${decks}</div>
         ${asc}
+        </div>
         <div class="row">
+          <button id="back">Volver</button>
           ${saved ? `<button class="primary big" id="resume">Continuar<small>obra ${saved.run.stage} · ${saved.run.gold} de oro</small></button>` : ''}
-          <button class="${saved ? '' : 'primary'} big" id="new">Nueva campaña<small>${saved ? 'abandona la actual' : 'mazo de 42 cartas'}</small></button>
+          <button class="${saved ? '' : 'primary'} big" id="new">Nueva campaña<small>${saved ? 'abandona la actual' : DECK[deckPick].name}</small></button>
         </div>
       </section>
-      <section class="panel camp-ups"><h3><span>Mejoras permanentes</span><span>${meta.renown} ✦</span></h3>${ups}</section>
+      <section class="panel camp-ups">
+        <div class="row tabs"><button data-tab="ups" class="${hubTab === 'ups' ? 'on' : ''}">Mejoras</button><button data-tab="ach" class="${hubTab === 'ach' ? 'on' : ''}">Logros ${done}/${ACHIEVEMENTS.length}</button></div>
+        <div class="scroll">${hubTab === 'ups' ? ups : achs}</div>
+      </section>
     </div>
   </div>`;
   $('#back').onclick = () => setScreen('home');
-  app.querySelectorAll<HTMLButtonElement>('[data-up]').forEach((b) => (b.onclick = () => {
+  const on = (sel: string, fn: (b: HTMLButtonElement) => void) => app.querySelectorAll<HTMLButtonElement>(sel).forEach((b) => (b.onclick = () => fn(b)));
+  on('[data-up]', (b) => {
     if (buyUpgrade(meta, b.dataset.up!)) {
       saveMeta();
       sfx.build();
       renderCamp();
     }
-  }));
-  app.querySelectorAll<HTMLButtonElement>('[data-asc]').forEach((b) => (b.onclick = () => {
+  });
+  on('[data-asc]', (b) => {
     ascensionPick = Number(b.dataset.asc);
     renderCamp();
-  }));
+  });
+  on('[data-tab]', (b) => {
+    hubTab = b.dataset.tab as 'ups' | 'ach';
+    renderCamp();
+  });
+  on('[data-deck]', (b) => {
+    deckPick = b.dataset.deck!;
+    localStorage.setItem(DECK_KEY, deckPick);
+    renderCamp();
+  });
   const resume = $('#resume');
   if (resume) resume.onclick = () => {
     campaign = savedCampaign();
     if (!campaign) return renderCamp();
-    if (campaign.run.phase === 'shop') setScreen('shop');
-    else enterStage(false);
+    if (campaign.run.phase === 'battle' && campaign.state) enterStage(false);
+    else setScreen('run');
   };
   $('#new').onclick = () => {
     if (saved) {
-      // abandonar cuenta como campaña terminada: cobra el renombre de lo ya superado
-      saved.run.phase = 'lost';
-      settle(meta, saved.run);
-      saveMeta();
+      saved.run.phase = 'lost'; // abandonar cobra el renombre de lo ya superado
+      maybeSettle(saved.run);
     }
-    campaign = { run: newRun(meta, (Math.random() * 2 ** 31) | 0, ascensionPick), state: null, cleans: 0 };
-    enterStage(true);
+    campaign = { run: newRun(runOpts(), (Math.random() * 2 ** 31) | 0), online: false, state: null };
+    lastGold = -1;
+    saveCampaign();
+    setScreen('run');
   };
 }
 
-/** Entra a la mesa con la obra actual (nueva, o la guardada si fresh es false). */
+// ── decisiones: van al servidor en sala online, o al reductor local ──
+
+function runDo(a: RunAction): void {
+  const c = campaign;
+  if (!c) return;
+  if (!isRunHost()) return toast('En campaña decide el anfitrión.');
+  if (c.online) return sendMsg({ t: 'run', action: a });
+  const err = runAction(c.run, a);
+  if (err) {
+    if (err.includes('oro')) ferreteroSays('poor');
+    return toast(err);
+  }
+  saveCampaign();
+  if (c.run.phase === 'battle') return enterStage(true);
+  renderRun();
+  afterRunChange();
+}
+
+/** Llega una campaña del servidor (sala online). */
+function applyRun(run: Run): void {
+  campaign = { run, online: true, state: null };
+  routeRun();
+}
+
+/** Al cambiar de campaña, se olvida lo ya mostrado de la anterior. */
+function syncSeen(run: Run): void {
+  if (seenRun === run.id) return;
+  seenRun = run.id;
+  seenSerial = run.serial;
+  seenStage = 0;
+}
+
+/** Tras cualquier cambio de campaña: logros y cartas recién llegadas. */
+function afterRunChange(): void {
+  const c = campaign;
+  if (!c) return;
+  const run = c.run;
+  syncSeen(run);
+  const fresh = run.deck.filter((d) => d.sp && Number(d.id.split('-').pop()) > seenSerial);
+  seenSerial = run.serial;
+  if (fresh.length && run.phase !== 'pack') revealCards(fresh);
+  trackMeta();
+}
+
+/** Lleva a la pantalla que toca según la fase de la campaña. */
+function routeRun(): void {
+  const c = campaign;
+  if (!c || busy || queue.length) return; // si hay animaciones, la cola vuelve a llamar al terminar
+  maybeSettle(c.run);
+  afterRunChange();
+  if (c.run.phase === 'battle') return refreshRunHud();
+  if (screen === 'run') renderRun();
+  else setScreen('run');
+}
+
+/** Presenta al jefe de la obra, una vez por obra. */
+function bossIntro(): void {
+  const run = campaign?.run;
+  if (!run || run.phase !== 'battle') return;
+  syncSeen(run);
+  if (seenStage === run.stage) return;
+  seenStage = run.stage;
+  ribbon(`Obra ${run.stage} · ${STAGES[run.stage - 1].name}`);
+  if (!run.boss) return;
+  const boss = BOSS[run.boss];
+  const el = document.createElement('div');
+  el.className = 'modal boss-intro';
+  el.innerHTML = `<div class="boss-box"><div class="boss-card"></div><div><small>Jefe de obra</small><h2>${boss.who}</h2><h3>${boss.name}</h3><p>${boss.desc}</p><button class="primary">A demoler</button></div></div>`;
+  const card = portraitEl(`j-${boss.id}`, boss.who);
+  dealIn(card, 0);
+  $('.boss-card', el).appendChild(card);
+  el.onclick = () => el.remove();
+  document.body.appendChild(el);
+  sfx.siren();
+  log(`<b>Jefe de obra: ${boss.who}.</b> ${boss.desc}`, 'red');
+}
+
+/** Entra a la mesa con la obra actual (solo en local). */
 function enterStage(fresh: boolean): void {
   const c = campaign!;
-  if (fresh || !c.state) {
-    c.state = startStage(c.run, meta);
-    c.cleans = 0;
-  }
+  if (fresh || !c.state) c.state = startStage(c.run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
   saveCampaign();
   tutorial = null;
   session = null;
@@ -1184,11 +1398,7 @@ function enterStage(fresh: boolean): void {
   history.replaceState(null, '', location.pathname);
   queue.push({ view: viewFor(c.state, RUN_PLAYER), events: [] });
   setScreen('table');
-  void pump().then(() => {
-    const st = STAGES[c.run.stage - 1];
-    ribbon(`Obra ${c.run.stage} · ${st.name}`);
-    if (c.run.boss) log(`<b>Jefe de obra: ${BOSS[c.run.boss].name}.</b> ${BOSS[c.run.boss].desc}`, 'red');
-  });
+  void pump();
 }
 
 function campaignAct(action: Action): void {
@@ -1197,7 +1407,8 @@ function campaignAct(action: Action): void {
   try {
     const res = applyAction(c.state, RUN_PLAYER, action);
     c.state = res.state;
-    c.cleans += res.events.filter((e) => e.e === 'floorDown' && e.clean).length;
+    trackEvents(c.run, res.events);
+    if (res.state.phase !== 'playing') finishBattle(c.run, res.state);
     selected.clear();
     saveCampaign();
     queue.push({ view: viewFor(res.state, RUN_PLAYER), events: res.events });
@@ -1207,140 +1418,221 @@ function campaignAct(action: Action): void {
   }
 }
 
-function campaignStageEnd(): void {
-  const c = campaign;
-  if (!c || !c.state || !shown) return;
-  const state = c.state;
-  const run = c.run;
-  const won = state.phase === 'won';
-  const el = document.createElement('div');
-  let body: string;
-  if (won) {
-    const lines = completeStage(run, state, c.cleans, meta);
-    const total = lines.reduce((a, [, n]) => a + n, 0);
-    c.state = null;
-    if (run.phase === 'won') {
-      const gained = settle(meta, run);
-      saveMeta();
-      sfx.win();
-      body = `${rubble('H', 'end-art')}<div class="meta"><span class="hot">CAMPAÑA COMPLETADA</span><span>ASCENSO ${run.ascension}</span></div><h1>Demolido</h1>
-        <p>Cayó la Torre Madre. ${run.stats.floors} pisos demolidos en ${run.stats.turns} turnos, con ${run.stats.cleans} golpes limpios.</p>
-        <p class="gain">+${gained} ✦ de renombre · Ascenso ${run.ascension + 1} desbloqueado</p>
-        <div class="row"><button class="primary" id="c-hub">Volver al gremio</button></div>`;
-    } else {
-      sfx.win();
-      body = `${rubble('S', 'end-art')}<div class="meta"><span class="hot">OBRA ${run.stage} DEMOLIDA</span><span>${STAGES[run.stage - 1].name}</span></div><h1>A cobrar</h1>
-        <table class="pay">${lines.map(([l, n]) => `<tr><td>${l}</td><td>+${n}</td></tr>`).join('')}<tr class="sum"><td>Total</td><td>+${total} de oro</td></tr></table>
-        <p>Tienes ${run.gold} de oro. El búnker queda en ${run.integrity}/${run.maxIntegrity}.</p>
-        <div class="row"><button class="primary" id="c-shop">A la ferretería</button></div>`;
-    }
-  } else {
-    run.phase = 'lost';
-    const gained = settle(meta, run);
-    saveMeta();
-    c.state = null;
-    sfx.lose();
-    body = `${skyline('end-art')}<div class="meta"><span class="hot">CAMPAÑA PERDIDA</span><span>OBRA ${run.stage} · ${STAGES[run.stage - 1].name}</span></div><h1>Sepultados</h1>
-      <p>Superaste ${stagesCleared(run)} de ${STAGES.length} obras con ${run.relics.length} herramientas.</p>
-      <p class="gain">+${gained} ✦ de renombre para el gremio</p>
-      <div class="row"><button class="primary" id="c-hub">Volver al gremio</button></div>`;
+// ── pantallas de campaña ──
+
+const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
+
+/** Una opción uniforme: carta o ficha arriba, nombre y texto debajo, botón al pie. */
+function choice(el: HTMLElement, title: string, desc: string, button: string | null, onClick: (() => void) | null, cls = ''): HTMLElement {
+  const box = document.createElement('div');
+  box.className = `choice ${cls}`;
+  box.appendChild(el);
+  box.insertAdjacentHTML('beforeend', `<h4>${title}</h4><p>${desc}</p>`);
+  if (button !== null) {
+    const b = document.createElement('button');
+    b.textContent = button;
+    b.disabled = !onClick;
+    if (onClick) b.onclick = onClick;
+    box.appendChild(b);
   }
-  saveCampaign();
-  el.className = `end ${won ? 'won' : 'lost'}`;
-  el.innerHTML = body;
-  document.body.appendChild(el);
-  const hub = $('#c-hub', el);
-  if (hub) hub.onclick = () => setScreen('camp');
-  const shop = $('#c-shop', el);
-  if (shop) shop.onclick = () => setScreen('shop');
+  return box;
 }
-void renownFor;
 
-const FORM_NAME: Record<string, string> = { solo: 'carta sola', grupo: 'grupo', escalera: 'escalera' };
+/** Descubre las cartas especiales que acaban de tocar. */
+function revealCards(cards: Card[]): void {
+  document.querySelector('.reveal')?.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal reveal';
+  modal.innerHTML = `<div class="reveal-box"><small>Te ha tocado</small><div class="choices"></div><button class="primary">Al mazo</button></div>`;
+  cards.forEach((c, i) => {
+    const el = cardEl(c);
+    dealIn(el, 150 + i * 250);
+    $('.choices', modal).appendChild(choice(el, SPECIAL[c.sp!].name, SPECIAL[c.sp!].desc, null, null));
+  });
+  modal.onclick = (e) => {
+    if (e.target === modal || (e.target as HTMLElement).tagName === 'BUTTON') modal.remove();
+  };
+  document.body.appendChild(modal);
+  sfx.build();
+}
 
-function renderShop(): void {
+const SAY: Record<string, string[]> = {
+  hello: ['¿Qué va a ser?', 'Tengo género nuevo.', 'Mira sin tocar. Bueno, toca.', 'Otra vez tú. Bien.'],
+  buy: ['Buena elección.', 'Eso no falla.', 'Con eso tiras una catedral.', 'Hmm. Vendido.', 'Me dolía venderla.'],
+  poor: ['Con eso no te llega.', 'Aquí no se fía.', 'Vuelve con más oro.'],
+  reroll: ['A ver qué queda en la trastienda…', 'Te saco lo otro.'],
+  burn: ['Menos lastre, mejor obra.', 'Al fuego con ella.'],
+};
+function ferreteroSays(kind: keyof typeof SAY): void {
+  const el = $('#say');
+  const lines = SAY[kind];
+  if (el) el.textContent = lines[Math.floor(Math.random() * lines.length)];
+  sfx.grunt();
+  const npc = $('.k-npc');
+  if (npc) {
+    npc.classList.remove('talk');
+    void npc.offsetWidth;
+    npc.classList.add('talk');
+  }
+}
+
+function deckModal(title: string, cards: Card[], onPick?: (c: Card) => void): void {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-box deck-box"><h2>${title} <button class="x">CERRAR</button></h2><div class="deck-mini"></div></div>`;
+  const grid = $('.deck-mini', modal);
+  const order = 'SDHCX';
+  [...cards]
+    .sort((a, b) => Number(!!a.sp) - Number(!!b.sp) || order.indexOf(a.suit) - order.indexOf(b.suit) || a.rank - b.rank)
+    .forEach((c) => {
+      const el = cardEl(c);
+      if (onPick) {
+        el.classList.add('pickable');
+        el.onclick = () => {
+          modal.remove();
+          onPick(c);
+        };
+      }
+      grid.appendChild(el);
+    });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal || (e.target as HTMLElement).classList.contains('x')) modal.remove();
+  });
+  document.body.appendChild(modal);
+}
+
+function renderRun(): void {
   const c = campaign;
   if (!c) return setScreen('camp');
   const run = c.run;
-  const next = STAGES[run.stage];
-  const boss = run.nextBoss ? BOSS[run.nextBoss] : null;
-  const offers = run.shop
-    .map((o, i) => {
-      let title = '';
-      let desc = '';
-      let tag = 'Servicio';
-      let extra = '';
+  const host = isRunHost();
+  const wait = host ? '' : '<p class="wait">El anfitrión decide por la cuadrilla.</p>';
+  const head = (h1: string, sub: string) =>
+    `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${DECK[run.deckId].name} · búnker ${run.integrity}/${run.maxIntegrity} · mazo ${run.deck.length}</p></div><div class="purse"><b>${run.gold}</b><span>de oro</span></div></header>`;
+
+  if (run.phase === 'pack') {
+    app.innerHTML = `<div class="run">${head('El sobre', `Campaña nueva · ascenso ${run.ascension}`)}
+      <div class="run-body"><p class="lead">Tu cuadrilla llega con estas cartas especiales. No tienen palo ni número: acompañan a cualquier golpe (hasta dos por golpe) o se juegan solas, y hacen su efecto.</p>
+      <div class="choices" id="picks"></div>${wait}
+      <div class="row end-row"><button id="deck-view">Ver mazo (${run.deck.length})</button><button class="primary big" id="go" ${host ? '' : 'disabled'}>A la obra 1<small>${STAGES[0].name}</small></button></div></div></div>`;
+    run.pack.forEach((id, i) => {
+      const el = cardEl(spCard(id));
+      dealIn(el, 200 + i * 220);
+      $('#picks').appendChild(choice(el, SPECIAL[id].name, SPECIAL[id].desc, null, null));
+    });
+    $('#go').onclick = () => runDo({ t: 'begin' });
+  } else if (run.phase === 'reward') {
+    const total = run.pay.reduce((a, [, n]) => a + n, 0);
+    app.innerHTML = `<div class="run">${head('A cobrar', `Obra ${run.stage} demolida · ${STAGES[run.stage - 1].name}`)}
+      <div class="run-body two">
+        <section class="panel"><h3><span>La paga</span><span>+${total}</span></h3>
+          <table class="pay">${run.pay.map(([l, n]) => `<tr><td>${l}</td><td>+${n}</td></tr>`).join('')}<tr class="sum"><td>Total</td><td>+${total} de oro</td></tr></table></section>
+        <section>
+          <h3 class="sec">${run.picked ? 'Carta resuelta' : 'Una carta para tu mazo'}</h3>
+          <div class="choices" id="picks"></div>
+          ${run.relicPicks.length ? `<h3 class="sec">${run.relicPicked ? 'Botín repartido' : `Botín de ${BOSS[run.boss ?? '']?.who ?? 'jefe'}: elige una herramienta`}</h3><div class="choices" id="relics"></div>` : ''}
+          ${wait}
+        </section>
+      </div></div>`;
+    if (!run.picked) {
+      $('#picks').appendChild(choice(tileEl('incognita', 'Incógnita', 'service'), 'Carta incógnita', 'Una carta especial al azar. No sabrás cuál hasta llevártela.', 'Llevar', host ? () => runDo({ t: 'pick', take: true }) : null));
+      $('#picks').appendChild(choice(tileEl('retirar', 'Ninguna', 'service'), 'Pasar', 'No siempre conviene engordar el mazo.', 'Saltar', host ? () => runDo({ t: 'pick', take: false }) : null));
+    }
+    const relics = $('#relics');
+    if (relics && !run.relicPicked) {
+      run.relicPicks.forEach((id) => relics.appendChild(choice(tileEl(id, RELIC[id].name, 'relic'), RELIC[id].name, RELIC[id].desc, 'Llevar', host ? () => runDo({ t: 'pickRelic', id }) : null)));
+      relics.appendChild(choice(tileEl('retirar', 'Ninguna', 'service'), 'Pasar', `Caben ${RELIC_SLOTS} herramientas; llevas ${run.relics.length}.`, 'Saltar', host ? () => runDo({ t: 'pickRelic', id: null }) : null));
+    }
+  } else if (run.phase === 'shop') {
+    const next = STAGES[run.stage];
+    const boss = run.nextBoss ? BOSS[run.nextBoss] : null;
+    app.innerHTML = `<div class="run">${head('La ferretería', `Obra ${run.stage} superada`)}
+      <div class="run-body shop">
+        <aside class="keeper"><div id="npc"></div><p class="say" id="say">…</p></aside>
+        <section><div class="choices" id="offers"></div>${wait}</section>
+        <aside class="shop-side">
+          ${toolsPanel(run, false)}
+          <div class="panel next"><h3><span>Siguiente obra</span><span>${run.stage + 1}/${STAGES.length}</span></h3>
+            <div class="next-row"><div id="next-boss"></div><div>
+            <p><b>${next.name}</b> · ${next.floors.length} piso${next.floors.length > 1 ? 's' : ''} por torre · resistencia ×${next.hp}</p>
+            ${boss ? `<p class="boss"><b>${boss.who} · ${boss.name}</b> ${boss.desc}</p>` : '<p>Sin jefe de obra.</p>'}</div></div></div>
+          <div class="grid2">
+            <button id="burn" ${host && run.gold >= removeCost(run) ? '' : 'disabled'}>Quemar carta · ${removeCost(run)}</button>
+            <button id="reroll" ${host && run.gold >= rerollCost(run) ? '' : 'disabled'}>Otra remesa · ${rerollCost(run)}</button>
+            <button id="deck-view">Ver mazo (${run.deck.length})</button>
+            <button class="primary" id="go" ${host ? '' : 'disabled'}>Siguiente obra</button>
+          </div>
+        </aside>
+      </div></div>`;
+    $('#npc').appendChild(ferreteroEl());
+    if (boss) $('#next-boss').appendChild(portraitEl(`j-${boss.id}`, boss.who));
+    run.shop.forEach((o, i) => {
+      const can = host && !o.sold && run.gold >= o.cost;
+      const label = o.sold ? 'Vendido' : `${o.cost} de oro`;
+      let el: HTMLElement;
+      let title: string;
+      let desc: string;
+      let click: (() => void) | null = can ? () => runDo({ t: 'buy', i }) : null;
       if (o.kind === 'relic') {
+        el = tileEl(o.id!, RELIC[o.id!].name, 'relic');
         title = RELIC[o.id!].name;
         desc = RELIC[o.id!].desc;
-        tag = 'Herramienta';
+      } else if (o.kind === 'sobre') {
+        el = tileEl('incognita', 'Incógnita', 'service');
+        title = 'Carta incógnita';
+        desc = 'Una carta especial al azar para tu mazo.';
       } else if (o.kind === 'forja') {
+        el = tileEl('forja', 'Forja', 'service');
         title = 'Forja';
-        desc = 'Una carta gana +3 de valor para siempre. Elige cuál:';
-        extra = `<div class="forge" data-forge="${i}"></div>`;
+        desc = 'Una carta gana +3 de valor para siempre. Eliges entre tres.';
+        if (can) click = () => deckModal('Forja: elige una carta', run.deck.filter((d) => o.cards!.includes(d.id)), (card) => runDo({ t: 'buy', i, choice: card.id }));
       } else if (o.kind === 'plano') {
-        title = `Plano de ${FORM_NAME[o.form!]}`;
-        desc = `Cada carta jugada en ${FORM_NAME[o.form!]} hace +${o.form === 'solo' ? 3 : 2}. Nivel ${run.levels[o.form!]} → ${run.levels[o.form!] + 1}.`;
-        tag = 'Plano';
+        el = tileEl('plano', 'Plano', 'service');
+        title = `Plano: ${FORMATION_NAME[o.form!]}`;
+        desc = `Cada carta jugada así hace +${o.form === 'solo' ? 3 : 2}. Nivel ${run.levels[o.form!]} → ${run.levels[o.form!] + 1}.`;
       } else if (o.kind === 'reparacion') {
+        el = tileEl('reparacion', 'Reparación', 'service');
         title = 'Reparación';
         desc = `+6 de integridad. El búnker está en ${run.integrity}/${run.maxIntegrity}.`;
       } else {
+        el = tileEl('comodin', 'Comodín', 'service');
         title = 'Comodín';
-        desc = 'Añade un comodín más a tu mazo para toda la campaña.';
+        desc = 'Añade un comodín más a tu mazo.';
       }
-      const cant = o.sold || run.gold < o.cost;
-      return `<div class="offer k-${o.kind} ${o.sold ? 'sold' : ''}"><small>${tag}</small><h4>${title}</h4><p>${desc}</p>${extra}
-        ${o.kind === 'forja' ? `<span class="price">${o.sold ? 'Vendido' : `${o.cost} de oro`}</span>` : `<button data-buy="${i}" ${cant ? 'disabled' : ''}>${o.sold ? 'Vendido' : `Comprar · ${o.cost}`}</button>`}</div>`;
-    })
-    .join('');
-  app.innerHTML = `
-  <div class="shop">
-    <header class="deck-head"><div><div class="meta"><span class="hot">OBRA ${run.stage} SUPERADA</span><span>BÚNKER ${run.integrity}/${run.maxIntegrity}</span></div><h1>La ferretería</h1></div><div class="purse"><b>${run.gold}</b><span>de oro</span></div></header>
-    <div class="shop-grid">
-      <section class="offers">${offers}</section>
-      <aside class="shop-side">
-        ${toolsPanel({ ...run, boss: null })}
-        <div class="panel next"><h3><span>Siguiente obra</span><span>${run.stage + 1}/${STAGES.length}</span></h3>
-          <p><b>${next.name}</b> · ${next.floors.length} piso${next.floors.length > 1 ? 's' : ''} por torre${next.hp > 1 ? ` · resistencia ×${next.hp}` : ''}</p>
-          ${boss ? `<p class="boss"><b>Jefe · ${boss.name}</b> ${boss.desc}</p>` : '<p>Sin jefe de obra.</p>'}
-          <p>Planos: sola ${run.levels.solo} · grupo ${run.levels.grupo} · escalera ${run.levels.escalera}</p>
-        </div>
-        <div class="row"><button id="reroll" ${run.gold < rerollCost(run) ? 'disabled' : ''}>Otra remesa · ${rerollCost(run)}</button><button class="primary" id="go">Siguiente obra</button></div>
-      </aside>
-    </div>
-  </div>`;
-  app.querySelectorAll<HTMLElement>('[data-forge]').forEach((box) => {
-    const i = Number(box.dataset.forge);
-    const o = run.shop[i];
-    for (const id of o.cards ?? []) {
-      const card = run.deck.find((d) => d.id === id);
-      if (!card) continue;
-      const el = cardEl(card);
-      if (!o.sold && run.gold >= o.cost) el.onclick = () => purchase(i, id);
-      else el.classList.add('off');
-      box.appendChild(el);
-    }
-  });
-  app.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach((b) => (b.onclick = () => purchase(Number(b.dataset.buy))));
-  $('#reroll').onclick = () => {
-    if (reroll(run, meta)) {
-      sfx.card();
-      saveCampaign();
-      renderShop();
-    }
-  };
-  $('#go').onclick = () => {
-    advance(run);
-    enterStage(true);
-  };
-}
-
-function purchase(i: number, choice?: string): void {
-  if (!campaign) return;
-  const err = buy(campaign.run, i, choice);
-  if (err) return toast(err);
-  sfx.build();
-  saveCampaign();
-  renderShop();
+      $('#offers').appendChild(choice(el, title, desc, label, click, o.sold ? 'sold' : ''));
+    });
+    if (lastGold >= 0 && run.gold < lastGold) {
+      sfx.coin();
+      ferreteroSays('buy');
+    } else ferreteroSays('hello');
+    $('#burn').onclick = () =>
+      deckModal(`Quemar una carta · ${removeCost(run)} de oro`, run.deck, (card) => {
+        runDo({ t: 'remove', card: card.id });
+        ferreteroSays('burn');
+      });
+    $('#reroll').onclick = () => {
+      runDo({ t: 'reroll' });
+      ferreteroSays('reroll');
+    };
+    $('#go').onclick = () => runDo({ t: 'next' });
+  } else {
+    const won = run.phase === 'won';
+    won ? sfx.win() : sfx.lose();
+    const canBack = !c.online || lobby?.host === session?.playerId;
+    app.innerHTML = `<div class="end ${won ? 'won' : 'lost'} in-page">
+      ${won ? rubble('H', 'end-art') : skyline('end-art')}
+      <div class="meta"><span class="hot">${won ? 'CAMPAÑA COMPLETADA' : 'CAMPAÑA PERDIDA'}</span><span>${won ? `ASCENSO ${run.ascension}` : `OBRA ${run.stage} · ${STAGES[run.stage - 1].name}`}</span></div>
+      <h1>${won ? 'Demolido' : 'Sepultados'}</h1>
+      <p>${won ? 'Cayó la Torre Madre.' : `Superasteis ${stagesCleared(run)} de ${STAGES.length} obras.`} ${run.stats.floors} pisos demolidos en ${run.stats.turns} turnos, con ${run.stats.cleans} golpes limpios y ${run.relics.length} herramientas.</p>
+      <p class="gain">+${lastGain} ✦ de renombre${won ? ` · Ascenso ${run.ascension + 1} desbloqueado` : ''}</p>
+      <div class="row">${c.online ? (canBack ? '<button class="primary" id="c-room">Volver a la sala</button>' : '<button disabled>Esperando al anfitrión…</button>') : '<button class="primary" id="c-hub">Volver al gremio</button>'}</div>
+    </div>`;
+    const hub = $('#c-hub');
+    if (hub) hub.onclick = () => setScreen('camp');
+    const room = $('#c-room');
+    if (room) room.onclick = () => sendMsg({ t: 'lobby' });
+  }
+  lastGold = run.gold;
+  const dv = $('#deck-view');
+  if (dv) dv.onclick = () => deckModal(`Tu mazo · ${run.deck.length} cartas`, run.deck);
 }

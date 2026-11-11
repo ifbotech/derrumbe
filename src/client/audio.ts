@@ -144,6 +144,25 @@ export const sfx = {
       horn(o, 146.83, t, 0.55, 0.11);
       horn(o, 220, t + 0.42, 0.9, 0.13, 207);
     }),
+  /** monedas sobre el mostrador */
+  coin: () =>
+    fx((_, o, t) => {
+      note(o, 1568, t, 0.18, { type: 'sine', vol: 0.09 });
+      note(o, 2093, t + 0.07, 0.3, { type: 'sine', vol: 0.09 });
+      note(o, 3136, t + 0.07, 0.16, { type: 'triangle', vol: 0.03 });
+    }),
+  /** el Ferretero gruñe: dos o tres sílabas graves */
+  grunt: () =>
+    fx((a, o, t) => {
+      const f = a.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 520 + Math.random() * 260;
+      f.Q.value = 3.5;
+      f.connect(o);
+      const base = 92 + Math.random() * 34;
+      const n = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < n; i++) note(f, base * (1 + (Math.random() - 0.5) * 0.24), t + i * 0.15, 0.13, { type: 'sawtooth', vol: 0.5, attack: 0.02, slide: base * 0.8 });
+    }),
   /** piedra sobre piedra */
   build: () =>
     fx((_, o, t) => {

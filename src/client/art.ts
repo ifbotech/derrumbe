@@ -17,9 +17,9 @@ export function skyline(cls = ''): string {
   const rays = Array.from({ length: 27 }, (_, i) => `<path d="M0,-118 L${i % 2 ? 5 : 9},-620 L${i % 2 ? -5 : -9},-620 Z" transform="rotate(${-91 + i * 7})"/>`).join('');
   const floors = (x1: number, x2: number, ys: number[]) => ys.map((y) => `M${x1},${y} H${x2}`).join(' ');
   const crow = (x: number, y: number, s = 1) => `<path class="cut" transform="translate(${x} ${y}) scale(${s})" d="M-12,2 q6,-9 12,0 q6,-9 12,0"/>`;
-  return `<svg class="art lino ${cls}" viewBox="0 0 640 420" aria-hidden="true">
+  return `<svg class="art lino ${cls}" viewBox="0 -200 640 620" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
   <g filter="url(#rough)">
-    <rect class="ink" width="640" height="420"/>
+    <rect class="ink" x="-400" y="-200" width="1440" height="620"/>
     <g transform="translate(280 276)" class="pp">${rays}</g>
     <circle class="rd" cx="280" cy="276" r="110"/>
     <circle cx="280" cy="276" r="92" fill="none" stroke="#f1ebdc" stroke-width="3" stroke-dasharray="3 9"/>

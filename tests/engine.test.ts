@@ -55,10 +55,10 @@ describe('ataque', () => {
     expect(state.turn).toBe(1);
   });
   it('el acero perfora: el exceso pasa al piso siguiente', () => {
-    const s = rig(['S10', 'S9', 'S8']); // 27 ×2 = 54 contra vidrio: J(20) + Q(30) y sobran 4
+    const s = rig(['S10', 'S9', 'S8']); // escalera de color: 27 ×2 ×1,5 = 81 contra vidrio: J(20) + Q(30) y sobran 31
     const { state } = applyAction(s, 'a', { type: 'attack', cards: ['S10', 'S9', 'S8'], target: 'D' });
     expect(state.towers.D.floors).toEqual([13]);
-    expect(state.towers.D.damage).toBe(4);
+    expect(state.towers.D.damage).toBe(31);
   });
   it('sin acero el exceso se pierde', () => {
     const s = rig(['H10', 'C10', 'D10']); // contra acero: C×2=20, H=10, D=10 → 40

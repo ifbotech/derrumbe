@@ -7,7 +7,8 @@ import { randomBytes, randomInt } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
 import { DIFFICULTY, Difficulty, GameEvent, GameState, RuleError, applyAction, createGame, currentPlayer, eventsFor, viewFor } from '../rules/engine';
 import { chooseAction } from '../rules/bot';
-import type { ClientMsg, LobbyInfo, ServerMsg } from '../shared/protocol';
+import { Run, finishBattle, newRun, runAction, startStage, trackEvents } from '../rules/run';
+import type { ClientMsg, LobbyInfo, Mode, ServerMsg } from '../shared/protocol';
 
 const portArg = process.argv.find((a) => a.startsWith('--port='))?.split('=')[1];
 const PORT = Number(portArg ?? process.env.PORT ?? 3000);
@@ -25,6 +26,9 @@ interface Room {
   code: string;
   host: string;
   difficulty: Difficulty;
+  mode: Mode;
+  /** Campaña en curso (modo campaña). */
+  run: Run | null;
   seats: Seat[];
   state: GameState | null;
   botTimer: NodeJS.Timeout | null;
@@ -57,7 +61,8 @@ function lobbyInfo(room: Room): LobbyInfo {
     room: room.code,
     host: room.host,
     difficulty: room.difficulty,
-    inGame: room.state !== null,
+    mode: room.mode,
+    inGame: room.state !== null || room.run !== null,
     players: room.seats.map((s) => ({ id: s.id, name: s.name, connected: s.ws !== null })),
   };
 }
@@ -70,6 +75,32 @@ function broadcastLobby(room: Room): void {
 function broadcastState(room: Room, events: GameEvent[]): void {
   if (!room.state) return;
   for (const s of room.seats) send(s.ws, { t: 'state', view: viewFor(room.state, s.id), events: eventsFor(events, s.id) });
+}
+
+function broadcastRun(room: Room): void {
+  if (room.run) for (const s of room.seats) send(s.ws, { t: 'run', run: room.run });
+}
+
+/** Tras cada jugada: en campaña, anota los eventos y cierra la obra si terminó. */
+function afterAction(room: Room, events: GameEvent[]): void {
+  broadcastState(room, events);
+  if (room.run && room.state) {
+    trackEvents(room.run, events);
+    if (room.state.phase !== 'playing') {
+      finishBattle(room.run, room.state);
+      broadcastRun(room);
+    }
+  }
+  scheduleBot(room);
+}
+
+/** Arranca la obra actual de la campaña. */
+function beginStage(room: Room): void {
+  if (!room.run) return;
+  room.state = startStage(room.run, room.seats.map((s) => ({ id: s.id, name: s.name })));
+  broadcastRun(room);
+  broadcastState(room, [{ e: 'turn', player: currentPlayer(room.state).id }]);
+  scheduleBot(room);
 }
 
 /** Si le toca a un jugador desconectado, el bot juega por él tras una espera. */
@@ -86,8 +117,7 @@ function scheduleBot(room: Room): void {
     if (!room.state || room.state.phase !== 'playing' || seat.ws || currentPlayer(room.state).id !== seat.id) return;
     const res = applyAction(room.state, seat.id, chooseAction(room.state));
     room.state = res.state;
-    broadcastState(room, res.events);
-    scheduleBot(room);
+    afterAction(room, res.events);
   }, BOT_DELAY_MS);
 }
 
@@ -99,6 +129,7 @@ function attach(ws: WebSocket, room: Room, seat: Seat): void {
   send(ws, { t: 'joined', room: room.code, playerId: seat.id, token: seat.token });
   broadcastLobby(room);
   if (room.state) send(ws, { t: 'state', view: viewFor(room.state, seat.id), events: [] });
+  if (room.run) send(ws, { t: 'run', run: room.run });
   scheduleBot(room);
 }
 
@@ -108,14 +139,14 @@ function detach(ws: WebSocket, leave: boolean): void {
   sockets.delete(ws);
   const { room, seat } = ctx;
   if (seat.ws === ws) seat.ws = null;
-  if (leave && !room.state) {
+  if (leave && !room.state && !room.run) {
     room.seats = room.seats.filter((s) => s !== seat);
     if (room.host === seat.id && room.seats.length) room.host = room.seats[0].id;
   }
   if (room.seats.every((s) => !s.ws)) room.emptySince = Date.now();
   if (room.seats.length === 0) rooms.delete(room.code);
   else {
-    if (room.host === seat.id && !room.state) room.host = (room.seats.find((s) => s.ws) ?? room.seats[0]).id;
+    if (room.host === seat.id && !room.state && !room.run) room.host = (room.seats.find((s) => s.ws) ?? room.seats[0]).id;
     broadcastLobby(room);
     scheduleBot(room);
   }
@@ -127,14 +158,14 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
   if (msg.t === 'create') {
     if (ctx) detach(ws, true);
     const seat: Seat = { id: randomBytes(6).toString('hex'), name: cleanName(msg.name), token: randomBytes(16).toString('hex'), ws: null };
-    const room: Room = { code: newCode(), host: seat.id, difficulty: 'obra', seats: [seat], state: null, botTimer: null, emptySince: null };
+    const room: Room = { code: newCode(), host: seat.id, difficulty: 'obra', mode: 'clasica', run: null, seats: [seat], state: null, botTimer: null, emptySince: null };
     rooms.set(room.code, room);
     return attach(ws, room, seat);
   }
   if (msg.t === 'join') {
     const room = rooms.get(String(msg.room ?? '').toUpperCase().trim());
     if (!room) return send(ws, { t: 'error', message: 'Esa sala no existe.' });
-    if (room.state) return send(ws, { t: 'error', message: 'La partida ya empezó.' });
+    if (room.state || room.run) return send(ws, { t: 'error', message: 'La partida ya empezó.' });
     if (room.seats.length >= 4) return send(ws, { t: 'error', message: 'La sala está llena (máx. 4).' });
     if (ctx) detach(ws, true);
     let name = cleanName(msg.name);
@@ -157,6 +188,19 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
     case 'leave':
       detach(ws, true);
       return send(ws, { t: 'left' });
+    case 'mode':
+      if (seat.id !== room.host || room.state || room.run) return;
+      if (msg.value !== 'clasica' && msg.value !== 'campana') return;
+      room.mode = msg.value;
+      return broadcastLobby(room);
+    case 'run': {
+      if (!room.run) return send(ws, { t: 'error', message: 'No hay campaña en curso.' });
+      if (seat.id !== room.host) return send(ws, { t: 'error', message: 'En campaña decide el anfitrión.' });
+      const err = runAction(room.run, msg.action);
+      if (err) return send(ws, { t: 'error', message: err });
+      if (room.run.phase === 'battle' && (msg.action.t === 'begin' || msg.action.t === 'next')) return beginStage(room);
+      return broadcastRun(room);
+    }
     case 'difficulty':
       if (seat.id !== room.host || room.state) return;
       if (!(msg.value in DIFFICULTY)) return;
@@ -164,7 +208,12 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
       return broadcastLobby(room);
     case 'start': {
       if (seat.id !== room.host) return send(ws, { t: 'error', message: 'Solo el anfitrión puede empezar.' });
-      if (room.state) return;
+      if (room.state || room.run) return;
+      if (room.mode === 'campana') {
+        room.run = newRun({ up: msg.up, ascension: msg.ascension, deck: msg.deck, pool: msg.pool }, randomInt(2 ** 31));
+        broadcastLobby(room);
+        return broadcastRun(room);
+      }
       room.state = createGame(room.seats.map((s) => ({ id: s.id, name: s.name })), randomInt(2 ** 31), DIFFICULTY[room.difficulty]);
       broadcastLobby(room);
       const first = currentPlayer(room.state).id;
@@ -176,8 +225,7 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
       try {
         const res = applyAction(room.state, seat.id, msg.action);
         room.state = res.state;
-        broadcastState(room, res.events);
-        scheduleBot(room);
+        afterAction(room, res.events);
       } catch (err) {
         if (err instanceof RuleError) return send(ws, { t: 'error', message: err.message });
         console.error(err);
@@ -186,8 +234,10 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
       return;
     }
     case 'lobby':
-      if (seat.id !== room.host || !room.state || room.state.phase === 'playing') return;
+      if (seat.id !== room.host) return;
+      if (room.run ? room.run.phase !== 'won' && room.run.phase !== 'lost' : !room.state || room.state.phase === 'playing') return;
       room.state = null;
+      room.run = null;
       room.seats = room.seats.filter((s) => s.ws); // quien se fue pierde el asiento
       return broadcastLobby(room);
   }

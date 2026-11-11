@@ -2,6 +2,8 @@
 // líneas talladas en color papel, tintas planas por palo y textura de imprenta.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
 import { Card, CardSuit, MATERIAL, RANK_LABEL, Suit } from '../rules/engine';
+import { SPECIAL } from '../rules/specials';
+import { GLYPH } from './glyphs';
 
 // ───────────────────────── Palos ─────────────────────────
 
@@ -254,6 +256,115 @@ const BACK = `
     </g>
   </svg>`;
 
+// ───────────────────────── Cartas especiales, herramientas y el Ferretero ─────────────────────────
+
+const RAYS = Array.from({ length: 16 }, (_, i) => `<path d="M0,-70 L5,-112 L-5,-112 Z" transform="rotate(${i * 22.5})"/>`).join('');
+const nameText = (name: string, cls: string) =>
+  `<text class="banner-txt ${cls}" x="124" y="264" text-anchor="middle" transform="rotate(-2.7 124 258)"${name.length > 11 ? ' textLength="152" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text>`;
+
+/** Carta especial: campo de tinta, emblema en un sol de papel y su nombre en una banda. */
+function specialArt(card: Card): string {
+  const s = SPECIAL[card.sp!];
+  return `<svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
+    <g filter="url(#rough)">
+      <rect class="ink" x="10" y="10" width="230" height="330"/>
+      <g transform="translate(125 142)"><g class="pp burst">${RAYS}</g><circle class="pp" r="70"/><circle class="sp-ring" r="62"/></g>
+      <path class="${s.locked ? 'rd' : 'gd'}" d="M24,246 L226,236 L223,273 L21,283 Z"/>
+      ${PORTRAIT[s.id] ? '' : `<svg x="67" y="84" width="116" height="116" viewBox="0 0 100 100">${GLYPH[s.id] ?? ''}</svg>`}
+    </g>
+    ${PORTRAIT[s.id] ? `<svg x="55" y="44" width="140" height="196" viewBox="0 0 250 350" class="mini-port">${portraitArt(s.id, false)}</svg>` : ''}
+    ${nameText(s.name, s.locked ? 'on-red' : 'on-gold')}
+  </svg><div class="ly sp-desc">${s.desc}</div>`;
+}
+
+/** Ficha con forma de carta para herramientas y servicios de la ferretería. */
+export function tileEl(glyph: string, name: string, kind: 'relic' | 'service'): HTMLDivElement {
+  ensureDefs();
+  const el = document.createElement('div');
+  el.className = `card k-tile t-${kind}`;
+  el.innerHTML = `
+    <div class="card-in"><div class="card-front">
+      <div class="ly paper"></div>
+      <svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
+        <g filter="url(#rough)">
+          <rect class="${kind === 'relic' ? 'rd' : 'gd'}" x="10" y="10" width="230" height="330"/>
+          <g transform="translate(125 150)"><g class="ink burst">${RAYS}</g><circle class="pp" r="72"/><circle class="sp-ring" r="63"/></g>
+          <path class="ink" d="M30,250 L222,241 L219,278 L27,287 Z"/>
+          <svg x="65" y="90" width="120" height="120" viewBox="0 0 100 100">${GLYPH[glyph] ?? ''}</svg>
+        </g>
+        ${nameText(name, 'on-ink').replace('y="264"', 'y="271"').replace('124 258', '124 265')}
+      </svg>
+      <div class="ly grain"></div><div class="ly glare"></div>
+    </div><div class="card-back">${BACK}</div></div>`;
+  attachTilt(el);
+  return el;
+}
+
+// ── retratos: el Ferretero y los jefes de obra comparten plantilla (cabeza de perfil, tocado, fondo y emblema) ──
+
+const HEAD_OLD = `
+    <path class="ink" d="M94,70 L89,96 L77,113 L88,117 L86,125 L92,129 L82,136 C74,146 72,164 80,172 C80,184 88,192 98,190 C104,200 118,202 124,194 C134,198 146,190 146,180 C156,172 160,160 158,146 L162,104 L158,70 Z"/>
+    <path class="pp" d="M84,121 C100,110 124,113 138,133 C120,123 102,126 88,134 Z"/>
+    <path class="cut" d="M97,138 C90,150 90,166 96,182 M108,137 C102,152 104,172 112,190 M120,135 C116,152 122,174 130,188 M132,133 C132,146 138,164 146,174 M144,126 C147,136 151,148 155,154"/>
+    <path class="cut" d="M116,104 C122,110 124,116 122,120 M148,96 c-7,-2 -10,8 -4,13 c3,2 6,0 5,-4 M84,113 l5,-1"/>
+    <path class="cut heavy" d="M93,89 L120,85"/>`;
+const HEAD_YOUNG = `
+    <path class="ink" d="M140,66 L170,72 C179,96 181,124 175,150 C169,162 152,160 146,150 Z"/>
+    <path class="ink" d="M96,72 L91,97 L80,111 L90,116 L88,123 L93,127 L90,134 C92,142 100,148 112,150 L118,186 L152,186 L156,140 L160,100 L156,70 Z"/>
+    <path class="cut" d="M152,86 C163,104 166,126 162,146 M84,111 l5,-1 M116,106 C121,111 122,117 120,122"/>
+    <path class="rd" d="M86.5,121.5 L96,120 L93.5,127 L97,133 L89,135.5 L91.5,128 Z"/>
+    <path class="cut heavy" d="M94,90 L120,84"/>`;
+
+interface Portrait {
+  head: 'old' | 'young';
+  bg: string;
+  robe: string;
+  hat: string;
+  glyph: string;
+}
+const PORTRAIT: Record<string, Portrait> = {
+  ferretero: { head: 'old', bg: 'gl', robe: 'pp', glyph: 'maza', hat: '<path class="rd ol" d="M82,77 C79,50 112,37 146,41 C167,45 175,61 171,77 Z"/><path class="ink" d="M58,72 H173 V82 H58 Z"/><path class="thin" d="M98,54 C118,45 144,46 160,57"/>' },
+  'j-doble': { head: 'young', bg: 'rd', robe: 'url(#pat-D)', glyph: 'sordina', hat: '<path class="gd ol" d="M92,74 L60,34 L104,52 Z M160,74 L196,34 L150,52 Z"/><path class="ink" d="M84,68 H166 V80 H84 Z"/><circle class="gd ol" cx="125" cy="62" r="9"/>' },
+  'j-escasez': { head: 'old', bg: 'gd', robe: 'url(#pat-C)', glyph: 'hucha', hat: '<rect class="ink" x="96" y="22" width="60" height="50"/><rect class="rd" x="96" y="56" width="60" height="9"/><rect class="ink" x="76" y="68" width="100" height="11"/>' },
+  'j-sequia': { head: 'young', bg: 'pp', robe: 'url(#pat-H)', glyph: 'botiquin', hat: '<path class="pp ol" d="M82,80 C82,36 170,36 170,80 Z"/><path class="rd" d="M120,46 h12 v9 h9 v12 h-9 v9 h-12 v-9 h-9 v-12 h9 Z"/>' },
+  'j-intemperie': { head: 'young', bg: 'gl', robe: 'url(#pat-S)', glyph: 'sacos', hat: '<path class="pp ol" d="M82,80 L92,40 L104,66 L114,26 L126,66 L138,26 L148,66 L160,40 L170,80 Z"/>' },
+  'j-blindaje': { head: 'old', bg: 'rd', robe: 'url(#pat-S)', glyph: 'encofrado', hat: '<path class="ink" d="M78,84 V52 C78,28 174,28 174,52 V84 Z"/><path class="cut" d="M78,64 H174 M100,74 h6 M120,74 h6 M140,74 h6"/><rect class="gd ol" x="119" y="24" width="14" height="46"/>' },
+  'j-furia': { head: 'young', bg: 'gd', robe: 'url(#pat-H)', glyph: 'dinamita', hat: '<path class="rd ol" d="M82,80 C74,56 92,52 90,32 C104,42 106,54 112,58 C112,42 124,34 126,20 C138,34 136,50 142,58 C148,48 158,44 160,32 C174,48 174,64 172,80 Z"/>' },
+  'j-inestable': { head: 'old', bg: 'gl', robe: 'url(#pat-C)', glyph: 'piqueta', hat: '<path class="gd ol" d="M80,80 C80,44 172,44 172,80 Z"/><rect class="ink" x="72" y="76" width="108" height="10"/><circle class="pp ol" cx="94" cy="62" r="11"/><path class="thin" d="M50,56 L78,60 M54,74 L80,66"/>' },
+};
+
+/** Dibujo de un retrato (250 × 350). Con `frame` lleva fondo y mostrador; sin él, solo el busto. */
+function portraitArt(id: string, frame: boolean): string {
+  const p = PORTRAIT[id];
+  const robe = p.robe.startsWith('url') ? `fill="${p.robe}"` : `class="${p.robe}"`;
+  const face = (body: string, live = false) => `<g transform="translate(250 0) scale(-1 1)"${live ? ' data-sx="-1" data-sy="1"' : ''}><g transform="translate(-52 -50) scale(1.5)">${body}</g></g>`;
+  return `<g filter="url(#rough)">
+      ${frame ? `<rect class="${p.bg}" x="10" y="10" width="230" height="330"/><g transform="translate(125 150)" class="ink port-rays">${RAYS}</g>` : ''}
+      <path ${robe} stroke="#151311" stroke-width="4" stroke-linejoin="round" d="M14,340 L40,216 C70,192 180,192 210,216 L236,340 Z"/>
+      <path class="ink" d="M92,340 L100,214 H150 L158,340 Z"/>
+      ${face((p.head === 'old' ? HEAD_OLD : HEAD_YOUNG) + p.hat)}
+      ${frame ? `<circle class="pp ol" cx="52" cy="262" r="34"/><svg x="27" y="237" width="50" height="50" viewBox="0 0 100 100">${GLYPH[p.glyph] ?? ''}</svg><path class="ink" d="M10,312 H240 V340 H10 Z"/>` : ''}
+    </g>
+    ${face(eye(106, 99), true)}`;
+}
+
+/** Carta de personaje: el Ferretero ('ferretero') o un jefe de obra ('j-' + id del jefe). */
+export function portraitEl(id: string, name: string): HTMLDivElement {
+  ensureDefs();
+  const el = document.createElement('div');
+  el.className = 'card k-npc';
+  el.innerHTML = `
+    <div class="card-in"><div class="card-front">
+      <div class="ly paper"></div>
+      <svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">${portraitArt(id, true)}
+        <text class="banner-txt on-ink" x="125" y="332" text-anchor="middle"${name.length > 12 ? ' textLength="200" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text></svg>
+      <div class="ly grain"></div><div class="ly glare"></div>
+    </div><div class="card-back">${BACK}</div></div>`;
+  attachTilt(el);
+  return el;
+}
+export const ferreteroEl = () => portraitEl('ferretero', 'El Ferretero');
+
 // ───────────────────────── Carta ─────────────────────────
 
 function corner(suit: CardSuit, rank: number, cls: string): string {
@@ -264,16 +375,17 @@ function corner(suit: CardSuit, rank: number, cls: string): string {
 export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } = {}): HTMLDivElement {
   ensureDefs();
   const el = document.createElement('div');
-  const kind = card.suit === 'X' ? 'joker' : card.rank > 10 ? 'figure' : card.rank === 1 ? 'ace' : 'number';
+  const kind = card.sp ? 'special' : card.suit === 'X' ? 'joker' : card.rank > 10 ? 'figure' : card.rank === 1 ? 'ace' : 'number';
+  if (card.sp) el.title = `${SPECIAL[card.sp].name}: ${SPECIAL[card.sp].desc}`;
   el.className = `card s-${card.suit} k-${kind}${opts.faceDown ? ' flipped' : ''}`;
   el.dataset.id = card.id;
-  const art = card.suit === 'X' ? jokerArt() : card.rank > 10 ? figure(card.suit, card.rank) : card.rank === 1 ? aceArt(card.suit) : numberArt(card.suit, card.rank);
+  const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : card.rank > 10 ? figure(card.suit, card.rank) : card.rank === 1 ? aceArt(card.suit) : numberArt(card.suit, card.rank);
   el.innerHTML = `
     <div class="card-in">
       <div class="card-front">
         <div class="ly paper"></div>
         ${art}
-        <div class="ly idx">${corner(card.suit, card.rank, 'tl')}${corner(card.suit, card.rank, 'br')}${card.plus ? `<div class="plus">+${card.plus}</div>` : ''}</div>
+        <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + corner(card.suit, card.rank, 'br')}${card.plus ? `<div class="plus">+${card.plus}</div>` : ''}</div>
         <div class="ly grain"></div>
         <div class="ly glare"></div>
       </div>

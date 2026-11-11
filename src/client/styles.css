@@ -158,9 +158,9 @@ svg.ly.art { width: 100%; height: 100%; transform: translateZ(12px) scale(0.987)
    Borde irregular de gubia en rótulos, botones y marcos; grano de imprenta sobre toda la pantalla. */
 .ruin, .preview, .coach .who, .hp { filter: url(#rough-ui); }
 .title, .lobby-code h1, .end h1, .deck-head h1, .bar .brand, .home-right h2, .tower-tag, .modal-box h2, .banner div, .float { filter: url(#rough); }
-.tower, .panel:not(.log), .coach { position: relative; border-color: transparent !important; box-shadow: none !important; }
-.tower::before, .panel:not(.log)::before, .coach::before { content: ''; position: absolute; inset: -4px; border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); filter: url(#rough-ui); pointer-events: none; }
-.tower.fallen::before { border-style: dashed; box-shadow: none; }
+
+
+
 body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-events: none; mix-blend-mode: multiply; opacity: 0.3; background-size: 260px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .07 0 0 0 0 .06 0 0 0 18 -13'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E"); }
 .lino { display: block; }
 .lino .crack { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linejoin: bevel; }
@@ -394,13 +394,13 @@ body { font-size: 14px; font-weight: 500; letter-spacing: 0.03em; }
 .tagline { font-size: clamp(12px, 1.9vh, 15px); }
 
 /* botones con marco de gubia: el texto queda nítido, el borde es el que tiembla */
-button { position: relative; border-color: transparent; box-shadow: none; }
-button::before { content: ''; position: absolute; inset: -3px; border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); filter: url(#rough-ui); pointer-events: none; }
-button:active:not(:disabled)::before { box-shadow: 0 0 0 var(--ink); }
-button.ghost::before, .bar button::before { box-shadow: none; }
-.home-right button { box-shadow: none; }
-.home-right button::before { box-shadow: 4px 4px 0 var(--concrete-2); }
-.home-right button.ghost::before { border-color: var(--paper); box-shadow: none; }
+
+
+
+
+
+
+
 
 /* ───────────── TODO EN PANTALLA, SIN SCROLL ─────────────
    Cada pantalla ocupa exactamente la ventana; los tamaños salen del alto disponible
@@ -561,7 +561,7 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 .tower.hint-target { animation: hintpulse 1.6s ease-in-out infinite; }
 .tower.hit { animation: hit2 0.32s ease; }
 @keyframes hit2 { 30% { transform: translate(-4px, 2px); } 60% { transform: translate(3px, -1px); } }
-.tower.strike { animation: strike2 0.7s ease; }
+
 @keyframes strike2 { 25% { background-color: var(--red); } }
 .bunker.shake { animation: hit2 0.35s ease; }
 .quake { animation: quake2 0.45s ease; }
@@ -672,4 +672,211 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: 0.55em
   .camp-grid .panel { overflow: visible; }
   .route { grid-template-columns: repeat(4, 1fr); }
   .offers, .shop-side { overflow: visible; }
+}
+
+/* ───────────── CARTAS ESPECIALES, FICHAS Y FERRETERO ───────────── */
+.art .sp-ring { fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-dasharray: 3 6; }
+.art .banner-txt.on-red, .art .banner-txt.on-ink { fill: var(--card-paper); }
+.art .banner-txt.on-gold { fill: var(--ink); }
+.k-special .art .burst, .k-tile .art .burst { animation: none; }
+.card:hover.k-special .art .burst, .card:hover.k-tile .art .burst { animation: ring 30s linear infinite; }
+.sp-desc { inset: 80.5% 23% 3.5% 7%; color: var(--card-paper); font-family: var(--mono); font-weight: 700; font-size: calc(var(--w) * 0.053); line-height: 1.16; text-transform: none; letter-spacing: 0; overflow: hidden; transform: translateZ(24px) scale(0.974); }
+.k-npc.talk { animation: talk 0.42s ease; }
+@keyframes talk { 30% { transform: translateY(-5px) rotate(-1.5deg); } 60% { transform: translateY(2px) rotate(1deg); } }
+.emblem { display: block; }
+.emblem.ico { width: clamp(22px, 3.2vh, 34px); height: clamp(22px, 3.2vh, 34px); flex: none; }
+
+/* ───────────── CAJAS UNIFORMES ─────────────
+   Todo lo que se repite mide lo mismo: opciones, paradas de la ruta, botones de mejora, filas de botones. */
+:root { --cw: clamp(92px, min(10.5vw, 19vh), 184px); }
+.choices { display: flex; flex-wrap: wrap; gap: clamp(8px, 1.3vw, 20px); align-items: flex-start; }
+.choice { width: var(--cw); display: grid; grid-template-rows: auto auto 1fr auto; gap: clamp(3px, 0.6vh, 7px); text-transform: none; }
+.choice .card { --w: var(--cw); }
+.choice h4 { font-family: var(--title); font-size: clamp(15px, 2.4vh, 25px); line-height: 1; height: 2em; overflow: hidden; margin-top: 4px; }
+.choice p { font-size: clamp(10px, 1.35vh, 14px); line-height: 1.3; height: 3.9em; overflow: hidden; }
+.choice button { width: 100%; height: clamp(26px, 4vh, 40px); padding: 0; }
+.choice.sold { opacity: 0.4; }
+.choice.sold .card { filter: grayscale(1); }
+.route { grid-auto-rows: clamp(46px, 8vh, 84px); }
+.stop { align-content: center; padding: 2px; overflow: hidden; }
+.stop span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.up button { width: clamp(64px, 6.5vw, 96px); height: clamp(30px, 4.6vh, 44px); padding: 0; }
+.up > div { min-width: 0; }
+.row > button { flex: 1; min-width: 0; }
+.home-right > button, .home-right .row > button, .lobby-side > button { min-height: clamp(30px, 4.8vh, 48px); }
+.home-right .row > input { flex: 1.6; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid2 button { height: clamp(32px, 5vh, 48px); padding: 0 4px; font-size: clamp(10px, 1.3vh, 14px); }
+.panel h3 { min-height: 1.3em; }
+.note { text-transform: none; font-size: clamp(11px, 1.4vh, 14px); line-height: 1.35; margin-top: 8px; }
+.wait { font-weight: 700; text-transform: uppercase; background: var(--ink); color: var(--hazard); padding: 4px 10px; display: inline-block; margin-top: 10px; }
+.tools li { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px; border-left: 0; padding-left: 0; }
+.tools li div { display: grid; min-width: 0; }
+.tools li.none { display: block; }
+
+/* ───────────── PANTALLAS DE CAMPAÑA ───────────── */
+.run { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); padding: clamp(10px, 2.2vh, 26px) clamp(12px, 2.2vw, 32px); gap: clamp(8px, 1.6vh, 18px); }
+.run .deck-head { margin: 0; padding-bottom: clamp(4px, 1vh, 12px); }
+.run .deck-head h1 { font-size: min(9vw, 12vh); line-height: 0.95; margin-top: 4px; }
+.run-body { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: clamp(8px, 1.6vh, 18px); padding: 2px 8px 8px 2px; }
+.run-body.two { display: grid; grid-template-columns: minmax(230px, 0.45fr) minmax(0, 1.55fr); align-items: start; gap: clamp(12px, 2vw, 32px); }
+.run-body.shop { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(240px, 320px); align-items: start; gap: clamp(12px, 1.8vw, 28px); }
+.lead { font-size: clamp(13px, 1.9vh, 19px); line-height: 1.45; max-width: 70ch; text-transform: none; }
+.end-row { margin-top: auto; justify-content: flex-end; }
+.end-row button { flex: none; min-width: 180px; }
+h3.sec { font-family: var(--title); font-size: clamp(20px, 3.2vh, 34px); line-height: 1; margin: 0 0 clamp(6px, 1.2vh, 12px); text-transform: none; }
+.choices + h3.sec { margin-top: clamp(10px, 2vh, 22px); }
+.run-body.two .pay { font-size: clamp(12px, 1.8vh, 18px); width: 100%; }
+.keeper { width: clamp(120px, 15vw, 230px); display: grid; gap: 10px; }
+.keeper .card { --w: clamp(120px, 15vw, 230px); }
+.say { background: var(--ink); color: var(--card-paper); padding: 8px 12px; text-transform: none; font-weight: 700; font-size: clamp(12px, 1.7vh, 17px); line-height: 1.3; min-height: 3.6em; position: relative; filter: url(#rough-ui); }
+.say::before { content: ''; position: absolute; top: -9px; left: 24px; border: 10px solid transparent; border-top: 0; border-bottom-color: var(--ink); }
+.end.in-page { position: relative; height: 100dvh; z-index: 1; animation: none; }
+.deck-box { max-width: 1100px; }
+.deck-mini { display: flex; flex-wrap: wrap; gap: 10px; }
+.deck-mini .card { --w: clamp(56px, 6.4vw, 96px); }
+.deck-mini .card.pickable { cursor: pointer; transition: transform 0.12s ease; }
+.deck-mini .card.pickable:hover { transform: translateY(-8px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :root { --cw: clamp(84px, 27vw, 150px); }
+  .run-body.two, .run-body.shop { grid-template-columns: 1fr; }
+  .keeper { grid-template-columns: auto 1fr; width: auto; align-items: center; }
+  .keeper .card { --w: 84px; }
+}
+.run-body.shop .choices { --cw: clamp(84px, min(8.6vw, 17vh), 164px); }
+.run-body.shop .choice .card { --w: var(--cw); }
+.run-body.shop .choice { width: var(--cw); }
+
+/* ───────────── MARCO ÚNICO ─────────────
+   Un solo tipo de caja en toda la interfaz: el relleno y el borde se cortan juntos con la misma
+   gubia (van en un ::before filtrado), así que nunca se desalinean, y el texto queda nítido encima.
+   Cada componente solo elige colores con variables: --bg relleno, --bd borde, --sh sombra. */
+@property --bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
+button, .tower, .panel:not(.log), .coach, .seat:not(.empty), .stop {
+  position: relative; isolation: isolate; background: none !important; border-color: transparent !important; box-shadow: none !important;
+}
+button::before, .tower::before, .panel:not(.log)::before, .coach::before, .seat:not(.empty)::before, .stop::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--bg); border: var(--bw, 3px) var(--bs, solid) var(--bd, var(--ink)); box-shadow: var(--sh, 4px 4px 0 var(--ink)); filter: url(#rough-ui);
+}
+button { --bg: var(--card-paper); color: var(--ink); }
+button:hover:not(:disabled) { --bg: var(--hazard); color: var(--ink); }
+button:active:not(:disabled) { transform: translate(3px, 3px); --sh: 0 0 0 var(--ink); }
+button.primary { --bg: var(--red); color: var(--card-paper); }
+button.primary:hover:not(:disabled) { --bg: var(--ink); color: var(--card-paper); }
+button.on { --bg: var(--ink); color: var(--card-paper); }
+button.on:hover:not(:disabled) { --bg: var(--ink); color: var(--hazard); }
+button.ghost { --bg: transparent; --sh: none; }
+button:disabled { opacity: 0.5; }
+.bar button { --sh: none; --bw: 2px; }
+.home-right button { --sh: 4px 4px 0 var(--concrete-2); }
+.home-right button.primary { color: var(--card-paper); }
+.home-right button.primary:hover:not(:disabled) { --bg: var(--hazard); color: var(--ink); }
+.home-right button.ghost { --bd: var(--card-paper); --sh: none; color: var(--card-paper); }
+.home-right button.ghost:hover:not(:disabled) { color: var(--ink); }
+.tower { --bg: var(--concrete-2); --bw: 4px; --sh: 6px 6px 0 var(--ink); }
+.tower.fallen { --bg: transparent; --bs: dashed; --sh: none; }
+.tower.targetable:hover { --bg: var(--hazard); }
+.tower.strike { animation: strike3 0.7s ease; }
+@keyframes strike3 { 25% { --bg: var(--red); } }
+.panel:not(.log) { --bg: var(--card-paper); --bw: 4px; --sh: 6px 6px 0 var(--ink); }
+.coach { --bg: var(--hazard); --bw: 4px; --sh: 6px 6px 0 var(--ink); }
+.seat:not(.empty) { --bg: var(--card-paper); --bw: 4px; --sh: 6px 6px 0 var(--ink); }
+.stop { --bg: var(--card-paper); --sh: none; color: var(--ink); }
+.stop.boss { --bg: var(--red); color: var(--card-paper); }
+.stop.done { --bg: var(--ink); color: var(--hazard); }
+/* etiquetas pequeñas: borde recto y fino, sin sombra, siempre igual */
+.meta span, .chip, .room { border-width: 2px; }
+.log { border: 4px solid var(--ink); box-shadow: none; }
+/* una caja con marco no hace scroll ella misma (se llevaría el marco): lo hace su .scroll */
+.scroll { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: clamp(6px, 1.2vh, 12px); padding-right: 4px; flex: 1; }
+.camp-grid .panel { overflow: visible; }
+.tools { overflow: visible; max-height: none; }
+.tools ul { max-height: 22vh; overflow: hidden; }
+
+/* ───────────── PORTADA ─────────────
+   La ilustración ocupa todo el panel; el título va en su propio bloque de tinta sobre el cielo
+   y el abanico de cartas pisa la colina. */
+.home-left { position: relative; background: var(--ink); overflow: hidden; justify-content: space-between; border-right: 6px solid var(--ink); }
+.hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.home-left .title { position: relative; align-self: flex-start; color: var(--card-paper); background: var(--ink); padding: 0 0.14em 0.1em 0.04em; font-size: min(12vw, 24vh); line-height: 1; }
+.home-foot { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(10px, 2vw, 28px); }
+.home-left .tagline { color: var(--card-paper); background: var(--ink); border-left: 8px solid var(--red); padding: 8px 12px; max-width: 30ch; margin: 0; }
+.home-left .fan { padding: 0; flex: none; }
+.home-left .fan .card { --w: min(7.4vw, 12vh); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .home-left { min-height: 26vh; }
+  .home-left .hero-bg { display: block; }
+  .home-left .home-foot { display: none; }
+}
+
+/* ───────────── GREMIO: BARAJAS Y LOGROS ───────────── */
+.camp .deck-head { align-items: center; }
+.camp .purse b { font-size: min(6vw, 8vh); }
+.camp-run, .camp-ups { display: flex; flex-direction: column; gap: clamp(6px, 1.2vh, 12px); min-height: 0; }
+.camp-run h3.sec { font-size: clamp(17px, 2.6vh, 26px); margin: 0; }
+.deck-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.deck-opt { display: grid; align-content: start; gap: 2px; text-align: left; height: clamp(64px, 11vh, 108px); padding: 6px 8px; overflow: hidden; font-family: var(--mono); }
+.deck-opt b { font-family: var(--display); text-transform: uppercase; font-size: clamp(10px, 1.4vh, 14px); line-height: 1.1; }
+.deck-opt span { text-transform: none; font-weight: 500; font-size: clamp(9px, 1.2vh, 12px); line-height: 1.25; letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.tabs { flex: none; }
+.ach { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: clamp(4px, 0.8vh, 8px); text-transform: none; }
+.ach b { display: block; text-transform: uppercase; font-size: clamp(12px, 1.6vh, 16px); }
+.ach span { font-size: clamp(11px, 1.4vh, 14px); line-height: 1.3; display: block; }
+.ach em { font-style: normal; font-weight: 700; color: var(--red); }
+.ach.ok { opacity: 0.6; }
+.ach.ok b::after { content: ' ✓'; color: var(--red); }
+.ach-r { text-align: right; font-weight: 700; font-size: clamp(10px, 1.3vh, 13px); text-transform: uppercase; width: clamp(52px, 5vw, 72px); }
+.ach-r b { font-family: var(--display); font-size: clamp(12px, 1.7vh, 16px); }
+.bar-prog { height: 6px; border: 1.5px solid var(--ink); margin-top: 3px; }
+.bar-prog i { display: block; height: 100%; background: var(--red); }
+.ach-stack { position: fixed; right: 16px; bottom: 16px; z-index: 120; display: grid; gap: 8px; pointer-events: none; }
+.ach-toast { background: var(--ink); color: var(--card-paper); border-left: 8px solid var(--hazard); padding: 8px 14px; display: grid; gap: 1px; min-width: 240px; max-width: 340px; animation: ach 5.2s ease both; text-transform: none; }
+.ach-toast small { color: var(--hazard); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; }
+.ach-toast b { font-family: var(--title); font-size: 24px; line-height: 1; font-weight: 700; }
+.ach-toast span { font-size: 12px; font-weight: 700; }
+@keyframes ach { 0% { transform: translateX(120%); } 7%, 92% { transform: none; opacity: 1; } 100% { transform: translateX(20px); opacity: 0; } }
+
+/* ───────────── CAMPAÑA: CABECERA, DESCUBRIR CARTA Y JEFE ───────────── */
+.deck-head .sub { font-weight: 700; text-transform: uppercase; font-size: clamp(10px, 1.4vh, 14px); margin-top: 2px; }
+.sp-desc { inset: 81.5% 7% 3% 7%; text-align: center; }
+.mini-port { overflow: visible; }
+.reveal, .boss-intro { background: rgba(10, 10, 10, 0.86); cursor: pointer; }
+.reveal-box { display: grid; justify-items: center; gap: clamp(8px, 2vh, 18px); color: var(--card-paper); }
+.reveal-box small, .boss-box small { font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--hazard); }
+.reveal-box .choices { justify-content: center; --cw: clamp(120px, min(16vw, 30vh), 230px); }
+.reveal-box .choice { width: var(--cw); text-align: center; }
+.reveal-box .choice .card { --w: var(--cw); }
+.reveal-box .choice h4 { height: auto; }
+.reveal-box .choice p { height: auto; font-size: clamp(12px, 1.7vh, 16px); }
+.boss-box { display: grid; grid-template-columns: auto minmax(0, 420px); gap: clamp(16px, 3vw, 44px); align-items: center; color: var(--card-paper); text-transform: none; }
+.boss-box .card { --w: clamp(140px, min(22vw, 40vh), 300px); }
+.boss-box h2 { font-family: var(--title); font-size: clamp(40px, 9vh, 96px); line-height: 0.95; font-weight: 700; }
+.boss-box h3 { font-family: var(--display); text-transform: uppercase; color: var(--red); font-size: clamp(16px, 2.8vh, 28px); margin: 6px 0; }
+.boss-box p { font-size: clamp(14px, 2.2vh, 22px); line-height: 1.4; margin-bottom: 16px; }
+.next-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
+.next-row .card { --w: clamp(48px, 5vw, 76px); }
+.next-row #next-boss:empty { display: none; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .deck-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .boss-box { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .camp-grid { overflow-y: auto; }
+  .scroll { overflow: visible; flex: none; }
+}
+.deck-opt:disabled { opacity: 0.72; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .choice p { height: 5.2em; }
+  .run-body.shop .grid2 { position: sticky; bottom: 0; background: var(--concrete); padding: 8px 0 2px; z-index: 2; }
+  .run .deck-head h1 { font-size: min(11vw, 8vh); }
+}
+/* nada ensancha la mesa más allá de la ventana */
+.table-screen { grid-template-columns: minmax(0, 1fr); }
+.bar { min-width: 0; }
+.bar .players { min-width: 0; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .bar { flex-wrap: wrap; row-gap: 4px; }
+  .bar .players { flex: 1 1 auto; }
+  .bar button { padding: 3px 5px; font-size: 8px; }
+  .tray { min-width: 0; }
+  .actions button { min-width: 0; }
 }

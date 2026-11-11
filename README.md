@@ -35,13 +35,20 @@ npm start
 
 Otros comandos: `npm test` (reglas), `npm run typecheck`, `npm run simulate` y `npm run simulate:run` (balance por simulación).
 
-### Campaña (roguelike)
+### Campaña (roguelike de construcción de mazo)
 
-**Campaña** abre el gremio. Una campaña son 8 obras cada vez más duras, cuatro de ellas con un jefe que tuerce una regla. Al demoler una obra cobras oro (con interés por lo ahorrado) y pasas por la ferretería: 20 herramientas que cambian las reglas, forja de cartas (+3 de valor permanente), planos que suben de nivel las formaciones, reparaciones y comodines. El búnker no se cura solo entre obras.
+**Campaña** abre el gremio. Eliges una baraja inicial, abres un sobre de cartas especiales y sales a demoler 8 obras, cuatro de ellas guardadas por un jefe con su propia carta y su maldición. Tras cada obra cobras oro (con interés por lo ahorrado), te llevas una carta incógnita y pasas por la ferretería, donde el Ferretero trae cada vez una remesa pequeña y distinta. También puedes pagar por quemar cartas del mazo.
 
-Ganes o pierdas, la campaña da **renombre**, que se gasta en mejoras permanentes del gremio. Cada victoria desbloquea un **ascenso** más difícil y mejor pagado. La campaña y el gremio se guardan en el navegador (`localStorage`), así que puedes cerrar y seguir después.
+- **24 cartas especiales** sin palo ni número, que acompañan a cualquier golpe y se consiguen a ciegas; 8 son legendarias (el Ferretero y los siete jefes) y hay que desbloquearlas.
+- **22 herramientas**, **7 jefes** y **6 barajas iniciales** que cambian la forma de jugar.
+- **26 logros** que dan renombre y desbloquean barajas y legendarias.
+- **Gremio**: mejoras permanentes compradas con renombre, y un **ascenso** más difícil tras cada victoria.
 
-Balance medido con `npm run simulate:run`: el bot de referencia gana cerca del 8 % de las campañas con el gremio vacío y del 70 % con todas las mejoras.
+En solitario la campaña y el gremio se guardan en el navegador (`localStorage`).
+
+**Online:** al crear una sala el anfitrión elige entre partida clásica o campaña. En campaña cooperativa el mazo, el oro y las herramientas son compartidos, decide el anfitrión (con su baraja y sus mejoras) y cada jugador gana su renombre y sus logros.
+
+Balance medido con `npm run simulate:run 200 0 1 todas` (bot de referencia, una fila por baraja): con el gremio vacío la baraja de obra gana cerca del 6 % de las campañas; con todo desbloqueado, las barajas ganan entre el 36 % y el 73 %.
 
 ### Aprender a jugar
 
@@ -74,7 +81,9 @@ src/
     engine.ts   estado, acciones, eventos, vista por jugador
     bot.ts      bot codicioso (simulación y sustituto de desconectados)
     tutorial.ts guion y mazo preparado de la partida guiada
-    run.ts      campaña roguelike: obras, jefes, herramientas, ferretería y gremio
+    specials.ts cartas especiales y sus efectos
+    achievements.ts logros, colección y lo que desbloquean
+    run.ts      campaña roguelike (reductor): sobre, obras, recompensas, ferretería y gremio
   shared/    Protocolo de mensajes cliente ⇄ servidor
   server/    Node + ws: salas, turnos, reconexión, estáticos
   client/    Vite + TypeScript + CSS/SVG: pantallas, cartas y animaciones

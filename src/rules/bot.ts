@@ -4,7 +4,7 @@ import { Action, Card, GameState, SUITS, Suit, classify, currentPlayer, previewS
 
 /** Todas las formaciones de ataque legales que se pueden armar con una mano. */
 export function formations(hand: Card[]): Card[][] {
-  const cards = hand.filter((c) => c.suit !== 'X');
+  const cards = hand.filter((c) => c.suit !== 'X' && !c.sp);
   const out: Card[][] = cards.map((c) => [c]);
   const byRank = new Map<number, Card[]>();
   for (const c of cards) byRank.set(c.rank, [...(byRank.get(c.rank) ?? []), c]);
@@ -26,7 +26,25 @@ export function formations(hand: Card[]): Card[][] {
       if (r - start + 1 >= 3) out.push(...combos);
     }
   }
-  return out.filter((f) => classify(f));
+  // doble par y full
+  const ranks = [...byRank.keys()];
+  const pairsOf = (r: number, size: number) => {
+    const g = byRank.get(r)!;
+    return g.length >= size ? [g.slice(0, size)] : [];
+  };
+  for (const a of ranks)
+    for (const b of ranks) {
+      if (a < b) for (const pa of pairsOf(a, 2)) for (const pb of pairsOf(b, 2)) out.push([...pa, ...pb]);
+      if (a !== b) for (const ta of pairsOf(a, 3)) for (const pb of pairsOf(b, 2)) out.push([...ta, ...pb]);
+    }
+  // color: todas las cartas de un palo si son 5 o más (y también las 5 más altas)
+  for (const s of ['S', 'D', 'H', 'C']) {
+    const same = cards.filter((c) => c.suit === s).sort((x, y) => y.rank - x.rank);
+    if (same.length >= 5) out.push(same, same.slice(0, 5));
+  }
+  const formed = out.filter((f) => classify(f));
+  const specials = hand.filter((c) => c.sp);
+  return [...formed, ...specials.map((s) => [s]), ...specials.flatMap((s) => formed.map((f) => [...f, s]))];
 }
 
 export function chooseAction(state: GameState): Action {
@@ -35,7 +53,7 @@ export function chooseAction(state: GameState): Action {
   if (p.hand.length === 0) return { type: 'pass' };
 
   const targets = SUITS.filter((s) => standing(state.towers[s]));
-  const joker = p.hand.find((c) => c.suit === 'X');
+  const joker = p.hand.find((c) => c.suit === 'X' && !c.sp);
   if (joker) {
     const armed = targets.filter((s) => !state.towers[s].disarmed);
     const pool = armed.length ? armed : targets;
@@ -70,5 +88,7 @@ export function chooseAction(state: GameState): Action {
   // Sin jugada útil: descarta las dos cartas más bajas.
   const low = [...p.hand].filter((c) => c.suit !== 'X').sort((a, b) => a.rank - b.rank).slice(0, 2);
   if (low.length) return { type: 'discard', cards: low.map((c) => c.id) };
+  const spare = p.hand.find((c) => c.sp);
+  if (spare) return { type: 'discard', cards: [spare.id] };
   return { type: 'joker', card: joker!.id, target: targets[0] };
 }
