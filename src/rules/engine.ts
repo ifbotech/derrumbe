@@ -1,42 +1,34 @@
 // DERRUMBE — motor de reglas puro (sin dependencias, determinista con semilla).
-// Lo usan el servidor (autoridad) y el cliente (validar y previsualizar jugadas).
-
+// Lo usan el servidor (autoridad), el cliente (validar y previsualizar jugadas), el bot y los tests.
+//
+// Cada golpe se resuelve en dos ejes, de izquierda a derecha:
+//
+//     Daño final = redondear(Fuerza × Resonancia)
+//
+// La formación pone la base; cada carta suma su impacto; tratamientos, sellos, cartas especiales
+// y herramientas del cinturón suman Fuerza, suman Resonancia o la multiplican, en ese orden.
+// Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
 import { MAX_SPECIALS, SPECIAL } from './specials';
+import { TOOL } from './tools';
+import type { ToolInst } from './tools';
+
+// ───────────────────────── Cartas ─────────────────────────
 
 export type Suit = 'S' | 'D' | 'H' | 'C';
-export type CardSuit = Suit | 'X'; // X = comodín
+export type CardSuit = Suit | 'X'; // X = comodín o carta especial
+export type Seal = 'dinamita' | 'eco' | 'jornal' | 'sindical';
+export type Treatment = 'forjado' | 'templado' | 'policromado' | 'agrietado';
+
 export interface Card {
   id: string;
   suit: CardSuit;
-  rank: number; // 0 comodín · 1-10 numerales · 11-13 figuras (J, Q, K)
-  /** Mejora de forja (campaña): se suma al valor de la carta. */
-  plus?: number;
-  /** Carta especial (campaña): id en SPECIAL. No tiene palo ni número (suit X, rank 0). */
+  rank: number; // 0 comodín / especial · 1-10 numerales · 11-13 figuras (J, Q, K)
+  /** Carta especial (campaña): id en SPECIAL. */
   sp?: string;
-}
-
-/** Valor de una carta para daño y poderes. El As es la carta más fuerte: vale 11. */
-export const cardValue = (c: Card): number => (c.rank === 1 ? 11 : c.rank) + (c.plus ?? 0);
-
-/** Modificadores de reglas que aportan herramientas y jefes en la campaña. Todos opcionales. */
-export interface Mods {
-  /** Daño extra por carta de ese palo. */
-  suitFlat?: Partial<Record<Suit, number>>;
-  /** Multiplicador con ventaja de material (2 por defecto). */
-  advMult?: number;
-  /** Multiplicador contra la torre del propio palo (0 por defecto). */
-  ownMult?: number;
-  /** Daño extra por carta según la formación (planos y herramientas). */
-  formFlat?: Partial<Record<Formation, number>>;
-  /** Se suma al multiplicador de la formación. */
-  formMult?: Partial<Record<Formation, number>>;
-  /** Todo golpe perfora, lleve o no picas. */
-  alwaysPierce?: boolean;
-  /** Al demoler un piso. */
-  floorHeal?: number;
-  floorWall?: number;
-  /** Al dar un golpe limpio. */
-  cleanHeal?: number;
+  /** Sello de obra estampado en la carta. */
+  seal?: Seal;
+  /** Tratamiento del material de la carta. */
+  tr?: Treatment;
 }
 
 export const SUITS: Suit[] = ['S', 'D', 'H', 'C'];
@@ -46,148 +38,34 @@ export const MATERIAL: Record<Suit, string> = { S: 'ACERO', D: 'VIDRIO', H: 'LAD
 export const SUIT_GLYPH: Record<CardSuit, string> = { S: '♠', D: '♦', H: '♥', C: '♣', X: '★' };
 export const RANK_LABEL = ['★', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
-export interface Config {
-  maxIntegrity: number;
-  wallCap: number;
-  collapseLoss: number;
-  /** Divisores de los poderes: muro = ⌈♣/wallDiv⌉, reparación = ⌈♥/repairDiv⌉, esquirlas = ⌊♦/shardDiv⌋. */
-  wallDiv: number;
-  repairDiv: number;
-  shardDiv: number;
-  floorHp: Record<number, number>;
-  floorThreat: Record<number, number>;
-  handSize: Record<number, number>;
-  /** Cartas que voltea la sirena cada turno (1 por defecto). */
-  sirenCount?: number;
-  mods?: Mods;
-}
-
-export const DEFAULT_CONFIG: Config = {
-  maxIntegrity: 20,
-  wallCap: 8,
-  collapseLoss: 5,
-  wallDiv: 3,
-  repairDiv: 3,
-  shardDiv: 3,
-  floorHp: { 11: 20, 12: 30, 13: 40 },
-  floorThreat: { 11: 3, 12: 4, 13: 6 },
-  handSize: { 1: 7, 2: 6, 3: 6, 4: 6 },
+export const SEALS: Seal[] = ['dinamita', 'eco', 'jornal', 'sindical'];
+export const SEAL: Record<Seal, { name: string; desc: string }> = {
+  dinamita: { name: 'Sello de dinamita', desc: 'Al golpear, las torres vecinas reciben el valor de esta carta.' },
+  eco: { name: 'Sello de eco', desc: 'Su impacto y el poder de su palo se repiten una vez más.' },
+  jornal: { name: 'Sello de jornal', desc: '+2 de oro si el golpe derriba un piso.' },
+  sindical: { name: 'Sello sindical', desc: 'Robas 1 carta extra al jugarla o descartarla.' },
+};
+export const TREATMENTS: Treatment[] = ['forjado', 'templado', 'policromado', 'agrietado'];
+export const TREATMENT: Record<Treatment, { name: string; desc: string }> = {
+  forjado: { name: 'Forjado', desc: '+6 de Fuerza.' },
+  templado: { name: 'Templado', desc: '+0,3 de Resonancia.' },
+  policromado: { name: 'Bronce vivo', desc: '×1,5 de Resonancia.' },
+  agrietado: { name: 'Agrietado', desc: '×2,5 de Resonancia, pero 1 de cada 4 veces se hace añicos.' },
 };
 
-export type Difficulty = 'obra' | 'brutal';
-/** Balanceado por simulación (npm run simulate): el bot gana ~60% en OBRA y ~40% en BRUTAL. */
-const OBRA: Config = { ...DEFAULT_CONFIG, floorHp: { 11: 32, 12: 46, 13: 62 }, floorThreat: { 11: 3, 12: 5, 13: 7 }, handSize: { 1: 6, 2: 6, 3: 6, 4: 6 } };
-export const DIFFICULTY: Record<Difficulty, Config> = {
-  obra: OBRA,
-  brutal: { ...OBRA, maxIntegrity: 16, collapseLoss: 6 },
-};
-
-export interface Tower {
-  suit: Suit;
-  /** Pisos restantes; el índice 0 es el piso activo. */
-  floors: number[];
-  damage: number;
-  disarmed: boolean;
-}
-
-export interface Player {
-  id: string;
-  name: string;
-  hand: Card[];
-}
-
-export type Phase = 'playing' | 'won' | 'lost';
-
-export interface GameState {
-  config: Config;
-  rng: number;
-  players: Player[];
-  deck: Card[];
-  discard: Card[];
-  towers: Record<Suit, Tower>;
-  integrity: number;
-  wall: number;
-  turn: number;
-  turnCount: number;
-  collapses: number;
-  phase: Phase;
-  lastSiren: Card | null;
-}
-
-export type Action =
-  | { type: 'attack'; cards: string[]; target: Suit }
-  | { type: 'discard'; cards: string[] }
-  | { type: 'joker'; card: string; target: Suit }
-  | { type: 'pass' };
-
-export type GameEvent =
-  | { e: 'play'; player: string; cards: Card[]; target: Suit; formation: Formation }
-  | { e: 'discard'; player: string; cards: Card[] }
-  | { e: 'joker'; player: string; card: Card; target: Suit }
-  | { e: 'pass'; player: string }
-  | { e: 'hit'; tower: Suit; amount: number; splash: boolean; damage: number; hp: number }
-  | { e: 'floorDown'; tower: Suit; rank: number; clean: boolean; towerDown: boolean; damage: number }
-  | { e: 'wall'; amount: number; total: number }
-  | { e: 'repair'; amount: number; total: number }
-  | { e: 'hurt'; amount: number; integrity: number }
-  | { e: 'gold'; amount: number }
-  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'disarmed' | 'joker' | 'clean' | 'huelga' | 'empty' }
-  | { e: 'collapse'; loss: number; integrity: number }
-  | { e: 'draw'; player: string; count: number; cards?: Card[] }
-  | { e: 'turn'; player: string }
-  | { e: 'end'; result: 'won' | 'lost' };
-
-export class RuleError extends Error {}
-
-// ───────────────────────── RNG ─────────────────────────
-
-export function nextRandom(state: { rng: number }): number {
-  state.rng = (state.rng + 0x6d2b79f5) | 0;
-  let t = state.rng;
-  t = Math.imul(t ^ (t >>> 15), t | 1);
-  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-}
-
-export function shuffle<T>(arr: T[], state: { rng: number }): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(nextRandom(state) * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-// ───────────────────────── Preparación ─────────────────────────
-
-export function createGame(players: { id: string; name: string }[], seed: number, config: Config = DEFAULT_CONFIG): GameState {
-  if (players.length < 1 || players.length > 4) throw new RuleError('Se juega de 1 a 4 jugadores.');
-  const deck: Card[] = [];
-  for (const s of SUITS) for (let r = 1; r <= 10; r++) deck.push({ id: `${s}${r}`, suit: s, rank: r });
-  deck.push({ id: 'X1', suit: 'X', rank: 0 }, { id: 'X2', suit: 'X', rank: 0 });
-  const state: GameState = {
-    config,
-    rng: seed | 0,
-    players: players.map((p) => ({ id: p.id, name: p.name, hand: [] })),
-    deck,
-    discard: [],
-    towers: Object.fromEntries(SUITS.map((s) => [s, { suit: s, floors: [11, 12, 13], damage: 0, disarmed: false }])) as Record<Suit, Tower>,
-    integrity: config.maxIntegrity,
-    wall: 0,
-    turn: 0,
-    turnCount: 0,
-    collapses: 0,
-    phase: 'playing',
-    lastSiren: null,
-  };
-  shuffle(state.deck, state);
-  const size = config.handSize[players.length];
-  for (const p of state.players) p.hand = state.deck.splice(0, size);
-  return state;
+/** Valor de una carta para Fuerza y poderes. El As es la carta fuerte: vale 11. */
+export const cardValue = (c: Card): number => (c.rank === 1 ? 11 : c.rank);
+export const cardLabel = (c: Card): string => (c.sp ? (SPECIAL[c.sp]?.name ?? '?') : `${RANK_LABEL[c.rank]}${SUIT_GLYPH[c.suit]}`);
+/** Orden estable de lectura (palo y número): sirve para mostrar montones sin revelar su orden real. */
+export function sortCards(cards: Card[]): Card[] {
+  const suit = 'SDHCX';
+  return [...cards].sort((a, b) => Number(!!a.sp) - Number(!!b.sp) || suit.indexOf(a.suit) - suit.indexOf(b.suit) || a.rank - b.rank || a.id.localeCompare(b.id));
 }
 
 // ───────────────────────── Formaciones ─────────────────────────
 
 export type Formation = 'solo' | 'grupo' | 'doblepar' | 'escalera' | 'color' | 'full' | 'poker' | 'escaleracolor';
-export const FORMATIONS: Formation[] = ['solo', 'grupo', 'doblepar', 'escalera', 'color', 'full', 'poker', 'escaleracolor'];
+export const FORMATIONS: Formation[] = ['solo', 'grupo', 'escalera', 'doblepar', 'color', 'full', 'escaleracolor', 'poker'];
 export const FORMATION_NAME: Record<Formation, string> = {
   solo: 'Carta sola',
   grupo: 'Grupo',
@@ -198,8 +76,17 @@ export const FORMATION_NAME: Record<Formation, string> = {
   poker: 'Póker',
   escaleracolor: 'Escalera de color',
 };
-/** Las formaciones difíciles multiplican el golpe entero. */
-export const FORMATION_MULT: Record<Formation, number> = { solo: 1, grupo: 1, doblepar: 1.25, escalera: 1, color: 1.5, full: 1.5, poker: 2, escaleracolor: 1.5 };
+/** Base de cada formación (f Fuerza, r Resonancia) y lo que gana por nivel de plano (lf, lr). */
+export const FORM: Record<Formation, { f: number; r: number; lf: number; lr: number }> = {
+  solo: { f: 0, r: 1, lf: 4, lr: 0.15 },
+  grupo: { f: 2, r: 1.2, lf: 3, lr: 0.2 },
+  escalera: { f: 4, r: 1.3, lf: 3, lr: 0.2 },
+  doblepar: { f: 6, r: 1.5, lf: 3, lr: 0.2 },
+  color: { f: 8, r: 1.8, lf: 3, lr: 0.2 },
+  full: { f: 10, r: 2, lf: 3, lr: 0.2 },
+  escaleracolor: { f: 10, r: 2, lf: 3, lr: 0.2 },
+  poker: { f: 14, r: 2.5, lf: 3, lr: 0.2 },
+};
 
 /**
  * Devuelve el tipo de formación o null si las cartas no forman una jugada legal de ataque.
@@ -229,113 +116,670 @@ export function classify(all: Card[]): Formation | null {
   return null;
 }
 
-export function multiplier(card: CardSuit, tower: Suit, mods: Mods = {}): number {
+// ───────────────────────── Configuración y estado ─────────────────────────
+
+export interface Config {
+  maxIntegrity: number;
+  wallCap: number;
+  collapseLoss: number;
+  /** Divisores de los poderes: muro = ⌈♣/wallDiv⌉, reparación = ⌈♥/repairDiv⌉, esquirlas = ⌊♦/shardDiv⌋. */
+  wallDiv: number;
+  repairDiv: number;
+  shardDiv: number;
+  floorHp: Record<number, number>;
+  floorThreat: Record<number, number>;
+  handSize: Record<number, number>;
+  /** Cartas que voltea la sirena cada turno (1 por defecto). */
+  sirenCount?: number;
+  /** Multiplicador con ventaja de material (2) y contra la torre del propio palo (0). */
+  advMult?: number;
+  ownMult?: number;
+  /** Margen del golpe limpio: el piso cae y cuenta como limpio a ±cleanTol de su resistencia. */
+  cleanTol?: number;
+  /** Todo golpe perfora, lleve o no picas. */
+  alwaysPierce?: boolean;
+  /** Niveles de plano por formación. */
+  formLevel?: Partial<Record<Formation, number>>;
+  /** Pisos que empiezan apuntalados (el primer golpe contra ellos resuena a la mitad). */
+  apuntalado?: number[];
+  /** Lo que multiplica una fractura expuesta (1,5 por defecto). */
+  fracturaMult?: number;
+  /** Los golpes policromos también fracturan. */
+  polyFractura?: boolean;
+  /** Los sellos de las cartas se activan dos veces. */
+  sealTwice?: boolean;
+  /** Las cartas descartadas se agotan (no vuelven esta obra) y cargan Fuerza para el próximo golpe. */
+  discardExhaust?: number;
+}
+
+export const DEFAULT_CONFIG: Config = {
+  maxIntegrity: 20,
+  wallCap: 8,
+  collapseLoss: 5,
+  wallDiv: 3,
+  repairDiv: 3,
+  shardDiv: 3,
+  floorHp: { 11: 20, 12: 30, 13: 40 },
+  floorThreat: { 11: 3, 12: 4, 13: 6 },
+  handSize: { 1: 7, 2: 6, 3: 6, 4: 6 },
+};
+
+export type Difficulty = 'obra' | 'brutal';
+/** Partida clásica (una obra). Balanceado por simulación (npm run simulate): el bot gana ~60 % en OBRA y ~40 % en BRUTAL. */
+const OBRA: Config = { ...DEFAULT_CONFIG, floorHp: { 11: 80, 12: 115, 13: 150 }, floorThreat: { 11: 3, 12: 5, 13: 7 }, handSize: { 1: 6, 2: 6, 3: 6, 4: 6 } };
+export const DIFFICULTY: Record<Difficulty, Config> = {
+  obra: OBRA,
+  brutal: { ...OBRA, maxIntegrity: 16, collapseLoss: 6 },
+};
+
+/** Estados estructurales de una torre (los provoca la mezcla de materiales del golpe, o un jefe). */
+export interface TowerFx {
+  /** Fractura expuesta: el próximo golpe contra ella resuena ×1,5. */
+  fractura?: boolean;
+  /** Sobrecarga: se salta su próximo golpe de sirena. */
+  sobrecarga?: boolean;
+  /** Apuntalado: el primer golpe contra este piso resuena a la mitad. */
+  apuntalado?: boolean;
+}
+export const TOWER_FX: Record<keyof TowerFx, { name: string; desc: string }> = {
+  fractura: { name: 'Fractura expuesta', desc: 'El próximo golpe contra esta torre resuena ×1,5.' },
+  sobrecarga: { name: 'Sobrecarga', desc: 'Esta torre se salta su próximo golpe de sirena.' },
+  apuntalado: { name: 'Apuntalado', desc: 'El primer golpe contra este piso resuena a la mitad.' },
+};
+
+export interface Tower {
+  suit: Suit;
+  /** Pisos restantes; el índice 0 es el piso activo. */
+  floors: number[];
+  damage: number;
+  disarmed: boolean;
+  fx: TowerFx;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  hand: Card[];
+}
+
+export type Phase = 'playing' | 'won' | 'lost';
+
+export interface GameState {
+  config: Config;
+  rng: number;
+  players: Player[];
+  deck: Card[];
+  discard: Card[];
+  towers: Record<Suit, Tower>;
+  integrity: number;
+  wall: number;
+  turn: number;
+  turnCount: number;
+  collapses: number;
+  phase: Phase;
+  lastSiren: Card | null;
+  /** Cinturón de herramientas, de izquierda a derecha (campaña). */
+  tools: ToolInst[];
+  /** Racha de golpes limpios: cada uno da +0,5 de Resonancia al siguiente golpe. */
+  chain: number;
+  /** Fuerza cargada para el próximo golpe. */
+  charge: number;
+  /** Escombros: cartas destruidas en toda la campaña. */
+  scrap: number;
+  /** Cartas destruidas en esta obra (salen del mazo de la campaña). */
+  burned: string[];
+  /** Cartas agotadas: fuera de juego hasta la obra siguiente. */
+  exhausted: Card[];
+}
+
+export type Action =
+  | { type: 'attack'; cards: string[]; target: Suit }
+  | { type: 'discard'; cards: string[] }
+  | { type: 'joker'; card: string; target: Suit }
+  | { type: 'pass' };
+
+export type StepSrc = 'form' | 'chain' | 'state' | 'card' | 'treat' | 'seal' | 'special' | 'tool';
+
+export type GameEvent =
+  | { e: 'play'; player: string; cards: Card[]; target: Suit; formation: Formation }
+  /** Un paso de la resolución: quién aporta (src + id, y slot si es una herramienta) y cuánto. */
+  | { e: 'step'; src: StepSrc; id: string; slot?: number; label: string; df?: number; dr?: number; mr?: number; fuerza: number; res: number }
+  | { e: 'impact'; tower: Suit; fuerza: number; res: number; total: number }
+  | { e: 'discard'; player: string; cards: Card[] }
+  | { e: 'joker'; player: string; card: Card; target: Suit }
+  | { e: 'pass'; player: string }
+  | { e: 'hit'; tower: Suit; amount: number; splash: boolean; damage: number; hp: number }
+  | { e: 'floorDown'; tower: Suit; rank: number; clean: boolean; towerDown: boolean; damage: number }
+  | { e: 'onda'; tower: Suit; amount: number }
+  | { e: 'state'; tower: Suit; fx: keyof TowerFx; on: boolean }
+  | { e: 'wall'; amount: number; total: number }
+  | { e: 'repair'; amount: number; total: number }
+  | { e: 'hurt'; amount: number; integrity: number }
+  | { e: 'gold'; amount: number }
+  | { e: 'burn'; card: Card }
+  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'disarmed' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty' }
+  | { e: 'collapse'; loss: number; integrity: number }
+  | { e: 'draw'; player: string; count: number; cards?: Card[] }
+  | { e: 'turn'; player: string }
+  | { e: 'end'; result: 'won' | 'lost' };
+
+export class RuleError extends Error {}
+
+// ───────────────────────── RNG ─────────────────────────
+
+export function nextRandom(state: { rng: number }): number {
+  state.rng = (state.rng + 0x6d2b79f5) | 0;
+  let t = state.rng;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+export function shuffle<T>(arr: T[], state: { rng: number }): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(nextRandom(state) * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+/** Convierte cualquier texto (una semilla escrita, una fecha) en una semilla numérica. */
+export function seedFrom(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h | 0;
+}
+
+// ───────────────────────── Preparación ─────────────────────────
+
+export function standardDeck(): Card[] {
+  const deck: Card[] = [];
+  for (const s of SUITS) for (let r = 1; r <= 10; r++) deck.push({ id: `${s}${r}`, suit: s, rank: r });
+  deck.push({ id: 'X1', suit: 'X', rank: 0 }, { id: 'X2', suit: 'X', rank: 0 });
+  return deck;
+}
+
+const floorFx = (rank: number | undefined, cfg: Config): TowerFx => (rank !== undefined && cfg.apuntalado?.includes(rank) ? { apuntalado: true } : {});
+
+export function newTowers(floors: number[], cfg: Config): Record<Suit, Tower> {
+  return Object.fromEntries(SUITS.map((s) => [s, { suit: s, floors: [...floors], damage: 0, disarmed: false, fx: floorFx(floors[0], cfg) }])) as Record<Suit, Tower>;
+}
+
+export function createGame(players: { id: string; name: string }[], seed: number, config: Config = DEFAULT_CONFIG): GameState {
+  if (players.length < 1 || players.length > 4) throw new RuleError('Se juega de 1 a 4 jugadores.');
+  const state: GameState = {
+    config,
+    rng: seed | 0,
+    players: players.map((p) => ({ id: p.id, name: p.name, hand: [] })),
+    deck: standardDeck(),
+    discard: [],
+    towers: newTowers([11, 12, 13], config),
+    integrity: config.maxIntegrity,
+    wall: 0,
+    turn: 0,
+    turnCount: 0,
+    collapses: 0,
+    phase: 'playing',
+    lastSiren: null,
+    tools: [],
+    chain: 0,
+    charge: 0,
+    scrap: 0,
+    burned: [],
+    exhausted: [],
+  };
+  shuffle(state.deck, state);
+  const size = config.handSize[players.length];
+  for (const p of state.players) p.hand = state.deck.splice(0, size);
+  return state;
+}
+
+// ───────────────────────── El golpe ─────────────────────────
+
+export function multiplier(card: CardSuit, tower: Suit, cfg: Config = DEFAULT_CONFIG): number {
   if (card === 'X') return 0;
-  if (card === tower) return mods.ownMult ?? 0;
-  return BEATS[card] === tower ? (mods.advMult ?? 2) : 1;
+  if (card === tower) return cfg.ownMult ?? 0;
+  return BEATS[card] === tower ? (cfg.advMult ?? 2) : 1;
 }
 
 export function standing(t: Tower): boolean {
   return t.floors.length > 0;
 }
+export const floorHp = (t: Tower, cfg: Config): number => cfg.floorHp[t.floors[0]];
 
-export interface StrikeResult {
-  events: GameEvent[];
-  formation: Formation | null;
-  /** Multiplicador total del golpe (formación × cartas especiales). */
-  mult: number;
-  wallGain: number;
-  repair: number;
-  clean: boolean;
-  /** Efectos de cartas especiales. */
+/** Lo que un golpe necesita saber del estado. Lo cumplen tanto GameState como PlayerView. */
+export interface StrikeEnv {
+  config: Config;
+  towers: Record<Suit, Tower>;
+  tools: ToolInst[];
+  chain: number;
+  charge: number;
+  scrap: number;
+  integrity: number;
+  wall: number;
+}
+
+/** El golpe en curso, tal como lo ven las cartas especiales y las herramientas. */
+export interface Strike {
+  env: StrikeEnv;
+  cfg: Config;
+  /** Cartas de baraja del golpe, en orden de izquierda a derecha. */
+  cards: Card[];
+  specials: Card[];
+  formation: Formation;
+  target: Suit;
+  fuerza: number;
+  res: number;
+  /** 2+ cartas, todas del mismo palo. */
+  mono: boolean;
+  /** 3+ palos distintos. */
+  poly: boolean;
+  /** Impacto que hizo cada carta (para repetirlas). */
+  impacts: number[];
+  pierce: boolean;
+  /** Daño fijo a cada una de las otras torres. */
+  splash: number;
+  /** Parte del daño final que salpica a las otras torres. */
+  splashPct: number;
+  wall: number;
+  heal: number;
   hurt: number;
   gold: number;
   draw: number;
   noSiren: boolean;
   disarm: boolean;
-  /** Daño aplicado a cada torre (para previsualizar). */
-  dealt: Partial<Record<Suit, number>>;
-  fallen: Partial<Record<Suit, number>>;
+  /** Daño adicional tras el golpe: fracción de la resistencia del piso activo de una torre. */
+  extra: { tower: Suit; pct: number }[];
+  /** +n de Fuerza. */
+  F(n: number): void;
+  /** +n de Resonancia. */
+  R(n: number): void;
+  /** ×n de Resonancia. */
+  X(n: number): void;
+  /** Aviso sin números (un efecto que no toca Fuerza ni Resonancia). */
+  note(text: string): void;
 }
 
-function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean, cfg: Config, out: StrikeResult): void {
+/** Cómo quedó el golpe: lo reciben las herramientas en su gancho `after`. */
+export interface Outcome {
+  total: number;
+  /** Pisos derribados (en cualquier torre). */
+  fallen: number;
+  clean: boolean;
+  fell: { tower: Suit; rank: number; clean: boolean }[];
+}
+
+export interface StrikeResult extends Outcome {
+  events: GameEvent[];
+  formation: Formation | null;
+  fuerza: number;
+  res: number;
+  wallGain: number;
+  repair: number;
+  hurt: number;
+  gold: number;
+  draw: number;
+  noSiren: boolean;
+  /** Daño aplicado a cada torre y pisos caídos (para previsualizar). */
+  dealt: Partial<Record<Suit, number>>;
+  fallenBy: Partial<Record<Suit, number>>;
+  /** Cartas agrietadas que se hicieron añicos (solo con azar real, nunca en la previsualización). */
+  shattered: Card[];
+}
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+interface Tally {
+  events: GameEvent[];
+  dealt: Partial<Record<Suit, number>>;
+  fallenBy: Partial<Record<Suit, number>>;
+  fell: { tower: Suit; rank: number; clean: boolean }[];
+}
+
+function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean, cfg: Config, out: Tally): void {
   if (amount <= 0 || !standing(t)) return;
+  const tol = cfg.cleanTol ?? 0;
   out.dealt[t.suit] = (out.dealt[t.suit] ?? 0) + amount;
   t.damage += amount;
-  out.events.push({ e: 'hit', tower: t.suit, amount, splash, damage: t.damage, hp: cfg.floorHp[t.floors[0]] });
-  while (standing(t) && t.damage >= cfg.floorHp[t.floors[0]]) {
-    const excess = t.damage - cfg.floorHp[t.floors[0]];
+  out.events.push({ e: 'hit', tower: t.suit, amount, splash, damage: t.damage, hp: floorHp(t, cfg) });
+  while (standing(t) && t.damage >= floorHp(t, cfg) - tol) {
+    const hp = floorHp(t, cfg);
+    const clean = Math.abs(t.damage - hp) <= tol;
+    const excess = clean ? 0 : t.damage - hp;
     const rank = t.floors.shift()!;
-    const clean = excess === 0;
-    if (clean) out.clean = true;
-    out.fallen[t.suit] = (out.fallen[t.suit] ?? 0) + 1;
+    out.fallenBy[t.suit] = (out.fallenBy[t.suit] ?? 0) + 1;
+    out.fell.push({ tower: t.suit, rank, clean });
     t.disarmed = false;
+    t.fx = floorFx(t.floors[0], cfg);
     t.damage = pierce && standing(t) ? excess : 0;
     out.events.push({ e: 'floorDown', tower: t.suit, rank, clean, towerDown: !standing(t), damage: t.damage });
   }
 }
 
-/** Resuelve el golpe sobre las torres (las muta). Pura respecto del resto del estado: sirve para previsualizar. */
-export function strike(towers: Record<Suit, Tower>, cards: Card[], target: Suit, cfg: Config): StrikeResult {
-  const m = cfg.mods ?? {};
-  const formation = classify(cards);
-  const out: StrikeResult = { events: [], formation, mult: formation ? FORMATION_MULT[formation] + (m.formMult?.[formation] ?? 0) : 1, wallGain: 0, repair: 0, clean: false, hurt: 0, gold: 0, draw: 0, noSiren: false, disarm: false, dealt: {}, fallen: {} };
-  let dmg = 0;
-  let glass = 0;
-  let concrete = 0;
-  let brick = 0;
-  let steel = false;
-  let splash = 0;
-  let goldOnKill = 0;
-  const formFlat = formation ? (m.formFlat?.[formation] ?? 0) : 0;
-  const riders = cards.filter((c) => c.sp).map((c) => SPECIAL[c.sp!]?.fx ?? {});
-  const base = cards.filter((c) => !c.sp);
-  const highest = Math.max(0, ...base.map(cardValue));
-  const perCard = riders.reduce((a, fx) => a + (fx.flatPerCard ?? 0), 0);
+/**
+ * Resuelve un golpe sobre `env` (muta sus torres, su carga y los contadores de sus herramientas).
+ * Con `rng` las cartas agrietadas pueden hacerse añicos; sin él (previsualización) nunca.
+ */
+export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: number }): StrikeResult {
+  const cfg = env.config;
+  const formation = classify(all);
+  const tally: Tally = { events: [], dealt: {}, fallenBy: {}, fell: [] };
+  const out: StrikeResult = { ...tally, formation, fuerza: 0, res: 1, total: 0, fallen: 0, clean: false, wallGain: 0, repair: 0, hurt: 0, gold: 0, draw: 0, noSiren: false, shattered: [] };
+  if (!formation) return out;
+  const tower = env.towers[target];
+  const cards = all.filter((c) => !c.sp);
+  const specials = all.filter((c) => c.sp);
+  const suits = [...new Set(cards.map((c) => c.suit as Suit))];
+
+  let cur: { src: StepSrc; id: string; slot?: number; label: string } = { src: 'form', id: formation, label: FORMATION_NAME[formation] };
+  const emit = (d: { df?: number; dr?: number; mr?: number }) => tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: cur.label, ...d, fuerza: x.fuerza, res: r2(x.res) });
+  const x: Strike = {
+    env,
+    cfg,
+    cards,
+    specials,
+    formation,
+    target,
+    fuerza: 0,
+    res: 1,
+    mono: cards.length >= 2 && suits.length === 1,
+    poly: suits.length >= 3,
+    impacts: [],
+    pierce: !!cfg.alwaysPierce,
+    splash: 0,
+    splashPct: 0,
+    wall: 0,
+    heal: 0,
+    hurt: 0,
+    gold: 0,
+    draw: 0,
+    noSiren: false,
+    disarm: false,
+    extra: [],
+    F(n) {
+      if (!n) return;
+      x.fuerza += n;
+      emit({ df: n });
+    },
+    R(n) {
+      if (!n) return;
+      x.res += n;
+      emit({ dr: r2(n) });
+    },
+    X(n) {
+      if (n === 1) return;
+      x.res *= n;
+      emit({ mr: r2(n) });
+    },
+    note(text) {
+      tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: `${cur.label}: ${text}`, fuerza: x.fuerza, res: r2(x.res) });
+    },
+  };
+
+  // 1 · la formación pone la base
+  const level = cfg.formLevel?.[formation] ?? 0;
+  const base = FORM[formation];
+  x.fuerza = base.f + level * base.lf;
+  x.res = base.r + level * base.lr;
+  emit({ df: x.fuerza, dr: r2(x.res - 1) });
+
+  // 2 · lo que arrastra la mesa: racha de golpes limpios, carga acumulada y estado de la torre
+  if (env.chain > 0) {
+    cur = { src: 'chain', id: 'onda', label: 'Onda sísmica' };
+    x.R(0.5 * env.chain);
+  }
+  if (env.charge > 0) {
+    cur = { src: 'state', id: 'carga', label: 'Carga' };
+    x.F(env.charge);
+    env.charge = 0;
+  }
+  if (standing(tower) && tower.fx.fractura) {
+    cur = { src: 'state', id: 'fractura', label: TOWER_FX.fractura.name };
+    x.X(cfg.fracturaMult ?? 1.5);
+    tower.fx.fractura = false;
+    tally.events.push({ e: 'state', tower: target, fx: 'fractura', on: false });
+  }
+  if (standing(tower) && tower.fx.apuntalado && cards.length) {
+    cur = { src: 'state', id: 'apuntalado', label: TOWER_FX.apuntalado.name };
+    x.X(0.5);
+    tower.fx.apuntalado = false;
+    tally.events.push({ e: 'state', tower: target, fx: 'apuntalado', on: false });
+  }
+
+  // 3 · las cartas, de izquierda a derecha
+  const riders = specials.map((c) => SPECIAL[c.sp!]?.fx ?? {});
   const allHigh = riders.some((fx) => fx.allHigh);
   const allAdv = riders.some((fx) => fx.allAdv);
-  let best = 0;
-  for (const c of base) {
+  const highest = Math.max(0, ...cards.map(cardValue));
+  const sealReps = cfg.sealTwice ? 2 : 1;
+  const power: Record<Suit, number> = { S: 0, D: 0, H: 0, C: 0 };
+  let adjacent = 0;
+  let jornal = 0;
+  const cracked: Card[] = [];
+  for (const c of cards) {
+    const suit = c.suit as Suit;
     const v = allHigh ? highest : cardValue(c);
-    const flat = c.suit === 'X' ? 0 : (m.suitFlat?.[c.suit] ?? 0) + formFlat + perCard;
-    const hit = (v + flat) * (allAdv ? (m.advMult ?? 2) : multiplier(c.suit, target, m));
-    best = Math.max(best, hit);
-    dmg += hit;
-    if (c.suit === 'S') steel = true;
-    if (c.suit === 'D') glass += v;
-    if (c.suit === 'C') concrete += v;
-    if (c.suit === 'H') brick += v;
+    const impact = v * (allAdv ? (cfg.advMult ?? 2) : multiplier(suit, target, cfg));
+    cur = { src: 'card', id: c.id, label: cardLabel(c) };
+    x.impacts.push(impact);
+    if (impact) x.F(impact);
+    else x.note('inmune');
+    power[suit] += v;
+    if (c.tr) {
+      cur = { src: 'treat', id: c.id, label: `${cardLabel(c)} · ${TREATMENT[c.tr].name}` };
+      if (c.tr === 'forjado') x.F(6);
+      else if (c.tr === 'templado') x.R(0.3);
+      else if (c.tr === 'policromado') x.X(1.5);
+      else {
+        x.X(2.5);
+        cracked.push(c);
+      }
+    }
+    if (c.seal) {
+      cur = { src: 'seal', id: c.id, label: `${cardLabel(c)} · ${SEAL[c.seal].name}` };
+      for (let i = 0; i < sealReps; i++) {
+        if (c.seal === 'eco') {
+          if (impact) x.F(impact);
+          else x.note('eco');
+          power[suit] += v;
+        } else if (c.seal === 'dinamita') {
+          adjacent += v;
+          x.note(`${v} a las torres vecinas`);
+        } else if (c.seal === 'jornal') {
+          jornal++;
+          x.note('+2 de oro si cae un piso');
+        } else {
+          x.draw++;
+          x.note('robas 1');
+        }
+      }
+    }
   }
-  for (const fx of riders) {
-    dmg += (fx.flat ?? 0) + (fx.highDouble ? best : 0);
-    if (fx.pierce) steel = true;
-    out.mult *= fx.strikeMult ?? 1;
-    out.wallGain += (fx.wall ?? 0) + (fx.wallPerCard ?? 0) * cards.length;
-    out.repair += fx.heal ?? 0;
-    out.hurt += fx.hurt ?? 0;
-    out.gold += fx.gold ?? 0;
-    out.draw += fx.draw ?? 0;
-    splash += fx.splash ?? 0;
+  if (power.S > 0) x.pierce = true;
+
+  // 4 · las cartas especiales que acompañan
+  const best = Math.max(0, ...x.impacts);
+  let goldOnKill = 0;
+  specials.forEach((c, i) => {
+    const fx = riders[i];
+    cur = { src: 'special', id: c.id, label: cardLabel(c) };
+    const before = tally.events.length;
+    x.F((fx.flat ?? 0) + (fx.flatPerCard ?? 0) * cards.length + (fx.highDouble ? best : 0));
+    x.X(fx.strikeMult ?? 1);
+    if (fx.pierce) x.pierce = true;
+    x.wall += (fx.wall ?? 0) + (fx.wallPerCard ?? 0) * all.length;
+    x.heal += fx.heal ?? 0;
+    x.hurt += fx.hurt ?? 0;
+    x.gold += fx.gold ?? 0;
+    x.draw += fx.draw ?? 0;
+    x.splash += fx.splash ?? 0;
     goldOnKill += fx.goldOnKill ?? 0;
-    if (fx.noSiren) out.noSiren = true;
-    if (fx.disarm) out.disarm = true;
+    if (fx.noSiren) x.noSiren = true;
+    if (fx.disarm) x.disarm = true;
+    if (tally.events.length === before) x.note(SPECIAL[c.sp!]?.desc ?? '');
+  });
+
+  // 5 · el cinturón de herramientas, de izquierda a derecha
+  env.tools.forEach((t, slot) => {
+    const def = TOOL[t.id];
+    if (!def) return;
+    if (def.kind === 'copy') {
+      const next = env.tools[slot + 1];
+      const copied = next && TOOL[next.id];
+      if (!copied?.strike) return;
+      cur = { src: 'tool', id: t.id, slot, label: `${def.name} → ${copied.name}` };
+      copied.strike(x, next);
+      return;
+    }
+    cur = { src: 'tool', id: t.id, slot, label: def.name };
+    def.strike?.(x, t);
+  });
+
+  // 6 · Fuerza × Resonancia
+  const total = Math.max(0, Math.round(x.fuerza * x.res));
+  tally.events.push({ e: 'impact', tower: target, fuerza: x.fuerza, res: r2(x.res), total });
+  applyDamage(tower, total, x.pierce, false, cfg, tally);
+  const shards = Math.floor(power.D / cfg.shardDiv) + x.splash + Math.round(total * x.splashPct);
+  SUITS.forEach((s, i) => {
+    if (s === target) return;
+    const near = Math.abs(i - SUITS.indexOf(target)) === 1 ? adjacent : 0;
+    applyDamage(env.towers[s], shards + near, false, true, cfg, tally);
+  });
+
+  // 7 · golpe limpio: onda sísmica sobre el piso siguiente y un jornal extra
+  for (const f of [...tally.fell]) {
+    if (!f.clean) continue;
+    x.gold += 1;
+    const t = env.towers[f.tower];
+    if (!standing(t)) continue;
+    const amount = Math.ceil(floorHp(t, cfg) * 0.25);
+    tally.events.push({ e: 'onda', tower: f.tower, amount });
+    applyDamage(t, amount, false, true, cfg, tally);
   }
-  applyDamage(towers[target], Math.floor(dmg * out.mult), steel || !!m.alwaysPierce, false, cfg, out);
-  const shards = Math.floor(glass / cfg.shardDiv) + splash;
-  if (shards > 0) for (const s of SUITS) if (s !== target) applyDamage(towers[s], shards, false, true, cfg, out);
-  const fallen = SUITS.reduce((a, s) => a + (out.fallen[s] ?? 0), 0);
-  if (fallen > 0) out.gold += goldOnKill;
-  if (out.disarm && standing(towers[target])) towers[target].disarmed = true;
-  out.wallGain += Math.ceil(concrete / cfg.wallDiv) + fallen * (m.floorWall ?? 0);
-  out.repair += Math.ceil(brick / cfg.repairDiv) + fallen * (m.floorHeal ?? 0) + (out.clean ? (m.cleanHeal ?? 0) : 0);
-  return out;
+
+  // 8 · las herramientas reaccionan a cómo quedó el golpe
+  const outcome = (): Outcome => ({ total, fallen: tally.fell.length, clean: tally.fell.some((f) => f.clean), fell: tally.fell });
+  const seen = outcome();
+  env.tools.forEach((t, slot) => {
+    const def = TOOL[t.id];
+    if (!def?.after) return;
+    cur = { src: 'tool', id: t.id, slot, label: def.name };
+    def.after(x, t, seen);
+  });
+  for (const e of x.extra) {
+    const t = env.towers[e.tower];
+    if (standing(t)) applyDamage(t, Math.ceil(floorHp(t, cfg) * e.pct), false, true, cfg, tally);
+  }
+  if (tally.fell.length > 0) x.gold += goldOnKill + 2 * jornal;
+
+  // 9 · estados estructurales que deja la mezcla de materiales
+  if (standing(tower)) {
+    if (x.disarm) tower.disarmed = true;
+    const setFx = (fx: keyof TowerFx) => {
+      if (tower.fx[fx]) return;
+      tower.fx[fx] = true;
+      tally.events.push({ e: 'state', tower: target, fx, on: true });
+    };
+    if (x.mono || (x.poly && cfg.polyFractura)) setFx('fractura');
+    if (x.poly) setFx('sobrecarga');
+  }
+
+  // 10 · las cartas agrietadas pueden hacerse añicos
+  if (rng) for (const c of cracked) if (nextRandom(rng) < 0.25) out.shattered.push(c);
+
+  return {
+    ...out,
+    ...outcome(),
+    fuerza: x.fuerza,
+    res: r2(x.res),
+    wallGain: x.wall + Math.ceil(power.C / cfg.wallDiv),
+    repair: x.heal + Math.ceil(power.H / cfg.repairDiv),
+    hurt: x.hurt,
+    gold: x.gold,
+    draw: x.draw,
+    noSiren: x.noSiren,
+  };
 }
 
-export function previewStrike(towers: Record<Suit, Tower>, cards: Card[], target: Suit, cfg: Config): StrikeResult {
-  return strike(structuredClone(towers), cards, target, cfg);
+/** Lo mismo que `strike`, sin tocar el estado: para previsualizar y para que el bot compare jugadas. */
+export function previewStrike(env: StrikeEnv, cards: Card[], target: Suit): StrikeResult {
+  return strike({ ...env, towers: structuredClone(env.towers), tools: env.tools.map((t) => ({ ...t })) }, cards, target);
 }
 
 // ───────────────────────── Turno ─────────────────────────
+
+/** Lo que una herramienta puede hacer fuera de un golpe (sirena, huelga, descartes, cartas destruidas). */
+export interface Hook {
+  state: GameState;
+  gold(n: number): void;
+  heal(n: number): void;
+  wall(n: number): void;
+  /** Roba n cartas extra al final del turno. */
+  draw(n: number): void;
+  /** Carga Fuerza para el próximo golpe. */
+  charge(n: number): void;
+  /** Daño directo a una torre. */
+  hit(tower: Suit, n: number): void;
+  /** Destruye una carta: sale del mazo de la campaña. */
+  burn(card: Card): void;
+}
+
+interface Turn {
+  state: GameState;
+  events: GameEvent[];
+  draw: number;
+}
+
+function hookFor(turn: Turn, slot: number): Hook {
+  const { state, events } = turn;
+  const t = state.tools[slot];
+  const mark = (label: string) => events.push({ e: 'step', src: 'tool', id: t.id, slot, label: `${TOOL[t.id]?.name ?? t.id}: ${label}`, fuerza: 0, res: 0 });
+  return {
+    state,
+    gold(n) {
+      mark(`+${n} de oro`);
+      events.push({ e: 'gold', amount: n });
+    },
+    heal(n) {
+      const before = state.integrity;
+      state.integrity = Math.min(state.config.maxIntegrity, state.integrity + n);
+      mark(`+${state.integrity - before} de integridad`);
+      events.push({ e: 'repair', amount: state.integrity - before, total: state.integrity });
+    },
+    wall(n) {
+      const before = state.wall;
+      state.wall = Math.min(state.config.wallCap, state.wall + n);
+      mark(`+${state.wall - before} de muro`);
+      events.push({ e: 'wall', amount: state.wall - before, total: state.wall });
+    },
+    draw(n) {
+      mark(`robas ${n}`);
+      turn.draw += n;
+    },
+    charge(n) {
+      mark(`+${n} de Fuerza cargada`);
+      state.charge += n;
+    },
+    hit(tower, n) {
+      mark(`${n} a ${MATERIAL[tower]}`);
+      const tally: Tally = { events, dealt: {}, fallenBy: {}, fell: [] };
+      applyDamage(state.towers[tower], n, false, true, state.config, tally);
+    },
+    burn(card) {
+      mark(`destruye ${cardLabel(card)}`);
+      destroy(turn, card);
+    },
+  };
+}
+
+/** Destruye una carta para toda la campaña: suma un escombro y avisa a las herramientas. */
+function destroy(turn: Turn, card: Card): void {
+  const { state, events } = turn;
+  if (state.burned.includes(card.id)) return;
+  state.burned.push(card.id);
+  state.scrap++;
+  events.push({ e: 'burn', card });
+  state.tools.forEach((t, slot) => TOOL[t.id]?.burn?.(hookFor(turn, slot), t, card));
+}
 
 function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   if (state.deck.length > 0 || state.discard.length === 0) return;
@@ -352,28 +796,27 @@ function drawOne(state: GameState, events: GameEvent[]): Card | null {
   return state.deck.shift() ?? null;
 }
 
-function siren(state: GameState, events: GameEvent[], skip: 'clean' | 'huelga' | null): void {
-  const base = { blocked: 0, taken: 0, threat: 0 };
-  if (skip) {
-    events.push({ e: 'siren', card: null, tower: null, ...base, integrity: state.integrity, wall: state.wall, reason: skip });
-    return;
-  }
+type SirenReason = Extract<GameEvent, { e: 'siren' }>['reason'];
+
+function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
+  const { state, events } = turn;
+  const say = (card: Card | null, tower: Suit | null, reason: SirenReason): void => {
+    events.push({ e: 'siren', card, tower, blocked: 0, taken: 0, threat: 0, integrity: state.integrity, wall: state.wall, reason });
+  };
+  if (skip) return say(null, null, skip);
   const card = drawOne(state, events);
   if (state.integrity <= 0) return;
-  if (!card) {
-    events.push({ e: 'siren', card: null, tower: null, ...base, integrity: state.integrity, wall: state.wall, reason: 'empty' });
-    return;
-  }
+  if (!card) return say(null, null, 'empty');
   state.discard.push(card);
   state.lastSiren = card;
-  if (card.suit === 'X') {
-    events.push({ e: 'siren', card, tower: null, ...base, integrity: state.integrity, wall: state.wall, reason: 'joker' });
-    return;
-  }
+  if (card.suit === 'X') return say(card, null, 'joker');
   const t = state.towers[card.suit];
-  if (!standing(t) || t.disarmed) {
-    events.push({ e: 'siren', card, tower: t.suit, ...base, integrity: state.integrity, wall: state.wall, reason: standing(t) ? 'disarmed' : 'ruin' });
-    return;
+  if (!standing(t)) return say(card, t.suit, 'ruin');
+  if (t.disarmed) return say(card, t.suit, 'disarmed');
+  if (t.fx.sobrecarga) {
+    t.fx.sobrecarga = false;
+    events.push({ e: 'state', tower: t.suit, fx: 'sobrecarga', on: false });
+    return say(card, t.suit, 'sobrecarga');
   }
   const threat = state.config.floorThreat[t.floors[0]];
   const blocked = Math.min(state.wall, threat);
@@ -381,6 +824,7 @@ function siren(state: GameState, events: GameEvent[], skip: 'clean' | 'huelga' |
   const taken = threat - blocked;
   state.integrity -= taken;
   events.push({ e: 'siren', card, tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike' });
+  state.tools.forEach((tool, slot) => TOOL[tool.id]?.siren?.(hookFor(turn, slot), tool, { tower: t.suit, threat, blocked, taken }));
 }
 
 function refill(state: GameState, p: Player, events: GameEvent[], extra = 0): void {
@@ -397,17 +841,18 @@ function refill(state: GameState, p: Player, events: GameEvent[], extra = 0): vo
 
 function takeFromHand(p: Player, ids: string[]): Card[] {
   if (new Set(ids).size !== ids.length) throw new RuleError('Cartas repetidas.');
-  const cards = ids.map((id) => {
+  return ids.map((id) => {
     const c = p.hand.find((h) => h.id === id);
     if (!c) throw new RuleError('Esa carta no está en tu mano.');
     return c;
   });
-  return cards;
 }
 
 export function currentPlayer(state: GameState): Player {
   return state.players[state.turn];
 }
+
+const allDown = (state: GameState) => SUITS.every((s) => !standing(state.towers[s]));
 
 /** Aplica una acción. No muta el estado recibido. Lanza RuleError si la jugada es ilegal. */
 export function applyAction(prev: GameState, playerId: string, action: Action): { state: GameState; events: GameEvent[] } {
@@ -416,8 +861,13 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   const state = structuredClone(prev);
   const p = currentPlayer(state);
   const events: GameEvent[] = [];
+  const turn: Turn = { state, events, draw: 0 };
   let skip: 'clean' | 'huelga' | null = null;
-  let extraDraw = 0;
+  const win = () => {
+    state.phase = 'won';
+    events.push({ e: 'end', result: 'won' });
+    return { state, events };
+  };
 
   if (action.type === 'attack') {
     const cards = takeFromHand(p, action.cards);
@@ -427,7 +877,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     if (!tower || !standing(tower)) throw new RuleError('Esa torre ya está en ruinas.');
     p.hand = p.hand.filter((c) => !action.cards.includes(c.id));
     events.push({ e: 'play', player: p.id, cards, target: action.target, formation });
-    const res = strike(state.towers, cards, action.target, state.config);
+    const res = strike(state, cards, action.target, state);
     events.push(...res.events);
     if (res.wallGain > 0) {
       const before = state.wall;
@@ -444,30 +894,36 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
       events.push({ e: 'hurt', amount: res.hurt, integrity: Math.max(0, state.integrity) });
     }
     if (res.gold > 0) events.push({ e: 'gold', amount: res.gold });
-    extraDraw = res.draw;
-    state.discard.push(...cards);
+    turn.draw += res.draw;
+    state.chain = res.clean ? Math.min(4, state.chain + 1) : 0;
+    state.discard.push(...cards.filter((c) => !res.shattered.includes(c)));
+    for (const c of res.shattered) destroy(turn, c);
     if (res.clean) skip = 'clean';
     else if (res.noSiren) skip = 'huelga';
-    if (SUITS.every((s) => !standing(state.towers[s]))) {
-      state.phase = 'won';
-      events.push({ e: 'end', result: 'won' });
-      return { state, events };
-    }
+    if (allDown(state)) return win();
   } else if (action.type === 'discard') {
     const cards = takeFromHand(p, action.cards);
     if (cards.length === 0) throw new RuleError('Elige al menos una carta para descartar.');
     p.hand = p.hand.filter((c) => !action.cards.includes(c.id));
-    state.discard.push(...cards);
     events.push({ e: 'discard', player: p.id, cards });
+    turn.draw += cards.filter((c) => c.seal === 'sindical').length * (state.config.sealTwice ? 2 : 1);
+    state.tools.forEach((t, slot) => TOOL[t.id]?.discard?.(hookFor(turn, slot), t, cards));
+    const rest = cards.filter((c) => !state.burned.includes(c.id));
+    if (state.config.discardExhaust) {
+      state.exhausted.push(...rest);
+      state.charge += rest.length * state.config.discardExhaust;
+    } else state.discard.push(...rest);
   } else if (action.type === 'joker') {
     const [card] = takeFromHand(p, [action.card]);
     if (card.suit !== 'X' || card.sp) throw new RuleError('Esa carta no es un comodín.');
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Esa torre ya está en ruinas.');
     p.hand = p.hand.filter((c) => c.id !== card.id);
-    tower.disarmed = true; // el comodín sale del juego
+    tower.disarmed = true;
+    state.exhausted.push(card); // el comodín no vuelve esta obra
     skip = 'huelga';
     events.push({ e: 'joker', player: p.id, card, target: action.target });
+    state.tools.forEach((t, slot) => TOOL[t.id]?.joker?.(hookFor(turn, slot), t));
   } else if (action.type === 'pass') {
     if (p.hand.length > 0) throw new RuleError('Solo puedes pasar con la mano vacía.');
     events.push({ e: 'pass', player: p.id });
@@ -476,8 +932,9 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   }
 
   const sirens = skip ? 1 : (state.config.sirenCount ?? 1);
-  for (let i = 0; i < sirens && state.integrity > 0; i++) siren(state, events, skip);
-  if (state.integrity > 0) refill(state, p, events, extraDraw);
+  for (let i = 0; i < sirens && state.integrity > 0; i++) siren(turn, skip);
+  if (allDown(state)) return win(); // una herramienta puede rematar durante la sirena
+  if (state.integrity > 0) refill(state, p, events, turn.draw);
   if (state.integrity <= 0) {
     state.integrity = 0;
     state.phase = 'lost';
@@ -490,16 +947,18 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   return { state, events };
 }
 
+/** Reordena una lista con una permutación de sus índices; null si la permutación no es válida. */
+export function reorder<T>(items: T[], order: number[]): T[] | null {
+  if (!Array.isArray(order) || order.length !== items.length || new Set(order).size !== items.length || order.some((i) => !Number.isInteger(i) || i < 0 || i >= items.length)) return null;
+  return order.map((i) => items[i]);
+}
+
 // ───────────────────────── Vista por jugador (información oculta) ─────────────────────────
 
-export interface PlayerView {
+export interface PlayerView extends StrikeEnv {
   you: string;
-  config: Config;
   players: { id: string; name: string; handCount: number }[];
   hand: Card[];
-  towers: Record<Suit, Tower>;
-  integrity: number;
-  wall: number;
   deckCount: number;
   discardCount: number;
   lastSiren: Card | null;
@@ -507,15 +966,26 @@ export interface PlayerView {
   turnCount: number;
   collapses: number;
   phase: Phase;
+  /** Lo que aún no has visto (cantera y manos ajenas), ordenado: no revela el orden de robo. */
+  unseen: Card[];
+  /** La escombrera, ordenada. */
+  discard: Card[];
+  exhausted: number;
+  burned: number;
 }
 
 export function viewFor(state: GameState, playerId: string): PlayerView {
+  const me = state.players.find((p) => p.id === playerId);
   return {
     you: playerId,
     config: state.config,
     players: state.players.map((p) => ({ id: p.id, name: p.name, handCount: p.hand.length })),
-    hand: state.players.find((p) => p.id === playerId)?.hand ?? [],
+    hand: me?.hand ?? [],
     towers: state.towers,
+    tools: state.tools,
+    chain: state.chain,
+    charge: state.charge,
+    scrap: state.scrap,
     integrity: state.integrity,
     wall: state.wall,
     deckCount: state.deck.length,
@@ -525,6 +995,10 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     turnCount: state.turnCount,
     collapses: state.collapses,
     phase: state.phase,
+    unseen: sortCards([...state.deck, ...state.players.filter((p) => p.id !== playerId).flatMap((p) => p.hand)]),
+    discard: sortCards(state.discard),
+    exhausted: state.exhausted.length,
+    burned: state.burned.length,
   };
 }
 

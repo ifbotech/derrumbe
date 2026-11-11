@@ -1,8 +1,8 @@
 {
   "name": "derrumbe",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "DERRUMBE — juego cooperativo online de demolición con baraja francesa (1-4 jugadores)",
+  "description": "DERRUMBE — roguelike de demolición con baraja francesa: Fuerza × Resonancia, cinturón de herramientas, sellos y campaña cooperativa online (1-4 jugadores)",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -14,7 +14,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "simulate": "tsx scripts/simulate.ts",
-    "simulate:run": "tsx scripts/simulate-run.ts"
+    "simulate:run": "tsx scripts/simulate-run.ts",
+    "docs": "tsx scripts/reglas.ts"
   },
   "dependencies": {
     "ws": "^8.18.0"

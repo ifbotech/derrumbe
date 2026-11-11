@@ -10,10 +10,10 @@ export type ClientMsg =
   | { t: 'rejoin'; room: string; playerId: string; token: string }
   | { t: 'difficulty'; value: Difficulty }
   | { t: 'mode'; value: Mode }
-  /** En campaña, el anfitrión aporta sus mejoras del gremio, el ascenso, la baraja y sus cartas legendarias. */
+  /** En campaña, el anfitrión aporta sus mejoras del gremio, el ascenso, la baraja, sus cartas legendarias y, si quiere, una semilla. */
   | ({ t: 'start' } & RunOpts)
   | { t: 'action'; action: Action }
-  /** Decisiones de campaña (sobre, recompensa, ferretería): solo el anfitrión. */
+  /** Decisiones de campaña (plano, cobro, ferretería, hallazgos, orden del cinturón): solo el anfitrión. */
   | { t: 'run'; action: RunAction }
   | { t: 'lobby' } // el anfitrión devuelve la sala al vestíbulo tras terminar
   | { t: 'leave' };
@@ -31,6 +31,7 @@ export type ServerMsg =
   | { t: 'joined'; room: string; playerId: string; token: string }
   | { t: 'lobby'; lobby: LobbyInfo }
   | { t: 'state'; view: PlayerView; events: GameEvent[] }
+  /** La campaña, sin el estado del azar ni la semilla (ver publicRun). */
   | { t: 'run'; run: Run }
   | { t: 'left' }
   | { t: 'error'; message: string };

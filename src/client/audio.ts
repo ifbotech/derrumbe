@@ -119,7 +119,73 @@ const horn = (out: AudioNode, f: number, t: number, dur: number, vol: number, sl
   note(out, f / 2, t, dur, { type: 'square', vol: vol * 0.5, attack: 0.12, cutoff: 500, slide: slide ? slide / 2 : undefined });
 };
 
+/** Semitonos → factor de frecuencia. */
+const semi = (n: number) => 2 ** (n / 12);
+
 export const sfx = {
+  /** campanilla de la cuenta: cada activación sube un semitono (2^(n/12)) */
+  tick: (n: number) =>
+    fx((_, o, t) => {
+      const f = 392 * semi(Math.min(n, 30));
+      note(o, f, t, 0.16, { type: 'triangle', vol: 0.11 });
+      note(o, f * 2, t, 0.09, { type: 'sine', vol: 0.04 });
+    }),
+  /** naipe que sale de la mano */
+  flick: () =>
+    fx((_, o, t) => {
+      noise(o, t, 0.05, 0.16, 'highpass', 3400);
+      note(o, 900, t, 0.05, { type: 'triangle', vol: 0.03, slide: 420 });
+    }),
+  /** tampón de goma contra el papel */
+  stamp: () =>
+    fx((_, o, t) => {
+      note(o, 150, t, 0.11, { type: 'sine', vol: 0.5, slide: 60 });
+      noise(o, t, 0.05, 0.3, 'lowpass', 900);
+      noise(o, t + 0.07, 0.04, 0.08, 'highpass', 2600);
+    }),
+  /** botón-sello: golpe seco y corto */
+  clack: () =>
+    fx((_, o, t) => {
+      note(o, 210, t, 0.05, { type: 'square', vol: 0.06, slide: 120 });
+      noise(o, t, 0.03, 0.14, 'bandpass', 1800);
+    }),
+  /** martillo sobre el yunque */
+  forge: () =>
+    fx((_, o, t) => {
+      noise(o, t, 0.04, 0.3, 'highpass', 2200);
+      [1, 2.32, 3.9, 5.1].forEach((m, i) => note(o, 520 * m, t, 0.7 - i * 0.14, { type: 'sine', vol: 0.11 / (i + 1) }));
+      note(o, 95, t, 0.16, { type: 'sine', vol: 0.3, slide: 50 });
+    }),
+  /** carta al quemador */
+  hiss: () =>
+    fx((_, o, t) => {
+      noise(o, t, 0.7, 0.2, 'highpass', 4200);
+      noise(o, t + 0.05, 0.5, 0.14, 'bandpass', 1500);
+      note(o, 320, t, 0.5, { type: 'sawtooth', vol: 0.02, slide: 90 });
+    }),
+  /** cascada de monedas: una por cada pieza de oro (hasta 10) */
+  coins: (n: number) =>
+    fx((_, o, t) => {
+      for (let i = 0; i < Math.min(10, Math.max(2, n)); i++) {
+        const at = t + i * 0.055 + Math.random() * 0.02;
+        note(o, 1400 + Math.random() * 1500, at, 0.14, { type: 'sine', vol: 0.06 });
+        noise(o, at, 0.02, 0.05, 'highpass', 5000);
+      }
+    }),
+  /** campana del golpe limpio */
+  bell: () =>
+    fx((_, o, t) => {
+      [1, 2, 2.4, 3, 4.2, 5.4].forEach((m, i) => note(o, 587.33 * m, t, 1.5 - i * 0.2, { type: 'sine', vol: 0.13 / (i + 1) }));
+      noise(o, t, 0.03, 0.12, 'highpass', 3000);
+    }),
+  /** varios pisos a la vez: el suelo retumba */
+  rumble: (floors: number) =>
+    fx((_, o, t) => {
+      const dur = 0.9 + 0.35 * Math.min(4, floors);
+      noise(o, t, dur, 0.6, 'lowpass', 180);
+      note(o, 52, t, dur, { type: 'sine', vol: 0.55, slide: 30 });
+      for (let i = 0; i < 6 + floors * 3; i++) noise(o, t + Math.random() * dur, 0.08, 0.2, 'bandpass', 300 + Math.random() * 900);
+    }),
   /** cuerda pulsada breve */
   select: () => fx((_, o, t) => note(o, 587, t, 0.12, { vol: 0.05 })),
   /** pergamino */

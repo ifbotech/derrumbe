@@ -1,7 +1,7 @@
 // Baraja DERRUMBE — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
 // líneas talladas en color papel, tintas planas por palo y textura de imprenta.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
-import { Card, CardSuit, MATERIAL, RANK_LABEL, Suit } from '../rules/engine';
+import { Card, CardSuit, MATERIAL, RANK_LABEL, SEAL, Seal, Suit, TREATMENT, Treatment } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
 import { GLYPH } from './glyphs';
 
@@ -306,19 +306,23 @@ function specialArt(card: Card): string {
   </svg><div class="ly sp-desc">${s.desc}</div>`;
 }
 
-/** Ficha con forma de carta para herramientas y servicios de la ferretería. */
-export function tileEl(glyph: string, name: string, kind: 'relic' | 'service'): HTMLDivElement {
+/** Fondo y rayos de una ficha según su rareza (las de servicio van en amarillo de obra). */
+const TILE_INK: Record<string, [string, string]> = { service: ['gd', 'ink'], comun: ['cn', 'ink'], oficio: ['gl', 'ink'], capataz: ['rd', 'ink'], reliquia: ['ink', 'gd'] };
+
+/** Ficha con forma de carta para herramientas (su color dice la rareza) y servicios de la ferretería. */
+export function tileEl(glyph: string, name: string, kind: 'relic' | 'service', rarity = 'capataz'): HTMLDivElement {
   ensureDefs();
   const el = document.createElement('div');
-  el.className = `card k-tile t-${kind}`;
+  const [bg, rays] = TILE_INK[kind === 'service' ? 'service' : rarity] ?? TILE_INK.capataz;
+  el.className = `card k-tile t-${kind} r-${kind === 'service' ? 'service' : rarity}`;
   el.innerHTML = `
     <div class="card-in"><div class="card-front">
       <div class="ly paper"></div>
       <svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
         <g filter="url(#rough)">
-          <rect class="${kind === 'relic' ? 'rd' : 'gd'}" x="10" y="10" width="230" height="330"/>
-          <g transform="translate(125 150)"><g class="ink burst">${RAYS}</g><circle class="pp" r="72"/><circle class="sp-ring" r="63"/></g>
-          <path class="ink" d="M30,250 L222,241 L219,278 L27,287 Z"/>
+          <rect class="${bg}" x="10" y="10" width="230" height="330"/>
+          <g transform="translate(125 150)"><g class="${rays} burst">${RAYS}</g><circle class="pp" r="72"/><circle class="sp-ring" r="63"/></g>
+          <path class="${bg === 'ink' ? 'rd' : 'ink'}" d="M30,250 L222,241 L219,278 L27,287 Z"/>
           <svg x="65" y="90" width="120" height="120" viewBox="0 0 100 100">${GLYPH[glyph] ?? ''}</svg>
         </g>
         ${nameText(name, 'on-ink').replace('y="264"', 'y="271"').replace('124 258', '124 265')}
@@ -494,6 +498,61 @@ export function portraitEl(id: string, name: string): HTMLDivElement {
 }
 export const ferreteroEl = () => portraitEl('ferretero', 'El Ferretero');
 
+// ───────────────────────── Sellos y tratamientos ─────────────────────────
+// El sello es un tampón de goma abajo a la izquierda; el tratamiento, un cartabón de tinta arriba a la
+// derecha más un acabado sobre toda la carta. Las esquinas con el índice quedan siempre libres.
+
+const SEAL_INK: Record<Seal, string> = { dinamita: '#e30613', eco: '#2c5fa3', jornal: '#a87400', sindical: '#151311' };
+const SEAL_ICON: Record<Seal, string> = {
+  dinamita: '<path d="M-9,-2 H9 V16 H-9 Z"/><path d="M0,-2 C0,-12 9,-8 10,-17" fill="none" stroke-width="3.4"/><path d="M10,-24 l3,5 l6,-1 l-4,5 l3,5 l-6,-1 l-3,5 l-2,-6 l-6,-1 l5,-4 Z"/>',
+  eco: '<circle r="4.5"/><path d="M-11,-11 C-17,-4 -17,4 -11,11 M11,-11 C17,-4 17,4 11,11 M-19,-17 C-28,-6 -28,6 -19,17 M19,-17 C28,-6 28,6 19,17" fill="none" stroke-width="3.4"/>',
+  jornal: '<circle r="15" fill="none" stroke-width="4"/><path d="M-5,-8 V8 M0,-8 V8 M5,-8 V8 M-9,5 L9,-5" fill="none" stroke-width="3"/>',
+  sindical: '<path d="M-11,16 V-2 C-11,-8 -6,-8 -6,-3 V-12 C-6,-17 -1,-17 -1,-12 V-14 C-1,-19 4,-19 4,-14 V-11 C4,-16 9,-16 9,-11 V4 C9,12 6,16 2,16 Z"/>',
+};
+
+function sealLayer(seal: Seal): string {
+  const ink = SEAL_INK[seal];
+  return `<svg class="ly art seal" viewBox="0 0 250 350" aria-hidden="true"><g filter="url(#rough)" transform="translate(60 286) rotate(-13)">
+    <circle r="37" fill="${PAPER}" opacity="0.9"/>
+    <circle r="33" fill="none" stroke="${ink}" stroke-width="5.5"/>
+    <circle r="25.5" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="3 4.2"/>
+    <g fill="${ink}" stroke="${ink}" stroke-linecap="round" stroke-linejoin="round" stroke-width="0">${SEAL_ICON[seal]}</g>
+  </g></svg>`;
+}
+
+const TREAT_FILL: Record<Treatment, string> = { forjado: '#2b2f33', templado: '#2c5fa3', policromado: '#f0b415', agrietado: '#e30613' };
+const TREAT_ICON: Record<Treatment, string> = {
+  forjado: `<circle cx="218" cy="26" r="5" fill="${PAPER}"/><circle cx="226" cy="46" r="4" fill="${PAPER}"/><circle cx="202" cy="20" r="4" fill="${PAPER}"/>`,
+  templado: `<path d="M196,22 q7,-9 14,0 t14,0 M208,38 q6,-8 12,0 t12,0" fill="none" stroke="${PAPER}" stroke-width="3.6" stroke-linecap="round"/>`,
+  policromado: `<g transform="translate(217 31)" fill="${INK}"><circle r="7.5"/>${Array.from({ length: 8 }, (_, i) => `<rect x="-1.8" y="-17" width="3.6" height="7" transform="rotate(${i * 45})"/>`).join('')}</g>`,
+  agrietado: `<path d="M228,14 L214,28 L224,34 L210,50" fill="none" stroke="${PAPER}" stroke-width="4" stroke-linejoin="bevel"/>`,
+};
+const TREAT_BODY: Record<Treatment, string> = {
+  // largueros de acero remachados a los lados
+  forjado: `<path fill="#2b2f33" d="M10,92 H19 V262 H10 Z M231,96 H240 V258 H231 Z"/>${[108, 150, 192, 234].map((y) => `<circle cx="14.5" cy="${y}" r="2.4" fill="${PAPER}"/><circle cx="235.5" cy="${y + 4}" r="2.4" fill="${PAPER}"/>`).join('')}`,
+  // la línea de temple cruza la carta
+  templado: `<path d="M10,214 q20,-16 40,0 t40,0 t40,0 t40,0 t40,0 t30,-6" fill="none" stroke="#2c5fa3" stroke-width="3.2" opacity="0.8"/><path d="M10,224 q20,-16 40,0 t40,0 t40,0 t40,0 t40,0 t30,-6" fill="none" stroke="#2c5fa3" stroke-width="1.4" opacity="0.6"/>`,
+  policromado: `<rect x="14" y="14" width="222" height="322" fill="none" stroke="#f0b415" stroke-width="4" stroke-dasharray="14 5"/>`,
+  agrietado: `<path d="M152,10 L140,62 L161,96 L134,140 L150,182 L120,226 L138,270 L112,340 M134,140 L96,160 L70,150 M150,182 L190,204 L206,244" fill="none" stroke="${INK}" stroke-width="5" stroke-linejoin="bevel"/><path d="M152,10 L140,62 L161,96 L134,140 L150,182 L120,226 L138,270 L112,340 M134,140 L96,160 L70,150 M150,182 L190,204 L206,244" fill="none" stroke="${PAPER}" stroke-width="1.6" stroke-linejoin="bevel"/>`,
+};
+
+function treatLayer(tr: Treatment): string {
+  return `<svg class="ly art treat" viewBox="0 0 250 350" aria-hidden="true"><g filter="url(#rough)">
+    ${TREAT_BODY[tr]}
+    <path d="M176,10 H240 V74 Z" fill="${TREAT_FILL[tr]}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    ${TREAT_ICON[tr]}
+  </g></svg>${tr === 'policromado' || tr === 'templado' ? '<div class="ly sheen"></div>' : ''}`;
+}
+
+/** Lo que dice el globo de ayuda de una carta: su efecto especial, su sello y su tratamiento. */
+export function cardTip(card: Card): string {
+  const parts: string[] = [];
+  if (card.sp) parts.push(`<b>${SPECIAL[card.sp].name}</b>${SPECIAL[card.sp].desc}`);
+  if (card.tr) parts.push(`<b>${TREATMENT[card.tr].name}</b>${TREATMENT[card.tr].desc}`);
+  if (card.seal) parts.push(`<b>${SEAL[card.seal].name}</b>${SEAL[card.seal].desc}`);
+  return parts.join('<hr>');
+}
+
 // ───────────────────────── Carta ─────────────────────────
 
 function corner(suit: CardSuit, rank: number, cls: string): string {
@@ -505,16 +564,18 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
   ensureDefs();
   const el = document.createElement('div');
   const kind = card.sp ? 'special' : card.suit === 'X' ? 'joker' : card.rank > 10 ? 'figure' : card.rank === 1 ? 'ace' : 'number';
-  if (card.sp) el.title = `${SPECIAL[card.sp].name}: ${SPECIAL[card.sp].desc}`;
-  el.className = `card s-${card.suit} k-${kind}${opts.faceDown ? ' flipped' : ''}`;
+  el.className = `card s-${card.suit} k-${kind}${card.tr ? ` t-${card.tr}` : ''}${card.seal ? ` z-${card.seal}` : ''}${opts.faceDown ? ' flipped' : ''}`;
   el.dataset.id = card.id;
+  const tip = cardTip(card);
+  if (tip) el.dataset.tip = tip;
   const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : card.rank > 10 ? figure(card.suit, card.rank) : card.rank === 1 ? aceArt(card.suit) : numberArt(card.suit, card.rank);
   el.innerHTML = `
     <div class="card-in">
       <div class="card-front">
         <div class="ly paper"></div>
         ${art}
-        <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + corner(card.suit, card.rank, 'br')}${card.plus ? `<div class="plus">+${card.plus}</div>` : ''}</div>
+        <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + corner(card.suit, card.rank, 'br')}</div>
+        ${card.tr ? treatLayer(card.tr) : ''}${card.seal ? sealLayer(card.seal) : ''}
         <div class="ly grain"></div>
         <div class="ly glare"></div>
       </div>

@@ -5,9 +5,9 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, randomInt } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
-import { DIFFICULTY, Difficulty, GameEvent, GameState, RuleError, applyAction, createGame, currentPlayer, eventsFor, viewFor } from '../rules/engine';
+import { DIFFICULTY, Difficulty, GameEvent, GameState, RuleError, applyAction, createGame, currentPlayer, eventsFor, reorder, viewFor } from '../rules/engine';
 import { chooseAction } from '../rules/bot';
-import { Run, finishBattle, newRun, runAction, startStage, trackEvents } from '../rules/run';
+import { Run, finishBattle, newRun, publicRun, runAction, startStage, trackEvents } from '../rules/run';
 import type { ClientMsg, LobbyInfo, Mode, ServerMsg } from '../shared/protocol';
 
 const portArg = process.argv.find((a) => a.startsWith('--port='))?.split('=')[1];
@@ -29,6 +29,8 @@ interface Room {
   mode: Mode;
   /** Campaña en curso (modo campaña). */
   run: Run | null;
+  /** Identificador de la campaña para los clientes (no revela la semilla). */
+  runUid: number;
   seats: Seat[];
   state: GameState | null;
   botTimer: NodeJS.Timeout | null;
@@ -78,7 +80,9 @@ function broadcastState(room: Room, events: GameEvent[]): void {
 }
 
 function broadcastRun(room: Room): void {
-  if (room.run) for (const s of room.seats) send(s.ws, { t: 'run', run: room.run });
+  if (!room.run) return;
+  const run = publicRun(room.run, room.runUid);
+  for (const s of room.seats) send(s.ws, { t: 'run', run });
 }
 
 /** Tras cada jugada: en campaña, anota los eventos y cierra la obra si terminó. */
@@ -129,7 +133,7 @@ function attach(ws: WebSocket, room: Room, seat: Seat): void {
   send(ws, { t: 'joined', room: room.code, playerId: seat.id, token: seat.token });
   broadcastLobby(room);
   if (room.state) send(ws, { t: 'state', view: viewFor(room.state, seat.id), events: [] });
-  if (room.run) send(ws, { t: 'run', run: room.run });
+  if (room.run) send(ws, { t: 'run', run: publicRun(room.run, room.runUid) });
   scheduleBot(room);
 }
 
@@ -158,7 +162,7 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
   if (msg.t === 'create') {
     if (ctx) detach(ws, true);
     const seat: Seat = { id: randomBytes(6).toString('hex'), name: cleanName(msg.name), token: randomBytes(16).toString('hex'), ws: null };
-    const room: Room = { code: newCode(), host: seat.id, difficulty: 'obra', mode: 'clasica', run: null, seats: [seat], state: null, botTimer: null, emptySince: null };
+    const room: Room = { code: newCode(), host: seat.id, difficulty: 'obra', mode: 'clasica', run: null, runUid: 0, seats: [seat], state: null, botTimer: null, emptySince: null };
     rooms.set(room.code, room);
     return attach(ws, room, seat);
   }
@@ -196,10 +200,20 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
     case 'run': {
       if (!room.run) return send(ws, { t: 'error', message: 'No hay campaña en curso.' });
       if (seat.id !== room.host) return send(ws, { t: 'error', message: 'En campaña decide el anfitrión.' });
-      const err = runAction(room.run, msg.action);
+      const action = msg.action;
+      if (!action || typeof action !== 'object') return send(ws, { t: 'error', message: 'Decisión ilegible.' });
+      const err = runAction(room.run, action);
       if (err) return send(ws, { t: 'error', message: err });
-      if (room.run.phase === 'battle' && (msg.action.t === 'begin' || msg.action.t === 'next')) return beginStage(room);
-      return broadcastRun(room);
+      if (action.t === 'route' && room.run.phase === 'battle') return beginStage(room);
+      // la semilla ya se enseñó en el acta: los cimientos abisales se siembran de nuevo
+      if (action.t === 'endless') room.run.rng = randomInt(2 ** 31);
+      broadcastRun(room);
+      // el cinturón se puede reordenar en plena obra: la mesa sigue la misma permutación
+      if (action.t === 'reorder' && room.state && room.state.phase === 'playing') {
+        room.state.tools = reorder(room.state.tools, action.order) ?? room.state.tools;
+        broadcastState(room, []);
+      }
+      return;
     }
     case 'difficulty':
       if (seat.id !== room.host || room.state) return;
@@ -210,7 +224,9 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
       if (seat.id !== room.host) return send(ws, { t: 'error', message: 'Solo el anfitrión puede empezar.' });
       if (room.state || room.run) return;
       if (room.mode === 'campana') {
-        room.run = newRun({ up: msg.up, ascension: msg.ascension, deck: msg.deck, pool: msg.pool }, randomInt(2 ** 31));
+        // la Obra diaria es en solitario: en sala no se acepta
+        room.run = newRun({ up: msg.up, ascension: msg.ascension, deck: msg.deck, pool: msg.pool, seedText: msg.seedText }, randomInt(2 ** 31));
+        room.runUid = randomInt(1, 2 ** 31);
         broadcastLobby(room);
         return broadcastRun(room);
       }

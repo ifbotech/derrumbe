@@ -159,16 +159,12 @@ svg.ly.art { width: 100%; height: 100%; transform: translateZ(12px) scale(0.987)
 .ruin, .preview, .coach .who, .hp { filter: url(#rough-ui); }
 .title, .lobby-code h1, .end h1, .deck-head h1, .bar .brand, .home-right h2, .tower-tag, .modal-box h2, .banner div, .float { filter: url(#rough); }
 
-
-
 body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-events: none; mix-blend-mode: multiply; opacity: 0.3; background-size: 260px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .07 0 0 0 0 .06 0 0 0 18 -13'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E"); }
 .lino { display: block; }
 .lino .crack { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linejoin: bevel; }
 .lino .crew { fill: var(--ink); stroke: var(--ink); stroke-width: 4.6; stroke-linecap: round; stroke-linejoin: round; }
 .lino .crew path { fill: none; }
 .strip { display: block; align-self: stretch; margin: -6px -8px 0; width: calc(100% + 16px); border-bottom: 3px solid var(--ink); }
-.mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
-.hero { width: min(34%, 300px); flex: none; margin-bottom: -6px; }
 .floor-slot > * { grid-area: 1 / 1; }
 .rubble { width: 86%; align-self: end; }
 .ruin { z-index: 1; background: var(--card-paper); opacity: 1 !important; }
@@ -189,14 +185,8 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .title span { display: block; }
 .title .cut { color: var(--red); transform: translateX(0.12em) rotate(-2deg); transform-origin: left bottom; animation: slip 5s steps(1) infinite; }
 @keyframes slip { 0%, 70%, 100% { transform: translateX(0.12em) rotate(-2deg); } 74% { transform: translate(0.16em, 0.04em) rotate(-4deg); } 82% { transform: translate(0.1em, 0.01em) rotate(-1deg); } }
-.tagline { max-width: 46ch; font-size: 15px; font-weight: 700; border-left: 10px solid var(--ink); padding-left: 14px; line-height: 1.45; }
-.fan { display: flex; gap: 14px; padding: 10px 0 6px; flex-wrap: wrap; }
-.fan .card { --w: clamp(70px, 8.5vw, 132px); }
-.fan .card:nth-child(odd) { transform: rotate(-3deg); }
-.fan .card:nth-child(even) { transform: rotate(2deg) translateY(10px); }
 .home-right { background: var(--ink); color: var(--paper); padding: 32px; display: flex; flex-direction: column; gap: 16px; justify-content: center; }
 .home-right h2 { font-family: var(--display); font-size: 28px; border-bottom: 4px solid var(--paper); padding-bottom: 8px; }
-.home-right label { font-weight: 700; color: var(--hazard); }
 .home-right button { box-shadow: 4px 4px 0 var(--concrete-2); color: var(--ink); }
 .home-right button.primary { color: var(--paper); }
 .home-right button.primary:hover:not(:disabled) { background: var(--hazard); color: var(--ink); }
@@ -283,7 +273,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .blocks { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
 .blocks i { aspect-ratio: 1; border: 2px solid var(--ink); background: var(--ink); }
 .blocks i.off { background: transparent; border-style: dashed; opacity: 0.4; }
-.blocks.wall { grid-template-columns: repeat(8, 1fr); }
+.blocks.wall { grid-template-columns: repeat(var(--cap, 8), 1fr); }
 .blocks.wall i { aspect-ratio: 2 / 1; background: var(--hazard); }
 .blocks.wall i.off { background: transparent; }
 .blocks.danger i:not(.off) { background: var(--red); animation: beat 0.8s infinite; }
@@ -391,16 +381,8 @@ body { font-size: 14px; font-weight: 500; letter-spacing: 0.03em; }
 .modal-box h2 { font-size: 52px; }
 .modal-box h2 button { font-family: var(--display); }
 .log { font-size: 12px; font-weight: 500; }
-.tagline { font-size: clamp(12px, 1.9vh, 15px); }
 
 /* botones con marco de gubia: el texto queda nítido, el borde es el que tiembla */
-
-
-
-
-
-
-
 
 /* ───────────── TODO EN PANTALLA, SIN SCROLL ─────────────
    Cada pantalla ocupa exactamente la ventana; los tamaños salen del alto disponible
@@ -412,10 +394,6 @@ html, body { height: 100%; overflow: hidden; }
 .home { height: 100dvh; min-height: 0; grid-template-columns: minmax(0, 1.3fr) minmax(290px, 0.7fr); }
 .home-left { padding: clamp(10px, 2.6vh, 28px) clamp(14px, 2.4vw, 32px); gap: clamp(6px, 1.6vh, 20px); min-height: 0; }
 .title { font-size: min(13vw, 25vh); }
-.mid { min-height: 0; }
-.hero { height: min(27vh, 20vw); width: auto; aspect-ratio: 640 / 420; margin: 0; }
-.fan { flex-wrap: nowrap; gap: clamp(6px, 1vw, 14px); padding: 0 0 clamp(8px, 1.6vh, 14px); }
-.fan .card { --w: min(8.2vw, 12.5vh); }
 .home-right { padding: clamp(12px, 3vh, 32px) clamp(16px, 2.2vw, 32px); gap: clamp(6px, 1.5vh, 16px); min-height: 0; overflow-y: auto; }
 
 .lobby { height: 100dvh; min-height: 0; overflow: hidden; padding: clamp(12px, 3vh, 32px); gap: clamp(10px, 2vh, 24px); grid-template-rows: auto minmax(0, 1fr); }
@@ -467,7 +445,6 @@ html, body { height: 100%; overflow: hidden; }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .home { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
   .home-left { border-right: 0; border-bottom: 6px solid var(--ink); }
-  .home-left .fan, .home-left .mid, .home-left .meta { display: none; }
   .title { font-size: min(21vw, 15vh); }
   .lobby { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); }
   .lobby-code p { display: none; }
@@ -497,8 +474,6 @@ body { font-size: clamp(13px, 1.5vh, 17px); }
 button { font-size: clamp(12px, 1.45vh, 17px); padding: clamp(5px, 0.95vh, 12px) clamp(10px, 1.5vh, 20px); }
 input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12px; }
 .meta span { font-size: clamp(11px, 1.35vh, 15px); }
-.hero { height: min(34vh, 24vw); }
-.tagline { font-size: clamp(12px, 1.9vh, 19px); }
 .bar button { font-size: clamp(10px, 1.25vh, 14px); padding: clamp(3px, 0.5vh, 6px) 10px; }
 .chip, .room { font-size: clamp(11px, 1.35vh, 15px); }
 .tower-weak, .threat { font-size: clamp(10px, 1.3vh, 14px); }
@@ -588,15 +563,9 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 .hand .card { --w: min(calc(clamp(92px, 25vh, 290px) * 0.84 / 1.4), 11.5vw); }
 .actions { min-width: 0; }
 .coach { margin-bottom: 2px; }
-.tools { flex: none; max-height: 34%; overflow: hidden; }
-.tools ul { list-style: none; display: grid; gap: 3px; }
-.tools li { display: grid; font-size: clamp(10px, 1.25vh, 13px); line-height: 1.25; text-transform: none; border-left: 4px solid var(--ink); padding-left: 6px; }
-.tools li b { text-transform: uppercase; font-size: clamp(10px, 1.3vh, 14px); }
-.tools li.none { border: 0; padding: 0; opacity: 0.7; }
 .boss { background: var(--red); color: var(--card-paper); padding: 4px 8px; margin-bottom: 6px; text-transform: none; font-size: clamp(10px, 1.3vh, 14px); line-height: 1.3; }
 .boss b { display: block; text-transform: uppercase; }
 .chip.gold { background: var(--hazard); color: var(--ink); border-color: var(--hazard); }
-.plus { position: absolute; left: 3%; bottom: 3%; background: var(--hazard); color: var(--ink); border: calc(var(--w) * 0.018) solid var(--ink); font-family: var(--display); font-size: calc(var(--w) * 0.14); line-height: 1; padding: 0.1em 0.25em; transform: rotate(-6deg); }
 
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .field { display: grid; container-type: normal; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
@@ -606,7 +575,6 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
   .rubble { width: 86cqw; }
   .side { flex-direction: row; }
   .log { display: block; flex: 1; }
-  .tools { display: none; }
   .bunker { flex: 1.3; display: block; }
   .bunker .piles { display: grid; margin-top: 4px; }
   .stat { flex-direction: row; align-items: baseline; justify-content: space-between; }
@@ -620,9 +588,9 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 /* ───────────── CAMPAÑA ───────────── */
 .home-right button.big, button.big { display: grid; gap: 2px; justify-items: center; font-size: clamp(15px, 2.2vh, 24px); padding: clamp(8px, 1.5vh, 16px); }
 button.big small { font-family: var(--mono); font-weight: 700; font-size: 0.55em; letter-spacing: 0.06em; opacity: 0.85; }
-.camp, .shop { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); padding: clamp(10px, 2.4vh, 28px) clamp(12px, 2.2vw, 32px); gap: clamp(8px, 1.8vh, 20px); }
-.camp .deck-head, .shop .deck-head { margin: 0; padding-bottom: clamp(6px, 1.2vh, 14px); }
-.camp .deck-head h1, .shop .deck-head h1 { font-size: min(9vw, 13vh); line-height: 0.95; margin-top: 4px; }
+.camp { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); padding: clamp(10px, 2.4vh, 28px) clamp(12px, 2.2vw, 32px); gap: clamp(8px, 1.8vh, 20px); }
+.camp .deck-head { margin: 0; padding-bottom: clamp(6px, 1.2vh, 14px); }
+.camp .deck-head h1 { font-size: min(9vw, 13vh); line-height: 0.95; margin-top: 4px; }
 .camp-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr); gap: clamp(12px, 1.6vw, 24px); min-height: 0; padding: 0 8px 8px 0; }
 .camp-grid .panel { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: clamp(6px, 1.3vh, 14px); text-transform: none; }
 .camp-run p { font-size: clamp(13px, 1.8vh, 18px); line-height: 1.45; }
@@ -645,21 +613,7 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: 0.55em
 .purse { text-align: right; line-height: 1; }
 .purse b { font-family: var(--display); font-size: min(8vw, 11vh); color: var(--red); }
 .purse span { display: block; font-weight: 700; text-transform: uppercase; }
-.shop-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.5fr); gap: clamp(12px, 1.6vw, 24px); min-height: 0; padding: 0 8px 8px 0; }
-.offers { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(170px, 17vw, 260px), 1fr)); gap: clamp(8px, 1.2vw, 16px); align-content: start; min-height: 0; overflow-y: auto; padding: 4px 8px 8px 4px; }
-.offer { position: relative; border: 4px solid var(--ink); background: var(--card-paper); box-shadow: 5px 5px 0 var(--ink); padding: clamp(6px, 1.2vh, 12px); display: flex; flex-direction: column; gap: clamp(3px, 0.7vh, 8px); text-transform: none; }
-.offer small { font-weight: 700; text-transform: uppercase; font-size: 10px; background: var(--ink); color: var(--hazard); align-self: flex-start; padding: 1px 6px; }
-.offer.k-relic small { background: var(--red); color: var(--card-paper); }
-.offer h4 { font-family: var(--title); font-size: clamp(20px, 3.2vh, 32px); line-height: 1; }
-.offer p { font-size: clamp(11px, 1.5vh, 15px); line-height: 1.35; flex: 1; }
-.offer.sold { opacity: 0.45; box-shadow: none; }
-.offer .price { font-weight: 700; text-transform: uppercase; font-size: 12px; }
-.forge { display: flex; gap: 8px; justify-content: center; }
-.forge .card { --w: clamp(44px, 5.2vw, 84px); cursor: pointer; }
-.forge .card.off { cursor: default; filter: grayscale(0.8); }
-.forge .card:not(.off):hover { transform: translateY(-6px); }
 .shop-side { display: flex; flex-direction: column; gap: clamp(8px, 1.4vh, 14px); min-height: 0; overflow-y: auto; padding: 0 8px 8px 0; }
-.shop-side .tools { max-height: none; }
 .shop-side .panel p { text-transform: none; font-size: clamp(11px, 1.5vh, 15px); line-height: 1.4; margin-bottom: 4px; }
 .shop-side .row button { flex: 1; }
 .pay { border-collapse: collapse; font-size: clamp(14px, 2.2vh, 22px); font-weight: 700; max-width: 520px; }
@@ -668,10 +622,9 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: 0.55em
 .pay .sum td { border-top: 4px solid currentColor; padding-top: 6px; }
 .gain { font-family: var(--display); font-size: clamp(16px, 2.8vh, 28px); }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
-  .camp-grid, .shop-grid { grid-template-columns: 1fr; overflow-y: auto; }
+  .camp-grid { grid-template-columns: 1fr; overflow-y: auto; }
   .camp-grid .panel { overflow: visible; }
   .route { grid-template-columns: repeat(4, 1fr); }
-  .offers, .shop-side { overflow: visible; }
 }
 
 /* ───────────── CARTAS ESPECIALES, FICHAS Y FERRETERO ───────────── */
@@ -704,15 +657,11 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: 0.55em
 .up > div { min-width: 0; }
 .row > button { flex: 1; min-width: 0; }
 .home-right > button, .home-right .row > button, .lobby-side > button { min-height: clamp(30px, 4.8vh, 48px); }
-.home-right .row > input { flex: 1.6; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .grid2 button { height: clamp(32px, 5vh, 48px); padding: 0 4px; font-size: clamp(10px, 1.3vh, 14px); }
 .panel h3 { min-height: 1.3em; }
 .note { text-transform: none; font-size: clamp(11px, 1.4vh, 14px); line-height: 1.35; margin-top: 8px; }
 .wait { font-weight: 700; text-transform: uppercase; background: var(--ink); color: var(--hazard); padding: 4px 10px; display: inline-block; margin-top: 10px; }
-.tools li { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px; border-left: 0; padding-left: 0; }
-.tools li div { display: grid; min-width: 0; }
-.tools li.none { display: block; }
 
 /* ───────────── PANTALLAS DE CAMPAÑA ───────────── */
 .run { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); padding: clamp(10px, 2.2vh, 26px) clamp(12px, 2.2vw, 32px); gap: clamp(8px, 1.6vh, 18px); }
@@ -791,8 +740,6 @@ button:disabled { opacity: 0.5; }
 /* una caja con marco no hace scroll ella misma (se llevaría el marco): lo hace su .scroll */
 .scroll { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: clamp(6px, 1.2vh, 12px); padding-right: 4px; flex: 1; }
 .camp-grid .panel { overflow: visible; }
-.tools { overflow: visible; max-height: none; }
-.tools ul { max-height: 22vh; overflow: hidden; }
 
 /* ───────────── PORTADA ─────────────
    La ilustración ocupa todo el panel; el título va en su propio bloque de tinta sobre el cielo
@@ -800,14 +747,9 @@ button:disabled { opacity: 0.5; }
 .home-left { position: relative; background: var(--ink); overflow: hidden; justify-content: space-between; border-right: 6px solid var(--ink); }
 .hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .home-left .title { position: relative; align-self: flex-start; color: var(--card-paper); background: var(--ink); padding: 0 0.14em 0.1em 0.04em; font-size: min(12vw, 24vh); line-height: 1; }
-.home-foot { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(10px, 2vw, 28px); }
-.home-left .tagline { color: var(--card-paper); background: var(--ink); border-left: 8px solid var(--red); padding: 8px 12px; max-width: 30ch; margin: 0; }
-.home-left .fan { padding: 0; flex: none; }
-.home-left .fan .card { --w: min(7.4vw, 12vh); }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .home-left { min-height: 26vh; }
   .home-left .hero-bg { display: block; }
-  .home-left .home-foot { display: none; }
 }
 
 /* ───────────── GREMIO: BARAJAS Y LOGROS ───────────── */

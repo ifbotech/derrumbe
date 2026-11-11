@@ -1,0 +1,242 @@
+/* DERRUMBE 2.0 — pantallas de campaña: gremio, preparación, plano de demolición, cobro,
+   ferretería, hallazgos, acta y visor de mazos. */
+
+/* ───────────── GREMIO Y COLECCIÓN ───────────── */
+.guild-body { display: flex; flex-direction: column; gap: clamp(8px, 1.4vh, 16px); min-height: 0; padding: 0 8px 8px 0; }
+.guild-body .tabs { flex: none; }
+.guild-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; text-transform: none; }
+.guild-panel .scroll { padding-right: 8px; }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(6px, 1.2vh, 12px) clamp(14px, 2vw, 32px); align-content: start; }
+.up.maxed { opacity: 0.7; }
+.up.maxed .badge { box-shadow: 3px 3px 0 var(--red); }
+.guild .col-sec { margin-bottom: clamp(14px, 2.6vh, 30px); }
+.guild .col-sec:last-child { margin-bottom: 0; }
+.deck-grid.chips { gap: 6px; }
+.form-chip { font-family: var(--display); text-transform: uppercase; font-size: clamp(11px, 1.5vh, 15px); padding: 3px 10px; border: 2px dashed var(--ink); opacity: 0.45; }
+.form-chip.on { border-style: solid; background: var(--ink); color: var(--hazard); opacity: 1; }
+.choice { position: relative; }
+.choice .tag-act { margin-top: 2px; }
+.col-sec .choice p { height: auto; min-height: 2.6em; }
+.col-sec .choice .tag-act { background: none; color: var(--ink); padding: 0; font-family: var(--mono); font-weight: 700; font-size: clamp(9px, 1.15vh, 11px); opacity: 0.7; }
+
+/* ───────────── PREPARACIÓN DE CAMPAÑA ───────────── */
+.seed-row { display: grid; grid-template-columns: minmax(130px, 240px) minmax(0, 1fr); gap: 12px; align-items: center; }
+.seed-row .note { margin: 0; }
+.seed-row input { text-transform: uppercase; }
+.kit { list-style: none; display: grid; gap: clamp(6px, 1.2vh, 12px); }
+.kit li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: clamp(4px, 0.9vh, 10px); }
+.kit li div { display: grid; }
+.kit li b { text-transform: uppercase; font-size: clamp(12px, 1.6vh, 16px); }
+.kit li span { font-size: clamp(11px, 1.4vh, 14px); line-height: 1.3; }
+.kit .ico { width: clamp(28px, 4.6vh, 46px); height: clamp(28px, 4.6vh, 46px); background: var(--hazard); border: 3px solid var(--ink); padding: 3px; }
+.camp-ups .row { flex: none; }
+
+/* ───────────── CINTURÓN EN LAS PANTALLAS DE CAMPAÑA ───────────── */
+.run-belt { display: flex; align-items: center; gap: clamp(8px, 1.2vw, 16px); flex-wrap: wrap; border-top: 3px dashed var(--ink); padding-top: clamp(6px, 1.2vh, 12px); margin-top: clamp(6px, 1.2vh, 12px); }
+.run-belt .belt-slot { width: clamp(36px, 6vh, 62px); }
+.run-belt > button { margin-left: auto; flex: none; }
+
+/* ───────────── PLANO DE DEMOLICIÓN ───────────── */
+.desk { position: relative; flex: none; padding: clamp(8px, 1.8vh, 20px) clamp(10px, 1.6vw, 24px); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
+  background:
+    linear-gradient(104deg, transparent 0 62%, rgba(10, 10, 10, 0.28) 62% 62.4%, transparent 62.4%),
+    linear-gradient(81deg, transparent 0 21%, rgba(10, 10, 10, 0.22) 21% 21.3%, transparent 21.3%),
+    linear-gradient(170deg, transparent 0 80%, rgba(241, 235, 220, 0.12) 80% 80.5%, transparent 80.5%),
+    repeating-linear-gradient(91deg, #5c3b22 0 17px, #4b2e19 17px 19px, #67452b 19px 38px, #513220 38px 40px, #5c3b22 40px 61px, #45290f 61px 62px); }
+.blueprint { position: relative; background-color: #23508f; background-image: linear-gradient(rgba(241, 235, 220, 0.13) 1px, transparent 1px), linear-gradient(90deg, rgba(241, 235, 220, 0.13) 1px, transparent 1px); background-size: 22px 22px; color: var(--card-paper); border: 3px solid var(--card-paper); outline: 3px solid var(--ink); padding: clamp(6px, 1.4vh, 14px) clamp(8px, 1.2vw, 16px) clamp(10px, 2vh, 20px); transform: rotate(-0.35deg); box-shadow: 5px 6px 0 rgba(10, 10, 10, 0.45); }
+.bp-title { font-family: var(--cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; font-size: clamp(9px, 1.3vh, 13px); margin-bottom: clamp(8px, 1.6vh, 16px); display: flex; justify-content: space-between; border-bottom: 1.5px dashed var(--card-paper); padding-bottom: 4px; }
+.bp-title::after { content: 'ESC. 1:200 · GREMIO DE DEMOLEDORES'; opacity: 0.7; }
+.bp-path { display: flex; align-items: stretch; }
+.bp-link { flex: 0 0 clamp(4px, 1vw, 18px); align-self: center; border-top: 3px dashed var(--card-paper); opacity: 0.8; }
+.bp-node { position: relative; flex: 1 1 0; min-width: 0; display: grid; grid-template-rows: auto auto 1fr; justify-items: center; align-content: start; gap: 2px; text-align: center; padding: clamp(4px, 0.9vh, 8px) 3px; border: 2px solid var(--card-paper); background: rgba(10, 10, 10, 0.2); text-transform: none; }
+.bp-node.boss { border-width: 3px; border-style: double; background: rgba(227, 6, 19, 0.3); }
+.bp-node.done, .bp-node.skip { opacity: 0.72; }
+.bp-node.now { background: var(--hazard); color: var(--ink); border: 3px solid var(--ink); transform: translateY(-6px) rotate(-1.2deg); box-shadow: 4px 5px 0 var(--ink); z-index: 2; opacity: 1; }
+.bp-n { font-family: var(--display); font-size: clamp(15px, 2.6vh, 28px); line-height: 1; }
+.bp-node > b { font-size: clamp(8px, 1.15vh, 12px); text-transform: uppercase; line-height: 1.1; min-height: 2.2em; display: grid; align-items: center; }
+.bp-node em { font-style: normal; font-weight: 700; font-size: clamp(9px, 1.25vh, 13px); line-height: 1.15; }
+.bp-node em small { display: block; font-weight: 500; font-size: 0.86em; opacity: 0.9; }
+.bp-node em.plain { opacity: 0.6; font-weight: 500; text-transform: uppercase; font-size: clamp(8px, 1.05vh, 11px); letter-spacing: 0.08em; }
+.bp-boss { display: block; }
+.bp-boss .card { --w: clamp(26px, 5.4vh, 58px); }
+.bp-boss .card .ly.paper { box-shadow: 2px 2px 0 var(--ink); border-width: 2px; }
+.bp-node .inkstamp { top: auto; bottom: 6%; right: auto; left: 50%; margin-left: -2.9em; font-size: clamp(8px, 1.35vh, 14px); padding: 2px 5px; border-width: 2px; }
+.routes { align-items: stretch; }
+.choice.risk h4 { color: var(--red); }
+.choice.skip h4 { text-decoration: underline wavy var(--red) 2px; text-underline-offset: 3px; }
+.routes .choice p { height: auto; min-height: 5.2em; }
+.routes .choice p b { display: block; margin-top: 3px; }
+.route-note { flex: 1; min-width: 220px; max-width: 520px; align-self: center; }
+
+/* ───────────── COBRO ───────────── */
+.paybox { position: relative; }
+.contract-res { position: relative; display: grid; gap: 2px; margin-top: clamp(8px, 1.6vh, 16px); border: 3px solid var(--ink); padding: 8px 10px; text-transform: none; min-height: 4.6em; }
+.contract-res b { text-transform: uppercase; font-size: clamp(11px, 1.5vh, 15px); padding-right: 6.5em; }
+.contract-res span { font-size: clamp(11px, 1.45vh, 14px); }
+.contract-res.ko { border-style: dashed; opacity: 0.85; }
+.contract-res .inkstamp { top: 6px; right: 6px; font-size: clamp(10px, 1.5vh, 15px); }
+
+/* ───────────── FERRETERÍA ───────────── */
+.stock { min-width: 0; }
+.rail { height: 10px; background: var(--ink); box-shadow: 0 4px 0 rgba(10, 10, 10, 0.25); filter: url(#rough-ui); }
+.hangers { padding-top: clamp(14px, 2.2vh, 22px); row-gap: clamp(22px, 3.4vh, 34px); }
+.choice.hang::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 3px; height: clamp(14px, 2.2vh, 22px); margin-left: -1.5px; background: var(--ink); }
+.choice.hang .card { transform-origin: 50% -12%; }
+.choice.hang.pick:hover .card, .choice.hang.pick:focus-visible .card { transform: translateY(0) rotate(-2.5deg); }
+.price-tag { position: absolute; z-index: 5; top: clamp(-8px, -1vh, -4px); right: -9px; transform: rotate(7deg); transform-origin: 0 50%; background: var(--manila); color: var(--ink); font-family: var(--display); text-transform: uppercase; font-size: clamp(10px, 1.45vh, 15px); line-height: 1; padding: 5px 8px 5px 18px; clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%); filter: drop-shadow(2px 2px 0 rgba(10, 10, 10, 0.5)); white-space: nowrap; }
+.price-tag::before { content: ''; position: absolute; left: 9px; top: 50%; width: 5px; height: 5px; margin-top: -2.5px; background: var(--ink); }
+.price-tag.free { background: var(--hazard); }
+.price-tag.dear { color: var(--red); }
+.choice.sold .price-tag { display: none; }
+.choice.sold .inkstamp { top: 26%; right: 6%; }
+.choice.hang p small { display: block; font-weight: 700; text-transform: uppercase; opacity: 0.6; font-size: 0.85em; margin-top: 2px; }
+.run-body.shop .choice p { height: auto; min-height: 4em; }
+.grid2 button { white-space: nowrap; }
+.grid2 button.primary { grid-column: 1 / -1; font-size: clamp(13px, 1.9vh, 19px); }
+.sobre-modal, .pending-modal { cursor: default; }
+
+/* ───────────── HALLAZGOS ───────────── */
+.event-box { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(14px, 3vw, 44px); align-items: start; }
+.event-ico { width: clamp(110px, 24vh, 250px); height: clamp(110px, 24vh, 250px); background: var(--card-paper); border: 4px solid var(--ink); box-shadow: 7px 7px 0 var(--ink); padding: clamp(8px, 1.6vh, 18px); transform: rotate(-2deg); }
+.event-txt .lead { max-width: 62ch; }
+.event-opts { display: grid; gap: clamp(8px, 1.4vh, 14px); margin-top: clamp(10px, 2vh, 20px); max-width: 680px; }
+.stamp-btn.opt { grid-template-columns: minmax(0, 1fr); }
+.stamp-btn.opt b { font-size: clamp(18px, 2.9vh, 30px); }
+.stamp-btn.opt small { font-size: clamp(11px, 1.5vh, 15px); }
+
+/* ───────────── ACTA DE DEMOLICIÓN ───────────── */
+.end.acta { justify-content: center; align-items: flex-start; }
+.acta-sheet { position: relative; z-index: 1; width: min(700px, 100%); max-height: 100%; overflow-y: auto; background: var(--card-paper) var(--noise); color: var(--ink); border: 5px solid var(--ink); box-shadow: 10px 10px 0 var(--red); padding: clamp(12px, 2.8vh, 30px) clamp(14px, 2.4vw, 32px); display: grid; gap: clamp(5px, 1.2vh, 12px); text-transform: none; }
+.end.won .acta-sheet { box-shadow: 10px 10px 0 var(--ink); }
+.acta-sheet h1 { font-size: min(11vw, 13vh); line-height: 0.95; }
+.acta-sheet > p { font-size: clamp(12px, 1.7vh, 16px); font-weight: 500; }
+.acta-stats { border-collapse: collapse; width: 100%; font-size: clamp(12px, 1.65vh, 16px); font-weight: 700; }
+.acta-stats td { border-bottom: 1.5px dashed var(--ink); padding: clamp(1px, 0.35vh, 4px) 0; }
+.acta-stats td + td { text-align: right; font-family: var(--display); }
+.acta-sheet .gain { color: var(--red); }
+.acta-sheet .row { flex-wrap: wrap; }
+.acta-sheet .row button { flex: 1 1 150px; }
+.acta-sheet button small { display: block; font-family: var(--mono); font-weight: 700; font-size: 0.6em; opacity: 0.8; text-transform: none; }
+
+/* ───────────── VISOR DE MAZOS ───────────── */
+.deck-box { max-width: 1100px; }
+.deck-tabs:empty { display: none; }
+.deck-tabs { margin-bottom: 8px; }
+.deck-note:empty { display: none; }
+.deck-row h4 { font-family: var(--display); font-weight: 400; text-transform: uppercase; font-size: 13px; margin: 10px 0 6px; display: flex; gap: 8px; align-items: center; }
+.deck-row h4 span { background: var(--ink); color: var(--card-paper); padding: 0 6px; }
+.deck-mini .card { --w: clamp(46px, 5.6vw, 84px); }
+.deck-mini .card.sel .ly.paper { box-shadow: 0 0 0 4px var(--red), 5px 5px 0 var(--ink); }
+.deck-mini .card.unpickable { filter: grayscale(1); opacity: 0.4; }
+.modal-box .cancel { font-family: var(--display); }
+.reveal .choice p { text-align: center; }
+.reveal-box .x { justify-self: center; }
+
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .two-col { grid-template-columns: minmax(0, 1fr); }
+  .seed-row { grid-template-columns: 1fr; }
+  .bp-path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .bp-link { display: none; }
+  .bp-node.now { transform: none; }
+  .bp-title::after { display: none; }
+  .event-box { grid-template-columns: 1fr; }
+  .event-ico { width: 96px; height: 96px; }
+  .run-belt > button { margin-left: 0; }
+  .guild-panel { overflow: visible; }
+  .acta-sheet h1 { font-size: min(15vw, 9vh); }
+  .end.acta .end-art { opacity: 0.35; }
+}
+
+/* ───────────── AJUSTES TRAS LA PRUEBA VISUAL ───────────── */
+.deck-head .sub { margin-top: clamp(6px, 1.3vh, 14px); }
+/* plano: las rutas son fichas apaisadas para que todo quepa sin scroll */
+.bp-node .inkstamp { top: -7px; right: -9px; bottom: auto; left: auto; margin: 0; transform: rotate(9deg); }
+.bp-node.now .inkstamp { background: var(--card-paper); }
+.routes .choice { width: auto; flex: 1 1 250px; max-width: 460px; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 1fr auto; column-gap: clamp(8px, 1vw, 16px); align-items: start; }
+.routes .choice .card { grid-row: 1 / -1; --w: clamp(62px, 13vh, 132px); }
+.routes .choice h4 { height: auto; margin-top: 0; }
+.routes .choice p { height: auto; min-height: 0; }
+.routes .choice .tag-act { align-self: end; }
+.routes .choice.boss-route { max-width: 600px; }
+.routes .choice.boss-route .card { --w: clamp(84px, 20vh, 190px); }
+.routes .choice.boss-route p { font-size: clamp(12px, 1.8vh, 18px); }
+.map .run-belt { margin-top: auto; }
+/* cobro */
+.run-body.two { grid-template-columns: minmax(250px, 0.5fr) minmax(0, 1.5fr); }
+.contract-res b { padding-right: 0; }
+.contract-res .inkstamp { position: static; justify-self: start; margin-top: 4px; transform: rotate(-4deg); }
+/* ferretería: todo el surtido en una fila colgada del riel */
+.run-body.shop .hangers { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); column-gap: clamp(6px, 1vw, 16px); }
+.run-body.shop .choice.hang { width: auto; container-type: inline-size; }
+.run-body.shop .choice.hang .card { --w: 100cqw; }
+.run-body.shop .choice.hang h4 { font-size: clamp(14px, 2.1vh, 22px); height: 2.1em; }
+.run-body.shop .choice.hang p { font-size: clamp(10px, 1.3vh, 13px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .run-body.shop .hangers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .routes .choice { flex-basis: 100%; max-width: none; }
+  .routes .choice .card { --w: clamp(56px, 18vw, 96px); }
+}
+.inkstamp.big { font-size: clamp(15px, 3.2vh, 32px); right: 3%; top: 3%; border-width: 4px; }
+.bp-path { min-height: clamp(84px, 19vh, 210px); }
+.bp-boss .card { --w: clamp(26px, 7vh, 74px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .bp-path { min-height: 0; }
+  .bp-boss .card { --w: clamp(24px, 8vw, 40px); }
+  .bp-node em small { display: none; }
+  .bp-node > b { min-height: 0; font-size: 8px; }
+  .bp-node em { font-size: 9px; }
+  .bp-n { font-size: 16px; }
+  .bp-node .inkstamp { font-size: 7px; top: -5px; right: -4px; padding: 1px 3px; border-width: 1.5px; }
+  .desk { padding: 8px; }
+  .blueprint { padding: 6px 8px 10px; }
+  .bp-title { margin-bottom: 8px; }
+  .routes { gap: 6px; }
+  .routes .choice .tag-act { display: none; }
+  .routes .choice p { font-size: 11px; line-height: 1.25; }
+  .routes .choice h4 { font-size: 17px; }
+  .map h3.sec { font-size: 20px; margin-bottom: 4px; }
+  .run .run-belt { padding-top: 6px; margin-top: 6px; gap: 6px; }
+  .run-belt .belt-slot { width: clamp(26px, 9vw, 42px); }
+  .run-belt .belt-label small { display: none; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .shop-side { overflow: visible; padding: 0; }
+  .run-body.shop .choice.hang p { font-size: 11px; line-height: 1.25; min-height: 0; }
+  .run-body.shop .choice.hang h4 { font-size: 16px; }
+  .hangers { row-gap: 26px; }
+}
+.routes .choice.boss-route .card { --w: clamp(84px, 16vh, 160px); }
+/* el quemador: la carta se tuesta de abajo arriba y desaparece */
+.card.burning { animation: burn 1.25s ease-in 0.15s forwards; }
+@keyframes burn {
+  0% { filter: none; clip-path: inset(0 0 0 0); }
+  35% { filter: sepia(1) saturate(5) hue-rotate(-18deg) brightness(1.05); clip-path: inset(0 0 0 0); }
+  100% { filter: sepia(1) saturate(2) brightness(0.25); clip-path: inset(0 0 100% 0); transform: translateY(-14px) rotate(3deg); }
+}
+.calm .card.burning { animation: calmout 1s linear forwards; }
+@keyframes calmout { to { opacity: 0; } }
+/* nada ensancha una pantalla más allá de la ventana */
+.camp, .run { grid-template-columns: minmax(0, 1fr); }
+.deck-head > div:first-child { min-width: 0; }
+.deck-head .purse { flex: none; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .guild-body .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+  .guild-body { padding: 0 6px 6px 0; }
+  .camp .purse b { font-size: clamp(22px, 8vw, 36px); }
+  .camp .purse span { font-size: 9px; max-width: 34vw; }
+  .deck-head { gap: 8px; }
+  .up button { width: 58px; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* preparación de campaña: los dos paneles van uno bajo el otro y la pantalla se desplaza entera */
+  .camp-grid { display: flex; flex-direction: column; overflow-y: auto; gap: 14px; }
+  .camp-grid .panel { flex: none; min-height: auto; }
+  .camp-grid .panel .scroll { overflow: visible; flex: none; }
+  .deck-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .deck-opt { height: auto; min-height: 66px; padding: 5px 6px; gap: 6px; }
+  .deck-back .card { --w: 30px; }
+  .camp-run .row { margin-top: 10px; flex-wrap: wrap; }
+  .camp-run .row button { flex: 1 1 40%; }
+  .route { grid-auto-rows: 44px; }
+}
+.reveal-box .choice p { min-height: 2.7em; }
