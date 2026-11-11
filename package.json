@@ -1,0 +1,37 @@
+{
+  "name": "derrumbe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DERRUMBE — juego cooperativo online de demolición con baraja francesa (1-4 jugadores)",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c red,white \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "tsx watch src/server/index.ts --port=3000",
+    "dev:client": "vite",
+    "build": "vite build && esbuild src/server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server/index.js",
+    "start": "node dist/server/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "simulate": "tsx scripts/simulate.ts",
+    "simulate:run": "tsx scripts/simulate-run.ts"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@fontsource/archivo": "^5.3.0",
+    "@fontsource/archivo-black": "^5.1.0",
+    "@fontsource/grenze-gotisch": "^5.3.0",
+    "@fontsource/space-mono": "^5.1.0",
+    "@fontsource/unifrakturcook": "^5.3.0",
+    "@types/node": "^22.9.0",
+    "@types/ws": "^8.5.13",
+    "concurrently": "^9.1.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
