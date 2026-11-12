@@ -9,14 +9,11 @@
 // Comprobaciones: sin desbordamiento horizontal en ninguna pantalla; la mesa cabe entera sin
 // desplazamiento; mano, cartas de torre, cinturón, marcador y botones no se pisan; ningún texto de
 // interfaz baja de 12 px; en móvil, todo lo que se pulsa mide al menos 44 px.
-import { spawnSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
-import { extname, join, normalize, resolve } from 'node:path';
+import { mkdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
+import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
-const ROOT = resolve('dist/web');
 const OUT = resolve('artifacts/visual-qa');
 const VIEWS = [
   { name: '1920x1080', width: 1920, height: 1080 },
@@ -24,24 +21,11 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'plano', 'cobro', 'ferreteria', 'forja', 'hallazgo', 'gremio', 'coleccion', 'acta', 'ajustes'];
+const ALL = ['portada', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'plano', 'cobro', 'ferreteria', 'forja', 'hallazgo', 'gremio', 'coleccion', 'archivo', 'acta', 'ajustes', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const STATES = wanted.length ? ALL.filter((s) => wanted.includes(s)) : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso'];
-
-const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
-
-function serve(): Promise<{ url: string; close: () => void }> {
-  const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent((req.url ?? '/').split('?')[0])).replace(/^([/\\])+/, '');
-    let file = join(ROOT, path || 'index.html');
-    if (!file.startsWith(ROOT) || !existsSync(file) || statSync(file).isDirectory()) file = join(ROOT, 'index.html');
-    res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
-    createReadStream(file).pipe(res);
-  });
-  return new Promise((done) => server.listen(0, '127.0.0.1', () => done({ url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/`, close: () => server.close() })));
-}
+const NO_SCROLL = ['portada', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso'];
 
 /** Lo que se comprueba dentro de la página. Devuelve una lista de fallos legibles. */
 function audit(opts: { state: string; mobile: boolean; noScroll: boolean }): string[] {
@@ -92,7 +76,7 @@ function audit(opts: { state: string; mobile: boolean; noScroll: boolean }): str
   }
 
   // 3 · la mesa: cinco zonas que no se pisan
-  if (opts.state === 'mesa') {
+  if (opts.state === 'mesa' || opts.state === 'mesa-mando' || opts.state === 'mesa-fatiga') {
     const union = (sel: string) => {
       const rs = [...document.querySelectorAll(sel)].filter(visible).map((e) => e.getBoundingClientRect());
       if (!rs.length) return null;
@@ -106,6 +90,7 @@ function audit(opts: { state: string; mobile: boolean; noScroll: boolean }): str
       botones: union('.actions button'),
       andamio: union('#reserve'),
       poderes: union('#powers .power'),
+      rueda: union('#wheel'),
     };
     const names = Object.keys(zones);
     for (let i = 0; i < names.length; i++) {
@@ -118,9 +103,9 @@ function audit(opts: { state: string; mobile: boolean; noScroll: boolean }): str
         if (w > 2 && h > 2) fails.push(`se pisan ${names[i]} y ${names[j]} (${Math.round(w)}×${Math.round(h)} px)`);
       }
     }
-    for (const z of ['mano', 'torres', 'cinturon', 'marcador', 'botones', 'poderes']) if (!zones[z]) fails.push(`falta en la mesa: ${z}`);
+    for (const z of ['mano', 'torres', 'cinturon', 'marcador', 'botones', 'poderes', 'rueda']) if (!zones[z]) fails.push(`falta en la mesa: ${z}`);
     // las tres bandas de la pantalla: torres, lateral y bandeja
-    const bands: Record<string, ReturnType<typeof union>> = { 'las torres': union('.tower'), 'el lateral': union('.side > *'), 'la bandeja': union('.tray') };
+    const bands: Record<string, ReturnType<typeof union>> = { 'las torres': union('.tower'), 'el lateral': union('.side > *:not(.whisper)'), 'la bandeja': union('.tray') };
     const bn = Object.keys(bands);
     for (let i = 0; i < bn.length; i++) {
       for (let j = i + 1; j < bn.length; j++) {
@@ -144,6 +129,44 @@ function audit(opts: { state: string; mobile: boolean; noScroll: boolean }): str
     if (document.querySelectorAll('#beltbar .belt-slot.tool').length < 5) fails.push('el cinturón de prueba tiene menos de 5 herramientas');
     if (!document.querySelector('#reserve .card')) fails.push('el andamio de prueba está vacío');
     if (!document.querySelector('#score .calc')) fails.push('no hay previsualización de daño');
+    if (opts.state === 'mesa-fatiga' && !document.querySelector('#fatigue.on:not([hidden])')) fails.push('con la obra alargada no se ve la fatiga de cimientos encendida');
+    if (opts.state === 'mesa-mando' && !opts.mobile) {
+      const shown = [...document.querySelectorAll('.actions .kh.pd, .bar .kh.pd')].filter(visible).length;
+      if (shown < 4) fails.push(`con mando solo se ven ${shown} insignias de botón en la mesa`);
+      if ([...document.querySelectorAll('.kh.kb')].some(visible)) fails.push('con mando siguen a la vista indicaciones de teclado');
+    }
+  }
+
+  // 3b · la barra de arriba: ninguna ficha tapada por otra ni por un botón, con o sin insignias
+  if (opts.state.startsWith('mesa')) {
+    const bits = [...document.querySelectorAll('.bar .brand, .bar .room, .bar .chip, .bar button')].filter(visible);
+    for (let i = 0; i < bits.length; i++) {
+      const a = bits[i].getBoundingClientRect();
+      if (bits[i].scrollWidth > bits[i].clientWidth + 2) fails.push(`recortado en la barra: ${name(bits[i])}`);
+      for (let j = i + 1; j < bits.length; j++) {
+        const b = bits[j].getBoundingClientRect();
+        const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (w > 1 && h > 1) fails.push(`se pisan en la barra ${name(bits[i])} y ${name(bits[j])} (${Math.round(w)} px)`);
+      }
+    }
+  }
+
+  // 3c · el susurro de tiza se lee entero: dentro de la pantalla y sin que su columna lo recorte
+  if (opts.state === 'mesa-susurro') {
+    const w = document.querySelector<HTMLElement>('.whisper');
+    if (!w) fails.push('no hay susurro de tiza a la vista');
+    else {
+      const r = w.getBoundingClientRect();
+      if (r.top < -2 || r.bottom > H + 2 || r.left < -2 || r.right > W + 2) fails.push(`el susurro se sale de la pantalla (${Math.round(r.top)}…${Math.round(r.bottom)} de ${H})`);
+      for (let p = w.parentElement; p && p !== document.body; p = p.parentElement) {
+        if (getComputedStyle(w).position === 'absolute' && getComputedStyle(p).position === 'static') continue;
+        if (!/(hidden|clip|auto|scroll)/.test(getComputedStyle(p).overflowY)) continue;
+        const pr = p.getBoundingClientRect();
+        if (r.bottom > pr.bottom + 2 || r.top < pr.top - 2) fails.push(`el susurro queda recortado por ${name(p)} (${Math.round(r.top)}…${Math.round(r.bottom)} en ${Math.round(pr.top)}…${Math.round(pr.bottom)})`);
+        break;
+      }
+    }
   }
 
   // 4 · tipografía de interfaz: 12 px como mínimo
@@ -169,19 +192,15 @@ function audit(opts: { state: string; mobile: boolean; noScroll: boolean }): str
 }
 
 async function main(): Promise<void> {
-  if (!process.env.NO_BUILD) {
-    const built = spawnSync('npm run build:web', { stdio: 'inherit', shell: true });
-    if (built.status !== 0) process.exit(built.status ?? 1);
-  }
-  if (!existsSync(join(ROOT, 'index.html'))) throw new Error('Falta dist/web: ejecuta antes npm run build:web');
-  const site = await serve();
+  ensureBuilt();
+  const site = await serveWeb();
   const browser = await chromium.launch();
   let failed = 0;
   const errors: string[] = [];
   for (const view of VIEWS) {
     const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
     // tsx envuelve las funciones con un ayudante que la página no conoce
-    await context.addInitScript({ content: 'globalThis.__name = (f) => f;' });
+    await context.addInitScript({ content: NAME_SHIM });
     const page = await context.newPage();
     page.on('pageerror', (e) => errors.push(`[${view.name}] ${e.message}`));
     page.on('console', (m) => m.type() === 'error' && !/WebSocket|favicon/.test(m.text()) && errors.push(`[${view.name}] consola: ${m.text()}`));

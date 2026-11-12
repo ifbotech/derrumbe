@@ -3,27 +3,14 @@
 // el andamio, la tiza, la lupa, el foco de teclado, el reinicio con R y una campaña del bot entera.
 //
 //   npm run qa:smoke          (construye antes; NO_BUILD=1 para saltarse la construcción)
-import { spawnSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
-import { extname, join, normalize, resolve } from 'node:path';
+//   NO_PAD=1 se salta la parte del mando virtual · GPU=1 mide la fluidez con aceleración
+import { mkdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { chromium, Page } from 'playwright';
+import { gamepadSuite } from './gamepad-qa';
+import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
-const ROOT = resolve('dist/web');
 const OUT = resolve('artifacts/visual-qa/smoke');
-const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.webmanifest': 'application/manifest+json' };
-
-function serve(): Promise<{ url: string; close: () => void }> {
-  const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent((req.url ?? '/').split('?')[0])).replace(/^([/\\])+/, '');
-    let file = join(ROOT, path || 'index.html');
-    if (!file.startsWith(ROOT) || !existsSync(file) || statSync(file).isDirectory()) file = join(ROOT, 'index.html');
-    res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
-    createReadStream(file).pipe(res);
-  });
-  return new Promise((done) => server.listen(0, '127.0.0.1', () => done({ url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/`, close: () => server.close() })));
-}
 
 const problems: string[] = [];
 const check = (ok: unknown, what: string) => {
@@ -36,17 +23,14 @@ const count = (page: Page, sel: string) => page.locator(sel).count();
 const settled = (page: Page) => page.waitForFunction(() => !document.querySelector('.handrow.locked') || !!document.querySelector('.end, .run, .modal'), null, { timeout: 30_000 });
 
 async function main(): Promise<void> {
-  if (!process.env.NO_BUILD) {
-    const built = spawnSync('npm run build:web', { stdio: 'inherit', shell: true });
-    if (built.status !== 0) process.exit(built.status ?? 1);
-  }
-  const site = await serve();
+  ensureBuilt();
+  const site = await serveWeb();
   // GPU=1 usa Chromium completo con aceleración: es como de verdad se mide la fluidez. Sin ella, el
   // navegador sin ventana lo pinta todo por CPU y los tiempos de fotograma solo son orientativos.
   const gpu = !!process.env.GPU;
   const browser = await chromium.launch(gpu ? { channel: 'chromium', args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-zero-copy'] } : {});
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 } });
-  await context.addInitScript({ content: 'globalThis.__name = (f) => f;' });
+  await context.addInitScript({ content: NAME_SHIM });
   const page = await context.newPage();
   page.on('pageerror', (e) => problems.push(`error de página: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && !/WebSocket|favicon/.test(m.text()) && problems.push(`consola: ${m.text()}`));
@@ -210,6 +194,64 @@ async function main(): Promise<void> {
   check(turns > 3 && turns < 60, `una obra entera a teclado termina (${turns} turnos)`);
   check((await count(page, '.run, .end')) > 0, 'al terminar la obra se pasa al cobro o al acta');
   await page.screenshot({ path: join(OUT, 'fin-de-obra.png') });
+
+  // ── la campaña jugada solo con un mando (virtual): menú, obra entera, cobro y ferretería ──
+  if (!process.env.NO_PAD) {
+    console.log('Mando virtual');
+    await gamepadSuite(browser, site.url, check, problems, (p, name) => p.screenshot({ path: join(OUT, `${name}.png`) }));
+  }
+
+  // ── copia de seguridad, con el guardado de verdad (sin ?qa): exportar, perderlo todo e importar ──
+  console.log('Copia de seguridad');
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, acceptDownloads: true });
+    await ctx.addInitScript({ content: NAME_SHIM });
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => problems.push(`[copia] error de página: ${e.message}`));
+    p.on('console', (m) => m.type() === 'error' && !/WebSocket|favicon/.test(m.text()) && problems.push(`[copia] consola: ${m.text()}`));
+    const guild = () => p.locator('#m-guild').textContent();
+    await p.goto(site.url);
+    await p.waitForSelector('#m-guild');
+    // un perfil con algo que perder
+    await p.evaluate(() => {
+      const meta = JSON.parse(localStorage.getItem('derrumbe:meta') ?? '{}') as Record<string, unknown>;
+      localStorage.setItem('derrumbe:meta', JSON.stringify({ ...meta, renown: 77 }));
+      localStorage.setItem('derrumbe:name', 'Capataz QA');
+    });
+    await p.reload();
+    await p.waitForSelector('#m-guild');
+    check((await guild())?.includes('77 ✦'), 'el perfil de prueba tiene 77 de renombre');
+    await p.locator('#m-set').click();
+    const [download] = await Promise.all([p.waitForEvent('download'), p.locator('#set-export').click()]);
+    const saved = join(OUT, 'copia.json');
+    await download.saveAs(saved);
+    const copy = JSON.parse(readFileSync(saved, 'utf8')) as { app: string; data: Record<string, string> };
+    check(/^derrumbe-progreso-\d{4}-\d{2}-\d{2}\.json$/.test(download.suggestedFilename()), 'Exportar progreso descarga un .json con la fecha');
+    check(copy.app === 'derrumbe' && JSON.parse(copy.data['derrumbe:meta']).renown === 77 && copy.data['derrumbe:name'] === 'Capataz QA', 'la copia lleva el gremio y el nombre');
+    check(!Object.keys(copy.data).includes('derrumbe:server'), 'la copia no se lleva la dirección del servidor de esta instalación');
+    // se pierde todo…
+    await p.evaluate(() => localStorage.clear());
+    await p.reload();
+    await p.waitForSelector('#m-guild');
+    check((await guild())?.includes('0 ✦') && !(await guild())?.includes('77'), 'tras borrar el navegador, el gremio vuelve a cero');
+    await p.locator('#m-set').click();
+    // …un archivo cualquiera no cuela…
+    await p.locator('#set-file').setInputFiles({ name: 'otra-cosa.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"otro","data":{}}') });
+    await p.waitForTimeout(300);
+    check((await p.locator('.modal-box.confirm').count()) === 0 && (await p.locator('.toast').last().textContent())?.includes('no es una copia'), 'Importar rechaza un archivo que no es una copia del juego');
+    await p.locator('#set-file').setInputFiles({ name: 'rota.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ app: 'derrumbe', data: { 'derrumbe:meta': '{rota' } })) });
+    await p.waitForTimeout(300);
+    check((await p.locator('.modal-box.confirm').count()) === 0, 'y una copia dañada, sin tocar lo guardado');
+    // …y la copia buena lo devuelve todo, previa confirmación
+    await p.locator('#set-file').setInputFiles(saved);
+    await p.waitForSelector('.modal-box.confirm');
+    check((await p.locator('.modal-box.confirm').textContent())?.includes('77 ✦ de renombre'), 'antes de importar se enseña qué trae la copia');
+    await Promise.all([p.waitForEvent('load'), p.locator('#yes').click()]);
+    await p.waitForSelector('#m-guild');
+    check((await guild())?.includes('77 ✦'), 'Importar progreso recupera el gremio tras recargar');
+    check((await p.evaluate(() => localStorage.getItem('derrumbe:name'))) === 'Capataz QA', 'y el resto de lo guardado');
+    await ctx.close();
+  }
 
   await browser.close();
   site.close();

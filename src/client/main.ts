@@ -15,7 +15,7 @@ import './theme.css';
 import { sfx, startMusic } from './audio';
 import { canRestart, isRunHost, restartCampaign, retireOldSave } from './campaign';
 import { bindEyes, ensureDefs } from './card';
-import { S, applySettings, bindClacks, bindTips, closeModal, topModal } from './core';
+import { S, applySettings, bindClacks, bindTips, closeModal, cycleSpeed, speedLabel, toast, topModal } from './core';
 import { bakeGrain } from './engraving';
 import { bindLupa, closeLupa, lupaOpen, openLupa } from './lupa';
 import { activate, bindNav, focused, keysInUse, moveFocus } from './nav';
@@ -23,7 +23,7 @@ import { connect } from './net';
 import { bindPings } from './pings';
 import { platform } from './platform';
 import { setScreen } from './router';
-import { onTableKey } from './table';
+import { onTableKey, refreshSpeed } from './table';
 import { showSettings } from './widgets';
 
 bakeGrain();
@@ -98,18 +98,27 @@ function toggleSettings(): void {
 
 /**
  * Una tecla, venga del teclado o del mando (que llega sin evento). Devuelve true si se atendió.
- * El mando reutiliza las teclas: A = Enter, B = Escape, X = espacio, Y = y, LB = Tab, RB = l.
+ * El mando reutiliza las teclas: A = Enter, B = Escape, X = espacio, Y = y, LB = Tab, RB = l, LT = z;
+ * RT llega como «Speed» y Start como «Start».
  */
 function onKey(key: string, e?: KeyboardEvent): boolean {
   const target = focused();
   if (key in ARROWS) {
     if (e?.shiftKey) return false; // Mayús + flechas reordena el cinturón
-    if (typing(target) && (key === 'ArrowLeft' || key === 'ArrowRight')) return false;
+    // con el teclado, izquierda y derecha dentro de un campo son del campo; el mando no escribe, así que mueve (o ajusta el deslizador)
+    if (e && typing(target) && (key === 'ArrowLeft' || key === 'ArrowRight')) return false;
     moveFocus(...ARROWS[key]);
     return true;
   }
   if (key === 'Escape') return back();
-  if (typing(target)) return false;
+  if (e && typing(target)) return false;
+  if (key === 'Speed') {
+    // gatillo derecho: 1× → 2× → 4×
+    cycleSpeed();
+    refreshSpeed();
+    toast(`Velocidad ${speedLabel()}`);
+    return true;
+  }
   if (key === 'Start') {
     toggleSettings();
     return true;

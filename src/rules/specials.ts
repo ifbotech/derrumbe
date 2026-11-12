@@ -8,6 +8,8 @@ export interface Fx {
   flat?: number;
   /** Fuerza extra por cada carta de baraja del golpe. */
   flatPerCard?: number;
+  /** Fuerza por cada punto de muro en pie (no lo gasta). */
+  wallForce?: number;
   /** La carta más alta del golpe cuenta dos veces. */
   highDouble?: boolean;
   /** Todas las cartas del golpe valen como la más alta. */
@@ -58,6 +60,7 @@ export const SPECIALS: Special[] = [
   { id: 'bola', name: 'Bola de demolición', desc: '×1,5 de Resonancia.', fx: { strikeMult: 1.5 } },
   { id: 'hormigonera', name: 'Hormigonera', desc: '+5 de muro.', fx: { wall: 5 } },
   { id: 'cemento', name: 'Cemento rápido', desc: '+2 de muro por cada carta del golpe.', fx: { wallPerCard: 2 } },
+  { id: 'embestida', name: 'Embestida', desc: '+4 de Fuerza, y +3 más por cada punto de muro en pie.', fx: { flat: 4, wallForce: 3 } },
   { id: 'sierra', name: 'Sierra radial', desc: 'Todo el golpe pega con ventaja, sea cual sea la torre.', fx: { allAdv: true } },
   // ── legendarias ──
   { id: 'ferretero', name: 'El Ferretero', desc: '+4 de oro y robas 1 carta extra.', fx: { gold: 4, draw: 1 }, locked: 'ferretero' },

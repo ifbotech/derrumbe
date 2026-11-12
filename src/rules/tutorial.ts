@@ -51,6 +51,7 @@ export function createTutorial(): GameState {
     stashed: false,
     chalk: 0,
     undo: null,
+    fatigue: 0,
   };
 }
 

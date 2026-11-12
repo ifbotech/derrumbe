@@ -23,13 +23,13 @@ export interface Ascension {
 }
 export const ASCENSIONS: Ascension[] = [
   { name: 'Obra limpia', desc: 'Las reglas de siempre.' },
-  { name: 'Hormigón armado', desc: 'Todos los pisos aguantan un 3 % más.' },
-  { name: 'Vigas maestras', desc: 'Las K llegan apuntaladas.' },
-  { name: 'Precios de obra', desc: 'Todo en la ferretería cuesta 1 de oro más.' },
+  { name: 'Hormigón armado', desc: 'Todos los pisos aguantan un 5 % más.' },
+  { name: 'Precios de obra', desc: 'Todo en la ferretería cuesta 2 de oro más.' },
+  { name: 'Vigas maestras', desc: 'En las obras con jefe, las K llegan apuntaladas.' },
   { name: 'Sirena afinada', desc: 'La amenaza de las K sube 1.' },
-  { name: 'Suelo cansado', desc: 'Los colapsos quitan 1 más.' },
-  { name: 'Sin relevo', desc: 'Al terminar cada obra el búnker se repara 2 en vez de 4.' },
-  { name: 'Clausura', desc: 'Las obras con jefe aguantan un 14 % más.' },
+  { name: 'Búnker viejo', desc: 'El búnker tiene 1 punto menos de integridad.' },
+  { name: 'Turno de noche', desc: 'La amenaza de las J y las Q sube 1.' },
+  { name: 'Clausura', desc: 'En las obras con jefe, la amenaza de todas las torres sube 1.' },
 ];
 export const MAX_ASCENSION = ASCENSIONS.length - 1;
 
@@ -45,18 +45,19 @@ export interface StageDef {
   boss: boolean;
 }
 /**
- * Balanceado con el laboratorio (npm run analyze:meta). Las obras son cortas (de 6 a 19 turnos de mediana)
- * y la dificultad sube sobre todo por la amenaza de la sirena, no por pisos interminables.
+ * Balanceado con el laboratorio (npm run analyze:meta). Las obras son cortas (de 6 a 12 turnos de mediana,
+ * y casi ninguna pasa de 18): la dificultad sube por la amenaza de la sirena y por la fatiga de cimientos,
+ * no por pisos interminables.
  */
 export const STAGES: StageDef[] = [
   { name: 'Caseta de obra', floors: [11], hp: 3.93, threat: 2, boss: false },
-  { name: 'Bloque de pisos', floors: [11, 12], hp: 3.93, threat: 2, boss: false },
-  { name: 'Torre del capataz', floors: [11, 12], hp: 4.7, threat: 3, boss: true },
-  { name: 'Polígono', floors: [11, 12, 13], hp: 5.68, threat: 3, boss: false },
-  { name: 'Ciudadela', floors: [11, 12, 13], hp: 6.56, threat: 4, boss: true },
-  { name: 'Rascacielos', floors: [11, 12, 13], hp: 7.32, threat: 4, boss: false },
-  { name: 'Fortaleza', floors: [11, 12, 13], hp: 8.09, threat: 5, boss: true },
-  { name: 'La Torre Madre', floors: [11, 12, 13], hp: 9.61, threat: 6, boss: true },
+  { name: 'Bloque de pisos', floors: [11, 12], hp: 2.8, threat: 3, boss: false },
+  { name: 'Torre del capataz', floors: [11, 12], hp: 3.35, threat: 4, boss: true },
+  { name: 'Polígono', floors: [11, 12, 13], hp: 4.05, threat: 5, boss: false },
+  { name: 'Ciudadela', floors: [11, 12, 13], hp: 4.5, threat: 5, boss: true },
+  { name: 'Rascacielos', floors: [11, 12, 13], hp: 5, threat: 6, boss: false },
+  { name: 'Fortaleza', floors: [11, 12, 13], hp: 5.3, threat: 5, boss: true },
+  { name: 'La Torre Madre', floors: [11, 12, 13], hp: 6.25, threat: 6, boss: true },
 ];
 /** La obra n. Más allá de la octava empiezan los Cimientos abisales: siempre con jefe y cada vez más duros. */
 export function stageDef(n: number): StageDef {
@@ -82,10 +83,10 @@ export const BOSSES: Boss[] = [
   { id: 'doble', who: 'La Sirena', name: 'Doble sirena', desc: 'La sirena voltea 2 cartas cada turno, pero cada golpe pega un 40 % menos.', apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))) },
   { id: 'escasez', who: 'El Usurero', name: 'Escasez', desc: 'Jugáis con 1 carta menos en la mano.', apply: (c) => eachHand(c, -1) },
   { id: 'sequia', who: 'El Matasanos', name: 'Sin botiquín', desc: 'Los ♥ no reparan el búnker.', apply: (c) => void (c.repairDiv = 9999) },
-  { id: 'intemperie', who: 'La Ventisca', name: 'Intemperie', desc: 'El muro no puede pasar de 2.', apply: (c) => void (c.wallCap = 2) },
-  { id: 'blindaje', who: 'El Coloso', name: 'Blindaje', desc: 'Todos los pisos llegan apuntalados y aguantan un 15 % más.', apply: (c) => void ((c.apuntalado = [11, 12, 13]), [11, 12, 13].forEach((r) => (c.floorHp[r] = Math.round(c.floorHp[r] * 1.15)))) },
+  { id: 'intemperie', who: 'La Ventisca', name: 'Intemperie', desc: 'El muro no puede pasar de 3.', apply: (c) => void (c.wallCap = Math.min(c.wallCap, 3)) },
+  { id: 'blindaje', who: 'El Coloso', name: 'Blindaje', desc: 'Todos los pisos llegan apuntalados y, mientras lo estén, su amenaza sube 1.', apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = 1)) },
   { id: 'furia', who: 'La Furia', name: 'Furia', desc: 'La amenaza de todas las torres sube 2.', apply: (c) => eachThreat(c, 2) },
-  { id: 'inestable', who: 'El Topo', name: 'Suelo inestable', desc: 'Los colapsos quitan el doble.', apply: (c) => void (c.collapseLoss *= 2) },
+  { id: 'inestable', who: 'El Topo', name: 'Suelo inestable', desc: 'La fatiga de cimientos empieza 3 turnos antes, y cada piso que cae sin golpe limpio le cuesta 1 al búnker.', apply: (c) => void ((c.crumbleHurt = 1), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? 8) - 3))) },
 ];
 export const BOSS: Record<string, Boss> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
 
@@ -230,10 +231,11 @@ export const UPGRADES: Upgrade[] = [
   boxUp('alquimia', 'Caja de alquimia', 'crisol'),
   boxUp('limite', 'Caja de riesgo', 'megafono'),
   boxUp('trituradora', 'Caja de chatarra', 'prensa'),
+  boxUp('aguante', 'Caja de aguante', 'ariete'),
   { id: 'tampones', name: 'Tampones nuevos', desc: 'La forja también ofrece los sellos de dinamita y sindical.', costs: [5], glyph: 'sello' },
   { id: 'bronce', name: 'Taller de bronce', desc: 'La forja también ofrece Bronce vivo y Agrietado.', costs: [6], glyph: 'forja' },
   { id: 'vale', name: 'Vale de remesa', desc: 'Un «Revolver cajones» gratis en cada ferretería, por nivel.', costs: [4, 8], glyph: 'cinta' },
-  { id: 'tienda', name: 'Proveedor', desc: '+1 herramienta en oferta en cada ferretería.', costs: [8], glyph: 'andamio' },
+  { id: 'tienda', name: 'Proveedor', desc: '+1 herramienta en oferta en cada ferretería, por nivel.', costs: [8, 12], glyph: 'andamio' },
   { id: 'caja', name: 'Caja chica', desc: '+2 de oro inicial por nivel.', costs: [3, 6], glyph: 'hucha' },
   { id: 'rutas', name: 'Topógrafo', desc: 'Cada obra sin jefe ofrece 3 rutas con contrato en vez de 2.', costs: [6], glyph: 'plano' },
 ];
@@ -530,14 +532,15 @@ export const DECKS: DeckDef[] = [
   {
     id: 'acero',
     name: 'Baraja negra',
-    desc: 'Solo ♠ y ♣, por duplicado: ni reparas ni lanzas esquirlas. Empiezas con Ácido, Casco y Sacos terreros, +6 de oro y un búnker reforzado (+10).',
+    desc: 'Solo ♠ y ♣, por duplicado: ni reparas ni lanzas esquirlas. Empiezas con Ácido y Sacos terreros y un búnker reforzado (+5); con la Caja de aguante del gremio, también con el Bastión.',
     unlock: 'capataz',
     build: (run) => {
       const black = run.deck.filter((c) => c.suit === 'S' || c.suit === 'C');
       run.deck = [...black, ...black.map(copyOf), ...run.deck.filter((c) => c.suit === 'X')];
-      run.tools.push({ id: 'acido', n: 0 }, { id: 'casco', n: 0 }, { id: 'sacos', n: 0 });
-      run.gold += 6;
-      run.maxIntegrity += 10;
+      run.tools.push({ id: 'acido', n: 0 }, { id: 'sacos', n: 0 });
+      // la caja de aguante del gremio le da con qué cobrar tanto muro: el Bastión
+      if (run.toolPool.includes('bastion')) run.tools.push({ id: 'bastion', n: 0 });
+      run.maxIntegrity += 5;
       run.integrity = run.maxIntegrity;
     },
   },
@@ -556,22 +559,23 @@ export const DECKS: DeckDef[] = [
   {
     id: 'ases',
     name: 'Baraja de ases',
-    desc: 'Ocho ases y ningún 2: más compañías y más pegada, pero el búnker tiene 3 menos.',
+    desc: 'Ocho ases y ningún 2: más compañías y más pegada, pero el búnker tiene 4 menos.',
     unlock: 'madre',
     build: (run) => {
       const aces = run.deck.filter((c) => c.rank === 1);
       run.deck = [...run.deck.filter((c) => c.rank !== 2), ...aces.map(copyOf)];
-      run.maxIntegrity -= 3;
+      run.maxIntegrity -= 4;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'corta',
     name: 'Baraja corta',
-    desc: 'Sin doses ni treses. Golpes gordos, pero la cantera se agota enseguida y el búnker tiene 6 menos.',
+    desc: 'Sin doses ni treses. Golpes gordos, pero la cantera se agota enseguida y el búnker tiene 6 menos. Empiezas con +3 de oro.',
     unlock: 'golpe100',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.rank < 2 || c.rank > 3);
+      run.gold += 3;
       run.maxIntegrity -= 6;
       run.integrity = run.maxIntegrity;
     },
@@ -579,12 +583,11 @@ export const DECKS: DeckDef[] = [
   {
     id: 'caos',
     name: 'Baraja del caos',
-    desc: 'Un solo comodín, pero el sobre inicial trae 6 cartas especiales y empiezas con +4 de oro.',
+    desc: 'Un solo comodín, pero el sobre inicial trae 5 cartas especiales.',
     unlock: 'coleccion',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.id !== 'X2');
-      run.gold += 4;
-      for (const id of rollSpecials(run, 3)) {
+      for (const id of rollSpecials(run, 2)) {
         run.pack.push(id);
         addSpecial(run, id);
       }
@@ -660,6 +663,8 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   };
   run.pack = rollSpecials(run, 3);
   for (const id of run.pack) addSpecial(run, id);
+  if (run.ascension >= 5) run.maxIntegrity -= 1;
+  run.integrity = Math.min(run.integrity, run.maxIntegrity);
   DECK[run.deckId].build(run);
   // los jefes se sortean ya: el plano los enseña desde el primer momento
   const bosses = pick(run, BOSSES, 4).map((b) => b.id);
@@ -670,6 +675,8 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
 
 /** Cuánto más aguantan las obras según el tamaño de la cuadrilla (1 a 4 jugadores). */
 const COOP_HP = [1, 1.3, 1.4, 1.48];
+/** Fatiga de cimientos en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánta Resonancia da cada nivel. */
+export const FATIGUE = { start: 8, every: 2, res: 0.25 };
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
@@ -679,13 +686,16 @@ export function stageConfig(run: Run, players = 1): Config {
   cfg.handSize = { [players]: 7 + run.handBonus };
   // en cuadrilla hay más manos entre las que elegir: las obras aguantan más
   const a = run.ascension;
-  const scale = st.hp * (a >= 1 ? 1.03 : 1) * (a >= 7 && st.boss ? 1.14 : 1) * COOP_HP[Math.min(players, 4) - 1];
+  const scale = st.hp * (a >= 1 ? 1.05 : 1) * COOP_HP[Math.min(players, 4) - 1];
   for (const r of [11, 12, 13]) {
     cfg.floorHp[r] = Math.round(DEFAULT_CONFIG.floorHp[r] * scale);
-    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? 1 : 0));
+    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? 1 : 0) + (a >= 6 && r !== 13 ? 1 : 0) + (a >= 7 && st.boss ? 1 : 0));
   }
-  if (a >= 2) cfg.apuntalado = [13];
-  if (a >= 5) cfg.collapseLoss += 1;
+  if (a >= 3 && st.boss) cfg.apuntalado = [13];
+  // fatiga de cimientos: en cuadrilla las obras duran más turnos y empieza en proporción
+  cfg.fatigueStart = Math.round(FATIGUE.start * COOP_HP[Math.min(players, 4) - 1]);
+  cfg.fatigueEvery = FATIGUE.every;
+  cfg.fatigueRes = FATIGUE.res;
   cfg.formLevel = { ...run.levels };
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
   if (run.boss) BOSS[run.boss]?.apply(cfg);
@@ -725,6 +735,7 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
     // una tiza de replanteo por obra, solo en solitario
     chalk: players.length === 1 ? 1 : 0,
     undo: null,
+    fatigue: 0,
   };
 }
 
@@ -759,7 +770,7 @@ export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?
 
 function generateShop(run: Run): Offer[] {
   const offers = stock(run);
-  if (run.ascension >= 3) for (const o of offers) o.cost += 1;
+  if (run.ascension >= 2) for (const o of offers) o.cost += 2;
   return offers;
 }
 
@@ -849,7 +860,7 @@ export function finishBattle(run: Run, state: GameState): void {
   run.stats.gold += total;
   if (state.integrity >= run.maxIntegrity) run.intact++;
   if (run.boss) run.beaten.includes(run.boss) || run.beaten.push(run.boss);
-  run.integrity = Math.min(run.maxIntegrity, state.integrity + (run.ascension >= 6 ? 2 : 4));
+  run.integrity = Math.min(run.maxIntegrity, state.integrity + 4);
   const contract = run.contract ? CONTRACT[run.contract] : null;
   if (contract) {
     run.contractDone = contract.risk ? true : !!contract.done?.(run.battle, state, run);

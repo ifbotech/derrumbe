@@ -1,6 +1,6 @@
 import { Config, DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formation, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../rules/engine';
 import { KEYWORDS } from '../rules/keywords';
-import { ASCENSIONS } from '../rules/run';
+import { ASCENSIONS, FATIGUE } from '../rules/run';
 import { TOOL_SLOTS } from '../rules/tools';
 import { suitSvg } from './card';
 
@@ -100,6 +100,7 @@ export function rulesHtml(cfg: Config = DIFFICULTY.obra): string {
   <h3>Reglas especiales</h3>
   <ul>
     <li><b>Comodín · Huelga</b>: se juega solo sobre una torre. Su piso actual queda <b>desarmado</b> (amenaza 0 hasta que caiga) y la sirena no suena. El comodín sale de la obra.</li>
+    <li><b>Fatiga de cimientos</b>: ninguna obra aguanta eternamente. ${cfg.fatigueStart === undefined ? `En campaña, desde el turno ${FATIGUE.start + 1}` : `Desde el turno ${cfg.fatigueStart + 1}`} y cada ${cfg.fatigueEvery ?? FATIGUE.every} turnos sube un nivel: cada nivel da <b>+${n(cfg.fatigueRes ?? FATIGUE.res)} de Resonancia</b> a todos los golpes y <b>+1 de amenaza</b> a todas las torres. La mesa avisa tres turnos antes.</li>
     <li><b>Colapso</b>: si la cantera se agota, la escombrera se baraja y vuelve a ser cantera, pero el búnker pierde <b>${cfg.collapseLoss}</b> de integridad (el muro no lo evita). Cada vuelta completa a la cantera lo encarece en 1.</li>
     <li><b>As de compañía</b>: un As forma jugada con <b>cualquier otra carta</b> (×${n(FORM.compania.r)}) y aporta el poder de su palo.</li>
     <li><b>Andamio</b>: una vez por turno, sin gastarlo, guardas una carta de tu mano en el hueco de reserva. No cuenta para el tamaño de la mano y se juega desde ahí. Si está ocupado, la guardada vuelve a la mano.</li>
@@ -149,7 +150,7 @@ export function rulesHtml(cfg: Config = DIFFICULTY.obra): string {
 
   <h3>Controles</h3>
   <p><b>1–9</b> eligen carta · <b>flechas</b> mueven el foco · <b>Enter</b> elige · <b>Espacio</b> golpea la torre apuntada · <b>Y</b> guarda en el andamio · <b>Z</b> gasta la tiza · <b>Supr</b> descarta · <b>Esc</b> suelta o vuelve atrás · <b>Tab</b> abre el mazo · <b>F</b> pantalla completa.</p>
-  <p><b>Lupa de grabador</b>: clic derecho, pulsación larga o <b>L</b> sobre cualquier carta, herramienta, piso o jefe. Con mando: cruceta, A elegir, X golpear, Y andamio, B atrás, LB mazo, RB lupa, Start ajustes. La tabla completa está en Ajustes.</p>
+  <p><b>Lupa de grabador</b>: clic derecho, pulsación larga o <b>L</b> sobre cualquier carta, herramienta, piso o jefe. Con mando: cruceta o palanca, A elegir, X golpear, Y andamio, B atrás, LB mazo, RB lupa, LT tiza, RT velocidad, Start ajustes. Los botones de la mesa enseñan su atajo según juegues con teclado o con mando. La tabla completa está en Ajustes.</p>
 
   <h3>Consejos de obra</h3>
   <ul>

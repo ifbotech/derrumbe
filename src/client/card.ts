@@ -16,6 +16,9 @@ const PIP: Record<Suit, string> = {
   C: '<circle cx="0" cy="-5.3" r="4.8"/><circle cx="-5.5" cy="1.6" r="4.8"/><circle cx="5.5" cy="1.6" r="4.8"/><path d="M-2.2,-2 H2.2 V2.4 C1.3,6 2,8.9 3.7,10.2 H-3.7 C-2,8.9 -1.3,6 -2.2,2.4 Z"/><path class="pcut" d="M-2.9,-6.8 C-2.3,-8 -1.2,-8.7 0,-8.7"/><path class="pcut" d="M-8.5,0.5 C-8,-0.7 -7,-1.5 -5.8,-1.6"/><path class="pcut" d="M2.6,0.3 C3.1,-0.8 4.1,-1.5 5.3,-1.6"/>',
 };
 
+/** El trazo de una pinta, centrado en (0,0), para incrustarlo en otro dibujo. */
+export const pipPath = (suit: Suit) => PIP[suit];
+
 export function suitSvg(suit: Suit, cls = ''): string {
   return `<svg class="glyph s-${suit} ${cls}" viewBox="-11 -11.5 22 23" aria-hidden="true">${PIP[suit]}</svg>`;
 }

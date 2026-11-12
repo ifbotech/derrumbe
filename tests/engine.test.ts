@@ -143,10 +143,12 @@ describe('cinturón: el orden importa', () => {
     expect(TOOLS.length).toBeGreaterThanOrEqual(36);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
     expect(new Set(TOOLS.map((t) => t.rarity))).toEqual(new Set(Object.keys(RARITY)));
-    for (const arch of ['precision', 'sismo', 'alquimia', 'limite', 'trituradora'] as const) expect(TOOLS.filter((t) => t.arch === arch).length).toBeGreaterThanOrEqual(4);
+    for (const arch of ['precision', 'sismo', 'alquimia', 'limite', 'trituradora', 'aguante'] as const) expect(TOOLS.filter((t) => t.arch === arch).length).toBeGreaterThanOrEqual(4);
     for (const t of TOOLS) expect(ARCH[t.arch], t.id).toBeTruthy();
-    expect(toolPool([]).length).toBe(32);
-    expect(toolPool(['precision', 'sismo', 'alquimia', 'limite', 'trituradora']).length).toBe(TOOLS.length);
+    // el surtido base es deliberadamente corto: lo demás se abre en el gremio, caja a caja
+    expect(toolPool([]).length).toBe(TOOLS.filter((t) => !t.box).length);
+    expect(toolPool([]).length).toBeLessThan(TOOLS.length * 0.6);
+    expect(toolPool(['precision', 'sismo', 'alquimia', 'limite', 'trituradora', 'aguante']).length).toBe(TOOLS.length);
     // ninguna revienta al resolverse sobre una mesa cualquiera
     for (const t of TOOLS) expect(() => strike(env([t.id, 'piqueta']), cards('S5', 'S6', 'S7'), 'D'), t.id).not.toThrow();
   });

@@ -22,7 +22,7 @@ const stamp = (id: string, glyph: string, title: string, sub: string, cls = '') 
 const withTutorial = (begin: () => void) => (tutorialDone() ? begin() : startTutorial(begin));
 
 /** Si hay una campaña a medias, pregunta antes de abandonarla. */
-function confirmAbandon(then: () => void): void {
+export function confirmAbandon(then: () => void): void {
   const saved = savedCampaign();
   if (!saved || saved.run.phase === 'won') return then();
   const el = modal(

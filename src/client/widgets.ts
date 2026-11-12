@@ -5,10 +5,11 @@ import { SPECIAL } from '../rules/specials';
 import { ARCH, RARITY, TOOL, TOOL_SLOTS, ToolInst } from '../rules/tools';
 import { Volume, getVolume, setVolume, sfx } from './audio';
 import { cardEl, suitSvg, tileEl } from './card';
-import { $, $$, S, applySettings, closeModal, cycleSpeed, kw, modal, settings, speedLabel } from './core';
+import { $, $$, S, applySettings, closeModal, cycleSpeed, kw, modal, settings, speedLabel, toast } from './core';
 import { glyphSvg } from './glyphs';
 import { reconnect } from './net';
-import { customServer, platform, setCustomServer } from './platform';
+import { applyBackup, describeBackup, exportProgress, readBackup } from './backup';
+import { COMMUNITY_URL, customServer, platform, setCustomServer } from './platform';
 import { rulesHtml } from './rules-text';
 
 export const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
@@ -195,6 +196,7 @@ export function deckModal(title: string, tabs: DeckTab[], opts: { pick?: number;
         if (opts.pick) {
           const ok = !opts.can || opts.can(c);
           ce.classList.add(ok ? 'pickable' : 'unpickable');
+          if (ok) ce.tabIndex = 0;
           ce.classList.toggle('sel', chosen.includes(c));
           if (ok)
             ce.onclick = () => {
@@ -236,7 +238,8 @@ const KEYS: [string, string, string][] = [
   ['Elegir', 'Enter · 1–9 en la mano', 'A'],
   ['Golpear la torre apuntada', 'Espacio', 'X'],
   ['Guardar en el andamio', 'Y', 'Y'],
-  ['Tiza de replanteo (deshacer)', 'Z', '—'],
+  ['Tiza de replanteo (deshacer)', 'Z', 'LT'],
+  ['Cambiar la velocidad', 'botón de la barra', 'RT'],
   ['Lupa de grabador', 'L · clic derecho · mantener pulsado', 'RB'],
   ['Mazo', 'Tab', 'LB'],
   ['Descartar lo elegido', 'Supr', '—'],
@@ -254,6 +257,9 @@ export function showSettings(onChange?: () => void): void {
       <div class="set-list" id="set-vol"></div><div class="set-list" id="set-toggles"></div>
       <div class="set server-row"><div><b>Servidor de salas</b><span>Solo para el cooperativo en línea. Vacío: el de esta misma página, si lo hay.</span></div>
         <span class="server-edit"><input id="set-server" autocomplete="off" spellcheck="false" placeholder="wss://mi-servidor/ws" /><button id="set-server-ok">Usar</button></span></div>
+      <div class="set"><div><b>Progreso</b><span>Gremio, colección, actas y ajustes en un archivo .json: para no perderlos y para llevarlos a otro equipo o a la versión de escritorio.</span></div>
+        <span class="server-edit"><button id="set-export">Exportar progreso</button><button id="set-import">Importar progreso</button><input type="file" id="set-file" accept="application/json,.json" hidden /></span></div>
+      <div class="set"><div><b>Comunidad y comentarios</b><span>Errores, ideas y partidas memorables: aquí se leen.</span></div><button id="set-community">Abrir</button></div>
       <h3 class="sec">Controles</h3>
       <table class="keys"><tr><th></th><th>Teclado y ratón</th><th>Mando</th></tr>${KEYS.map(([what, key, pad]) => `<tr><td>${what}</td><td>${key}</td><td>${pad}</td></tr>`).join('')}</table>
     </div>`,
@@ -295,6 +301,25 @@ export function showSettings(onChange?: () => void): void {
     );
   };
   draw();
+  $('#set-export', el).onclick = () => toast(`Progreso guardado en ${exportProgress()}`);
+  $('#set-community', el).onclick = () => platform.openExternal(COMMUNITY_URL);
+  const file = $<HTMLInputElement>('#set-file', el);
+  $('#set-import', el).onclick = () => file.click();
+  file.onchange = async () => {
+    const picked = file.files?.[0];
+    file.value = '';
+    if (!picked) return;
+    const backup = readBackup(await picked.text());
+    if (typeof backup === 'string') return toast(backup);
+    const ask = modal(
+      `<div class="modal-box confirm"><h2>¿Importar este progreso?</h2><p>${describeBackup(backup)}.</p><p>Sustituye todo lo que hay guardado en este equipo (gremio, colección, actas, campaña en curso y ajustes). No se puede deshacer: si dudas, exporta antes lo que tienes.</p>
+       <div class="row"><button class="x">Cancelar</button><button class="primary" id="yes">Importar y recargar</button></div></div>`,
+    );
+    $('#yes', ask).onclick = () => {
+      applyBackup(backup);
+      location.reload();
+    };
+  };
   const server = $<HTMLInputElement>('#set-server', el);
   server.value = customServer();
   $('#set-server-ok', el).onclick = () => {

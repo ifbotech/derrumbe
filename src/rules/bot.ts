@@ -2,7 +2,7 @@
 // Se usa para balancear las reglas por simulación y para jugar el turno de un jugador
 // desconectado en partidas online. Entiende el cinturón (lo ordena), los sellos, los
 // tratamientos, la selección de cartas y las sinergias entre herramientas.
-import { Action, Card, Config, GameState, SUITS, StrikeEnv, Suit, Tower, cardValue, classify, currentPlayer, standing, strike } from './engine';
+import { Action, Card, Config, GameState, SUITS, StrikeEnv, Suit, Tower, cardValue, classify, currentPlayer, standing, strike, threatOf } from './engine';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';
 import { RARITY, TOOL, TOOL_SLOTS, bestOrder } from './tools';
@@ -63,14 +63,20 @@ export function formations(hand: Card[]): Card[][] {
 
 const remaining = (towers: Record<Suit, Tower>, cfg: Config) => SUITS.reduce((a, s) => a + towers[s].floors.reduce((b, r) => b + cfg.floorHp[r], 0) - (standing(towers[s]) ? towers[s].damage : 0), 0);
 /** Daño medio que hará la próxima sirena. */
-const danger = (towers: Record<Suit, Tower>, cfg: Config) => SUITS.reduce((a, s) => a + (standing(towers[s]) && !towers[s].disarmed && !towers[s].fx.sobrecarga ? cfg.floorThreat[towers[s].floors[0]] : 0), 0) / 4;
+const danger = (env: { config: Config; fatigue?: number }, towers: Record<Suit, Tower>) => SUITS.reduce((a, s) => a + (standing(towers[s]) && !towers[s].disarmed && !towers[s].fx.sobrecarga ? threatOf(env, towers[s]) : 0), 0) / 4;
+/** Herramientas que solo rinden con cartas de un palo. */
+const SUIT_TOOL: Record<string, Suit> = { piqueta: 'S', cortavidrios: 'D', metralla: 'D', paleta: 'H', botiquin: 'H', maza: 'C', sacos: 'C' };
+/** Herramientas que cobran la defensa: con ellas el muro (o reparar de más) vale el doble. */
+const WALL_PAYOFF = ['ariete', 'contragolpe', 'bastion'];
 
 /** Cuánto vale una jugada: demolición útil, pisos caídos, defensa del búnker y lo que cuesta. */
 function evaluate(state: GameState, cards: Card[], target: Suit): number {
   const cfg = state.config;
   const env: StrikeEnv = { ...state, towers: structuredClone(state.towers), tools: state.tools.map((t) => ({ ...t })) };
   const before = remaining(state.towers, cfg);
-  const risk = danger(state.towers, cfg) * (cfg.sirenCount ?? 1);
+  const risk = danger(state, state.towers) * (cfg.sirenCount ?? 1);
+  const has = (id: string) => state.tools.some((t) => t.id === id);
+  const wallPays = WALL_PAYOFF.filter(has).length;
   const res = strike(env, cards, target);
   const unit = cfg.floorHp[11] / 20;
   const low = state.integrity <= cfg.maxIntegrity / 2 ? 1.5 : 1;
@@ -83,9 +89,17 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
   if (res.clean) score += 3;
   // un piso que queda desarmado deja de golpear lo que le quede de vida (unos cuantos turnos)
   const hitTower = env.towers[target];
-  if (standing(hitTower) && hitTower.disarmed && !state.towers[target].disarmed) score += (cfg.floorThreat[hitTower.floors[0]] / 4) * 3 * 1.7 * low;
-  score += Math.min(res.wallGain, cfg.wallCap - state.wall) * 1.3;
-  score += Math.min(res.repair, cfg.maxIntegrity - state.integrity) * 1.6 * low;
+  if (standing(hitTower) && hitTower.disarmed && !state.towers[target].disarmed) score += (threatOf(state, hitTower) / 4) * 3 * 1.7 * low;
+  // romper el apuntalamiento de un piso que amenaza más mientras lo lleva
+  if (cfg.bracedThreat && state.towers[target].fx.apuntalado && standing(hitTower) && !hitTower.fx.apuntalado) score += (cfg.bracedThreat / 4) * 3 * 1.7 * low;
+  const walled = Math.min(res.wallGain, cfg.wallCap - state.wall);
+  score += walled * (1.3 + 0.9 * wallPays);
+  // con el Rebosadero, el muro que sobra repara el búnker
+  const spill = cfg.overwallRepair ? Math.floor((res.wallGain - walled) / cfg.overwallRepair) : 0;
+  const mended = Math.min(res.repair + spill, cfg.maxIntegrity - state.integrity);
+  score += mended * 1.6 * low;
+  // con el Rebosadero, reparar de más carga el golpe siguiente
+  if (cfg.overhealCharge) score += (res.repair + spill - mended) * cfg.overhealCharge * 0.35;
   score += res.gold * 0.7 + res.draw * 1.2;
   score -= res.hurt * 1.8 * low;
   score -= cards.filter((c) => !c.sp).length * 0.8 + cards.filter((c) => c.sp).length * 0.5; // las especiales vuelven en cada vuelta de cantera: guardarlas solo estorba
@@ -175,6 +189,23 @@ export function toolValue(id: string, run: Run): number {
   if (id === 'timbre') v += Math.min(3, run.deck.filter((c) => c.seal).length * 0.5) - 2;
   if (id === 'corazon') v += run.tools.some((t) => t.id === 'casco' || t.id === 'plomada' || t.id === 'botiquin') ? 1 : -1;
   if (id === 'andamio' || id === 'sordina' || id === 'dinamita' || id === 'pasarela') v += 1.5;
+  // aguante: rinde con muro abundante (tréboles, sacos, encofrado) y con sus compañeras de caja
+  if (def.arch === 'aguante') {
+    const clubs = run.deck.filter((c) => !c.sp && c.suit === 'C').length / Math.max(1, run.deck.length);
+    const hearts = run.deck.filter((c) => !c.sp && c.suit === 'H').length / Math.max(1, run.deck.length);
+    const wallers = ['sacos', 'encofrado', ...WALL_PAYOFF].filter((o) => o !== id && has(o)).length;
+    const builds = clubs > 0.3 || has('sacos') || has('encofrado');
+    if (id === 'andamio') v += 0;
+    else if (id === 'rebosadero') v += builds ? (clubs > 0.3 ? 5 : 2) + (has('sacos') ? 2 : 0) : hearts > 0.3 ? 0 : -3;
+    else v += builds ? (clubs > 0.3 ? 2.5 : 1) + wallers * 1.2 : -3;
+  }
+  if ((id === 'sacos' || id === 'encofrado') && WALL_PAYOFF.some(has)) v += 2;
+  // una herramienta atada a un palo vale según cuánto de ese palo lleva el mazo (y nada si no lleva ninguno)
+  const plain = run.deck.filter((c) => !c.sp && c.suit !== 'X');
+  const share = (s: Suit) => plain.filter((c) => c.suit === s).length / Math.max(1, plain.length);
+  const suit = SUIT_TOOL[id];
+  if (suit) v += share(suit) < 0.08 ? -20 : (share(suit) - 0.25) * 10;
+  if (id === 'mosaico' && SUITS.filter((s) => share(s) >= 0.08).length < 3) v -= 20;
   if (id === 'hucha') v += run.stage <= 3 ? 1.5 : -1;
   if (id === 'cincel') v -= 1;
   return v;

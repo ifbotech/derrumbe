@@ -582,7 +582,8 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   .tower-tag .glyph { display: none; }
   /* la previsualización va al pie de la torre, sobre los pisos que esperan: no tapa ni la carta ni las placas */
   .preview { top: auto; bottom: 3px; left: 3px; right: 3px; transform: none; text-align: center; font-size: 15px; padding: 2px 2px 3px; }
-  .preview small { display: inline; margin: 0 0 0 4px; }
+  .preview small { display: inline; margin: 0 0 0 4px; font-size: 0; }
+  .preview small::after { content: attr(data-short); font-size: 12px; }
   .actions button { white-space: nowrap; letter-spacing: 0; }
   #btn-discard { flex: 1.7; }
   .run-belt > button { min-height: 44px; }
@@ -623,4 +624,115 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   /* los estados de una torre estrecha no se salen de ella */
   .tower-fx { min-width: 0; }
   .fx { max-width: 100%; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.02em; padding: 0 2px; }
+}
+
+/* ───────────── 4.0 · indicaciones de control: tecla o botón, según con qué se juegue ───────────── */
+.kh { display: none; flex: none; margin-left: 6px; min-width: 1.7em; height: 1.7em; padding: 0 5px; place-items: center; font-family: var(--display); font-weight: 400; font-size: 12px; line-height: 1; letter-spacing: 0; text-transform: none; border: 1.5px solid var(--pit); vertical-align: middle; }
+html[data-input='keys'] .kb { display: inline-grid; background: var(--card-paper); color: var(--ink); box-shadow: 0 2px 0 var(--pit); }
+html[data-input='pad'] .pd { display: inline-grid; border-radius: 999px; background: var(--pit); color: var(--paper-2); box-shadow: inset 0 0 0 1.5px currentColor; }
+.pd.b-a { color: #62a898; }
+.pd.b-b { color: var(--red-lit); }
+.pd.b-x { color: #7fb0c6; }
+.pd.b-y { color: var(--hazard); }
+.pd.b-lb, .pd.b-rb, .pd.b-lt, .pd.b-rt, .pd.b-start, .pd.b-select { border-radius: 5px; }
+.only-keys, .only-pad { display: none; }
+html[data-input='keys'] .only-keys, html[data-input='pad'] .only-pad { display: inline; }
+.reserve-slot.empty .plus { font-size: clamp(16px, 2.4vh, 24px); border: 0; padding: 0; }
+.reserve-slot.empty .kh { margin: 0; }
+html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slot .plus { display: none; }
+.actions button, .bar button { display: inline-flex; align-items: center; justify-content: center; }
+
+/* rueda de materiales */
+.wheel { flex: none; width: clamp(46px, 6.8vh, 66px); aspect-ratio: 1; cursor: help; }
+.wheel svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.wa path { fill: none; stroke: var(--table-4); stroke-width: 2.4; }
+.wa .head { fill: var(--table-4); stroke: none; }
+.wa.on path { stroke: #d4a348; stroke-width: 3.6; }
+.wa.on .head { fill: #d4a348; }
+.wn circle { fill: var(--table-3); stroke: var(--pit); stroke-width: 1.6; }
+.wn .pcut { stroke: none; }
+.wn.n-S .wg { fill: var(--suitd-S); }
+.wn.n-H .wg { fill: var(--suitd-H); }
+.wn.n-D .wg { fill: var(--suitd-D); }
+.wn.n-C .wg { fill: var(--suitd-C); }
+.wn.lit circle { fill: var(--paper-2); }
+.wn.lit.n-S .wg { fill: var(--suit-S); }
+.wn.lit.n-H .wg { fill: var(--suit-H); }
+.wn.lit.n-D .wg { fill: var(--suit-D); }
+.wn.lit.n-C .wg { fill: var(--suit-C); }
+.wn.aim circle { stroke: var(--hazard); stroke-width: 2.8; }
+.wn .wx { display: none; fill: none; stroke: var(--red-lit); stroke-width: 2.8; }
+.wn.immune circle { fill: #45423d; stroke: var(--red-lit); }
+.wn.immune .wg { fill: #8f897d; }
+.wn.immune .wx { display: block; }
+.wheel.adv { animation: pop2 0.26s ease; }
+
+/* fatiga de cimientos */
+.power.fatigue { border-style: dashed; cursor: help; }
+.power.fatigue em { background: var(--pit); color: var(--paper-2); }
+.power.fatigue.on { border-style: solid; background: var(--red); color: var(--card-paper); }
+.power.fatigue.on em { background: var(--pit); color: var(--hazard); }
+
+/* susurros de tiza: consejos al margen, una vez cada uno */
+.table-screen { position: relative; }
+.whisper { flex: none; margin: 0; padding: 8px 12px 10px; font-family: var(--mono); font-style: italic; font-weight: 500; font-size: clamp(13px, 1.7vh, 16px); line-height: 1.35; text-transform: none; letter-spacing: 0; color: #f0e4c8; border: 2px dashed rgba(240, 228, 200, 0.5); border-radius: 14px 9px 16px 8px / 9px 16px 8px 14px; transform: rotate(-1deg); pointer-events: none; animation: chalkin 0.4s ease both; transition: opacity 0.5s; }
+.whisper b { font-style: normal; font-weight: 700; color: var(--hazard); display: block; }
+.whisper.out { opacity: 0; }
+/* en escritorio se escribe al pie de la columna del búnker, encima del registro: cabe entero aunque la pantalla sea baja */
+.side { position: relative; }
+.side > .whisper { position: absolute; z-index: 6; left: 0; right: 8px; bottom: 8px; background: #14120f; box-shadow: 0 0 0 4px var(--table, #1b1916); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .side { position: static; }
+  .side > .whisper { position: absolute; z-index: 40; left: 8px; right: 8px; top: 96px; bottom: auto; background: #0d0c0b; box-shadow: none; transform: none; }
+  .wheel { width: 40px; }
+  .kh { display: none !important; }
+  .reserve-slot .plus { display: inline !important; }
+}
+
+/* ───────────── 4.0 · archivo de actas ───────────── */
+.actas { display: grid; gap: clamp(6px, 1.1vh, 12px); }
+.acta-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(8px, 1.2vw, 18px); align-items: center; border-bottom: 1.5px dashed rgba(24, 22, 20, 0.45); padding-bottom: clamp(6px, 1.1vh, 12px); text-transform: none; }
+.acta-stamp { font-family: var(--display); text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(12px, 1.5vh, 15px); line-height: 1; padding: 4px 8px 5px; border: 3px double currentColor; transform: rotate(-6deg); color: var(--ink); white-space: nowrap; }
+.acta-row.won .acta-stamp { color: var(--red); }
+.acta-main { display: grid; gap: 2px; min-width: 0; }
+.acta-main b { text-transform: uppercase; font-size: clamp(12px, 1.6vh, 16px); }
+.acta-main span { font-size: clamp(12px, 1.45vh, 14px); line-height: 1.3; }
+.acta-tools { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.acta-tools em { font-style: normal; font-family: var(--cap); font-weight: 700; font-size: 12px; opacity: 0.75; margin-left: 6px; }
+.mini-ico { width: clamp(20px, 2.8vh, 28px); height: clamp(20px, 2.8vh, 28px); flex: none; background: var(--paper-2); border: 1.5px solid var(--pit); padding: 1px; }
+.acta-btns { display: grid; gap: 6px; }
+.acta-btns button { white-space: nowrap; }
+.set .server-edit { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .acta-row { grid-template-columns: minmax(0, 1fr); }
+  .acta-stamp { justify-self: start; }
+  .acta-btns { grid-template-columns: 1fr 1fr; }
+  .set .server-edit { justify-content: flex-start; }
+}
+
+/* ───────────── tarjeta para compartir (1200 × 630), solo en el estado de control de calidad «og» ───────────── */
+.og-card { position: fixed; inset: 0; overflow: hidden; background: var(--pit); }
+.og-card .hero-art { position: absolute; inset: 0 34% 0 0; }
+.og-card .og-txt { position: absolute; top: 0; bottom: 0; right: 0; width: 40%; display: grid; align-content: center; gap: 14px; padding: 0 44px 0 30px; background: linear-gradient(90deg, rgba(13, 12, 11, 0) 0, var(--pit) 22%); text-transform: none; }
+.og-card .title { position: static; font-size: 104px; line-height: 0.95; color: var(--card-paper); text-shadow: none; white-space: nowrap; }
+.og-card .title .cut { color: var(--red-lit); }
+.og-card p { font-family: var(--mono); font-weight: 700; font-size: 27px; line-height: 1.2; color: var(--card-paper); }
+.og-card small { font-family: var(--cap); font-weight: 700; font-size: 16px; letter-spacing: 0.04em; color: var(--hazard); text-transform: uppercase; }
+.og-card .og-cards { position: absolute; left: 4%; bottom: -70px; display: flex; }
+.og-card .og-cards .card { --w: 150px; margin-right: -34px; transform: translateY(var(--y, 0)) rotate(var(--r, 0deg)); }
+/* retoques tras ver las capturas de la 4.0 */
+.wheel { width: clamp(56px, 8.2vh, 78px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .wheel { width: 44px; }
+  .power.fatigue b { display: inline; }
+  /* en móvil el susurro pisa la barra de arriba (que sigue recibiendo los toques), no las torres */
+  .side > .whisper { top: 4px; }
+}
+/* pantallas de portátil: con las indicaciones de tecla o de mando a la vista, la barra y la fila del cinturón se aprietan */
+@media (min-width: 641px) and (max-width: 1420px) and (min-aspect-ratio: 1/1) {
+  html[data-input='keys'] .bar, html[data-input='pad'] .bar { gap: 6px; }
+  html[data-input='keys'] .bar .contract-chip > span, html[data-input='pad'] .bar .contract-chip > span { display: none; }
+  .bar .kh { margin-left: 4px; }
+  .hudrow { column-gap: 12px; }
+  .hudrow .belt-label { display: none; }
 }

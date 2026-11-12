@@ -51,6 +51,10 @@ const TOOL_FLAVOR: Record<string, string> = {
   horno: 'Lo que no sirve, al menos calienta.',
   contenedor: 'Lo tirado hoy pesa mañana.',
   prensa: 'Cada chatarra, un grado más de apriete.',
+  ariete: 'El muro que te protegía, puesto a correr.',
+  contragolpe: 'Lo que no entra, vuelve. Con intereses.',
+  rebosadero: 'Ni una gota de arreglo se tira en esta obra.',
+  bastion: 'Detrás de un buen muro se pega más tranquilo.',
 };
 
 const SPECIAL_FLAVOR: Record<string, string> = {
@@ -70,6 +74,7 @@ const SPECIAL_FLAVOR: Record<string, string> = {
   hormigonera: 'Gira que te gira, y el muro crece.',
   cemento: 'Fragua antes de que termines la frase.',
   sierra: 'Canta agudo y no respeta materiales.',
+  embestida: 'La mejor defensa es llevársela por delante.',
   ferretero: 'Fía una vez. Solo una.',
   'j-doble': 'Aprendió a callar a la fuerza.',
   'j-escasez': 'Lo que os quitó, ahora lo paga.',

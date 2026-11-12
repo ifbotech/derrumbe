@@ -1,20 +1,21 @@
 // La mesa de combate: torres, búnker, cinturón, poderes de palo, marcador Fuerza × Resonancia,
 // andamio, mano y la cola de eventos que anima cada jugada paso a paso.
-import { BEATS, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, previewStrike } from '../rules/engine';
+import { BEATS, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, previewStrike, threatOf } from '../rules/engine';
 import { BOSS, CONTRACT, LAST_STAGE, stageDef } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
 import type { ClientMsg } from '../shared/protocol';
 import { bunkerArt, rubble, skyline } from './art';
 import { setPressure, setScene, sfx } from './audio';
 import { afterBatch, campaignAct, isRunHost, routeRun, runDo, stageIntro } from './campaign';
-import { backEl, cardEl, setDeckBack, suitSvg } from './card';
+import { backEl, cardEl, pipPath, setDeckBack, suitSvg } from './card';
 import { $, $$, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
 import { CRACKS, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, hitstop, pop, quake, restart, ribbon, shake, stampOn, tear, wait } from './fx';
-import { trackMeta } from './guild';
+import { meta, trackMeta } from './guild';
 import { forget, sendMsg } from './net';
 import { renderPings, sendPing } from './pings';
-import { platform } from './platform';
+import { loadJson, platform, saveJson } from './platform';
+import { hint } from './prompts';
 import { setScreen } from './router';
 import { guidedStep, renderCoach, showTutorialEnd, skipTutorial, tutorialAct } from './tutorial-ui';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
@@ -55,9 +56,9 @@ export function buildTable(): void {
       ${c ? `<div class="chip gold" id="gold-chip" data-tip="<b>Oro</b>Se gasta en la ferretería. Cada 5 de oro guardado da 1 de interés al cobrar."><span>Oro</span><b id="gold-n">${c.run.gold}</b></div>` : ''}
       <div class="obra-chips" id="obra"></div>
       <div class="players" id="players"></div>
-      <button id="btn-deck" data-tip="<b>Cantera y escombrera</b>Qué cartas quedan por salir. Tecla Tab.">Mazo</button>
+      <button id="btn-deck" data-tip="<b>Cantera y escombrera</b>Qué cartas quedan por salir.">Mazo${hint('deck')}</button>
       <button id="btn-speed" data-tip="<b>Velocidad</b>1×, 2× o 4× Turbo."></button>
-      <button id="btn-set">Ajustes</button>
+      <button id="btn-set">Ajustes${hint('settings')}</button>
       <button id="btn-rules">Reglas</button>
       <button id="btn-leave">Salir</button>
     </header>
@@ -86,6 +87,8 @@ export function buildTable(): void {
       <div class="hudrow">
         <div class="beltbar" id="beltbar" hidden></div>
         <div class="powers" id="powers"></div>
+        <div class="wheel" id="wheel" data-tip="<b>Ciclo de materiales</b>♠ rompe ♦ · ♦ corta ♥ · ♥ agrieta ♣ · ♣ sepulta ♠. Con ventaja, cada carta suma el doble de Fuerza; contra la torre de su propio palo no suma nada. La rueda se enciende con lo que llevas elegido."></div>
+        <div class="power fatigue" id="fatigue" hidden></div>
       </div>
       <div class="status score" id="score"></div>
       <div class="playrow">
@@ -94,10 +97,10 @@ export function buildTable(): void {
         <div class="hand" id="hand"></div>
       </div>
       <div class="actions">
-        <button id="btn-undo" hidden data-tip="<b>Tiza de replanteo</b>Deshace tu última jugada. La cantera se baraja de nuevo: lo que viste salir ya no vale. Una por obra, solo en solitario. Atajo: Z.">Tiza ↶</button>
-        <button id="btn-discard">Descartar</button>
-        <button id="btn-clear">Soltar</button>
-        <button id="btn-pass" hidden>Pasar</button>
+        <button id="btn-undo" hidden data-tip="<b>Tiza de replanteo</b>Deshace tu última jugada. La cantera se baraja de nuevo: lo que viste salir ya no vale. Una por obra, solo en solitario."><span class="lbl">Tiza ↶</span>${hint('undo')}</button>
+        <button id="btn-discard"><span class="lbl">Descartar</span>${hint('discard')}</button>
+        <button id="btn-clear">Soltar${hint('back')}</button>
+        <button id="btn-pass" hidden>Pasar${hint('strike')}</button>
       </div>
       </div>
     </footer>
@@ -135,12 +138,12 @@ export function buildTable(): void {
   };
   $('#deck-slot').appendChild(backEl());
   const speedBtn = $('#btn-speed');
-  speedBtn.textContent = speedLabel();
+  refreshSpeed();
   speedBtn.onclick = () => {
     cycleSpeed();
-    speedBtn.textContent = speedLabel();
+    refreshSpeed();
   };
-  $('#btn-set').onclick = () => showSettings(() => (speedBtn.textContent = speedLabel()));
+  $('#btn-set').onclick = () => showSettings(refreshSpeed);
   $('#btn-rules').onclick = showRules;
   $('#btn-deck').onclick = toggleInspector;
   $('#deck-slot').onclick = toggleInspector;
@@ -384,7 +387,7 @@ function renderTower(s: Suit): void {
     $('.hp span', el).textContent = `${left} / ${hp}`;
     $('.cracks', el)?.setAttribute('data-level', level);
     $('.facade .storey-art', el)?.setAttribute('data-level', level);
-    const threat = cfg.floorThreat[top];
+    const threat = threatOf(v, t);
     $('.threat', el).innerHTML = t.disarmed ? '<span>Amenaza</span><b class="off">0</b>' : `<span>Amenaza</span><b>${threat}</b>`;
   }
 }
@@ -486,7 +489,7 @@ function renderHand(): void {
         } else {
           slot.tabIndex = 0;
           slot.classList.add('empty');
-          slot.innerHTML = '<i>Y</i>';
+          slot.innerHTML = `<i class="plus">+</i>${hint('stash')}`;
           slot.onclick = () => stash();
         }
         res.appendChild(slot);
@@ -573,7 +576,7 @@ function renderScore(): void {
     body = '<span class="hint">…</span>';
   } else if (cards.length === 0) {
     tag = '<span class="tag go">Tu turno</span>';
-    body = held().length ? '<span class="hint">Elige cartas y pulsa una torre. Teclas: 1–9 eligen, flechas mueven el foco, espacio golpea.</span>' : '<span class="hint">No tienes cartas: pulsa PASAR.</span>';
+    body = held().length ? '<span class="hint">Elige cartas y pulsa una torre.<span class="only-keys"> Teclas: 1–9 eligen, flechas mueven el foco, espacio golpea.</span><span class="only-pad"> Mando: A elige, X golpea, Y guarda en el andamio.</span></span>' : '<span class="hint">No tienes cartas: pulsa PASAR.</span>';
   } else if (joker) {
     tag = '<span class="tag go">Huelga</span>';
     body = `<span class="marks"><em class="m good">Desarma el piso</em><em class="m good">La sirena calla</em>${final}</span><span class="hint">Pulsa una torre.</span>`;
@@ -604,12 +607,21 @@ function renderScore(): void {
         final,
       ].join('');
       body = `<div class="calc" data-tip="<b>Previsualización de impacto</b>Fuerza × Resonancia = daño estimado contra ${MATERIAL[target]}. Las cartas se resuelven en el orden en que las elegiste.">
-        <b class="f">${r.fuerza}</b><i>×</i><b class="r">${num(r.res)}</b><i>=</i><b class="t">${r.total}</b><span class="vs">contra ${MATERIAL[target]}</span></div>
+        <b class="f">${r.fuerza}</b><i>×</i><b class="r">${num(r.res)}</b><i>=</i><b class="t">${r.total}</b><span class="vs">contra ${MATERIAL[target]}${hint('strike')}</span></div>
         <span class="marks">${marks}</span>`;
     }
   }
   el.innerHTML = tag + body;
   renderPowers(cards, shown, shownTarget);
+  renderWheel(cards, shownTarget);
+  if (shown?.clean) whisper('limpio', '<b>Daño exacto.</b> Si golpeas ahora es un golpe limpio: la sirena calla, cobras 1 de oro y robas una carta más.');
+  if (shownTarget && (v.config.ownMult ?? 0) === 0 && cards.some((c) => !c.sp && c.suit === shownTarget))
+    whisper('inmune', `<b>Placa de hierro.</b> La torre de ${MATERIAL[shownTarget].toLowerCase()} es inmune a su propio palo: tus ${SUIT_GLYPH[shownTarget]} no le suman Fuerza. Prueba contra otra torre.`);
+  // antes de un sirenazo serio con el andamio sin usar: todavía se está a tiempo de guardar una carta
+  if (shown && shownTarget && !shown.clean && !shown.noSiren && v.reserveSize > 0 && v.reserve.length === 0) {
+    const incoming = threatOf(v, v.towers[shownTarget]) - v.wall - Math.max(0, Math.min(shown.wallGain, v.config.wallCap - v.wall));
+    if (incoming >= 4) whisper('andamio', ANDAMIO_WHISPER);
+  }
   const end = $('#btn-end', el);
   if (end) end.onclick = showEnd;
 }
@@ -641,7 +653,9 @@ export function renderInteractive(): void {
         const fallen = res.fallenBy[s] ?? 0;
         const mine = res.fell.some((f) => f.tower === s && f.clean);
         const extra = [fallen ? `cae${fallen > 1 ? 'n ' + fallen : ''}` : '', mine ? 'limpio' : ''].filter(Boolean);
-        tag.innerHTML = `−${dealt}${extra.length ? `<small>${extra.join(' · ')}</small>` : ''}`;
+        // en móvil la etiqueta ocupa el pie de una torre estrecha: va la forma corta (el amarillo ya dice «limpio»)
+        const short = fallen ? `cae${fallen > 1 ? ` ${fallen}` : ''}` : 'limpio';
+        tag.innerHTML = `−${dealt}${extra.length ? `<small data-short="${short}">${extra.join(' · ')}</small>` : ''}`;
         tag.classList.toggle('zero', dealt === 0);
         tag.classList.toggle('clean', mine);
       }
@@ -649,13 +663,13 @@ export function renderInteractive(): void {
     }
   }
   $<HTMLButtonElement>('#btn-discard').disabled = !can || cards.length === 0;
-  $('#btn-discard').textContent = cards.length ? `Descartar (${cards.length})` : 'Descartar';
+  $('#btn-discard .lbl').textContent = cards.length ? `Descartar (${cards.length})` : 'Descartar';
   $<HTMLButtonElement>('#btn-clear').disabled = cards.length === 0;
   $('#btn-pass').hidden = !(can && held().length === 0);
   const undoBtn = $<HTMLButtonElement>('#btn-undo');
   undoBtn.hidden = !(S.campaign && v.players.length === 1);
   undoBtn.disabled = !can || !v.canUndo;
-  undoBtn.textContent = v.chalk > 0 ? 'Tiza ↶' : 'Sin tiza';
+  $('.lbl', undoBtn).textContent = v.chalk > 0 ? 'Tiza ↶' : 'Sin tiza';
   const guide = can ? guidedStep() : null;
   for (const [id, el] of cardEls) el.classList.toggle('hint', !!guide && guide.cards!.includes(id) && !S.selected.includes(id));
   const ready = !!guide && cards.length === guide.cards!.length;
@@ -671,6 +685,96 @@ export function renderAll(): void {
   renderBelt();
   renderInteractive();
   renderPings();
+  renderFatigue();
+}
+
+/** La velocidad de la mesa, en su botón (con su indicación de mando). */
+export function refreshSpeed(): void {
+  const btn = $('#btn-speed');
+  if (btn) btn.innerHTML = `${speedLabel()}${hint('speed')}`;
+}
+
+// ── rueda de materiales: ♠ → ♦ → ♥ → ♣ → ♠ ──
+const WHEEL_AT: Record<Suit, number> = { S: -90, D: 0, H: 90, C: 180 };
+function wheelSvg(): string {
+  const at = (deg: number, r: number): [number, number] => [32 + r * Math.cos((deg * Math.PI) / 180), 32 + r * Math.sin((deg * Math.PI) / 180)];
+  const f = (n: number) => n.toFixed(1);
+  const arcs = SUITS.map((s) => {
+    const from = WHEEL_AT[s] + 27;
+    const to = WHEEL_AT[s] + 63;
+    const [x1, y1] = at(from, 23);
+    const [x2, y2] = at(to, 23);
+    // punta de flecha, tangente al final del arco
+    const [tx, ty] = at(to + 9, 23);
+    const [ax, ay] = at(to - 3, 27.5);
+    const [bx, by] = at(to - 3, 18.5);
+    return `<g class="wa a-${s}"><path d="M${f(x1)},${f(y1)} A23,23 0 0 1 ${f(x2)},${f(y2)}"/><path class="head" d="M${f(tx)},${f(ty)} L${f(ax)},${f(ay)} L${f(bx)},${f(by)} Z"/></g>`;
+  }).join('');
+  const nodes = SUITS.map((s) => {
+    const [x, y] = at(WHEEL_AT[s], 23);
+    return `<g class="wn n-${s}" transform="translate(${f(x)} ${f(y)})"><circle r="8.8"/><g class="wg" transform="scale(0.6)">${pipPath(s)}</g><path class="wx" d="M-5.4,-5.4 L5.4,5.4 M5.4,-5.4 L-5.4,5.4"/></g>`;
+  }).join('');
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${arcs}${nodes}</svg>`;
+}
+
+/** Enciende en la rueda lo que hace la jugada elegida: ventaja (flecha de latón) o inmunidad (aspa de hierro). */
+function renderWheel(cards: Card[], target: Suit | null): void {
+  const el = $('#wheel');
+  const v = S.shown;
+  if (!el || !v) return;
+  if (!el.firstChild) el.innerHTML = wheelSvg();
+  const own = v.config.ownMult ?? 0;
+  const suits = new Set(cards.filter((c) => !c.sp && c.suit !== 'X').map((c) => c.suit as Suit));
+  let adv = false;
+  let blocked = false;
+  for (const s of SUITS) {
+    const wins = !!target && suits.has(s) && BEATS[s] === target;
+    const immune = target === s && suits.has(s) && own === 0;
+    adv ||= wins;
+    blocked ||= immune;
+    el.querySelector(`.a-${s}`)?.classList.toggle('on', wins);
+    const node = el.querySelector(`.n-${s}`);
+    node?.classList.toggle('lit', suits.has(s));
+    node?.classList.toggle('aim', target === s);
+    node?.classList.toggle('immune', immune);
+  }
+  el.classList.toggle('adv', adv);
+  el.classList.toggle('blocked', blocked);
+}
+
+/** Fatiga de cimientos: avisa tres turnos antes de empezar y luego enseña su nivel. */
+function renderFatigue(): void {
+  const el = $('#fatigue');
+  const v = S.shown;
+  if (!el || !v) return;
+  const start = v.config.fatigueStart;
+  const res = v.config.fatigueRes ?? 0.25;
+  const level = v.fatigue ?? 0;
+  const left = start === undefined ? Infinity : start - v.turnCount;
+  el.hidden = start === undefined || v.phase !== 'playing' || (level === 0 && left > 3);
+  if (el.hidden || start === undefined) return;
+  el.classList.toggle('on', level > 0);
+  el.innerHTML = level > 0 ? `<b>Fatiga</b><em>${level}</em>` : `<b>Fatiga en</b><em>${Math.max(1, left)}</em>`;
+  el.dataset.tip = `<b>Fatiga de cimientos</b>Ninguna obra aguanta eternamente. Desde el turno ${start + 1}, y cada ${v.config.fatigueEvery ?? 2} turnos, sube un nivel: cada nivel da +${num(res)} de Resonancia a todos los golpes y +1 de amenaza a todas las torres.${level ? `<hr>Ahora: +${num(res * level)} de Resonancia y +${level} de amenaza.` : ''}`;
+}
+
+// ── susurros de tiza: tres consejos al margen, solo en la primera campaña de un perfil y una vez cada uno ──
+const WHISPER_KEY = 'derrumbe:susurros';
+const whispered = new Set<string>(loadJson<string[]>(WHISPER_KEY) ?? []);
+const ANDAMIO_WHISPER = '<b>Viene un sirenazo y el andamio está vacío.</b> Guarda en él la carta que no quieras gastar ahora: sigue siendo tuya y, al reponer la mano, robarás una más.';
+function whisper(id: string, html: string): void {
+  const c = S.campaign;
+  if (!c || c.online || S.tutorial || meta.runs > 0 || whispered.has(id)) return;
+  // de uno en uno: si ya hay un susurro a la vista, este espera a la próxima ocasión (y no se da por leído)
+  if (document.querySelector('.whisper')) return;
+  whispered.add(id);
+  saveJson(WHISPER_KEY, [...whispered]);
+  const el = document.createElement('p');
+  el.className = 'whisper';
+  el.innerHTML = html;
+  $('.side')?.appendChild(el);
+  setTimeout(() => el.classList.add('out'), 8200);
+  setTimeout(() => el.remove(), 8800);
 }
 
 // ───────────────────────── Mazo y teclado ─────────────────────────
@@ -867,6 +971,17 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       logLine(`<b>${nameOf(ev.player)}</b> guarda una carta en el andamio${ev.back ? ' y recupera la que había' : ''}.`, 'dim');
       sfx.flick();
       break;
+    case 'fatigue':
+      v.fatigue = ev.level;
+      for (const s of SUITS) renderTower(s);
+      renderFatigue();
+      if (ev.level > 0) {
+        banner(`Fatiga ${ev.level}`, 'red', 'los cimientos ceden · golpes y sirenas pegan más');
+        sfx.rumble(1 + ev.level);
+        logLine(`Fatiga de cimientos ${ev.level}: tus golpes resuenan +${num((v.config.fatigueRes ?? 0.25) * ev.level)} y la amenaza de todas las torres sube ${ev.level}.`, 'red');
+        await wait(650);
+      }
+      break;
     case 'undo':
       banner('Replanteo', 'yel', 'la jugada se deshace · la cantera se baraja');
       sfx.stamp();
@@ -1022,6 +1137,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
           platform.vibrate(60, Math.min(1, ev.taken / 8));
           shake($('#bunker'), Math.min(1, ev.taken / 6), 1, 0.4);
           floatText($('#bunker'), `−${ev.taken}`);
+          if (ev.taken >= 4 && v.reserveSize > 0 && v.reserve.length === 0) whisper('andamio', ANDAMIO_WHISPER);
         }
         sfx.hit();
         v.integrity = ev.integrity;

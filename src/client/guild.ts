@@ -2,13 +2,16 @@
 // Vive en el navegador de cada uno, así que cuenta igual en solitario y en sala online.
 import { Card, FORMATIONS, FORMATION_NAME, SEAL, SEALS, TREATMENT, TREATMENTS } from '../rules/engine';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteRun, unlocksOf } from '../rules/achievements';
-import { BOSSES, DECKS, Meta, UPGRADES, buyUpgrade, depthOf, loadMeta, settle, stagesCleared } from '../rules/run';
+import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, UPGRADES, buyUpgrade, depthOf, loadMeta, settle, stageDef, stagesCleared } from '../rules/run';
 import { SPECIALS } from '../rules/specials';
 import { ARCH, Arch, TOOLS } from '../rules/tools';
 import { sfx } from './audio';
 import { ALL_CARDS, backEl, cardEl, ferreteroEl, portraitEl } from './card';
 import { masteryBadge } from './engraving';
-import { $, $$, Campaign, S, app, loadJson } from './core';
+import { newCampaign, pickDeck, prefs, runOpts } from './campaign';
+import { $, $$, Campaign, S, app, loadJson, toast } from './core';
+import { confirmAbandon } from './home';
+import { actaText } from './runscreens';
 import { glyphSvg } from './glyphs';
 import { setScreen } from './router';
 import { choice, toolTile } from './widgets';
@@ -23,6 +26,61 @@ saveMeta(); // deja guardada la migración, si la hubo
 
 /** Renombre que dio la última campaña cerrada (para el acta). */
 export let lastGain = 0;
+
+// ── archivo de actas: las 25 últimas campañas terminadas ──
+const ARCHIVE_KEY = 'derrumbe:actas';
+export const ARCHIVE_SIZE = 25;
+export interface Acta {
+  /** La campaña a la que pertenece (una que sigue a los cimientos abisales actualiza su acta). */
+  key: string;
+  when: string;
+  won: boolean;
+  /** Obras superadas y obra en la que terminó. */
+  cleared: number;
+  stage: number;
+  boss: string | null;
+  depth: number;
+  turns: number;
+  maxHit: number;
+  tools: string[];
+  seed: string;
+  deck: string;
+  level: number;
+  daily: string | null;
+  online: boolean;
+  gain: number;
+  /** El acta en texto, lista para copiar. */
+  text: string;
+}
+export const archive: Acta[] = (loadJson<Acta[]>(ARCHIVE_KEY) ?? []).filter((a) => a && typeof a.key === 'string' && Array.isArray(a.tools)).slice(0, ARCHIVE_SIZE);
+
+function fileActa(c: Campaign, gain: number): void {
+  const run = c.run;
+  const entry: Acta = {
+    key: c.key,
+    when: new Date().toISOString(),
+    won: run.conquered,
+    cleared: stagesCleared(run),
+    stage: run.stage,
+    boss: run.boss ? (BOSS[run.boss]?.who ?? null) : null,
+    depth: depthOf(run),
+    turns: run.stats.turns,
+    maxHit: run.stats.maxHit,
+    tools: run.tools.map((t) => t.id),
+    seed: c.online ? '' : run.seedText,
+    deck: run.deckId,
+    level: run.ascension + 1,
+    daily: run.daily,
+    online: c.online,
+    gain,
+    text: actaText(run),
+  };
+  const old = archive.findIndex((a) => a.key === c.key);
+  if (old >= 0) archive.splice(old, 1);
+  archive.unshift(entry);
+  archive.length = Math.min(archive.length, ARCHIVE_SIZE);
+  platform.save(ARCHIVE_KEY, JSON.stringify(archive));
+}
 
 /**
  * Abona el renombre de una campaña terminada, una sola vez. Quien gana y sigue a los cimientos
@@ -39,12 +97,14 @@ export function maybeSettle(c: Campaign): void {
     lastGain = 0;
     const cleared = stagesCleared(run);
     if (cleared > meta.daily.cleared) meta.daily = { date: run.daily, cleared, won: run.conquered };
+    fileActa(c, 0);
     return saveMeta();
   }
   if (run.endless) {
     lastGain = depthOf(run);
     meta.renown += lastGain;
   } else lastGain = settle(meta, run);
+  fileActa(c, lastGain);
   saveMeta();
 }
 
@@ -79,7 +139,7 @@ const ACH_GLYPH: Record<string, string> = {
   'j-sequia': 'botiquin', 'j-intemperie': 'acido', 'j-blindaje': 'encofrado', 'j-furia': 'dinamita', 'j-inestable': 'piqueta',
 };
 
-type Tab = 'ups' | 'ach' | 'col';
+type Tab = 'ups' | 'ach' | 'col' | 'arc';
 let tab: Tab = 'ups';
 export const openGuild = (t: Tab) => {
   tab = t;
@@ -97,6 +157,7 @@ export function renderGuild(): void {
         <button data-tab="ups" class="${tab === 'ups' ? 'on' : ''}">Mejoras</button>
         <button data-tab="ach" class="${tab === 'ach' ? 'on' : ''}">Logros ${done}/${ACHIEVEMENTS.length}</button>
         <button data-tab="col" class="${tab === 'col' ? 'on' : ''}">Colección</button>
+        <button data-tab="arc" class="${tab === 'arc' ? 'on' : ''}">Archivo ${archive.length}</button>
         <button id="back">Volver</button>
       </div>
       <section class="panel guild-panel"><div class="scroll" id="guild-list"></div></section>
@@ -105,6 +166,7 @@ export function renderGuild(): void {
   const list = $('#guild-list');
   if (tab === 'ups') list.innerHTML = upgradesHtml();
   else if (tab === 'ach') list.innerHTML = achievementsHtml();
+  else if (tab === 'arc') archiveTab(list);
   else collection(list);
   $('#back').onclick = () => setScreen('home');
   $$<HTMLButtonElement>('[data-tab]').forEach(
@@ -121,6 +183,58 @@ export function renderGuild(): void {
         saveMeta();
         sfx.stamp();
         renderGuild();
+      }),
+  );
+}
+
+/** Archivo de actas: cómo acabó cada una de las últimas campañas, con su semilla para volver a jugarla. */
+function archiveTab(list: HTMLElement): void {
+  if (!archive.length) {
+    list.innerHTML = `<p class="col-note">Aún no hay actas. Cada campaña que termines, la ganes o no, queda archivada aquí (las ${ARCHIVE_SIZE} últimas), con su semilla para volver a jugarla.</p>`;
+    return;
+  }
+  const wins = archive.filter((a) => a.won).length;
+  const day = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+  list.innerHTML = `<p class="col-note">${archive.length} actas · ${wins} ganadas · mayor golpe ${Math.max(...archive.map((a) => a.maxHit))} · campaña más rápida ganada: ${wins ? `${Math.min(...archive.filter((a) => a.won).map((a) => a.turns))} turnos` : '—'}.</p>
+  <div class="actas">${archive
+    .map((a, i) => {
+      const where = a.won ? (a.depth ? `Torre Madre demolida + ${a.depth} abisal${a.depth > 1 ? 'es' : ''}` : 'Torre Madre demolida') : `obra ${Math.min(a.stage, LAST_STAGE)}/${LAST_STAGE} · ${stageDef(a.stage).name}${a.boss ? ` · ante ${a.boss}` : ''}`;
+      const replay = !!a.seed && !a.daily && !a.online;
+      return `<article class="acta-row ${a.won ? 'won' : 'lost'}">
+        <span class="acta-stamp">${a.won ? 'Demolido' : 'Sepultados'}</span>
+        <div class="acta-main">
+          <b>${DECK[a.deck]?.name ?? a.deck} · nivel de obra ${a.level}${a.daily ? ` · diaria ${a.daily}` : ''}${a.online ? ' · en sala' : ''}</b>
+          <span>${day(a.when)} · ${where} · ${a.turns} turnos · mayor golpe ${a.maxHit}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
+          <span class="acta-tools">${a.tools.map((id) => glyphSvg(id, 'mini-ico')).join('') || '<em>sin herramientas</em>'}<em>${a.seed ? `semilla ${a.seed}` : 'semilla del servidor'}</em></span>
+        </div>
+        <div class="acta-btns"><button data-replay="${i}" ${replay ? '' : 'disabled'} data-tip="<b>Rejugar semilla</b>${replay ? 'Empieza una campaña nueva con la misma semilla, baraja y nivel de obra: las mismas decisiones darán exactamente la misma campaña.' : a.daily ? 'La obra diaria solo se juega en su día.' : 'En sala la semilla la pone el servidor.'}">Rejugar semilla</button><button data-copy="${i}">Copiar acta</button></div>
+      </article>`;
+    })
+    .join('')}</div>`;
+  $$<HTMLButtonElement>('[data-copy]', list).forEach(
+    (b) =>
+      (b.onclick = () => {
+        const text = archive[Number(b.dataset.copy)]?.text ?? '';
+        void navigator.clipboard?.writeText(text).then(
+          () => toast('Acta copiada'),
+          () => toast('No se pudo copiar'),
+        );
+      }),
+  );
+  $$<HTMLButtonElement>('[data-replay]', list).forEach(
+    (b) =>
+      (b.onclick = () => {
+        const a = archive[Number(b.dataset.replay)];
+        if (!a) return;
+        confirmAbandon(() => {
+          prefs.seed = a.seed;
+          if (deckUnlocked(meta, a.deck)) pickDeck(a.deck);
+          prefs.ascension = Math.min(a.level - 1, meta.ascMax);
+          newCampaign(runOpts());
+        });
       }),
   );
 }

@@ -3,17 +3,21 @@
 Roguelike de construcción de mazo con baraja francesa clásica y estética de grabado brutalista. Diseño original:
 cuatro torres, doce pisos y un búnker que se agrieta con cada sirena. Para 1 a 4 jugadores.
 
-- **Campaña roguelike** en solitario o en cuadrilla: 8 obras, jefes anunciados en el plano, rutas con contrato, ferretería, hallazgos y cimientos abisales sin final.
+**Jugar en el navegador:** https://ifbotech.github.io/derrumbe/ (se publica sola en cada cambio; ver [Publicar](#publicar)).
+
+- **Campaña roguelike** en solitario o en cuadrilla: 8 obras cortas y tensas (de 6 a 12 turnos), jefes anunciados en el plano, rutas con contrato, ferretería, hallazgos y cimientos abisales sin final.
 - **Fuerza × Resonancia**: cada golpe se resuelve paso a paso, de izquierda a derecha, y se ve en la mesa antes de darlo.
-- **La baraja manda**: cartas solas, formaciones de póker y el **As de compañía**, que forma jugada con cualquier carta y cuela el poder de su palo. Los cuatro poderes (perforar, esquirlas, reparar, muro) están siempre a la vista, y cada torre lleva atornillada su **placa de inmunidad**.
+- **La baraja manda**: cartas solas, formaciones de póker y el **As de compañía**. Los cuatro poderes de palo y la **rueda de materiales** (♠ → ♦ → ♥ → ♣ → ♠) están siempre a la vista, y cada torre lleva atornillada su **placa de inmunidad**.
 - **Golpe limpio**: tirar un piso con el daño exacto calla la sirena, paga, roba y castiga al piso de abajo.
-- **Cinturón de herramientas** reordenable (48 herramientas, 4 rarezas, 5 familias), **sellos** y **tratamientos** sobre las cartas.
-- **Andamio** (un hueco para guardar una carta), **tiza de replanteo** (deshacer una jugada por obra en solitario) y **reinicio rápido** manteniendo R.
+- **Fatiga de cimientos**: ninguna obra se eterniza. A partir del turno 9, tus golpes resuenan más y la sirena también: todo acaba en un crescendo.
+- **Cinturón de herramientas** reordenable (52 herramientas, 4 rarezas, 6 familias). La familia de **aguante** cobra la defensa en daño: el muro se vuelve Fuerza, lo que frena se devuelve y lo que sobra, repara.
+- **Andamio**, **tiza de replanteo** (deshacer una jugada por obra en solitario) y **reinicio rápido** manteniendo R.
 - **8 niveles de obra**, cada uno con un giro, y **sellos de maestría** en la colección.
 - **Lupa de grabador**: clic derecho o pulsación larga sobre cualquier carta, herramienta, piso o jefe.
+- **Archivo de actas**: las 25 últimas campañas, con su semilla para rejugarlas, y **copia de seguridad** del progreso en un archivo.
 - **Cooperativo online** con salas por código, servidor autoritativo y **marcas de tiza** para señalar sin hablar.
-- **Teclado y mando** de principio a fin (también en Steam Deck), y maqueta propia para móvil.
-- **Obra diaria** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada**.
+- **Teclado y mando** de principio a fin, con las indicaciones de cada botón en pantalla; maqueta propia para móvil.
+- **Obra diaria** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada** con consejos de tiza la primera vez.
 
 Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo seis palabras tienen significado propio —Fuerza, Resonancia, golpe limpio, fractura, apuntalado y desarmada—; todo lo demás se dice con palabras llanas.
 
@@ -49,39 +53,50 @@ Versión estática, sin servidor (GitHub Pages, itch.io o una envoltura de escri
 npm run build:web
 ```
 
-El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest` e icono SVG.
+El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, icono SVG y tarjeta para compartir.
 
 | Comando | Qué hace |
 |---|---|
-| `npm test` | Pruebas del motor, la campaña, el tutorial y las palabras clave (Vitest), con 500 partidas de fuzz con semilla |
+| `npm test` | Pruebas del motor, la campaña, la fatiga, el tutorial y las palabras clave (Vitest), con 500 partidas de fuzz con semilla |
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
-| `npm run analyze:meta` | Laboratorio de balance: ~10.000 campañas con semilla → consola y `scripts/meta-report.json` |
+| `npm run analyze:meta` | Laboratorio de balance: ~52.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
 | `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas de la partida clásica y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 15 estados en 4 tamaños, con auditoría del DOM → `artifacts/visual-qa/` |
-| `npm run qa:smoke` | Juega de verdad en el navegador: golpe, tiza, andamio, lupa, foco, reinicio y una obra a teclado |
-| `npm run docs` | Regenera `REGLAS.md` desde los datos del motor |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 19 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM → `artifacts/visual-qa/` |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, obra, reglas, ajustes, cobro, ferretería y hallazgo) |
+| `npm run og` | Regenera la tarjeta para compartir (`public/og-card.png`, 1200 × 630) |
+| `npm run docs` | Regenera `REGLAS.md` y las tablas de balance y controles de este archivo |
 
-La primera vez, las dos órdenes de control de calidad necesitan el navegador de Playwright:
+La primera vez, las órdenes que abren un navegador necesitan el de Playwright:
 
 ```bash
 npx playwright install chromium
 ```
 
+### Publicar
+
+El flujo [`.github/workflows/ci-deploy.yml`](.github/workflows/ci-deploy.yml) comprueba tipos y pruebas en cada cambio y, en `main`, publica `dist/web` en GitHub Pages. Solo hay que activarlo una vez en el repositorio: **Settings → Pages → Source: GitHub Actions**. La página queda en https://ifbotech.github.io/derrumbe/.
+
+Al compartir el enlace sale la tarjeta de `public/og-card.png`. Si publicas el juego en otra dirección, cambia las tres direcciones completas de las etiquetas `og:` de [index.html](index.html).
+
+Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativo) y `VITE_COMMUNITY_URL` (a dónde lleva «Comunidad y comentarios» en Ajustes; por defecto, los avisos de este repositorio).
+
 ## Cómo se juega una campaña
 
 1. **El sobre.** Empiezas con una baraja inicial y tres cartas especiales.
 2. **El plano de demolición.** Enseña las ocho obras y, desde el principio, qué jefe espera en cada una. En las obras sin jefe eliges **ruta** —cada una con un **contrato**— o tomas el **atajo** y te la saltas a cambio de una **etiqueta sindical**.
-3. **La obra.** Eliges cartas y la mesa te enseña **Fuerza × Resonancia = daño** contra cada torre, con sus avisos (golpe limpio, muro, sirena, si la jugada se puede deshacer). Al golpear, cada carta, sello, tratamiento y herramienta se activa en orden.
+3. **La obra.** Eliges cartas y la mesa te enseña **Fuerza × Resonancia = daño** contra cada torre, con sus avisos (golpe limpio, muro, sirena, si la jugada se puede deshacer). Al golpear, cada carta, sello, tratamiento y herramienta se activa en orden. Si la obra se alarga, la **fatiga de cimientos** sube las apuestas para los dos lados.
 4. **A cobrar.** Oro con interés, el resultado del contrato y **una de tres opciones a la vista** para el mazo. Los jefes dejan una herramienta de botín.
 5. **La ferretería.** Herramientas en su chapa (hierro, cobre, latón o carmesí y oro, según la rareza), sobres de especiales, planos, la **mesa de forja**, el quemador y «Revolver cajones».
 6. **Hallazgos en los cimientos** tras cada jefe intermedio: dilemas con premio y precio.
-7. Tras la octava obra, el **acta de demolición** se puede copiar como tarjeta de texto. Y si quedan ganas, los **cimientos abisales**.
+7. Tras la octava obra, el **acta de demolición** se puede copiar como tarjeta de texto y queda en el archivo. Y si quedan ganas, los **cimientos abisales**.
 
 ### El gremio
 
-Ganes o pierdas, cada campaña deja renombre. En el gremio no se compra fuerza bruta: se **abren surtidos**. Los **logros** desbloquean barajas iniciales y cartas legendarias, y ganar una campaña estampa un **sello de maestría** (bronce, hierro u oro, según el nivel de obra) en la baraja y en cada herramienta que llevabas.
+Ganes o pierdas, cada campaña deja renombre. En el gremio no se compra fuerza bruta: se **abren surtidos**. El surtido base es corto a propósito; seis cajas abren el resto de las herramientas, cada una con su manera de jugar (precisión, sismo, alquimia, riesgo, chatarra y aguante). Los **logros** desbloquean barajas iniciales y cartas legendarias, y ganar una campaña estampa un **sello de maestría** (bronce, hierro u oro, según el nivel de obra) en la baraja y en cada herramienta que llevabas.
 
-En solitario, la campaña y el gremio se guardan en el dispositivo. Todo lo que el juego le pide a la máquina (guardar, pantalla completa, vibración, logros del sistema, dirección del servidor) pasa por `PlatformBridge` (`src/client/platform.ts`): una envoltura de escritorio solo tiene que llamar a `setPlatform()` con la suya.
+El **archivo de actas** guarda las 25 últimas campañas: resultado, obra y jefe, turnos, mayor golpe, herramientas y semilla, con un botón para **rejugar la semilla** y otro para copiar el acta.
+
+En solitario, la campaña y el gremio se guardan en el dispositivo. Desde **Ajustes** se puede **exportar el progreso** a un archivo .json e **importarlo** en otro navegador, otro equipo o la versión de escritorio. Todo lo que el juego le pide a la máquina (guardar, archivos, pantalla completa, vibración, logros del sistema, enlaces, dirección del servidor) pasa por `PlatformBridge` (`src/client/platform.ts`): una envoltura de escritorio solo tiene que llamar a `setPlatform()` con la suya.
 
 ### Jugar con amigos
 
@@ -105,85 +120,97 @@ Detrás de un proxy inverso, recuerda permitir la actualización a WebSocket en 
 
 ### Controles
 
+Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón del mando si lo último que tocaste fue un mando.
+
+<!-- controles:inicio -->
 | Acción | Teclado y ratón | Mando |
 |---|---|---|
 | Mover el foco | Flechas | Cruceta o palanca |
 | Elegir | Enter · 1–9 en la mano | A |
 | Golpear la torre apuntada | Espacio | X |
 | Guardar en el andamio | Y | Y |
-| Tiza de replanteo | Z | — |
+| Tiza de replanteo (deshacer) | Z | LT |
+| Cambiar la velocidad (1× → 2× → 4×) | botón de la barra | RT |
 | Lupa de grabador | L · clic derecho · pulsación larga | RB |
-| Mazo | Tab | LB |
-| Atrás / soltar | Esc | B |
+| Mazo (cantera y escombrera) | Tab | LB |
+| Descartar lo elegido | Supr | — |
+| Atrás / soltar la selección | Esc | B |
+| Reordenar el cinturón | Arrastrar · Mayús + flechas | — |
 | Reiniciar la campaña | Mantener R | Mantener Select |
-| Pantalla completa · Ajustes | F | Start |
+| Pantalla completa | F | — |
+| Ajustes | — | Start |
+<!-- controles:fin -->
 
 ## Balance
 
-Medido con `npm run analyze:meta`: **18.160 campañas** con semilla jugadas por el bot de referencia (rutas, contratos, selección, ferretería, forja, hallazgos, andamio y orden del cinturón). El informe completo —cada herramienta, carta especial, sello y tratamiento, con cuánto se elige, cuánto se activa y cuánto mueve el resultado— queda en [scripts/meta-report.json](scripts/meta-report.json).
+<!-- balance:inicio -->
+Medido con `npm run analyze:meta`: **54.840 campañas** con semilla jugadas por el bot de referencia (rutas, contratos, selección, ferretería, forja, hallazgos, andamio y orden del cinturón). El informe completo —cada herramienta, carta especial, sello y tratamiento— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
 
-Campañas ganadas por nivel de obra (baraja de obra). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 8 y el 18 %. Los niveles 1 y 8 se miden con 1.500 campañas por celda (±1,3 puntos); los intermedios, con 200 (±3,3):
+Campañas ganadas por nivel de obra (baraja de obra, 1500 campañas por celda). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 8 y el 18 %; y cada nivel, más difícil que el anterior.
 
 | Nivel | Gremio vacío | Gremio lleno |
 |---|---|---|
-| 1 · Obra limpia | 29,9 % | 39,3 % |
-| 2 · Hormigón armado | 29 % | 39 % |
-| 3 · Vigas maestras | 21,5 % | 33 % |
-| 4 · Precios de obra | 18,5 % | 28,5 % |
-| 5 · Sirena afinada | 15 % | 23,5 % |
-| 6 · Suelo cansado | 9 % | 19 % |
-| 7 · Sin relevo | 12,5 % | 17,5 % |
-| 8 · Clausura | 7,5 % | 16,7 % |
+| 1 · Obra limpia | 29,1 % | 44,1 % |
+| 2 · Hormigón armado | 25 % | 40,6 % |
+| 3 · Precios de obra | 23 % | 35,1 % |
+| 4 · Vigas maestras | 17,6 % | 32,2 % |
+| 5 · Sirena afinada | 14,3 % | 27,7 % |
+| 6 · Búnker viejo | 12 % | 24,5 % |
+| 7 · Turno de noche | 7,3 % | 16,9 % |
+| 8 · Clausura | 4,1 % | 10,9 % |
 
-El nivel 1 con gremio lleno queda en el borde bajo del objetivo en esta muestra. La misma configuración, medida aparte con otras 3.000 campañas por celda de semillas distintas, dio 30,1 % (vacío), 43,5 % (lleno) y 16,3 % (nivel 8); juntando las dos mediciones (4.500 campañas por celda): **30,0 %, 42,1 % y 16,4 %**.
+Por baraja inicial (nivel 1, 1500 campañas por celda). Objetivo: todas entre el 24 y el 31 % sin gremio y entre el 40 y el 45 % con él.
 
-Por baraja inicial (nivel 1; 400 campañas por celda, ±2,4 puntos):
+| Baraja | Gremio vacío | Gremio lleno | Lo que suma el gremio |
+|---|---|---|---|
+| Baraja de obra | 29,1 % | 44,1 % | +15 |
+| Baraja negra | 27,3 % | 43,3 % | +16 |
+| Baraja del prestamista | 27,7 % | 41,5 % | +13,8 |
+| Baraja de ases | 25,6 % | 40,1 % | +14,5 |
+| Baraja corta | 28,7 % | 40,7 % | +12 |
+| Baraja del caos | 26,3 % | 43,3 % | +17 |
 
-| Baraja | Gremio vacío | Gremio lleno |
-|---|---|---|
-| Baraja de obra | 29,9 % | 39,3 % |
-| Baraja negra | 35,3 % | 35,5 % |
-| Baraja del prestamista | 28 % | 39,8 % |
-| Baraja de ases | 33,8 % | 44 % |
-| Baraja corta | 29,3 % | 37,5 % |
-| Baraja del caos | 28,3 % | 45 % |
-
-Jefes: proporción de campañas que acaban ante cada uno, y cuánto se aparta de la media (ninguno pasa de ×2,2).
+Jefes: de cada vez que una campaña llega a uno, cuántas acaba ahí (media 15,4 %). Objetivo: todos entre 0,8× y 1,3× de la media.
 
 | Jefe | Letalidad | Frente a la media |
 |---|---|---|
-| La Sirena | 19,5 % | ×1,09 |
-| El Usurero | 19,2 % | ×1,07 |
-| El Matasanos | 18,4 % | ×1,03 |
-| La Ventisca | 27,1 % | ×1,51 |
-| El Coloso | 12,9 % | ×0,72 |
-| La Furia | 16,4 % | ×0,92 |
-| El Topo | 11,7 % | ×0,65 |
+| La Sirena | 15,1 % | ×0,98 |
+| El Usurero | 16,5 % | ×1,07 |
+| El Matasanos | 13,8 % | ×0,9 |
+| La Ventisca | 17,6 % | ×1,14 |
+| El Coloso | 15,8 % | ×1,03 |
+| La Furia | 14,9 % | ×0,97 |
+| El Topo | 14,4 % | ×0,94 |
 
-Turnos por obra (mediana y percentil 95). El colapso se encarece con cada vuelta a la cantera, así que ninguna obra se puede estirar sin fin. Las obras de 25 turnos o más son en torno a un 8 % de las tardías y, en la muestra analizada, todas acaban en victoria: mazos de poco daño que ganan por aguante, no atascos.
+Turnos por obra. Objetivo: obra 1 de 5 a 7 turnos de mediana (P95 ≤ 10); obras 2 y 3 de 8 a 10 (P95 ≤ 15); obras 4 a 8 de 9 a 13 (P95 ≤ 19), con cualquier baraja.
 
 | Obra | Mediana | P95 |
 |---|---|---|
 | 1 · Caseta de obra | 6 | 9 |
-| 2 · Bloque de pisos | 12 | 16 |
-| 3 · Torre del capataz | 12 | 19 |
-| 4 · Polígono | 17 | 25 |
-| 5 · Ciudadela | 17 | 30 |
-| 6 · Rascacielos | 17 | 26 |
-| 7 · Fortaleza | 16 | 29 |
-| 8 · La Torre Madre | 15 | 31 |
+| 2 · Bloque de pisos | 8 | 11 |
+| 3 · Torre del capataz | 9 | 12 |
+| 4 · Polígono | 11 | 15 |
+| 5 · Ciudadela | 11 | 16 |
+| 6 · Rascacielos | 11 | 16 |
+| 7 · Fortaleza | 11 | 17 |
+| 8 · La Torre Madre | 11 | 17 |
 
-Partida clásica (`npm run simulate 1500`): el bot gana el 62 % de las obras en solitario y el 67 %, 64 % y 53 % con 2, 3 y 4 jugadores.
+Peor percentil 95 de las obras 4 a 8, por baraja: de obra 18 · negra 18 · del prestamista 18 · de ases 17 · corta 16 · del caos 17.
 
-El objetivo es un progreso **horizontal**: una cuenta nueva ya gana en torno a tres de cada diez campañas, y el gremio completo sube ese número ampliando opciones, no multiplicando estadísticas.
+Partida clásica (una obra, 1500 partidas por celda; objetivo 58–65 %): 1 jugador 59,3 % · 2 jugadores 58,5 % · 3 jugadores 64,5 % · 4 jugadores 63,1 %.
+
+El informe no deja ningún aviso: todos los objetivos se cumplen en la muestra.
+<!-- balance:fin -->
+
+El objetivo es un progreso **horizontal**: una cuenta nueva ya gana más de una de cada cuatro campañas, y el gremio completo sube ese número ampliando opciones, no multiplicando estadísticas.
 
 ## Arquitectura
 
 ```
 src/
   rules/        Motor de reglas puro, determinista y sin dependencias
-    engine.ts     estado, acciones, golpe (Fuerza × Resonancia), andamio, tiza, eventos, vista por jugador
-    tools.ts      las 48 herramientas del cinturón
+    engine.ts     estado, acciones, golpe (Fuerza × Resonancia), fatiga, andamio, tiza, eventos, vista por jugador
+    tools.ts      las 52 herramientas del cinturón
     specials.ts   cartas especiales
     keywords.ts   las seis palabras clave y cómo se marcan en los textos
     run.ts        campaña (reductor): plano, contratos, cobro, ferretería, hallazgos, niveles de obra, gremio
@@ -194,24 +221,26 @@ src/
   server/       Node + ws: salas, turnos, reconexión, marcas de tiza, estáticos
   client/       Vite + TypeScript + CSS/SVG
     core.ts · platform.ts · net.ts · router.ts   estado, puente con la plataforma, conexión
-    home.ts · lobby.ts · guild.ts                portada, vestíbulo, gremio y colección
+    home.ts · lobby.ts · guild.ts                portada, vestíbulo, gremio, colección y archivo de actas
     campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas
-    table.ts · tutorial-ui.ts                    mesa de combate y partida guiada
-    lupa.ts · flavor.ts · pings.ts · nav.ts      lupa de grabador, epígrafes, marcas de tiza, teclado y mando
-    widgets.ts · fx.ts                           cinturón, visor de mazos, ajustes, efectos
+    table.ts · tutorial-ui.ts                    mesa de combate (rueda de materiales, fatiga, susurros) y partida guiada
+    nav.ts · prompts.ts                          foco para teclado y mando, e indicaciones de cada botón
+    lupa.ts · flavor.ts · pings.ts               lupa de grabador, epígrafes, marcas de tiza
+    widgets.ts · backup.ts · fx.ts               cinturón, visor de mazos, ajustes, copia de seguridad, efectos
     card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: cartas, retratos, iconos, tramas y grano
     audio.ts                                     efectos y música sintetizados, con mezcla y máster
     qa.ts                                        estados fijos para las capturas (solo con ?qa)
-tests/          Vitest: motor, campaña, tutorial y palabras clave
-scripts/        Laboratorio de balance, control de calidad visual y generador del reglamento
+tests/          Vitest: motor, campaña, fatiga y aguante, tutorial y palabras clave
+scripts/        Laboratorio de balance, control de calidad (capturas, humo, mando virtual), tarjeta social y reglamento
 ```
 
 - **Motor determinista.** Semilla + lista de acciones reproducen cualquier partida y cualquier campaña, decisión a decisión. Las pruebas lo comprueban con 500 partidas de fuzz.
 - **Servidor autoritativo.** El cliente solo envía intenciones; el servidor valida con el motor y difunde el resultado. Las marcas de tiza son solo señales: no deciden nada.
 - **Información oculta.** Cada jugador recibe únicamente su mano y su andamio (`viewFor`) y sus propias cartas robadas o guardadas (`eventsFor`). La campaña de una sala viaja sin el estado del azar ni la semilla (`publicRun`).
 - **Animación por eventos.** Cada golpe produce una lista de eventos que el cliente encola y anima; las reglas no saben nada de lo visual.
-- **Grabado.** Todo el arte es SVG dibujado a mano: figuras de doble cabeza, tintas planas por material, sombras de buril (rayados y semitonos) y cuatro tintas de taller —negro de humo, almagre, ocre y verdín— con opción de las dos clásicas. El grano del papel se hornea una vez en un lienzo; lo que se mueve solo cambia `transform` y `opacity`.
-- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio. Música y efectos van a buses separados, y el máster pasa por un estante de agudos, un compresor y una reverberación corta de sala de hormigón; la música gana capas con el apuro del búnker y el audio se suspende al cambiar de pestaña.
+- **Mando.** `nav.ts` lee el mando estándar del W3C (cruceta, palanca con zona muerta de 0,28, repetición a los 320 ms y cada 110 ms) y lo traduce a las mismas acciones que el teclado. La prueba de humo inyecta un mando virtual y juega una campaña entera con él.
+- **Grabado.** Todo el arte es SVG dibujado a mano: figuras de doble cabeza, tintas planas por material, sombras de buril y cuatro tintas de taller —negro de humo, almagre, ocre y verdín— con opción de las dos clásicas. El grano del papel se hornea una vez en un lienzo; lo que se mueve solo cambia `transform` y `opacity`.
+- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta; la música gana capas con el apuro del búnker.
 
 Todo el stack es open source: TypeScript, Vite, ws, Vitest, esbuild, Playwright y las tipografías UnifrakturCook, Grenze Gotisch, Archivo, Archivo Black y Space Mono (OFL).
 

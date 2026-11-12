@@ -1,10 +1,12 @@
 // Genera REGLAS.md a partir de los datos del propio motor, para que el reglamento escrito
 // nunca se desincronice de lo que el juego hace de verdad:  npm run docs
-import { writeFileSync } from 'node:fs';
+// De paso pone al día en README.md las tablas de balance (desde scripts/meta-report.json) y la de
+// controles, que van entre marcas <!-- …:inicio --> y <!-- …:fin -->.
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formation, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { ACHIEVEMENTS, unlocksOf } from '../src/rules/achievements';
 import { KEYWORDS } from '../src/rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, EVENT_AFTER, LAST_STAGE, MIN_DECK, STAGES, TAGS, UPGRADES, stageDef } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, EVENT_AFTER, FATIGUE, LAST_STAGE, MIN_DECK, STAGES, TAGS, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
 import { ARCH, Arch, RARITY, TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 
@@ -23,6 +25,23 @@ const FORM_CARDS: Record<Formation, string> = {
   poker: '4 del mismo número',
 };
 const KIND = { f: '+F suma Fuerza', r: '+R suma Resonancia', x: '×R multiplica', copy: '⇉ copia', p: '• pasiva' } as const;
+
+const CONTROLS_TABLE = table(['Acción', 'Teclado y ratón', 'Mando'], [
+  ['Mover el foco', 'Flechas', 'Cruceta o palanca'],
+  ['Elegir', 'Enter · 1–9 en la mano', 'A'],
+  ['Golpear la torre apuntada', 'Espacio', 'X'],
+  ['Guardar en el andamio', 'Y', 'Y'],
+  ['Tiza de replanteo (deshacer)', 'Z', 'LT'],
+  ['Cambiar la velocidad (1× → 2× → 4×)', 'botón de la barra', 'RT'],
+  ['Lupa de grabador', 'L · clic derecho · pulsación larga', 'RB'],
+  ['Mazo (cantera y escombrera)', 'Tab', 'LB'],
+  ['Descartar lo elegido', 'Supr', '—'],
+  ['Atrás / soltar la selección', 'Esc', 'B'],
+  ['Reordenar el cinturón', 'Arrastrar · Mayús + flechas', '—'],
+  ['Reiniciar la campaña', 'Mantener R', 'Mantener Select'],
+  ['Pantalla completa', 'F', '—'],
+  ['Ajustes', '—', 'Start'],
+]);
 
 const md = `# DERRUMBE — Reglas
 
@@ -104,6 +123,7 @@ La mesa te lo avisa antes de golpear: la previsualización de cada torre dice si
 ### Reglas especiales
 
 - **Comodín · Huelga**: se juega solo sobre una torre. Su piso actual queda **desarmado** (amenaza 0 hasta que caiga) y la sirena no suena. El comodín sale de la obra.
+- **Fatiga de cimientos**: ninguna obra aguanta eternamente. En campaña, desde el turno ${FATIGUE.start + 1} de cada obra y cada ${FATIGUE.every} turnos, la fatiga sube un nivel; cada nivel da **+${n(FATIGUE.res)} de Resonancia** a todos los golpes y **+1 de amenaza** a todas las torres. La obra se acelera en los dos sentidos: pegas más y la sirena también. La mesa avisa tres turnos antes. En cuadrilla empieza más tarde, en proporción a lo que aguantan las obras; en la partida clásica, en el turno ${(cfg.fatigueStart ?? 0) + 1} y cada ${cfg.fatigueEvery} turnos.
 - **Colapso**: si la cantera se agota, la escombrera se baraja y vuelve a ser cantera, pero el búnker pierde **${cfg.collapseLoss}** de integridad (el muro no lo evita). Cada vuelta completa de la cuadrilla a la cantera encarece el colapso en 1: las obras no se pueden estirar sin fin.
 - **As de compañía**: un As forma jugada con **cualquier otra carta** (×${n(FORM.compania.r)} de Resonancia) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar muro, uno de ♥ para reparar, uno de ♠ para perforar.
 - **Andamio**: junto a la mano hay un hueco de reserva. Una vez por turno, y sin gastar el turno, puedes guardar en él una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La herramienta *Pasarela* añade un segundo hueco. En la partida guiada no hay andamio.
@@ -111,6 +131,7 @@ La mesa te lo avisa antes de golpear: la previsualización de cada torre dice si
 - Las cartas de baraja nunca bajan de 12 en el mazo: lo que las destruye deja de hacerlo al llegar a ese mínimo.
 - **Victoria**: las cuatro torres en ruinas. **Derrota**: la integridad del búnker llega a 0.
 - Modo **BRUTAL** (partida clásica): búnker de ${DIFFICULTY.brutal.maxIntegrity} y colapsos de ${DIFFICULTY.brutal.collapseLoss}.
+- **Partida clásica en cuadrilla**: el colapso se ajusta a cuántos jugáis, porque con más manos la cantera se agota antes: ${[1, 2, 3, 4].map((p) => `${cfg.collapseLoss - (cfg.collapseRelief?.[p - 1] ?? 0)} con ${p}`).join(', ')}.
 
 ## Campaña
 
@@ -200,9 +221,14 @@ ${table(['Baraja', 'Cómo cambia la campaña', 'Se desbloquea con'], DECKS.map((
 
 ## El gremio
 
-Ganes o pierdas, cada campaña deja **renombre**. En el gremio se gasta en **abrir surtidos**, no en fuerza bruta:
+Ganes o pierdas, cada campaña deja **renombre**. En el gremio se gasta en **abrir surtidos**, no en fuerza bruta. El surtido base es corto a propósito (${TOOLS.filter((t) => !t.box).length} herramientas); las cajas abren las otras ${TOOLS.filter((t) => t.box).length}, cada una con su manera de jugar:
 
 ${table(['Mejora', 'Efecto', 'Coste'], UPGRADES.map((u) => [u.name, u.desc, u.costs.map((c) => `${c} ✦`).join(' · ')]))}
+
+### Archivo de actas y copia de seguridad
+
+- El gremio guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué obra y ante qué jefe, turnos, mayor golpe, herramientas y semilla. Desde ahí se puede **copiar el acta** o **rejugar la semilla** con la misma baraja y el mismo nivel de obra.
+- En **Ajustes**, *Exportar progreso* guarda gremio, colección, actas y ajustes en un archivo .json, e *Importar progreso* lo recupera en otro navegador, otro equipo o la versión de escritorio.
 
 ### Logros
 
@@ -216,24 +242,72 @@ ${KEYWORDS.map((k) => `- **${k.name}**: ${k.desc}`).join('\n')}
 
 ## Controles
 
-${table(['Acción', 'Teclado y ratón', 'Mando'], [
-  ['Mover el foco', 'Flechas', 'Cruceta o palanca'],
-  ['Elegir', 'Enter · 1–9 en la mano', 'A'],
-  ['Golpear la torre apuntada', 'Espacio', 'X'],
-  ['Guardar en el andamio', 'Y', 'Y'],
-  ['Tiza de replanteo (deshacer)', 'Z', '—'],
-  ['Lupa de grabador', 'L · clic derecho · pulsación larga', 'RB'],
-  ['Mazo (cantera y escombrera)', 'Tab', 'LB'],
-  ['Descartar lo elegido', 'Supr', '—'],
-  ['Atrás / soltar la selección', 'Esc', 'B'],
-  ['Reordenar el cinturón', 'Arrastrar · Mayús + flechas', '—'],
-  ['Reiniciar la campaña', 'Mantener R', 'Mantener Select'],
-  ['Pantalla completa', 'F', '—'],
-  ['Ajustes', '—', 'Start'],
-])}
+${CONTROLS_TABLE}
+
+Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón (A, B, X, Y, LB, RB, LT, RT) si lo último que tocaste fue un mando, y nada con ratón o pantalla táctil. Junto a los poderes de palo, la **rueda de materiales** (♠ → ♦ → ♥ → ♣ → ♠) se enciende con lo que llevas elegido: flecha de latón si pegas con ventaja, aspa de hierro si esa torre es inmune a tu palo.
 
 La **lupa de grabador** abre cualquier carta, herramienta, piso de torre o jefe a tamaño de lámina, con la cuenta exacta de lo que aporta en ese momento. En sala, pulsar una torre cuando no es tu turno (o cualquier ruta, oferta o carta con Alt) deja una **marca de tiza** con tus iniciales para la cuadrilla: no decide nada, solo señala.
 `;
 
 writeFileSync(new URL('../REGLAS.md', import.meta.url), md);
+
+// ── README: bloques generados ──
+interface Report {
+  campaigns: number;
+  winrate: { levels: { level: number; name: string; vacio: number; lleno: number; n: number }[]; decks: { name: string; vacio: number; lleno: number; n: number }[] };
+  bosses: { who: string; lethality: number; faced: number }[];
+  avgLethality: number;
+  pacing: { stage: number; name: string; p50: number; p95: number }[];
+  pacingByDeck?: { name: string; worstP95: number }[];
+  classic?: { players: number; winrate: number; turns: number; n: number }[];
+  flags: string[];
+}
+const p = (x: number) => `${n(Math.round(x * 10) / 10)} %`;
+function balanceMd(r: Report): string {
+  const levels = r.winrate.levels.filter((l) => l.n);
+  const decks = r.winrate.decks.filter((d) => d.n);
+  return [
+    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, contratos, selección, ferretería, forja, hallazgos, andamio y orden del cinturón). El informe completo —cada herramienta, carta especial, sello y tratamiento— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
+    '',
+    `Campañas ganadas por nivel de obra (baraja de obra, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 8 y el 18 %; y cada nivel, más difícil que el anterior.`,
+    '',
+    table(['Nivel', 'Gremio vacío', 'Gremio lleno'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
+    '',
+    `Por baraja inicial (nivel 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el 24 y el 31 % sin gremio y entre el 40 y el 45 % con él.`,
+    '',
+    table(['Baraja', 'Gremio vacío', 'Gremio lleno', 'Lo que suma el gremio'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
+    '',
+    `Jefes: de cada vez que una campaña llega a uno, cuántas acaba ahí (media ${p(r.avgLethality)}). Objetivo: todos entre 0,8× y 1,3× de la media.`,
+    '',
+    table(['Jefe', 'Letalidad', 'Frente a la media'], r.bosses.map((b) => [b.who, p(b.lethality), `×${n(Math.round((b.lethality / (r.avgLethality || 1)) * 100) / 100)}`])),
+    '',
+    'Turnos por obra. Objetivo: obra 1 de 5 a 7 turnos de mediana (P95 ≤ 10); obras 2 y 3 de 8 a 10 (P95 ≤ 15); obras 4 a 8 de 9 a 13 (P95 ≤ 19), con cualquier baraja.',
+    '',
+    table(['Obra', 'Mediana', 'P95'], r.pacing.map((x) => [`${x.stage} · ${x.name}`, String(x.p50), String(x.p95)])),
+    '',
+    r.pacingByDeck?.length ? `Peor percentil 95 de las obras 4 a 8, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}.` : '',
+    '',
+    r.classic?.length ? `Partida clásica (una obra, ${r.classic[0].n} partidas por celda; objetivo 58–65 %): ${r.classic.map((c) => `${c.players} jugador${c.players > 1 ? 'es' : ''} ${p(c.winrate)}`).join(' · ')}.` : '',
+    '',
+    r.flags.length ? `Avisos del informe (${r.flags.length}): ${r.flags.join('; ')}.` : 'El informe no deja ningún aviso: todos los objetivos se cumplen en la muestra.',
+  ]
+    .filter((line, i, all) => line !== '' || all[i - 1] !== '')
+    .join('\n');
+}
+function block(text: string, name: string, body: string): string {
+  const a = `<!-- ${name}:inicio -->`;
+  const b = `<!-- ${name}:fin -->`;
+  const i = text.indexOf(a);
+  const j = text.indexOf(b);
+  return i < 0 || j < i ? text : `${text.slice(0, i + a.length)}\n${body}\n${text.slice(j)}`;
+}
+const readmeUrl = new URL('../README.md', import.meta.url);
+const reportUrl = new URL('./meta-report.json', import.meta.url);
+if (existsSync(readmeUrl)) {
+  let readme = readFileSync(readmeUrl, 'utf8');
+  readme = block(readme, 'controles', CONTROLS_TABLE);
+  if (existsSync(reportUrl)) readme = block(readme, 'balance', balanceMd(JSON.parse(readFileSync(reportUrl, 'utf8')) as Report));
+  writeFileSync(readmeUrl, readme);
+  console.log('README.md · tablas de balance y controles al día');
+}
 console.log(`REGLAS.md · ${md.split('\n').length} líneas`);

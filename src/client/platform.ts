@@ -17,6 +17,12 @@ export interface PlatformBridge {
   vibrate(ms: number, strength?: number): void;
   /** Dirección del servidor de salas, o null si esta instalación es solo local. */
   serverUrl(): string | null;
+  /** Claves guardadas que empiezan por `prefix` (para la copia de seguridad). */
+  keys(prefix: string): string[];
+  /** Entrega un archivo de texto al jugador (descarga en la web; diálogo de guardar en escritorio). */
+  saveFile(name: string, text: string): void;
+  /** Abre una dirección fuera del juego (navegador, o la capa de Steam en escritorio). */
+  openExternal(url: string): void;
 }
 
 const SERVER_KEY = 'derrumbe:server';
@@ -78,6 +84,30 @@ function webPlatform(): PlatformBridge {
         /* sin vibración */
       }
     },
+    keys(prefix) {
+      const out = new Set<string>([...memory.keys()].filter((k) => k.startsWith(prefix)));
+      try {
+        const store = storage();
+        for (let i = 0; store && i < store.length; i++) {
+          const k = store.key(i);
+          if (k?.startsWith(prefix)) out.add(k);
+        }
+      } catch {
+        /* solo lo que haya en memoria */
+      }
+      return [...out];
+    },
+    saveFile(name, text) {
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const a = Object.assign(document.createElement('a'), { href: url, download: name });
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    },
+    openExternal(url) {
+      window.open(url, '_blank', 'noopener');
+    },
     serverUrl() {
       const custom = this.load(SERVER_KEY)?.trim();
       if (custom) return custom.replace(/^http/, 'ws').replace(/\/?$/, '').replace(/\/ws$/, '') + '/ws';
@@ -101,6 +131,9 @@ export function setCustomServer(url: string): void {
   if (url.trim()) platform.save(SERVER_KEY, url.trim());
   else platform.remove(SERVER_KEY);
 }
+
+/** Dónde se habla del juego: avisos de errores, ideas y comentarios. Se puede cambiar al construir (VITE_COMMUNITY_URL). */
+export const COMMUNITY_URL = ((import.meta.env.VITE_COMMUNITY_URL as string | undefined) ?? '').trim() || 'https://github.com/ifbotech/derrumbe/issues';
 
 /** Lee un valor guardado como JSON; null si no existe o está corrupto. */
 export function loadJson<T>(key: string): T | null {

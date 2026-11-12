@@ -3,7 +3,7 @@
 import { applyAction, currentPlayer } from '../src/rules/engine';
 import type { Seal, Treatment } from '../src/rules/engine';
 import { RunPolicy, chooseAction, chooseRunAction } from '../src/rules/bot';
-import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents } from '../src/rules/run';
+import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, DECKS, FATIGUE, STAGES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 
 export interface Spec {
@@ -16,6 +16,8 @@ export interface Spec {
   /** Herramienta o carta especial de regalo al empezar (para medir cuánto vale por sí sola). */
   giveTool?: string;
   giveSpecial?: string;
+  /** Campaña de control: las mismas semillas que las de regalo, pero sin regalo. */
+  control?: 'tool' | 'special';
   /** Con gremio lleno, solo estas mejoras (y «legendarias»). */
   only?: string[];
   policy?: RunPolicy;
@@ -41,6 +43,31 @@ export interface Log {
   taken: Record<string, number>;
   maxHit: number;
   gold: number;
+}
+
+// Mandos de ajuste (variables de entorno): valen para el laboratorio entero, también en sus procesos hijos.
+//   HPS=3.9,3.9,…  resistencia de cada obra · HPX=0.8 escala todas · LATE=0.2 inclina hacia las últimas
+//   THR=2,2,3,…    amenaza de cada obra · FAT=8,2,0.25  fatiga: turno de inicio, cada cuántos turnos, Resonancia por nivel
+//   BARAJA=corta:1:-3  prueba una baraja con más o menos búnker y oro inicial de los que tiene
+const env = process.env;
+if (env.HPS) env.HPS.split(',').forEach((v, i) => STAGES[i] && (STAGES[i].hp = Number(v)));
+if (env.THR) env.THR.split(',').forEach((v, i) => STAGES[i] && (STAGES[i].threat = Number(v)));
+if (env.HPX || env.LATE) STAGES.forEach((st, i) => (st.hp = Math.round(st.hp * Number(env.HPX ?? 1) * (1 + Number(env.LATE ?? 0) * (i / 7)) * 100) / 100));
+if (env.BARAJA) {
+  const [id, bunker, gold] = env.BARAJA.split(':');
+  const deck = DECKS.find((d) => d.id === id);
+  if (!deck) throw new Error(`BARAJA: no existe la baraja «${id}»`);
+  const build = deck.build;
+  deck.build = (run) => {
+    build(run);
+    run.maxIntegrity += Number(bunker) || 0;
+    run.integrity = run.maxIntegrity;
+    run.gold += Number(gold) || 0;
+  };
+}
+if (env.FAT) {
+  const [start, every, res] = env.FAT.split(',').map(Number);
+  Object.assign(FATIGUE, { start, every: every || FATIGUE.every, res: res ?? FATIGUE.res });
 }
 
 const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec[key] ?? 0) + 1);

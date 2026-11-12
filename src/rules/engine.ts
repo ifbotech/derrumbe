@@ -157,6 +157,30 @@ export interface Config {
   discardExhaust?: number;
   /** Huecos de andamio: cartas que cada jugador puede guardar aparte de su mano (1 por defecto). */
   reserveSize?: number;
+  /**
+   * Fatiga de cimientos: desde este turno de la obra, y cada `fatigueEvery` turnos, sube un nivel.
+   * Cada nivel da +`fatigueRes` de Resonancia a todos los golpes y +1 de amenaza a todas las torres:
+   * la obra se acelera en los dos sentidos. Sin definir, no hay fatiga.
+   */
+  fatigueStart?: number;
+  fatigueEvery?: number;
+  fatigueRes?: number;
+  /** Amenaza extra de un piso mientras siga apuntalado. */
+  bracedThreat?: number;
+  /** Lo que le cuesta al búnker cada piso que cae sin golpe limpio. */
+  crumbleHurt?: number;
+  /** Fuerza que se guarda para el próximo golpe por cada punto reparado de más con el búnker lleno. */
+  overhealCharge?: number;
+  /** Puntos de muro sobrante (por encima del tope) que hacen falta para reparar 1 de integridad. */
+  overwallRepair?: number;
+  /** Partida clásica: lo que se le perdona (o se le carga, si es negativo) a cada colapso según jueguen 1, 2, 3 o 4. */
+  collapseRelief?: number[];
+}
+
+/** Nivel de fatiga de cimientos que corresponde a un turno de la obra. */
+export function fatigueAt(cfg: Config, turnCount: number): number {
+  if (cfg.fatigueStart === undefined || turnCount < cfg.fatigueStart) return 0;
+  return 1 + Math.floor((turnCount - cfg.fatigueStart) / Math.max(1, cfg.fatigueEvery ?? 2));
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -173,7 +197,7 @@ export const DEFAULT_CONFIG: Config = {
 
 export type Difficulty = 'obra' | 'brutal';
 /** Partida clásica (una obra). Balanceado por simulación (npm run simulate): el bot gana ~60 % en OBRA y ~40 % en BRUTAL. */
-const OBRA: Config = { ...DEFAULT_CONFIG, floorHp: { 11: 126, 12: 180, 13: 235 }, floorThreat: { 11: 3, 12: 5, 13: 7 }, handSize: { 1: 6, 2: 6, 3: 6, 4: 6 } };
+const OBRA: Config = { ...DEFAULT_CONFIG, floorHp: { 11: 124, 12: 177, 13: 231 }, floorThreat: { 11: 3, 12: 5, 13: 7 }, handSize: { 1: 6, 2: 6, 3: 6, 4: 6 }, fatigueStart: 32, fatigueEvery: 3, fatigueRes: 0.25, collapseRelief: [0, -1, 0, 1] };
 export const DIFFICULTY: Record<Difficulty, Config> = {
   obra: OBRA,
   brutal: { ...OBRA, maxIntegrity: 16, collapseLoss: 6 },
@@ -245,6 +269,8 @@ export interface GameState {
   chalk: number;
   /** La mesa justo antes de la última jugada, mientras quede tiza. */
   undo: GameState | null;
+  /** Nivel de fatiga de cimientos (ver Config.fatigueStart). */
+  fatigue: number;
 }
 
 export type Action =
@@ -269,6 +295,7 @@ export type GameEvent =
   | { e: 'pass'; player: string }
   | { e: 'stash'; player: string; card?: Card; back?: Card | null }
   | { e: 'undo'; chalk: number }
+  | { e: 'fatigue'; level: number }
   | { e: 'hit'; tower: Suit; amount: number; splash: boolean; damage: number; hp: number }
   | { e: 'floorDown'; tower: Suit; rank: number; clean: boolean; towerDown: boolean; damage: number }
   | { e: 'onda'; tower: Suit; amount: number }
@@ -350,6 +377,7 @@ export function createGame(players: { id: string; name: string }[], seed: number
     stashed: false,
     chalk: 0,
     undo: null,
+    fatigue: 0,
   };
   shuffle(state.deck, state);
   const size = config.handSize[players.length];
@@ -380,6 +408,13 @@ export interface StrikeEnv {
   scrap: number;
   integrity: number;
   wall: number;
+  fatigue?: number;
+}
+
+/** Amenaza de una torre ahora mismo: la de su piso, más la fatiga de cimientos y lo que añada el apuntalamiento. */
+export function threatOf(env: { config: Config; fatigue?: number }, t: Tower): number {
+  if (!t.floors.length) return 0;
+  return env.config.floorThreat[t.floors[0]] + (env.fatigue ?? 0) + (t.fx.apuntalado ? (env.config.bracedThreat ?? 0) : 0);
 }
 
 /** El golpe en curso, tal como lo ven las cartas especiales y las herramientas. */
@@ -556,6 +591,10 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     x.F(env.charge);
     env.charge = 0;
   }
+  if ((env.fatigue ?? 0) > 0) {
+    cur = { src: 'state', id: 'fatiga', label: 'Fatiga de cimientos' };
+    x.R(r2((cfg.fatigueRes ?? 0.25) * env.fatigue!));
+  }
   if (standing(tower) && tower.fx.fractura) {
     cur = { src: 'state', id: 'fractura', label: TOWER_FX.fractura.name };
     x.X(cfg.fracturaMult ?? 1.5);
@@ -627,7 +666,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     const fx = riders[i];
     cur = { src: 'special', id: c.id, label: cardLabel(c) };
     const before = tally.events.length;
-    x.F((fx.flat ?? 0) + (fx.flatPerCard ?? 0) * cards.length + (fx.highDouble ? best : 0));
+    x.F((fx.flat ?? 0) + (fx.flatPerCard ?? 0) * cards.length + (fx.highDouble ? best : 0) + (fx.wallForce ?? 0) * env.wall);
     x.X(fx.strikeMult ?? 1);
     if (fx.pierce) x.pierce = true;
     x.wall += (fx.wall ?? 0) + (fx.wallPerCard ?? 0) * all.length;
@@ -695,6 +734,13 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     if (standing(t)) applyDamage(t, Math.ceil(floorHp(t, cfg) * e.pct), false, true, cfg, tally);
   }
   if (tally.fell.length > 0) x.gold += goldOnKill + 2 * jornal;
+  // suelo inestable: cada piso que cae sin golpe limpio se lleva algo del búnker
+  const rough = tally.fell.filter((f) => !f.clean).length;
+  if (cfg.crumbleHurt && rough) {
+    cur = { src: 'state', id: 'inestable', label: 'Suelo inestable' };
+    x.hurt += cfg.crumbleHurt * rough;
+    x.note(`el búnker pierde ${cfg.crumbleHurt * rough}`);
+  }
 
   // 9 · estados estructurales que deja la mezcla de materiales
   if (standing(tower)) {
@@ -823,7 +869,9 @@ function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   state.discard = [];
   shuffle(state.deck, state);
   // cada vuelta completa de la cuadrilla a la cantera encarece el colapso en 1
-  const loss = state.config.collapseLoss + Math.floor(state.collapses / state.players.length);
+  // en cuadrilla hay más cartas en las manos y la cantera se agota antes: cada colapso pesa menos
+  const crowd = state.config.collapseRelief?.[Math.min(state.players.length, 4) - 1] ?? 0;
+  const loss = Math.max(1, state.config.collapseLoss - crowd) + Math.floor(state.collapses / state.players.length);
   state.collapses++;
   state.integrity -= loss;
   events.push({ e: 'collapse', loss, integrity: Math.max(0, state.integrity) });
@@ -860,7 +908,7 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
     events.push({ e: 'state', tower: t.suit, fx: 'sobrecarga', on: false });
     return say(card, t.suit, 'sobrecarga');
   }
-  const threat = state.config.floorThreat[t.floors[0]];
+  const threat = threatOf(state, t);
   const blocked = Math.min(state.wall, threat);
   state.wall -= blocked;
   const taken = threat - blocked;
@@ -945,15 +993,32 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     events.push({ e: 'play', player: p.id, cards, target: action.target, formation });
     const res = strike(state, cards, action.target, state);
     events.push(...res.events);
+    let repair = res.repair;
     if (res.wallGain > 0) {
       const before = state.wall;
       state.wall = Math.min(state.config.wallCap, state.wall + res.wallGain);
       events.push({ e: 'wall', amount: state.wall - before, total: state.wall });
+      // el muro que no cabe no se pierde si alguien lo recoge: repara el búnker
+      const spill = before + res.wallGain - state.wall;
+      const mend = state.config.overwallRepair ? Math.floor(spill / state.config.overwallRepair) : 0;
+      if (mend > 0) {
+        repair += mend;
+        const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
+        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: el muro que sobra repara ${mend}`, fuerza: 0, res: 0 });
+      }
     }
-    if (res.repair > 0) {
+    if (repair > 0) {
       const before = state.integrity;
-      state.integrity = Math.min(state.config.maxIntegrity, state.integrity + res.repair);
+      state.integrity = Math.min(state.config.maxIntegrity, state.integrity + repair);
       events.push({ e: 'repair', amount: state.integrity - before, total: state.integrity });
+      // lo reparado de más con el búnker lleno no se pierde si alguien lo recoge
+      const over = before + repair - state.integrity;
+      if (over > 0 && state.config.overhealCharge) {
+        const gain = over * state.config.overhealCharge;
+        state.charge += gain;
+        const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
+        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: +${gain} de Fuerza cargada`, fuerza: 0, res: 0 });
+      }
     }
     if (res.hurt > 0) {
       state.integrity -= res.hurt;
@@ -1012,6 +1077,11 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   state.turn = (state.turn + 1) % state.players.length;
   state.turnCount++;
   state.stashed = false;
+  const fatigue = fatigueAt(state.config, state.turnCount);
+  if (fatigue !== (state.fatigue ?? 0)) {
+    state.fatigue = fatigue;
+    events.push({ e: 'fatigue', level: fatigue });
+  }
   events.push({ e: 'turn', player: currentPlayer(state).id });
   return { state, events };
 }
@@ -1050,6 +1120,8 @@ export interface PlayerView extends StrikeEnv {
   /** Tizas de replanteo que quedan, y si hay una jugada que deshacer. */
   chalk: number;
   canUndo: boolean;
+  /** Nivel de fatiga de cimientos de la obra. */
+  fatigue: number;
   deckCount: number;
   discardCount: number;
   lastSiren: Card | null;
@@ -1077,6 +1149,7 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     stashed: state.stashed,
     chalk: state.chalk,
     canUndo: state.chalk > 0 && !!state.undo,
+    fatigue: state.fatigue ?? 0,
     towers: state.towers,
     tools: state.tools,
     chain: state.chain,

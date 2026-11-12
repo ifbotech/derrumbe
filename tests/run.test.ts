@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
-import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, LAST_STAGE, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, LAST_STAGE, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FATIGUE } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
-import { TOOL, TOOL_SLOTS } from '../src/rules/tools';
+import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 
 const P = [{ id: 'a', name: 'A' }];
 const act = (run: Run, a: RunAction) => expect(runAction(run, a), JSON.stringify(a)).toBeNull();
@@ -89,7 +89,7 @@ describe('preparación', () => {
     expect(Object.keys(run.bosses).map(Number)).toEqual(bossStages);
     expect(new Set(Object.values(run.bosses)).size).toBe(bossStages.length);
     expect(run.events.length).toBe(3);
-    expect(run.toolPool.length).toBe(32);
+    expect(run.toolPool.length).toBe(toolPool([]).length);
     expect(run.v).toBe(RUN_VERSION);
     expect(run.seals).toEqual(['eco', 'jornal']);
     expect(run.treats).toEqual(['forjado', 'templado']);
@@ -113,9 +113,15 @@ describe('preparación', () => {
       expect(run.integrity, d.id).toBe(run.maxIntegrity);
       expect(startStage(Object.assign(run, { phase: 'battle' as const }), P).players[0].hand.length).toBe(7 + run.handBonus);
     }
-    expect(newRun({ deck: 'acero' }, 3).tools.map((t) => t.id)).toEqual(['acido', 'casco', 'sacos']);
+    expect(newRun({ deck: 'acero' }, 3).tools.map((t) => t.id)).toEqual(['acido', 'sacos']);
+    expect(newRun({ deck: 'acero' }, 3).maxIntegrity).toBe(25);
+    // con la caja de aguante abierta en el gremio, la baraja negra trae además el Bastión
+    expect(newRun({ deck: 'acero', up: { caja_aguante: 1 } }, 3).tools.map((t) => t.id)).toEqual(['acido', 'sacos', 'bastion']);
+    // ases y caos ya no llevan oro de más
+    expect(newRun({ deck: 'ases' }, 3).gold).toBe(4);
+    expect(newRun({ deck: 'caos' }, 3).gold).toBe(4);
     expect(newRun({ deck: 'ases' }, 3).deck.filter((c) => c.rank === 1).length).toBe(8);
-    expect(newRun({ deck: 'caos' }, 3).pack.length).toBe(6);
+    expect(newRun({ deck: 'caos' }, 3).pack.length).toBe(5);
   });
 });
 
@@ -570,7 +576,9 @@ describe('final, cimientos abisales y gremio', () => {
     const solo = stageConfig(run, 1).floorHp[11];
     expect(stageConfig(run, 3).floorHp[11]).toBeGreaterThan(solo);
     expect(stageConfig(newRun({ ascension: 2 }, 13), 1).floorHp[11]).toBeGreaterThan(solo);
-    expect(stageConfig(newRun({ ascension: 2 }, 13), 1).apuntalado).toEqual([13]);
+    // en cuadrilla la fatiga de cimientos empieza más tarde, en proporción a lo que aguantan las obras
+    expect(stageConfig(run, 1).fatigueStart).toBe(FATIGUE.start);
+    expect(stageConfig(run, 4).fatigueStart!).toBeGreaterThan(FATIGUE.start);
     // en solitario hay una tiza de replanteo por obra; en cuadrilla, ninguna
     expect(startStage(Object.assign(newRun({}, 13), { phase: 'battle' as const }), P).chalk).toBe(1);
     expect(startStage(Object.assign(newRun({}, 13), { phase: 'battle' as const }), [...P, { id: 'b', name: 'B' }]).chalk).toBe(0);
@@ -663,33 +671,39 @@ describe('niveles de obra y maestría', () => {
     expect(MAX_ASCENSION).toBe(7);
     expect(newRun({ ascension: 99 }, 1).ascension).toBe(7);
     const base = stageConfig(at(0, 3));
-    const harder = stageConfig(at(1, 3)).floorHp[13] / base.floorHp[13]; // 2 · hormigón armado: +3 % (con el redondeo a enteros)
-    expect(harder).toBeGreaterThan(1.015);
-    expect(harder).toBeLessThan(1.045);
-    expect(stageConfig(at(1, 3)).apuntalado).toBeUndefined();
-    expect(stageConfig(at(2, 3)).apuntalado).toEqual([13]); // 3 · vigas maestras
-    expect(stageConfig(at(3, 3)).floorThreat[11]).toBe(base.floorThreat[11]);
-    expect(stageConfig(at(4, 3)).floorThreat[13]).toBe(base.floorThreat[13] + 1); // 5 · sirena afinada: solo las K
+    const harder = stageConfig(at(1, 3)).floorHp[13] / base.floorHp[13]; // 2 · hormigón armado: +5 % (con el redondeo a enteros)
+    expect(harder).toBeGreaterThan(1.03);
+    expect(harder).toBeLessThan(1.07);
+    // 4 · vigas maestras: K apuntaladas, pero solo en las obras con jefe (la 5 lo es; la 4 no)
+    expect(stageConfig(at(2, 5)).apuntalado).toBeUndefined();
+    expect(stageConfig(at(3, 5)).apuntalado).toEqual([13]);
+    expect(stageConfig(at(3, 4)).apuntalado).toBeUndefined();
+    // 5 · sirena afinada: solo las K
+    expect(stageConfig(at(3, 3)).floorThreat[13]).toBe(base.floorThreat[13]);
+    expect(stageConfig(at(4, 3)).floorThreat[13]).toBe(base.floorThreat[13] + 1);
     expect(stageConfig(at(4, 3)).floorThreat[11]).toBe(base.floorThreat[11]);
-    expect(stageConfig(at(4, 3)).collapseLoss).toBe(base.collapseLoss);
-    expect(stageConfig(at(5, 3)).collapseLoss).toBe(base.collapseLoss + 1); // 6 · suelo cansado
-    // 8 · clausura: solo las obras con jefe
-    expect(stageConfig(at(7, 3)).floorHp[13]).toBeGreaterThan(stageConfig(at(6, 3)).floorHp[13]);
-    expect(stageConfig(at(7, 4)).floorHp[13]).toBe(stageConfig(at(6, 4)).floorHp[13]);
+    // 6 · búnker viejo: un punto menos de integridad
+    expect(at(4).maxIntegrity - at(5).maxIntegrity).toBe(1);
+    // 7 · turno de noche: J y Q, no las K
+    expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
+    expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + 1);
+    expect(stageConfig(at(6, 3)).floorThreat[13]).toBe(base.floorThreat[13] + 1);
+    // 8 · clausura: +1 de amenaza, solo en las obras con jefe (la 3 lo es; la 4 no)
+    expect(stageConfig(at(7, 3)).floorThreat[11]).toBe(stageConfig(at(6, 3)).floorThreat[11] + 1);
+    expect(stageConfig(at(7, 4)).floorThreat[11]).toBe(stageConfig(at(6, 4)).floorThreat[11]);
+    // ningún nivel alarga las obras con jefe más que el hormigón armado
+    expect(stageConfig(at(7, 3)).floorHp[13]).toBe(stageConfig(at(1, 3)).floorHp[13]);
   });
 
-  it('4 · precios de obra: la ferretería cuesta 1 más; 7 · sin relevo: el búnker se repara la mitad', () => {
-    const cheap = at(2);
-    const dear = at(3);
+  it('3 · precios de obra: la ferretería cuesta 2 más; al terminar una obra el búnker se repara 4', () => {
+    const cheap = at(1);
+    const dear = at(2);
     toShop(cheap);
     toShop(dear);
-    expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost + 1));
-    const healed = at(5);
-    const tired = at(6);
+    expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost + 2));
+    const healed = at(7);
     win(healed, (s) => (s.integrity = 10));
-    win(tired, (s) => (s.integrity = 10));
     expect(healed.integrity).toBe(14);
-    expect(tired.integrity).toBe(12);
   });
 
   it('ganar estampa el sello de maestría en la baraja y en cada herramienta del cinturón', () => {

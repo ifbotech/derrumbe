@@ -19,10 +19,6 @@ const which = process.argv[5] ?? 'obra';
 const policy = { skip: process.env.SKIP ? process.env.SKIP.split(',') : [], risk: process.env.RISK === '1' };
 const ascension = Math.max(0, Number(process.env.ASC ?? 1) - 1);
 const verbose = process.env.VERBOSE === '1';
-// mandos de ajuste: HPX escala la resistencia de todas las obras y LATE la inclina hacia las últimas
-if (process.env.HPS) process.env.HPS.split(',').forEach((v, i) => (STAGES[i].hp = Number(v)));
-if (process.env.THR) process.env.THR.split(',').forEach((v, i) => (STAGES[i].threat = Number(v)));
-if (process.env.HPX || process.env.LATE) STAGES.forEach((st, i) => (st.hp = Math.round(st.hp * Number(process.env.HPX ?? 1) * (1 + Number(process.env.LATE ?? 0) * (i / 7)) * 100) / 100));
 
 function report(deck: string, full: boolean): void {
   const reached = new Array(LAST_STAGE + 1).fill(0);

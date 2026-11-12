@@ -2,14 +2,20 @@
 // los estados que fotografía scripts/visual-qa.ts (mesa llena, lupa, plano, ferretería, forja…).
 // Nada de lo que pasa aquí se guarda: el guardado queda desactivado mientras dura la sesión.
 import { ACHIEVEMENTS } from '../rules/achievements';
-import { Card, GameState, SUITS, Seal, Suit, Treatment, applyAction, viewFor } from '../rules/engine';
+import { chooseAction } from '../rules/bot';
+import { Card, GameState, SUITS, Seal, Suit, Treatment, applyAction, fatigueAt, viewFor } from '../rules/engine';
 import { Run, finishBattle, newRun, runAction, startStage } from '../rules/run';
 import { TOOLS } from '../rules/tools';
-import { RUN_PLAYER, S } from './core';
-import { meta, openGuild } from './guild';
+import { hero } from './art';
+import { prefs } from './campaign';
+import { cardEl } from './card';
+import { RUN_PLAYER, S, app } from './core';
+import { archive, meta, openGuild } from './guild';
 import { openLupa } from './lupa';
+import { InputMode, setMode } from './nav';
 import { platform } from './platform';
 import { setScreen } from './router';
+import { renderRun } from './runscreens';
 import { pump, renderInteractive } from './table';
 import { showSettings } from './widgets';
 
@@ -57,7 +63,10 @@ function show(run: Run, state: GameState | null = null): void {
   S.campaign = { run, online: false, state, key: 'qa' };
 }
 
-async function mesa(): Promise<void> {
+async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6): Promise<void> {
+  setMode(input);
+  // los susurros de tiza solo salen en la primera campaña de un perfil
+  meta.runs = firstRun ? 0 : Math.max(1, meta.runs);
   const run = baseRun(4);
   runAction(run, { t: 'route', i: 0 });
   let state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
@@ -77,7 +86,8 @@ async function mesa(): Promise<void> {
   state.wall = 3;
   state.integrity = 13;
   state.chain = 1;
-  state.turnCount = 6;
+  state.turnCount = turn;
+  state.fatigue = fatigueAt(state.config, turn);
   const stashed = find(p.hand, 'C', 4);
   if (stashed) state = applyAction(state, RUN_PLAYER, { type: 'stash', card: stashed.id }).state;
   state.stashed = false;
@@ -119,7 +129,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     meta.ascMax = 7;
     setScreen('camp');
   },
-  mesa,
+  mesa: () => mesa(),
   lupa: async () => {
     await mesa();
     openLupa(document.querySelector('#hand .card.z-dinamita') ?? document.querySelector('#hand .card'));
@@ -200,27 +210,100 @@ const STATES: Record<string, () => void | Promise<void>> = {
     setScreen('home');
     showSettings();
   },
+  // primera campaña y jugando con teclado: susurro de tiza al margen e indicaciones de tecla
+  'mesa-susurro': () => mesa(true, 'keys'),
+  // la mesa tal como se ve jugando con mando: cada botón enseña el suyo
+  'mesa-mando': () => mesa(false, 'pad'),
+  // una obra que se alarga: fatiga de cimientos de nivel 3, con su Resonancia y su amenaza de más
+  'mesa-fatiga': () => mesa(false, 'pointer', 12),
+  archivo: () => {
+    clean();
+    archive.length = 0;
+    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'obra', level = 1) => ({
+      key: `qa:${i}`,
+      when: new Date(Date.UTC(2026, 10, 12 - i, 20, 0)).toISOString(),
+      won,
+      cleared: won ? 8 : stage - 1,
+      stage,
+      boss,
+      depth: 0,
+      turns: won ? 84 : 9 * stage + i,
+      maxHit: 120 + 37 * ((i * 5) % 7),
+      tools,
+      seed,
+      deck,
+      level,
+      daily: null,
+      online: false,
+      gain: won ? 13 : stage - 1,
+      text: 'DERRUMBE · Acta de demolición',
+    });
+    archive.push(
+      sample(0, true, 8, 'La Furia', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
+      sample(1, false, 5, 'El Coloso', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91'),
+      sample(2, false, 7, 'La Ventisca', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3),
+      sample(3, true, 8, 'El Topo', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
+      sample(4, false, 3, 'El Usurero', ['hucha', 'cinta'], '4HH2PA'),
+    );
+    openGuild('arc');
+  },
+  // tarjeta para compartir (1200 × 630): la fotografía scripts/og-card.ts
+  og: () => {
+    clean();
+    S.campaign = null;
+    app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt"><h1 class="title"><span>Derr</span><span class="cut">umbe</span></h1><p>Roguelike de demolición con baraja francesa</p><small>Cuatro torres · doce pisos · un búnker · de 1 a 4 jugadores</small></div><div class="og-cards"></div></div>`;
+    const fan = app.querySelector('.og-cards')!;
+    ([['S', 13], ['D', 12], ['H', 11], ['C', 13]] as [Suit, number][]).forEach(([suit, rank], i) => {
+      const c = cardEl({ id: `og-${suit}`, suit, rank }, { tilt: false });
+      c.style.setProperty('--r', `${(i - 1.5) * 9}deg`);
+      c.style.setProperty('--y', `${Math.abs(i - 1.5) * 16}px`);
+      fan.appendChild(c);
+    });
+  },
 };
 
 export function installQa(): void {
-  // nada de esto debe tocar la partida ni el gremio guardados
-  platform.save = () => undefined;
-  platform.remove = () => undefined;
+  // nada de esto debe tocar la partida ni el gremio guardados: el guardado pasa a ser de quita y pon
+  const memory = new Map<string, string>();
+  platform.load = (key) => memory.get(key) ?? null;
+  platform.save = (key, value) => void memory.set(key, value);
+  platform.remove = (key) => void memory.delete(key);
+  platform.keys = (prefix) => [...memory.keys()].filter((k) => k.startsWith(prefix));
   document.documentElement.classList.add('qa');
+  const settle = () =>
+    document.getAnimations().forEach((a) => {
+      try {
+        if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish();
+      } catch {
+        /* animación sin final */
+      }
+    });
   Object.assign(window, {
     __qa: {
       states: Object.keys(STATES),
       go: async (name: string) => {
         await STATES[name]?.();
-        // todo quieto y en su sitio antes de la foto
-        document.getAnimations().forEach((a) => {
-          try {
-            if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish();
-          } catch {
-            /* animación sin final */
-          }
-        });
+        settle(); // todo quieto y en su sitio antes de la foto
         return name in STATES;
+      },
+      settle,
+      /** Semilla de la próxima campaña (el mando no escribe). */
+      seed: (text: string) => void (prefs.seed = text),
+      /** Lo que el bot de referencia haría ahora en la obra en curso (la prueba lo ejecuta con el mando). */
+      bot: () => (S.campaign?.state && S.campaign.state.phase === 'playing' ? chooseAction(S.campaign.state) : null),
+      /** Resumen de la campaña en curso, para comprobar lo que hizo el mando. */
+      run: () => {
+        const run = S.campaign?.run;
+        return run ? { phase: run.phase, stage: run.stage, gold: run.gold, tools: run.tools.map((t) => t.id), marks: run.deck.filter((c) => c.seal || c.tr).length, pending: run.pending?.kind ?? null, shop: run.shop.map((o) => o.kind) } : null;
+      },
+      /** En la ferretería: oro de sobra y dos herramientas, para probar el cinturón y la forja sin depender del azar. */
+      boost: () => {
+        const run = S.campaign?.run;
+        if (!run) return false;
+        run.gold = 60;
+        for (const id of ['piqueta', 'gemelos']) if (run.tools.length < 2 && !run.tools.some((t) => t.id === id)) run.tools.push({ id, n: 0 });
+        renderRun();
+        return true;
       },
     },
   });

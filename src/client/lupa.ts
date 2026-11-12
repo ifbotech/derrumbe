@@ -1,7 +1,7 @@
 // Lupa de grabador: clic derecho, pulsación larga o la tecla L sobre cualquier carta, herramienta o
 // jefe abre la pieza a tamaño de lámina, con su epígrafe, su texto de reglas, la cuenta exacta de
 // lo que aporta ahora mismo y, si lo tiene, su sello de maestría.
-import { BEATS, Card, MATERIAL, RANK_LABEL, SEAL, SUITS, SUIT_GLYPH, Suit, TOWER_FX, TREATMENT, TowerFx, cardLabel, cardValue } from '../rules/engine';
+import { BEATS, Card, MATERIAL, RANK_LABEL, SEAL, SUITS, SUIT_GLYPH, Suit, TOWER_FX, TREATMENT, TowerFx, cardLabel, cardValue, threatOf } from '../rules/engine';
 import { keywordsIn } from '../rules/keywords';
 import { BOSS, DECK, sellValue } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
@@ -60,7 +60,7 @@ function cardSheet(c: Card, host: HTMLElement): Sheet {
     const t = v.towers[s];
     const hp = v.config.floorHp[c.rank] ?? 0;
     rows.push(row('Resistencia', `<b>${Math.max(0, hp - t.damage)}</b> de ${hp}`));
-    rows.push(row('Amenaza', t.disarmed ? '0 (desarmada)' : `<b>${v.config.floorThreat[c.rank] ?? 0}</b> al búnker cada vez que la sirena saque ${SUIT_GLYPH[s]}`));
+    rows.push(row('Amenaza', t.disarmed ? '0 (desarmada)' : `<b>${threatOf(v, t)}</b> al búnker cada vez que la sirena saque ${SUIT_GLYPH[s]}${v.fatigue ? ` (incluye +${v.fatigue} de fatiga)` : ''}`));
     rows.push(row('Inmune', own === 0 ? `${glyph(s)}: sus cartas no suman Fuerza aquí (×0)` : `Anulada: ${glyph(s)} pega ×${own}`));
     rows.push(row('Débil', `${glyph(WEAK_TO[s])}: sus cartas suman ×${adv}`));
     const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => t.fx?.[k]);
