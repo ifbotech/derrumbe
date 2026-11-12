@@ -3,7 +3,7 @@
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
 import { Card, CardSuit, MATERIAL, RANK_LABEL, SEAL, Seal, Suit, TREATMENT, Treatment } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
-import { engravingDefs, plateFrame, shade } from './engraving';
+import { engravingDefs, plateFrame, shade, suitWeaves } from './engraving';
 import { GLYPH } from './glyphs';
 
 // ───────────────────────── Palos ─────────────────────────
@@ -51,10 +51,7 @@ export function ensureDefs(): void {
       <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="5" result="n"/>
       <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
-    <pattern id="pat-S" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" style="fill:var(--mat-S)"/><path d="M7,0 V14" stroke="${PAPER}" stroke-width="1.5"/><path d="M0,14 L14,0" stroke="${PAPER}" stroke-width="0.7" opacity="0.45"/><circle cx="2.6" cy="3.5" r="1.3" fill="${PAPER}"/><circle cx="11.4" cy="10.5" r="1.3" fill="${PAPER}"/></pattern>
-    <pattern id="pat-H" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" style="fill:var(--mat-H)"/><path d="M0,0.8 H24 M0,8.8 H24 M6,0.8 V8.8 M18,8.8 V16.8" stroke="${PAPER}" stroke-width="1.7"/></pattern>
-    <pattern id="pat-D" width="18" height="18" patternUnits="userSpaceOnUse"><rect width="18" height="18" style="fill:var(--mat-D)"/><path d="M0,18 L18,0 M-2,2 L2,-2 M16,20 L20,16" stroke="${PAPER}" stroke-width="1.5"/><path d="M0,0 L18,18" stroke="${INK}" stroke-width="0.8" opacity="0.55"/></pattern>
-    <pattern id="pat-C" width="22" height="18" patternUnits="userSpaceOnUse"><rect width="22" height="18" style="fill:var(--mat-C)"/><circle cx="4" cy="5" r="1.4" fill="${INK}"/><circle cx="14" cy="3" r="0.9" fill="${PAPER}"/><circle cx="9" cy="12" r="1.6" fill="${INK}"/><circle cx="18" cy="13" r="1" fill="${PAPER}"/><path d="M0,17.2 H22" stroke="${INK}" stroke-width="1" opacity="0.6"/></pattern>
+    ${suitWeaves()}
     ${engravingDefs()}
     <pattern id="hatch-pip" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0,1.2 H2.4 M1.2,0 V2.4" stroke="${PAPER}" stroke-width="0.3" opacity="0.55"/></pattern>
     <pattern id="pat-back" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${PAPER}" stroke-width="1" opacity="0.5"/><rect x="8" y="8" width="4" height="4" fill="${PAPER}"/></pattern>
@@ -230,7 +227,7 @@ function aceArt(suit: Suit): string {
       <g transform="translate(125 168)"><g class="burst ink">${rays}</g><circle class="ring" r="56"/><circle class="ring thin2" r="104"/></g>
       <path class="ink" d="M60,291 L190,284 L187,311 L57,318 Z"/>
     </g>
-    <text class="banner-txt" x="123" y="307" text-anchor="middle" transform="rotate(-3.1 123 301)">${MATERIAL[suit]}</text>
+    <text class="banner-txt" x="123" y="307" text-anchor="middle" transform="rotate(-3.1 123 301)"${MATERIAL[suit].length > 6 ? ' textLength="118" lengthAdjust="spacingAndGlyphs"' : ''}>${MATERIAL[suit]}</text>
     <g transform="translate(125 168)"><g class="stamp" style="--i:1"><g class="pip ace-pip" style="--i:0"><g class="${FILL[suit]}" transform="scale(4.6)">${pipInk(suit)}</g></g></g></g>
   </svg>`;
 }
@@ -302,8 +299,9 @@ export function backSvg(id = currentBack): string {
 // ───────────────────────── Cartas especiales, herramientas y el Ferretero ─────────────────────────
 
 const RAYS = Array.from({ length: 16 }, (_, i) => `<path d="M0,-70 L5,-112 L-5,-112 Z" transform="rotate(${i * 22.5})"/>`).join('');
+// el nombre va en letra grande (25 unidades): se lee desde una carta de 132 px; por debajo se retira (theme.css)
 const nameText = (name: string, cls: string) =>
-  `<text class="banner-txt ${cls}" x="124" y="264" text-anchor="middle" transform="rotate(-2.7 124 258)"${name.length > 11 ? ' textLength="152" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text>`;
+  `<text class="banner-txt ${cls}" x="124" y="270" text-anchor="middle" transform="rotate(-2.7 124 262)"${name.length > 9 ? ' textLength="192" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text>`;
 
 /** Carta especial: campo de tinta, emblema en un sol de papel y su nombre en una banda. */
 function specialArt(card: Card): string {
@@ -505,7 +503,7 @@ export function portraitEl(id: string, name: string): HTMLDivElement {
       <div class="ly paper"></div>
       <svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">${portraitBody(id)}
         <g filter="url(#rough)"><path class="ink" d="M10,312 H240 V340 H10 Z"/></g>
-        <text class="banner-txt on-ink" x="125" y="332" text-anchor="middle"${name.length > 12 ? ' textLength="200" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text></svg>
+        <text class="banner-txt on-ink npc-name" x="125" y="334" text-anchor="middle"${name.length > 11 ? ' textLength="214" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text></svg>
       <div class="ly grain"></div><div class="ly glare"></div>
     </div><div class="card-back">${backSvg()}</div></div>`;
   attachTilt(el);
@@ -570,6 +568,10 @@ export function cardTip(card: Card): string {
 
 // ───────────────────────── Carta ─────────────────────────
 
+/** Marco de la carta con la trama de su palo: el palo se reconoce en gris por el borde. Las esquinas llevan placa encima. */
+const weaveFrame = (suit: Suit) =>
+  `<svg class="ly weave" viewBox="0 0 250 350" preserveAspectRatio="none" aria-hidden="true"><path fill-rule="evenodd" d="M7,7 H243 V343 H7 Z M21,21 V329 H229 V21 Z" fill="url(#trama-${suit})"/></svg>`;
+
 function corner(suit: CardSuit, rank: number, cls: string): string {
   const glyph = suit === 'X' ? '<span class="star-mini">★</span>' : suitSvg(suit);
   return `<div class="corner ${cls}${rank === 10 ? ' wide' : ''}"><b>${RANK_LABEL[rank]}</b>${glyph}</div>`;
@@ -589,6 +591,7 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
     <div class="card-in">
       <div class="card-front">
         <div class="ly paper"></div>
+        ${card.sp || card.suit === 'X' ? '' : weaveFrame(card.suit)}
         ${art}
         <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + corner(card.suit, card.rank, 'br')}</div>
         ${card.tr ? treatLayer(card.tr) : ''}${card.seal ? sealLayer(card.seal) : ''}

@@ -1,9 +1,11 @@
 // Banco de pruebas compartido por los simuladores: juega una campaña entera con el bot de
 // referencia y deja anotado todo lo que el laboratorio de balance necesita medir.
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { applyAction, currentPlayer } from '../src/rules/engine';
 import type { Seal, Treatment } from '../src/rules/engine';
 import { RunPolicy, chooseAction, chooseRunAction } from '../src/rules/bot';
-import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, DECKS, FATIGUE, STAGES } from '../src/rules/run';
+import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, BOSS, CLAUSURA, DECKS, FATIGUE, STAGES, TIMBRE } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 
 export interface Spec {
@@ -49,6 +51,8 @@ export interface Log {
 //   HPS=3.9,3.9,…  resistencia de cada obra · HPX=0.8 escala todas · LATE=0.2 inclina hacia las últimas
 //   THR=2,2,3,…    amenaza de cada obra · FAT=8,2,0.25  fatiga: turno de inicio, cada cuántos turnos, Resonancia por nivel
 //   BARAJA=corta:1:-3  prueba una baraja con más o menos búnker y oro inicial de los que tiene
+//   TIMBRE=2  cartas que sella el Timbre del gremio al empezar cada obra · VENTISCA=4:1  tope de muro de La Ventisca (y amenaza que suma)
+//   CLAUSURA=8:1  obras en las que el nivel 8 sube la amenaza, y cuánto (3,5,7,8:1 es «en las obras con jefe»)
 const env = process.env;
 if (env.HPS) env.HPS.split(',').forEach((v, i) => STAGES[i] && (STAGES[i].hp = Number(v)));
 if (env.THR) env.THR.split(',').forEach((v, i) => STAGES[i] && (STAGES[i].threat = Number(v)));
@@ -65,12 +69,45 @@ if (env.BARAJA) {
     run.gold += Number(gold) || 0;
   };
 }
+if (env.TIMBRE) TIMBRE.stamps = Number(env.TIMBRE);
+if (env.VENTISCA) {
+  const [cap, up] = env.VENTISCA.split(':').map(Number);
+  BOSS.intemperie.apply = (c) => {
+    c.wallCap = Math.min(c.wallCap, cap);
+    if (up) [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + up)));
+  };
+}
+if (env.CLAUSURA) {
+  const [stages, threat] = env.CLAUSURA.split(':');
+  Object.assign(CLAUSURA, { stages: stages.split(',').map(Number), threat: Number(threat ?? 1) });
+}
 if (env.FAT) {
   const [start, every, res] = env.FAT.split(',').map(Number);
   Object.assign(FATIGUE, { start, every: every || FATIGUE.every, res: res ?? FATIGUE.res });
 }
 
 const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec[key] ?? 0) + 1);
+
+/** Archivos cuyas reglas decide el laboratorio: si cambian, el informe publicado deja de valer. */
+const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot'];
+/**
+ * Huella de las reglas: el código de `src/rules` que juega las campañas, sin comentarios, sin espacios y sin
+ * los textos (desc, name, who), que no cambian ninguna partida. La guarda `meta-report.json` y la comprueba
+ * `tests/invariantes.test.ts`: así se sabe que el informe publicado es de estas reglas. Las palancas de
+ * entorno de arriba (TIMBRE, CLAUSURA…) no entran: la huella dice qué hay en disco.
+ */
+export function fingerprint(): string {
+  const hash = createHash('sha256');
+  for (const f of RULE_FILES) {
+    const src = readFileSync(new URL(`../src/rules/${f}.ts`, import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:\\'"`])\/\/.*$/gm, '$1')
+      .replace(/\b(desc|name|who)\s*:\s*(['"`])(?:\\.|(?!\2)[^\\])*\2/g, '$1:""')
+      .replace(/\s+/g, '');
+    hash.update(`${f}\n${src}\n`);
+  }
+  return hash.digest('hex').slice(0, 16);
+}
 
 export function optsFor(spec: Spec): RunOpts {
   const up = spec.full ? Object.fromEntries(UPGRADES.filter((u) => !spec.only || spec.only.includes(u.id)).map((u) => [u.id, u.costs.length])) : {};

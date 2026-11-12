@@ -64,6 +64,39 @@ export function bakeGrain(): void {
   set('--grain-paper', tile(192, [60, 44, 26], 0.13, 0.2, 11)); // motas sepia sobre el papel
   set('--grain-ink', tile(192, [234, 224, 206], 0.1, 0.22, 23)); // calvas de papel sobre la tinta
   set('--grain-table', tile(256, [255, 236, 200], 0.06, 0.07, 37)); // polvo claro sobre la mesa oscura
+  // las cifras de los títulos góticos salen de su propia fuente (theme.css): se carga ya, antes del primer título
+  void document.fonts?.load("800 16px 'Derrumbe Cifras'", '0123456789').catch(() => undefined);
+}
+
+// ───────────────────────── Tramas de palo ─────────────────────────
+
+/**
+ * Las cuatro tramas de material, una por palo, que distinguen el palo sin mirar el color (daltonismo):
+ *   ♠ ACERO rayado diagonal · ♦ VIDRIO punteado · ♥ LADRILLO aparejo de ladrillo · ♣ HORMIGÓN rayado cruzado.
+ * Cada una en dos tiradas que comparten el dibujo:
+ *   pat-X    tinta del material con el dibujo tallado en papel (ropajes, fachadas, rótulos, rueda)
+ *   trama-X  el mismo dibujo en tinta del palo sobre el papel de la carta (el marco de la carta)
+ * Periodo de 12 unidades: a tamaño de mano no baja de 6 px, y a 24 px se sigue leyendo.
+ */
+const WEAVE: Record<Suit, (ink: string) => string> = {
+  // rayado diagonal a 45°: una sola dirección
+  S: (c) => `<path d="M0,6 H12" style="stroke:${c}" stroke-width="3.6"/>`,
+  // punteado al tresbolillo: puntos sueltos, sin líneas
+  D: (c) => `<circle cx="3" cy="3" r="2.3" style="fill:${c}"/><circle cx="9" cy="9" r="2.3" style="fill:${c}"/>`,
+  // aparejo de ladrillo: hiladas horizontales con juntas a matajunta
+  H: (c) => `<path d="M0,1 H24 M0,7 H24 M6,1 V7 M18,7 V13" style="stroke:${c}" stroke-width="2"/>`,
+  // rayado cruzado: retícula en dos direcciones
+  C: (c) => `<path d="M0,0 L12,12 M12,0 L0,12 M-3,9 L3,15 M9,-3 L15,3 M9,15 L15,9 M-3,3 L3,-3" style="stroke:${c}" stroke-width="1.9"/>`,
+};
+const WEAVE_BOX: Record<Suit, [number, number, string]> = { S: [12, 12, ' patternTransform="rotate(45)"'], D: [12, 12, ''], H: [24, 12, ''], C: [12, 12, ''] };
+export function suitWeaves(): string {
+  return (['S', 'D', 'H', 'C'] as Suit[])
+    .map((s) => {
+      const [w, h, tr] = WEAVE_BOX[s];
+      return `<pattern id="pat-${s}" width="${w}" height="${h}" patternUnits="userSpaceOnUse"${tr}><rect width="${w}" height="${h}" style="fill:var(--mat-${s})"/>${WEAVE[s](PAPER)}</pattern>` +
+        `<pattern id="trama-${s}" width="${w}" height="${h}" patternUnits="userSpaceOnUse"${tr}>${WEAVE[s](`var(--suit-${s})`)}</pattern>`;
+    })
+    .join('');
 }
 
 // ───────────────────────── Tramas de buril ─────────────────────────

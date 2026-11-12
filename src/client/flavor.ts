@@ -101,7 +101,7 @@ const COURT: Record<number, Record<Suit, string>> = {
     S: 'Remacha de día, vigila de noche y no ha soltado la lanza desde que entró.',
     D: 'Limpia los ventanales por fuera. No conoce el vértigo.',
     H: 'Lleva ladrillos al hombro desde que aprendió a andar.',
-    C: 'Enconfra, vierte y espera: la paciencia hecha oficio.',
+    C: 'Encofra, vierte y espera: la paciencia hecha oficio.',
   },
   12: {
     S: 'Firma con un punzón. Sus contratos no se rompen: se oxidan.',

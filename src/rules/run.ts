@@ -4,6 +4,7 @@
 //
 //   sobre → [ plano: ruta con contrato · o atajo → obra → cobro + selección (+ botín de jefe)
 //             → ferretería → (hallazgo tras cada jefe) ] × 8 → Cimientos abisales (infinito)
+import { Autopsy, autopsy } from './autopsy';
 import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool } from './tools';
@@ -29,7 +30,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Sirena afinada', desc: 'La amenaza de las K sube 1.' },
   { name: 'Búnker viejo', desc: 'El búnker tiene 1 punto menos de integridad.' },
   { name: 'Turno de noche', desc: 'La amenaza de las J y las Q sube 1.' },
-  { name: 'Clausura', desc: 'En las obras con jefe, la amenaza de todas las torres sube 1.' },
+  { name: 'Clausura', desc: 'Solo en la obra 8, la amenaza de todas las torres sube 1.' },
 ];
 export const MAX_ASCENSION = ASCENSIONS.length - 1;
 
@@ -83,7 +84,7 @@ export const BOSSES: Boss[] = [
   { id: 'doble', who: 'La Sirena', name: 'Doble sirena', desc: 'La sirena voltea 2 cartas cada turno, pero cada golpe pega un 40 % menos.', apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))) },
   { id: 'escasez', who: 'El Usurero', name: 'Escasez', desc: 'Jugáis con 1 carta menos en la mano.', apply: (c) => eachHand(c, -1) },
   { id: 'sequia', who: 'El Matasanos', name: 'Sin botiquín', desc: 'Los ♥ no reparan el búnker.', apply: (c) => void (c.repairDiv = 9999) },
-  { id: 'intemperie', who: 'La Ventisca', name: 'Intemperie', desc: 'El muro no puede pasar de 3.', apply: (c) => void (c.wallCap = Math.min(c.wallCap, 3)) },
+  { id: 'intemperie', who: 'La Ventisca', name: 'Intemperie', desc: 'El muro no puede pasar de 4.', apply: (c) => void (c.wallCap = Math.min(c.wallCap, 4)) },
   { id: 'blindaje', who: 'El Coloso', name: 'Blindaje', desc: 'Todos los pisos llegan apuntalados y, mientras lo estén, su amenaza sube 1.', apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = 1)) },
   { id: 'furia', who: 'La Furia', name: 'Furia', desc: 'La amenaza de todas las torres sube 2.', apply: (c) => eachThreat(c, 2) },
   { id: 'inestable', who: 'El Topo', name: 'Suelo inestable', desc: 'La fatiga de cimientos empieza 3 turnos antes, y cada piso que cae sin golpe limpio le cuesta 1 al búnker.', apply: (c) => void ((c.crumbleHurt = 1), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? 8) - 3))) },
@@ -446,6 +447,10 @@ export interface Run {
   beaten: string[];
   intact: number;
   stats: { floors: number; cleans: number; turns: number; gold: number; maxHit: number; burned: number; forged: number; contracts: number; skips: number; toolUse: Record<string, number>; stageTurns: number[] };
+  /** Cartas (ids) que el Timbre del gremio selló al entrar a la obra en curso; vacío si no lo llevas. */
+  stamped?: string[];
+  /** Autopsia de la derrota: qué tiró el búnker en la última obra. La rellena `trackEvents` y se limpia al empezar otra obra. */
+  death?: Autopsy | null;
 }
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
@@ -490,11 +495,14 @@ function grantTool(run: Run, rarities: Rarity[]): boolean {
   run.tools.push({ id, n: 0 });
   return true;
 }
-function stampRandom(run: Run, n: number): void {
-  for (const c of pick(run, run.deck.filter((d) => isPlain(d) && !d.seal), n)) {
+/** Sella n cartas de baraja al azar (de las que aún no llevan sello) y las devuelve. */
+function stampRandom(run: Run, n: number): Card[] {
+  const cards = pick(run, run.deck.filter((d) => isPlain(d) && !d.seal), n);
+  for (const c of cards) {
     c.seal = pick(run, run.seals, 1)[0];
     run.stats.forged++;
   }
+  return cards;
 }
 function treatRandom(run: Run): void {
   const [c] = pick(run, run.deck.filter((d) => isPlain(d) && !d.tr), 1);
@@ -602,14 +610,15 @@ export const dailySeed = (date: string) => seedFrom(`derrumbe-diaria-${date}`);
 export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   const daily = typeof opts.daily === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(opts.daily) ? opts.daily : null;
   const seedText = daily ?? (typeof opts.seedText === 'string' && opts.seedText.trim() ? opts.seedText.trim().slice(0, 24).toUpperCase() : '');
-  const seed = daily ? dailySeed(daily) : seedText ? seedFrom(seedText) : ((Number.isFinite(opts.seed) ? Number(opts.seed) : fallbackSeed) | 0);
+  // «#K3F9QZ» es una semilla al azar tal como se enseña (base 36): se lee tal cual, sin hash, para que se repita
+  const seed = daily ? dailySeed(daily) : /^#[0-9A-Z]{1,7}$/.test(seedText) ? parseInt(seedText.slice(1), 36) | 0 : seedText ? seedFrom(seedText) : ((Number.isFinite(opts.seed) ? Number(opts.seed) : fallbackSeed) | 0);
   const up = daily ? cleanUp({}) : cleanUp(opts.up);
   const boxes = BOXES.filter((b) => up[`caja_${b}`]);
   const maxIntegrity = 20;
   const run: Run = {
     v: RUN_VERSION,
     id: seed,
-    seedText: seedText || (seed >>> 0).toString(36).toUpperCase(),
+    seedText: seedText || `#${(seed >>> 0).toString(36).toUpperCase()}`,
     daily,
     rng: seed,
     ascension: daily ? 0 : Math.max(0, Math.min(MAX_ASCENSION, Math.floor(opts.ascension ?? 0) || 0)),
@@ -678,6 +687,11 @@ const COOP_HP = [1, 1.3, 1.4, 1.48];
 /** Fatiga de cimientos en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánta Resonancia da cada nivel. */
 export const FATIGUE = { start: 8, every: 2, res: 0.25 };
 
+/** Timbre del gremio: cartas del mazo que sella al empezar cada obra (además de activar dos veces todos los sellos). */
+export const TIMBRE = { stamps: 1 };
+/** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
+export const CLAUSURA = { stages: [8], threat: 1 };
+
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
   const st = stageDef(run.stage);
@@ -689,7 +703,7 @@ export function stageConfig(run: Run, players = 1): Config {
   const scale = st.hp * (a >= 1 ? 1.05 : 1) * COOP_HP[Math.min(players, 4) - 1];
   for (const r of [11, 12, 13]) {
     cfg.floorHp[r] = Math.round(DEFAULT_CONFIG.floorHp[r] * scale);
-    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? 1 : 0) + (a >= 6 && r !== 13 ? 1 : 0) + (a >= 7 && st.boss ? 1 : 0));
+    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? 1 : 0) + (a >= 6 && r !== 13 ? 1 : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
   }
   if (a >= 3 && st.boss) cfg.apuntalado = [13];
   // fatiga de cimientos: en cuadrilla las obras duran más turnos y empieza en proporción
@@ -711,6 +725,7 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
   shuffle(deck, run);
   const size = config.handSize[players.length];
   run.battle = { taken: 0, cleans: 0, jokers: 0, forms: [] };
+  run.death = null;
   return {
     config,
     rng: (run.rng ^ 0x5bd1e995) | 0,
@@ -759,6 +774,7 @@ export function trackEvents(run: Run, events: GameEvent[]): void {
     else if (ev.e === 'impact') run.stats.maxHit = Math.max(run.stats.maxHit, ev.total);
     else if (ev.e === 'burn') run.stats.burned++;
     else if (ev.e === 'step' && ev.src === 'tool') run.stats.toolUse[ev.id] = (run.stats.toolUse[ev.id] ?? 0) + 1;
+    else if (ev.e === 'end' && ev.result === 'lost') run.death = autopsy(events, stageConfig(run));
   }
 }
 
@@ -905,6 +921,9 @@ export function runAction(run: Run, a: RunAction): string | null {
       run.contract = boss ? null : run.node.routes[a.i];
       run.boss = boss ? run.bosses[run.stage] : null;
       run.phase = 'battle';
+      // el Timbre del gremio sella cartas del mazo antes de cada obra
+      run.stamped = run.tools.some((t) => t.id === 'timbre') ? stampRandom(run, TIMBRE.stamps).map((c) => c.id) : [];
+      if (run.stamped.length) run.stats.toolUse.timbre = (run.stats.toolUse.timbre ?? 0) + run.stamped.length;
       return null;
     }
     case 'skip': {

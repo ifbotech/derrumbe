@@ -27,7 +27,7 @@ import { DIFFICULTY, SEAL, SEALS, TREATMENT, TREATMENTS, applyAction, createGame
 import { ASCENSIONS, BOSS, BOSSES, DECKS, LAST_STAGE, STAGES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
-import { Log, Spec, playCampaign } from './lab';
+import { Log, Spec, fingerprint, playCampaign } from './lab';
 
 const args = process.argv.slice(2);
 const arg = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
@@ -44,6 +44,9 @@ const GIFT_N = 160;
  * que sigue empeorando. (Elegir con unos datos y confirmar con otros evita perseguir el ruido.)
  */
 const CONFIRM_N = 800;
+/** Una herramienta dada de salida que gana menos que esto es una trampa; más que GIFT_MAX, una victoria regalada. */
+const TRAP = 35;
+const GIFT_MAX = 68;
 /** --piezas=clavos,ariete: en el modo «regalos», las herramientas o especiales que se miden (con --n campañas cada una). */
 const onlyPieces = arg('piezas')?.split(',') ?? [];
 /**
@@ -107,7 +110,9 @@ if (shard) {
 }
 
 async function runAll(argv: string[] = args): Promise<Log[]> {
-  const workers = Math.max(1, Math.min(12, availableParallelism() - 1));
+  // LAB_HILOS=6 deja núcleos libres cuando hay otras pruebas (capturas, humo) corriendo a la vez
+  const cap = Number(process.env.LAB_HILOS) || 12;
+  const workers = Math.max(1, Math.min(cap, availableParallelism() - 1));
   const self = fileURLToPath(import.meta.url);
   const files = Array.from({ length: workers }, (_, i) => join(tmpdir(), `derrumbe-meta-${process.pid}-${i}.json`));
   await Promise.all(
@@ -231,7 +236,8 @@ function report(logs: Log[], confirm: Log[] = []) {
   const l8 = winrate.levels[7];
   if (has(l1) && (l1.vacio < 24 || l1.vacio > 30)) flags.push(`Nivel 1 con gremio vacío: ${l1.vacio} % (objetivo 24–30)`);
   if (has(l1) && (l1.lleno < 40 || l1.lleno > 48)) flags.push(`Nivel 1 con gremio lleno: ${l1.lleno} % (objetivo 40–48)`);
-  if (has(l8) && (l8.lleno < 8 || l8.lleno > 18)) flags.push(`Nivel 8 con gremio lleno: ${l8.lleno} % (objetivo 8–18)`);
+  if (has(l8) && (l8.vacio < 6 || l8.vacio > 9)) flags.push(`Nivel 8 con gremio vacío: ${l8.vacio} % (objetivo 6–9)`);
+  if (has(l8) && (l8.lleno < 12 || l8.lleno > 17)) flags.push(`Nivel 8 con gremio lleno: ${l8.lleno} % (objetivo 12–17)`);
   // cada nivel tiene que ser más difícil que el anterior, con el gremio vacío y con el lleno
   for (let i = 1; i < winrate.levels.length; i++) {
     const a = winrate.levels[i - 1];
@@ -246,21 +252,30 @@ function report(logs: Log[], confirm: Log[] = []) {
     if (d.vacio < 22 || d.vacio > 32) flags.push(`${d.name}: ${d.vacio} % con gremio vacío (objetivo 24–31)`);
     if (d.lleno - d.vacio < 6) flags.push(`${d.name}: el gremio lleno solo le suma ${Math.round((d.lleno - d.vacio) * 10) / 10} puntos`);
   }
-  /** Piezas que la primera vuelta deja por debajo del ruido. */
-  const suspect = (x: { givenN: number; delta: number | null }) => x.givenN > 0 && (x.delta ?? 0) <= -noise(x.givenN, noGift.length, giftRef);
+  /**
+   * Piezas que la primera vuelta deja por debajo del ruido, o fuera de 35–68 % de victorias dadas de salida
+   * (trampa o victoria regalada): todas pasan la segunda vuelta antes de avisar.
+   */
+  const suspect = (x: { givenN: number; given: number | null; delta: number | null }) =>
+    x.givenN > 0 && ((x.delta ?? 0) <= -noise(x.givenN, noGift.length, giftRef) || (x.given ?? 50) < TRAP || (x.given ?? 50) > GIFT_MAX);
+  /** Lo que ganó la pieza dada de salida: manda la segunda vuelta si la hubo. */
+  const final = (x: { givenN: number; given: number | null; confirmN: number; confirm: number | null }) => (x.confirmN ? [x.confirm, x.confirmN] : [x.given, x.givenN]) as [number | null, number];
   const worse = (kind: string, x: { name: string; givenN: number; delta: number | null; confirmN: number; confirmDelta: number | null }) => {
-    if (!suspect(x)) return;
+    if (!x.givenN || (x.delta ?? 0) > -noise(x.givenN, noGift.length, giftRef)) return;
     const [delta, n] = x.confirmN ? [x.confirmDelta ?? 0, x.confirmN] : [x.delta ?? 0, x.givenN];
     // con segunda vuelta, manda ella: muestra grande y semillas que no eligieron a la sospechosa
     if (delta <= -noise(n, noGift.length, giftRef)) flags.push(`${kind} ${x.name}: llevarla de salida empeora el resultado (${delta} puntos en ${n} campañas; ruido ±${noise(n, noGift.length, giftRef)})`);
   };
   for (const t of tools) {
-    if (t.given !== null && t.given > 68) flags.push(`Herramienta ${t.name}: ${t.given} % ganadas si se da de salida (>68)`);
+    const [won, n] = final(t);
+    if (won !== null && won > GIFT_MAX) flags.push(`Herramienta ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${GIFT_MAX}: victoria regalada)`);
+    if (won !== null && won < TRAP) flags.push(`Herramienta ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${TRAP}: trampa)`);
     if (t.pick < 5 && t.offered >= 40 && (t.delta ?? 0) <= 0) flags.push(`Herramienta ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`);
     worse('Herramienta', t);
   }
   for (const sp of specials) {
-    if (sp.given !== null && sp.given > 68) flags.push(`Especial ${sp.name}: ${sp.given} % ganadas si se da de salida (>68)`);
+    const [won, n] = final(sp);
+    if (won !== null && won > GIFT_MAX) flags.push(`Especial ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${GIFT_MAX})`);
     worse('Especial', sp);
   }
   // jefes: todos entre 0,8× y 1,3× de la letalidad media
@@ -339,5 +354,5 @@ for (const c of classicRows) if (c.winrate < 58 || c.winrate > 65) result.flags.
 print(result);
 if (classicRows.length) console.log(`\nPartida clásica (victorias del bot): ${classicRows.map((c) => `${c.players}J ${c.winrate} %`).join(' · ')}`);
 const out = quick ? join(tmpdir(), `derrumbe-meta-${mode}.json`) : fileURLToPath(new URL('./meta-report.json', import.meta.url));
-writeFileSync(out, JSON.stringify({ generated: 'npm run analyze:meta', quick, curses: Object.fromEntries(BOSSES.map((b) => [b.id, BOSS[b.id].name])), ...result }, null, 1) + '\n');
+writeFileSync(out, JSON.stringify({ generated: 'npm run analyze:meta', quick, rules: fingerprint(), curses: Object.fromEntries(BOSSES.map((b) => [b.id, BOSS[b.id].name])), ...result }, null, 1) + '\n');
 console.log(`\n${out} · ${Math.round((Date.now() - started) / 1000)} s`);

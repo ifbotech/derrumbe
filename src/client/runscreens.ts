@@ -1,5 +1,6 @@
 // Pantallas de campaña: el sobre, el plano de demolición, el cobro con su selección, la ferretería,
 // los hallazgos en los cimientos y el acta final.
+import { whisper } from './whispers';
 import { Card, FORM, FORMATION_NAME, SEAL, TREATMENT, cardLabel } from '../rules/engine';
 import { BOSS, CONTRACT, DECK, DraftOpt, EVENT, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
@@ -8,7 +9,9 @@ import { rubble, skyline } from './art';
 import { setScene, sfx } from './audio';
 import { isRunHost, runDo } from './campaign';
 import { cardEl, ferreteroEl, portraitEl, setDeckBack, tileEl } from './card';
-import { $, $$, S, app, modal, num, toast } from './core';
+import { $, $$, S, app, esc, modal, num, toast } from './core';
+import { causeHtml, causeText, validDeath } from './causa';
+import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
 import { burst, dealIn, restart, stampOn } from './fx';
 import { glyphSvg } from './glyphs';
 import { lastGain } from './guild';
@@ -173,6 +176,7 @@ function mapScreen(run: Run): void {
       routes.appendChild(
         choice(tileEl(TAG_GLYPH[tag.id] ?? 'atajo', 'Atajo', 'service'), `Saltar la obra`, `Sin cobro, sin selección y sin ferretería. A cambio, etiqueta sindical: <b>${tag.name}.</b> ${tag.desc}`, 'Saltar', can ? () => (sfx.stamp(), runDo({ t: 'skip' })) : null, 'skip'),
       );
+      whisper('atajo', { tag: tag.name });
     }
   }
 }
@@ -339,6 +343,7 @@ function openPending(run: Run): void {
       },
     });
     el.classList.add('pending-modal');
+    whisper('forja');
   } else if (p.kind === 'dup') {
     deckModal('Molde · duplica una carta', [{ label: 'Mazo', cards: run.deck, note: 'Elige la carta que quieres tener dos veces.' }], { pick: 1, sticky: true, onCancel: cancel, onPick: ([card]) => runDo({ t: 'target', cards: [card.id] }) }).classList.add('pending-modal');
   } else {
@@ -402,7 +407,8 @@ function eventScreen(run: Run): void {
 // ───────────────────────── Acta de demolición ─────────────────────────
 
 /** El acta en texto, para pegarla donde quieras. */
-export function actaText(run: Run): string {
+export function actaText(run: Run, online = false): string {
+  const link = seedLink(run, online);
   const cleared = stagesCleared(run);
   const row = Array.from({ length: LAST_STAGE }, (_, i) => {
     const n = i + 1;
@@ -420,7 +426,21 @@ export function actaText(run: Run): string {
     mvp ? `🔧 Herramienta más activa: ${TOOL[mvp]?.name ?? mvp} (${run.stats.toolUse[mvp]})` : '🔧 Sin herramientas',
     `📜 Contratos: ${run.stats.contracts} · 🔥 Cartas destruidas: ${run.stats.burned} · ⏱️ Turnos: ${run.stats.turns}`,
     `🃏 ${DECK[run.deckId].name}${run.ascension ? ` · nivel de obra ${run.ascension + 1}` : ''}${run.seedText ? ` · 🌱 ${run.seedText}` : ''}`,
+    ...(run.phase === 'lost' && validDeath(run.death) ? [causeText(run.death)] : []),
+    ...(link ? [`🔗 Juega la misma: ${link}`] : []),
   ].join('\n');
+}
+
+/** Tinta desvanecida al pie del acta mientras quede por leer (data-mas, como pide la QA). */
+function inkFade(el: HTMLElement): void {
+  const mark = () => {
+    const more = [el.scrollTop > 2 ? 'arriba' : '', el.scrollTop + el.clientHeight < el.scrollHeight - 2 ? 'abajo' : ''].filter(Boolean).join(' ');
+    if (more) el.dataset.mas = more;
+    else delete el.dataset.mas;
+  };
+  el.addEventListener('scroll', mark, { passive: true });
+  addEventListener('resize', mark);
+  mark();
 }
 
 function actaScreen(run: Run): void {
@@ -443,30 +463,51 @@ function actaScreen(run: Run): void {
     ['Cartas destruidas', String(run.stats.burned)],
     ['Turnos', String(run.stats.turns)],
     ['Oro ganado', String(run.stats.gold)],
-    ['Semilla', run.seedText || (c.online ? 'la del servidor' : '—')],
   ];
+  // la causa del derrumbe (si la campaña cayó en la mesa) y el enlace para jugar la misma
+  const death = !won && validDeath(run.death) ? run.death : null;
+  const link = seedLink(run, c.online);
+  const seed = run.daily ? `diaria ${run.daily}` : run.seedText || (c.online ? 'la del servidor' : '—');
   app.innerHTML = `<div class="end ${won ? 'won' : 'lost'} in-page acta">
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
     <div class="acta-sheet">
       <div class="meta"><span class="hot">ACTA DE DEMOLICIÓN</span><span>${run.daily ? `OBRA DIARIA ${run.daily}` : `${DECK[run.deckId].name}${run.ascension ? ` · NIVEL DE OBRA ${run.ascension + 1}` : ''}`}</span></div>
       <h1>${won ? 'Demolido' : 'Sepultados'}</h1>
-      <p>${won ? 'Cayó la Torre Madre. Debajo aún hay cimientos, si os quedan ganas.' : depth ? `Los cimientos os tragaron en el abisal ${depth + 1}.` : `El búnker cedió en la obra ${run.stage}: ${stageDef(run.stage).name}.`}</p>
-      <table class="acta-stats">${stats.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
-      <p class="gain">+${lastGain} ✦ de renombre${won && !run.endless && run.ascension < 7 ? ` · nivel de obra ${run.ascension + 2} desbloqueado` : ''}</p>
-      <div class="row">
-        <button id="copy">Copiar acta</button>
+      <div class="acta-cols">
+        <div class="acta-izq">
+          <p>${won ? 'Cayó la Torre Madre. Debajo aún hay cimientos, si os quedan ganas.' : depth ? `Los cimientos os tragaron en el abisal ${depth + 1}.` : `El búnker cedió en la obra ${run.stage}: ${stageDef(run.stage).name}.`}</p>
+          ${death ? causeHtml(death) : ''}
+          <p class="acta-semilla"><span>Semilla</span><b>${esc(seed)}</b>${link ? '<small>«Copiar acta» lleva el enlace para jugar la misma campaña.</small>' : ''}</p>
+          <p class="gain">+${lastGain} ✦ de renombre${won && !run.endless && run.ascension < 7 ? ` · nivel de obra ${run.ascension + 2} desbloqueado` : ''}</p>
+        </div>
+        <table class="acta-stats">${stats.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
+      </div>
+      <div class="row acta-acciones">
+        <button class="tinta" id="lamina-dl">Descargar lámina</button>
+        <button class="tinta" id="lamina-copy">Copiar lámina</button>
+        <button class="tinta" id="copy">Copiar acta</button>
         ${won && canBack ? '<button id="deeper">Cimientos abisales<small>seguir sin final</small></button>' : ''}
         ${c.online ? (canBack ? '<button class="primary" id="c-room">Volver a la sala</button>' : '<button disabled>Esperando al anfitrión…</button>') : '<button class="primary" id="c-hub">Volver a la portada</button>'}
       </div>
     </div>
   </div>`;
-  stampOn($('.acta-sheet'), won ? 'Demolido' : 'Clausurado', won ? 's-done big' : 's-skip big');
-  $('#copy').onclick = () => {
-    const text = actaText(run);
-    const done = () => toast('Acta copiada');
+  const sheet = $('.acta-sheet');
+  stampOn(sheet, won ? 'Demolido' : 'Clausurado', won ? 's-done big' : 's-skip big');
+  inkFade(sheet);
+  const copyText = (text: string, ok: string) => {
+    const done = () => toast(ok);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
     else fallbackCopy(text, done);
   };
+  $('#copy').onclick = () => copyText(actaText(run, c.online), 'Acta copiada');
+  const lamina = laminaOf(run, c.online);
+  $('#lamina-dl').onclick = () => void downloadLamina(lamina);
+  $('#lamina-copy').onclick = () =>
+    void copyLamina(lamina, actaText(run, c.online)).then((what) => {
+      if (what === 'png') toast('Lámina copiada: pégala donde quieras');
+      else if (what === 'text') toast('Este navegador no copia imágenes: va el acta en texto con su enlace');
+      else copyText(actaText(run, c.online), 'Acta copiada en texto');
+    });
   const deeper = $('#deeper');
   if (deeper) deeper.onclick = () => runDo({ t: 'endless' });
   const hub = $('#c-hub');

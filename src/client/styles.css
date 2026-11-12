@@ -196,7 +196,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .row input { flex: 1; min-width: 0; }
 .or { display: flex; align-items: center; gap: 10px; color: var(--concrete-2); }
 .or::before, .or::after { content: ''; flex: 1; height: 3px; background: var(--concrete-2); }
-.conn { font-size: 12px; color: var(--concrete-2); }
+.conn { font-size: 13px; color: var(--concrete-2); }
 .conn.bad { color: var(--red); }
 
 .deck { padding: 28px 32px 60px; }
@@ -213,7 +213,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .seats { display: grid; gap: 12px; }
 .seat { border: 4px solid var(--ink); background: var(--paper); padding: 14px 16px; font-family: var(--display); font-size: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 6px 6px 0 var(--ink); }
 .seat.empty { background: transparent; border-style: dashed; box-shadow: none; color: var(--ink); opacity: 0.45; }
-.seat small { font-family: var(--mono); font-size: 12px; background: var(--ink); color: var(--hazard); padding: 2px 6px; }
+.seat small { font-family: var(--mono); font-size: 13px; background: var(--ink); color: var(--hazard); padding: 2px 6px; }
 .seat.off { opacity: 0.5; }
 .lobby-side { display: flex; flex-direction: column; gap: 14px; }
 .panel { border: 4px solid var(--ink); background: var(--paper); padding: 12px; box-shadow: 6px 6px 0 var(--ink); }
@@ -231,7 +231,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .chip.turn { background: var(--hazard); color: var(--ink); border-color: var(--hazard); }
 .chip.off { opacity: 0.45; text-decoration: line-through; }
 .chip.me::before { content: '▶'; }
-.bar button { box-shadow: none; padding: 4px 10px; font-size: 12px; color: var(--ink); }
+.bar button { box-shadow: none; padding: 4px 10px; font-size: 13px; color: var(--ink); }
 
 .field { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 14px; padding: 14px; min-height: 0; }
 .towers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; min-height: 0; }
@@ -239,9 +239,9 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .tower-tag { align-self: stretch; display: flex; justify-content: space-between; align-items: center; font-family: var(--display); font-size: clamp(13px, 1.5vw, 20px); background: var(--ink); color: var(--paper); margin: -8px -8px 0; padding: 4px 8px; }
 .tower-tag .glyph { fill: var(--paper); font-size: 1.2em; }
 .tower[data-suit='H'] .tower-tag .glyph, .tower[data-suit='D'] .tower-tag .glyph { fill: var(--red); }
-.tower-weak { align-self: stretch; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; }
+.tower-weak { align-self: stretch; font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; }
 .ladder { display: flex; gap: 4px; align-self: stretch; }
-.ladder span { flex: 1; text-align: center; border: 2px solid var(--ink); font-family: var(--display); font-size: 12px; padding: 1px 0; }
+.ladder span { flex: 1; text-align: center; border: 2px solid var(--ink); font-family: var(--display); font-size: 13px; padding: 1px 0; }
 .ladder span.now { background: var(--hazard); }
 .ladder span.down { background: var(--ink); color: var(--concrete-2); text-decoration: line-through; }
 .floor-slot { flex: 1; display: grid; place-items: center; min-height: 0; position: relative; align-self: stretch; }
@@ -249,8 +249,8 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .ruin { font-family: var(--display); font-size: clamp(18px, 2.4vw, 34px); color: var(--ink); opacity: 0.55; transform: rotate(-8deg); border: 4px dashed var(--ink); padding: 6px 12px; }
 .hp { align-self: stretch; height: 22px; border: 3px solid var(--ink); background: var(--paper); position: relative; }
 .hp-fill { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(90deg, var(--red) 0 8px, #b3040f 8px 10px); transition: width 0.25s steps(5); }
-.hp span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 12px; color: var(--card-paper); }
-.threat { align-self: stretch; display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; }
+.hp span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--card-paper); }
+.threat { align-self: stretch; display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; }
 .threat b { color: var(--red); letter-spacing: 2px; }
 .tower.disarmed .threat b { color: var(--ink); text-decoration: line-through; }
 .tower.fallen { background: transparent; box-shadow: none; border-style: dashed; }
@@ -258,7 +258,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .tower.targetable { cursor: crosshair; outline: 4px solid var(--red); outline-offset: 2px; }
 .tower.targetable:hover { background-color: var(--hazard); transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
 .preview { position: absolute; top: 34px; right: -4px; z-index: 6; background: var(--red); color: var(--paper); font-family: var(--display); font-size: clamp(16px, 2vw, 26px); padding: 2px 8px; border: 3px solid var(--ink); transform: rotate(3deg); pointer-events: none; text-align: right; line-height: 1; }
-.preview small { display: block; font-family: var(--mono); font-size: 12px; font-weight: 700; margin-top: 2px; }
+.preview small { display: block; font-family: var(--mono); font-size: 13px; font-weight: 700; margin-top: 2px; }
 .preview.zero { background: var(--concrete); color: var(--ink); }
 .tower.hit { animation: hit 0.3s steps(6); }
 .tower.strike { animation: strike 0.6s steps(6); }
@@ -282,12 +282,12 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .stat b.pulse { animation: pulse 0.4s steps(4); }
 @keyframes pulse { 50% { background: var(--hazard); transform: scale(1.4); } }
 .piles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-.pile { text-align: center; font-size: 12px; font-weight: 700; }
+.pile { text-align: center; font-size: 13px; font-weight: 700; }
 .pile .slot { display: grid; place-items: center; height: 92px; border: 2px dashed var(--ink); margin-bottom: 3px; }
 .pile .card { --w: 56px; }
 .pile .card .ly.paper, .pile .card .card-back { box-shadow: 3px 3px 0 var(--ink); border-width: 2px; }
 .pile .count { font-family: var(--display); font-size: 26px; }
-.log { flex: 1; min-height: 80px; overflow-y: auto; font-size: 12px; line-height: 1.5; background: var(--ink); color: var(--paper); text-transform: none; }
+.log { flex: 1; min-height: 80px; overflow-y: auto; font-size: 13px; line-height: 1.5; background: var(--ink); color: var(--paper); text-transform: none; }
 .log p { border-bottom: 1px solid #333; padding: 2px 0; }
 .log p.red { color: #ff5a64; }
 .log p.yel { color: var(--hazard); }
@@ -297,7 +297,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .status { grid-column: 1 / -1; font-family: var(--display); font-size: 15px; display: flex; gap: 12px; align-items: center; min-height: 26px; }
 .status .tag { background: var(--ink); color: var(--paper); padding: 2px 10px; }
 .status .tag.go { background: var(--red); animation: beat 1.2s infinite; }
-.status .hint { font-family: var(--mono); font-size: 12px; font-weight: 700; text-transform: none; }
+.status .hint { font-family: var(--mono); font-size: 13px; font-weight: 700; text-transform: none; }
 .hand .card { --w: 116px; }
 .hand { display: flex; gap: 12px; min-height: 168px; align-items: flex-end; padding: 24px 6px 6px; overflow-x: auto; }
 .hand .card { cursor: pointer; transition: transform 0.12s steps(3); }
@@ -310,7 +310,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .coach { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; background: var(--hazard); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: 8px 12px; margin-bottom: 6px; text-transform: none; font-size: 14px; line-height: 1.4; }
 .coach[hidden] { display: none; }
 .coach .who { font-family: var(--display); text-transform: uppercase; background: var(--ink); color: var(--hazard); padding: 8px 12px; text-align: center; line-height: 1.1; align-self: stretch; display: grid; align-content: center; }
-.coach .who small { display: block; font-family: var(--mono); font-size: 12px; color: var(--paper); margin-top: 4px; }
+.coach .who small { display: block; font-family: var(--mono); font-size: 13px; color: var(--paper); margin-top: 4px; }
 .coach h4 { font-family: var(--display); text-transform: uppercase; font-size: 17px; line-height: 1.1; margin-bottom: 2px; }
 .coach button { font-size: 15px; padding: 10px 18px; }
 .hand .card.hint { animation: hintbob 0.6s ease-in-out infinite alternate; }
@@ -324,7 +324,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .banner div { font-family: var(--display); font-size: clamp(48px, 13vw, 190px); letter-spacing: -0.04em; line-height: 0.85; background: var(--ink); color: var(--paper); padding: 0.08em 0.25em; transform: rotate(-3deg); animation: slam 1s steps(12) forwards; text-align: center; }
 .banner.red div { background: var(--red); }
 .banner.yel div { background: var(--hazard); color: var(--ink); }
-.banner small { display: block; font-family: var(--mono); font-size: clamp(12px, 1.6vw, 20px); letter-spacing: 0.05em; padding-bottom: 0.6em; }
+.banner small { display: block; font-family: var(--mono); font-size: clamp(13px, 1.6vw, 20px); letter-spacing: 0.05em; padding-bottom: 0.6em; }
 @keyframes slam { 0% { transform: scale(3) rotate(-10deg); opacity: 0; } 15% { transform: scale(1) rotate(-3deg); opacity: 1; } 75% { transform: scale(1) rotate(-3deg); opacity: 1; } 100% { transform: translateX(110vw) rotate(-3deg); opacity: 1; } }
 .flash { position: fixed; inset: 0; z-index: 55; pointer-events: none; background: var(--red); animation: flash 0.5s steps(4) forwards; }
 @keyframes flash { 0%, 50% { opacity: 0.55; } 25%, 75% { opacity: 0; } 100% { opacity: 0; } }
@@ -348,7 +348,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .modal-box li { margin: 3px 0; }
 .modal-box table { border-collapse: collapse; width: 100%; margin: 6px 0; }
 .modal-box td, .modal-box th { border: 2px solid var(--ink); padding: 5px 8px; text-align: left; vertical-align: top; }
-.modal-box th { background: var(--ink); color: var(--paper); text-transform: uppercase; font-size: 12px; }
+.modal-box th { background: var(--ink); color: var(--paper); text-transform: uppercase; font-size: 13px; }
 .modal-box .glyph { font-size: 1.15em; }
 
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 100; background: var(--red); color: var(--paper); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: 10px 18px; font-family: var(--display); animation: toast 3s steps(30) forwards; }
@@ -376,11 +376,11 @@ body { font-size: 14px; font-weight: 500; letter-spacing: 0.03em; }
 .bar .brand { font-size: 30px; line-height: 1; }
 .tower-tag { font-size: clamp(17px, 2.9vh, 30px); line-height: 1; }
 .panel h3 { font-size: clamp(17px, 2.8vh, 24px); line-height: 1; align-items: baseline; }
-.panel h3 span + span { font-family: var(--mono); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.panel h3 span + span { font-family: var(--mono); font-size: 13px; font-weight: 700; text-transform: uppercase; }
 .coach h4 { font-size: 23px; }
 .modal-box h2 { font-size: 52px; }
 .modal-box h2 button { font-family: var(--display); }
-.log { font-size: 12px; font-weight: 500; }
+.log { font-size: 13px; font-weight: 500; }
 
 /* botones con marco de gubia: el texto queda nítido, el borde es el que tiembla */
 
@@ -424,7 +424,7 @@ html, body { height: 100%; overflow: hidden; }
 .pile .card { --w: clamp(26px, 6.2vh, 64px); }
 .pile .count { font-size: clamp(16px, 3vh, 26px); }
 .tray { padding: clamp(4px, 1vh, 8px) 14px clamp(8px, 1.6vh, 14px); }
-.status { min-height: 0; font-size: clamp(12px, 1.9vh, 15px); }
+.status { min-height: 0; font-size: clamp(13px, 1.9vh, 15px); }
 .hand { container-type: size; height: clamp(92px, 25vh, 290px); min-height: 0; padding: 0 6px; gap: clamp(4px, 0.9vw, 12px); overflow: visible; }
 .hand .card { --w: min(calc(82cqh / 1.4), 12.4cqw); }
 .actions { justify-content: flex-end; }
@@ -439,7 +439,7 @@ html, body { height: 100%; overflow: hidden; }
   button { padding: 6px 12px; }
   .tower-weak { display: none; }
   .blocks:not(.wall) i { aspect-ratio: 2 / 1; }
-  .coach { font-size: 12px; padding: 4px 10px; }
+  .coach { font-size: 13px; padding: 4px 10px; }
   .coach h4 { font-size: 18px; }
 }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
@@ -450,7 +450,7 @@ html, body { height: 100%; overflow: hidden; }
   .lobby-code p { display: none; }
   .bar { gap: 6px; padding: 4px 8px; }
   .bar .brand, .bar .room { display: none; }
-  .bar button { padding: 3px 6px; font-size: 12px; }
+  .bar button { padding: 3px 6px; font-size: 13px; }
   .field { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
   .tower-weak, .log, .bunker h3, .bunker .blocks, .bunker-art { display: none; }
   .threat span { display: none; }
@@ -471,32 +471,32 @@ html, body { height: 100%; overflow: hidden; }
 
 /* escala del texto de interfaz con el alto de la ventana */
 body { font-size: clamp(13px, 1.5vh, 17px); }
-button { font-size: clamp(12px, 1.45vh, 17px); padding: clamp(5px, 0.95vh, 12px) clamp(10px, 1.5vh, 20px); }
+button { font-size: clamp(13px, 1.45vh, 17px); padding: clamp(5px, 0.95vh, 12px) clamp(10px, 1.5vh, 20px); }
 input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12px; }
-.meta span { font-size: clamp(12px, 1.35vh, 15px); }
-.bar button { font-size: clamp(12px, 1.25vh, 14px); padding: clamp(3px, 0.5vh, 6px) 10px; }
-.chip, .room { font-size: clamp(12px, 1.35vh, 15px); }
-.tower-weak, .threat { font-size: clamp(12px, 1.3vh, 14px); }
-.ladder span { font-size: clamp(12px, 1.4vh, 15px); }
+.meta span { font-size: clamp(13px, 1.35vh, 15px); }
+.bar button { font-size: clamp(13px, 1.25vh, 14px); padding: clamp(3px, 0.5vh, 6px) 10px; }
+.chip, .room { font-size: clamp(13px, 1.35vh, 15px); }
+.tower-weak, .threat { font-size: clamp(13px, 1.3vh, 14px); }
+.ladder span { font-size: clamp(13px, 1.4vh, 15px); }
 .hp { height: clamp(16px, 2.4vh, 26px); }
-.hp span { font-size: clamp(12px, 1.4vh, 14px); }
-.status .hint { font-size: clamp(12px, 1.45vh, 15px); }
-.log { font-size: clamp(12px, 1.3vh, 14px); }
-.coach { font-size: clamp(12px, 1.6vh, 17px); }
+.hp span { font-size: clamp(13px, 1.4vh, 14px); }
+.status .hint { font-size: clamp(13px, 1.45vh, 15px); }
+.log { font-size: clamp(13px, 1.3vh, 14px); }
+.coach { font-size: clamp(13px, 1.6vh, 17px); }
 .coach h4 { font-size: clamp(18px, 2.6vh, 28px); }
-@media (max-aspect-ratio: 1/1), (max-width: 640px) { .bar button { padding: 3px 6px; font-size: 12px; } }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) { .bar button { padding: 3px 6px; font-size: 13px; } }
 
 /* vertical (móvil): la mano manda según el ancho y las torres se quedan con el resto */
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .hand { height: clamp(70px, min(19vh, 25vw), 200px); }
-  .tower-tag { font-size: clamp(12px, 3.7vw, 22px); }
+  .tower-tag { font-size: clamp(13px, 3.7vw, 22px); }
   .tower-tag .glyph { display: none; }
-  .ladder span { font-size: 12px; border-width: 1px; }
+  .ladder span { font-size: 13px; border-width: 1px; }
   .bunker { grid-template-columns: auto auto minmax(0, 1fr); }
   .stat { gap: 6px; }
   .piles { display: flex; justify-content: flex-end; gap: 6px; grid-column: 3; }
-  .pile { font-size: 12px; }
-  .coach { font-size: 12px; padding: 6px 10px; gap: 8px; }
+  .pile { font-size: 13px; }
+  .coach { font-size: 13px; padding: 6px 10px; gap: 8px; }
   .coach h4 { font-size: 18px; }
   .field { padding: 6px; gap: 6px; }
 }
@@ -508,7 +508,7 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .bunker { grid-template-columns: auto auto minmax(0, 1fr); column-gap: 14px; }
   .stat { flex-direction: column; align-items: flex-start; gap: 0; }
-  .stat span { font-size: 12px; }
+  .stat span { font-size: 13px; }
   .stat b { font-size: 18px; }
   .pile .slot { width: 40px; }
 }
@@ -563,7 +563,7 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 .hand .card { --w: min(calc(clamp(92px, 25vh, 290px) * 0.84 / 1.4), 11.5vw); }
 .actions { min-width: 0; }
 .coach { margin-bottom: 2px; }
-.boss { background: var(--red); color: var(--card-paper); padding: 4px 8px; margin-bottom: 6px; text-transform: none; font-size: clamp(12px, 1.3vh, 14px); line-height: 1.3; }
+.boss { background: var(--red); color: var(--card-paper); padding: 4px 8px; margin-bottom: 6px; text-transform: none; font-size: clamp(13px, 1.3vh, 14px); line-height: 1.3; }
 .boss b { display: block; text-transform: uppercase; }
 .chip.gold { background: var(--hazard); color: var(--ink); border-color: var(--hazard); }
 
@@ -587,7 +587,7 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 
 /* ───────────── CAMPAÑA ───────────── */
 .home-right button.big, button.big { display: grid; gap: 2px; justify-items: center; font-size: clamp(15px, 2.2vh, 24px); padding: clamp(8px, 1.5vh, 16px); }
-button.big small { font-family: var(--mono); font-weight: 700; font-size: max(12px, 0.55em); letter-spacing: 0.06em; opacity: 0.85; }
+button.big small { font-family: var(--mono); font-weight: 700; font-size: max(13px, 0.55em); letter-spacing: 0.06em; opacity: 0.85; }
 .camp { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); padding: clamp(10px, 2.4vh, 28px) clamp(12px, 2.2vw, 32px); gap: clamp(8px, 1.8vh, 20px); }
 .camp .deck-head { margin: 0; padding-bottom: clamp(6px, 1.2vh, 14px); }
 .camp .deck-head h1 { font-size: min(9vw, 13vh); line-height: 0.95; margin-top: 4px; }
@@ -597,7 +597,7 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: max(12
 .route { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
 .stop { border: 3px solid var(--ink); padding: 4px 2px; text-align: center; display: grid; gap: 2px; background: var(--card-paper); }
 .stop b { font-family: var(--display); font-size: clamp(14px, 2.4vh, 24px); line-height: 1; }
-.stop span { font-size: clamp(12px, 1.1vh, 11px); font-weight: 700; text-transform: uppercase; line-height: 1.1; overflow: hidden; }
+.stop span { font-size: clamp(13px, 1.1vh, 13px); font-weight: 700; text-transform: uppercase; line-height: 1.1; overflow: hidden; }
 .stop.boss { background: var(--red); color: var(--card-paper); }
 .stop.done { background: var(--ink); color: var(--hazard); }
 .asc { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; text-transform: uppercase; }
@@ -606,7 +606,7 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: max(12
 .camp-run .row button { flex: 1; }
 .up { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: clamp(4px, 0.9vh, 10px); }
 .up b { display: block; text-transform: uppercase; font-size: clamp(13px, 1.7vh, 17px); }
-.up span { font-size: clamp(12px, 1.45vh, 15px); }
+.up span { font-size: clamp(13px, 1.45vh, 15px); }
 .pips { display: flex; gap: 3px; margin-top: 3px; }
 .pips i { width: 14px; height: 8px; border: 2px solid var(--ink); }
 .pips i.on { background: var(--red); }
@@ -614,7 +614,7 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: max(12
 .purse b { font-family: var(--display); font-size: min(8vw, 11vh); color: var(--red); }
 .purse span { display: block; font-weight: 700; text-transform: uppercase; }
 .shop-side { display: flex; flex-direction: column; gap: clamp(8px, 1.4vh, 14px); min-height: 0; overflow-y: auto; padding: 0 8px 8px 0; }
-.shop-side .panel p { text-transform: none; font-size: clamp(12px, 1.5vh, 15px); line-height: 1.4; margin-bottom: 4px; }
+.shop-side .panel p { text-transform: none; font-size: clamp(13px, 1.5vh, 15px); line-height: 1.4; margin-bottom: 4px; }
 .shop-side .row button { flex: 1; }
 .pay { border-collapse: collapse; font-size: clamp(14px, 2.2vh, 22px); font-weight: 700; max-width: 520px; }
 .pay td { padding: 2px 18px 2px 0; }
@@ -644,9 +644,13 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: max(12
 :root { --cw: clamp(92px, min(10.5vw, 19vh), 184px); }
 .choices { display: flex; flex-wrap: wrap; gap: clamp(8px, 1.3vw, 20px); align-items: flex-start; }
 .choice { width: var(--cw); display: grid; grid-template-rows: auto auto 1fr auto; gap: clamp(3px, 0.6vh, 7px); text-transform: none; }
+/* donde cada opción lleva su botón («Llevar», «Pasar»), las tarjetas de una fila miden lo mismo y los botones quedan en línea */
+.choices:has(> .choice > .tag-act) { align-items: stretch; }
 .choice .card { --w: var(--cw); }
-.choice h4 { font-family: var(--title); font-size: clamp(15px, 2.4vh, 25px); line-height: 1; height: 2em; overflow: hidden; margin-top: 4px; }
-.choice p { font-size: clamp(12px, 1.35vh, 14px); line-height: 1.3; height: 3.9em; overflow: hidden; }
+/* Título y texto de una opción: alto mínimo para que las tarjetas de una fila cuadren, nunca alto fijo con
+   overflow: hidden (cortaba la última línea de las descripciones largas, sobre todo en móvil). */
+.choice h4 { font-family: var(--title); font-size: clamp(15px, 2.4vh, 25px); line-height: 1; min-height: 2em; margin-top: 4px; }
+.choice p { font-size: clamp(13px, 1.35vh, 14px); line-height: 1.3; min-height: 3.9em; }
 .choice button { width: 100%; height: clamp(26px, 4vh, 40px); padding: 0; }
 .choice.sold { opacity: 0.4; }
 .choice.sold .card { filter: grayscale(1); }
@@ -658,9 +662,9 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: max(12
 .row > button { flex: 1; min-width: 0; }
 .home-right > button, .home-right .row > button, .lobby-side > button { min-height: clamp(30px, 4.8vh, 48px); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.grid2 button { height: clamp(32px, 5vh, 48px); padding: 0 4px; font-size: clamp(12px, 1.3vh, 14px); }
+.grid2 button { height: clamp(32px, 5vh, 48px); padding: 0 4px; font-size: clamp(13px, 1.3vh, 14px); }
 .panel h3 { min-height: 1.3em; }
-.note { text-transform: none; font-size: clamp(12px, 1.4vh, 14px); line-height: 1.35; margin-top: 8px; }
+.note { text-transform: none; font-size: clamp(13px, 1.4vh, 14px); line-height: 1.35; margin-top: 8px; }
 .wait { font-weight: 700; text-transform: uppercase; background: var(--ink); color: var(--hazard); padding: 4px 10px; display: inline-block; margin-top: 10px; }
 
 /* ───────────── PANTALLAS DE CAMPAÑA ───────────── */
@@ -675,10 +679,10 @@ button.big small { font-family: var(--mono); font-weight: 700; font-size: max(12
 .end-row button { flex: none; min-width: 180px; }
 h3.sec { font-family: var(--title); font-size: clamp(20px, 3.2vh, 34px); line-height: 1; margin: 0 0 clamp(6px, 1.2vh, 12px); text-transform: none; }
 .choices + h3.sec { margin-top: clamp(10px, 2vh, 22px); }
-.run-body.two .pay { font-size: clamp(12px, 1.8vh, 18px); width: 100%; }
+.run-body.two .pay { font-size: clamp(13px, 1.8vh, 18px); width: 100%; }
 .keeper { width: clamp(120px, 15vw, 230px); display: grid; gap: 10px; }
 .keeper .card { --w: clamp(120px, 15vw, 230px); }
-.say { background: var(--ink); color: var(--card-paper); padding: 8px 12px; text-transform: none; font-weight: 700; font-size: clamp(12px, 1.7vh, 17px); line-height: 1.3; min-height: 3.6em; position: relative; filter: url(#rough-ui); }
+.say { background: var(--ink); color: var(--card-paper); padding: 8px 12px; text-transform: none; font-weight: 700; font-size: clamp(13px, 1.7vh, 17px); line-height: 1.3; min-height: 3.6em; position: relative; filter: url(#rough-ui); }
 .say::before { content: ''; position: absolute; top: -9px; left: 24px; border: 10px solid transparent; border-top: 0; border-bottom-color: var(--ink); }
 .end.in-page { position: relative; height: 100dvh; z-index: 1; animation: none; }
 .deck-box { max-width: 1100px; }
@@ -759,28 +763,28 @@ button:disabled { opacity: 0.5; }
 .camp-run h3.sec { font-size: clamp(17px, 2.6vh, 26px); margin: 0; }
 .deck-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .deck-opt { display: grid; align-content: start; gap: 2px; text-align: left; height: clamp(64px, 11vh, 108px); padding: 6px 8px; overflow: hidden; font-family: var(--mono); }
-.deck-opt b { font-family: var(--display); text-transform: uppercase; font-size: clamp(12px, 1.4vh, 14px); line-height: 1.1; }
-.deck-opt span { text-transform: none; font-weight: 500; font-size: clamp(12px, 1.2vh, 12px); line-height: 1.25; letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.deck-opt b { font-family: var(--display); text-transform: uppercase; font-size: clamp(13px, 1.4vh, 14px); line-height: 1.1; }
+.deck-opt span { text-transform: none; font-weight: 500; font-size: clamp(13px, 1.2vh, 13px); line-height: 1.25; letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .tabs { flex: none; }
 .ach { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: clamp(4px, 0.8vh, 8px); text-transform: none; }
-.ach b { display: block; text-transform: uppercase; font-size: clamp(12px, 1.6vh, 16px); }
-.ach span { font-size: clamp(12px, 1.4vh, 14px); line-height: 1.3; display: block; }
+.ach b { display: block; text-transform: uppercase; font-size: clamp(13px, 1.6vh, 16px); }
+.ach span { font-size: clamp(13px, 1.4vh, 14px); line-height: 1.3; display: block; }
 .ach em { font-style: normal; font-weight: 700; color: var(--red); }
 .ach.ok { opacity: 0.6; }
 .ach.ok b::after { content: ' ✓'; color: var(--red); }
-.ach-r { text-align: right; font-weight: 700; font-size: clamp(12px, 1.3vh, 13px); text-transform: uppercase; width: clamp(52px, 5vw, 72px); }
-.ach-r b { font-family: var(--display); font-size: clamp(12px, 1.7vh, 16px); }
+.ach-r { text-align: right; font-weight: 700; font-size: clamp(13px, 1.3vh, 13px); text-transform: uppercase; width: clamp(52px, 5vw, 72px); }
+.ach-r b { font-family: var(--display); font-size: clamp(13px, 1.7vh, 16px); }
 .bar-prog { height: 6px; border: 1.5px solid var(--ink); margin-top: 3px; }
 .bar-prog i { display: block; height: 100%; background: var(--red); }
 .ach-stack { position: fixed; right: 16px; bottom: 16px; z-index: 120; display: grid; gap: 8px; pointer-events: none; }
 .ach-toast { background: var(--ink); color: var(--card-paper); border-left: 8px solid var(--hazard); padding: 8px 14px; display: grid; gap: 1px; min-width: 240px; max-width: 340px; animation: ach 5.2s ease both; text-transform: none; }
-.ach-toast small { color: var(--hazard); font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.1em; }
+.ach-toast small { color: var(--hazard); font-weight: 700; text-transform: uppercase; font-size: 13px; letter-spacing: 0.1em; }
 .ach-toast b { font-family: var(--title); font-size: 24px; line-height: 1; font-weight: 700; }
-.ach-toast span { font-size: 12px; font-weight: 700; }
+.ach-toast span { font-size: 13px; font-weight: 700; }
 @keyframes ach { 0% { transform: translateX(120%); } 7%, 92% { transform: none; opacity: 1; } 100% { transform: translateX(20px); opacity: 0; } }
 
 /* ───────────── CAMPAÑA: CABECERA, DESCUBRIR CARTA Y JEFE ───────────── */
-.deck-head .sub { font-weight: 700; text-transform: uppercase; font-size: clamp(12px, 1.4vh, 14px); margin-top: 2px; }
+.deck-head .sub { font-weight: 700; text-transform: uppercase; font-size: clamp(13px, 1.4vh, 14px); margin-top: 2px; }
 .sp-desc { inset: 81.5% 7% 3% 7%; text-align: center; }
 .mini-port { overflow: visible; }
 .reveal, .boss-intro { background: rgba(10, 10, 10, 0.86); cursor: pointer; }
@@ -790,7 +794,7 @@ button:disabled { opacity: 0.5; }
 .reveal-box .choice { width: var(--cw); text-align: center; }
 .reveal-box .choice .card { --w: var(--cw); }
 .reveal-box .choice h4 { height: auto; }
-.reveal-box .choice p { height: auto; font-size: clamp(12px, 1.7vh, 16px); }
+.reveal-box .choice p { height: auto; font-size: clamp(13px, 1.7vh, 16px); }
 .boss-box { display: grid; grid-template-columns: auto minmax(0, 420px); gap: clamp(16px, 3vw, 44px); align-items: center; color: var(--card-paper); text-transform: none; }
 .boss-box .card { --w: clamp(140px, min(22vw, 40vh), 300px); }
 .boss-box h2 { font-family: var(--title); font-size: clamp(40px, 9vh, 96px); line-height: 0.95; font-weight: 700; }
@@ -807,7 +811,7 @@ button:disabled { opacity: 0.5; }
 }
 .deck-opt:disabled { opacity: 0.72; }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
-  .choice p { height: 5.2em; }
+  .choice p { min-height: 5.2em; }
   .run-body.shop .grid2 { position: sticky; bottom: 0; background: var(--concrete); padding: 8px 0 2px; z-index: 2; }
   .run .deck-head h1 { font-size: min(11vw, 8vh); }
 }
@@ -818,7 +822,7 @@ button:disabled { opacity: 0.5; }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .bar { flex-wrap: wrap; row-gap: 4px; }
   .bar .players { flex: 1 1 auto; }
-  .bar button { padding: 3px 5px; font-size: 12px; }
+  .bar button { padding: 3px 5px; font-size: 13px; }
   .tray { min-width: 0; }
   .actions button { min-width: 0; }
 }
@@ -834,7 +838,7 @@ input::placeholder { color: #8d8a83; opacity: 1; }
 .choice.pick { cursor: pointer; outline: none; }
 .choice.pick:hover .card, .choice.pick:focus-visible .card { transform: translateY(-8px) rotate(-1.5deg); }
 .choice.pick:hover h4, .choice.pick:focus-visible h4 { color: var(--red); }
-.tag-act { justify-self: start; font-family: var(--display); text-transform: uppercase; font-size: clamp(12px, 1.4vh, 14px); line-height: 1; background: var(--ink); color: var(--card-paper); padding: 4px 8px; }
+.tag-act { justify-self: start; font-family: var(--display); text-transform: uppercase; font-size: clamp(13px, 1.4vh, 14px); line-height: 1; background: var(--ink); color: var(--card-paper); padding: 4px 8px; }
 .choice.pick .tag-act { background: var(--red); }
 .choice.no-pick .tag-act { opacity: 0.55; }
 
@@ -859,8 +863,8 @@ input::placeholder { color: #8d8a83; opacity: 1; }
 /* ───────────── COLECCIÓN ───────────── */
 .col-sec { margin-bottom: clamp(18px, 3.5vh, 40px); }
 .col-sec h3.sec { border-bottom: 4px solid var(--ink); padding-bottom: 4px; margin-bottom: 4px; font-size: clamp(26px, 4.4vh, 46px); display: flex; justify-content: space-between; align-items: baseline; }
-.col-sec h3.sec span { font-family: var(--display); font-size: max(12px, 0.5em); color: var(--red); }
-.col-note { text-transform: none; font-size: clamp(12px, 1.6vh, 15px); margin-bottom: clamp(8px, 1.6vh, 16px); }
+.col-sec h3.sec span { font-family: var(--display); font-size: max(13px, 0.5em); color: var(--red); }
+.col-note { text-transform: none; font-size: clamp(13px, 1.6vh, 15px); margin-bottom: clamp(8px, 1.6vh, 16px); }
 .col-sec .deck-grid { gap: clamp(10px, 1.4vw, 20px); }
 .col-sec .deck-grid > .card { --w: clamp(72px, 7.4vw, 120px); }
 .col-sec .choice { --cw: clamp(96px, 9.4vw, 150px); width: var(--cw); }

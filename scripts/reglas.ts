@@ -9,6 +9,7 @@ import { KEYWORDS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, EVENT_AFTER, FATIGUE, LAST_STAGE, MIN_DECK, STAGES, TAGS, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
 import { ARCH, Arch, RARITY, TOOLS, TOOL_SLOTS } from '../src/rules/tools';
+import { CONTROL_ROWS } from '../src/client/prompts';
 
 const cfg = DIFFICULTY.obra;
 const n = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',');
@@ -26,22 +27,8 @@ const FORM_CARDS: Record<Formation, string> = {
 };
 const KIND = { f: '+F suma Fuerza', r: '+R suma Resonancia', x: '×R multiplica', copy: '⇉ copia', p: '• pasiva' } as const;
 
-const CONTROLS_TABLE = table(['Acción', 'Teclado y ratón', 'Mando'], [
-  ['Mover el foco', 'Flechas', 'Cruceta o palanca'],
-  ['Elegir', 'Enter · 1–9 en la mano', 'A'],
-  ['Golpear la torre apuntada', 'Espacio', 'X'],
-  ['Guardar en el andamio', 'Y', 'Y'],
-  ['Tiza de replanteo (deshacer)', 'Z', 'LT'],
-  ['Cambiar la velocidad (1× → 2× → 4×)', 'botón de la barra', 'RT'],
-  ['Lupa de grabador', 'L · clic derecho · pulsación larga', 'RB'],
-  ['Mazo (cantera y escombrera)', 'Tab', 'LB'],
-  ['Descartar lo elegido', 'Supr', '—'],
-  ['Atrás / soltar la selección', 'Esc', 'B'],
-  ['Reordenar el cinturón', 'Arrastrar · Mayús + flechas', '—'],
-  ['Reiniciar la campaña', 'Mantener R', 'Mantener Select'],
-  ['Pantalla completa', 'F', '—'],
-  ['Ajustes', '—', 'Start'],
-]);
+// la tabla de controles es la de prompts.ts: la misma que enseñan Ajustes y las insignias de cada botón
+const CONTROLS_TABLE = table(['Acción', 'Teclado y ratón', 'Mando'], CONTROL_ROWS);
 
 const md = `# DERRUMBE — Reglas
 
@@ -244,7 +231,7 @@ ${KEYWORDS.map((k) => `- **${k.name}**: ${k.desc}`).join('\n')}
 
 ${CONTROLS_TABLE}
 
-Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón (A, B, X, Y, LB, RB, LT, RT) si lo último que tocaste fue un mando, y nada con ratón o pantalla táctil. Junto a los poderes de palo, la **rueda de materiales** (♠ → ♦ → ♥ → ♣ → ♠) se enciende con lo que llevas elegido: flecha de latón si pegas con ventaja, aspa de hierro si esa torre es inmune a tu palo.
+Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón (A, B, X, Y, LB, RB, LT, RT, L3, R3) si lo último que tocaste fue un mando, y nada con ratón o pantalla táctil. Junto a los poderes de palo, la **rueda de materiales** (♠ → ♦ → ♥ → ♣ → ♠) se enciende con lo que llevas elegido: flecha de latón si pegas con ventaja, aspa de hierro si esa torre es inmune a tu palo.
 
 La **lupa de grabador** abre cualquier carta, herramienta, piso de torre o jefe a tamaño de lámina, con la cuenta exacta de lo que aporta en ese momento. En sala, pulsar una torre cuando no es tu turno (o cualquier ruta, oferta o carta con Alt) deja una **marca de tiza** con tus iniciales para la cuadrilla: no decide nada, solo señala.
 `;
@@ -269,7 +256,7 @@ function balanceMd(r: Report): string {
   return [
     `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, contratos, selección, ferretería, forja, hallazgos, andamio y orden del cinturón). El informe completo —cada herramienta, carta especial, sello y tratamiento— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
-    `Campañas ganadas por nivel de obra (baraja de obra, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 8 y el 18 %; y cada nivel, más difícil que el anterior.`,
+    `Campañas ganadas por nivel de obra (baraja de obra, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 6 y el 9 % con el gremio vacío y entre el 12 y el 17 % con el gremio lleno; y cada nivel, más difícil que el anterior.`,
     '',
     table(['Nivel', 'Gremio vacío', 'Gremio lleno'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
     '',

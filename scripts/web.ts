@@ -6,7 +6,12 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { extname, join, normalize, resolve } from 'node:path';
 
-export const WEB_ROOT = resolve('dist/web');
+/**
+ * Dónde se construye y desde dónde se sirve. Por defecto, dist/web. Con QA_DIR=dist/qa-loquesea cada
+ * celda del estudio construye en su propia carpeta y dos pruebas a la vez no se pisan la construcción.
+ */
+const QA_DIR = process.env.QA_DIR?.trim();
+export const WEB_ROOT = resolve(QA_DIR || 'dist/web');
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -21,10 +26,10 @@ const MIME: Record<string, string> = {
 /** Construye la versión estática (salvo con NO_BUILD=1) y comprueba que está. */
 export function ensureBuilt(): void {
   if (!process.env.NO_BUILD) {
-    const built = spawnSync('npm run build:web', { stdio: 'inherit', shell: true });
+    const built = spawnSync(QA_DIR ? `npx vite build --mode web --outDir "${QA_DIR}"` : 'npm run build:web', { stdio: 'inherit', shell: true });
     if (built.status !== 0) process.exit(built.status ?? 1);
   }
-  if (!existsSync(join(WEB_ROOT, 'index.html'))) throw new Error('Falta dist/web: ejecuta antes npm run build:web');
+  if (!existsSync(join(WEB_ROOT, 'index.html'))) throw new Error(`Falta ${QA_DIR || 'dist/web'}: ejecuta antes npm run build:web`);
 }
 
 /** Sirve dist/web en 127.0.0.1 y devuelve su dirección. */

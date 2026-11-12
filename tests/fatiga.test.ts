@@ -63,7 +63,7 @@ describe('aguante: la defensa se cobra en daño', () => {
   it('Ariete suma Fuerza por cada punto de muro, y la Embestida también', () => {
     const cfg = cfgWith();
     const bare = previewStrike(table(cfg, [], { wall: 6 }), [card('S5')], 'D').fuerza;
-    expect(previewStrike(table(cfg, ['ariete'], { wall: 6 }), [card('S5')], 'D').fuerza).toBe(bare + 18);
+    expect(previewStrike(table(cfg, ['ariete'], { wall: 6 }), [card('S5')], 'D').fuerza).toBe(bare + 24);
     expect(previewStrike(table(cfg, ['ariete'], { wall: 0 }), [card('S5')], 'D').fuerza).toBe(bare);
     expect(SPECIAL.embestida.fx.wallForce).toBe(3);
     const rider: Card = { id: 'sp-e', suit: 'X', rank: 0, sp: 'embestida' };

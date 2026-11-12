@@ -6,7 +6,7 @@ cuatro torres, doce pisos y un búnker que se agrieta con cada sirena. Para 1 a 
 **Jugar en el navegador:** https://ifbotech.github.io/derrumbe/ (se publica sola en cada cambio; ver [Publicar](#publicar)).
 
 - **Campaña roguelike** en solitario o en cuadrilla: 8 obras cortas y tensas (de 6 a 12 turnos), jefes anunciados en el plano, rutas con contrato, ferretería, hallazgos y cimientos abisales sin final.
-- **Fuerza × Resonancia**: cada golpe se resuelve paso a paso, de izquierda a derecha, y se ve en la mesa antes de darlo.
+- **Fuerza × Resonancia**: cada golpe se resuelve paso a paso, de izquierda a derecha. Antes de darlo, la mesa enseña el **daño final en grande** con sus avisos (golpe limpio, cae el piso, ventaja, inmune) y, si lo pides, el **recibo**: Base + Cartas + Cinturón × Resonancia = Daño.
 - **La baraja manda**: cartas solas, formaciones de póker y el **As de compañía**. Los cuatro poderes de palo y la **rueda de materiales** (♠ → ♦ → ♥ → ♣ → ♠) están siempre a la vista, y cada torre lleva atornillada su **placa de inmunidad**.
 - **Golpe limpio**: tirar un piso con el daño exacto calla la sirena, paga, roba y castiga al piso de abajo.
 - **Fatiga de cimientos**: ninguna obra se eterniza. A partir del turno 9, tus golpes resuenan más y la sirena también: todo acaba en un crescendo.
@@ -14,10 +14,12 @@ cuatro torres, doce pisos y un búnker que se agrieta con cada sirena. Para 1 a 
 - **Andamio**, **tiza de replanteo** (deshacer una jugada por obra en solitario) y **reinicio rápido** manteniendo R.
 - **8 niveles de obra**, cada uno con un giro, y **sellos de maestría** en la colección.
 - **Lupa de grabador**: clic derecho o pulsación larga sobre cualquier carta, herramienta, piso o jefe.
-- **Archivo de actas**: las 25 últimas campañas, con su semilla para rejugarlas, y **copia de seguridad** del progreso en un archivo.
+- **Causa del derrumbe**: al perder, el acta dice en dos líneas qué tiró el búnker y por qué el muro no lo evitó; un aviso de último turno lo anticipa en la mesa.
+- **Archivo de actas**: las 25 últimas campañas, con su semilla para rejugarlas. Cada acta se descarga o se copia como **lámina** de grabado, con un enlace (`?seed=…`) que carga esa misma campaña. Y **copia de seguridad** del progreso en un archivo.
 - **Cooperativo online** con salas por código, servidor autoritativo y **marcas de tiza** para señalar sin hablar.
-- **Teclado y mando** de principio a fin, con las indicaciones de cada botón en pantalla; maqueta propia para móvil.
-- **Obra diaria** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada** con consejos de tiza la primera vez.
+- **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar el cinturón y pantalla completa también con mando), con un marco de foco que se ve a distancia y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
+- **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en gótica y cada palo con su **trama de grabado** (rayado diagonal, punteado, aparejo de ladrillo, rayado cruzado), para distinguirlos sin el color.
+- **Obra diaria** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada**. Ocho **susurros de tiza** saltan la primera vez que te encuentras cada cosa (palo inmune, andamio, golpe limpio, forja, atajo, jefe, fatiga, cantera baja), con «No mostrar más» a un clic.
 
 Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo seis palabras tienen significado propio —Fuerza, Resonancia, golpe limpio, fractura, apuntalado y desarmada—; todo lo demás se dice con palabras llanas.
 
@@ -61,8 +63,9 @@ El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, i
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
 | `npm run analyze:meta` | Laboratorio de balance: ~52.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
 | `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas de la partida clásica y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 19 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM → `artifacts/visual-qa/` |
-| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, obra, reglas, ajustes, cobro, ferretería y hallazgo) |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 25 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras sin gótica y con placa, cero recortes, dianas ≥ 44 px, contraste, tramas de palo → `artifacts/visual-qa/` y su `report.json` |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, obra, reglas, ajustes, cobro, ferretería, forja y hallazgo; descartar con L3, reordenar el cinturón con LB/RB, pantalla completa con R3, foco, susurros e insignias) |
+| `npm run forja` | Forja de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, herramientas, jefes) a 24 y 300 px, mide su tinta y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
 | `npm run og` | Regenera la tarjeta para compartir (`public/og-card.png`, 1200 × 630) |
 | `npm run docs` | Regenera `REGLAS.md` y las tablas de balance y controles de este archivo |
 
@@ -88,7 +91,7 @@ Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativ
 4. **A cobrar.** Oro con interés, el resultado del contrato y **una de tres opciones a la vista** para el mazo. Los jefes dejan una herramienta de botín.
 5. **La ferretería.** Herramientas en su chapa (hierro, cobre, latón o carmesí y oro, según la rareza), sobres de especiales, planos, la **mesa de forja**, el quemador y «Revolver cajones».
 6. **Hallazgos en los cimientos** tras cada jefe intermedio: dilemas con premio y precio.
-7. Tras la octava obra, el **acta de demolición** se puede copiar como tarjeta de texto y queda en el archivo. Y si quedan ganas, los **cimientos abisales**.
+7. Tras la octava obra, el **acta de demolición** se puede copiar como texto o llevarse como lámina, y queda en el archivo. Y si quedan ganas, los **cimientos abisales**.
 
 ### El gremio
 
@@ -125,62 +128,62 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 <!-- controles:inicio -->
 | Acción | Teclado y ratón | Mando |
 |---|---|---|
-| Mover el foco | Flechas | Cruceta o palanca |
-| Elegir | Enter · 1–9 en la mano | A |
-| Golpear la torre apuntada | Espacio | X |
+| Mover el foco | Flechas | Cruceta o palanca izquierda |
+| Elegir | Enter · 1–9 en la mano · clic | A |
+| Golpear la torre apuntada | Espacio · clic en la torre | X |
 | Guardar en el andamio | Y | Y |
 | Tiza de replanteo (deshacer) | Z | LT |
-| Cambiar la velocidad (1× → 2× → 4×) | botón de la barra | RT |
-| Lupa de grabador | L · clic derecho · pulsación larga | RB |
-| Mazo (cantera y escombrera) | Tab | LB |
-| Descartar lo elegido | Supr | — |
+| Descartar lo elegido | Supr | L3 (pulsar la palanca izquierda) |
 | Atrás / soltar la selección | Esc | B |
-| Reordenar el cinturón | Arrastrar · Mayús + flechas | — |
+| Mazo (cantera y escombrera) | Tab | LB |
+| Lupa de grabador | L · clic derecho · pulsación larga | RB |
+| Reordenar el cinturón | Arrastrar · Mayús + flechas | LB / RB con el foco en la herramienta |
+| Cambiar la velocidad (1× → 2× → 4×) | botón de la barra | RT |
+| Pantalla completa | F | R3 (pulsar la palanca derecha) |
 | Reiniciar la campaña | Mantener R | Mantener Select |
-| Pantalla completa | F | — |
-| Ajustes | — | Start |
+| Ajustes | botón de la barra | Start |
 <!-- controles:fin -->
 
 ## Balance
 
 <!-- balance:inicio -->
-Medido con `npm run analyze:meta`: **54.840 campañas** con semilla jugadas por el bot de referencia (rutas, contratos, selección, ferretería, forja, hallazgos, andamio y orden del cinturón). El informe completo —cada herramienta, carta especial, sello y tratamiento— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
+Medido con `npm run analyze:meta`: **55.640 campañas** con semilla jugadas por el bot de referencia (rutas, contratos, selección, ferretería, forja, hallazgos, andamio y orden del cinturón). El informe completo —cada herramienta, carta especial, sello y tratamiento— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
 
-Campañas ganadas por nivel de obra (baraja de obra, 1500 campañas por celda). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 8 y el 18 %; y cada nivel, más difícil que el anterior.
+Campañas ganadas por nivel de obra (baraja de obra, 1500 campañas por celda). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 6 y el 9 % con el gremio vacío y entre el 12 y el 17 % con el gremio lleno; y cada nivel, más difícil que el anterior.
 
 | Nivel | Gremio vacío | Gremio lleno |
 |---|---|---|
-| 1 · Obra limpia | 29,1 % | 44,1 % |
-| 2 · Hormigón armado | 25 % | 40,6 % |
-| 3 · Precios de obra | 23 % | 35,1 % |
-| 4 · Vigas maestras | 17,6 % | 32,2 % |
-| 5 · Sirena afinada | 14,3 % | 27,7 % |
-| 6 · Búnker viejo | 12 % | 24,5 % |
-| 7 · Turno de noche | 7,3 % | 16,9 % |
-| 8 · Clausura | 4,1 % | 10,9 % |
+| 1 · Obra limpia | 29,7 % | 45,1 % |
+| 2 · Hormigón armado | 25,6 % | 41,5 % |
+| 3 · Precios de obra | 23,5 % | 35,9 % |
+| 4 · Vigas maestras | 18,3 % | 34,3 % |
+| 5 · Sirena afinada | 14,1 % | 29,1 % |
+| 6 · Búnker viejo | 12,3 % | 24,9 % |
+| 7 · Turno de noche | 7,9 % | 16,9 % |
+| 8 · Clausura | 6,8 % | 15,3 % |
 
 Por baraja inicial (nivel 1, 1500 campañas por celda). Objetivo: todas entre el 24 y el 31 % sin gremio y entre el 40 y el 45 % con él.
 
 | Baraja | Gremio vacío | Gremio lleno | Lo que suma el gremio |
 |---|---|---|---|
-| Baraja de obra | 29,1 % | 44,1 % | +15 |
-| Baraja negra | 27,3 % | 43,3 % | +16 |
-| Baraja del prestamista | 27,7 % | 41,5 % | +13,8 |
-| Baraja de ases | 25,6 % | 40,1 % | +14,5 |
-| Baraja corta | 28,7 % | 40,7 % | +12 |
-| Baraja del caos | 26,3 % | 43,3 % | +17 |
+| Baraja de obra | 29,7 % | 45,1 % | +15,4 |
+| Baraja negra | 29,3 % | 45,1 % | +15,8 |
+| Baraja del prestamista | 28,7 % | 43,3 % | +14,6 |
+| Baraja de ases | 26,3 % | 41,6 % | +15,3 |
+| Baraja corta | 29,6 % | 42,5 % | +12,9 |
+| Baraja del caos | 28 % | 44 % | +16 |
 
-Jefes: de cada vez que una campaña llega a uno, cuántas acaba ahí (media 15,4 %). Objetivo: todos entre 0,8× y 1,3× de la media.
+Jefes: de cada vez que una campaña llega a uno, cuántas acaba ahí (media 14,9 %). Objetivo: todos entre 0,8× y 1,3× de la media.
 
 | Jefe | Letalidad | Frente a la media |
 |---|---|---|
-| La Sirena | 15,1 % | ×0,98 |
-| El Usurero | 16,5 % | ×1,07 |
-| El Matasanos | 13,8 % | ×0,9 |
-| La Ventisca | 17,6 % | ×1,14 |
-| El Coloso | 15,8 % | ×1,03 |
-| La Furia | 14,9 % | ×0,97 |
-| El Topo | 14,4 % | ×0,94 |
+| La Sirena | 15 % | ×1,01 |
+| El Usurero | 16,4 % | ×1,1 |
+| El Matasanos | 13,6 % | ×0,91 |
+| La Ventisca | 14 % | ×0,94 |
+| El Coloso | 15,9 % | ×1,07 |
+| La Furia | 15 % | ×1,01 |
+| El Topo | 14,4 % | ×0,97 |
 
 Turnos por obra. Objetivo: obra 1 de 5 a 7 turnos de mediana (P95 ≤ 10); obras 2 y 3 de 8 a 10 (P95 ≤ 15); obras 4 a 8 de 9 a 13 (P95 ≤ 19), con cualquier baraja.
 
@@ -190,7 +193,7 @@ Turnos por obra. Objetivo: obra 1 de 5 a 7 turnos de mediana (P95 ≤ 10); obras
 | 2 · Bloque de pisos | 8 | 11 |
 | 3 · Torre del capataz | 9 | 12 |
 | 4 · Polígono | 11 | 15 |
-| 5 · Ciudadela | 11 | 16 |
+| 5 · Ciudadela | 11 | 17 |
 | 6 · Rascacielos | 11 | 16 |
 | 7 · Fortaleza | 11 | 17 |
 | 8 · La Torre Madre | 11 | 17 |
@@ -204,6 +207,33 @@ El informe no deja ningún aviso: todos los objetivos se cumplen en la muestra.
 
 El objetivo es un progreso **horizontal**: una cuenta nueva ya gana más de una de cada cuatro campañas, y el gremio completo sube ese número ampliando opciones, no multiplicando estadísticas.
 
+## El estudio
+
+Desde la 5.0 el juego se hace con un pequeño estudio de agentes de Claude Code, cada uno dueño de sus archivos:
+
+| Subagente (`.claude/agents/`) | Qué es suyo |
+|---|---|
+| `director` | `ROADMAP_V5_V10.md`, `SPECS/`, `CHANGELOG.md` y la decisión de publicar o apartar una versión |
+| `reglas-balance` | `src/rules/`, el laboratorio (`scripts/analyze-meta.ts`) y `tests/`; vigila la constitución anticomplejidad |
+| `arte-ui` | estilos, maquetación, grabado SVG, pantallas, la QA visual y la forja |
+| `juice-ux` | mando y teclado, susurros de tiza, efectos, sonido, la red del cooperativo y la prueba de humo |
+
+Cinco habilidades (`.claude/skills/`) recogen el oficio que se repite: `brutalist-print-ui` (reglas de imprenta), `engraving-svg-forge` (dibujar y comprobar el arte), `playwright-deck-qa` (QA en las cuatro ventanas y con mando virtual), `regicide-synergy-math` (laboratorio e invariantes) y `autonomous-sprint-loop` (el bucle de versiones).
+
+**Constitución anticomplejidad**, comprobada por `npm test`: como mucho 6 palabras clave y 56 herramientas, ninguna descripción de más de 115 caracteres y ninguna obra de la 4 a la 8 con un percentil 95 por encima de 19 turnos.
+
+La hoja de ruta de la 6.0 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). El bucle que las construye:
+
+```powershell
+.\scripts\estudio-autonomo.ps1 -Ensayo
+```
+
+```powershell
+.\scripts\estudio-autonomo.ps1
+```
+
+Por cada versión abre una rama, lanza una sesión por celda de la especificación, pasa las puertas de CPU (`typecheck`, `test`, `analyze:meta`, `docs`, `qa:visual`, `qa:smoke`), audita el commit candidato con un panel **simulado** de jugadores en `..\panelAgentesGaming` y compara aprobación y claridad con la versión anterior: si no empeora, fusiona y etiqueta; si empeora, `main` queda como estaba y la rama se aparta. Con `-Publicar`, además, sube cada versión aceptada. El panel ordena prioridades; no sustituye a jugadores de verdad.
+
 ## Arquitectura
 
 ```
@@ -213,6 +243,7 @@ src/
     tools.ts      las 52 herramientas del cinturón
     specials.ts   cartas especiales
     keywords.ts   las seis palabras clave y cómo se marcan en los textos
+    autopsy.ts    causa del derrumbe (qué tiró el búnker) y aviso de último turno
     run.ts        campaña (reductor): plano, contratos, cobro, ferretería, hallazgos, niveles de obra, gremio
     achievements.ts  logros, colección y lo que desbloquean
     bot.ts        bot de obra y de campaña (simulación y sustituto de desconectados)
@@ -223,14 +254,17 @@ src/
     core.ts · platform.ts · net.ts · router.ts   estado, puente con la plataforma, conexión
     home.ts · lobby.ts · guild.ts                portada, vestíbulo, gremio, colección y archivo de actas
     campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas
-    table.ts · tutorial-ui.ts                    mesa de combate (rueda de materiales, fatiga, susurros) y partida guiada
+    table.ts · tutorial-ui.ts                    mesa de combate (rueda de materiales, fatiga) y partida guiada
+    cuenta.ts · causa.ts · lamina.ts             cuenta central y su recibo, causa del derrumbe, lámina del acta y enlace con semilla
+    whispers.ts                                  susurros de tiza contextuales
     nav.ts · prompts.ts                          foco para teclado y mando, e indicaciones de cada botón
     lupa.ts · flavor.ts · pings.ts               lupa de grabador, epígrafes, marcas de tiza
     widgets.ts · backup.ts · fx.ts               cinturón, visor de mazos, ajustes, copia de seguridad, efectos
-    card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: cartas, retratos, iconos, tramas y grano
+    card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: cartas, retratos, iconos, tramas de palo y grano
+    tinta.ts                                     aviso de tinta desvanecida en las cajas con desplazamiento
     audio.ts                                     efectos y música sintetizados, con mezcla y máster
-    qa.ts                                        estados fijos para las capturas (solo con ?qa)
-tests/          Vitest: motor, campaña, fatiga y aguante, tutorial y palabras clave
+    qa.ts · forja-qa.ts                          estados fijos para las capturas y banco de la forja (solo con ?qa)
+tests/          Vitest: motor, campaña, fatiga y aguante, autopsia, tutorial, palabras clave, invariantes anticomplejidad e imprenta
 scripts/        Laboratorio de balance, control de calidad (capturas, humo, mando virtual), tarjeta social y reglamento
 ```
 

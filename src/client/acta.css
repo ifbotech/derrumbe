@@ -1,0 +1,87 @@
+/* DERRUMBE — causa del derrumbe, acta de demolición, lámina compartible y aviso de semilla (arte-ui B).
+   Va después de theme.css y de cuenta.css.
+   · Cifras en Archivo Black o en sans de peso alto, tabular-nums y sobre placa. Nunca en gótica.
+   · La causa se pinta igual sobre tinta (mesa, final clásico) y sobre papel (acta): cambian sus dos tintas. */
+
+/* ───────────── causa del derrumbe ───────────── */
+.causa { --c-fg: var(--card-paper); --c-bg: var(--pit); --c-dim: var(--dim); display: grid; gap: 6px; width: 100%; max-width: 720px; padding: 10px 12px 11px; background: var(--c-bg); color: var(--c-fg); border: 2px solid var(--red); border-left-width: 8px; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.acta-sheet .causa { --c-fg: var(--ink); --c-bg: var(--card-paper); --c-dim: #4d463c; }
+.causa h2 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; filter: none; font-family: var(--cap); font-weight: 700; font-size: 13px; line-height: 1.3; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-fg); }
+.causa h2 span { background: var(--red); color: var(--card-paper); padding: 1px 7px; }
+.causa h2 em { font-style: normal; color: var(--c-dim); }
+.end .causa p, .causa p { max-width: none; margin: 0; }
+.causa .causa-1 { font-family: var(--mono); font-weight: 700; font-size: clamp(15px, 2vh, 19px); line-height: 1.25; }
+.causa .causa-2 { font-family: var(--mono); font-weight: 500; font-size: clamp(14px, 1.8vh, 16px); line-height: 1.3; color: var(--c-fg); }
+
+/* la barra: arriba el golpe (muro que frena + lo que entra), debajo lo que le quedaba al búnker */
+.causa-barra { display: grid; gap: 4px; margin-top: 2px; }
+.cb-fila { display: grid; grid-template-columns: 4.6em minmax(0, 1fr); align-items: center; gap: 8px; }
+.cb-fila > span { font-family: var(--cap); font-weight: 700; font-size: 13px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-dim); }
+.cb-pista { display: flex; height: 14px; }
+.cb-pista i { display: block; min-width: 0; height: 100%; }
+.cb-muro, .l-muro i { background: repeating-linear-gradient(135deg, var(--c-fg) 0 2px, var(--c-bg) 2px 5px); box-shadow: inset 0 0 0 1.5px var(--c-fg); }
+.cb-entra, .l-entra i { background: var(--red); box-shadow: inset 0 0 0 1.5px var(--c-fg); }
+.cb-queda, .l-queda i { background: var(--hazard); box-shadow: inset 0 0 0 1.5px var(--c-fg); }
+.cb-aire { background: none; }
+.cb-ley { display: flex; flex-wrap: wrap; gap: 2px 14px; font-family: var(--mono); font-weight: 500; font-size: 14px; line-height: 1.35; }
+.cb-ley span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.cb-ley i { display: inline-block; width: 13px; height: 13px; flex: none; }
+.cb-ley b { font-family: var(--display); font-weight: 400; font-size: 15px; letter-spacing: 0; }
+
+/* ───────────── «Sepultados»: gótica legible ─────────────
+   La gótica de los títulos (UnifrakturCook con la tinta rugosa) hacía de la «l» una «E». En la derrota
+   el título pasa a Grenze Gotisch, más abierta, sin filtro de rugosidad y con un poco de aire. */
+.end.lost h1 { font-family: 'Grenze Gotisch', var(--title); font-weight: 900; letter-spacing: 0.015em; filter: none; }
+
+/* ───────────── el acta de demolición ───────────── */
+.end.acta .acta-sheet { width: min(1060px, 100%); }
+.acta-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(8px, 1.6vh, 16px) clamp(14px, 2vw, 30px); align-items: start; }
+.acta-izq { display: grid; gap: clamp(6px, 1.2vh, 12px); align-content: start; min-width: 0; }
+.acta-izq > p { font-size: clamp(14px, 1.8vh, 17px); font-weight: 500; }
+.acta-izq .gain { color: var(--red); font-weight: 700; }
+.acta-sheet h1 { font-size: min(9vw, 12vh); }
+.acta-sheet .acta-stats { font-size: clamp(13px, 1.65vh, 16px); }
+.acta-sheet .acta-stats td + td { font-variant-numeric: tabular-nums; }
+/* semilla y enlace para repetirla */
+.acta-semilla { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; padding: 7px 10px; background: var(--ink); color: var(--card-paper); font-family: var(--mono); font-weight: 700; font-size: 14px; line-height: 1.3; }
+.acta-semilla b { font-family: var(--display); font-weight: 400; font-size: 17px; letter-spacing: 0.03em; color: var(--hazard); overflow-wrap: anywhere; }
+.acta-semilla small { grid-column: 1 / -1; font-family: var(--mono); font-weight: 500; font-size: 13px; color: var(--card-paper); overflow-wrap: anywhere; }
+
+/* botones: ≥ 44 px, separados 12 px; los del acta van en tinta para que se lean (antes negro sobre gris) */
+.acta-sheet .acta-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 12px; margin-top: 4px; }
+.acta-sheet .acta-acciones button { min-height: 48px; margin: 0; font-size: clamp(14px, 1.8vh, 16px); }
+.acta-sheet .acta-acciones button.tinta { --bg: var(--ink); --bd: var(--ink); color: var(--card-paper); }
+.acta-sheet .acta-acciones button.tinta:hover:not(:disabled) { --bg: var(--table-4); color: var(--card-paper); }
+.acta-sheet .acta-acciones button small { color: inherit; opacity: 1; }
+
+/* zona con desplazamiento: tinta desvanecida al pie mientras quede acta por leer */
+.acta-sheet[data-mas~='abajo']::after { content: ''; position: sticky; bottom: calc(-1 * clamp(12px, 2.8vh, 30px)); display: block; height: 30px; margin-top: -30px; pointer-events: none; background: linear-gradient(to bottom, rgba(234, 224, 206, 0), var(--card-paper) 85%); }
+
+/* ───────────── aviso de semilla en la preparación de campaña ───────────── */
+.semilla-aviso { display: grid; gap: 3px; margin: 0 0 12px; padding: 8px 12px; background: var(--hazard); color: var(--ink); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); font-family: var(--mono); font-weight: 500; font-size: 14px; line-height: 1.3; text-transform: none; letter-spacing: 0; }
+.semilla-aviso b { font-weight: 700; font-size: 15px; }
+
+/* ───────────── causa del derrumbe en la fila del archivo ─────────────
+   La misma voz que la «Causa del derrumbe» del acta, en pequeño y sobre papel: rótulo rojo, título en
+   mono gruesa y detalle debajo, con el filete rojo a la izquierda. Sin barra: la fila es un resumen. */
+.acta-main .acta-causa { display: grid; gap: 2px; justify-items: start; margin: 3px 0 0; padding: 4px 8px 5px; background: var(--card-paper); color: var(--ink); border: 1.5px solid var(--red); border-left-width: 6px; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; max-width: 72ch; }
+.acta-causa .ac-rot { font-family: var(--cap); font-weight: 700; font-size: 13px; line-height: 1.3; letter-spacing: 0.08em; text-transform: uppercase; background: var(--red); color: var(--card-paper); padding: 0 6px; }
+.acta-causa b { font-family: var(--mono); font-weight: 700; font-size: clamp(13px, 1.6vh, 15px); line-height: 1.25; text-transform: none; overflow-wrap: anywhere; }
+.acta-causa small { font-family: var(--mono); font-weight: 500; font-size: 13px; line-height: 1.3; color: #4d463c; overflow-wrap: anywhere; }
+
+/* ───────────── final de la partida clásica ───────────── */
+.end:not(.in-page) > .causa { max-width: 720px; }
+
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .acta-cols { grid-template-columns: minmax(0, 1fr); }
+  .acta-sheet h1 { font-size: min(15vw, 9vh); }
+  .causa { padding: 8px 10px 9px; border-left-width: 6px; }
+  .causa .causa-1 { font-size: 16px; }
+  .causa .causa-2, .cb-ley { font-size: 14px; }
+  .cb-ley { gap: 2px 10px; }
+  .acta-sheet .acta-acciones { grid-template-columns: 1fr 1fr; }
+  .acta-sheet .acta-acciones button { min-height: 48px; padding-inline: 8px; }
+  .acta-sheet .acta-acciones button.primary { grid-column: 1 / -1; }
+  .semilla-aviso { font-size: 14px; }
+  .acta-causa .ac-rot, .acta-causa b, .acta-causa small { font-size: 14px; }
+}

@@ -186,7 +186,8 @@ export function toolValue(id: string, run: Run): number {
   if (id === 'trituradora') v += has('montacargas') || has('prensa') ? 2 : -1;
   if (id === 'contenedor') v -= 1;
   if (id === 'catalizador') v += has('crisol') ? 2 : 0;
-  if (id === 'timbre') v += Math.min(3, run.deck.filter((c) => c.seal).length * 0.5) - 2;
+  // sella por su cuenta desde la primera obra: ya no depende de los sellos que traiga el mazo, pero con ellos rinde antes
+  if (id === 'timbre') v += Math.min(3, run.deck.filter((c) => c.seal).length * 0.5);
   if (id === 'corazon') v += run.tools.some((t) => t.id === 'casco' || t.id === 'plomada' || t.id === 'botiquin') ? 1 : -1;
   if (id === 'andamio' || id === 'sordina' || id === 'dinamita' || id === 'pasarela') v += 1.5;
   // aguante: rinde con muro abundante (tréboles, sacos, encofrado) y con sus compañeras de caja

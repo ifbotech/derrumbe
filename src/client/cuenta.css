@@ -1,0 +1,149 @@
+/* DERRUMBE — la cuenta central de la mesa (#score / .calc / .marks), su recibo paso a paso, el aviso
+   de último turno y la causa del derrumbe sobre la mesa. Va después de theme.css.
+   · Cifras: siempre en Archivo Black o Space Mono, con tabular-nums y sobre placa. Nunca en gótica.
+   · El daño final es lo primero que se ve; Fuerza y Resonancia, en pequeño.
+   · Nada se anima en bucle: el recibo sube una vez (transform y opacity) y se queda quieto. */
+
+/* ───────────── la línea por defecto ───────────── */
+#score { min-height: clamp(48px, 6.6vh, 68px); gap: clamp(8px, 1vw, 16px); row-gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; font-variant-numeric: tabular-nums; }
+#score .calc { display: inline-flex; align-items: center; gap: clamp(8px, 0.8vw, 14px); font-family: var(--display); font-size: clamp(30px, 4.5vh, 48px); line-height: 1; font-variant-numeric: tabular-nums; }
+#score .calc b { display: inline-block; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font-weight: 400; text-align: center; }
+#score .calc i { font-style: normal; font-family: var(--display); }
+
+/* la zona que se abre: placa del daño + contra qué + Fuerza y Resonancia en pequeño */
+#score:not(.live) .calc { cursor: pointer; padding: 3px 10px 3px 3px; background: var(--pit); border: 2px solid var(--table-4); outline: none; -webkit-tap-highlight-color: transparent; }
+#score:not(.live) .calc:hover, #score.con-recibo .calc { border-color: var(--hazard); }
+#score:not(.live) .calc b.t { min-width: 2.3ch; padding: 0.07em 0.3em 0.11em; background: var(--hazard); color: var(--ink); letter-spacing: -0.01em; }
+.calc-txt { display: grid; gap: 4px; justify-items: start; font-family: var(--cap); font-weight: 700; font-size: 13px; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); }
+#score .calc .vs { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0 6px; margin: 0; color: var(--dim); font-family: var(--cap); font-weight: 700; font-size: clamp(13px, 1.7vh, 15px); }
+#score .calc .vs strong { font-family: var(--display); font-weight: 400; font-size: clamp(14px, 2vh, 18px); letter-spacing: 0.02em; color: var(--card-paper); }
+#score .calc .vs .forma { display: none; color: var(--card-paper); }
+.calc .fr { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.calc .fr .sh { display: none; }
+#score .calc .fr i { font-family: var(--cap); font-weight: 700; }
+#score .calc .fr b { font-family: var(--cap); font-weight: 700; font-size: 14px; line-height: 1.25; padding: 0 5px; margin-left: 2px; }
+#score .calc .fr-f b { background: var(--red); color: var(--card-paper); }
+#score .calc .fr-r b { background: var(--blue); color: var(--card-paper); }
+.calc .abre { display: inline-flex; align-items: center; gap: 4px; font-style: normal; padding: 0 5px 0 6px; line-height: 1.25; border: 1.5px dashed var(--dim); color: var(--card-paper); }
+.calc .abre svg { width: 12px; height: 12px; flex: none; }
+#score.con-recibo .calc .abre { border-style: solid; border-color: var(--hazard); color: var(--hazard); }
+#score.con-recibo .calc .abre svg { transform: rotate(180deg); }
+
+/* insignias: lo que decide el golpe va primero y más lleno; lo que acompaña, en papel */
+#score .marks { gap: 5px; align-items: center; justify-content: center; }
+#score .marks .m { font-size: 13px; line-height: 1.3; padding: 2px 7px; }
+#score .marks .m.adv { background: var(--hazard); color: var(--ink); }
+#score .marks .m.inm { background: var(--table-4); color: var(--card-paper); border-color: var(--dim); }
+
+/* la cuenta en vivo durante el golpe: Fuerza × Resonancia = daño, mismas cifras */
+#score.live .calc { gap: clamp(5px, 0.6vw, 10px); }
+#score.live .calc b { min-width: 2ch; padding: 0.07em 0.28em 0.11em; border: 2px solid var(--pit); }
+#score.live .calc b.f { background: var(--red); color: var(--card-paper); }
+#score.live .calc b.r { background: var(--blue); color: var(--card-paper); }
+#score.live .calc b.t { min-width: 2.4ch; background: var(--pit); color: var(--hazard); border-color: var(--hazard); }
+#score.live .calc.slam b.t { background: var(--hazard); color: var(--ink); }
+#score.live .calc i { color: var(--card-paper); font-size: 0.66em; }
+#score.live .calc small { font-family: var(--cap); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim); }
+
+/* ───────────── el recibo paso a paso ───────────── */
+.recibo { position: fixed; z-index: 45; width: max-content; transform: translateX(-50%); display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); background: var(--card-paper); color: var(--ink); border: 3px solid var(--pit); box-shadow: 0 0 0 2px var(--hazard), 0 7px 0 2px var(--pit); font-family: var(--cap); font-weight: 700; font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; overflow: hidden; }
+.recibo[hidden] { display: none; }
+.recibo.abre { animation: recibo-sube 0.15s ease-out both; }
+@keyframes recibo-sube { from { opacity: 0; translate: 0 10px; } to { opacity: 1; translate: 0 0; } }
+.calm .recibo.abre { animation: none; }
+.recibo-cab { display: none; }
+.recibo-cuerpo { display: flex; align-items: flex-start; min-width: 0; min-height: 0; padding: 3px 2px 4px 10px; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--ink) transparent; }
+.ficha { flex: none; display: grid; grid-template-columns: auto auto; column-gap: 6px; align-content: start; padding-right: 10px; }
+.ficha .op { grid-column: 1; grid-row: 1; font-style: normal; font-family: var(--display); font-size: 22px; line-height: 25px; }
+.ficha h4 { grid-column: 2; grid-row: 1; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-family: var(--cap); font-weight: 700; font-size: 13px; line-height: 25px; text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap; border-bottom: 2px solid var(--ink); }
+.ficha h4 b { font-family: var(--display); font-weight: 400; font-size: 21px; line-height: 23px; letter-spacing: 0; padding: 0 7px; }
+.f-base h4 b, .f-cartas h4 b, .f-cinto h4 b { background: var(--red); color: var(--card-paper); }
+.f-res h4 b { background: var(--blue); color: var(--card-paper); }
+.f-total h4 b { background: var(--ink); color: var(--hazard); }
+.ficha ul { grid-column: 2; grid-row: 2; list-style: none; margin-top: 3px; display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 3), auto); grid-auto-columns: max-content; column-gap: 14px; margin-top: 2px; }
+.ficha li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13px; line-height: 1.22; white-space: nowrap; }
+.ficha li span { font-family: var(--mono); font-weight: 700; max-width: 26ch; white-space: normal; }
+.ficha li small { font-size: 13px; font-weight: 500; opacity: 0.78; }
+.ficha li b { font-family: var(--cap); font-weight: 700; font-size: 14px; }
+.ficha li.l-n small { max-width: 17ch; white-space: normal; display: inline-block; vertical-align: top; }
+.ficha li.vacio span { font-weight: 500; opacity: 0.78; }
+/* segundo intento de place(): las notas no se parten si sobra ancho, para que el recibo quepa sin desplazarse */
+.recibo.ancho .ficha li span, .recibo.ancho .ficha li.l-n small { max-width: none; white-space: nowrap; }
+/* tinta desvanecida hacia donde queda recibo por leer */
+.recibo-cuerpo.mas-abajo { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); }
+.recibo-cuerpo.mas-arriba { -webkit-mask-image: linear-gradient(to top, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to top, #000 calc(100% - 22px), transparent); }
+.recibo-cuerpo.mas-abajo.mas-arriba { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 22px), transparent); }
+.recibo-cuerpo.mas-der:not(.mas-abajo):not(.mas-arriba) { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.recibo-cuerpo.mas-izq:not(.mas-abajo):not(.mas-arriba):not(.mas-der) { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+.recibo-cuerpo.mas-der.mas-izq:not(.mas-abajo):not(.mas-arriba) { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+
+button.recibo-x { --bg: var(--ink); --bd: var(--ink); --bw: 0px; --sh: none; color: var(--card-paper); min-width: 44px; min-height: 44px; padding: 0 6px; display: grid; place-items: center; align-self: stretch; filter: none; }
+button.recibo-x::before { filter: none; }
+button.recibo-x:hover:not(:disabled) { --bg: var(--red); color: var(--card-paper); }
+.recibo-x svg { width: 18px; height: 18px; display: block; }
+.recibo-x span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ───────────── aviso de último turno ───────────── */
+.omen { flex: 0 1 640px; min-width: min(420px, 100%); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; align-self: center; max-width: min(1040px, 100%); padding: 4px 14px 5px 8px; background: var(--hazard); color: var(--ink); border: 2px solid var(--pit); box-shadow: 0 3px 0 var(--pit); font-family: var(--mono); text-transform: none; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+.tray > .omen { grid-column: 1 / -1; }
+.omen-ico { width: 28px; height: 28px; color: var(--ink); }
+.omen-ico svg { display: block; width: 100%; height: 100%; }
+.omen p { display: grid; gap: 1px; min-width: 0; }
+.omen b { font-weight: 700; font-size: clamp(14px, 1.9vh, 17px); line-height: 1.2; }
+.omen p span { font-weight: 500; font-size: clamp(13px, 1.75vh, 15px); line-height: 1.25; }
+
+/* ───────────── la causa del derrumbe, sobre la mesa ─────────────
+   Lleva la clase .end para que el foco del mando se quede en ella y la mesa no atienda teclas, pero
+   no tapa la pantalla: es una caja al pie, sobre la bandeja; torres y búnker siguen a la vista. */
+.end.causa-mesa { inset: auto 0 0 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0; padding: 0 12px clamp(10px, 2.4vh, 26px); background: none; color: var(--ink); overflow: visible; pointer-events: none; animation: recibo-sube 0.22s ease-out both; }
+.calm .end.causa-mesa { animation: none; }
+.causa-caja { pointer-events: auto; width: min(720px, 100%); display: grid; gap: 10px; padding: 12px; background: var(--pit); border: 3px solid var(--red); box-shadow: 0 0 0 3px var(--pit), 0 10px 0 3px var(--pit); }
+.causa-caja .row { justify-content: flex-end; }
+.causa-caja .row button { flex: 0 1 240px; min-height: 48px; font-size: clamp(14px, 1.9vh, 17px); color: var(--card-paper); }
+
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  #score { min-height: 48px; column-gap: 8px; row-gap: 5px; }
+  #score .calc { font-size: 32px; gap: 8px; }
+  /* en estrecho la formación va dentro de la cuenta y su etiqueta suelta se retira: una línea menos */
+  #score:has(.calc[tabindex]) > .tag { display: none; }
+  #score .calc .vs { display: inline-flex; font-size: 14px; }
+  #score .calc .vs strong { font-size: 15px; }
+  #score .calc .vs .forma { display: inline; }
+  .calc-txt { font-size: 14px; }
+  .calc .fr { gap: 6px; }
+  .calc .fr .lg { display: none; }
+  .calc .fr .sh { display: inline; }
+  #score .marks .m { font-size: 14px; }
+  #score.live .calc small { display: none; }
+
+  /* el recibo es una hoja que sube desde la cuenta, con su botón de cerrar de 48 px. Cada ficha va en
+     renglón corrido (rótulo y líneas seguidas) para que quepa entre las torres y la mano sin desplazarse */
+  .recibo { width: auto; transform: none; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); }
+  .recibo-cab { display: flex; align-items: center; flex-wrap: wrap; gap: 0 8px; padding: 2px 10px; min-width: 0; background: var(--ink); color: var(--card-paper); }
+  .recibo-cab b { font-family: var(--display); font-weight: 400; font-size: 15px; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.02em; }
+  .recibo-cab span { font-family: var(--mono); font-weight: 500; font-size: 14px; line-height: 1.2; }
+  button.recibo-x { grid-column: 2; grid-row: 1; min-width: 48px; min-height: 48px; --bg: var(--red); }
+  .recibo-x svg { width: 20px; height: 20px; }
+  .recibo-cuerpo { grid-column: 1 / -1; grid-row: 2; display: grid; gap: 0; align-content: start; padding: 1px 10px 3px; }
+  .ficha { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; padding: 1px 0 2px; border-top: 1.5px solid var(--ink); }
+  .ficha:first-child { border-top: 0; }
+  .ficha .op { font-size: 17px; line-height: 20px; width: 0.7em; margin-right: -6px; }
+  .ficha h4 { gap: 6px; font-size: 14px; line-height: 20px; border-bottom: 0; }
+  .ficha h4 b { font-size: 16px; line-height: 20px; padding: 0 5px; }
+  .ficha ul { display: contents; }
+  .ficha li { font-size: 14px; line-height: 20px; gap: 6px; white-space: nowrap; }
+  .ficha li small { font-size: 14px; }
+  .ficha li span { max-width: none; }
+  .ficha li.l-n small { max-width: none; display: inline; white-space: normal; }
+  .ficha li.repite { display: none; }
+
+  /* en el móvil la banda va en renglón corrido (título y detalle seguidos) y sin icono: la mesa no se desplaza
+     y cada renglón que ocupa se lo quita a las torres */
+  .omen { order: -1; flex: 1 1 100%; min-width: 0; display: block; padding: 3px 8px 4px; border-left-width: 6px; }
+  .omen-ico { display: none; }
+  .omen p { display: block; font-size: 14px; line-height: 1.24; }
+  .omen b { font-size: 14px; line-height: 1.24; margin-right: 5px; }
+  .omen p span { font-size: 14px; line-height: 1.24; }
+  .causa-caja { padding: 8px; gap: 8px; }
+  .causa-caja .row button { flex: 1 1 auto; }
+}

@@ -19,8 +19,8 @@ export interface PlatformBridge {
   serverUrl(): string | null;
   /** Claves guardadas que empiezan por `prefix` (para la copia de seguridad). */
   keys(prefix: string): string[];
-  /** Entrega un archivo de texto al jugador (descarga en la web; diálogo de guardar en escritorio). */
-  saveFile(name: string, text: string): void;
+  /** Entrega un archivo al jugador, texto o binario (descarga en la web; diálogo de guardar en escritorio). */
+  saveFile(name: string, data: string | Blob): void;
   /** Abre una dirección fuera del juego (navegador, o la capa de Steam en escritorio). */
   openExternal(url: string): void;
 }
@@ -97,8 +97,8 @@ function webPlatform(): PlatformBridge {
       }
       return [...out];
     },
-    saveFile(name, text) {
-      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    saveFile(name, data) {
+      const url = URL.createObjectURL(typeof data === 'string' ? new Blob([data], { type: 'application/json' }) : data);
       const a = Object.assign(document.createElement('a'), { href: url, download: name });
       document.body.appendChild(a);
       a.click();

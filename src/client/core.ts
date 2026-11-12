@@ -198,7 +198,9 @@ export function bindTips(): void {
   document.addEventListener('pointerup', () => clearTimeout(tipTimer));
   document.addEventListener('focusin', (e) => {
     const t = find(e);
-    if (t) showTip(t);
+    // con teclado o mando el foco descansa en las cartas de la mano: su globo quedaría fijo encima de la
+    // cuenta central. Para leer una carta está la lupa (L / RB); el resto de elementos sí enseña su globo.
+    if (t && !t.closest('#hand, #reserve')) showTip(t);
   });
   document.addEventListener('focusout', hideTip);
   addEventListener('scroll', hideTip, true);

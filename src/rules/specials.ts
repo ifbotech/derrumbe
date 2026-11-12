@@ -46,7 +46,7 @@ export interface Special {
 
 export const SPECIALS: Special[] = [
   { id: 'barreno', name: 'Barreno', desc: 'El golpe perfora y suma +12 de Fuerza.', fx: { flat: 12, pierce: true } },
-  { id: 'martillo', name: 'Martillo neumático', desc: 'La carta más alta del golpe cuenta dos veces.', fx: { highDouble: true } },
+  { id: 'martillo', name: 'Martillo neumático', desc: 'La carta de mayor valor del golpe cuenta 2 veces.', fx: { highDouble: true } },
   { id: 'saboteador', name: 'Saboteador', desc: 'Desarma el piso que golpeas.', fx: { disarm: true } },
   { id: 'palanca', name: 'Palanca', desc: '+4 de Fuerza por cada carta del golpe.', fx: { flatPerCard: 4 } },
   { id: 'grua', name: 'Grúa', desc: 'Robas 2 cartas extra este turno.', fx: { draw: 2 } },
@@ -55,7 +55,7 @@ export const SPECIALS: Special[] = [
   { id: 'chatarrero', name: 'Chatarrero', desc: '+3 de oro.', fx: { gold: 3 } },
   { id: 'pico', name: 'Pico de oro', desc: 'Si el golpe tira un piso, +5 de oro.', fx: { goldOnKill: 5 } },
   { id: 'botica', name: 'Botica', desc: '+5 de integridad.', fx: { heal: 5 } },
-  { id: 'gemelo', name: 'Gemelo', desc: 'Todas las cartas del golpe valen como la más alta.', fx: { allHigh: true } },
+  { id: 'gemelo', name: 'Gemelo', desc: 'Todas las cartas del golpe valen lo que la de mayor valor.', fx: { allHigh: true } },
   { id: 'nitro', name: 'Nitroglicerina', desc: '×2 de Resonancia, pero el búnker pierde 2.', fx: { strikeMult: 2, hurt: 2 } },
   { id: 'bola', name: 'Bola de demolición', desc: '×1,5 de Resonancia.', fx: { strikeMult: 1.5 } },
   { id: 'hormigonera', name: 'Hormigonera', desc: '+5 de muro.', fx: { wall: 5 } },

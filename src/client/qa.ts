@@ -2,6 +2,7 @@
 // los estados que fotografía scripts/visual-qa.ts (mesa llena, lupa, plano, ferretería, forja…).
 // Nada de lo que pasa aquí se guarda: el guardado queda desactivado mientras dura la sesión.
 import { ACHIEVEMENTS } from '../rules/achievements';
+import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
 import { Card, GameState, SUITS, Seal, Suit, Treatment, applyAction, fatigueAt, viewFor } from '../rules/engine';
 import { Run, finishBattle, newRun, runAction, startStage } from '../rules/run';
@@ -16,8 +17,8 @@ import { InputMode, setMode } from './nav';
 import { platform } from './platform';
 import { setScreen } from './router';
 import { renderRun } from './runscreens';
-import { pump, renderInteractive } from './table';
-import { showSettings } from './widgets';
+import { pump, renderInteractive, toggleInspector } from './table';
+import { showRules, showSettings } from './widgets';
 
 const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'pasarela', 'resonador'];
 const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
@@ -142,6 +143,22 @@ const STATES: Record<string, () => void | Promise<void>> = {
     await mesa();
     openLupa(document.querySelector('.tower[data-suit="S"] .floor-slot .card'));
   },
+  // la lupa sobre una carta especial: su banda de nombre y su texto, a tamaño de lectura
+  'lupa-especial': async () => {
+    await mesa();
+    openLupa(document.querySelector('#hand .card.k-special') ?? document.querySelector('#hand .card'));
+  },
+  // el visor del mazo sobre la mesa: cartas en miniatura, en su versión simplificada
+  mazo: async () => {
+    await mesa();
+    toggleInspector();
+  },
+  reglas: () => {
+    clean();
+    S.campaign = null;
+    setScreen('home');
+    showRules();
+  },
   plano: () => {
     show(baseRun(2));
     setScreen('run');
@@ -213,13 +230,17 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // primera campaña y jugando con teclado: susurro de tiza al margen e indicaciones de tecla
   'mesa-susurro': () => mesa(true, 'keys'),
   // la mesa tal como se ve jugando con mando: cada botón enseña el suyo
-  'mesa-mando': () => mesa(false, 'pad'),
+  // con mando: insignias de botón en cada acción y el marco de foco sobre la primera carta elegida
+  'mesa-mando': async () => {
+    await mesa(false, 'pad');
+    document.querySelector<HTMLElement>('#hand .card.sel, #hand .card')?.focus({ preventScroll: true });
+  },
   // una obra que se alarga: fatiga de cimientos de nivel 3, con su Resonancia y su amenaza de más
   'mesa-fatiga': () => mesa(false, 'pointer', 12),
   archivo: () => {
     clean();
     archive.length = 0;
-    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'obra', level = 1) => ({
+    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'obra', level = 1, death: Autopsy | null = null) => ({
       key: `qa:${i}`,
       when: new Date(Date.UTC(2026, 10, 12 - i, 20, 0)).toISOString(),
       won,
@@ -237,15 +258,65 @@ const STATES: Record<string, () => void | Promise<void>> = {
       online: false,
       gain: won ? 13 : stage - 1,
       text: 'DERRUMBE · Acta de demolición',
+      death,
     });
     archive.push(
       sample(0, true, 8, 'La Furia', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
-      sample(1, false, 5, 'El Coloso', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91'),
-      sample(2, false, 7, 'La Ventisca', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3),
+      sample(1, false, 5, 'El Coloso', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
+        kind: 'sirena',
+        title: 'Sirena de HORMIGÓN: amenaza 18 contra muro 4 → entran 14',
+        detail: 'Al búnker le quedaban 11. Un ♣ más o un golpe limpio la callaban.',
+        before: 11,
+        threat: 18,
+        blocked: 4,
+        taken: 14,
+        tower: 'C',
+      }),
+      sample(2, false, 7, 'La Ventisca', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3, {
+        kind: 'colapso',
+        title: 'Cantera agotada: el colapso quitó 4 y el muro no lo frena',
+        detail: 'Al búnker le quedaban 3. Cada colapso quita 1 más que el anterior: cuenta la cantera antes de robar.',
+        before: 3,
+        threat: 4,
+        blocked: 0,
+        taken: 4,
+      }),
       sample(3, true, 8, 'El Topo', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
       sample(4, false, 3, 'El Usurero', ['hucha', 'cinta'], '4HH2PA'),
     );
     openGuild('arc');
+  },
+  // ── arte-ui B: cuenta central, aviso de último turno y acta con la causa del derrumbe ──
+  // el recibo paso a paso desplegado (fijado, como tras un toque)
+  'mesa-cuenta': async () => {
+    await mesa();
+    const { pinReceipt } = await import('./cuenta');
+    pinReceipt();
+  },
+  // último turno: la próxima sirena puede tirar el búnker y la banda de aviso sale junto a la cuenta
+  'mesa-peligro': async () => {
+    await mesa();
+    const state = S.campaign?.state;
+    if (!state) return;
+    state.integrity = 2;
+    state.wall = 0;
+    const keep = [...S.selected];
+    S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
+    await pump();
+    S.selected.splice(0, S.selected.length, ...keep);
+    renderInteractive();
+  },
+  // el acta de una campaña que cayó en la mesa: causa del derrumbe, semilla con enlace y botones de lámina
+  'acta-derrota': () => {
+    const run = baseRun(6);
+    run.phase = 'lost';
+    run.integrity = 0;
+    run.stats.turns = 71;
+    run.stats.gold = 143;
+    run.stats.contracts = 3;
+    run.death = { kind: 'sirena', title: 'Sirena de ACERO: amenaza 14 contra muro 3 → entran 11', detail: 'Al búnker le quedaban 9. Un ♣ más o un golpe limpio la callaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+    show(run);
+    setScreen('run');
   },
   // tarjeta para compartir (1200 × 630): la fotografía scripts/og-card.ts
   og: () => {

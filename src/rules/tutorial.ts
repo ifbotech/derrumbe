@@ -105,7 +105,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     title: 'Perforar',
-    say: 'ACERO es débil a ♣. Juega el grupo <b>5♣ 5♠</b> contra <b>ACERO</b>. El 5♠ no suma Fuerza contra su torre, pero las picas <b>perforan</b>: el daño que sobre pasa al piso siguiente.',
+    say: 'ACERO es débil a ♣. Juega el grupo <b>5♣ 5♠</b> contra <b>ACERO</b>. El 5♠ no suma Fuerza contra su torre, pero las picas <b>perforan</b>: el daño que sobra pasa al piso siguiente.',
     cards: ['C5', 'S5'],
     target: 'S',
     after: '(2 + 10) × 1,2 = <b>14</b>: cayó la J y los 8 sobrantes perforaron hasta la Q. Sin una ♠ en la jugada, ese exceso se habría perdido. El muro frenó a la sirena otra vez.',

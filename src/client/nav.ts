@@ -1,23 +1,34 @@
-// Navegación sin ratón: flechas, cruceta o palanca mueven un foco con cantoneras de latón al elemento
-// más cercano en esa dirección; A / Enter lo pulsa. Sirve igual en todas las pantallas porque no
-// conoce ninguna: solo mira qué se puede pulsar y dónde está.
+// Navegación sin ratón: flechas, cruceta o palanca mueven un foco de latón al elemento más cercano en
+// esa dirección; A / Enter lo pulsa. Sirve igual en todas las pantallas porque no conoce ninguna: solo
+// mira qué se puede pulsar y dónde está.
 //
-//   Teclado   flechas · Enter elegir · Espacio golpear · Y andamio · Z tiza · L lupa · Tab mazo
-//             Esc atrás · F pantalla completa · mantener R reinicia la campaña
-//   Mando     cruceta o palanca · A elegir · X golpear · Y andamio · B atrás · LB mazo · RB lupa
-//             LT tiza · RT velocidad · Start ajustes · mantener Select reinicia la campaña
+//   Teclado   flechas · Enter elegir · Espacio golpear · Y andamio · Z tiza · Supr descartar · L lupa
+//             Tab mazo · Esc atrás · F pantalla completa · Mayús + flechas reordena el cinturón
+//             · mantener R reinicia la campaña
+//   Mando     cruceta o palanca · A elegir · X golpear · Y andamio · B atrás · L3 descartar · LB mazo
+//             · RB lupa (con el foco en una herramienta, LB / RB la mueven a izquierda y derecha)
+//             · LT tiza · RT velocidad · R3 pantalla completa · Start ajustes · mantener Select reinicia
+//
+// El foco responde en el mismo fotograma de la pulsación (marco, salto de escala y un toque de latón)
+// y nunca espera a que la mesa acabe de animar. Si la pantalla se redibuja bajo el foco, el foco vuelve
+// al mismo elemento redibujado (o al más cercano): con mando nunca se queda en el aire.
 //
 // También lleva la cuenta de con qué se está jugando (ratón, teclado o mando) y lo deja en
 // <html data-input="…">: las indicaciones de cada botón (prompts.ts) cambian solas con eso.
+import { sfx } from './audio';
 import { platform } from './platform';
 
 const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), select, [tabindex="0"]';
 /** Lo que tiene desplazamiento propio: solo ahí dentro se mueve la vista para enseñar lo enfocado. */
-const SCROLLERS = '.scroll, .run-body, .modal-box, .lupa-sheet, .lupa-box, .home-right, .lobby-side, .camp-grid, .acta-sheet';
+const SCROLLERS = '.scroll, .run-body, .modal-box, .lupa-sheet, .lupa-box, .home-right, .lobby-side, .camp-grid, .acta-sheet, .deck-rows';
+/** Atributos que identifican un elemento aunque se vuelva a pintar (para devolverle el foco). */
+const KEYS = ['id', 'data-id', 'data-slot', 'data-suit', 'data-tab', 'data-set', 'data-vol', 'data-i', 'data-opt'];
 
 export type InputMode = 'pointer' | 'keys' | 'pad';
 let mode: InputMode = 'pointer';
 let ring: HTMLDivElement | null = null;
+/** Dónde está pintado el marco ahora mismo (para no tocar el DOM si nada se ha movido). */
+let ringAt = '';
 
 export const inputMode = (): InputMode => mode;
 /** Con qué se está jugando: decide qué indicaciones se enseñan (tecla, botón del mando o ninguna). */
@@ -42,33 +53,161 @@ function candidates(): HTMLElement[] {
   });
 }
 
-function showRing(el: Element | null): void {
+function ringEl(): HTMLDivElement {
   if (!ring) {
     ring = document.createElement('div');
     ring.className = 'focus-ring';
     ring.setAttribute('aria-hidden', 'true');
+    ring.innerHTML = '<i></i>';
     document.body.appendChild(ring);
   }
+  return ring;
+}
+
+/** Coloca el marco sobre el elemento. Solo cambia transform, ancho y alto: nada de reflujo en la página. */
+function place(el: Element): void {
+  const r = el.getBoundingClientRect();
+  const at = `${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}`;
+  if (at === ringAt) return;
+  ringAt = at;
+  const box = ringEl();
+  box.style.transform = `translate(${r.left - 6}px, ${r.top - 6}px)`;
+  box.style.width = `${r.width + 12}px`;
+  box.style.height = `${r.height + 12}px`;
+}
+
+function showRing(el: Element | null, hop = false): void {
+  const box = ringEl();
   if (!el || mode === 'pointer' || el === document.body) {
-    ring.classList.remove('on');
+    box.classList.remove('on');
+    ringAt = '';
     return;
   }
+  place(el);
+  box.classList.add('on');
+  if (hop) {
+    // salto de escala leve al llegar: se reinicia la animación aunque el anterior no hubiera acabado
+    box.classList.remove('hop');
+    void box.offsetWidth;
+    box.classList.add('hop');
+  }
+}
+
+// ── el foco sobrevive a los redibujados ──
+
+/** Lo último enfocado con teclado o mando, con lo que hace falta para encontrarlo si se vuelve a pintar. */
+let last: { el: HTMLElement; sel: string; x: number; y: number; lost: number } | null = null;
+/** Un destino pedido a mano (la herramienta que se acaba de mover): gana a todo lo demás. */
+let wanted: { sel: string; until: number } | null = null;
+
+function signature(el: HTMLElement): string {
+  const attrs = KEYS.filter((k) => el.hasAttribute(k)).map((k) => (k === 'id' ? `#${CSS.escape(el.id)}` : `[${k}="${CSS.escape(el.getAttribute(k)!)}"]`));
+  if (!attrs.length) return '';
+  const cls = el.classList[0] ? `.${CSS.escape(el.classList[0])}` : el.tagName.toLowerCase();
+  return `${cls}${attrs.join('')}`;
+}
+
+function remember(el: HTMLElement): void {
   const r = el.getBoundingClientRect();
-  ring.style.transform = `translate(${r.left - 6}px, ${r.top - 6}px)`;
-  ring.style.width = `${r.width + 12}px`;
-  ring.style.height = `${r.height + 12}px`;
-  ring.classList.add('on');
+  last = { el, sel: signature(el), x: r.left + r.width / 2, y: r.top + r.height / 2, lost: 0 };
+}
+
+/** Pide que el foco vaya a este selector en cuanto exista (lo usa el cinturón al reordenar). */
+export function expectFocus(sel: string, ms = 900): void {
+  wanted = { sel, until: performance.now() + ms };
+}
+
+/** Cada fotograma: el marco sigue a lo enfocado y, si lo enfocado desaparece, el foco busca su sitio. */
+function keepFocus(now: number): void {
+  if (mode === 'pointer') return;
+  if (wanted) {
+    const hit = [...scope().querySelectorAll<HTMLElement>(wanted.sel)].find((el) => candidates().includes(el));
+    if (hit) {
+      wanted = null;
+      reveal(hit, true);
+      hit.classList.remove('pop');
+      void hit.offsetWidth;
+      hit.classList.add('pop');
+      return;
+    }
+    if (now > wanted.until) wanted = null;
+  }
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active !== document.body && active.isConnected) {
+    if (ring?.classList.contains('on')) place(active);
+    return;
+  }
+  if (!last || last.el.isConnected) return;
+  // lo enfocado se ha vuelto a pintar: primero se busca el mismo elemento, luego el más cercano
+  last.lost++;
+  const list = candidates();
+  const same = last.sel ? list.find((el) => el.matches(last!.sel)) : undefined;
+  if (same) return reveal(same, false);
+  if (last.lost < 8) return; // se le da un momento al redibujado
+  let best: HTMLElement | null = null;
+  let dist = Infinity;
+  for (const el of list) {
+    const r = el.getBoundingClientRect();
+    const d = Math.hypot(r.left + r.width / 2 - last.x, r.top + r.height / 2 - last.y);
+    if (d < dist) {
+      dist = d;
+      best = el;
+    }
+  }
+  if (best) reveal(best, false);
+  else last = null;
 }
 
 /** Enfoca sin que el navegador desplace la pantalla (la mesa no se mueve nunca). */
-function reveal(el: HTMLElement): void {
+function reveal(el: HTMLElement, hop = true): void {
   el.focus({ preventScroll: true });
   if (el.closest(SCROLLERS)) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  showRing(el);
+  remember(el);
+  showRing(el, hop);
 }
 
 /**
- * Mueve el foco al elemento pulsable más cercano en la dirección (dx, dy). Si el foco está en un
+ * El vecino en la dirección (dx, dy), fila a fila, con huecos entre BORDES (una torre alta queda cerca
+ * aunque su centro esté lejos):
+ *   1. Si algo queda en línea (su franja lateral se solapa con la nuestra) y su hueco no pasa de
+ *      2,5 × el hueco más corto + 80 px, gana el de menor hueco en línea.
+ *   2. Si no, gana el de menor «hueco + 1,5 × desvío lateral entre bordes» (la fila siguiente, aunque
+ *      quede a un lado, antes que un botón en la vertical al otro extremo de la pantalla).
+ * Solo cuenta lo que queda hacia ese lado (centro a 8 px o más). Lo que está «al lado» —solapado en la
+ * dirección más de media altura y en diagonal, como las cartas del abanico— solo cuenta si no hay nada más.
+ * A igualdad, el de centro más alineado.
+ */
+function nearest(a: DOMRect, list: HTMLElement[], dx: number, dy: number): HTMLElement | null {
+  const ax = a.left + a.width / 2;
+  const ay = a.top + a.height / 2;
+  type Option = { el: HTMLElement; gap: number; side: number; off: number; beside: boolean };
+  const all: Option[] = [];
+  for (const el of list) {
+    const b = el.getBoundingClientRect();
+    const along = (b.left + b.width / 2 - ax) * dx + (b.top + b.height / 2 - ay) * dy;
+    if (along < 8) continue; // tiene que estar hacia ese lado
+    // hueco en la dirección (negativo si se solapan) y desvío lateral entre bordes (0 si están en línea)
+    const gap = dx > 0 ? b.left - a.right : dx < 0 ? a.left - b.right : dy > 0 ? b.top - a.bottom : a.top - b.bottom;
+    const side = dx ? Math.max(0, b.top - a.bottom, a.top - b.bottom) : Math.max(0, b.left - a.right, a.left - b.right);
+    const size = dx ? Math.min(a.width, b.width) : Math.min(a.height, b.height);
+    const off = Math.abs((b.left + b.width / 2 - ax) * dy) + Math.abs((b.top + b.height / 2 - ay) * dx);
+    all.push({ el, gap: Math.max(0, gap), side, off, beside: -gap > size / 2 && side > 0 });
+  }
+  const ahead = all.filter((o) => !o.beside);
+  const pool = ahead.length ? ahead : all;
+  if (!pool.length) return null;
+  const pick = (score: (o: Option) => number, from: Option[]) =>
+    from.reduce((best, o) => {
+      const d = score(o) - score(best);
+      return d < -0.5 || (Math.abs(d) <= 0.5 && o.off < best.off) ? o : best;
+    }).el;
+  const minGap = Math.min(...pool.map((o) => o.gap));
+  const inline = pool.filter((o) => o.side === 0 && o.gap <= minGap * 2.5 + 80);
+  return inline.length ? pick((o) => o.gap, inline) : pick((o) => o.gap + o.side * 1.5, pool);
+}
+
+/**
+ * Mueve el foco al elemento pulsable más cercano en la dirección (dx, dy) (ver `nearest`). Si el foco está en un
  * deslizador, izquierda y derecha cambian su valor; si no queda nada hacia ese lado, se desplaza la
  * ventana (así se leen las reglas con el mando y ninguna ventana atrapa el foco).
  */
@@ -82,33 +221,27 @@ export function moveFocus(dx: number, dy: number): void {
     const step = Number(from.step) || 1;
     from.value = String(Math.max(Number(from.min), Math.min(Number(from.max), Number(from.value) + dx * step)));
     from.dispatchEvent(new Event('input', { bubbles: true }));
+    sfx.focus(dx, 0);
     return;
   }
   if (!from) {
     const first = list.find((el) => el.matches('.primary, .choice.pick, #hand .card')) ?? list[0];
-    if (first) reveal(first);
+    if (first) {
+      reveal(first);
+      sfx.focus();
+    }
     return;
   }
-  const a = from.getBoundingClientRect();
-  const ax = a.left + a.width / 2;
-  const ay = a.top + a.height / 2;
-  let best: HTMLElement | null = null;
-  let bestScore = Infinity;
-  for (const el of list) {
-    if (el === from) continue;
-    const b = el.getBoundingClientRect();
-    const along = (b.left + b.width / 2 - ax) * dx + (b.top + b.height / 2 - ay) * dy;
-    const across = Math.abs((b.left + b.width / 2 - ax) * dy) + Math.abs((b.top + b.height / 2 - ay) * dx);
-    if (along < 8) continue; // tiene que estar hacia ese lado
-    const score = along + across * 2.4; // se prefiere lo que queda en línea
-    if (score < bestScore) {
-      bestScore = score;
-      best = el;
-    }
+  const best = nearest(from.getBoundingClientRect(), list.filter((el) => el !== from), dx, dy);
+  if (best) {
+    reveal(best);
+    sfx.focus(dx, dy);
+    return;
   }
-  if (best) return reveal(best);
   const scroller = from.closest<HTMLElement>(SCROLLERS) ?? layer.querySelector<HTMLElement>(SCROLLERS);
+  const before = scroller ? scroller.scrollTop + scroller.scrollLeft : 0;
   scroller?.scrollBy({ top: dy * 140, left: dx * 140 });
+  if (!scroller || scroller.scrollTop + scroller.scrollLeft === before) sfx.edge();
   showRing(from);
 }
 
@@ -122,6 +255,34 @@ export function activate(): boolean {
 
 export const focused = () => (document.activeElement instanceof HTMLElement ? document.activeElement : null);
 
+// ───────────────────────── Cinturón ─────────────────────────
+
+/** La herramienta del cinturón que tiene el foco (o que es el destino de una tecla), si la hay. */
+export function beltSlot(el: Element | null): HTMLElement | null {
+  return el instanceof HTMLElement ? el.closest<HTMLElement>('.belt-slot.tool') : null;
+}
+
+/**
+ * Mueve la herramienta enfocada un hueco a la izquierda (−1) o a la derecha (+1). El cinturón
+ * (widgets.ts) ya sabe moverla con Mayús + flechas: se le manda esa misma tecla y el foco viaja con la
+ * herramienta a su hueco nuevo. Con el mando es LB / RB; con el teclado, Mayús + flechas.
+ */
+export function shiftBelt(slot: HTMLElement, dir: -1 | 1, viaKeyboard = false): void {
+  const belt = slot.closest('.belt');
+  const from = Number(slot.dataset.slot);
+  const tools = belt ? belt.querySelectorAll('.belt-slot.tool').length : 0;
+  const to = from + dir;
+  if (!belt?.classList.contains('can-order') || to < 0 || to >= tools) {
+    sfx.edge();
+    showRing(slot, true);
+    return;
+  }
+  const host = slot.closest('#beltbar') ? '#beltbar' : slot.closest('.run-belt') ? '.run-belt' : '';
+  expectFocus(`${host} .belt-slot[data-slot="${to}"][data-id="${CSS.escape(slot.dataset.id ?? '')}"]`.trim());
+  // con el teclado, el propio cinturón ya ha recibido la tecla: solo queda seguir a la herramienta
+  if (!viaKeyboard) slot.dispatchEvent(new KeyboardEvent('keydown', { key: dir < 0 ? 'ArrowLeft' : 'ArrowRight', shiftKey: true, bubbles: true, cancelable: true }));
+}
+
 // ───────────────────────── Mando ─────────────────────────
 
 type Handler = (key: string) => void;
@@ -132,7 +293,10 @@ const held = new Map<string, number>();
 
 /** Zona muerta de la palanca, primera repetición al mantener y ritmo de las siguientes (ms). */
 export const PAD = { deadzone: 0.28, first: 320, repeat: 110 };
-/** Botones del mando estándar (W3C) y la tecla a la que equivalen. */
+/**
+ * Botones del mando estándar (W3C) y la tecla a la que equivalen. LB y RB llegan como Tab y l: sobre
+ * una herramienta del cinturón main.ts los convierte en «moverla» (beltLeft / beltRight de prompts.ts).
+ */
 const BUTTONS: [number, string][] = [
   [12, 'ArrowUp'],
   [13, 'ArrowDown'],
@@ -148,6 +312,8 @@ const BUTTONS: [number, string][] = [
   [7, 'Speed'], // RT
   [8, 'r'], // Select
   [9, 'Start'],
+  [10, 'Delete'], // L3: pulsar la palanca izquierda descarta lo elegido
+  [11, 'f'], // R3: pulsar la palanca derecha, pantalla completa
 ];
 
 /** Convierte botones y palanca en las mismas teclas que usa el teclado. */
@@ -180,6 +346,7 @@ function poll(now: number): void {
       }
     }
   }
+  keepFocus(now);
   requestAnimationFrame(poll);
 }
 
@@ -190,9 +357,25 @@ export function bindNav(onKey: Handler, onKeyUp: Handler = () => undefined): voi
   document.documentElement.dataset.input = mode;
   addEventListener('gamepadconnected', () => platform.vibrate(60, 0.4));
   requestAnimationFrame(poll);
-  document.addEventListener('focusin', (e) => showRing(e.target as Element));
+  document.addEventListener('focusin', (e) => {
+    const el = e.target as HTMLElement;
+    if (mode !== 'pointer' && el instanceof HTMLElement && el !== document.body) remember(el);
+    showRing(el);
+  });
   document.addEventListener('focusout', () => showRing(null));
-  document.addEventListener('pointerdown', () => setMode('pointer'));
+  // Mayús + flechas sobre el cinturón: el cinturón mueve la herramienta y aquí el foco se va con ella
+  addEventListener(
+    'keydown',
+    (e) => {
+      const slot = e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ? beltSlot(e.target as Element) : null;
+      if (slot) shiftBelt(slot, e.key === 'ArrowLeft' ? -1 : 1, true);
+    },
+    true,
+  );
+  document.addEventListener('pointerdown', () => {
+    setMode('pointer');
+    last = null;
+  });
   document.addEventListener('pointermove', (e) => (e.movementX || e.movementY) && mode !== 'pointer' && e.pointerType === 'mouse' && setMode('pointer'));
   addEventListener('resize', () => showRing(document.activeElement));
   addEventListener('scroll', () => showRing(document.activeElement), true);

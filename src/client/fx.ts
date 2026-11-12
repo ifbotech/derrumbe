@@ -1,5 +1,7 @@
 // Efectos de la mesa: tiempos, vuelos de cartas, golpes, temblores, escombros y rótulos.
 // Todo respeta dos ajustes: la velocidad (1×, 2×, 4×) y «Reducir movimiento».
+import type { GameEvent } from '../rules/engine';
+import { sfx } from './audio';
 import { $, S, settings } from './core';
 
 /** Factor de tiempo: más rápido si hay jugadas en cola o el jugador eligió 2× / 4×. */
@@ -223,3 +225,35 @@ export function stampOn(host: HTMLElement | null, text: string, cls = ''): void 
   s.textContent = text;
   host.appendChild(s);
 }
+
+/**
+ * Insignia flotante cuando una herramienta se cobra (Ariete, Contragolpe, Rebosadero…): lee el campo
+ * `proc` del paso del golpe. «+12 Fuerza · Ariete» junto a la cuenta, «−12 · Contragolpe» sobre la
+ * torre, «+2 integridad · Rebosadero» sobre el búnker. ~1,2 s, solo transform y opacity, y su sonido.
+ * La mesa la llama en cada paso (`case 'step'` de animate); sin `proc` no hace nada.
+ */
+export function procBadge(ev: GameEvent): void {
+  if (ev.e !== 'step' || !ev.proc) return;
+  const { what, n, tower } = ev.proc;
+  const who = ev.label.includes(': ') ? ev.label.slice(0, ev.label.indexOf(': ')) : ev.label;
+  const [num, word, at] =
+    what === 'fuerza' ? [`+${n}`, 'Fuerza', $('#score .calc') ?? $('#score')]
+    : what === 'carga' ? [`+${n}`, 'Fuerza guardada', $('#score .calc') ?? $('#score')]
+    : what === 'repara' ? [`+${n}`, 'integridad', $('#bunker')]
+    : [`−${n}`, '', (tower && $(`.tower[data-suit="${tower}"] .floor-slot`)) || $('#score')];
+  if (!at) return;
+  const r = at.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = `proc-badge ${what}`;
+  el.innerHTML = `<b>${num}</b> <span>${word ? `${word} · ` : '· '}${who}</span>`;
+  // junto a la cuenta va a su derecha; sobre la torre y el búnker, centrada encima
+  const x = what === 'fuerza' || what === 'carga' ? r.right + 90 : r.left + r.width / 2;
+  el.style.setProperty('--x', `${Math.round(Math.max(90, Math.min(innerWidth - 90, x)))}px`);
+  el.style.setProperty('--y', `${Math.round(Math.max(40, r.top + (what === 'dano' ? r.height * 0.3 : 0)))}px`);
+  el.style.animationDuration = `${Math.round(1200 * Math.max(0.5, speed()))}ms`;
+  document.body.appendChild(el);
+  sfx.proc(what);
+  setTimeout(() => el.remove(), 1250);
+}
+// la prueba de humo dispara insignias a mano (con ?qa): no depende de que el azar traiga un Ariete
+if (new URLSearchParams(location.search).has('qa')) Object.assign(window, { __qaProc: procBadge });

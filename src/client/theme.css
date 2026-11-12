@@ -180,10 +180,10 @@ input::placeholder { color: #8a7f6d; }
 /* globos de ayuda con palabras clave encadenadas */
 .tip { background: var(--pit); border: 1px solid var(--table-4); border-left: 5px solid var(--hazard); box-shadow: 0 6px 0 rgba(10, 9, 8, 0.5); font-size: clamp(13px, 1.6vh, 15px); max-width: min(330px, 88vw); }
 .tip b { font-size: 0.95em; }
-.tip small { font-size: max(12px, 0.88em); }
+.tip small { font-size: max(13px, 0.88em); }
 .tip b.kw { display: inline; font-family: inherit; font-weight: 700; text-transform: none; letter-spacing: 0; font-size: inherit; margin: 0; color: var(--hazard); border-bottom: 0; }
 .tip .chain { margin-top: 7px; padding-top: 6px; border-top: 1px dashed #6b6456; display: grid; gap: 5px; }
-.tip .kwdef { font-size: max(12px, 0.92em); opacity: 0.92; padding-left: 8px; border-left: 2px solid var(--table-4); }
+.tip .kwdef { font-size: max(13px, 0.92em); opacity: 0.92; padding-left: 8px; border-left: 2px solid var(--table-4); }
 .tip .kwdef b { margin-bottom: 0; }
 
 /* ───────────── MESA ───────────── */
@@ -215,7 +215,7 @@ input::placeholder { color: #8a7f6d; }
 .tower-tag { background: var(--pit); color: var(--card-paper); border-bottom: 3px solid var(--tc); justify-content: flex-start; gap: 0.35em; margin: calc(-1 * clamp(3px, 0.6vh, 6px)) calc(-1 * clamp(3px, 0.6vh, 6px)) 0; padding: 3px 8px 4px; font-size: clamp(16px, 2.6vh, 28px); }
 .tower-tag .glyph, .tower[data-suit='H'] .tower-tag .glyph, .tower[data-suit='D'] .tower-tag .glyph { fill: var(--tc); font-size: 0.9em; }
 /* la amenaza va en el rótulo, a la derecha */
-.threat { position: absolute; z-index: 2; top: 0; right: 0; height: clamp(22px, 3.6vh, 38px); padding: 0 8px; align-self: auto; display: flex; align-items: center; gap: 6px; color: var(--dim); font-size: clamp(12px, 1.3vh, 14px); }
+.threat { position: absolute; z-index: 2; top: 0; right: 0; height: clamp(22px, 3.6vh, 38px); padding: 0 8px; align-self: auto; display: flex; align-items: center; gap: 6px; color: var(--dim); font-size: clamp(13px, 1.3vh, 14px); }
 .threat b { font-family: var(--display); font-weight: 400; font-size: clamp(14px, 2vh, 20px); letter-spacing: 0; color: var(--red-lit); }
 .threat b.off, .tower.disarmed .threat b { color: var(--dim); text-decoration: line-through; }
 .tower.fallen { --bg: transparent; --bd: var(--line); --bs: dashed; --sh: none; }
@@ -240,7 +240,7 @@ input::placeholder { color: #8a7f6d; }
 /* placas del piso: hierro tallado = inmune; latón = débil */
 .plates { display: flex; gap: 5px; justify-content: flex-start; justify-self: start; height: var(--plate-h); }
 .plate { display: inline-flex; align-items: center; gap: 3px; padding: 0 7px 0 5px; font-style: normal; border: 2px solid var(--pit); box-shadow: inset 0 2px 0 rgba(255, 243, 214, 0.16), inset 0 -3px 0 rgba(10, 9, 8, 0.34); white-space: nowrap; }
-.plate b { font-family: var(--display); font-weight: 400; font-size: clamp(12px, 1.6vh, 16px); line-height: 1; }
+.plate b { font-family: var(--display); font-weight: 400; font-size: clamp(13px, 1.6vh, 16px); line-height: 1; }
 .plate .glyph { width: clamp(13px, 1.9vh, 19px); height: clamp(13px, 1.9vh, 19px); }
 .plate.iron { background: #45423d; color: #d9cfbb; }
 .plate.iron .glyph { fill: #d9cfbb; }
@@ -263,7 +263,7 @@ input::placeholder { color: #8a7f6d; }
 .storeys { align-self: stretch; display: grid; gap: 2px; }
 .storey { position: relative; height: var(--storey-h); }
 .storey .storey-art { opacity: 0.6; }
-.storey b, .storey span { position: absolute; top: 50%; transform: translateY(-50%); font-family: var(--display); font-weight: 400; font-size: clamp(12px, 1.6vh, 16px); line-height: 1.25; padding: 0 6px; }
+.storey b, .storey span { position: absolute; top: 50%; transform: translateY(-50%); font-family: var(--display); font-weight: 400; font-size: clamp(13px, 1.6vh, 16px); line-height: 1.25; padding: 0 6px; }
 .storey b { left: 5px; background: var(--card-paper); color: var(--ink); }
 .storey span { right: 5px; background: var(--pit); color: var(--card-paper); }
 .footing { align-self: stretch; height: clamp(4px, 0.8vh, 8px); background: repeating-linear-gradient(90deg, var(--pit) 0 14px, var(--table-4) 14px 16px); }
@@ -313,7 +313,7 @@ input::placeholder { color: #8a7f6d; }
 .hudrow { display: flex; max-width: 100%; align-items: center; justify-content: center; gap: clamp(8px, 1.8vw, 32px); flex-wrap: wrap; min-width: 0; }
 .beltbar { grid-column: auto; }
 .powers { display: flex; gap: clamp(3px, 0.4vw, 6px); flex-wrap: wrap; justify-content: center; }
-.power { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 2px solid var(--pit); background: var(--table-3); color: var(--dim); font-size: clamp(12px, 1.35vh, 14px); font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.power { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 2px solid var(--pit); background: var(--table-3); color: var(--dim); font-size: clamp(13px, 1.35vh, 14px); font-weight: 700; line-height: 1.2; white-space: nowrap; }
 .power b { font-weight: 700; }
 .power .glyph { width: 1.15em; height: 1.15em; }
 .power.s-S .glyph { fill: var(--suitd-S); }
@@ -332,7 +332,7 @@ input::placeholder { color: #8a7f6d; }
 .status .hint { color: var(--dim); }
 .calc b { border-color: var(--pit); }
 .calc b.t { background: var(--pit); color: var(--hazard); }
-.calc .vs { color: var(--dim); font-size: max(12px, 0.42em); }
+.calc .vs { color: var(--dim); font-size: max(13px, 0.42em); }
 .marks .m { border-color: var(--pit); background: var(--paper-2); color: var(--ink); }
 .marks .m.gold { background: var(--hazard); }
 .marks .m.red { background: var(--red); color: var(--card-paper); }
@@ -362,10 +362,10 @@ input::placeholder { color: #8a7f6d; }
 .handrow { display: flex; align-items: flex-end; justify-content: center; gap: clamp(8px, 1.3vw, 22px); min-width: 0; --rw: calc(var(--hand-h) * 0.62 / 1.4); --gap: clamp(4px, 0.7vw, 10px); }
 .reserve { position: relative; flex: none; display: flex; align-items: flex-end; gap: 6px; padding: clamp(16px, 2.2vh, 22px) 7px 6px; border: 2px solid var(--table-4); border-top: 4px solid var(--hazard); background-color: rgba(13, 12, 11, 0.5); background-image: repeating-linear-gradient(135deg, rgba(224, 155, 61, 0.1) 0 6px, transparent 6px 14px); }
 .reserve[hidden] { display: none; }
-.reserve-label { position: absolute; left: 7px; top: 2px; font-family: var(--display); font-size: 12px; line-height: 1.2; letter-spacing: 0.05em; color: var(--hazard); }
+.reserve-label { position: absolute; left: 7px; top: 2px; font-family: var(--display); font-size: 13px; line-height: 1.2; letter-spacing: 0.05em; color: var(--hazard); }
 .reserve-slot { width: var(--rw); aspect-ratio: 5 / 7; display: grid; place-items: center; outline: none; }
 .reserve-slot.empty { border: 2px dashed var(--dim); color: var(--dim); cursor: pointer; }
-.reserve-slot.empty i { font-style: normal; font-family: var(--display); font-size: clamp(12px, 1.8vh, 18px); border: 2px solid currentColor; padding: 0 7px; line-height: 1.5; }
+.reserve-slot.empty i { font-style: normal; font-family: var(--display); font-size: clamp(13px, 1.8vh, 18px); border: 2px solid currentColor; padding: 0 7px; line-height: 1.5; }
 .reserve-slot.empty:hover { border-color: var(--hazard); color: var(--hazard); }
 .reserve.used .reserve-slot.empty { cursor: not-allowed; opacity: 0.5; }
 .reserve .card { --w: var(--rw); cursor: pointer; transition: transform 0.16s ease; }
@@ -380,7 +380,7 @@ input::placeholder { color: #8a7f6d; }
 .hand.locked .card, .handrow.locked .reserve .card { filter: none; opacity: 0.82; cursor: default; }
 .hand .card.sel .ly.paper, .reserve .card.sel .ly.paper { box-shadow: 0 0 0 4px var(--red-lit), 0 8px 0 #0a0908; }
 .hand .card.hint .ly.paper { box-shadow: 0 0 0 4px var(--hazard), 0 6px 0 #0a0908; }
-.hand .card[data-n]::after, .reserve .card[data-n]::after { content: attr(data-n); position: absolute; z-index: 8; right: -6px; top: -8px; min-width: 1.5em; text-align: center; font-family: var(--display); font-size: clamp(12px, 1.6vh, 16px); line-height: 1.5; background: var(--red); color: var(--card-paper); border: 2px solid var(--pit); }
+.hand .card[data-n]::after, .reserve .card[data-n]::after { content: attr(data-n); position: absolute; z-index: 8; right: -6px; top: -8px; min-width: 1.5em; text-align: center; font-family: var(--display); font-size: clamp(13px, 1.6vh, 16px); line-height: 1.5; background: var(--red); color: var(--card-paper); border: 2px solid var(--pit); }
 .hand .card[data-key]:not([data-key=''])::before { background: var(--pit); border: 1px solid var(--line); top: auto; bottom: -1.7em; }
 .actions { flex: none; display: grid; gap: clamp(4px, 0.7vh, 8px); align-content: end; min-width: clamp(120px, 11vw, 170px); }
 .actions button[hidden] { display: none; }
@@ -396,40 +396,33 @@ input::placeholder { color: #8a7f6d; }
 .chalk-mark.c3 { color: #e6c574; }
 @keyframes chalkin { from { opacity: 0; transform: rotate(-20deg) scale(1.8); } }
 
-/* ───────────── Foco de latón (teclado y mando) y anillo de reinicio ───────────── */
-.focus-ring { --c: #d4a348; --t: 3px; --l: 14px; position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none; opacity: 0; transition: transform 0.09s ease-out, opacity 0.1s;
-  background:
-    linear-gradient(var(--c), var(--c)) left top / var(--l) var(--t) no-repeat, linear-gradient(var(--c), var(--c)) left top / var(--t) var(--l) no-repeat,
-    linear-gradient(var(--c), var(--c)) right top / var(--l) var(--t) no-repeat, linear-gradient(var(--c), var(--c)) right top / var(--t) var(--l) no-repeat,
-    linear-gradient(var(--c), var(--c)) left bottom / var(--l) var(--t) no-repeat, linear-gradient(var(--c), var(--c)) left bottom / var(--t) var(--l) no-repeat,
-    linear-gradient(var(--c), var(--c)) right bottom / var(--l) var(--t) no-repeat, linear-gradient(var(--c), var(--c)) right bottom / var(--t) var(--l) no-repeat; }
-.focus-ring.on { opacity: 1; }
+/* ───────────── Anillo de reinicio (el foco de latón vive en juice.css) ───────────── */
 .hold-ring { position: fixed; left: 50%; top: 46%; z-index: 450; width: clamp(120px, 20vh, 190px); aspect-ratio: 1; transform: translate(-50%, -50%) rotate(-7deg); display: grid; place-items: center; pointer-events: none; color: var(--card-paper); }
 .hold-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hold-ring .track { fill: rgba(13, 12, 11, 0.9); stroke: var(--table-4); stroke-width: 7; }
 .hold-ring .prog { fill: none; stroke: var(--red-lit); stroke-width: 7; stroke-dasharray: 100; stroke-dashoffset: 100; animation: holdfill 0.7s linear forwards; }
 @keyframes holdfill { to { stroke-dashoffset: 0; } }
-.hold-ring b { position: relative; font-family: var(--title); font-size: clamp(44px, 9vh, 84px); line-height: 1; margin-top: -0.2em; }
-.hold-ring span { position: absolute; bottom: 21%; font-family: var(--cap); font-weight: 700; font-size: 12px; letter-spacing: 0.06em; white-space: nowrap; }
+.hold-ring b { position: relative; font-family: var(--num); font-size: clamp(44px, 9vh, 84px); line-height: 1; margin-top: -0.2em; }
+.hold-ring span { position: absolute; bottom: 21%; font-family: var(--cap); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; white-space: nowrap; }
 
 /* ───────────── Lupa de grabador ───────────── */
 .lupa { position: fixed; inset: 0; z-index: 95; background: rgba(13, 12, 11, 0.92); display: grid; place-items: center; padding: clamp(10px, 3vh, 40px) clamp(10px, 3vw, 48px); cursor: zoom-out; animation: tipin 0.14s ease both; text-transform: none; }
 .lupa-box { display: grid; grid-template-columns: auto minmax(0, 480px); gap: clamp(16px, 3.4vw, 56px); align-items: center; max-height: 100%; min-height: 0; cursor: default; }
 .lupa-art .card { --w: clamp(170px, min(32vw, 54vh), 430px); }
 .lupa-sheet { position: relative; background-color: var(--card-paper); background-image: var(--grain-paper, none); color: var(--ink); border: 3px solid var(--pit); box-shadow: 0 8px 0 var(--pit); padding: clamp(12px, 2.4vh, 26px) clamp(14px, 2vw, 28px); display: grid; gap: clamp(6px, 1.2vh, 12px); max-height: min(88vh, 100%); overflow-y: auto; }
-.lupa-kicker { font-family: var(--cap); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--red); }
+.lupa-kicker { font-family: var(--cap); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--red); }
 .lupa-sheet h2 { font-family: var(--title); font-weight: 700; font-size: clamp(30px, 5.6vh, 58px); line-height: 1; display: flex; align-items: center; gap: 12px; }
 .lupa-epi { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: clamp(14px, 2vh, 19px); line-height: 1.35; color: #5a4a36; border-left: 3px solid var(--ochre); padding-left: 10px; }
 .lupa-rules { font-size: clamp(14px, 2vh, 19px); font-weight: 700; line-height: 1.4; }
 .lupa-math { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 14px; font-size: clamp(13px, 1.65vh, 16px); line-height: 1.4; border-top: 2px solid var(--ink); padding-top: 8px; align-items: baseline; }
-.lupa-math dt { font-family: var(--display); text-transform: uppercase; font-size: max(12px, 0.82em); letter-spacing: 0.03em; }
+.lupa-math dt { font-family: var(--display); text-transform: uppercase; font-size: max(13px, 0.82em); letter-spacing: 0.03em; }
 .lupa-math .vs-t { display: inline-flex; align-items: center; gap: 4px; margin: 0 6px 4px 0; padding: 1px 7px; border: 2px solid var(--ink); }
 .lupa-math .vs-t b { font-family: var(--display); font-weight: 400; }
-.lupa-math .vs-t small { font-size: 12px; opacity: 0.75; }
+.lupa-math .vs-t small { font-size: 13px; opacity: 0.75; }
 .lupa-math .vs-t.zero { opacity: 0.5; border-style: dashed; }
 .lupa-math .vs-t.adv { background: var(--hazard); }
-.lupa-chain { display: grid; gap: 5px; border-top: 1px dashed var(--ink); padding-top: 8px; font-size: clamp(12px, 1.5vh, 14px); line-height: 1.35; }
-.lupa-chain .kwdef b { display: block; font-family: var(--display); font-weight: 400; text-transform: uppercase; font-size: 12px; letter-spacing: 0.04em; color: var(--red); }
+.lupa-chain { display: grid; gap: 5px; border-top: 1px dashed var(--ink); padding-top: 8px; font-size: clamp(13px, 1.5vh, 14px); line-height: 1.35; }
+.lupa-chain .kwdef b { display: block; font-family: var(--display); font-weight: 400; text-transform: uppercase; font-size: 13px; letter-spacing: 0.04em; color: var(--red); }
 .lupa-close { justify-self: end; }
 
 /* sellos de maestría: un remache de bronce, hierro u oro */
@@ -445,9 +438,9 @@ input::placeholder { color: #8a7f6d; }
 .levels { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
 .level { display: grid; align-content: center; justify-items: center; gap: 1px; padding: 3px 2px; height: clamp(44px, 7.4vh, 70px); min-width: 0; font-family: var(--mono); }
 .level b { font-family: var(--display); font-weight: 400; font-size: clamp(15px, 2.3vh, 24px); line-height: 1; }
-.level span { font-size: 12px; font-weight: 700; line-height: 1.05; text-transform: none; letter-spacing: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: center; }
+.level span { font-size: 13px; font-weight: 700; line-height: 1.05; text-transform: none; letter-spacing: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: center; }
 .level.in:not(.on) { --bg: var(--paper-3); }
-.level-twists { list-style: none; display: grid; gap: 2px; font-size: clamp(12px, 1.5vh, 15px); line-height: 1.3; text-transform: none; }
+.level-twists { list-style: none; display: grid; gap: 2px; font-size: clamp(13px, 1.5vh, 15px); line-height: 1.3; text-transform: none; }
 .level-twists li b { font-family: var(--display); font-weight: 400; margin-right: 6px; }
 .stop.boss { --bg: var(--red); color: var(--card-paper); }
 .stop.done { --bg: var(--ink); color: var(--hazard); }
@@ -474,9 +467,9 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   :root { --storey-h: 13px; --plate-h: 20px; }
   .bar { padding: 4px 6px; gap: 4px; }
-  .bar button { min-height: 44px; min-width: 44px; padding: 0 8px; font-size: 12px; }
+  .bar button { min-height: 44px; min-width: 44px; padding: 0 8px; font-size: 13px; }
   .bar .players { order: 9; flex: 1 1 100%; }
-  .chip, .room { font-size: 12px; padding: 1px 6px; }
+  .chip, .room { font-size: 13px; padding: 1px 6px; }
   .field { padding: 5px; gap: 5px; grid-template-rows: auto auto; align-content: start; }
   .towers { width: 100%; gap: 5px; }
   .tower { padding: 3px; gap: 3px; }
@@ -488,21 +481,21 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   .floor-slot .card { --w: 92cqw; }
   .rubble { width: 80cqw; }
   .plate { padding: 0 3px; gap: 1px; }
-  .plate b { font-size: 12px; }
+  .plate b { font-size: 13px; }
   .plate .glyph { width: 12px; height: 12px; }
-  .storey b, .storey span { font-size: 12px; line-height: 1.05; padding: 0 3px; }
-  .fx { font-size: 12px; padding: 0 3px; border-width: 1px; }
+  .storey b, .storey span { font-size: 13px; line-height: 1.05; padding: 0 3px; }
+  .fx { font-size: 13px; padding: 0 3px; border-width: 1px; }
   .hp { height: 16px; }
-  .hp span { font-size: 12px; }
+  .hp span { font-size: 13px; }
   .preview { font-size: 15px; top: 22px; }
   .side { flex-direction: row; max-width: none; padding: 0; }
   .log { display: none; }
   .bunker { flex: 1; display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; column-gap: 12px; }
   .bunker h3, .bunker .blocks, .bunker-art { display: none; }
   .bunker .stat { flex-direction: row; align-items: baseline; gap: 6px; margin: 0; }
-  .bunker .stat span { font-size: 12px; }
+  .bunker .stat span { font-size: 13px; }
   .bunker .piles { display: flex; justify-content: flex-end; gap: 8px; margin: 0; grid-column: 3; grid-row: 1; }
-  .pile { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+  .pile { font-size: 13px; display: flex; align-items: center; gap: 4px; }
   .pile .slot { width: 30px; height: 40px; margin: 0; }
   .pile .card { --w: 24px; }
   .pile .count { font-size: 15px; }
@@ -513,10 +506,10 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   .beltbar { gap: 4px; justify-content: center; }
   .belt-slot { width: 42px; margin: 1px; border-width: 2px; }
   .carries { display: none; }
-  .power { padding: 2px 6px; font-size: 12px; }
+  .power { padding: 2px 6px; font-size: 13px; }
   .status.score { justify-content: center; min-height: 0; }
   .status .hint { display: none; }
-  .marks .m { font-size: 12px; }
+  .marks .m { font-size: 13px; }
   .handrow { display: contents; }
   .hand, .is-run .hand { grid-column: 1 / -1; height: auto; flex-wrap: wrap; justify-content: center; row-gap: 6px; padding: 4px 0 0; --gap: 6px; }
   .hand .card, .is-run .hand .card { --w: min(calc((100vw - 12px - 4 * 6px) / 5), 11.5vh); }
@@ -526,7 +519,7 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   .reserve-slot { width: 44px; }
   .reserve .card { --w: 44px; }
   .actions { grid-column: 2; display: flex; flex-direction: row; align-items: stretch; gap: 5px; min-width: 0; align-self: stretch; }
-  .actions button { flex: 1; min-width: 44px; min-height: 44px; padding: 0 4px; font-size: 12px; }
+  .actions button { flex: 1; min-width: 44px; min-height: 44px; padding: 0 4px; font-size: 13px; }
   .coach { font-size: 13px; }
   button, .stamp-btn { min-height: 44px; }
   .choice.pick { min-height: 44px; }
@@ -583,7 +576,7 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   /* la previsualización va al pie de la torre, sobre los pisos que esperan: no tapa ni la carta ni las placas */
   .preview { top: auto; bottom: 3px; left: 3px; right: 3px; transform: none; text-align: center; font-size: 15px; padding: 2px 2px 3px; }
   .preview small { display: inline; margin: 0 0 0 4px; font-size: 0; }
-  .preview small::after { content: attr(data-short); font-size: 12px; }
+  .preview small::after { content: attr(data-short); font-size: 13px; }
   .actions button { white-space: nowrap; letter-spacing: 0; }
   #btn-discard { flex: 1.7; }
   .run-belt > button { min-height: 44px; }
@@ -627,7 +620,7 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
 }
 
 /* ───────────── 4.0 · indicaciones de control: tecla o botón, según con qué se juegue ───────────── */
-.kh { display: none; flex: none; margin-left: 6px; min-width: 1.7em; height: 1.7em; padding: 0 5px; place-items: center; font-family: var(--display); font-weight: 400; font-size: 12px; line-height: 1; letter-spacing: 0; text-transform: none; border: 1.5px solid var(--pit); vertical-align: middle; }
+.kh { display: none; flex: none; margin-left: 6px; min-width: 1.7em; height: 1.7em; padding: 0 5px; place-items: center; font-family: var(--display); font-weight: 400; font-size: 13px; line-height: 1; letter-spacing: 0; text-transform: none; border: 1.5px solid var(--pit); vertical-align: middle; }
 html[data-input='keys'] .kb { display: inline-grid; background: var(--card-paper); color: var(--ink); box-shadow: 0 2px 0 var(--pit); }
 html[data-input='pad'] .pd { display: inline-grid; border-radius: 999px; background: var(--pit); color: var(--paper-2); box-shadow: inset 0 0 0 1.5px currentColor; }
 .pd.b-a { color: #62a898; }
@@ -673,17 +666,11 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 .power.fatigue.on { border-style: solid; background: var(--red); color: var(--card-paper); }
 .power.fatigue.on em { background: var(--pit); color: var(--hazard); }
 
-/* susurros de tiza: consejos al margen, una vez cada uno */
+/* los susurros de tiza (.whisper*) viven en juice.css */
 .table-screen { position: relative; }
-.whisper { flex: none; margin: 0; padding: 8px 12px 10px; font-family: var(--mono); font-style: italic; font-weight: 500; font-size: clamp(13px, 1.7vh, 16px); line-height: 1.35; text-transform: none; letter-spacing: 0; color: #f0e4c8; border: 2px dashed rgba(240, 228, 200, 0.5); border-radius: 14px 9px 16px 8px / 9px 16px 8px 14px; transform: rotate(-1deg); pointer-events: none; animation: chalkin 0.4s ease both; transition: opacity 0.5s; }
-.whisper b { font-style: normal; font-weight: 700; color: var(--hazard); display: block; }
-.whisper.out { opacity: 0; }
-/* en escritorio se escribe al pie de la columna del búnker, encima del registro: cabe entero aunque la pantalla sea baja */
 .side { position: relative; }
-.side > .whisper { position: absolute; z-index: 6; left: 0; right: 8px; bottom: 8px; background: #14120f; box-shadow: 0 0 0 4px var(--table, #1b1916); }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .side { position: static; }
-  .side > .whisper { position: absolute; z-index: 40; left: 8px; right: 8px; top: 96px; bottom: auto; background: #0d0c0b; box-shadow: none; transform: none; }
   .wheel { width: 40px; }
   .kh { display: none !important; }
   .reserve-slot .plus { display: inline !important; }
@@ -692,13 +679,13 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 /* ───────────── 4.0 · archivo de actas ───────────── */
 .actas { display: grid; gap: clamp(6px, 1.1vh, 12px); }
 .acta-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(8px, 1.2vw, 18px); align-items: center; border-bottom: 1.5px dashed rgba(24, 22, 20, 0.45); padding-bottom: clamp(6px, 1.1vh, 12px); text-transform: none; }
-.acta-stamp { font-family: var(--display); text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(12px, 1.5vh, 15px); line-height: 1; padding: 4px 8px 5px; border: 3px double currentColor; transform: rotate(-6deg); color: var(--ink); white-space: nowrap; }
+.acta-stamp { font-family: var(--display); text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(13px, 1.5vh, 15px); line-height: 1; padding: 4px 8px 5px; border: 3px double currentColor; transform: rotate(-6deg); color: var(--ink); white-space: nowrap; }
 .acta-row.won .acta-stamp { color: var(--red); }
 .acta-main { display: grid; gap: 2px; min-width: 0; }
-.acta-main b { text-transform: uppercase; font-size: clamp(12px, 1.6vh, 16px); }
-.acta-main span { font-size: clamp(12px, 1.45vh, 14px); line-height: 1.3; }
+.acta-main b { text-transform: uppercase; font-size: clamp(13px, 1.6vh, 16px); }
+.acta-main span { font-size: clamp(13px, 1.45vh, 14px); line-height: 1.3; }
 .acta-tools { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.acta-tools em { font-style: normal; font-family: var(--cap); font-weight: 700; font-size: 12px; opacity: 0.75; margin-left: 6px; }
+.acta-tools em { font-style: normal; font-family: var(--cap); font-weight: 700; font-size: 13px; opacity: 0.75; margin-left: 6px; }
 .mini-ico { width: clamp(20px, 2.8vh, 28px); height: clamp(20px, 2.8vh, 28px); flex: none; background: var(--paper-2); border: 1.5px solid var(--pit); padding: 1px; }
 .acta-btns { display: grid; gap: 6px; }
 .acta-btns button { white-space: nowrap; }
@@ -725,8 +712,6 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .wheel { width: 44px; }
   .power.fatigue b { display: inline; }
-  /* en móvil el susurro pisa la barra de arriba (que sigue recibiendo los toques), no las torres */
-  .side > .whisper { top: 4px; }
 }
 /* pantallas de portátil: con las indicaciones de tecla o de mando a la vista, la barra y la fila del cinturón se aprietan */
 @media (min-width: 641px) and (max-width: 1420px) and (min-aspect-ratio: 1/1) {
@@ -735,4 +720,234 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
   .bar .kh { margin-left: 4px; }
   .hudrow { column-gap: 12px; }
   .hudrow .belt-label { display: none; }
+}
+
+/* ═════════════ V5 · IMPRENTA ═════════════
+   Legibilidad ante todo: ninguna letra por debajo de 13 px, ninguna cifra en gótica, cifras con placa,
+   palos a 7:1 con su trama, dianas de 44 px (48 en la barra del pulgar) y nada recortado. */
+
+/* ── cifras: una fuente propia para los dígitos. Va primera en la gótica de títulos, así que un «4/8»
+      dentro de un título sale en palo seco; y es la base de --num, la variable de toda cifra. ── */
+@font-face { font-family: 'Derrumbe Cifras'; src: url('../../node_modules/@fontsource/archivo-black/files/archivo-black-latin-400-normal.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; unicode-range: U+0025, U+002B, U+0030-0039, U+00D7, U+2212; }
+:root {
+  --num: 'Derrumbe Cifras', 'Archivo Black', 'Arial Black', Impact, sans-serif;
+  --title: 'Derrumbe Cifras', 'UnifrakturCook', 'Grenze Gotisch', 'Old English Text MT', serif;
+  /* tintas de palo, ≥ 7:1 sobre el papel crema y sobre el papel de las cartas tratadas (♠ 15:1 · ♥ 7,9:1 · ♦ 7,9:1 · ♣ 9,2:1) */
+  --suit-H: #7d1a13;
+  --suit-D: #5f3704;
+  --suit-C: #143d34;
+}
+:root.inks2 { --suit-D: #7d1a13; }
+.t-forjado .ly.paper { background-color: #e0dbd0; }
+.corner, .threat b, .plate b, .storey b, .storey span, .hp span, .belt-slot .kind, .belt-slot .cnt, .chip b, .power em, .preview, .kh, .pile .count, .pile b, .stat b, .level b, .purse b, .pay td + td, .slider output, .stop b, .ach-r b, .bp-n, .mastery i, .lupa-math .vs-t b, .level-twists li b, .price-tag, .reserve-slot.empty i, .hand .card[data-n]::after, .reserve .card[data-n]::after, .hold-ring b, .chalk-mark, .float, .col-sec h3.sec span {
+  font-family: var(--num); font-variant-numeric: tabular-nums; font-weight: 400;
+}
+
+/* ── cartas: índice con placa de papel, palo con contorno de tinta, letra del arte solo si se lee ── */
+.corner { font-size: max(13px, calc(var(--w) * 0.2)); letter-spacing: -0.04em; }
+.corner b { background: var(--card-paper); padding: 0.05em 0.07em 0.02em; line-height: 0.92; }
+.corner.wide b { font-size: max(13px, 0.74em); letter-spacing: -0.08em; }
+.star-mini { font-size: max(13px, 0.7em); }
+.corner .glyph { stroke: var(--ink); stroke-width: 1.3; paint-order: stroke; overflow: visible; }
+.corner .glyph.s-S { stroke: var(--card-paper); stroke-width: 0.9; paint-order: normal; }
+svg.ly.weave { width: 100%; height: 100%; opacity: 0.62; }
+/* el texto del grabado (nombres en la banda, «SOTA · ACERO» al canto) se retira en las cartas pequeñas:
+   tamaño en pantalla = cuerpo × ancho de la carta / 250 × 0,987; por debajo de 13 px vale 0 */
+.art .banner-txt { font-size: clamp(0px, (var(--w, 0px) - 131px) * 1000, 25px); letter-spacing: 0.5px; }
+.art .banner-txt.npc-name { font-size: clamp(0px, (var(--w, 0px) - 164px) * 1000, 20px); }
+.art .cap { font-size: clamp(0px, (var(--w, 0px) - 300px) * 1000, 11px); letter-spacing: 1px; }
+.sp-desc { font-size: max(13px, calc(var(--w) * 0.053)); }
+
+/* ── torres: amenaza y pisos con placa, rótulo con la trama del material ── */
+.tower-tag { position: relative; border-bottom: 0; padding-bottom: 9px; }
+.tag-weave { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 7px; border-top: 2px solid var(--pit); }
+.threat { background: var(--pit); color: var(--paper-3); }
+.threat b { color: #ec8a7b; }
+.hp span { font-size: max(13px, 1.4vh); }
+.fx { font-size: 13px; }
+.tower .fx { white-space: nowrap; }
+.wn .wt { stroke: var(--pit); stroke-width: 1.2; }
+.belt { gap: 8px; }
+.belt-slot { margin: 2px; }
+
+/* ── barra de arriba, cinturón, poderes y búnker: nada por debajo de 13 px y cifras con placa ── */
+.bar { padding-left: 10px; padding-right: 10px; }
+.bar button { min-height: 44px; padding-top: 0; padding-bottom: 0; }
+.bar .chip, .bar .room, .obra-chips > *, .players > * { font-size: max(13px, 1.35vh); }
+.belt-label, .belt-label small { font-size: max(13px, 1.4vh); }
+.belt-slot .kind, .belt-slot .cnt { font-size: 13px; line-height: 1.2; padding: 0 4px; }
+.belt-slot .kind { left: -7px; top: -10px; background: var(--pit); color: var(--card-paper); border: 1.5px solid var(--card-paper); }
+.belt-slot .cnt { right: -8px; bottom: -9px; background: var(--hazard); color: var(--ink); border: 1.5px solid var(--pit); }
+.carry, .power, .stepchip.note { font-size: max(13px, 1.35vh); }
+.pile, .stat span, .reserve-label { font-size: max(13px, 1.3vh); }
+.blocks i { border-color: #c9b994; background: #c9b994; }
+.blocks i.off { border-color: var(--paper-3); opacity: 0.55; }
+.blocks.wall i { background: #f0ae4f; border-color: #f0ae4f; }
+.log { font-size: max(13px, 1.3vh); }
+.tip, .tip small, .tip .kwdef { font-size: max(13px, 1.5vh); }
+.inkstamp { font-size: max(13px, 1.8vh); }
+
+/* ── índices de la mano: placa de tinta con número en papel, legibles sobre corazones ── */
+.hand .card[data-n]::after, .reserve .card[data-n]::after { font-size: max(13px, 1.6vh); background: var(--pit); color: var(--card-paper); border: 2px solid var(--card-paper); }
+.hand .card.sel[data-n]::after, .reserve .card.sel[data-n]::after { background: var(--red); border-color: var(--pit); }
+.hand .card[data-key]:not([data-key=''])::before { font-size: 13px; }
+
+/* ── dianas: todo lo pulsable mide al menos 44 × 44 px ── */
+button, #app button, .modal button, .lupa button { min-height: 44px; min-width: 44px; }
+input:not([type='range']):not([type='checkbox']):not([type='radio']) { min-height: 44px; }
+.choice button, .up button, .grid2 button, .modal-box .x, .lupa-close, .deck-box button { min-height: 44px; height: auto; }
+button:disabled, .deck-opt:disabled { opacity: 1; --bg: var(--paper-3); color: #4a4339; }
+.table-screen button:disabled, .bar button:disabled { --bg: var(--table-3); color: var(--dim); }
+button.primary:disabled { --bg: #6d4a45; color: var(--paper-2); }
+.stamp-btn small, button.big small { opacity: 1; }
+
+/* ── botones de acción de la mesa (C5): Golpear arriba, luego Andamio y Tiza, Descartar y Soltar ── */
+.actions { display: grid; grid-template-columns: 1.3fr 1fr; grid-template-areas: 'strike strike' 'stash undo' 'discard clear'; gap: 8px; min-width: 0; align-content: end; }
+#btn-strike, #btn-pass { grid-area: strike; }
+#btn-stash { grid-area: stash; }
+#btn-undo { grid-area: undo; }
+#btn-discard { grid-area: discard; }
+#btn-clear { grid-area: clear; }
+.actions button { min-height: 44px; padding: 2px 6px; font-size: max(13px, 1.45vh); line-height: 1.1; letter-spacing: 0.01em; white-space: normal; }
+#btn-strike { font-size: max(15px, 1.9vh); min-height: 48px; }
+.hand .card, .is-run .hand .card { --w: min(calc(var(--hand-h) * 0.84 / 1.4), calc((100vw - clamp(220px, 17vw, 300px) - var(--rs, 0) * (var(--rw) + 12px) - 130px - (var(--n, 8) - 1) * var(--gap)) / var(--n, 8))); }
+.handrow { --gap: clamp(12px, 0.9vw, 16px); }
+.reserve { gap: 10px; }
+.actions { width: clamp(220px, 17vw, 300px); }
+/* Con teclado o mando, la insignia de las acciones estrechas va de sello en la esquina del botón: dentro,
+   junto a «Descartar (3)», no cabía y el texto se salía por la izquierda (tinta sobre mesa: invisible). */
+.actions button:not(#btn-strike):not(#btn-pass) .kh { position: absolute; z-index: 2; top: -14px; right: -6px; margin: 0; }
+html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { background: var(--card-paper); box-shadow: 0 2px 0 var(--pit); }
+/* Cuántas cartas se descartarían: sello rojo en la otra esquina, con la misma voz que los índices de la mano. */
+.sel-n { position: absolute; z-index: 2; top: -11px; left: -7px; display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 5px; font-family: var(--num); font-weight: 900; font-size: 14px; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: 0; background: var(--red); color: var(--card-paper); border: 2px solid var(--pit); }
+.sel-n[hidden] { display: none; }
+/* El registro solo se enseña si caben dos renglones enteros: medio renglón asomando se lee como un recorte. */
+.table-screen .log { container: registro / size; }
+@container registro (height < 56px) {
+  .log > p { display: none; }
+}
+/* portátil y Steam Deck: la barra de arriba se aprieta sin pisarse (8 px entre botones) */
+@media (min-width: 641px) and (max-width: 1420px) and (min-aspect-ratio: 1/1) {
+  .bar .brand { display: none; }
+  .bar, html[data-input='keys'] .bar, html[data-input='pad'] .bar { column-gap: 8px; }
+  .bar button { padding-left: 8px; padding-right: 8px; }
+}
+.hp { height: clamp(20px, 2.4vh, 26px); }
+.hp { flex: none; }
+.hp span { line-height: 1; }
+.bar { padding-top: 8px; padding-bottom: 8px; }
+
+/* ── avisos de tinta desvanecida (tinta.ts pone data-mas mientras quede contenido por ver) ── */
+[data-mas~='abajo'] { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - min(38px, 22%)), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - min(38px, 22%)), transparent); }
+[data-mas~='arriba'] { -webkit-mask-image: linear-gradient(to top, #000 calc(100% - min(38px, 22%)), transparent); mask-image: linear-gradient(to top, #000 calc(100% - min(38px, 22%)), transparent); }
+[data-mas='arriba abajo'] { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 min(38px, 22%), #000 calc(100% - min(38px, 22%)), transparent); mask-image: linear-gradient(to bottom, transparent, #000 min(38px, 22%), #000 calc(100% - min(38px, 22%)), transparent); }
+
+/* ── contraste de lo atenuado: se baja el tono, no la opacidad ── */
+.lupa-math .vs-t.zero { opacity: 1; color: #5e564a; }
+.lupa-math .vs-t small { opacity: 1; font-size: max(13px, 0.9em); }
+.bp-node em.plain { opacity: 1; }
+.form-chip { opacity: 1; color: #5e564a; }
+.unknown h4, .unknown p, .choice.unknown h4, .choice.unknown p { opacity: 1; color: #5e564a; }
+.belt-label small, #belt-host small { color: var(--paper-3); }
+.title .cut { color: #e8705e; }
+
+/* ── móvil 390 × 844: cifras y descripciones a 14 px, barra del pulgar de 48 px abajo ── */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .corner.wide b { font-size: max(14px, 0.74em); }
+  .corner b, .threat b, .plate b, .storey b, .storey span, .hp span, .chip b, .pile b, .pile .count, .power em, .preview, .belt-slot .kind, .belt-slot .cnt, .stat b, .price-tag, .purse b, .level b, .bp-n, .pay td, .hand .card[data-n]::after, .reserve .card[data-n]::after { font-size: max(14px, 1em); }
+  .choice p, .lead, .note, .col-note, .stamp-btn small, .up span, .ach span, .kit li span, .acta-main span, .set span, .deck-opt span, .lupa-rules, .lupa-math dd, .say, .coach p { font-size: max(14px, 1em); }
+  .stat span { font-size: 13px; }
+  .pile { font-size: 0; }
+  /* el andamio a la izquierda de la mano; abajo, la barra del pulgar: Golpear, Andamio, Descartar y Tiza a 48 px */
+  .tray { grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; padding-left: 8px; padding-right: 8px; }
+  .hand, .is-run .hand { grid-column: 2; order: 1; --gap: 8px; column-gap: 8px; row-gap: 8px; justify-content: flex-start; }
+  .hand .card, .is-run .hand .card { --w: min(calc((100vw - 16px - 8px - var(--rs, 0) * 52px - 10px - (var(--per) - 1) * 8px) / var(--per)), 10.6vh); }
+  .reserve { grid-column: 1; order: 1; align-self: start; padding: 4px 3px; gap: 8px; --rw: 44px; }
+  .reserve-slot, .reserve .card { --w: 44px; width: 44px; }
+  .actions { grid-column: 1 / -1; order: 2; display: grid; width: auto; grid-template-columns: 1.12fr 1fr 1.2fr 0.8fr; grid-template-areas: 'strike stash discard undo'; gap: 8px; min-width: 0; }
+  .actions > button { min-height: 48px; padding: 2px 4px; font-family: var(--mono); font-weight: 700; font-size: 14px; letter-spacing: 0.01em; white-space: normal; }
+  #btn-strike, #btn-pass { grid-area: strike; font-size: 15px; min-height: 48px; }
+  #btn-stash { grid-area: stash; }
+  #btn-discard { grid-area: discard; flex: none; }
+  #btn-undo { grid-area: undo; }
+  #btn-clear { display: none; }
+  /* torres y cinturón con 8 px de aire */
+  .field { padding: 6px 8px; }
+  .towers { gap: 8px; }
+  .tower .fx { white-space: normal; overflow: visible; text-overflow: clip; text-align: center; line-height: 1.1; max-width: 100%; font-family: var(--mono); letter-spacing: 0; }
+  .hp { height: 22px; }
+  .table-screen .bunker { gap: 10px; }
+  .bunker .piles { gap: 6px; }
+  .beltbar { gap: 8px; }
+  .belt-slot, .run-belt .belt-slot { width: 44px; }
+  #gold-chip > span { display: none; }
+  .bar .chip, .bar .room { padding: 1px 5px; }
+  /* barra de arriba: fichas en una fila, los cinco botones en otra, con 8 px de aire */
+  .bar { padding: 4px 8px; column-gap: 6px; row-gap: 6px; }
+  .bar button + button { margin-left: 2px; }
+  .bar button { padding: 0 2px; letter-spacing: 0; font-family: var(--mono); font-weight: 700; font-size: 13px; }
+  .lupa-math .vs-t small { font-size: 14px; }
+}
+
+/* ── pantallas de campaña en móvil: la lista del gremio se desplaza dentro de su panel, con aviso ── */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .guild-panel .scroll, .guild-panel #guild-list { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+  .guild-body .tabs { gap: 8px 10px; }
+}
+
+/* ── campaña: preparación, plano, cobro, ferretería, archivo y ajustes ── */
+.levels { gap: 8px; }
+.bp-node.done, .bp-node.skip { opacity: 1; }
+.stop span { text-transform: none; }
+.mastery.m-bronce { background: #c07a3c; }
+.mastery.m-hierro { background: #9a978f; }
+.stamp-btn small { font-size: max(13px, 1.35vh); }
+.acta-btns { gap: 8px; }
+.server-edit, .set .row, .set-row { gap: 8px; }
+.card-back text { font-size: clamp(0px, (var(--w, 0px) - 34px) * 1000, 96px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .acta-main em, .set button, .event-opts small, .deck-opt b, .routes .choice p, .routes .choice b, .choice.skip p, .choice.skip b, .run-body.shop .choice.hang p, .choice.hang p small, .choice.hang b.kw { font-size: 14px; }
+  .deck-opt span { -webkit-line-clamp: unset; display: block; overflow: visible; }
+  .routes { gap: 8px; }
+  .run-body.shop .hangers { column-gap: 12px; }
+}
+.stop { overflow: visible; }
+.stop span { display: block; overflow: visible; -webkit-line-clamp: unset; letter-spacing: 0; line-height: 1.05; }
+.route { grid-auto-rows: minmax(clamp(46px, 8vh, 84px), auto); }
+/* carta que no se puede elegir: tachada con rayado, sin bajar el contraste de su índice */
+.deck-mini .card.unpickable { opacity: 1; cursor: not-allowed; }
+.deck-mini .card.unpickable::after { content: ''; position: absolute; inset: 0; z-index: 30; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(13, 12, 11, 0.5) 0 3px, transparent 3px 9px); border: 2px dashed var(--pit); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  #app .actions > button { min-height: 48px; }
+  .stamp-btn small, #opts.event-opts small { font-size: 14px; }
+  .run-body.two { grid-template-columns: minmax(0, 1fr); }
+  .modal-box { padding: 14px 14px; }
+  .modal-box h2 { font-size: clamp(28px, 8vw, 36px); flex-wrap: wrap; gap: 8px; line-height: 1.05; }
+  .modal-box h2 button { flex: none; }
+}
+.run-body.shop .hangers { column-gap: clamp(10px, 1vw, 16px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* la previsualización del golpe, sobre la cabeza de la carta del jefe (su índice se repite al pie):
+     al pie de la torre tapaba la cifra del último piso */
+  .preview { top: 30px; bottom: auto; }
+  /* tira del búnker: integridad, muro y los tres montones caben en 374 px sin recortar la escombrera */
+  .table-screen .bunker { gap: 6px; padding: 4px; }
+  .bunker .stat { gap: 4px; }
+  .bunker .piles { gap: 6px; }
+  .tower .fx { overflow-wrap: anywhere; letter-spacing: 0; max-width: 100%; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* la previsualización baja a media carta para no tapar las placas de multiplicador */
+  .preview { top: 40%; }
+  .tower .fx { white-space: normal; }
+  /* rótulo de la torre: el nombre entero junto a la amenaza («Hormigón» no se esconde tras el ▲ 8) */
+  .tower-tag { font-size: clamp(13px, 3.4vw, 20px); padding-left: 3px; padding-right: 3px; }
+  .threat { padding: 0 3px; }
+  .threat b::before { margin-right: 1px; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* efectos de la torre: parten por sílaba (guion blando) y se posan sobre el pie de la carta del jefe,
+     encima de la vida, en vez de esconderse bajo ella (la torre del móvil no tiene alto de sobra) */
+  .tower-fx { flex: none; height: 0; position: relative; z-index: 3; align-content: flex-end; align-items: flex-end; overflow: visible; }
+  .tower .fx { overflow-wrap: normal; hyphens: manual; line-height: 1.05; }
 }

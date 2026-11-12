@@ -6,6 +6,12 @@
 // Mezcla pensada para sesiones largas:
 //   efectos ─┐                       ┌─ sala de hormigón (reverberación corta y oscura)
 //   música ──┴─► máster ─► estante de agudos (−5 dB) ─► compresor ─► salida
+//
+// Acierto y fallo se distinguen sin mirar: el golpe limpio resuelve hacia arriba (campana y dos notas
+// que suben), el piso que cae sin limpio se queda en un golpe sordo que baja, la jugada inválida son
+// dos toques de madera hacia abajo, la sirena que el muro frena entera es piedra contra piedra con un
+// respiro que sube, y la que entra es hierro, un cuerno que se desploma y cascotes. Lo que se repite
+// (elegir carta, mover el foco) nunca suena dos veces igual: cambia unos cents, el ataque y la nota.
 import { loadJson, platform, saveJson } from './platform';
 
 let ctx: AudioContext | null = null;
@@ -178,8 +184,32 @@ const horn = (out: AudioNode, f: number, t: number, dur: number, vol: number, sl
 
 /** Semitonos → factor de frecuencia. */
 const semi = (n: number) => 2 ** (n / 12);
+/** Desafinación leve (± cents) para lo que se repite: ningún toque sale idéntico al anterior. */
+const drift = (cents = 12) => 2 ** (((Math.random() * 2 - 1) * cents) / 1200);
+/** Entre 1 − a y 1 + a: para variar un poco el volumen o el ataque. */
+const sway = (a = 0.12) => 1 + (Math.random() * 2 - 1) * a;
+/** Re menor pentatónico: cada carta que se suma a la selección sube un peldaño. */
+const PENTA = [0, 3, 5, 7, 10, 12, 15];
+/** Tres alturas para el paso del foco; se van turnando para no repetir la misma dos veces. */
+const STEP_TONES = [0, -2, 3];
+let stepTone = 0;
 
-export const sfx = {
+/** Lo último que ha sonado (nombres de efecto). Solo lo lee la prueba de humo, con ?qa. */
+const heard: string[] = [];
+function logged<T extends object>(raw: T): T {
+  const table = raw as Record<string, (...args: unknown[]) => void>;
+  for (const name of Object.keys(table)) {
+    const play = table[name];
+    table[name] = (...args: unknown[]) => {
+      heard.push(name);
+      if (heard.length > 240) heard.shift();
+      play(...args);
+    };
+  }
+  return raw;
+}
+
+export const sfx = logged({
   /** campanilla de la cuenta: cada activación sube un semitono (2^(n/12)) */
   tick: (n: number) =>
     fx((_, o, t) => {
@@ -229,11 +259,14 @@ export const sfx = {
         noise(o, at, 0.02, 0.05, 'highpass', 5000);
       }
     }),
-  /** campana del golpe limpio */
+  /** campana del golpe limpio: el acierto del juego. Tras la campana, dos notas que suben (quinta y octava) */
   bell: () =>
     fx((_, o, t) => {
       [1, 2, 2.4, 3, 4.2, 5.4].forEach((m, i) => note(o, 587.33 * m, t, 1.5 - i * 0.2, { type: 'sine', vol: 0.13 / (i + 1) }));
       noise(o, t, 0.03, 0.12, 'highpass', 3000);
+      note(o, 880, t + 0.11, 0.45, { type: 'sine', vol: 0.07 });
+      note(o, 1174.66, t + 0.23, 0.9, { type: 'sine', vol: 0.08 });
+      note(o, 2349.32, t + 0.23, 0.4, { type: 'triangle', vol: 0.02 });
     }),
   /** varios pisos a la vez: el suelo retumba */
   rumble: (floors: number) =>
@@ -243,13 +276,47 @@ export const sfx = {
       note(o, 52, t, dur, { type: 'sine', vol: 0.55, slide: 30 });
       for (let i = 0; i < 6 + floors * 3; i++) noise(o, t + Math.random() * dur, 0.08, 0.2, 'bandpass', 300 + Math.random() * 900);
     }),
-  /** cuerda pulsada breve */
-  select: () => fx((_, o, t) => note(o, 587, t, 0.12, { vol: 0.05 })),
-  /** tiza sobre el plano: dos trazos cortos */
+  /**
+   * cuerda pulsada breve. `n` es cuántas cartas quedan elegidas: cada una sube un peldaño de la escala,
+   * así un trío suena a tres notas y no a la misma tres veces. Al soltar una carta (`on` = false) la
+   * cuerda baja y se apaga antes.
+   */
+  select: (n = 1, on = true) =>
+    fx((_, o, t) => {
+      const f = 587.33 * semi(PENTA[Math.max(0, Math.min(PENTA.length - 1, on ? n - 1 : n))]) * drift(9);
+      if (on) {
+        note(o, f, t, 0.13 * sway(), { vol: 0.05 * sway(), attack: 0.003 + Math.random() * 0.006 });
+        note(o, f * 2, t, 0.05, { type: 'sine', vol: 0.012 });
+      } else note(o, f, t, 0.1, { vol: 0.04 * sway(), attack: 0.004, slide: f * 0.84, cutoff: 1500 });
+    }),
+  /**
+   * paso del foco (flechas, cruceta o palanca): un toque de latón muy corto y muy bajo. Sube un poco
+   * hacia la derecha o hacia arriba y baja hacia el otro lado, y va turnando tres alturas.
+   */
+  focus: (dx = 0, dy = 0) =>
+    fx((_, o, t) => {
+      stepTone = (stepTone + 1 + Math.floor(Math.random() * 2)) % STEP_TONES.length;
+      const f = 1046.5 * semi(STEP_TONES[stepTone] + (dx - dy) * 2) * drift(10);
+      note(o, f, t, 0.035, { type: 'triangle', vol: 0.026 * sway(0.2), attack: 0.002 + Math.random() * 0.003 });
+      noise(o, t, 0.012, 0.018, 'highpass', 5200);
+    }),
+  /** el foco no tiene adónde ir por ese lado: un toque apagado, sin nota */
+  edge: () => fx((_, o, t) => noise(o, t, 0.04, 0.07 * sway(0.2), 'lowpass', 420 * drift(80))),
+  /** jugada inválida: dos toques de madera que bajan. Nunca se confunde con un acierto */
+  deny: () =>
+    fx((_, o, t) => {
+      const k = drift(18);
+      note(o, 196 * k, t, 0.07, { type: 'square', vol: 0.07, cutoff: 720, slide: 150 * k });
+      note(o, 147 * k, t + 0.09, 0.12, { type: 'square', vol: 0.08, cutoff: 620, slide: 104 * k });
+      noise(o, t, 0.03, 0.09, 'lowpass', 520);
+    }),
+  /** tiza sobre la pizarra (susurros): dos trazos cortos y un punto, cada vez con otra mano */
   chalk: () =>
     fx((_, o, t) => {
-      noise(o, t, 0.07, 0.1, 'bandpass', 2400);
-      noise(o, t + 0.09, 0.09, 0.12, 'bandpass', 1900);
+      const k = drift(140);
+      noise(o, t, 0.07, 0.1, 'bandpass', 2400 * k);
+      noise(o, t + 0.09, 0.09, 0.12, 'bandpass', 1900 * k);
+      noise(o, t + 0.21, 0.025, 0.09, 'bandpass', 3100 * k);
     }),
   /** pergamino */
   card: () => fx((_, o, t) => noise(o, t, 0.07, 0.12, 'highpass', 2600)),
@@ -260,18 +327,83 @@ export const sfx = {
       note(o, 120, t, 0.25, { type: 'sine', vol: 0.4, slide: 46 });
       [1, 2.76, 5.4].forEach((m, i) => note(o, 330 * m, t, 0.35 - i * 0.08, { type: 'sine', vol: 0.05 / (i + 1) }));
     }),
-  /** derrumbe: estruendo grave y cascotes */
-  crash: () =>
+  /**
+   * derrumbe: estruendo grave y cascotes. Con `clean` = true el estruendo se recoge para dejar sitio a
+   * la campana; con false (el piso cae, pero no es limpio y la sirena va a sonar) remata con un golpe
+   * sordo que baja y grava que sigue cayendo. Sin argumento, el derrumbe de siempre (colapso).
+   */
+  crash: (clean?: boolean) =>
     fx((_, o, t) => {
-      noise(o, t, 1.3, 0.7, 'lowpass', 320);
-      note(o, 80, t, 1.1, { type: 'sine', vol: 0.5, slide: 28 });
-      for (let i = 0; i < 9; i++) noise(o, t + 0.12 + Math.random() * 0.8, 0.07, 0.25, 'bandpass', 500 + Math.random() * 1800);
+      noise(o, t, clean ? 0.9 : 1.3, clean ? 0.55 : 0.7, 'lowpass', 320);
+      note(o, 80, t, clean ? 0.8 : 1.1, { type: 'sine', vol: 0.5, slide: 28 });
+      for (let i = 0; i < (clean ? 5 : 9); i++) noise(o, t + 0.12 + Math.random() * 0.8, 0.07, 0.25, 'bandpass', 500 + Math.random() * 1800);
+      if (clean === false) {
+        note(o, 98, t + 0.34, 0.5, { type: 'sine', vol: 0.34, slide: 58 });
+        note(o, 147, t + 0.34, 0.22, { type: 'square', vol: 0.05, cutoff: 480, slide: 92 });
+        noise(o, t + 0.5, 0.7, 0.16, 'lowpass', 900);
+      }
     }),
   /** la sirena de este mundo es un cuerno de guerra */
   siren: () =>
     fx((_, o, t) => {
       horn(o, 146.83, t, 0.55, 0.11);
       horn(o, 220, t + 0.42, 0.9, 0.13, 207);
+    }),
+  /**
+   * la sirena golpea. Si el muro la frena entera, piedra contra piedra y dos notas que suben (un
+   * respiro); si entra, hierro, un cuerno que se desploma un tritono y cascotes, más fuerte cuanto más
+   * quita. Una sirena frenada a medias suena a las dos cosas: primero el muro, luego el daño.
+   */
+  sirenLand: (taken: number, blocked = 0): void => (taken > 0 ? sfx.sirenHit(taken, blocked) : sfx.sirenBlocked()),
+  sirenBlocked: () =>
+    fx((_, o, t) => {
+      noise(o, t, 0.13, 0.4, 'lowpass', 420);
+      note(o, 150, t, 0.14, { type: 'sine', vol: 0.36, slide: 108 });
+      noise(o, t + 0.05, 0.05, 0.12, 'bandpass', 1300);
+      note(o, 392, t + 0.16, 0.16, { type: 'triangle', vol: 0.06, cutoff: 1600 });
+      note(o, 523.25, t + 0.28, 0.34, { type: 'triangle', vol: 0.07, cutoff: 1800 });
+    }),
+  sirenHit: (taken: number, blocked = 0) =>
+    fx((_, o, t) => {
+      const power = Math.max(0.35, Math.min(1, taken / 7));
+      let at = t;
+      if (blocked > 0) {
+        // el muro cruje antes de ceder
+        noise(o, t, 0.09, 0.3, 'lowpass', 420);
+        note(o, 150, t, 0.1, { type: 'sine', vol: 0.24, slide: 108 });
+        at = t + 0.1;
+      }
+      noise(o, at, 0.26, 0.4 + 0.25 * power, 'lowpass', 760);
+      note(o, 104, at, 0.34, { type: 'sine', vol: 0.34 + 0.2 * power, slide: 40 });
+      [1, 2.76, 5.4].forEach((m, i) => note(o, 290 * m, at, 0.3 - i * 0.07, { type: 'sine', vol: 0.05 / (i + 1) }));
+      horn(o, 311.13, at + 0.05, 0.5 + 0.2 * power, 0.05 + 0.05 * power, 220);
+      for (let i = 0; i < 3 + Math.round(5 * power); i++) noise(o, at + 0.16 + Math.random() * 0.5, 0.06, 0.18, 'bandpass', 500 + Math.random() * 1600);
+    }),
+  /**
+   * una herramienta de defensa se cobra (Ariete, Contragolpe, Rebosadero…): breve y con voz propia.
+   * Fuerza: dos martillazos que suben · daño: un latigazo · repara: argamasa, dos notas templadas ·
+   * carga: un resorte que se tensa.
+   */
+  proc: (what: 'fuerza' | 'dano' | 'repara' | 'carga' = 'fuerza') =>
+    fx((_, o, t) => {
+      const k = drift(10);
+      if (what === 'fuerza') {
+        noise(o, t, 0.02, 0.14, 'highpass', 3000);
+        note(o, 659.25 * k, t, 0.14, { type: 'triangle', vol: 0.1 });
+        note(o, 987.77 * k, t + 0.07, 0.2, { type: 'triangle', vol: 0.11 });
+        note(o, 1975.5 * k, t + 0.07, 0.1, { type: 'sine', vol: 0.03 });
+      } else if (what === 'dano') {
+        noise(o, t, 0.05, 0.26, 'highpass', 2500);
+        note(o, 520 * k, t, 0.1, { type: 'square', vol: 0.08, cutoff: 1800, slide: 170 });
+        note(o, 110, t + 0.03, 0.14, { type: 'sine', vol: 0.26, slide: 60 });
+      } else if (what === 'repara') {
+        noise(o, t, 0.05, 0.12, 'bandpass', 1100);
+        note(o, 329.63 * k, t, 0.15, { type: 'triangle', vol: 0.1, cutoff: 1500 });
+        note(o, 440 * k, t + 0.08, 0.24, { type: 'triangle', vol: 0.1, cutoff: 1700 });
+      } else {
+        note(o, 220 * k, t, 0.2, { type: 'sine', vol: 0.12, slide: 660 * k });
+        note(o, 880 * k, t + 0.17, 0.08, { type: 'triangle', vol: 0.05 });
+      }
     }),
   /** monedas sobre el mostrador */
   coin: () =>
@@ -309,7 +441,9 @@ export const sfx = {
     fx((_, o, t) => {
       [0, 1.1, 2.2].forEach((d) => [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(o, 110 * m, t + d, 2.4 - i * 0.3, { type: 'sine', vol: 0.16 / (i + 1) })));
     }),
-};
+});
+// la prueba de humo comprueba de oído: con ?qa, lo que ha sonado queda a la vista (solo nombres)
+if (new URLSearchParams(location.search).has('qa')) Object.assign(window, { __qaSounds: heard });
 
 // ───────────────────────── Música ─────────────────────────
 

@@ -7,9 +7,9 @@
 }
 
 /* ───────────── GLOBOS DE AYUDA ───────────── */
-.tip { position: fixed; z-index: 400; max-width: min(300px, 86vw); background: var(--ink); color: var(--card-paper); padding: 8px 11px; border-left: 6px solid var(--hazard); box-shadow: 5px 5px 0 rgba(10, 10, 10, 0.35); font-size: clamp(12px, 1.5vh, 14px); font-weight: 500; line-height: 1.35; text-transform: none; letter-spacing: 0; pointer-events: none; animation: tipin 0.12s ease both; }
-.tip b { display: block; font-family: var(--display); font-weight: 400; text-transform: uppercase; color: var(--hazard); font-size: 0.92em; letter-spacing: 0.03em; margin-bottom: 2px; }
-.tip small { display: block; opacity: 0.72; margin-top: 4px; font-size: max(12px, 0.86em); }
+.tip { position: fixed; z-index: 400; max-width: min(300px, 86vw); background: var(--ink); color: var(--card-paper); padding: 8px 11px; border-left: 6px solid var(--hazard); box-shadow: 5px 5px 0 rgba(10, 10, 10, 0.35); font-size: clamp(13px, 1.5vh, 14px); font-weight: 500; line-height: 1.35; text-transform: none; letter-spacing: 0; pointer-events: none; animation: tipin 0.12s ease both; }
+.tip b { display: block; font-family: var(--display); font-weight: 400; text-transform: uppercase; color: var(--hazard); font-size: max(13px, 0.92em); letter-spacing: 0.03em; margin-bottom: 2px; }
+.tip small { display: block; opacity: 0.72; margin-top: 4px; font-size: max(13px, 0.86em); }
 .tip hr { border: 0; border-top: 1px dashed #6b6860; margin: 6px 0; }
 @keyframes tipin { from { opacity: 0; transform: translateY(4px); } }
 
@@ -36,9 +36,9 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .hand .card.sel { transform: translateY(-26px) rotate(0deg); z-index: 2; }
 .hand.locked .card:hover { transform: translateY(var(--dy, 0px)) rotate(var(--rot, 0deg)); }
 .hand .card.hint { animation: none; transform: translateY(-14px) rotate(0deg); }
-.hand .card[data-key]:not([data-key=''])::before { content: attr(data-key); position: absolute; z-index: 7; left: 50%; top: -1.5em; transform: translateX(-50%); font-family: var(--cap); font-size: clamp(12px, 1.2vh, 12px); font-weight: 700; background: var(--ink); color: var(--card-paper); padding: 0 5px; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.hand .card[data-key]:not([data-key=''])::before { content: attr(data-key); position: absolute; z-index: 7; left: 50%; top: -1.5em; transform: translateX(-50%); font-family: var(--cap); font-size: 13px; font-weight: 700; background: var(--ink); color: var(--card-paper); padding: 0 5px; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
 .hand:not(.locked):hover .card[data-key]::before { opacity: 0.75; }
-.hand .card[data-n]::after { content: attr(data-n); position: absolute; z-index: 8; right: -6px; top: -8px; min-width: 1.5em; text-align: center; font-family: var(--display); font-size: clamp(12px, 1.6vh, 16px); line-height: 1.5; background: var(--red); color: var(--card-paper); border: 2px solid var(--ink); }
+.hand .card[data-n]::after { content: attr(data-n); position: absolute; z-index: 8; right: -6px; top: -8px; min-width: 1.5em; text-align: center; font-family: var(--display); font-size: clamp(13px, 1.6vh, 16px); line-height: 1.5; background: var(--red); color: var(--card-paper); border: 2px solid var(--ink); }
 
 /* ───────────── TARIMA: las cartas jugadas mientras se resuelve el golpe ───────────── */
 .tray { position: relative; }
@@ -48,7 +48,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .stepchip.f { background: var(--red); }
 .stepchip.r { background: var(--blue); }
 .stepchip.x { background: var(--hazard); color: var(--ink); }
-.stepchip.note { font-family: var(--mono); font-weight: 700; font-size: clamp(12px, 1.5vh, 14px); text-transform: none; padding: 4px 8px; }
+.stepchip.note { font-family: var(--mono); font-weight: 700; font-size: clamp(13px, 1.5vh, 14px); text-transform: none; padding: 4px 8px; }
 @keyframes chip { 0% { opacity: 0; transform: translate(-50%, -60%) scale(1.7) rotate(-6deg); } 18% { opacity: 1; transform: translate(-50%, -115%) scale(1) rotate(-3deg); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -210%) rotate(-3deg); } }
 
 /* ───────────── MARCADOR: Fuerza × Resonancia = daño ───────────── */
@@ -60,12 +60,12 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .calc b.t { background: var(--ink); color: var(--hazard); min-width: 2.4em; }
 .calc b.pop { animation: pop 0.22s ease; }
 .calc i { font-style: normal; font-family: var(--display); }
-.calc .vs { font-family: var(--mono); font-weight: 700; font-size: max(12px, 0.42em); text-transform: uppercase; letter-spacing: 0.06em; margin-left: 4px; }
+.calc .vs { font-family: var(--mono); font-weight: 700; font-size: max(13px, 0.42em); text-transform: uppercase; letter-spacing: 0.06em; margin-left: 4px; }
 .score.live .calc { font-size: clamp(20px, 3.6vh, 38px); }
 .calc.slam b.t { animation: slamtotal 0.36s var(--spring) both; background: var(--hazard); color: var(--ink); }
 @keyframes slamtotal { from { transform: scale(2.1) rotate(-6deg); } }
 .marks { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-.marks .m { font-style: normal; font-family: var(--mono); font-weight: 700; font-size: clamp(12px, 1.3vh, 13px); text-transform: uppercase; letter-spacing: 0.04em; border: 2px solid var(--ink); padding: 1px 6px; background: var(--card-paper); white-space: nowrap; }
+.marks .m { font-style: normal; font-family: var(--mono); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; border: 2px solid var(--ink); padding: 1px 6px; background: var(--card-paper); white-space: nowrap; }
 .marks .m.gold { background: var(--hazard); }
 .marks .m.red { background: var(--red); color: var(--card-paper); }
 .marks .m.good { background: var(--ink); color: var(--card-paper); }
@@ -76,7 +76,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .tower.targetable.aimed { outline-color: var(--red); outline-width: 6px; }
 .preview.clean { background: var(--hazard); color: var(--ink); }
 .tower-fx { align-self: stretch; display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: clamp(14px, 2.1vh, 22px); }
-.fx { font-style: normal; font-family: var(--mono); font-weight: 700; font-size: clamp(12px, 1.15vh, 12px); text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 5px; border: 2px solid var(--ink); background: var(--card-paper); white-space: nowrap; }
+.fx { font-style: normal; font-family: var(--mono); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 5px; border: 2px solid var(--ink); background: var(--card-paper); white-space: nowrap; }
 .fx-fractura { background: var(--red); color: var(--card-paper); }
 .fx-sobrecarga { background: var(--blue); color: var(--card-paper); }
 .fx-apuntalado { background: var(--ink); color: var(--hazard); }
@@ -92,7 +92,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 /* ───────────── CINTURÓN DE HERRAMIENTAS ───────────── */
 .beltbar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: clamp(6px, 1vw, 14px); flex-wrap: wrap; }
 .beltbar[hidden] { display: none; }
-.belt-label { font-family: var(--display); text-transform: uppercase; font-size: clamp(12px, 1.4vh, 14px); letter-spacing: 0.04em; }
+.belt-label { font-family: var(--display); text-transform: uppercase; font-size: clamp(13px, 1.4vh, 14px); letter-spacing: 0.04em; }
 .belt-label small { font-family: var(--mono); font-weight: 500; text-transform: none; opacity: 0.75; margin-left: 4px; }
 .belt { display: flex; gap: clamp(3px, 0.5vw, 7px); }
 .belt-slot { --rc: var(--concrete-2); position: relative; width: clamp(32px, 5.4vh, 58px); aspect-ratio: 1; display: grid; place-items: center; background: var(--card-paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink), inset 0 -6px 0 var(--rc); transition: transform 0.18s var(--spring); outline: none; }
@@ -100,13 +100,13 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .belt-slot.r-capataz { --rc: var(--red); }
 .belt-slot.r-reliquia { --rc: var(--gold); background: #fff7d6; border-color: var(--ink); box-shadow: 3px 3px 0 var(--red), inset 0 -6px 0 var(--rc); }
 .belt-slot.empty { border-style: dashed; box-shadow: none; opacity: 0.35; background: none; }
-.belt-slot.empty span { font-family: var(--display); font-size: clamp(12px, 1.5vh, 15px); }
+.belt-slot.empty span { font-family: var(--display); font-size: clamp(13px, 1.5vh, 15px); }
 .belt-ico { width: 72%; height: 72%; margin-bottom: 8%; }
-.belt-slot .kind { position: absolute; left: -4px; top: -6px; font-family: var(--display); font-size: clamp(12px, 1.15vh, 12px); line-height: 1.25; padding: 0 3px; background: var(--ink); color: var(--card-paper); }
+.belt-slot .kind { position: absolute; left: -4px; top: -6px; font-family: var(--display); font-size: 13px; line-height: 1.25; padding: 0 3px; background: var(--ink); color: var(--card-paper); }
 .belt-slot.k-f .kind { background: var(--red); }
 .belt-slot.k-r .kind { background: var(--blue); }
 .belt-slot.k-x .kind, .belt-slot.k-copy .kind { background: var(--hazard); color: var(--ink); }
-.belt-slot .cnt { position: absolute; right: -5px; bottom: -6px; font-family: var(--display); font-size: clamp(12px, 1.15vh, 12px); line-height: 1.25; padding: 0 3px; background: var(--hazard); color: var(--ink); border: 1.5px solid var(--ink); }
+.belt-slot .cnt { position: absolute; right: -5px; bottom: -6px; font-family: var(--display); font-size: 13px; line-height: 1.25; padding: 0 3px; background: var(--hazard); color: var(--ink); border: 1.5px solid var(--ink); }
 .belt-slot .pos { display: none; }
 .belt.can-order .belt-slot.tool { cursor: grab; }
 .belt.can-order .belt-slot.tool:hover, .belt-slot.tool:focus-visible { transform: translateY(-4px) rotate(-2deg); }
@@ -116,14 +116,14 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .belt-slot.pop { animation: beltpop 0.3s ease; z-index: 4; }
 @keyframes beltpop { 35% { transform: scale(1.22) rotate(-4deg); filter: brightness(1.3); } }
 .carries { display: inline-flex; gap: 4px; flex-wrap: wrap; }
-.carry { font-style: normal; font-family: var(--mono); font-weight: 700; font-size: clamp(12px, 1.3vh, 13px); text-transform: uppercase; padding: 1px 6px; border: 2px solid var(--ink); background: var(--card-paper); white-space: nowrap; }
+.carry { font-style: normal; font-family: var(--mono); font-weight: 700; font-size: 13px; text-transform: uppercase; padding: 1px 6px; border: 2px solid var(--ink); background: var(--card-paper); white-space: nowrap; }
 .carry.chain { background: var(--hazard); }
 .carry.charge { background: var(--red); color: var(--card-paper); }
 .carry.scrap { background: var(--ink); color: var(--card-paper); }
 
 /* panel de la obra (jefe y contrato) */
 .obra { flex: none; text-transform: none; }
-.obra p { font-size: clamp(12px, 1.3vh, 14px); line-height: 1.3; margin-bottom: 4px; }
+.obra p { font-size: clamp(13px, 1.3vh, 14px); line-height: 1.3; margin-bottom: 4px; }
 .contract { border-left: 5px solid var(--hazard); padding-left: 8px; }
 .contract.risk { border-left-color: var(--red); }
 .contract b, .boss b { display: block; text-transform: uppercase; }
@@ -132,7 +132,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 #deck-slot, #disc-slot { cursor: pointer; }
 
 /* ───────────── SELLOS DE TINTA ───────────── */
-.inkstamp { position: absolute; z-index: 6; right: 5%; top: 8%; transform: rotate(-12deg); font-style: normal; font-family: var(--display); text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(12px, 1.8vh, 20px); line-height: 1; color: var(--red); border: 3px double currentColor; padding: 3px 9px 4px; background: rgba(241, 235, 220, 0.9); pointer-events: none; white-space: nowrap; animation: inkstamp 0.42s var(--spring) both; }
+.inkstamp { position: absolute; z-index: 6; right: 5%; top: 8%; transform: rotate(-12deg); font-style: normal; font-family: var(--display); text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(13px, 1.8vh, 20px); line-height: 1; color: var(--red); border: 3px double currentColor; padding: 3px 9px 4px; background: rgba(241, 235, 220, 0.9); pointer-events: none; white-space: nowrap; animation: inkstamp 0.42s var(--spring) both; }
 .inkstamp.s-skip { color: var(--ink); }
 .inkstamp.big { font-size: clamp(22px, 5vh, 54px); right: 4%; top: 6%; border-width: 6px; background: none; mix-blend-mode: multiply; opacity: 0.85; }
 @keyframes inkstamp { from { opacity: 0; transform: rotate(-22deg) scale(2.6); } }
@@ -156,7 +156,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .stamp-btn { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(8px, 1.2vw, 16px); text-align: left; padding: clamp(4px, 0.9vh, 10px) clamp(8px, 1.2vw, 16px); min-height: 0; transition: transform 0.16s var(--spring); }
 .stamp-btn > span { display: grid; gap: 1px; min-width: 0; }
 .stamp-btn b { font-family: var(--title); font-weight: 700; text-transform: none; letter-spacing: 0; font-size: clamp(19px, 3.5vh, 36px); line-height: 1; }
-.stamp-btn small { font-family: var(--mono); font-weight: 700; text-transform: none; letter-spacing: 0.01em; font-size: clamp(12px, 1.35vh, 14px); line-height: 1.2; opacity: 0.85; }
+.stamp-btn small { font-family: var(--mono); font-weight: 700; text-transform: none; letter-spacing: 0.01em; font-size: clamp(13px, 1.35vh, 14px); line-height: 1.2; opacity: 0.85; }
 .stamp-ico { width: clamp(28px, 5.4vh, 56px); height: clamp(28px, 5.4vh, 56px); background: var(--card-paper); border: 2px solid var(--ink); padding: 2px; }
 .stamp-btn:hover:not(:disabled) { transform: translate(-2px, -3px) rotate(-1.1deg); }
 .menu .stamp-btn:nth-child(even):hover:not(:disabled) { transform: translate(-2px, -3px) rotate(0.9deg); }
@@ -164,16 +164,16 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .stamp-btn:hover:not(:disabled) .stamp-ico { transform: rotate(-6deg) scale(1.06); transition: transform 0.2s var(--spring); }
 .home-right button.resume { --bg: var(--hazard); display: grid; gap: 1px; text-align: left; padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.4vw, 18px); color: var(--ink); flex: none; }
 .home-right button.resume:hover:not(:disabled) { --bg: var(--card-paper); }
-.resume small { font-family: var(--cap); font-size: clamp(12px, 1.2vh, 12px); letter-spacing: 0.1em; }
+.resume small { font-family: var(--cap); font-size: 13px; letter-spacing: 0.1em; }
 .resume b { font-family: var(--title); font-weight: 700; text-transform: none; letter-spacing: 0; font-size: clamp(20px, 3.6vh, 36px); line-height: 1; }
-.resume span { font-family: var(--mono); font-weight: 700; text-transform: none; font-size: clamp(12px, 1.35vh, 14px); }
+.resume span { font-family: var(--mono); font-weight: 700; text-transform: none; font-size: clamp(13px, 1.35vh, 14px); }
 .home-right .foot { align-items: center; flex: none; }
 .home-right .foot .conn { flex: 1; text-align: right; }
 .home-right .foot button { flex: none; }
 
 /* ventanas pequeñas */
 .coop, .confirm, .settings { max-width: 540px; display: grid; gap: clamp(8px, 1.4vh, 14px); }
-.coop label { font-family: var(--display); text-transform: uppercase; font-size: 12px; margin-bottom: -6px; }
+.coop label { font-family: var(--display); text-transform: uppercase; font-size: 13px; margin-bottom: -6px; }
 .coop .or { color: var(--ink); }
 .coop .or::before, .coop .or::after { background: var(--ink); }
 .coop .conn { color: var(--ink); opacity: 0.7; }
@@ -199,19 +199,21 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
   .hand .card, .hand .card:hover, .hand.locked .card:hover, .hand .card.hint { transform: none; }
   .hand .card.sel { transform: translateY(-8px); }
   .hand .card[data-key]::before { display: none; }
+  .hand .card[data-n]::after { font-size: 14px; }
+  .marks .m, .carry { font-size: 14px; }
   .beltbar { gap: 5px; justify-content: flex-start; }
   .belt-label { display: none; }
   .belt-slot { width: clamp(26px, 9.2vw, 44px); border-width: 2px; }
-  .belt-slot .kind, .belt-slot .cnt { font-size: 12px; }
+  .belt-slot .kind, .belt-slot .cnt { font-size: 14px; }
   .obra { display: none; }
   .score { justify-content: flex-start; }
   .calc { font-size: clamp(14px, 4.4vw, 22px); }
   .marks .m.dim { display: none; }
   .stage .card { --w: clamp(40px, 13vw, 70px); }
   .tower-fx { min-height: 0; }
-  .fx { font-size: 12px; padding: 0 3px; border-width: 1px; }
+  .fx { font-size: 14px; padding: 0 3px; border-width: 1px; }
   .stamp-btn b { font-size: clamp(18px, 5.6vw, 28px); }
-  .stamp-btn small { font-size: clamp(12px, 2.9vw, 13px); }
+  .stamp-btn small { font-size: 14px; }
   .stamp-ico { width: clamp(26px, 9vw, 44px); height: clamp(26px, 9vw, 44px); }
   .home-right { overflow-y: auto; }
   .menu { grid-auto-rows: minmax(clamp(44px, 8.4vh, 78px), 1fr); }
@@ -247,3 +249,62 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
   .stamp-btn { padding: 2px 10px; }
   .belt-slot { width: clamp(26px, 9.2vw, 44px); }
 }
+
+/* ───────────── FOCO DE LATÓN (teclado y mando · contrato C4, de juice-ux) ─────────────
+   Marco de 3 px de latón entre dos filetes de marfil: se lee sobre la crema de las cartas y sobre la
+   tinta de la mesa, y a dos metros. Al llegar a cada elemento da un salto de escala leve. Se mueve
+   solo con transform y opacity (el ancho y el alto cambian de golpe, sin transición). */
+.focus-ring { --brass: #d4a348; --ivory: #f3ead2; position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none; opacity: 0; transition: transform 0.07s ease-out, opacity 0.08s; }
+.focus-ring.on { opacity: 1; }
+.focus-ring i { position: absolute; inset: 0; border: 3px solid var(--brass); border-radius: 4px; box-shadow: 0 0 0 2px var(--ivory), inset 0 0 0 2px var(--ivory), 0 0 0 5px rgba(13, 12, 11, 0.55); }
+/* cantoneras: las esquinas en latón macizo, para que el marco se vea entero aunque el fondo sea latón */
+.focus-ring i::before { content: ''; position: absolute; inset: -6px; --l: 14px; --t: 4px;
+  background:
+    linear-gradient(var(--brass), var(--brass)) left top / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) left top / var(--t) var(--l) no-repeat,
+    linear-gradient(var(--brass), var(--brass)) right top / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) right top / var(--t) var(--l) no-repeat,
+    linear-gradient(var(--brass), var(--brass)) left bottom / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) left bottom / var(--t) var(--l) no-repeat,
+    linear-gradient(var(--brass), var(--brass)) right bottom / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) right bottom / var(--t) var(--l) no-repeat; }
+.focus-ring.hop i { animation: ringhop 0.18s cubic-bezier(0.3, 1.6, 0.6, 1); }
+@keyframes ringhop { from { transform: scale(1.09); opacity: 0.55; } }
+.calm .focus-ring { transition: opacity 0.08s; }
+.calm .focus-ring.hop i { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .focus-ring { transition: opacity 0.08s; }
+  .focus-ring.hop i { animation: none; }
+}
+
+/* ───────────── SUSURROS DE TIZA (contrato C3, de juice-ux) ─────────────
+   Una línea al margen y su «No mostrar más». En la mesa se escriben al pie de la columna del búnker,
+   encima del registro (nunca sobre la mano ni la cuenta); en la forja y en el plano, en su sitio. */
+.whisper { flex: none; margin: 0; padding: 8px 12px 9px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-family: var(--mono); font-style: italic; font-weight: 500; font-size: clamp(13px, 1.7vh, 16px); line-height: 1.35; text-transform: none; letter-spacing: 0; color: #f0e4c8; background: #14120f; border: 2px dashed rgba(240, 228, 200, 0.5); border-radius: 14px 9px 16px 8px / 9px 16px 8px 14px; transform: rotate(-1deg); animation: chalkin 0.4s ease both; transition: opacity 0.5s; }
+.whisper p { margin: 0; flex: 1 1 18em; min-width: 0; }
+.whisper b { font-style: normal; font-weight: 700; color: var(--hazard); }
+.whisper .kh { font-style: normal; }
+/* el marco único de los botones (styles.css) pinta su ::before con --bg/--bd/--sh: aquí la pizarra
+   del susurro, no el papel por defecto (con papel, la tiza sobre crema quedaba a 1,2:1) */
+button.whisper-off { --bg: #231f19; --bd: rgba(240, 228, 200, 0.62); --bw: 1.5px; --sh: none; flex: none; min-height: 44px; min-width: 44px; padding: 4px 12px; font-family: var(--mono); font-style: normal; font-weight: 700; font-size: 13px; text-transform: none; letter-spacing: 0; color: #f0e4c8; cursor: pointer; }
+button.whisper-off:hover:not(:disabled), button.whisper-off:focus-visible { --bg: #3a3328; --bd: #f0e4c8; color: #f0e4c8; }
+.whisper.out { opacity: 0; pointer-events: none; }
+.side > .whisper { position: absolute; z-index: 6; left: 0; right: 8px; bottom: 8px; box-shadow: 0 0 0 4px var(--table, #1b1916); }
+/* dentro de una ventana (forja) o sobre las rutas del plano: en su sitio, sin tapar nada */
+.whisper.inline { position: static; transform: none; margin: 4px 0 10px; }
+.calm .whisper { animation-name: calmin; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* en móvil el susurro pisa la barra de arriba (que sigue recibiendo los toques), no las torres ni la mano */
+  .side > .whisper { position: absolute; z-index: 40; left: 8px; right: 8px; top: 4px; bottom: auto; background: #0d0c0b; box-shadow: none; transform: none; font-size: 14px; }
+  .whisper.inline { font-size: 14px; }
+  button.whisper-off { min-height: 48px; font-size: 14px; }
+}
+
+/* ───────────── INSIGNIAS DE HERRAMIENTA (contrato C2, de juice-ux) ─────────────
+   «+12 Fuerza · Ariete» junto a la cuenta, «−12 · Contragolpe» sobre la torre, «+2 integridad ·
+   Rebosadero» sobre el búnker. Cifra en sans de peso alto sobre placa; ~1,2 s; transform y opacity. */
+.proc-badge { position: fixed; z-index: 72; left: 0; top: 0; display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px 5px; white-space: nowrap; pointer-events: none; color: var(--card-paper); background: var(--ink); border: 2px solid var(--card-paper); box-shadow: 3px 3px 0 rgba(13, 12, 11, 0.6); animation: procbadge 1.2s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.proc-badge b { font-family: var(--display); font-weight: 400; font-size: clamp(16px, 2.4vh, 24px); line-height: 1; letter-spacing: 0; }
+.proc-badge span { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 14px; line-height: 1; text-transform: none; letter-spacing: 0; }
+.proc-badge.fuerza, .proc-badge.carga { background: var(--red); }
+.proc-badge.dano { background: var(--ink); color: var(--hazard); border-color: var(--hazard); }
+.proc-badge.repara { background: #2f6f5f; }
+@keyframes procbadge { 0% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -40%) scale(1.5); } 14% { opacity: 1; transform: translate(var(--x), var(--y)) translate(-50%, -100%) scale(1); } 78% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -170%); } }
+.calm .proc-badge { animation-name: calmbadge; animation-timing-function: linear; }
+@keyframes calmbadge { 0% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -100%); } 12%, 80% { opacity: 1; transform: translate(var(--x), var(--y)) translate(-50%, -100%); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -100%); } }

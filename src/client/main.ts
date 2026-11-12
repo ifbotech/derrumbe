@@ -12,14 +12,18 @@ import './styles.css';
 import './juice.css';
 import './campaign.css';
 import './theme.css';
+import './cuenta.css';
+import './acta.css';
+import './tinta';
 import { sfx, startMusic } from './audio';
 import { canRestart, isRunHost, restartCampaign, retireOldSave } from './campaign';
 import { bindEyes, ensureDefs } from './card';
 import { S, applySettings, bindClacks, bindTips, closeModal, cycleSpeed, speedLabel, toast, topModal } from './core';
 import { bakeGrain } from './engraving';
 import { bindLupa, closeLupa, lupaOpen, openLupa } from './lupa';
-import { activate, bindNav, focused, keysInUse, moveFocus } from './nav';
+import { activate, beltSlot, bindNav, focused, keysInUse, moveFocus, shiftBelt } from './nav';
 import { connect } from './net';
+import { openSeedLink } from './lamina';
 import { bindPings } from './pings';
 import { platform } from './platform';
 import { setScreen } from './router';
@@ -98,8 +102,9 @@ function toggleSettings(): void {
 
 /**
  * Una tecla, venga del teclado o del mando (que llega sin evento). Devuelve true si se atendió.
- * El mando reutiliza las teclas: A = Enter, B = Escape, X = espacio, Y = y, LB = Tab, RB = l, LT = z;
- * RT llega como «Speed» y Start como «Start».
+ * El mando reutiliza las teclas: A = Enter, B = Escape, X = espacio, Y = y, LB = Tab, RB = l, LT = z,
+ * L3 = Supr (descartar) y R3 = f (pantalla completa); RT llega como «Speed» y Start como «Start».
+ * Con el foco en una herramienta del cinturón, LB y RB la mueven (y el foco viaja con ella).
  */
 function onKey(key: string, e?: KeyboardEvent): boolean {
   const target = focused();
@@ -111,6 +116,12 @@ function onKey(key: string, e?: KeyboardEvent): boolean {
     return true;
   }
   if (key === 'Escape') return back();
+  // LB / RB sobre una herramienta del cinturón: moverla. Fuera de él siguen siendo mazo y lupa
+  const slot = !e && (key === 'Tab' || key === 'l') ? beltSlot(target) : null;
+  if (slot) {
+    shiftBelt(slot, key === 'Tab' ? -1 : 1);
+    return true;
+  }
   if (e && typing(target)) return false;
   if (key === 'Speed') {
     // gatillo derecho: 1× → 2× → 4×
@@ -173,6 +184,11 @@ bindNav(
 if (import.meta.env.DEV) Object.assign(window, { __derrumbe: S });
 retireOldSave();
 setScreen('home');
+openSeedLink(); // enlace de un acta (?seed=…&baraja=…&nivel=…): a la preparación de campaña, con todo cargado
 connect();
 // control de calidad visual: estados montados a mano, solo si la dirección lleva ?qa
-if (new URLSearchParams(location.search).has('qa')) void import('./qa').then((m) => m.installQa());
+if (new URLSearchParams(location.search).has('qa')) {
+  void import('./qa').then((m) => m.installQa());
+  // el banco de la forja de grabado (npm run forja): cada pieza del arte, suelta
+  void import('./forja-qa').then((m) => m.installForja());
+}

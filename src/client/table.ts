@@ -1,6 +1,7 @@
 // La mesa de combate: torres, búnker, cinturón, poderes de palo, marcador Fuerza × Resonancia,
 // andamio, mano y la cola de eventos que anima cada jugada paso a paso.
 import { BEATS, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, previewStrike, threatOf } from '../rules/engine';
+import { autopsy } from '../rules/autopsy';
 import { BOSS, CONTRACT, LAST_STAGE, stageDef } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
 import type { ClientMsg } from '../shared/protocol';
@@ -8,17 +9,20 @@ import { bunkerArt, rubble, skyline } from './art';
 import { setPressure, setScene, sfx } from './audio';
 import { afterBatch, campaignAct, isRunHost, routeRun, runDo, stageIntro } from './campaign';
 import { backEl, cardEl, pipPath, setDeckBack, suitSvg } from './card';
+import { causeHtml } from './causa';
+import { LIVE_HTML, Preview, closeReceipt, paintScore, previewHtml, stageOver } from './cuenta';
 import { $, $$, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
-import { CRACKS, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, hitstop, pop, quake, restart, ribbon, shake, stampOn, tear, wait } from './fx';
-import { meta, trackMeta } from './guild';
+import { CRACKS, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, hitstop, pop, quake, restart, ribbon, shake, procBadge, stampOn, tear, wait } from './fx';
+import { maybeSettle, trackMeta } from './guild';
 import { forget, sendMsg } from './net';
 import { renderPings, sendPing } from './pings';
-import { loadJson, platform, saveJson } from './platform';
+import { platform } from './platform';
 import { hint } from './prompts';
 import { setScreen } from './router';
 import { guidedStep, renderCoach, showTutorialEnd, skipTutorial, tutorialAct } from './tutorial-ui';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
+import { tableWhispers, whisper } from './whispers';
 
 /** Cartas de la mano y del andamio que están pintadas. */
 const cardEls = new Map<string, HTMLDivElement>();
@@ -27,6 +31,8 @@ let towerEls = {} as Record<Suit, HTMLElement>;
 let aim: Suit | null = null;
 /** Pasos resueltos en el golpe en curso: marca el tono de la campanilla. */
 let stepN = 0;
+/** El último lote de eventos animado: de ahí sale la causa del derrumbe cuando la obra acaba en derrota. */
+let lastEvents: GameEvent[] = [];
 
 const WEAK_TO = Object.fromEntries(SUITS.map((s) => [BEATS[s], s])) as Record<Suit, Suit>; // torre → palo que la dobla
 const FLOOR = (r: number) => RANK_LABEL[r];
@@ -97,8 +103,10 @@ export function buildTable(): void {
         <div class="hand" id="hand"></div>
       </div>
       <div class="actions">
+        <button id="btn-strike" class="primary" data-tip="<b>Golpear</b>Golpea la torre apuntada con las cartas elegidas (o la que más daño recibe)."><span class="lbl">Golpear</span>${hint('strike')}</button>
+        <button id="btn-stash" data-tip="<b>Andamio</b>Guarda en el andamio la carta elegida. Una vez por turno y sin gastar el turno."><span class="lbl">Andamio</span>${hint('stash')}</button>
         <button id="btn-undo" hidden data-tip="<b>Tiza de replanteo</b>Deshace tu última jugada. La cantera se baraja de nuevo: lo que viste salir ya no vale. Una por obra, solo en solitario."><span class="lbl">Tiza ↶</span>${hint('undo')}</button>
-        <button id="btn-discard"><span class="lbl">Descartar</span>${hint('discard')}</button>
+        <button id="btn-discard"><span class="lbl">Descartar</span><b class="sel-n" id="discard-n" hidden></b>${hint('discard')}</button>
         <button id="btn-clear">Soltar${hint('back')}</button>
         <button id="btn-pass" hidden>Pasar${hint('strike')}</button>
       </div>
@@ -114,7 +122,7 @@ export function buildTable(): void {
     el.dataset.ping = `tower:${s}`;
     el.tabIndex = 0;
     el.innerHTML = `
-      <div class="tower-tag"><span>${cap(MATERIAL[s])}</span>${suitSvg(s)}</div>
+      <div class="tower-tag"><span>${cap(MATERIAL[s])}</span>${suitSvg(s)}<svg class="tag-weave" aria-hidden="true"><rect width="100%" height="100%" fill="url(#pat-${s})"/></svg></div>
       <div class="floor-slot"><div class="facade"></div><div class="plates"></div></div>
       <div class="tower-fx"></div>
       <div class="hp"><div class="hp-fill"></div><span></span></div>
@@ -162,6 +170,8 @@ export function buildTable(): void {
     }, 2500);
   };
   $('#btn-clear').onclick = clearSelection;
+  $('#btn-strike').onclick = () => onTableKey(' ', null);
+  $('#btn-stash').onclick = () => stash();
   $('#btn-discard').onclick = discardSelection;
   $('#btn-undo').onclick = undo;
   $('#btn-pass').onclick = () => canAct() && act({ t: 'action', action: { type: 'pass' } });
@@ -200,7 +210,7 @@ function clearSelection(): void {
 }
 
 function discardSelection(): void {
-  if (!canAct() || S.selected.length === 0) return;
+  if (!canAct() || S.selected.length === 0) return sfx.deny();
   if (guidedStep()) return toast('Ahora no: sigue el paso del tutorial');
   act({ t: 'action', action: { type: 'discard', cards: [...S.selected] } });
 }
@@ -236,7 +246,7 @@ function onTower(s: Suit, ping = false): void {
     if (!ok) return toast(cards.length === step.cards!.length ? 'Casi: golpea la torre marcada' : 'Primero selecciona las cartas marcadas');
   }
   if (isJoker(cards)) return act({ t: 'action', action: { type: 'joker', card: cards[0].id, target: s } });
-  if (!classify(cards)) return;
+  if (!classify(cards)) return sfx.deny();
   act({ t: 'action', action: { type: 'attack', cards: cards.map((c) => c.id), target: s } });
 }
 
@@ -247,7 +257,7 @@ function toggleCard(id: string): void {
   const at = S.selected.indexOf(id);
   if (at >= 0) S.selected.splice(at, 1);
   else S.selected.push(id);
-  sfx.select();
+  sfx.select(S.selected.length, at < 0);
   renderInteractive();
 }
 
@@ -377,8 +387,10 @@ function renderTower(s: Suit): void {
       .map((r) => `<div class="storey" data-tip="<b>Piso ${FLOOR(r)} de ${cap(MATERIAL[s])}</b>Resistencia ${cfg.floorHp[r]} · amenaza ${cfg.floorThreat[r]}. Lo destapas al tirar el de arriba.">${storeySvg(s, r)}<b>${FLOOR(r)}</b><span>${cfg.floorHp[r]}</span></div>`)
       .join('');
   }
+  // guiones blandos: en la torre estrecha del móvil la etiqueta parte por sílaba y no se recorta
+  const shy = (txt: string) => txt.replace(/Fractura|Desarmada|Apuntalado/g, (w) => ({ Fractura: 'Frac&shy;tura', Desarmada: 'Desar&shy;mada', Apuntalado: 'Apun&shy;talado' })[w]!);
   const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => top !== undefined && t.fx?.[k]);
-  $('.tower-fx', el).innerHTML = [...(t.disarmed && top !== undefined ? ['<em class="fx fx-sobrecarga" data-tip="<b>Desarmada</b>Huelga: este piso no golpea hasta que caiga.">Desarmada</em>'] : []), ...fx.map((k) => `<em class="fx fx-${k}" data-tip="<b>${TOWER_FX[k].name}</b>${TOWER_FX[k].desc}">${TOWER_FX[k].name}</em>`)].join('');
+  $('.tower-fx', el).innerHTML = [...(t.disarmed && top !== undefined ? ['<em class="fx fx-sobrecarga" data-tip="<b>Desarmada</b>Huelga: este piso no golpea hasta que caiga.">' + shy('Desarmada') + '</em>'] : []), ...fx.map((k) => `<em class="fx fx-${k}" data-tip="<b>${TOWER_FX[k].name}</b>${TOWER_FX[k].desc}">${shy(TOWER_FX[k].name)}</em>`)].join('');
   if (top !== undefined) {
     const hp = cfg.floorHp[top];
     const left = Math.max(0, hp - t.damage);
@@ -456,9 +468,10 @@ function renderHand(): void {
     const known = cardEls.has(c.id);
     const el = cardNode(c, known ? 0 : fresh++ * 80);
     if (hand.children[i] !== el) hand.insertBefore(el, hand.children[i] ?? null);
-    // abanico: cada carta gira y baja un poco según lo lejos que esté del centro
+    // abanico: cada carta gira y baja un poco según lo lejos que esté del centro (giro corto: las cartas
+    // vecinas no se pisan y cada una deja su franja limpia para el puntero)
     const off = mid ? (i - mid) / mid : 0; // de −1 a 1
-    el.style.setProperty('--rot', `${(off * Math.min(5.5, mid * 1.4)).toFixed(2)}deg`);
+    el.style.setProperty('--rot', `${(off * Math.min(1, mid * 0.3)).toFixed(2)}deg`);
     el.style.setProperty('--dy', `${(Math.abs(off) ** 1.5 * Math.min(5, mid * 1.3)).toFixed(1)}px`);
     el.dataset.key = i < 9 ? String(i + 1) : i === 9 ? '0' : '';
   });
@@ -563,6 +576,7 @@ function renderScore(): void {
   let body = '';
   let shown: StrikeResult | null = null;
   let shownTarget: Suit | null = null;
+  let preview: Preview | null = null;
   // con tiza la jugada se puede deshacer; sin ella (o en sala) es definitiva
   const final = v.players.length === 1 && S.campaign ? (v.chalk > 0 ? '<em class="m dim">Con tiza: se puede deshacer</em>' : '<em class="m dim">Sin tiza: jugada definitiva</em>') : '';
   if (v.phase !== 'playing') {
@@ -592,35 +606,21 @@ function renderScore(): void {
       shown = r;
       shownTarget = target;
       towerEls[target].classList.add('aimed');
-      const fallen = r.fallenBy[target] ?? 0;
-      const wallGain = Math.min(r.wallGain, v.config.wallCap - v.wall);
-      const repair = Math.min(r.repair, v.config.maxIntegrity - v.integrity);
-      const marks = [
-        r.clean ? '<em class="m gold">Golpe limpio</em>' : '',
-        fallen ? `<em class="m red">${fallen > 1 ? `Caen ${fallen} pisos` : 'Cae el piso'}</em>` : '',
-        wallGain > 0 ? `<em class="m">Muro +${wallGain}</em>` : '',
-        repair > 0 ? `<em class="m">Repara +${repair}</em>` : '',
-        r.gold ? `<em class="m gold">Oro +${r.gold}</em>` : '',
-        r.draw ? `<em class="m">Robas +${r.draw}</em>` : '',
-        r.hurt ? `<em class="m red">Búnker −${r.hurt}</em>` : '',
-        r.clean || r.noSiren ? '<em class="m good">La sirena calla</em>' : '<em class="m dim">Sonará la sirena</em>',
-        final,
-      ].join('');
-      body = `<div class="calc" data-tip="<b>Previsualización de impacto</b>Fuerza × Resonancia = daño estimado contra ${MATERIAL[target]}. Las cartas se resuelven en el orden en que las elegiste.">
-        <b class="f">${r.fuerza}</b><i>×</i><b class="r">${num(r.res)}</b><i>=</i><b class="t">${r.total}</b><span class="vs">contra ${MATERIAL[target]}${hint('strike')}</span></div>
-        <span class="marks">${marks}</span>`;
+      // la cuenta: daño final en grande con sus insignias; el recibo paso a paso se abre bajo demanda (cuenta.ts)
+      preview = { v, cards, r, target, formation };
+      body = previewHtml(preview, final);
     }
   }
-  el.innerHTML = tag + body;
+  paintScore(el, tag + body, preview, v);
   renderPowers(cards, shown, shownTarget);
   renderWheel(cards, shownTarget);
-  if (shown?.clean) whisper('limpio', '<b>Daño exacto.</b> Si golpeas ahora es un golpe limpio: la sirena calla, cobras 1 de oro y robas una carta más.');
+  if (shown?.clean) whisper('limpio');
   if (shownTarget && (v.config.ownMult ?? 0) === 0 && cards.some((c) => !c.sp && c.suit === shownTarget))
-    whisper('inmune', `<b>Placa de hierro.</b> La torre de ${MATERIAL[shownTarget].toLowerCase()} es inmune a su propio palo: tus ${SUIT_GLYPH[shownTarget]} no le suman Fuerza. Prueba contra otra torre.`);
+    whisper('inmune', { material: MATERIAL[shownTarget].toLowerCase(), glyph: SUIT_GLYPH[shownTarget] });
   // antes de un sirenazo serio con el andamio sin usar: todavía se está a tiempo de guardar una carta
   if (shown && shownTarget && !shown.clean && !shown.noSiren && v.reserveSize > 0 && v.reserve.length === 0) {
     const incoming = threatOf(v, v.towers[shownTarget]) - v.wall - Math.max(0, Math.min(shown.wallGain, v.config.wallCap - v.wall));
-    if (incoming >= 4) whisper('andamio', ANDAMIO_WHISPER);
+    if (incoming >= 4) whisper('andamio');
   }
   const end = $('#btn-end', el);
   if (end) end.onclick = showEnd;
@@ -663,9 +663,17 @@ export function renderInteractive(): void {
     }
   }
   $<HTMLButtonElement>('#btn-discard').disabled = !can || cards.length === 0;
-  $('#btn-discard .lbl').textContent = cards.length ? `Descartar (${cards.length})` : 'Descartar';
+  // cuántas cartas se descartarían: en un sello aparte, para que la etiqueta quepa siempre en un renglón
+  const discardN = $('#discard-n');
+  discardN.textContent = cards.length ? String(cards.length) : '';
+  discardN.hidden = !cards.length;
+  $('#btn-discard').setAttribute('aria-label', cards.length ? `Descartar ${cards.length} ${cards.length === 1 ? 'carta' : 'cartas'}` : 'Descartar');
   $<HTMLButtonElement>('#btn-clear').disabled = cards.length === 0;
   $('#btn-pass').hidden = !(can && held().length === 0);
+  $('#btn-strike').hidden = !$('#btn-pass').hidden;
+  $<HTMLButtonElement>('#btn-strike').disabled = !can || cards.length === 0;
+  $<HTMLButtonElement>('#btn-stash').hidden = !v.reserveSize;
+  $<HTMLButtonElement>('#btn-stash').disabled = !can || v.stashed || cards.length !== 1 || !v.hand.some((c) => c.id === cards[0].id);
   const undoBtn = $<HTMLButtonElement>('#btn-undo');
   undoBtn.hidden = !(S.campaign && v.players.length === 1);
   undoBtn.disabled = !can || !v.canUndo;
@@ -674,6 +682,7 @@ export function renderInteractive(): void {
   for (const [id, el] of cardEls) el.classList.toggle('hint', !!guide && guide.cards!.includes(id) && !S.selected.includes(id));
   const ready = !!guide && cards.length === guide.cards!.length;
   for (const s of SUITS) towerEls[s].classList.toggle('hint-target', ready && guide!.target === s);
+  tableWhispers(); // susurros que dependen del estado de la mesa: jefe, fatiga, cantera baja
 }
 
 export function renderAll(): void {
@@ -712,7 +721,7 @@ function wheelSvg(): string {
   }).join('');
   const nodes = SUITS.map((s) => {
     const [x, y] = at(WHEEL_AT[s], 23);
-    return `<g class="wn n-${s}" transform="translate(${f(x)} ${f(y)})"><circle r="8.8"/><g class="wg" transform="scale(0.6)">${pipPath(s)}</g><path class="wx" d="M-5.4,-5.4 L5.4,5.4 M5.4,-5.4 L-5.4,5.4"/></g>`;
+    return `<g class="wn n-${s}" transform="translate(${f(x)} ${f(y)})"><path class="wt" d="M-11,0 a11,11 0 1 0 22,0 a11,11 0 1 0 -22,0 Z" fill="url(#pat-${s})"/><circle r="7.8"/><g class="wg" transform="scale(0.6)">${pipPath(s)}</g><path class="wx" d="M-5.4,-5.4 L5.4,5.4 M5.4,-5.4 L-5.4,5.4"/></g>`;
   }).join('');
   return `<svg viewBox="0 0 64 64" aria-hidden="true">${arcs}${nodes}</svg>`;
 }
@@ -758,25 +767,6 @@ function renderFatigue(): void {
   el.dataset.tip = `<b>Fatiga de cimientos</b>Ninguna obra aguanta eternamente. Desde el turno ${start + 1}, y cada ${v.config.fatigueEvery ?? 2} turnos, sube un nivel: cada nivel da +${num(res)} de Resonancia a todos los golpes y +1 de amenaza a todas las torres.${level ? `<hr>Ahora: +${num(res * level)} de Resonancia y +${level} de amenaza.` : ''}`;
 }
 
-// ── susurros de tiza: tres consejos al margen, solo en la primera campaña de un perfil y una vez cada uno ──
-const WHISPER_KEY = 'derrumbe:susurros';
-const whispered = new Set<string>(loadJson<string[]>(WHISPER_KEY) ?? []);
-const ANDAMIO_WHISPER = '<b>Viene un sirenazo y el andamio está vacío.</b> Guarda en él la carta que no quieras gastar ahora: sigue siendo tuya y, al reponer la mano, robarás una más.';
-function whisper(id: string, html: string): void {
-  const c = S.campaign;
-  if (!c || c.online || S.tutorial || meta.runs > 0 || whispered.has(id)) return;
-  // de uno en uno: si ya hay un susurro a la vista, este espera a la próxima ocasión (y no se da por leído)
-  if (document.querySelector('.whisper')) return;
-  whispered.add(id);
-  saveJson(WHISPER_KEY, [...whispered]);
-  const el = document.createElement('p');
-  el.className = 'whisper';
-  el.innerHTML = html;
-  $('.side')?.appendChild(el);
-  setTimeout(() => el.classList.add('out'), 8200);
-  setTimeout(() => el.remove(), 8800);
-}
-
 // ───────────────────────── Mazo y teclado ─────────────────────────
 
 /** Abre (o cierra) el visor de cantera y escombrera. El orden real de la cantera nunca se enseña. */
@@ -813,6 +803,7 @@ export function onTableKey(key: string, target: HTMLElement | null): boolean {
     return true;
   }
   if (key === 'Escape') {
+    if (closeReceipt()) return true; // el recibo de la cuenta se repliega antes de soltar la selección
     if (!S.selected.length) return false;
     clearSelection();
     return true;
@@ -853,7 +844,8 @@ function liveScore(label: string, fuerza: number, res: number, total: number | n
   if (!el) return;
   if (!el.classList.contains('live')) {
     el.classList.add('live');
-    el.innerHTML = `<span class="tag go" id="live-tag"></span><div class="calc"><b class="f">0</b><i>×</i><b class="r">1</b><i>=</i><b class="t">?</b></div><span class="marks" id="live-marks"></span>`;
+    closeReceipt();
+    el.innerHTML = LIVE_HTML;
   }
   if (label) $('#live-tag', el).textContent = label;
   const set = (sel: string, text: string) => {
@@ -933,6 +925,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       break;
     }
     case 'step': {
+      procBadge(ev); // insignia flotante si una herramienta se cobra (Ariete, Contragolpe, Rebosadero)
       const inStrike = ev.fuerza !== 0 || ev.res !== 0;
       const text = ev.mr ? `×${num(ev.mr)}` : [ev.df ? `${ev.df > 0 ? '+' : ''}${ev.df}` : '', ev.dr ? `${ev.dr > 0 ? '+' : ''}${num(ev.dr)}` : ''].filter(Boolean).join(' · ');
       const kind = ev.mr ? 'x' : ev.dr && !ev.df ? 'r' : 'f';
@@ -1031,7 +1024,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       if (doomed) tear(doomed);
       restart($('.facade', el), 'shear'); // la fachada se parte y se viene abajo
       if (falls.length > 1 && falls[0] === ev) sfx.rumble(falls.length);
-      else sfx.crash();
+      else sfx.crash(ev.clean);
       platform.vibrate(90, 0.9);
       quake(Math.min(1, 0.45 + 0.2 * falls.length), x - innerWidth / 2, 60);
       if (ev.clean) {
@@ -1137,9 +1130,9 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
           platform.vibrate(60, Math.min(1, ev.taken / 8));
           shake($('#bunker'), Math.min(1, ev.taken / 6), 1, 0.4);
           floatText($('#bunker'), `−${ev.taken}`);
-          if (ev.taken >= 4 && v.reserveSize > 0 && v.reserve.length === 0) whisper('andamio', ANDAMIO_WHISPER);
+          if (ev.taken >= 4 && v.reserveSize > 0 && v.reserve.length === 0) whisper('andamio');
         }
-        sfx.hit();
+        sfx.sirenLand(ev.taken, ev.blocked);
         v.integrity = ev.integrity;
         v.wall = ev.wall;
         renderBunker();
@@ -1199,6 +1192,7 @@ export async function pump(): Promise<void> {
       renderInteractive(); // bloquea la mano mientras se anima
       renderBelt();
       if (S.campaign) afterBatch(batch.events);
+      lastEvents = batch.events;
       for (const ev of batch.events) {
         try {
           await animate(ev, batch.events);
@@ -1211,6 +1205,7 @@ export async function pump(): Promise<void> {
     }
     if (S.screen !== 'table') break;
     const first = !S.shown;
+    if (first) lastEvents = [];
     S.shown = batch.view;
     const c = S.campaign;
     if (first) logLine(S.tutorial ? 'Obra de prácticas: sigue al capataz.' : c ? `Obra ${c.run.stage}: ${stageDef(c.run.stage).name}.` : `Empieza la obra. Sala ${S.session?.room ?? ''}.`, 'yel');
@@ -1228,7 +1223,10 @@ export async function pump(): Promise<void> {
     trackMeta();
     stageIntro();
     if (c.run.phase !== 'battle') {
-      setTimeout(() => routeRun(), 900); // deja ver el último derrumbe antes de cambiar de pantalla
+      // victoria: un momento para ver el último derrumbe. Derrota: la causa se queda sobre la mesa hasta que se lee
+      const death = c.run.phase === 'lost' ? (c.run.death ?? autopsy(lastEvents, S.shown.config)) : null;
+      if (death) maybeSettle(c); // renombre y acta quedan guardados aunque se cierre la ventana leyendo la causa
+      void stageOver(death).then(() => S.campaign && S.screen === 'table' && routeRun());
       return;
     }
   }
@@ -1244,6 +1242,8 @@ function showEnd(): void {
   won ? sfx.win() : sfx.lose();
   const floors = 12 - SUITS.reduce((a, s) => a + v.towers[s].floors.length, 0);
   const isHost = S.lobby?.host === v.you;
+  // la causa del derrumbe sale del último lote de eventos (si se vio caer: tras reconectar no lo hay)
+  const death = won ? null : autopsy(lastEvents, v.config);
   const el = document.createElement('div');
   el.className = `end ${won ? 'won' : 'lost'}`;
   el.innerHTML = `
@@ -1251,6 +1251,7 @@ function showEnd(): void {
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
     <h1>${won ? 'Demolido' : 'Sepultados'}</h1>
     <p>${won ? 'Las cuatro torres son escombro. La cuadrilla sale caminando.' : 'El búnker cedió antes que las torres. Volved a intentarlo.'}</p>
+    ${death ? causeHtml(death) : ''}
     <p>Pisos demolidos ${floors}/12 · Turnos ${v.turnCount} · Colapsos ${v.collapses} · Integridad final ${v.integrity}/${v.config.maxIntegrity}</p>
     <div class="row">
       ${isHost ? '<button class="primary" id="again">Otra obra</button>' : '<button disabled>Esperando al anfitrión…</button>'}

@@ -1,6 +1,8 @@
 // Prueba de humo en el navegador: juega de verdad unos turnos sobre el juego construido
 // (dist/web) y falla si algo lanza un error. Cubre lo que las pruebas del motor no ven: la mesa,
-// el andamio, la tiza, la lupa, el foco de teclado, el reinicio con R y una campaña del bot entera.
+// el andamio, la tiza, la lupa, el foco de teclado (marco de 3 px, < 50 ms), Mayús + flechas sobre el
+// cinturón, los susurros de tiza y su «No mostrar más», las insignias de herramienta, lo que suena, la
+// tabla de controles de Ajustes, el reinicio con R y una campaña del bot entera.
 //
 //   npm run qa:smoke          (construye antes; NO_BUILD=1 para saltarse la construcción)
 //   NO_PAD=1 se salta la parte del mando virtual · GPU=1 mide la fluidez con aceleración
@@ -17,6 +19,11 @@ const check = (ok: unknown, what: string) => {
   console.log(`${ok ? '✓' : '✗'} ${what}`);
   if (!ok) problems.push(what);
 };
+/** Lo que ha sonado (nombres de efecto; audio.ts lo deja a la vista con ?qa). */
+const sounds = (page: Page) => page.evaluate(() => [...(window as unknown as { __qaSounds: string[] }).__qaSounds]);
+const runTools = (page: Page) => page.evaluate(() => (window as unknown as { __qa: { run(): { tools: string[] } | null } }).__qa.run()?.tools ?? []);
+type Whispers = { force(on: boolean | null): void; off(): boolean; reset(): void };
+const whispers = <T>(page: Page, fn: (w: Whispers) => T) => page.evaluate(`(${fn.toString()})(window.__whispers)`) as Promise<T>;
 const go = (page: Page, state: string) => page.evaluate((s) => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go(s), state);
 const count = (page: Page, sel: string) => page.locator(sel).count();
 /** Espera a que la mesa termine de animar y vuelva a dejar jugar. */
@@ -105,6 +112,16 @@ async function main(): Promise<void> {
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
   check((await count(page, '.focus-ring.on')) === 1, 'las flechas encienden el foco de latón');
+  check(await page.evaluate(() => getComputedStyle(document.querySelector('.focus-ring i')!).borderTopWidth === '3px'), 'el marco del foco mide 3 px');
+  const keyLag = await page.evaluate(() => {
+    const from = document.activeElement;
+    const t0 = performance.now();
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
+    const moved = document.activeElement !== from && document.querySelector('.focus-ring.hop.on') !== null;
+    return moved ? performance.now() - t0 : -1;
+  });
+  check(keyLag >= 0 && keyLag < 50, `una flecha mueve el foco y su marco en el mismo fotograma (${keyLag < 0 ? 'no se movió' : `${keyLag.toFixed(1)} ms`})`);
+  check((await sounds(page)).slice(-4).includes('focus'), 'mover el foco suena (toque de latón que varía)');
   check(await page.evaluate(() => document.querySelector('.bar')!.getBoundingClientRect().top === 0 && document.scrollingElement!.scrollTop === 0), 'enfocar con el teclado no desplaza la mesa');
   await page.locator('#beltbar .belt-slot.tool').first().click({ button: 'right' });
   check((await count(page, '.lupa')) === 1, 'el clic derecho abre la lupa de grabador');
@@ -117,6 +134,23 @@ async function main(): Promise<void> {
   await page.keyboard.press('Tab');
   check((await count(page, '.deck-modal')) === 1, 'Tab abre el mazo');
   await page.keyboard.press('Escape');
+
+  // ── Mayús + flechas mueven la herramienta enfocada del cinturón, y el foco va con ella ──
+  {
+    const before = await runTools(page);
+    await page.locator('#beltbar .belt-slot[data-slot="0"]').focus();
+    await page.keyboard.press('Shift+ArrowRight');
+    await page.waitForTimeout(250);
+    const after = await runTools(page);
+    check(after[0] === before[1] && after[1] === before[0], 'Mayús + → mueve la herramienta del cinturón a la derecha');
+    check(await page.evaluate((id) => !!document.activeElement?.matches(`#beltbar .belt-slot[data-slot="1"][data-id="${id}"]`), before[0]), 'y el foco viaja con ella');
+    await page.keyboard.press('Shift+ArrowLeft');
+    await page.waitForTimeout(250);
+    check((await runTools(page)).join() === before.join(), 'Mayús + ← la devuelve');
+  }
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Delete');
+  check((await sounds(page)).slice(-3).includes('deny'), 'Supr sin nada elegido suena a error (dos toques de madera), no a acierto');
 
   // ── globo con palabras clave encadenadas ──
   await page.locator('#beltbar .belt-slot.tool').nth(1).hover();
@@ -138,12 +172,70 @@ async function main(): Promise<void> {
   await page.waitForTimeout(300);
   check((await count(page, '.run')) === 1 && (await page.locator('.deck-head h1').textContent())?.includes('sobre'), 'mantener R 0,7 s reinicia la campaña (vuelve al sobre)');
 
+  // ── susurro de tiza: una línea, sin tapar mano ni cuenta, con «No mostrar más» ──
+  await go(page, 'mesa-susurro');
+  await page.waitForTimeout(300);
+  const w = await page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>('.whisper');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const hit = (sel: string) => [...document.querySelectorAll(sel)].some((o) => {
+      const b = o.getBoundingClientRect();
+      return b.width > 0 && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top;
+    });
+    return { id: el.dataset.w, size: parseFloat(getComputedStyle(el).fontSize), covers: hit('#hand .card') || hit('#score'), off: !!el.querySelector('button.whisper-off') };
+  });
+  check(!!w, `la mesa de primera campaña enseña un susurro de tiza${w ? ` («${w.id}»)` : ''}`);
+  check(w && w.size >= 13, 'el susurro se lee (≥ 13 px)');
+  check(w && !w.covers, 'el susurro no tapa la mano ni la cuenta');
+  check(w?.off, 'el susurro trae «No mostrar más»');
+  check((await sounds(page)).includes('chalk'), 'el susurro suena a tiza');
+  check((await count(page, '.whisper')) === 1, 'de uno en uno: nunca dos susurros a la vez');
+  await page.locator('.whisper-off').click();
+  check((await count(page, '.whisper')) === 0 && (await whispers(page, (x) => x.off())), '«No mostrar más» lo borra a un clic y queda guardado');
+  await whispers(page, (x) => x.reset());
+
+  // ── insignias de herramienta: «+12 Fuerza · Ariete» junto a la cuenta, «−12 · Contragolpe» sobre la torre ──
+  await go(page, 'mesa');
+  const badges = await page.evaluate(() => {
+    const fire = (window as unknown as { __qaProc: (ev: unknown) => void }).__qaProc;
+    const step = (label: string, proc: unknown) => ({ e: 'step', src: 'tool', id: 'x', label, fuerza: 0, res: 0, proc });
+    fire(step('Ariete: +12 de Fuerza', { what: 'fuerza', n: 12 }));
+    fire(step('Contragolpe: devuelve 12', { what: 'dano', n: 12, tower: 'S' }));
+    fire(step('Rebosadero: repara 2', { what: 'repara', n: 2 }));
+    const read = (cls: string) => {
+      const el = document.querySelector<HTMLElement>(`.proc-badge.${cls}`);
+      if (!el) return null;
+      const b = el.querySelector('b')!;
+      const r = el.getBoundingClientRect();
+      return { text: el.textContent ?? '', font: getComputedStyle(b).fontFamily, size: parseFloat(getComputedStyle(b).fontSize), x: r.left + r.width / 2, dur: getComputedStyle(el).animationDuration };
+    };
+    const tower = document.querySelector('.tower[data-suit="S"]')!.getBoundingClientRect();
+    const bunker = document.querySelector('#bunker')!.getBoundingClientRect();
+    return { f: read('fuerza'), d: read('dano'), r: read('repara'), tower: [tower.left, tower.right], bunker: [bunker.left, bunker.right] };
+  });
+  check(badges.f?.text.includes('+12') && badges.f.text.includes('Fuerza') && badges.f.text.includes('Ariete'), 'Ariete enseña «+12 Fuerza · Ariete»');
+  check(badges.d?.text.includes('−12') && badges.d.text.includes('Contragolpe') && badges.d.x >= badges.tower[0] && badges.d.x <= badges.tower[1], 'Contragolpe enseña «−12 · Contragolpe» sobre su torre');
+  check(badges.r?.text.includes('+2 integridad') && badges.r.x >= badges.bunker[0] - 60 && badges.r.x <= badges.bunker[1] + 60, 'Rebosadero enseña «+2 integridad» sobre el búnker');
+  check([badges.f, badges.d, badges.r].every((b) => b && b.size >= 14 && !/Unifraktur|Grenze/i.test(b.font)), 'la cifra de las insignias va en sans de peso alto (≥ 14 px, nunca gótica)');
+  check(badges.f?.dur === '1.2s', 'cada insignia dura 1,2 s a velocidad normal');
+  check((await sounds(page)).filter((x) => x === 'proc').length >= 3, 'cada insignia trae su sonido');
+
   // ── dos tintas clásicas y ajustes ──
   await go(page, 'ajustes');
   await page.locator('#set-toggles button').nth(2).click();
   check(await page.evaluate(() => document.documentElement.classList.contains('inks2')), 'el ajuste cambia a 2 tintas clásicas');
   await page.locator('#set-toggles button').nth(2).click();
   check(await page.evaluate(() => !document.documentElement.classList.contains('inks2')), '…y vuelve a 4 tintas de taller');
+  const whisperRow = page.locator('#set-toggles .set', { hasText: 'Susurros de tiza' }).locator('button');
+  check((await whisperRow.textContent()) === 'Sí', 'Ajustes tiene la fila «Susurros de tiza» (encendidos)');
+  await whisperRow.click();
+  check((await whisperRow.textContent()) === 'No' && (await whispers(page, (x) => x.off())), 'se apagan desde Ajustes');
+  await whisperRow.click();
+  check((await whisperRow.textContent()) === 'Sí' && !(await whispers(page, (x) => x.off())), 'y se vuelven a encender');
+  const pads = await page.locator('.keys tr td:nth-child(3)').allTextContents();
+  check(pads.length >= 12 && !pads.some((t) => t.trim() === '—' || t.trim() === ''), 'en la tabla de controles ninguna acción se queda sin mando');
+  check(pads.some((t) => t.includes('L3')) && pads.some((t) => t.includes('R3')) && pads.some((t) => t.includes('LB / RB')), 'la tabla enseña L3 (descartar), R3 (pantalla completa) y LB / RB (cinturón)');
   await page.keyboard.press('Escape');
 
   // ── colección: la lupa abre también barajas y jefes, con su sello de maestría ──

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer } from '../src/rules/engine';
+import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer, seedFrom } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
 import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, LAST_STAGE, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FATIGUE } from '../src/rules/run';
@@ -56,6 +56,24 @@ describe('semillas', () => {
     const b = newRun({ seedText: 'OBRA' }, 999);
     expect(a.seedText).toBe('OBRA');
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+
+  it('una campaña al azar se repite escribiendo la semilla que enseña; una palabra sigue pasando por el hash', () => {
+    for (const n of [42, -123456789, 2 ** 31 - 1, -(2 ** 31)]) {
+      const a = newRun({ seed: n }, 7);
+      expect(a.seedText).toMatch(/^#[0-9A-Z]{1,7}$/);
+      const b = newRun({ seedText: a.seedText }, 999);
+      const c = newRun({ seedText: a.seedText.toLowerCase() }, 5);
+      expect(b.id).toBe(n | 0);
+      expect(b.deck).toEqual(a.deck);
+      // la campaña entera (mazo inicial, plano, ofertas) es la misma
+      expect(JSON.stringify(b)).toBe(JSON.stringify(a));
+      expect(JSON.stringify(c)).toBe(JSON.stringify(a));
+    }
+    // lo que no tiene la forma «#base36» va por el hash de siempre: las actas viejas con palabra no cambian
+    expect(newRun({ seedText: 'CASA' }, 1).id).toBe(seedFrom('CASA'));
+    expect(newRun({ seedText: 'casa' }, 2).id).toBe(seedFrom('CASA'));
+    expect(newRun({ seedText: '#ABCDEFGH' }, 3).id).toBe(seedFrom('#ABCDEFGH'));
   });
 
   it('la Obra diaria usa la semilla de la fecha, la baraja de obra y ninguna mejora del gremio', () => {
@@ -688,9 +706,10 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[13]).toBe(base.floorThreat[13] + 1);
-    // 8 · clausura: +1 de amenaza, solo en las obras con jefe (la 3 lo es; la 4 no)
-    expect(stageConfig(at(7, 3)).floorThreat[11]).toBe(stageConfig(at(6, 3)).floorThreat[11] + 1);
-    expect(stageConfig(at(7, 4)).floorThreat[11]).toBe(stageConfig(at(6, 4)).floorThreat[11]);
+    // 8 · clausura: +1 de amenaza en todas las torres, solo en la obra 8 (ni en la 7 ni en las otras con jefe)
+    for (const r of [11, 12, 13]) expect(stageConfig(at(7, 8)).floorThreat[r]).toBe(stageConfig(at(6, 8)).floorThreat[r] + 1);
+    expect(stageConfig(at(7, 7)).floorThreat[11]).toBe(stageConfig(at(6, 7)).floorThreat[11]);
+    expect(stageConfig(at(7, 3)).floorThreat[11]).toBe(stageConfig(at(6, 3)).floorThreat[11]);
     // ningún nivel alarga las obras con jefe más que el hormigón armado
     expect(stageConfig(at(7, 3)).floorHp[13]).toBe(stageConfig(at(1, 3)).floorHp[13]);
   });

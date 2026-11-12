@@ -52,6 +52,8 @@ export interface ToolDef {
   box?: Arch;
   /** Qué hace en un golpe: f suma Fuerza, r suma Resonancia, x multiplica, copy copia, p es pasiva. */
   kind: 'f' | 'r' | 'x' | 'copy' | 'p';
+  /** Sonora: la Fuerza que suma en un golpe sale con aviso (`proc`) para que la mesa la anuncie sobre la herramienta. */
+  loud?: boolean;
   /** Regla fija de la obra. */
   cfg?(c: Config): void;
   /** Su turno en la resolución del golpe. */
@@ -147,7 +149,7 @@ export const TOOLS: ToolDef[] = [
       x.note('la mitad salpica');
     },
   },
-  { id: 'timbre', name: 'Timbre del gremio', desc: 'Los sellos de las cartas se activan dos veces.', rarity: 'reliquia', arch: 'sismo', box: 'sismo', kind: 'p', cfg: (c) => void (c.sealTwice = true) },
+  { id: 'timbre', name: 'Timbre del gremio', desc: 'Al empezar cada obra, sella 1 carta de tu mazo al azar. Los sellos se activan dos veces.', rarity: 'reliquia', arch: 'sismo', box: 'sismo', kind: 'p', cfg: (c) => void (c.sealTwice = true) },
 
   // ───────── alquimia de materiales ─────────
   { id: 'prisma', name: 'Prisma', desc: '+0,5 de Resonancia por cada carta del golpe que comparta palo con otra (hasta +2).', rarity: 'oficio', arch: 'alquimia', kind: 'r', strike: (x) => x.R(Math.min(2, 0.5 * x.cards.filter((c) => x.cards.some((o) => o !== c && o.suit === c.suit)).length)) },
@@ -171,7 +173,7 @@ export const TOOLS: ToolDef[] = [
       h.draw(2);
     },
   },
-  { id: 'ultimo', name: 'Último turno', desc: '×2 de Resonancia con el búnker a la mitad o menos.', rarity: 'capataz', arch: 'limite', box: 'limite', kind: 'x', strike: (x) => x.env.integrity * 2 <= x.cfg.maxIntegrity && x.X(2) },
+  { id: 'ultimo', name: 'Último turno', desc: '×2 de Resonancia si al búnker le queda ≤ 50 % de su integridad.', rarity: 'capataz', arch: 'limite', box: 'limite', kind: 'x', strike: (x) => x.env.integrity * 2 <= x.cfg.maxIntegrity && x.X(2) },
   {
     id: 'corazon',
     name: 'Corazón de la torre',
@@ -198,32 +200,32 @@ export const TOOLS: ToolDef[] = [
     },
   },
   { id: 'montacargas', name: 'Montacargas', desc: '+2 de Fuerza por cada carta destruida en la campaña.', rarity: 'oficio', arch: 'trituradora', kind: 'f', strike: (x) => x.F(2 * x.env.scrap) },
-  { id: 'horno', name: 'Horno', desc: 'Cada carta destruida: +2 de oro.', rarity: 'comun', arch: 'trituradora', box: 'trituradora', kind: 'p', burn: (h) => h.gold(2) },
+  { id: 'horno', name: 'Horno', desc: '+3 de oro cada vez que una carta se destruye en obra (Trituradora, cartas agrietadas).', rarity: 'comun', arch: 'trituradora', box: 'trituradora', kind: 'p', burn: (h) => h.gold(3) },
   { id: 'contenedor', name: 'Contenedor', desc: 'Las cartas que descartas no vuelven en esta obra, y cada una da +6 de Fuerza a tu próximo golpe.', rarity: 'oficio', arch: 'trituradora', box: 'trituradora', kind: 'p', cfg: (c) => void (c.discardExhaust = (c.discardExhaust ?? 0) + 6) },
   { id: 'prensa', name: 'Prensa de chatarra', desc: '×1,05 de Resonancia por cada carta destruida en la campaña (se suman: 4 cartas, ×1,2).', rarity: 'capataz', arch: 'trituradora', box: 'trituradora', kind: 'x', strike: (x) => x.X(1 + 0.05 * x.env.scrap) },
   // ── aguante: la defensa se cobra en daño ──
-  { id: 'ariete', name: 'Ariete', desc: '+3 de Fuerza por cada punto de muro en pie.', rarity: 'oficio', arch: 'aguante', box: 'aguante', kind: 'f', strike: (x) => x.env.wall > 0 && x.F(3 * x.env.wall) },
+  { id: 'ariete', name: 'Ariete', desc: '+4 de Fuerza por cada punto de muro en pie.', rarity: 'oficio', arch: 'aguante', box: 'aguante', kind: 'f', loud: true, strike: (x) => x.env.wall > 0 && x.F(4 * x.env.wall) },
   {
     id: 'contragolpe',
     name: 'Contragolpe',
-    desc: 'Cuando el muro frena entera una sirena, la torre que golpeó recibe el triple de lo frenado.',
+    desc: 'Si el muro frena entera una sirena, su torre recibe 3 × lo frenado. Ej.: frena 4 → la torre recibe 12.',
     rarity: 'oficio',
     arch: 'aguante',
     box: 'aguante',
     kind: 'p',
-    siren: (h, _, s) => s.taken === 0 && s.blocked > 0 && h.hit(s.tower, 3 * s.blocked),
+    siren: (h, _, s) => s.taken === 0 && s.blocked > 0 && h.hit(s.tower, 3 * s.blocked, `3 × ${s.blocked} frenado`),
   },
   {
     id: 'rebosadero',
     name: 'Rebosadero',
-    desc: 'Lo que sobra no se pierde: el muro que pase de su tope repara el búnker (1 por cada 2), y lo que repares de más con el búnker lleno carga +3 de Fuerza por punto para tu próximo golpe.',
+    desc: 'Muro que no cabe: cada 2 reparan 1. Reparación que no cabe: +3 de Fuerza por punto para tu próximo golpe.',
     rarity: 'oficio',
     arch: 'aguante',
     box: 'aguante',
     kind: 'p',
     cfg: (c) => void ((c.overhealCharge = (c.overhealCharge ?? 0) + 3), (c.overwallRepair = 2)),
   },
-  { id: 'bastion', name: 'Bastión', desc: '×1,5 de Resonancia con el muro a la mitad de su tope o más.', rarity: 'capataz', arch: 'aguante', box: 'aguante', kind: 'x', strike: (x) => x.env.wall > 0 && x.env.wall * 2 >= x.cfg.wallCap && x.X(1.5) },
+  { id: 'bastion', name: 'Bastión', desc: '×1,5 de Resonancia con el muro a ≥ 50 % de su tope.', rarity: 'capataz', arch: 'aguante', box: 'aguante', kind: 'x', strike: (x) => x.env.wall > 0 && x.env.wall * 2 >= x.cfg.wallCap && x.X(1.5) },
 ];
 export const TOOL: Record<string, ToolDef> = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
 export const BOXES: Arch[] = ['precision', 'sismo', 'alquimia', 'limite', 'trituradora', 'aguante'];

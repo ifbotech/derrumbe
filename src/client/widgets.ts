@@ -11,6 +11,8 @@ import { reconnect } from './net';
 import { applyBackup, describeBackup, exportProgress, readBackup } from './backup';
 import { COMMUNITY_URL, customServer, platform, setCustomServer } from './platform';
 import { rulesHtml } from './rules-text';
+import { CONTROL_ROWS } from './prompts';
+import { whisperSetting } from './whispers';
 
 export const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
 
@@ -98,7 +100,7 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
     slot.dataset.lupa = `tool:${t.id}`;
     slot.tabIndex = 0;
     const sell = opts.onSell ? `<hr>Pulsa dos veces para venderla por ${opts.sellValue?.(t.id) ?? 0} de oro.` : '';
-    const order = opts.onReorder ? '<hr>Arrástrala, o púlsala y luego pulsa otro hueco, para cambiar el orden (con teclado: Mayús + flechas).' : '';
+    const order = opts.onReorder ? '<hr>Arrástrala, o púlsala y luego pulsa otro hueco, para cambiar el orden (con teclado: Mayús + flechas; con mando: LB / RB).' : '';
     slot.dataset.tip = toolTip(t.id, `<small>Hueco ${i + 1} de ${TOOL_SLOTS}: se activa ${i === 0 ? 'la primera' : `después de ${i}`}.</small>${order}${sell}`);
     slot.innerHTML = `${glyphSvg(t.id, 'belt-ico')}<span class="kind">${KIND_LABEL[def.kind]}</span>${count ? `<span class="cnt">${count}</span>` : ''}<span class="pos">${i + 1}</span>`;
     if (opts.onReorder) {
@@ -233,21 +235,7 @@ export function showRules(): void {
   modal(`<div class="modal-box"><h2>Reglas <button class="x">CERRAR</button></h2>${rulesHtml(S.shown?.config)}</div>`);
 }
 
-const KEYS: [string, string, string][] = [
-  ['Mover el foco', 'Flechas', 'Cruceta o palanca'],
-  ['Elegir', 'Enter · 1–9 en la mano', 'A'],
-  ['Golpear la torre apuntada', 'Espacio', 'X'],
-  ['Guardar en el andamio', 'Y', 'Y'],
-  ['Tiza de replanteo (deshacer)', 'Z', 'LT'],
-  ['Cambiar la velocidad', 'botón de la barra', 'RT'],
-  ['Lupa de grabador', 'L · clic derecho · mantener pulsado', 'RB'],
-  ['Mazo', 'Tab', 'LB'],
-  ['Descartar lo elegido', 'Supr', '—'],
-  ['Atrás / soltar', 'Esc', 'B'],
-  ['Reiniciar la campaña', 'Mantener R', 'Mantener Select'],
-  ['Pantalla completa', 'F', '—'],
-  ['Ajustes', '—', 'Start'],
-];
+// la tabla de controles sale de prompts.ts (CONTROL_ROWS): la misma que el README y la prueba de humo
 
 /** Ajustes: mezcla de sonido, ritmo de la mesa, tintas, pantalla y controles. */
 export function showSettings(onChange?: () => void): void {
@@ -261,7 +249,7 @@ export function showSettings(onChange?: () => void): void {
         <span class="server-edit"><button id="set-export">Exportar progreso</button><button id="set-import">Importar progreso</button><input type="file" id="set-file" accept="application/json,.json" hidden /></span></div>
       <div class="set"><div><b>Comunidad y comentarios</b><span>Errores, ideas y partidas memorables: aquí se leen.</span></div><button id="set-community">Abrir</button></div>
       <h3 class="sec">Controles</h3>
-      <table class="keys"><tr><th></th><th>Teclado y ratón</th><th>Mando</th></tr>${KEYS.map(([what, key, pad]) => `<tr><td>${what}</td><td>${key}</td><td>${pad}</td></tr>`).join('')}</table>
+      <table class="keys"><tr><th></th><th>Teclado y ratón</th><th>Mando</th></tr>${CONTROL_ROWS.map(([what, key, pad]) => `<tr><td>${what}</td><td>${key}</td><td>${pad}</td></tr>`).join('')}</table>
     </div>`,
     { cls: 'settings-modal' },
   );
@@ -287,7 +275,8 @@ export function showSettings(onChange?: () => void): void {
       ['Velocidad', 'Lo rápido que se resuelven los golpes en la mesa.', speedLabel(), () => void cycleSpeed()],
       ['Reducir movimiento', 'Sin temblores, destellos ni partículas.', settings.calm ? 'Sí' : 'No', () => ((settings.calm = !settings.calm), applySettings())],
       ['Tintas de la baraja', 'Cuatro tintas de taller (una por palo) o las dos clásicas, rojo y negro.', settings.inks === 4 ? '4 tintas' : '2 clásicas', () => ((settings.inks = settings.inks === 4 ? 2 : 4), applySettings())],
-      ['Pantalla completa', 'También con la tecla F.', platform.isFullscreen() ? 'Sí' : 'No', () => void platform.toggleFullscreen().then(draw)],
+      ['Pantalla completa', 'También con la tecla F (o R3 en el mando).', platform.isFullscreen() ? 'Sí' : 'No', () => void platform.toggleFullscreen().then(draw)],
+      whisperSetting(),
     ];
     const list = $('#set-toggles', el);
     list.innerHTML = rows.map(([name, desc, value], i) => `<div class="set"><div><b>${name}</b><span>${desc}</span></div><button data-set="${i}" class="${value === 'No' ? '' : 'on'}">${value}</button></div>`).join('');

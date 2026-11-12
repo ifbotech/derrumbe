@@ -12,12 +12,12 @@
 .guild .col-sec { margin-bottom: clamp(14px, 2.6vh, 30px); }
 .guild .col-sec:last-child { margin-bottom: 0; }
 .deck-grid.chips { gap: 6px; }
-.form-chip { font-family: var(--display); text-transform: uppercase; font-size: clamp(12px, 1.5vh, 15px); padding: 3px 10px; border: 2px dashed var(--ink); opacity: 0.45; }
+.form-chip { font-family: var(--display); text-transform: uppercase; font-size: clamp(13px, 1.5vh, 15px); padding: 3px 10px; border: 2px dashed var(--ink); opacity: 0.45; }
 .form-chip.on { border-style: solid; background: var(--ink); color: var(--hazard); opacity: 1; }
 .choice { position: relative; }
 .choice .tag-act { margin-top: 2px; }
 .col-sec .choice p { height: auto; min-height: 2.6em; }
-.col-sec .choice .tag-act { background: none; color: var(--ink); padding: 0; font-family: var(--mono); font-weight: 700; font-size: clamp(12px, 1.15vh, 11px); opacity: 0.7; }
+.col-sec .choice .tag-act { background: none; color: var(--ink); padding: 0; font-family: var(--mono); font-weight: 700; font-size: clamp(13px, 1.15vh, 13px); opacity: 0.7; }
 
 /* ───────────── PREPARACIÓN DE CAMPAÑA ───────────── */
 .seed-row { display: grid; grid-template-columns: minmax(130px, 240px) minmax(0, 1fr); gap: 12px; align-items: center; }
@@ -26,8 +26,8 @@
 .kit { list-style: none; display: grid; gap: clamp(6px, 1.2vh, 12px); }
 .kit li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: clamp(4px, 0.9vh, 10px); }
 .kit li div { display: grid; }
-.kit li b { text-transform: uppercase; font-size: clamp(12px, 1.6vh, 16px); }
-.kit li span { font-size: clamp(12px, 1.4vh, 14px); line-height: 1.3; }
+.kit li b { text-transform: uppercase; font-size: clamp(13px, 1.6vh, 16px); }
+.kit li span { font-size: clamp(13px, 1.4vh, 14px); line-height: 1.3; }
 .kit .ico { width: clamp(28px, 4.6vh, 46px); height: clamp(28px, 4.6vh, 46px); background: var(--hazard); border: 3px solid var(--ink); padding: 3px; }
 .camp-ups .row { flex: none; }
 
@@ -44,7 +44,7 @@
     linear-gradient(170deg, transparent 0 80%, rgba(241, 235, 220, 0.12) 80% 80.5%, transparent 80.5%),
     repeating-linear-gradient(91deg, #5c3b22 0 17px, #4b2e19 17px 19px, #67452b 19px 38px, #513220 38px 40px, #5c3b22 40px 61px, #45290f 61px 62px); }
 .blueprint { position: relative; background-color: #23508f; background-image: linear-gradient(rgba(241, 235, 220, 0.13) 1px, transparent 1px), linear-gradient(90deg, rgba(241, 235, 220, 0.13) 1px, transparent 1px); background-size: 22px 22px; color: var(--card-paper); border: 3px solid var(--card-paper); outline: 3px solid var(--ink); padding: clamp(6px, 1.4vh, 14px) clamp(8px, 1.2vw, 16px) clamp(10px, 2vh, 20px); transform: rotate(-0.35deg); box-shadow: 5px 6px 0 rgba(10, 10, 10, 0.45); }
-.bp-title { font-family: var(--cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; font-size: clamp(12px, 1.3vh, 13px); margin-bottom: clamp(8px, 1.6vh, 16px); display: flex; justify-content: space-between; border-bottom: 1.5px dashed var(--card-paper); padding-bottom: 4px; }
+.bp-title { font-family: var(--cap); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; font-size: clamp(13px, 1.3vh, 13px); margin-bottom: clamp(8px, 1.6vh, 16px); display: flex; justify-content: space-between; border-bottom: 1.5px dashed var(--card-paper); padding-bottom: 4px; }
 .bp-title::after { content: 'ESC. 1:200 · GREMIO DE DEMOLEDORES'; opacity: 0.7; }
 .bp-path { display: flex; align-items: stretch; }
 .bp-link { flex: 0 0 clamp(4px, 1vw, 18px); align-self: center; border-top: 3px dashed var(--card-paper); opacity: 0.8; }
@@ -53,14 +53,14 @@
 .bp-node.done, .bp-node.skip { opacity: 0.72; }
 .bp-node.now { background: var(--hazard); color: var(--ink); border: 3px solid var(--ink); transform: translateY(-6px) rotate(-1.2deg); box-shadow: 4px 5px 0 var(--ink); z-index: 2; opacity: 1; }
 .bp-n { font-family: var(--display); font-size: clamp(15px, 2.6vh, 28px); line-height: 1; }
-.bp-node > b { font-size: clamp(12px, 1.15vh, 12px); text-transform: uppercase; line-height: 1.1; min-height: 2.2em; display: grid; align-items: center; }
-.bp-node em { font-style: normal; font-weight: 700; font-size: clamp(12px, 1.25vh, 13px); line-height: 1.15; }
-.bp-node em small { display: block; font-weight: 500; font-size: max(12px, 0.86em); opacity: 0.9; }
-.bp-node em.plain { opacity: 0.6; font-weight: 500; text-transform: uppercase; font-size: clamp(12px, 1.05vh, 11px); letter-spacing: 0.08em; }
+.bp-node > b { font-size: clamp(13px, 1.15vh, 13px); text-transform: uppercase; line-height: 1.1; min-height: 2.2em; display: grid; align-items: center; }
+.bp-node em { font-style: normal; font-weight: 700; font-size: clamp(13px, 1.25vh, 13px); line-height: 1.15; }
+.bp-node em small { display: block; font-weight: 500; font-size: max(13px, 0.86em); opacity: 0.9; }
+.bp-node em.plain { opacity: 0.6; font-weight: 500; text-transform: uppercase; font-size: clamp(13px, 1.05vh, 13px); letter-spacing: 0.08em; }
 .bp-boss { display: block; }
 .bp-boss .card { --w: clamp(26px, 5.4vh, 58px); }
 .bp-boss .card .ly.paper { box-shadow: 2px 2px 0 var(--ink); border-width: 2px; }
-.bp-node .inkstamp { top: auto; bottom: 6%; right: auto; left: 50%; margin-left: -2.9em; font-size: clamp(12px, 1.35vh, 14px); padding: 2px 5px; border-width: 2px; }
+.bp-node .inkstamp { top: auto; bottom: 6%; right: auto; left: 50%; margin-left: -2.9em; font-size: clamp(13px, 1.35vh, 14px); padding: 2px 5px; border-width: 2px; }
 .routes { align-items: stretch; }
 .choice.risk h4 { color: var(--red); }
 .choice.skip h4 { text-decoration: underline wavy var(--red) 2px; text-underline-offset: 3px; }
@@ -71,10 +71,10 @@
 /* ───────────── COBRO ───────────── */
 .paybox { position: relative; }
 .contract-res { position: relative; display: grid; gap: 2px; margin-top: clamp(8px, 1.6vh, 16px); border: 3px solid var(--ink); padding: 8px 10px; text-transform: none; min-height: 4.6em; }
-.contract-res b { text-transform: uppercase; font-size: clamp(12px, 1.5vh, 15px); padding-right: 6.5em; }
-.contract-res span { font-size: clamp(12px, 1.45vh, 14px); }
+.contract-res b { text-transform: uppercase; font-size: clamp(13px, 1.5vh, 15px); padding-right: 6.5em; }
+.contract-res span { font-size: clamp(13px, 1.45vh, 14px); }
 .contract-res.ko { border-style: dashed; opacity: 0.85; }
-.contract-res .inkstamp { top: 6px; right: 6px; font-size: clamp(12px, 1.5vh, 15px); }
+.contract-res .inkstamp { top: 6px; right: 6px; font-size: clamp(13px, 1.5vh, 15px); }
 
 /* ───────────── FERRETERÍA ───────────── */
 .stock { min-width: 0; }
@@ -83,13 +83,13 @@
 .choice.hang::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 3px; height: clamp(14px, 2.2vh, 22px); margin-left: -1.5px; background: var(--ink); }
 .choice.hang .card { transform-origin: 50% -12%; }
 .choice.hang.pick:hover .card, .choice.hang.pick:focus-visible .card { transform: translateY(0) rotate(-2.5deg); }
-.price-tag { position: absolute; z-index: 5; top: clamp(-8px, -1vh, -4px); right: -9px; transform: rotate(7deg); transform-origin: 0 50%; background: var(--manila); color: var(--ink); font-family: var(--display); text-transform: uppercase; font-size: clamp(12px, 1.45vh, 15px); line-height: 1; padding: 5px 8px 5px 18px; clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%); filter: drop-shadow(2px 2px 0 rgba(10, 10, 10, 0.5)); white-space: nowrap; }
+.price-tag { position: absolute; z-index: 5; top: clamp(-8px, -1vh, -4px); right: -9px; transform: rotate(7deg); transform-origin: 0 50%; background: var(--manila); color: var(--ink); font-family: var(--display); text-transform: uppercase; font-size: clamp(13px, 1.45vh, 15px); line-height: 1; padding: 5px 8px 5px 18px; clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%); filter: drop-shadow(2px 2px 0 rgba(10, 10, 10, 0.5)); white-space: nowrap; }
 .price-tag::before { content: ''; position: absolute; left: 9px; top: 50%; width: 5px; height: 5px; margin-top: -2.5px; background: var(--ink); }
 .price-tag.free { background: var(--hazard); }
 .price-tag.dear { color: var(--red); }
 .choice.sold .price-tag { display: none; }
 .choice.sold .inkstamp { top: 26%; right: 6%; }
-.choice.hang p small { display: block; font-weight: 700; text-transform: uppercase; opacity: 0.6; font-size: max(12px, 0.85em); margin-top: 2px; }
+.choice.hang p small { display: block; font-weight: 700; text-transform: uppercase; opacity: 0.6; font-size: max(13px, 0.85em); margin-top: 2px; }
 .run-body.shop .choice p { height: auto; min-height: 4em; }
 .grid2 button { white-space: nowrap; }
 .grid2 button.primary { grid-column: 1 / -1; font-size: clamp(13px, 1.9vh, 19px); }
@@ -102,21 +102,21 @@
 .event-opts { display: grid; gap: clamp(8px, 1.4vh, 14px); margin-top: clamp(10px, 2vh, 20px); max-width: 680px; }
 .stamp-btn.opt { grid-template-columns: minmax(0, 1fr); }
 .stamp-btn.opt b { font-size: clamp(18px, 2.9vh, 30px); }
-.stamp-btn.opt small { font-size: clamp(12px, 1.5vh, 15px); }
+.stamp-btn.opt small { font-size: clamp(13px, 1.5vh, 15px); }
 
 /* ───────────── ACTA DE DEMOLICIÓN ───────────── */
 .end.acta { justify-content: center; align-items: flex-start; }
 .acta-sheet { position: relative; z-index: 1; width: min(700px, 100%); max-height: 100%; overflow-y: auto; background: var(--card-paper) var(--noise); color: var(--ink); border: 5px solid var(--ink); box-shadow: 10px 10px 0 var(--red); padding: clamp(12px, 2.8vh, 30px) clamp(14px, 2.4vw, 32px); display: grid; gap: clamp(5px, 1.2vh, 12px); text-transform: none; }
 .end.won .acta-sheet { box-shadow: 10px 10px 0 var(--ink); }
 .acta-sheet h1 { font-size: min(11vw, 13vh); line-height: 0.95; }
-.acta-sheet > p { font-size: clamp(12px, 1.7vh, 16px); font-weight: 500; }
-.acta-stats { border-collapse: collapse; width: 100%; font-size: clamp(12px, 1.65vh, 16px); font-weight: 700; }
+.acta-sheet > p { font-size: clamp(13px, 1.7vh, 16px); font-weight: 500; }
+.acta-stats { border-collapse: collapse; width: 100%; font-size: clamp(13px, 1.65vh, 16px); font-weight: 700; }
 .acta-stats td { border-bottom: 1.5px dashed var(--ink); padding: clamp(1px, 0.35vh, 4px) 0; }
 .acta-stats td + td { text-align: right; font-family: var(--display); }
 .acta-sheet .gain { color: var(--red); }
 .acta-sheet .row { flex-wrap: wrap; }
 .acta-sheet .row button { flex: 1 1 150px; }
-.acta-sheet button small { display: block; font-family: var(--mono); font-weight: 700; font-size: max(12px, 0.6em); opacity: 0.8; text-transform: none; }
+.acta-sheet button small { display: block; font-family: var(--mono); font-weight: 700; font-size: max(13px, 0.6em); opacity: 0.8; text-transform: none; }
 
 /* ───────────── VISOR DE MAZOS ───────────── */
 .deck-box { max-width: 1100px; }
@@ -159,7 +159,7 @@
 .routes .choice .tag-act { align-self: end; }
 .routes .choice.boss-route { max-width: 600px; }
 .routes .choice.boss-route .card { --w: clamp(84px, 20vh, 190px); }
-.routes .choice.boss-route p { font-size: clamp(12px, 1.8vh, 18px); }
+.routes .choice.boss-route p { font-size: clamp(13px, 1.8vh, 18px); }
 .map .run-belt { margin-top: auto; }
 /* cobro */
 .run-body.two { grid-template-columns: minmax(250px, 0.5fr) minmax(0, 1.5fr); }
@@ -170,7 +170,7 @@
 .run-body.shop .choice.hang { width: auto; container-type: inline-size; }
 .run-body.shop .choice.hang .card { --w: 100cqw; }
 .run-body.shop .choice.hang h4 { font-size: clamp(14px, 2.1vh, 22px); height: 2.1em; }
-.run-body.shop .choice.hang p { font-size: clamp(12px, 1.3vh, 13px); }
+.run-body.shop .choice.hang p { font-size: clamp(13px, 1.3vh, 13px); }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .run-body.shop .hangers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .routes .choice { flex-basis: 100%; max-width: none; }
@@ -183,16 +183,16 @@
   .bp-path { min-height: 0; }
   .bp-boss .card { --w: clamp(24px, 8vw, 40px); }
   .bp-node em small { display: none; }
-  .bp-node > b { min-height: 0; font-size: 12px; }
-  .bp-node em { font-size: 12px; }
+  .bp-node > b { min-height: 0; font-size: 13px; }
+  .bp-node em { font-size: 13px; }
   .bp-n { font-size: 16px; }
-  .bp-node .inkstamp { font-size: 12px; top: -5px; right: -4px; padding: 1px 3px; border-width: 1.5px; }
+  .bp-node .inkstamp { font-size: 13px; top: -5px; right: -4px; padding: 1px 3px; border-width: 1.5px; }
   .desk { padding: 8px; }
   .blueprint { padding: 6px 8px 10px; }
   .bp-title { margin-bottom: 8px; }
   .routes { gap: 6px; }
   .routes .choice .tag-act { display: none; }
-  .routes .choice p { font-size: 12px; line-height: 1.25; }
+  .routes .choice p { font-size: 13px; line-height: 1.25; }
   .routes .choice h4 { font-size: 17px; }
   .map h3.sec { font-size: 20px; margin-bottom: 4px; }
   .run .run-belt { padding-top: 6px; margin-top: 6px; gap: 6px; }
@@ -201,7 +201,7 @@
 }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .shop-side { overflow: visible; padding: 0; }
-  .run-body.shop .choice.hang p { font-size: 12px; line-height: 1.25; min-height: 0; }
+  .run-body.shop .choice.hang p { font-size: 13px; line-height: 1.25; min-height: 0; }
   .run-body.shop .choice.hang h4 { font-size: 16px; }
   .hangers { row-gap: 26px; }
 }
@@ -223,7 +223,7 @@
   .guild-body .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
   .guild-body { padding: 0 6px 6px 0; }
   .camp .purse b { font-size: clamp(22px, 8vw, 36px); }
-  .camp .purse span { font-size: 12px; max-width: 34vw; }
+  .camp .purse span { font-size: 13px; max-width: 34vw; }
   .deck-head { gap: 8px; }
   .up button { width: 58px; }
 }

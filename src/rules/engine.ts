@@ -41,7 +41,7 @@ export const RANK_LABEL = ['★', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '
 export const SEALS: Seal[] = ['dinamita', 'eco', 'jornal', 'sindical'];
 export const SEAL: Record<Seal, { name: string; desc: string }> = {
   dinamita: { name: 'Sello de dinamita', desc: 'Al golpear, las torres vecinas reciben el valor de esta carta.' },
-  eco: { name: 'Sello de eco', desc: 'Su impacto y el poder de su palo se repiten una vez más.' },
+  eco: { name: 'Sello de eco', desc: 'Su impacto y el poder de su palo se aplican 2 veces.' },
   jornal: { name: 'Sello de jornal', desc: '+2 de oro si el golpe derriba un piso.' },
   sindical: { name: 'Sello sindical', desc: 'Robas 1 carta extra al jugarla o descartarla.' },
 };
@@ -284,11 +284,22 @@ export type Action =
   | { type: 'undo' };
 
 export type StepSrc = 'form' | 'chain' | 'state' | 'card' | 'treat' | 'seal' | 'special' | 'tool';
+/**
+ * Aviso de herramienta que dispara: qué hizo (sumó Fuerza al golpe, pegó a una torre, reparó el búnker
+ * o cargó Fuerza para el golpe siguiente) y cuánto. Lo llevan los `step` de las herramientas cuya cuenta
+ * no se ve en las cartas: la interfaz lo pinta como insignia sobre la herramienta.
+ */
+export interface Proc {
+  what: 'fuerza' | 'dano' | 'repara' | 'carga';
+  n: number;
+  /** La torre que recibe el daño, si `what` es 'dano'. */
+  tower?: Suit;
+}
 
 export type GameEvent =
   | { e: 'play'; player: string; cards: Card[]; target: Suit; formation: Formation }
   /** Un paso de la resolución: quién aporta (src + id, y slot si es una herramienta) y cuánto. */
-  | { e: 'step'; src: StepSrc; id: string; slot?: number; label: string; df?: number; dr?: number; mr?: number; fuerza: number; res: number }
+  | { e: 'step'; src: StepSrc; id: string; slot?: number; label: string; df?: number; dr?: number; mr?: number; fuerza: number; res: number; proc?: Proc }
   | { e: 'impact'; tower: Suit; fuerza: number; res: number; total: number }
   | { e: 'discard'; player: string; cards: Card[] }
   | { e: 'joker'; player: string; card: Card; target: Suit }
@@ -309,7 +320,8 @@ export type GameEvent =
   | { e: 'collapse'; loss: number; integrity: number }
   | { e: 'draw'; player: string; count: number; cards?: Card[] }
   | { e: 'turn'; player: string }
-  | { e: 'end'; result: 'won' | 'lost' };
+  /** `was`: integridad del búnker al empezar la jugada que cerró la obra (para la autopsia de la derrota). */
+  | { e: 'end'; result: 'won' | 'lost'; was?: number };
 
 export class RuleError extends Error {}
 
@@ -529,8 +541,11 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   const specials = all.filter((c) => c.sp);
   const suits = [...new Set(cards.map((c) => c.suit as Suit))];
 
-  let cur: { src: StepSrc; id: string; slot?: number; label: string } = { src: 'form', id: formation, label: FORMATION_NAME[formation] };
-  const emit = (d: { df?: number; dr?: number; mr?: number }) => tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: cur.label, ...d, fuerza: x.fuerza, res: r2(x.res) });
+  let cur: { src: StepSrc; id: string; slot?: number; label: string; loud?: boolean } = { src: 'form', id: formation, label: FORMATION_NAME[formation] };
+  const emit = (d: { df?: number; dr?: number; mr?: number }) => {
+    const proc: { proc?: Proc } = cur.loud && d.df ? { proc: { what: 'fuerza', n: d.df } } : {};
+    tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: cur.label, ...d, fuerza: x.fuerza, res: r2(x.res), ...proc });
+  };
   const x: Strike = {
     env,
     cfg,
@@ -689,11 +704,11 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
       const next = env.tools[slot + 1];
       const copied = next && TOOL[next.id];
       if (!copied?.strike) return;
-      cur = { src: 'tool', id: t.id, slot, label: `${def.name} → ${copied.name}` };
+      cur = { src: 'tool', id: t.id, slot, label: `${def.name} → ${copied.name}`, loud: copied.loud };
       copied.strike(x, next);
       return;
     }
-    cur = { src: 'tool', id: t.id, slot, label: def.name };
+    cur = { src: 'tool', id: t.id, slot, label: def.name, loud: def.loud };
     def.strike?.(x, t);
   });
 
@@ -788,8 +803,8 @@ export interface Hook {
   draw(n: number): void;
   /** Carga Fuerza para el próximo golpe. */
   charge(n: number): void;
-  /** Daño directo a una torre. */
-  hit(tower: Suit, n: number): void;
+  /** Daño directo a una torre. `why` es la cuenta que lo explica en mesa («3 × 4 frenado»). */
+  hit(tower: Suit, n: number, why?: string): void;
   /** Destruye una carta: sale del mazo de la campaña. */
   burn(card: Card): void;
 }
@@ -803,7 +818,7 @@ interface Turn {
 function hookFor(turn: Turn, slot: number): Hook {
   const { state, events } = turn;
   const t = state.tools[slot];
-  const mark = (label: string) => events.push({ e: 'step', src: 'tool', id: t.id, slot, label: `${TOOL[t.id]?.name ?? t.id}: ${label}`, fuerza: 0, res: 0 });
+  const mark = (label: string, proc?: Proc) => events.push({ e: 'step', src: 'tool', id: t.id, slot, label: `${TOOL[t.id]?.name ?? t.id}: ${label}`, fuerza: 0, res: 0, ...(proc ? { proc } : {}) });
   return {
     state,
     gold(n) {
@@ -813,7 +828,7 @@ function hookFor(turn: Turn, slot: number): Hook {
     heal(n) {
       const before = state.integrity;
       state.integrity = Math.min(state.config.maxIntegrity, state.integrity + n);
-      mark(`+${state.integrity - before} de integridad`);
+      mark(`+${state.integrity - before} de integridad`, { what: 'repara', n: state.integrity - before });
       events.push({ e: 'repair', amount: state.integrity - before, total: state.integrity });
     },
     wall(n) {
@@ -827,11 +842,11 @@ function hookFor(turn: Turn, slot: number): Hook {
       turn.draw += n;
     },
     charge(n) {
-      mark(`+${n} de Fuerza cargada`);
+      mark(`+${n} de Fuerza cargada`, { what: 'carga', n });
       state.charge += n;
     },
-    hit(tower, n) {
-      mark(`${n} a ${MATERIAL[tower]}`);
+    hit(tower, n, why) {
+      mark(`${why ? `${why} = ` : ''}${n} a ${MATERIAL[tower]}`, { what: 'dano', n, tower });
       const tally: Tally = { events, dealt: {}, fallenBy: {}, fell: [] };
       applyDamage(state.towers[tower], n, false, true, state.config, tally);
     },
@@ -863,15 +878,21 @@ function destroy(turn: Turn, card: Card): boolean {
   return true;
 }
 
+/**
+ * Lo que quitará el próximo colapso de cantera. Cada vuelta completa de la cuadrilla a la cantera lo
+ * encarece en 1; en cuadrilla hay más cartas en las manos y la cantera se agota antes: cada colapso pesa menos.
+ */
+export function nextCollapse(env: { config: Config; collapses: number }, players: number): number {
+  const crowd = env.config.collapseRelief?.[Math.min(players, 4) - 1] ?? 0;
+  return Math.max(1, env.config.collapseLoss - crowd) + Math.floor(env.collapses / Math.max(1, players));
+}
+
 function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   if (state.deck.length > 0 || state.discard.length === 0) return;
   state.deck = state.discard;
   state.discard = [];
   shuffle(state.deck, state);
-  // cada vuelta completa de la cuadrilla a la cantera encarece el colapso en 1
-  // en cuadrilla hay más cartas en las manos y la cantera se agota antes: cada colapso pesa menos
-  const crowd = state.config.collapseRelief?.[Math.min(state.players.length, 4) - 1] ?? 0;
-  const loss = Math.max(1, state.config.collapseLoss - crowd) + Math.floor(state.collapses / state.players.length);
+  const loss = nextCollapse(state, state.players.length);
   state.collapses++;
   state.integrity -= loss;
   events.push({ e: 'collapse', loss, integrity: Math.max(0, state.integrity) });
@@ -1004,7 +1025,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
       if (mend > 0) {
         repair += mend;
         const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
-        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: el muro que sobra repara ${mend}`, fuerza: 0, res: 0 });
+        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: ${spill} de muro que no cabe ÷ ${state.config.overwallRepair} = repara ${mend}`, fuerza: 0, res: 0, proc: { what: 'repara', n: mend } });
       }
     }
     if (repair > 0) {
@@ -1017,7 +1038,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
         const gain = over * state.config.overhealCharge;
         state.charge += gain;
         const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
-        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: +${gain} de Fuerza cargada`, fuerza: 0, res: 0 });
+        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: ${over} de reparación que no cabe × ${state.config.overhealCharge} = +${gain} de Fuerza cargada`, fuerza: 0, res: 0, proc: { what: 'carga', n: gain } });
       }
     }
     if (res.hurt > 0) {
@@ -1071,7 +1092,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   if (state.integrity <= 0) {
     state.integrity = 0;
     state.phase = 'lost';
-    events.push({ e: 'end', result: 'lost' });
+    events.push({ e: 'end', result: 'lost', was: prev.integrity });
     return { state, events };
   }
   state.turn = (state.turn + 1) % state.players.length;

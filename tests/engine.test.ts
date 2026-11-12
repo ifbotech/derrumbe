@@ -267,7 +267,7 @@ describe('tratamientos', () => {
         expect(a.state.scrap).toBe(1);
         expect(a.state.discard.some((c) => c.id === 'S7')).toBe(false);
         expect(of(a.events, 'burn')[0].card.id).toBe('S7');
-        expect(of(a.events, 'gold').some((g) => g.amount === 2)).toBe(true); // el Horno paga cada carta destruida
+        expect(of(a.events, 'gold').some((g) => g.amount === 3)).toBe(true); // el Horno paga 3 por cada carta destruida
       } else expect(a.state.discard.some((c) => c.id === 'S7')).toBe(true);
     }
     expect(broken).toBeGreaterThan(70);

@@ -5,14 +5,16 @@ import { ACHIEVEMENTS, claim, deckUnlocked, noteRun, unlocksOf } from '../rules/
 import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, UPGRADES, buyUpgrade, depthOf, loadMeta, settle, stageDef, stagesCleared } from '../rules/run';
 import { SPECIALS } from '../rules/specials';
 import { ARCH, Arch, TOOLS } from '../rules/tools';
+import type { Autopsy } from '../rules/autopsy';
 import { sfx } from './audio';
 import { ALL_CARDS, backEl, cardEl, ferreteroEl, portraitEl } from './card';
 import { masteryBadge } from './engraving';
 import { newCampaign, pickDeck, prefs, runOpts } from './campaign';
-import { $, $$, Campaign, S, app, loadJson, toast } from './core';
+import { $, $$, Campaign, S, app, esc, loadJson, toast } from './core';
 import { confirmAbandon } from './home';
 import { actaText } from './runscreens';
 import { glyphSvg } from './glyphs';
+import { validDeath } from './causa';
 import { setScreen } from './router';
 import { choice, toolTile } from './widgets';
 import { platform } from './platform';
@@ -51,6 +53,8 @@ export interface Acta {
   gain: number;
   /** El acta en texto, lista para copiar. */
   text: string;
+  /** Causa del derrumbe, si la campaña cayó en la mesa (campo opcional: las actas viejas no la traen). */
+  death?: Autopsy | null;
 }
 export const archive: Acta[] = (loadJson<Acta[]>(ARCHIVE_KEY) ?? []).filter((a) => a && typeof a.key === 'string' && Array.isArray(a.tools)).slice(0, ARCHIVE_SIZE);
 
@@ -73,7 +77,8 @@ function fileActa(c: Campaign, gain: number): void {
     daily: run.daily,
     online: c.online,
     gain,
-    text: actaText(run),
+    text: actaText(run, c.online),
+    death: run.conquered ? null : (run.death ?? null),
   };
   const old = archive.findIndex((a) => a.key === c.key);
   if (old >= 0) archive.splice(old, 1);
@@ -203,12 +208,18 @@ function archiveTab(list: HTMLElement): void {
     .map((a, i) => {
       const where = a.won ? (a.depth ? `Torre Madre demolida + ${a.depth} abisal${a.depth > 1 ? 'es' : ''}` : 'Torre Madre demolida') : `obra ${Math.min(a.stage, LAST_STAGE)}/${LAST_STAGE} · ${stageDef(a.stage).name}${a.boss ? ` · ante ${a.boss}` : ''}`;
       const replay = !!a.seed && !a.daily && !a.online;
+      // la causa del derrumbe, con la voz del acta: rótulo rojo, título en mono gruesa y detalle debajo
+      const death = !a.won && validDeath(a.death) ? a.death : null;
+      const cause = death
+        ? `<p class="acta-causa k-${death.kind}"><span class="ac-rot">Causa del derrumbe</span><b>${esc(death.title)}</b>${death.detail ? `<small>${esc(death.detail)}</small>` : ''}</p>`
+        : '';
       return `<article class="acta-row ${a.won ? 'won' : 'lost'}">
         <span class="acta-stamp">${a.won ? 'Demolido' : 'Sepultados'}</span>
         <div class="acta-main">
           <b>${DECK[a.deck]?.name ?? a.deck} · nivel de obra ${a.level}${a.daily ? ` · diaria ${a.daily}` : ''}${a.online ? ' · en sala' : ''}</b>
           <span>${day(a.when)} · ${where} · ${a.turns} turnos · mayor golpe ${a.maxHit}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
           <span class="acta-tools">${a.tools.map((id) => glyphSvg(id, 'mini-ico')).join('') || '<em>sin herramientas</em>'}<em>${a.seed ? `semilla ${a.seed}` : 'semilla del servidor'}</em></span>
+          ${cause}
         </div>
         <div class="acta-btns"><button data-replay="${i}" ${replay ? '' : 'disabled'} data-tip="<b>Rejugar semilla</b>${replay ? 'Empieza una campaña nueva con la misma semilla, baraja y nivel de obra: las mismas decisiones darán exactamente la misma campaña.' : a.daily ? 'La obra diaria solo se juega en su día.' : 'En sala la semilla la pone el servidor.'}">Rejugar semilla</button><button data-copy="${i}">Copiar acta</button></div>
       </article>`;
