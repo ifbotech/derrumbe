@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  Bucle autónomo del estudio DERRUMBE: construye una versión tras otra (V6 → V10) y solo deja pasar
+  Bucle autónomo del estudio de CORONA ROTA: construye una versión tras otra (V7 → V10) y solo deja pasar
   la que no empeora. Windows PowerShell 5.1 o superior.
 
 .DESCRIPTION
@@ -13,7 +13,7 @@
     3. Puertas de CPU, en orden: typecheck, test, analyze:meta (sin avisos), docs, qa:visual, qa:smoke.
        Si una falla, la celda responsable recibe el registro y lo arregla (-Intentos veces).
     4. Cierre: las celdas del director corren después de las puertas, con sus medidas delante, y
-       escriben el registro de cambios. Commit candidato "DERRUMBE N.0" en la rama.
+       escriben el registro de cambios. Commit candidato "CORONA ROTA N.0" en la rama.
     5. Puerta de GPU: el panel simulado de ..\panelAgentesGaming sobre ese commit (RTX 3090), con la
        sala QA-3090 animada mientras corre.
     6. Veredicto: compara aprobación por persona y claridad media con v(N-1). Si no hay regresión,
@@ -23,14 +23,14 @@
   Todo queda registrado en artifacts\estudio\vN\ (un .log por celda y por puerta, y veredicto.json).
 
 .PARAMETER Desde
-  Primera versión que se construye (por defecto 6).
+  Primera versión que se construye (por defecto 7).
 .PARAMETER Hasta
   Última versión (por defecto 10).
 .PARAMETER BasePanel
   run_id del panel con el que se compara la primera versión. Sin él, se usa el que guardó la versión
   anterior en artifacts\estudio\estado.json y, si no hay, se audita main antes de empezar.
 .PARAMETER Preset
-  Preset del panel (por defecto v4-completo: 240 personas, unos 90-105 minutos).
+  Preset del panel (por defecto v6-completo: 240 personas, unos 90-105 minutos).
 .PARAMETER Intentos
   Rondas de reparación por puerta de CPU antes de apartar la versión (por defecto 2).
 .PARAMETER Permisos
@@ -53,16 +53,16 @@
   No ejecuta nada: enseña las celdas y las puertas de cada versión.
 
 .EXAMPLE
-  .\scripts\estudio-autonomo.ps1                          # V6 a V10, sin publicar
+  .\scripts\estudio-autonomo.ps1                          # V7 a V10, sin publicar
   .\scripts\estudio-autonomo.ps1 -Publicar -ReiniciarOllama
   .\scripts\estudio-autonomo.ps1 -Desde 7 -Hasta 7        # solo la V7
   .\scripts\estudio-autonomo.ps1 -Ensayo                  # qué haría, sin tocar nada
 #>
 param(
-  [ValidateRange(5, 99)][int]$Desde = 6,
+  [ValidateRange(5, 99)][int]$Desde = 7,
   [ValidateRange(5, 99)][int]$Hasta = 10,
   [string]$BasePanel = "",
-  [string]$Preset = "v4-completo",
+  [string]$Preset = "v6-completo",
   [ValidateRange(0, 5)][int]$Intentos = 2,
   [ValidateSet("acceptEdits", "auto", "dontAsk", "bypassPermissions")][string]$Permisos = "acceptEdits",
   [string]$Modelo = "",
@@ -160,7 +160,7 @@ function LanzarCelda([int]$n, [string]$nombre, [string]$encargo, [string]$etique
   $pedido = Join-Path $carpeta "$etiqueta.pedido.md"
   $log = Join-Path $carpeta "$etiqueta.log"
   $cabecera = @"
-Sprint DERRUMBE V$n, rama estudio/v$n. Eres la celda '$nombre' del estudio: sigue tu reglamento.
+Sprint de CORONA ROTA, V$n, rama estudio/v$n. Eres la celda '$nombre' del estudio: sigue tu reglamento.
 Otras celdas ya trabajaron o trabajarán después de ti en esta misma rama: toca solo tus archivos.
 No ejecutes git commit, push, stash, reset, restore ni checkout: el commit lo hace el orquestador.
 Cuando termines, deja en verde tus propias comprobaciones y acaba con un informe breve de lo que cambió.
@@ -393,7 +393,7 @@ try {
     Repo "add -A" | Out-Null
     if (-not (Repo "status --porcelain")) { Apartar $n "las celdas no cambiaron nada"; break }
     $mensaje = Join-Path $carpeta "commit.txt"
-    [System.IO.File]::WriteAllText($mensaje, "DERRUMBE $n.0: $($spec.Tema)`n", $Utf8)
+    [System.IO.File]::WriteAllText($mensaje, "CORONA ROTA $n.0: $($spec.Tema)`n", $Utf8)
     Repo "commit -F `"$mensaje`"" | Out-Null
     $sha = Repo "rev-parse HEAD"
     Decir "Commit candidato $($sha.Substring(0, 7))" "Green"
@@ -415,8 +415,8 @@ try {
     Repo "switch main" | Out-Null
     Repo "merge --ff-only estudio/v$n" | Out-Null
     # la etiqueta lleva el veredicto del panel: queda en el historial sin tocar más archivos
-    $nota = "DERRUMBE $n.0"
-    if ($panel) { $nota = "DERRUMBE {0}.0 - panel {1}: aprobacion {2} % ({3:+0.0;-0.0}), claridad {4} ({5:+0.00;-0.00})" -f $n, $panel.RunId, $panel.Aprobacion, $dA, $panel.Claridad, $dC }
+    $nota = "CORONA ROTA $n.0"
+    if ($panel) { $nota = "CORONA ROTA {0}.0 - panel {1}: aprobacion {2} % ({3:+0.0;-0.0}), claridad {4} ({5:+0.00;-0.00})" -f $n, $panel.RunId, $panel.Aprobacion, $dA, $panel.Claridad, $dC }
     Repo "tag -a v$n.0.0 -m `"$nota`"" | Out-Null
     Repo "branch -d estudio/v$n" | Out-Null
     if ($Publicar) { Repo "push origin main --follow-tags" | Out-Null; Decir "Publicada: main y v$n.0.0 en origin." "Green" }

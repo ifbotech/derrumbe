@@ -3,6 +3,7 @@ import { Autopsy, autopsy, omen } from '../src/rules/autopsy';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { Action, Card, Config, DEFAULT_CONFIG, GameEvent, GameState, MATERIAL, Suit, applyAction, createGame, currentPlayer, newTowers, viewFor } from '../src/rules/engine';
 import { BOSS, Run, finishBattle, newRun, runAction, startStage, trackEvents } from '../src/rules/run';
+import { SPECIAL } from '../src/rules/specials';
 import { TOOL } from '../src/rules/tools';
 
 const card = (id: string, extra: Partial<Card> = {}): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0, ...extra } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)), ...extra });
@@ -40,9 +41,9 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const s = table(cfg, [card('H2'), card('H3')], [card('S9')], [], { integrity: 9, wall: 3 });
     const { a } = lose(s, { type: 'discard', cards: ['H2'] });
     expect(a).toMatchObject({ kind: 'sirena', tower: 'S', before: 9, threat: 14, blocked: 3, taken: 11 });
-    expect(a.title).toBe('Sirena de ACERO: amenaza 14 contra muro 3 → entran 11');
-    // le quedaban 9 y entraron 11: con 3 puntos más de muro habría seguido en pie con 1
-    expect(a.detail).toBe('Al búnker le quedaban 9. Faltaron 3 de muro (♣); un golpe limpio también la callaba.');
+    expect(a.title).toBe('Contraataque de PICAS: Ataque 14 contra Escudo 3 → entran 11');
+    // le quedaban 9 y entraron 11: con 3 puntos más de Escudo habría seguido en pie con 1
+    expect(a.detail).toBe('Te quedaban 9 de Vida. Faltaron 3 de Escudo (♣); un Golpe exacto también lo paraba.');
     fits(a);
   });
 
@@ -52,9 +53,9 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const s = table(cfg, [card('H6'), card('H3')], [card('D4')], [], { integrity: 3, wall: 0 });
     const { a } = lose(s, { type: 'attack', cards: ['H6'], target: 'S' });
     expect(a).toMatchObject({ kind: 'sirena', tower: 'D', before: 5, threat: 9, blocked: 0, taken: 9 });
-    expect(a.title).toBe(`Sirena de ${MATERIAL.D}: amenaza 9 y ningún muro → entran 9`);
+    expect(a.title).toBe(`Contraataque de ${MATERIAL.D}: Ataque 9 y ningún Escudo → entran 9`);
     expect(a.detail).toContain('quedaban 5');
-    expect(a.detail).toContain('Faltaron 5 de muro');
+    expect(a.detail).toContain('Faltaron 5 de Escudo');
     fits(a);
   });
 
@@ -63,7 +64,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const s = table(cfg, [card('H2'), card('H3')], [card('S9'), card('C9')], [], { integrity: 6, wall: 0 });
     const { a } = lose(s, { type: 'discard', cards: ['H2'] });
     expect(a).toMatchObject({ kind: 'sirena', tower: 'C', before: 2, threat: 4, taken: 4 });
-    expect(a.detail).toContain('2.ª sirena del turno');
+    expect(a.detail).toContain('2.º Contraataque del turno');
     expect(a.detail).toContain('quedaban 2');
     fits(a);
   });
@@ -79,9 +80,9 @@ describe('autopsia de la derrota (contrato C1)', () => {
     expect(loss && loss.e === 'collapse' ? loss.loss : 0).toBe(cfg.collapseLoss);
     expect(a).toMatchObject({ kind: 'colapso', before: 4, threat: cfg.collapseLoss, blocked: 0, taken: cfg.collapseLoss });
     expect(a.tower).toBeUndefined();
-    expect(a.title).toBe(`Cantera agotada: el colapso quitó ${cfg.collapseLoss} y el muro no lo frena`);
+    expect(a.title).toBe(`Mazo agotado: pierdes ${cfg.collapseLoss} de Vida; el Escudo no lo frena`);
     expect(a.detail).toContain('quedaban 4');
-    expect(a.detail).toContain('Cada colapso quita 1 más');
+    expect(a.detail).toContain('pierdes 1 más');
     fits(a);
   });
 
@@ -92,7 +93,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
     s.deck = [];
     const { a } = lose(s, { type: 'discard', cards: ['H2'] });
     expect(a).toMatchObject({ kind: 'colapso', before: 6, taken: cfg.collapseLoss + 1 });
-    expect(a.title).toContain(`quitó ${cfg.collapseLoss + 1}`);
+    expect(a.title).toContain(`pierdes ${cfg.collapseLoss + 1} de Vida`);
   });
 
   it('herida propia: Corazón de la torre cobra su punto cuando el golpe no tira nada', () => {
@@ -100,9 +101,9 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const s = table(cfg, [card('S5'), card('H3')], [card('X1')], ['corazon'], { integrity: 1, wall: 8 });
     const { a } = lose(s, { type: 'attack', cards: ['S5'], target: 'D' });
     expect(a).toMatchObject({ kind: 'herida', before: 1, threat: 1, blocked: 0, taken: 1 });
-    expect(a.title).toBe('Corazón de la torre: tu propio golpe le costó 1 al búnker');
-    expect(a.detail).toContain('quedaba 1.');
-    expect(a.detail).toContain('El muro no frena');
+    expect(a.title).toBe(`${TOOL.corazon.name}: tu propio golpe te costó 1 de Vida`);
+    expect(a.detail).toContain('quedaba 1 de Vida.');
+    expect(a.detail).toContain('El Escudo no frena');
     fits(a);
   });
 
@@ -116,14 +117,14 @@ describe('autopsia de la derrota (contrato C1)', () => {
     expect(out.state.phase).toBe('lost');
     const a = autopsy(out.events, topo)!;
     expect(a).toMatchObject({ kind: 'herida', before: 1, taken: 1 });
-    expect(a.title).toBe('Suelo inestable: tu propio golpe le costó 1 al búnker');
+    expect(a.title).toBe(`${BOSS.inestable.name}: tu propio golpe te costó 1 de Vida`);
     fits(a);
 
     const nitro: Card = { id: 'sp-nitro-9', suit: 'X', rank: 0, sp: 'nitro' };
     const t = table(cfgWith({ floorHp: TOUGH }), [card('S5'), nitro, card('D3')], [card('X1')], [], { integrity: 2 });
     const b = lose(t, { type: 'attack', cards: ['S5', nitro.id], target: 'D' }).a;
     expect(b).toMatchObject({ kind: 'herida', before: 2, taken: 2 });
-    expect(b.title).toBe('Nitroglicerina: tu propio golpe le costó 2 al búnker');
+    expect(b.title).toBe(`${SPECIAL.nitro.name}: tu propio golpe te costó 2 de Vida`);
     fits(b);
   });
 
@@ -248,8 +249,13 @@ describe('aviso de último turno', () => {
     const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 4, wall: 2 });
     const o = omen(view(s))!;
     expect(o.kind).toBe('sirena');
-    expect(o.title).toMatch(/^Último turno: la sirena de (ACERO|VIDRIO|LADRILLO|HORMIGÓN) \(6\) puede tirar el búnker$/);
-    expect(o.detail).toContain('Te quedan 4 y 2 de muro');
+    expect(o.title).toMatch(/^Último turno: el Contraataque de (PICAS|DIAMANTES|CORAZONES|TRÉBOLES) \(⚔ 6\) puede acabar contigo$/);
+    expect(o.detail).toContain('Te quedan 4 de Vida y 2 de Escudo');
+    // las cifras también van en campos propios (el aviso de un renglón del móvil las lee de ahí)
+    expect(o).toMatchObject({ threat: 6, shield: 2, life: 4 });
+    expect(o.title).toContain(MATERIAL[o.tower!]);
+    expect(o.loss).toBeUndefined();
+    expect(o.deck).toBeUndefined();
     fits(o);
     // un punto más de muro y ya no es el último turno
     expect(omen(view({ ...s, wall: 3 }))).toBeNull();
@@ -259,7 +265,7 @@ describe('aviso de último turno', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 3, 12: 3, 13: 3 } });
     const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 5, wall: 0 });
     expect(omen(view(s))).toBeNull();
-    expect(omen(view({ ...s, fatigue: 2 }))?.title).toContain('(5)');
+    expect(omen(view({ ...s, fatigue: 2 }))?.title).toContain('(⚔ 5)');
     // con todo desarmado no hay sirena que temer
     const calm = structuredClone({ ...s, fatigue: 2 });
     for (const t of Object.values(calm.towers)) t.disarmed = true;
@@ -278,8 +284,12 @@ describe('aviso de último turno', () => {
     s.deck = s.deck.slice(0, 2);
     const o = omen(view(s))!;
     expect(o.kind).toBe('colapso');
-    expect(o.title).toBe(`Último turno: quedan 2 cartas en la cantera y el colapso quita ${cfg.collapseLoss}`);
-    expect(o.detail).toContain('el muro no frena un colapso');
+    expect(o.title).toBe(`Último turno: quedan 2 cartas en el Mazo y agotarlo quita ${cfg.collapseLoss} de Vida`);
+    expect(o.detail).toContain('el Escudo no frena el Mazo agotado');
+    expect(o).toMatchObject({ loss: cfg.collapseLoss, deck: 2, life: 5 });
+    expect(o.threat).toBeUndefined();
+    expect(o.tower).toBeUndefined();
+    expect(o.shield).toBeUndefined();
     fits(o);
     // con 3 cartas en la cantera, o con un punto más de búnker, todavía no
     expect(omen(view({ ...s, deck: [...s.deck, card('S2')] }))).toBeNull();
@@ -324,7 +334,7 @@ describe('avisos de herramienta que dispara (contrato C2)', () => {
     const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
     const [st] = steps(out.events, 'contragolpe');
     expect(st.proc).toEqual({ what: 'dano', n: 12, tower: 'S' });
-    expect(st.label).toBe('Contragolpe: 3 × 4 frenado = 12 a ACERO');
+    expect(st.label).toBe('Rodela de púas: 3 × 4 frenado = 12 a PICAS');
     expect(out.state.towers.S.damage).toBe(12);
   });
 
@@ -337,7 +347,7 @@ describe('avisos de herramienta que dispara (contrato C2)', () => {
       { what: 'repara', n: 4 },
       { what: 'carga', n: 9 },
     ]);
-    expect(st.map((x) => x.label)).toEqual(['Rebosadero: 8 de muro que no cabe ÷ 2 = repara 4', 'Rebosadero: 3 de reparación que no cabe × 3 = +9 de Fuerza cargada']);
+    expect(st.map((x) => x.label)).toEqual(['Copa rebosante: 8 de Escudo que no cabe ÷ 2 = cura 4', 'Copa rebosante: 3 de curación que no cabe × 3 = +9 de Daño cargado']);
   });
 
   it('Megáfono (cualquier gancho que pega) también lleva su aviso', () => {
@@ -345,6 +355,6 @@ describe('avisos de herramienta que dispara (contrato C2)', () => {
     const s = table(cfg, [card('H2'), card('H3')], [card('S9')], ['megafono'], { wall: 0 });
     const [st] = steps(applyAction(s, 'a', { type: 'discard', cards: ['H2'] }).events, 'megafono');
     expect(st.proc).toEqual({ what: 'dano', n: 8, tower: 'S' });
-    expect(st.label).toBe('Megáfono: 8 a ACERO');
+    expect(st.label).toBe('Rosa de espinas: 8 a PICAS');
   });
 });

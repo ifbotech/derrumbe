@@ -21,7 +21,7 @@ export const CONTROLS: Record<Act, [string, string]> = {
   // L3 = pulsar la palanca izquierda. Botón propio: una pulsación corta de X golpea y nunca descarta
   discard: ['Supr', 'L3'],
   restart: ['R', 'Select'],
-  // con el foco en una herramienta del cinturón; fuera de él, LB abre el mazo y RB la lupa
+  // con el foco en una reliquia; fuera de ellas, LB abre el mazo y RB la lupa
   beltLeft: ['Mayús ←', 'LB'],
   beltRight: ['Mayús →', 'RB'],
   // R3 = pulsar la palanca derecha
@@ -45,14 +45,14 @@ const pad = (act: Act) => CONTROLS[act][P];
 export const CONTROL_ROWS: [string, string, string][] = [
   ['Mover el foco', 'Flechas', 'Cruceta o palanca izquierda'],
   ['Elegir', `${key('choose')} · 1–9 en la mano · clic`, pad('choose')],
-  ['Golpear la torre apuntada', `${key('strike')} · clic en la torre`, pad('strike')],
-  ['Guardar en el andamio', key('stash'), pad('stash')],
-  ['Tiza de replanteo (deshacer)', key('undo'), pad('undo')],
+  ['Golpear el trono apuntado', `${key('strike')} · clic en el trono`, pad('strike')],
+  ['Guardar en La Manga', key('stash'), pad('stash')],
+  ['Rebobinar (deshacer)', key('undo'), pad('undo')],
   ['Descartar lo elegido', key('discard'), `${pad('discard')} (pulsar la palanca izquierda)`],
   ['Atrás / soltar la selección', key('back'), pad('back')],
-  ['Mazo (cantera y escombrera)', key('deck'), pad('deck')],
-  ['Lupa de grabador', `${key('lupa')} · clic derecho · pulsación larga`, pad('lupa')],
-  ['Reordenar el cinturón', 'Arrastrar · Mayús + flechas', `${pad('beltLeft')} / ${pad('beltRight')} con el foco en la herramienta`],
+  ['Ver el Mazo y el Descarte', key('deck'), pad('deck')],
+  ['Lupa', `${key('lupa')} · clic derecho · pulsación larga`, pad('lupa')],
+  ['Reordenar las reliquias', 'Arrastrar · Mayús + flechas', `${pad('beltLeft')} / ${pad('beltRight')} con el foco en la reliquia`],
   ['Cambiar la velocidad (1× → 2× → 4×)', 'botón de la barra', pad('speed')],
   ['Pantalla completa', key('fullscreen'), `${pad('fullscreen')} (pulsar la palanca derecha)`],
   ['Reiniciar la campaña', `Mantener ${key('restart')}`, `Mantener ${pad('restart')}`],

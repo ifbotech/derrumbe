@@ -1,4 +1,4 @@
-// Baraja DERRUMBE — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
+// Baraja de CORONA ROTA — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
 // líneas talladas en color papel, tintas planas por palo y textura de imprenta.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
 import { Card, CardSuit, MATERIAL, RANK_LABEL, SEAL, Seal, Suit, TREATMENT, Treatment } from '../rules/engine';
@@ -118,7 +118,7 @@ function king(s: Suit): [string, string] {
     <path class="cut" d="M97,136 C90,150 90,166 96,182 M108,135 C102,152 104,172 112,190 M120,133 C116,152 122,174 130,188 M132,131 C132,146 138,164 146,174 M144,124 C147,136 151,148 155,154"/>
     <path class="cut" d="M116,104 C122,110 124,116 122,122 M148,96 c-7,-2 -10,8 -4,13 c3,2 6,0 5,-4 M152,76 L154,92 M84,113 l5,-1"/>
     <path class="cut heavy" d="M93,88 L120,82"/>
-    <path class="gd ol" d="M88,72 L83,52 V38 H96 V50 H108 V33 H120 V50 H132 V33 H144 V50 H156 V38 H169 V52 L164,72 Z"/>
+    <path class="gd ol" d="M88,72 L81,34 L100,52 L112,24 L125,48 L138,24 L150,52 L171,34 L164,72 Z"/><circle class="gd ol" cx="112" cy="24" r="4"/><circle class="gd ol" cx="138" cy="24" r="4"/>
     <path class="thin" d="M85,60 H167"/>`;
   const live = `
     ${eye(106, 98)}
@@ -247,7 +247,7 @@ function jokerArt(): string {
       <g filter="url(#rough)"><g clip-path="url(#inframe)">${half}<g transform="rotate(180 125 175)">${half}</g></g>
         <path class="belt" d="M-6,199.1 L256,150.9"/><path class="stitch" d="M-6,199.1 L256,150.9"/>
       </g>
-      <text class="cap" transform="translate(23 188) rotate(-90)">HUELGA GENERAL</text><g transform="rotate(180 125 175)"><text class="cap" transform="translate(23 188) rotate(-90)">HUELGA GENERAL</text></g>
+      <text class="cap" transform="translate(23 188) rotate(-90)">MOTÍN</text><g transform="rotate(180 125 175)"><text class="cap" transform="translate(23 188) rotate(-90)">MOTÍN</text></g>
     </svg>
     <svg class="ly art live" viewBox="0 0 250 350" aria-hidden="true">
       <g transform="translate(206 60)"><path class="star" d="M0,-20 L5.5,-6.5 L20,-6.5 L8.5,2.5 L12.5,17 L0,8.5 L-12.5,17 L-8.5,2.5 L-20,-6.5 L-5.5,-6.5 Z"/></g>
@@ -264,15 +264,16 @@ interface BackDef {
   diamond: string;
   emblem: string;
 }
-const TOWER = `<path d="M101,214 h48 v-24 h-8 v-24 h-8 v-26 h-16 v26 h-8 v24 h-8 Z" fill="${PAPER}"/><path d="M125,140 l-5,22 l8,10 l-6,18 l7,10 l-3,14" fill="none" stroke="${INK}" stroke-width="2.4"/>`;
-const inDiamond = (glyph: string) => `<svg x="85" y="135" width="80" height="80" viewBox="0 0 100 100">${GLYPH[glyph]}</svg>`;
+/** Emblema de la conjura: una daga que atraviesa una corona. */
+const CONJURA = `<path d="M92,204 L88,164 L105,182 L125,152 L145,182 L162,164 L158,204 Z" fill="${PAPER}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><path d="M92,192 H158" stroke="${INK}" stroke-width="3"/>
+  <g transform="translate(125 178) rotate(35)"><path d="M-6,-64 L0,-80 L6,-64 V24 H-6 Z" fill="${PAPER}" stroke="${INK}" stroke-width="3"/><path d="M-20,24 H20 V32 H-20 Z" fill="${INK}" stroke="${PAPER}" stroke-width="1.5"/><rect x="-4" y="32" width="8" height="22" fill="${INK}"/><circle cy="60" r="7" fill="${PAPER}" stroke="${INK}" stroke-width="3"/></g>`;
 const BACKS: Record<string, BackDef> = {
-  obra: { field: INK, dark: true, diamond: '#ae2d24', emblem: TOWER },
+  obra: { field: INK, dark: true, diamond: '#ae2d24', emblem: CONJURA },
   acero: { field: 'url(#pat-S)', dark: true, diamond: INK, emblem: `<g transform="translate(125 158) scale(2.5)" fill="${PAPER}">${PIP.S}</g><g transform="translate(125 206) scale(1.7)" fill="${PAPER}">${PIP.C}</g>` },
-  prestamista: { field: '#f0b415', dark: false, diamond: INK, emblem: `<ellipse cx="125" cy="204" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><ellipse cx="125" cy="188" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><ellipse cx="125" cy="172" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><circle cx="125" cy="140" r="17" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><path d="M125,130 V150" stroke="${INK}" stroke-width="4"/>` },
-  ases: { field: '#ae2d24', dark: true, diamond: PAPER, emblem: `<text x="125" y="208" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#ae2d24">${PIP.S}</g>` },
-  corta: { field: PAPER, dark: false, diamond: '#f0b415', emblem: inDiamond('sierra') },
-  caos: { field: '#2a6359', dark: false, diamond: PAPER, emblem: inDiamond('incognita') },
+  prestamista: { field: '#f0b415', dark: false, diamond: INK, emblem: `<path d="M110,142 C100,132 104,124 112,128 L125,136 L138,128 C146,124 150,132 140,142 C168,154 172,214 125,216 C78,214 82,154 110,142 Z" fill="#f0b415" stroke="${PAPER}" stroke-width="3.5" stroke-linejoin="round"/><path d="M108,146 H142" stroke="${INK}" stroke-width="5"/><circle cx="125" cy="184" r="14" fill="none" stroke="${INK}" stroke-width="4"/><path d="M125,176 V192" stroke="${INK}" stroke-width="4"/>` },
+  ases: { field: '#ae2d24', dark: true, diamond: PAPER, emblem: `<path d="M100,134 L97,112 L110,124 L125,104 L140,124 L153,112 L150,134 Z" fill="#ae2d24" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><text x="125" y="212" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#ae2d24">${PIP.S}</g>` },
+  corta: { field: PAPER, dark: false, diamond: '#f0b415', emblem: `<g stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"><path d="M96,132 H124 L118,152 L128,170 L114,218 H96 Z" fill="${PAPER}" transform="rotate(-8 110 175)"/><path d="M130,132 H154 V218 H122 L136,170 L126,152 Z" fill="${PAPER}" transform="rotate(8 140 175)"/></g><g transform="translate(108 150) scale(0.9)" fill="#ae2d24">${PIP.H}</g>` },
+  caos: { field: '#2a6359', dark: false, diamond: PAPER, emblem: `<path d="M125,175 C125,168 135,168 135,176 C135,188 115,188 115,174 C115,154 147,154 147,176 C147,200 103,200 103,174 C103,142 159,142 159,176 C159,212 91,212 91,174" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>` },
 };
 let currentBack = 'obra';
 /** Dorso con el que se dibujan las cartas a partir de ahora (la baraja de la campaña en curso). */
@@ -287,7 +288,7 @@ export function backSvg(id = currentBack): string {
     <rect width="250" height="350" fill="${INK}"/>
     <rect x="10" y="10" width="230" height="330" fill="${b.field}"/>
     <rect x="16" y="16" width="218" height="318" fill="url(#pat-back${b.dark ? '' : '-ink'})"/>
-    <rect x="16" y="16" width="218" height="20" fill="url(#pat-haz)"/><rect x="16" y="314" width="218" height="20" fill="url(#pat-haz)"/>
+    <rect x="16" y="16" width="218" height="20" fill="#7d1d17"/><rect x="16" y="314" width="218" height="20" fill="#7d1d17"/><path d="M16,26 H234 M16,324 H234" stroke="#e0a43a" stroke-width="2.5" stroke-dasharray="10 5"/>
     <g filter="url(#rough)">
       <rect x="10" y="10" width="230" height="330" fill="none" stroke="${line}" stroke-width="3"/>
       <path d="M125,84 L196,175 L125,266 L54,175 Z" fill="${b.diamond}" stroke="${b.diamond === PAPER || b.diamond === '#f0b415' ? INK : PAPER}" stroke-width="4"/>
@@ -345,23 +346,20 @@ export function tileEl(glyph: string, name: string, kind: 'relic' | 'service', r
   return el;
 }
 
-// ── retratos: el Ferretero y los jefes de obra. Cada uno tiene su propia silueta ──
-// (perfil o de frente, máscara, casco, hocico…) para reconocerlo de un vistazo.
-// `still` pasa por el filtro de gubia; `live` son los ojos, que siguen al puntero.
+// ── retratos: el Tratante y los siete monarcas. A cada uno se le reconoce por su objeto y su silueta
+// (sombrero y farol, naipe de dos caras, balanza, cáliz, corona de carámbanos, llave, hacha al hombro,
+// reloj de arena), nunca por rasgos de la cara. `still` pasa por el filtro de gubia; `live` son los
+// ojos, que siguen al puntero.
 
-const HEAD_OLD = `
-    <path class="ink" d="M94,70 L89,96 L77,113 L88,117 L86,125 L92,129 L82,136 C74,146 72,164 80,172 C80,184 88,192 98,190 C104,200 118,202 124,194 C134,198 146,190 146,180 C156,172 160,160 158,146 L162,104 L158,70 Z"/>
-    <path class="pp" d="M84,121 C100,110 124,113 138,133 C120,123 102,126 88,134 Z"/>
-    <path class="cut" d="M97,138 C90,150 90,166 96,182 M108,137 C102,152 104,172 112,190 M120,135 C116,152 122,174 130,188 M132,133 C132,146 138,164 146,174 M144,126 C147,136 151,148 155,154"/>
-    <path class="cut" d="M116,104 C122,110 124,116 122,120 M148,96 c-7,-2 -10,8 -4,13 c3,2 6,0 5,-4 M84,113 l5,-1"/>
-    <path class="cut heavy" d="M93,89 L120,85"/>`;
-const HEAD_YOUNG = `
-    <path class="ink" d="M96,72 L91,97 L80,111 L90,116 L88,123 L93,127 L90,134 C92,142 100,148 112,150 L118,186 L152,186 L156,140 L160,100 L156,70 Z"/>
-    <path class="cut" d="M84,111 l5,-1 M116,106 C121,111 122,117 120,122"/>
-    <path class="cut heavy" d="M94,90 L120,84"/>`;
 const CLOAK = (fill: string, d: string) => `<path ${fill.startsWith('url') ? `fill="${fill}"` : `class="${fill}"`} stroke="#181614" stroke-width="4" stroke-linejoin="round" d="${d}"/>`;
 const iris = (x: number, y: number) => `<g transform="translate(${x} ${y})"><g class="lid"><g class="iris"><circle class="rd" r="6"/><circle class="pp" r="2.2"/></g></g></g>`;
-const mirrored = (body: string, live = false) => `<g transform="translate(250 0) scale(-1 1)"${live ? ' data-sx="-1" data-sy="1"' : ''}><g transform="translate(-52 -50) scale(1.5)">${body}</g></g>`;
+/** Rostro de frente, sereno: óvalo de papel, nariz y boca de buril. */
+const FACE = (x1: number, x2: number, top: number, chin: number) => {
+  const mid = (x1 + x2) / 2;
+  return `<path class="pp ol" d="M${x1},${top} C${x1 - 2},${top + 48} ${mid - 22},${chin - 2} ${mid},${chin} C${mid + 22},${chin - 2} ${x2 + 2},${top + 48} ${x2},${top} C${x2},${top - 24} ${x1},${top - 24} ${x1},${top} Z"/>
+    <path class="thin" d="M${mid},${top + 22} V${top + 46} l-6,4 M${mid - 9},${top + 62} Q${mid},${top + 66} ${mid + 9},${top + 62}"/>`;
+};
+const ERMINE = (pts: [number, number][]) => pts.map(([x, y]) => `<path class="ink" d="M${x},${y} l3,9 l3,-9 Z"/>`).join('');
 
 interface Portrait {
   bg: string;
@@ -369,120 +367,126 @@ interface Portrait {
   still: string;
   live: string;
 }
+const KING_STILL = king('D')[0];
 const PORTRAIT: Record<string, Portrait> = {
-  // El Ferretero: perfil con barba, boina y delantal
+  // El Tratante: sombrero de ala ancha con una moneda en la cinta y un farol colgado
   ferretero: {
     bg: 'gl',
     rays: false,
-    still: `<path class="thin" d="M10,66 H240 M10,124 H240"/>
-      <rect class="rd ol" x="24" y="24" width="24" height="40"/><rect class="pp ol" x="52" y="34" width="18" height="30"/><rect class="ink" x="182" y="28" width="30" height="36"/><rect class="gd ol" x="216" y="38" width="16" height="26"/>
-      ${CLOAK('ink', 'M14,312 L40,216 C70,192 180,192 210,216 L236,312 Z')}
-      <path class="pp ol" d="M68,312 L78,234 H172 L182,312 Z"/>
-      ${mirrored(HEAD_OLD + '<path class="rd ol" d="M82,77 C79,50 112,37 146,41 C167,45 175,61 171,77 Z"/><path class="ink" d="M58,72 H173 V82 H58 Z"/><path class="thin" d="M98,54 C118,45 144,46 160,57"/>')}
-      <g transform="translate(46 250) rotate(-10)"><rect class="pp ol" x="-5" y="-98" width="10" height="112"/><rect class="ink" x="-32" y="-126" width="64" height="32" rx="3"/><path class="cut" d="M-22,-118 V-102 M22,-118 V-102"/>${FIST}</g>`,
-    live: mirrored(eye(106, 99), true),
+    still: `<path class="thin" d="M44,10 V60"/>
+      <path class="ink" d="M30,60 H58 L62,70 H26 Z"/><rect class="gd ol" x="28" y="70" width="32" height="42"/><rect class="pp" x="35" y="77" width="18" height="28"/><path class="ink" d="M26,112 H62 L56,120 H32 Z"/>
+      ${CLOAK('url(#pat-D)', 'M14,312 L36,222 C70,198 180,198 214,222 L236,312 Z')}
+      <path class="rd ol" d="M82,198 C100,216 150,216 168,198 L174,216 C150,236 100,236 76,216 Z"/>
+      ${FACE(92, 158, 116, 196)}
+      <path class="ink" d="M92,116 H158 V132 C140,126 110,126 92,132 Z"/>
+      <path class="ink" d="M76,108 C74,54 176,54 174,108 Z"/>
+      <path class="gd ol" d="M76,94 H174 V108 H76 Z"/><circle class="gd ol" cx="152" cy="101" r="11"/><path class="thin" d="M152,95 V107"/>
+      <path class="ink" d="M12,118 C60,98 190,98 238,118 C190,134 60,134 12,118 Z"/>
+      <path class="cut" d="M40,116 C90,107 160,107 210,116"/>`,
+    live: eye(111, 142, 9, 6) + eye(139, 142, 9, 6),
   },
-  // La Sirena: grita por un megáfono, con la melena al viento
+  // El Rey de Dos Caras: un rey de naipe con una cara arriba y otra abajo, cada una mirando a un lado
   'j-doble': {
-    bg: 'rd',
+    bg: 'ink',
     rays: false,
-    still: `<path class="ink" d="M150,66 C204,58 236,110 228,170 C224,220 236,270 240,312 H146 C170,262 160,200 150,170 Z"/>
-      <path class="cut" d="M178,90 C208,122 206,182 200,232 C198,262 206,290 214,308 M162,112 C188,142 186,202 180,252 C178,276 182,296 188,310"/>
-      ${CLOAK('url(#pat-D)', 'M60,312 L84,240 C110,222 180,222 206,244 L226,312 Z')}
-      <g transform="translate(10 -42) scale(1.45)">${HEAD_YOUNG}<path class="rd" d="M88,120 L99,118 L99,132 L90,135 Z"/><path class="gd ol" d="M92,72 L96,52 L106,66 L114,46 L124,66 L134,46 L142,66 L152,52 L158,72 Z"/></g>
-      <path class="gd ol" d="M134,126 L134,156 L46,200 V84 Z"/><path class="ink" d="M36,76 H50 V208 H36 Z"/><path class="thin" d="M72,100 V184 M102,114 V170"/>
-      <path class="thin" d="M28,108 C19,126 19,158 28,176 M19,92 C6,120 6,164 19,192"/>
-      <g transform="translate(116 186)">${FIST}</g>`,
-    live: `<g transform="translate(10 -42) scale(1.45)">${eye(107, 99, 10, 7)}</g>`,
+    still: `<rect class="pp ol" x="22" y="18" width="206" height="314" rx="10"/>
+      <g clip-path="url(#half)">${KING_STILL}</g>
+      <g transform="rotate(180 125 175)"><g clip-path="url(#half)">${KING_STILL}</g></g>
+      <path class="belt" d="M-6,199.1 L256,150.9"/><path class="stitch" d="M-6,199.1 L256,150.9"/>`,
+    live: `${eye(106, 98)}<g transform="rotate(180 125 175)" data-sx="-1" data-sy="-1">${eye(106, 98)}</g>`,
   },
-  // El Usurero: de frente, gordo, con chistera, monóculo y bigote
+  // El Usurero: recaudador flaco de cuello de armiño que pesa monedas en una balanza de mano
   'j-escasez': {
     bg: 'gd',
     rays: true,
-    still: `${CLOAK('url(#pat-C)', 'M20,312 L40,238 C70,216 180,216 210,238 L230,312 Z')}
-      <path class="ink" d="M98,226 L125,292 L152,226 L172,312 H78 Z"/>
-      <ellipse class="ink" cx="125" cy="152" rx="68" ry="70"/>
-      <rect class="ink" x="82" y="16" width="86" height="72"/><rect class="rd" x="82" y="66" width="86" height="12"/><rect class="ink" x="54" y="84" width="142" height="15" rx="4"/>
-      <path class="cut" d="M70,176 C80,208 110,220 125,220 C140,220 170,208 180,176 M118,162 C118,148 132,148 132,162 M80,120 L112,124 M138,114 L172,110"/>
-      <path class="cut heavy" d="M84,134 H110"/>
-      <path class="pp" d="M125,170 C108,158 84,162 68,182 C90,174 108,180 125,188 C142,180 160,174 182,182 C166,162 142,158 125,170 Z"/>
-      <path class="rd ol" d="M103,230 L125,242 L147,230 V256 L125,244 L103,256 Z"/>
-      <circle cx="154" cy="136" r="21" fill="none" stroke="#c98a1e" stroke-width="5.5"/><path d="M171,150 C188,172 188,204 178,228" fill="none" stroke="#c98a1e" stroke-width="3" stroke-dasharray="4 3"/>
-      <rect class="gd ol" x="22" y="284" width="48" height="11" rx="4"/><rect class="gd ol" x="26" y="272" width="48" height="11" rx="4"/><rect class="gd ol" x="20" y="260" width="48" height="11" rx="4"/><circle class="gd ol" cx="54" cy="244" r="12"/>`,
-    live: eye(154, 136, 13, 10),
+    still: `${CLOAK('url(#pat-C)', 'M62,312 L78,228 C98,212 152,212 172,228 L188,312 Z')}
+      <path class="ink" d="M113,186 H137 V214 H113 Z"/>
+      <path class="pp ol" d="M70,232 C90,204 160,204 180,232 C160,248 90,248 70,232 Z"/>${ERMINE([[88, 222], [108, 216], [134, 216], [154, 222]])}
+      ${FACE(102, 148, 112, 196)}
+      <path class="rd ol" d="M96,106 C78,92 88,62 125,60 C164,62 174,92 154,106 Z"/><path class="ink" d="M97,100 H153 V112 H97 Z"/><circle class="gd ol" cx="146" cy="78" r="6"/>
+      <path class="ink" d="M121,234 H129 V264 H121 Z"/><g transform="translate(125 238) scale(0.8)">${FIST}</g>
+      <path class="ink" d="M56,262 H194 V269 H56 Z"/><circle class="gd ol" cx="125" cy="265" r="6"/>
+      <path class="thin" d="M60,269 L48,296 M60,269 L72,296 M190,269 L178,296 M190,269 L202,296"/>
+      <path class="gd ol" d="M42,296 H78 C76,308 44,308 42,296 Z M172,296 H208 C206,308 174,308 172,296 Z"/>
+      <ellipse class="gd ol" cx="52" cy="292" rx="8" ry="3.5"/><ellipse class="gd ol" cx="68" cy="292" rx="8" ry="3.5"/><ellipse class="gd ol" cx="60" cy="285" rx="8" ry="3.5"/>`,
+    live: eye(113, 138, 7, 5) + eye(137, 138, 7, 5),
   },
-  // El Matasanos: máscara de pico, gafas redondas y sombrero de ala
+  // La Dama del Cáliz: dama velada que ofrece un cáliz del que sube un humo verde
   'j-sequia': {
-    bg: 'pp',
-    rays: true,
-    still: `${CLOAK('url(#pat-H)', 'M28,312 L52,234 C80,214 170,214 196,238 L216,312 Z')}
-      <path class="ink" d="M68,240 C54,182 60,112 110,94 C150,84 174,110 174,150 V184 C152,202 132,216 128,242 Z"/>
-      <path class="pp ol" d="M150,128 C192,134 224,160 237,198 C204,190 176,182 152,178 Z"/><path class="thin" d="M160,154 C190,162 212,176 228,192"/><circle class="ink" cx="178" cy="150" r="3.4"/>
-      <circle class="pp ol" cx="134" cy="138" r="21"/>
-      <path class="cut" d="M96,152 C110,172 130,180 152,178 M86,202 C100,216 116,224 128,228"/>
-      <path class="ink" d="M36,94 H204 V110 H36 Z M76,96 C76,36 164,36 164,96 Z"/>
-      <path class="pp" d="M108,50 h24 v16 h16 v22 h-16 v8 h-24 v-8 h-16 v-22 h16 Z"/><path class="rd" d="M112,54 h16 v16 h16 v14 h-16 v8 h-16 v-8 h-16 v-14 h16 Z"/>
-      <path class="thin" d="M34,150 V312"/><rect class="gd ol" x="22" y="150" width="24" height="34"/><path class="thin" d="M34,150 V138"/>`,
-    live: eye(134, 138, 12, 12),
+    // fondo de veneno (verde oscuro): el lacre queda para El Inquisidor
+    bg: 'vd',
+    rays: false,
+    still: `${CLOAK('url(#pat-H)', 'M30,312 L52,228 C84,206 166,206 198,228 L220,312 Z')}
+      <path class="pp ol" d="M125,28 C80,32 66,90 64,150 C62,200 50,240 40,282 L84,264 C92,234 100,216 125,214 C150,216 158,234 166,264 L210,282 C200,240 188,200 186,150 C184,90 170,32 125,28 Z"/>
+      <path class="thin" d="M86,80 C78,140 76,200 62,262 M164,80 C172,140 174,200 188,262"/>
+      <path class="ink" d="M96,104 C96,160 106,190 125,192 C144,190 154,160 154,104 C154,80 96,80 96,104 Z"/>
+      <path d="M97,116 H153 M96,130 H154 M97,160 H153 M100,174 H150" fill="none" stroke="#eae0ce" stroke-width="1.6" opacity="0.5"/>
+      <path class="gd ol" d="M92,62 C110,50 140,50 158,62 L154,72 C138,64 112,64 96,72 Z"/>
+      <path d="M114,226 C104,210 122,202 112,186 M126,224 C134,208 120,200 130,182 M138,226 C146,212 136,204 142,190" fill="none" style="stroke:var(--verd-lit)" stroke-width="5" stroke-linecap="round"/>
+      <path class="gd ol" d="M98,226 H152 C152,254 140,264 125,264 C110,264 98,254 98,226 Z"/><path class="rd" d="M118,238 C118,234 124,234 125,238 C126,234 132,234 132,238 C132,244 125,248 125,250 C125,248 118,244 118,238 Z"/>
+      <path class="gd ol" d="M121,264 H129 V288 H121 Z"/><path class="gd ol" d="M102,300 C108,286 142,286 148,300 Z"/>`,
+    live: eye(112, 144, 7, 5) + eye(138, 144, 7, 5),
   },
-  // La Ventisca: de frente, solo dos ojos en el fondo de una capucha helada
+  // La Reina Helada: reina pálida con corona de carámbanos y capa de armiño
   'j-intemperie': {
     bg: 'gl',
     rays: false,
-    still: `<path class="thin" d="M14,62 L72,40 M176,30 L236,12 M14,206 L48,192 M198,98 L236,84 M20,130 L44,122"/>
-      <circle class="pp" cx="40" cy="92" r="4"/><circle class="pp" cx="214" cy="56" r="5"/><circle class="pp" cx="206" cy="150" r="3.5"/><circle class="pp" cx="30" cy="166" r="3"/>
-      ${CLOAK('url(#pat-S)', 'M22,312 L46,232 C80,208 170,208 204,232 L228,312 Z')}
-      <path class="pp ol" d="M96,48 L104,10 L114,38 L125,4 L136,38 L146,10 L154,48 Z"/>
-      <path class="pp ol" d="M125,30 C70,50 50,120 56,192 C60,226 84,246 125,248 C166,246 190,226 194,192 C200,120 180,50 125,30 Z"/>
-      <path class="ink" d="M125,62 C92,78 78,124 82,178 C86,208 102,224 125,226 C148,224 164,208 168,178 C172,124 158,78 125,62 Z"/>
-      <path class="thin" d="M64,120 l10,6 M60,150 l11,3 M186,120 l-10,6 M190,150 l-11,3 M125,36 V56"/>
-      <path class="pp ol" d="M58,198 l8,36 l8,-32 Z M84,230 l7,30 l8,-26 Z M152,232 l8,30 l7,-28 Z M176,202 l8,36 l8,-34 Z"/>
-      <path class="cut" d="M110,198 q15,10 30,0"/>`,
-    live: eye(104, 142, 11, 8) + eye(146, 142, 11, 8),
+    still: `<circle class="pp" cx="40" cy="92" r="4"/><circle class="pp" cx="214" cy="56" r="5"/><circle class="pp" cx="206" cy="150" r="3.5"/><circle class="pp" cx="30" cy="166" r="3"/><circle class="pp" cx="196" cy="26" r="3"/>
+      ${CLOAK('pp', 'M22,312 L46,226 C80,202 170,202 204,226 L228,312 Z')}${ERMINE([[44, 268], [62, 240], [70, 290], [176, 240], [188, 290], [204, 266], [56, 300], [196, 300]])}
+      <path d="M96,312 L104,228 H146 L154,312 Z" fill="url(#pat-S)" class="ol"/>
+      <path class="ink" d="M84,110 C80,170 78,212 68,242 H182 C172,212 170,170 166,110 C166,70 84,70 84,110 Z"/>
+      ${FACE(98, 152, 110, 188)}
+      <path class="pp ol" d="M86,98 L90,52 L99,86 L108,28 L116,82 L125,10 L134,82 L142,28 L151,86 L160,52 L164,98 Z"/>
+      <path class="thin" d="M108,40 V80 M125,24 V80 M142,40 V80"/>`,
+    live: eye(113, 136, 8, 5.5) + eye(137, 136, 8, 5.5),
   },
-  // El Coloso: yelmo cerrado, hombreras enormes y dos brasas en la visera
+  // El Inquisidor: capucha puntiaguda, ojos en sombra y una gran llave al cuello
   'j-blindaje': {
     bg: 'rd',
     rays: true,
-    still: `${CLOAK('url(#pat-S)', 'M12,312 V252 C12,214 62,206 94,222 V312 Z')}${CLOAK('url(#pat-S)', 'M238,312 V252 C238,214 188,206 156,222 V312 Z')}
-      <circle class="pp" cx="36" cy="246" r="4"/><circle class="pp" cx="64" cy="236" r="4"/><circle class="pp" cx="214" cy="246" r="4"/><circle class="pp" cx="186" cy="236" r="4"/>
-      <path class="ink" d="M80,312 L88,214 H162 L170,312 Z"/><path class="cut" d="M125,224 V312 M100,254 H150"/>
-      <path class="rd ol" d="M125,26 C152,0 194,10 204,42 C178,30 156,38 138,54 Z"/>
-      <path class="ink" d="M66,216 V98 C66,38 184,38 184,98 V216 Z"/>
-      <path class="gd ol" d="M112,54 C112,22 138,22 138,54 V100 H112 Z"/>
-      <path class="cut" d="M66,114 H184"/>
-      <path class="pp" d="M82,126 H168 V144 H133 V204 H117 V144 H82 Z"/>
-      <circle class="pp" cx="96" cy="172" r="3.4"/><circle class="pp" cx="96" cy="188" r="3.4"/><circle class="pp" cx="154" cy="172" r="3.4"/><circle class="pp" cx="154" cy="188" r="3.4"/>`,
-    live: iris(102, 135) + iris(148, 135),
+    still: `${CLOAK('url(#pat-S)', 'M24,312 L48,224 C80,202 170,202 202,224 L226,312 Z')}
+      <path class="ink" d="M125,10 L180,178 C184,206 160,220 125,222 C90,220 66,206 70,178 Z" stroke="#eae0ce" stroke-width="2.5"/>
+      <path class="cut" d="M125,24 L94,162 M125,24 L156,162"/>
+      <path d="M96,146 h24 v16 h-24 Z M130,146 h24 v16 h-24 Z" fill="#26231f" stroke="#eae0ce" stroke-width="2.5"/>
+      <path d="M84,204 Q125,244 166,204" fill="none" stroke="#c98a1e" stroke-width="5" stroke-dasharray="7 4"/>
+      <circle class="gd ol" cx="125" cy="240" r="16"/><circle class="ink" cx="125" cy="240" r="6"/>
+      <path class="gd ol" d="M120,255 H130 V304 H120 Z"/><path class="gd ol" d="M130,282 H148 V290 H140 V300 H130 Z"/>`,
+    live: iris(108, 154) + iris(142, 154),
   },
-  // La Furia: de frente, melena de llamas, boca abierta y puños en alto
+  // El Verdugo: encapuchado corpulento con el hacha apoyada al hombro, de espaldas al filo
   'j-furia': {
     bg: 'gd',
-    rays: true,
-    still: `${CLOAK('url(#pat-H)', 'M22,312 L28,208 H54 L72,312 Z')}${CLOAK('url(#pat-H)', 'M228,312 L222,208 H196 L178,312 Z')}
-      ${CLOAK('url(#pat-H)', 'M56,312 L70,238 C96,222 154,222 180,238 L194,312 Z')}
-      <g transform="translate(41 192) scale(1.5)">${FIST}</g><g transform="translate(209 192) scale(1.5)">${FIST}</g>
-      <path class="rd ol" d="M58,152 C40,112 62,98 56,58 C76,72 84,88 90,98 C88,64 108,46 106,14 C128,34 132,64 138,82 C146,60 164,48 166,24 C188,52 186,86 182,102 C192,92 204,86 208,72 C218,106 206,136 192,152 Z"/>
-      <path class="ink" d="M64,142 C64,112 186,112 186,142 V208 C186,238 64,238 64,208 Z"/>
-      <path class="cut heavy" d="M80,138 L114,152 M170,138 L136,152"/>
-      <path class="rd" d="M90,186 H160 V214 C160,226 90,226 90,214 Z"/>
-      <path class="pp" d="M90,186 H160 L152,200 L143,186 L134,200 L125,186 L116,200 L107,186 L98,200 Z M100,224 L107,212 L116,224 L125,212 L134,224 L143,212 L150,224 Z"/>`,
-    live: eye(100, 164, 10, 7) + eye(150, 164, 10, 7),
+    rays: false,
+    still: `${CLOAK('url(#pat-H)', 'M8,312 V248 C8,208 60,192 125,192 C190,192 242,208 242,248 V312 Z')}
+      <path class="ink" d="M78,208 C70,142 76,72 125,64 C174,72 180,142 172,208 Z" stroke="#eae0ce" stroke-width="2.5"/>
+      <path class="pp ol" d="M98,120 C102,110 116,110 120,122 C112,127 104,127 98,120 Z M130,122 C134,110 148,110 152,120 C146,127 138,127 130,122 Z"/>
+      <path class="cut" d="M125,74 V104"/>
+      <!-- el hacha, delante de la capucha y al hombro: la hoja ancha entera a la vista -->
+      <g transform="translate(176 100) rotate(20) scale(1.1)">
+        <rect class="ink" x="-5.5" y="-14" width="11" height="196" stroke="#eae0ce" stroke-width="2"/>
+        <path class="ink" d="M4,-6 C22,-8 38,-16 48,-30 C60,-4 62,36 52,66 C42,54 24,46 4,44 Z" stroke="#eae0ce" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M46,-20 C55,2 56,36 49,58" fill="none" stroke="#eae0ce" stroke-width="3" stroke-linecap="round"/>
+        <path class="ink" d="M-4,6 L-26,18 L-4,30 Z" stroke="#eae0ce" stroke-width="2.5" stroke-linejoin="round"/>
+        <path class="gd ol" d="M-7,-20 H7 V-12 H-7 Z"/>
+      </g>
+      <g transform="translate(114 278) rotate(-18)">${FIST}</g>`,
+    live: iris(110, 119) + iris(141, 119),
   },
-  // El Topo: hocico largo, gafitas, dientes y casco de minero con lámpara
+  // El Relojero: anciano con lupa al ojo y un reloj de arena en la mano
   'j-inestable': {
     bg: 'gl',
-    rays: false,
-    still: `<path class="pp" d="M160,78 L238,36 V104 L164,96 Z"/>
-      ${CLOAK('url(#pat-C)', 'M18,312 L44,238 C70,216 150,216 176,238 L198,312 Z')}
-      <path class="ink" d="M54,240 C38,172 58,104 116,100 C150,98 170,116 184,136 C206,146 228,158 236,172 C228,186 204,192 182,192 C170,216 150,234 126,242 Z"/>
-      <circle class="rd ol" cx="230" cy="170" r="9"/>
-      <path class="pp ol" d="M184,190 h10 v18 h-10 Z M197,189 h10 v15 h-10 Z"/>
-      <path class="thin" d="M206,160 L238,138 M208,174 L240,190 M202,150 L230,120"/>
-      <circle class="pp ol" cx="146" cy="142" r="17"/><path class="cut" d="M129,140 L98,132 M84,152 c-10,-4 -14,10 -6,16"/>
-      <path class="gd ol" d="M50,118 C50,58 152,54 174,112 Z"/><rect class="ink" x="42" y="108" width="144" height="13" rx="4"/><circle class="pp ol" cx="152" cy="84" r="13"/>
-      <circle class="pp ol" cx="44" cy="270" r="30"/><svg x="22" y="248" width="44" height="44" viewBox="0 0 100 100">${GLYPH.piqueta}</svg>`,
-    live: eye(146, 142, 9, 9),
+    rays: true,
+    still: `${CLOAK('url(#pat-C)', 'M24,312 L46,228 C80,206 170,206 204,228 L226,312 Z')}
+      ${FACE(92, 158, 102, 180)}
+      <path class="ink" d="M90,102 C92,64 158,64 160,102 Z"/>
+      <path class="pp ol" d="M96,160 C96,202 110,238 125,252 C140,238 154,202 154,160 C142,174 108,174 96,160 Z"/>
+      <path class="thin" d="M112,182 L118,228 M125,184 V242 M138,182 L132,228"/>
+      <circle cx="141" cy="130" r="16" class="gl" stroke="#181614" stroke-width="5"/><path class="thin" d="M155,140 L172,156"/>
+      <g transform="translate(62 252)"><rect class="gd ol" x="-26" y="-42" width="52" height="9"/><rect class="gd ol" x="-26" y="33" width="52" height="9"/>
+        <path class="pp ol" d="M-19,-33 H19 C19,-12 4,-6 4,0 C4,6 19,12 19,33 H-19 C-19,12 -4,6 -4,0 C-4,-6 -19,-12 -19,-33 Z"/>
+        <path class="gd" d="M-15,31 C-12,19 -4,14 0,8 C4,14 12,19 15,31 Z"/><path class="thin" d="M0,0 V22"/></g>
+      <g transform="translate(96 262)">${FIST}</g>`,
+    live: eye(109, 130, 7, 5) + eye(141, 130, 10, 7.5),
   },
 };
 
@@ -509,7 +513,7 @@ export function portraitEl(id: string, name: string): HTMLDivElement {
   attachTilt(el);
   return el;
 }
-export const ferreteroEl = () => portraitEl('ferretero', 'El Ferretero');
+export const ferreteroEl = () => portraitEl('ferretero', 'El Tratante');
 
 // ───────────────────────── Sellos y tratamientos ─────────────────────────
 // El sello es un tampón de goma abajo a la izquierda; el tratamiento, un cartabón de tinta arriba a la

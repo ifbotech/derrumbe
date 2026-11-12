@@ -1,6 +1,64 @@
 # Registro de cambios
 
-Todas las versiones notables de DERRUMBE. Las cifras de balance salen del laboratorio (`npm run analyze:meta`); las del panel salen de una simulación con n = 240 y tienen unos ±6 puntos de ruido.
+Todas las versiones notables de CORONA ROTA (hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`); las del panel salen de una simulación con n = 240 y tienen unos ±6 puntos de ruido.
+
+## 6.0.0 — 2026-11-12
+
+Cambio de tema 360° y claridad universal, sin tocar una cuenta. Motivo: en la auditoría V4 del panel simulado, «reglas confusas / tutorial» sumó 187 menciones y el casual dio 3,58/10 de claridad; la jerga de obra (35 términos) no era de baraja.
+
+### Tema y vocabulario
+- El juego pasa a llamarse CORONA ROTA («La conjura de los naipes»). El título vive solo en `src/shared/brand.ts`.
+- No se adoptó «Regicidio» como título: es el nombre de un juego comercial que ya existe. Tampoco sus nombres propios: la tienda es «Mercado clandestino».
+- Vocabulario universal en todo lo que lee el jugador (glosario en `SPECS/V6-normas-y-glosario.md`): palos por su nombre, tronos y guardias, Vida, Escudo, Mazo, Descarte, Contraataque ⚔, Daño × Multi = Golpe, Golpe exacto, Impulso, Motín, Asedio final, La Manga, Rebobinar, Reliquias, Sellos de lacre, Acabados, monarcas y decretos, Mercado clandestino, Mesa de lacre, Mapa del castillo, Juramentos, La Orden, Coronas, Reinado, Trono infinito, Asalto diario, Crónica.
+- 226 piezas renombradas en las reglas (185 nombres y 171 descripciones): 52 reliquias, 25 especiales, 7 monarcas, 8 asaltos, 8 Reinados, juramentos, atajos, secretos, logros… Biblia en `SPECS/V6-biblia-de-nombres.md`.
+- Las seis palabras clave: Daño, Multi, Golpe exacto, Brecha, En guardia, Desarmado.
+- Tres redes contra la jerga vieja: `tests/vocabulario.test.ts`, la regla «jerga» de la QA visual y `tests/marca.test.ts`.
+- No cambian, a propósito: identificadores de datos, clases CSS, protocolo de red, claves de guardado `derrumbe:*`, la semilla del Asalto diario y la dirección de la página.
+
+### Grabado
+- Portada: sala del trono con la corona de piedra partida, dagas cruzadas, cuatro estandartes con la trama de cada palo, antorchas y sello de lacre. Tarjeta para compartir e icono nuevos.
+- Los cuatro tronos: cabecera de cada casa, escudo de inmunidad, insignia de Ataque «⚔ n» sobre placa, paños de guardia con su tocado (Sota, Reina, Rey).
+- 52 reliquias, 17 especiales y 17 iconos de servicio grabados de nuevo. 8 retratos (los siete monarcas y el Tratante), reconocibles por su objeto y su silueta. 6 dorsos de baraja.
+- Títulos en Cinzel (romana de inscripción, en versales) en vez de la gótica.
+- Animaciones: estandarte rasgado al caer un guardia y corona que se parte al caer un trono.
+- Forja: en las reliquias, tinta fuera de 22–58 % o silueta por debajo del 55 % a 24 px ya es fallo. Quedan entre 23,6 % y 56,9 %. Grupos nuevos `especiales` y `servicios`.
+
+### Mesa y pantallas
+- Todas las pantallas con el vocabulario nuevo. Píldoras `+D`, `+M`, `×M`; cuenta `Daño × Multi = Golpe`.
+- Insignias «¡Exacto!», «Cae el guardia», «Cae el trono», «Ventaja», «Inmune», «Habrá Contraataque ⚔ n».
+- La preparación de campaña cabe entera sin desplazar en 1366×768 y 1280×800: «Semilla» al pie del panel (era una nota de la 5.0), título más corto y barajas con alto mínimo en vez de fijo (una descripción larga se montaba sobre la fila de abajo).
+- En el Mercado clandestino, a 1280 y 1366 de ancho, el nombre de cada oferta va en la letra de rótulos y cabe entero («ESTANDARTE» ya no se parte con guion).
+- Aviso de último turno en móvil en un renglón de 28 px (era una nota de la 5.0). Antes restaba 60 px a los tronos; ahora unos 33.
+- QA visual: reglas nuevas «jerga» y «texto pisado». Cazó títulos partidos y textos fuera de su botón en el Mercado a 1280.
+
+Certificación final: QA visual con 27 estados × 4 ventanas = 108 capturas y cero fallos; prueba de humo con 162 comprobaciones, «Todo en orden» en tres pasadas seguidas; con aceleración gráfica, 7,1 ms de media por fotograma durante un golpe (p95 12,1 ms); banco de grabado con 145 piezas sin fallos; 186 pruebas en verde; barrido de jerga con cero palabras del tema viejo en lo que lee el jugador.
+
+### Mando y sonido
+- LB/RB sobre las reliquias, comprobado también en combate dentro de la prueba de humo (era una nota de la 5.0).
+- La prueba encontró un fallo real: al reordenar en combate, la cuenta del golpe no se repintaba. Arreglado.
+- Prueba de humo: de 143 a 162 comprobaciones.
+- Sonido del tema nuevo, todo sintetizado: tambor de guardia y acero en el Contraataque, espada contra escudo si lo frena el Escudo, campana en el Golpe exacto, estandarte que cae, corona que se parte, redoble en el Motín.
+- Los ocho Susurros y la partida guiada (ahora habla la Maestra), reescritos.
+
+### Reglas (sin cambios de balance)
+- Ni una cuenta cambió: el informe del laboratorio (55.640 campañas, sin avisos) es idéntico número a número al de la 5.0 (`artifacts/v6/comparar-meta.mjs`).
+- `omen()` expone sus cifras en campos propios para el aviso corto.
+
+### Panel y estudio
+- `..\panelAgentesGaming` habla el vocabulario nuevo: preset `v6-completo` (`v4-completo` queda de alias).
+- 11 duelos A/B ya resueltos, retirados; 3 propuestos para la V7, como hipótesis.
+- `pytest` de 62 a 73 pruebas, en verde. Copia de respaldo en `archivo_v5/`.
+- Circuito en seco limpio. No se lanzó ninguna corrida real.
+- Hoja de ruta renumerada: V6 es este cambio de tema; V7, enseñanza de 60 segundos y personalidad de los monarcas; V8, jugo y audio de corte; V9, cooperativo, `balance-config.json` y telemetría con la privacidad primero; V10, candidata a lanzamiento.
+- El bucle `scripts/estudio-autonomo.ps1` arranca en la V7.
+- Reglamentos de los subagentes y skills, al día.
+
+### Sin hacer o por comprobar
+- El panel no se ha corrido sobre la 5.0 ni sobre la 6.0: no hay medida de aprobación ni de claridad de ninguna de las dos. El bucle audita `main` como línea base antes de la V7.
+- `scripts/estudio-autonomo.ps1` solo se ha probado en modo ensayo.
+- En móvil, el aviso de último turno aún resta unos 33 px a los tronos.
+- `index.html` y el manifest llevan el título escrito a mano (son estáticos). `tests/marca.test.ts` falla si alguien cambia la marca y se los deja.
+- La página sigue en `/derrumbe/` y el repositorio se sigue llamando así.
 
 ## 5.0.0 — 2026-11-12
 

@@ -1,11 +1,11 @@
 ---
 name: engraving-svg-forge
-description: Bucle de dibujar y comprobar para el arte SVG de DERRUMBE (cartas, herramientas, palos, jefes). Renderiza cada pieza suelta a 24 px y a 300 px, mide densidad de tinta y claridad de silueta, y garantiza las cuatro tramas de palo aptas para daltonismo. Úsala al dibujar o retocar cualquier SVG del juego.
+description: Bucle de dibujar y comprobar para el arte SVG de CORONA ROTA (cartas, reliquias, palos, monarcas). Renderiza cada pieza suelta a 24 px y a 300 px, mide densidad de tinta y claridad de silueta, y garantiza las cuatro tramas de palo aptas para daltonismo. Úsala al dibujar o retocar cualquier SVG del juego.
 ---
 
 # Forja de grabado SVG
 
-Todo el arte de DERRUMBE es SVG dibujado en código (`src/client/card.ts`, `art.ts`, `glyphs.ts`, `engraving.ts`). Una pieza está bien cuando funciona en sus dos tamaños extremos: **24 px** (icono en una ficha, miniatura del mazo) y **300 px** (lupa de grabador). Esta skill es un bucle: dibujar → renderizar → medir → mirar → corregir.
+Todo el arte de CORONA ROTA es SVG dibujado en código (`src/client/card.ts`, `art.ts`, `glyphs.ts`, `engraving.ts`). Una pieza está bien cuando funciona en sus dos tamaños extremos: **24 px** (icono en una ficha, miniatura del Mazo) y **300 px** (la Lupa). Esta skill es un bucle: dibujar → renderizar → medir → mirar → corregir.
 
 ## El bucle
 
@@ -21,7 +21,7 @@ npm run forja -- cartas herramientas
 - `artifacts/svg-forge/informe.json` con las medidas de cada pieza y de cada par de tramas
 - `artifacts/svg-forge/hoja.png`, la hoja de contacto (cada pieza a 96 y a 24 px), y `hoja-gris.png`, la misma en escala de grises
 
-Grupos: `palos`, `tramas`, `cartas` (as, 7, 10 y figuras de cada palo, y el comodín), `herramientas` (todas) y `jefes`. Una pieza nueva entra sola si está en `TOOLS`, `BOSSES` o `ALL_CARDS`; un grupo nuevo se añade en `lista()` y `nodo()` de `forja-qa.ts`.
+Grupos (son identificadores y no cambian de nombre): `palos`, `tramas`, `cartas` (as, 7, 10 y figuras de cada palo, y el Comodín), `herramientas` (todas las reliquias), `especiales`, `servicios` y `jefes` (los monarcas). Una pieza nueva entra sola si está en `TOOLS`, `BOSSES` o `ALL_CARDS`; un grupo nuevo se añade en `lista()` y `nodo()` de `forja-qa.ts`.
 
 Sale con error si hay un **fallo**. Los **avisos** no rompen: piden mirar la pieza. **Después de cada pasada, abre las dos hojas y las piezas que cambiaste**: las medidas detectan lo que está mal, no lo que es feo.
 
@@ -31,24 +31,30 @@ Sale con error si hay un **fallo**. Los **avisos** no rompen: piden mirar la pie
 
 | Medida | Qué es | Falla | Avisa |
 |---|---|---|---|
-| Densidad de tinta a 300 px | fracción de tinta dentro de la caja de la pieza | iconos (palos, herramientas): < **3 %** (en blanco) o > **93 %** (mancha). Cartas y retratos van a sangre: solo fallan sin tinta | iconos fuera de **12–62 %** |
-| Silueta a 24 px | parte del alto o del ancho que ocupa el mayor cuerpo conexo de tinta | sin tinta a 24 px | < **55 %**: se deshace en motas |
+| Densidad de tinta a 300 px | fracción de tinta dentro de la caja de la pieza | iconos (palos, reliquias, especiales, servicios): < **3 %** (en blanco) o > **93 %** (mancha). Cartas y retratos van a sangre: solo fallan sin tinta. **Reliquias (grupo `herramientas`): fuera de 22–58 %** | iconos que no son reliquias, fuera de **12–62 %** |
+| Silueta a 24 px | parte del alto o del ancho que ocupa el mayor cuerpo conexo de tinta | reliquias: < **55 %**; cualquier pieza: sin tinta a 24 px | resto de iconos: < **55 %**, se deshace en motas |
 | Deriva de densidad | diferencia de densidad entre 300 y 24 px | — | > **18 puntos**: trazos demasiado finos, a 24 px se empasta o se borra |
 | Contraste del glifo de palo | mediana de la tinta del glifo contra el papel (WCAG) | < **7:1** | — |
 | Tramas dos a dos | firma de dirección de los trazos (—, \|, \\, /) y fracción de píxeles distintos | un par con forma < **0,12** y píxeles < **25 %**; o una trama casi lisa (< 8 % o > 92 % de tinta) | — |
 
-Línea base de la V4, para saber de dónde se venía: glifos ♦ 3,22:1, ♥ 5,02:1 y ♣ 6,63:1 sobre el papel, y la trama de ♣ lisa en luminancia (99 % de tinta: en gris se confundía con la de ♠).
+Los umbrales salen de `LIMITS` en `scripts/svg-forge.ts` (`relicInk: [0.22, 0.58]`, `relicBody: 0.55`, `inkWarn: [0.12, 0.62]`). Hasta la 5.0 la densidad de las piezas del grupo `herramientas` solo avisaba fuera de 12–62 %; con las reliquias de la V6 es una regla dura.
+
+Línea base de la 4.0, para saber de dónde se venía: glifos ♦ 3,22:1, ♥ 5,02:1 y ♣ 6,63:1 sobre el papel (con las tintas de entonces), y una trama de ♣ lisa en luminancia (99 % de tinta: en gris se confundía con la de ♠).
+
+## Las reliquias
+
+Los iconos del juego son reliquias de corte: dagas, coronas, anillos de sello, cálices, escudos, relojes de arena, antorchas. Cada una (hay 52; sus ids, nombres y la imagen que se graba están en `SPECS/V6-biblia-de-nombres.md`) tiene que pasar los dos tamaños y la densidad de 22–58 %: ni hilo suelto ni borrón. Ejemplos: `timbre` (Anillo de sello, con el chatón plano), `ariete` (Ariete, con cabeza de carnero), `horno` (Horno, un fuelle de cuero con boquilla).
 
 ## Las cuatro tramas de palo
 
-Los palos se distinguen **sin color**. Cada uno tiene su trama, definida una sola vez como `<pattern>` en `engraving.ts` y reutilizada en el fondo de la carta, en la etiqueta de la torre y en la rueda de materiales:
+Los palos se distinguen **sin color**. Cada uno tiene su trama, definida una sola vez como `<pattern>` en `engraving.ts` y reutilizada en el fondo de la carta, en la etiqueta del trono y en la rueda de palos (♠ corta ♦ · ♦ compra ♥ · ♥ doblega ♣ · ♣ quiebra ♠):
 
-| Palo | Material | Trama | Cómo reconocerla a 24 px |
+| Palo | Tinta | Trama | Cómo reconocerla a 24 px |
 |---|---|---|---|
-| ♠ | ACERO | rayado diagonal a 45° | líneas paralelas inclinadas |
-| ♦ | VIDRIO | punteado | puntos sueltos, sin líneas |
-| ♥ | LADRILLO | aparejo de ladrillo | hiladas horizontales con juntas alternas |
-| ♣ | HORMIGÓN | rayado cruzado estructural | retícula de dos direcciones |
+| ♠ Picas | hierro oscuro | rayado diagonal a 45° «de lanzas» | líneas paralelas inclinadas |
+| ♦ Diamantes | oro bruñido | punteado «de gemas» | puntos sueltos, sin líneas |
+| ♥ Corazones | carmesí real | aparejo «de cáliz»: hiladas horizontales con juntas alternas | hiladas horizontales con juntas alternas |
+| ♣ Tréboles | verdín profundo | rayado cruzado heráldico | retícula de dos direcciones |
 
 Reglas:
 
@@ -61,7 +67,7 @@ Reglas:
 
 1. **Silueta primero**: una forma cerrada que se reconozca rellena de negro. Si la silueta no dice qué es, los detalles no lo arreglan.
 2. **Tres grosores**: contorno (3), forma (2), buril (1,5). Nada más fino.
-3. **Tinta plana**: una tinta por material, sin degradados ni filtros. El grano del papel lo pone el lienzo, no la pieza.
+3. **Tinta plana**: una tinta por palo, sin degradados ni filtros. El grano del papel lo pone el lienzo, no la pieza.
 4. **Sombra de buril**: rayado paralelo en el lado de sombra, siempre en la misma dirección dentro de una pieza.
 5. `viewBox` cuadrado para iconos (`0 0 48 48`) y `0 0 100 140` para cartas. Coordenadas enteras o medias.
 6. Sin `<text>` en un icono: una letra a 24 px no se lee. En cartas, el texto obedece a `brutalist-print-ui` (≥ 13 px efectivos; en miniatura, versión simplificada).
@@ -69,6 +75,6 @@ Reglas:
 ## Errores que ya se cometieron
 
 - Trama más oscura que el número: el número desaparece. La trama va al 35–45 % de la tinta, y nunca bajo la cifra.
-- Iconos del cinturón con líneas de 1 px: a 24 px eran «basura visual». Menos líneas y más gruesas.
-- ♥ en almagre claro sobre crema: 3,1:1. Con contorno de tinta y almagre más oscuro, pasa de 7:1.
+- Iconos de las reliquias con líneas de 1 px: a 24 px eran «basura visual». Menos líneas y más gruesas.
+- ♥ en almagre claro sobre crema: 3,1:1. Con contorno de tinta y un carmesí más oscuro, pasa de 7:1.
 - Un `<filter>` de ruido en un nodo que se anima: tira los fotogramas. El ruido se hornea una vez en el lienzo.

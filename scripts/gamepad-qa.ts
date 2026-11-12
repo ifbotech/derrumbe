@@ -3,14 +3,15 @@
 // lo maneja con press / hold / stick. El juego lo lee por su camino normal (nav.ts).
 //
 // Con él se juega una campaña de principio a fin sin tocar teclado ni ratón: portada → preparación
-// → plano → una obra entera (el bot de referencia decide la jugada; el mando la ejecuta) → cobro →
-// ferretería, donde se reordena el cinturón (A sobre A, y LB / RB con el foco en la herramienta) y se
-// forja una carta, y un hallazgo. Por el camino abre y cierra cada ventana (mazo, ajustes, reglas,
-// lupa) para comprobar que ninguna atrapa el foco, descarta con L3, pide pantalla completa con R3,
-// mide que el foco responda en menos de 50 ms (también mientras la mesa anima, por mediana de cinco
-// pulsaciones) y que el marco de latón se vea, barre la mesa (desde cada cosa enfocable se llega a cada
-// torre, y de cada torre a la mano, en seis pulsaciones como mucho) y cierra un susurro de tiza con
-// «No mostrar más».
+// → mapa → un asalto entero (el bot de referencia decide la jugada; el mando la ejecuta) → Botín →
+// Mercado clandestino, donde se reordenan las reliquias (A sobre A, y LB / RB con el foco en la
+// reliquia) y se sella una carta en la Mesa de lacre, y un Secreto de la cripta. Por el camino abre y
+// cierra cada ventana (mazo, ajustes, reglas, Lupa) para comprobar que ninguna atrapa el foco, descarta
+// con L3, pide pantalla completa con R3, mide que el foco responda en menos de 50 ms (también mientras
+// la mesa anima, por mediana de cinco pulsaciones) y que el marco de latón se vea, barre la mesa (desde
+// cada cosa enfocable se llega a cada trono, y de cada trono a la mano, en seis pulsaciones como mucho)
+// y cierra un susurro con «No mostrar más». Al final, en una mesa con seis reliquias, LB / RB las
+// reordenan en pleno combate y la cuenta del golpe sigue el orden nuevo.
 import type { Browser, Page } from 'playwright';
 import { NAME_SHIM } from './web';
 
@@ -20,7 +21,7 @@ export const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, SELECT:
 export const VIRTUAL_GAMEPAD = `(() => {
   const button = (down) => ({ pressed: down, touched: down, value: down ? 1 : 0 });
   const pad = {
-    id: 'DERRUMBE QA Virtual Gamepad (STANDARD GAMEPAD)', index: 0, connected: false, mapping: 'standard', timestamp: 0,
+    id: 'QA Virtual Gamepad (STANDARD GAMEPAD)', index: 0, connected: false, mapping: 'standard', timestamp: 0,
     buttons: Array.from({ length: 17 }, () => button(false)), axes: [0, 0, 0, 0],
     vibrationActuator: { playEffect: () => Promise.resolve('complete') },
   };
@@ -191,6 +192,110 @@ const focusIsSane = (page: Page) =>
     return !a || a === document.body || !!top?.contains(a);
   });
 
+/**
+ * LB / RB sobre las reliquias en combate. El primer asalto de la campaña no tiene dos, así que se monta
+ * la mesa de QA (seis reliquias, el orden se puede cambiar) y se juega con el mando: con el foco en una
+ * reliquia, RB la mueve a la derecha y LB a la izquierda, el foco y el marco viajan con ella, el orden
+ * nuevo es el que usa la cuenta del golpe y en los extremos solo suena el tope.
+ */
+export async function combatRelics(page: Page, check: Check): Promise<void> {
+  const tools = () => run(page).then((r) => r?.tools ?? []);
+  // lo que ha sonado desde una marca (la lista de sonidos tiene tope y se recorta por delante: se marca, no se cuenta)
+  const sounds = () => page.evaluate(() => (window as unknown as QaWindow).__qaSounds.push('·marca'));
+  const heardSince = (_: number) => page.evaluate(() => { const h = (window as unknown as QaWindow).__qaSounds; return h.slice(h.lastIndexOf('·marca') + 1); });
+  const calc = () => page.evaluate(() => {
+    const c = document.querySelector('#score .calc');
+    return c ? [...c.querySelectorAll('.f, .r, .t')].map((e) => e.textContent?.trim()).join(' · ') : '';
+  });
+  const slot = (i: number, id?: string) => `#beltbar .belt-slot[data-slot="${i}"]${id ? `[data-id="${id}"]` : ''}`;
+  // como haría una persona: por la mano hasta la carta que queda debajo, y de ahí hacia arriba
+  const reach = async (sel: string) => {
+    const under = await page.evaluate((s) => {
+      const t = document.querySelector(s)?.getBoundingClientRect();
+      if (!t) return null;
+      const x = t.left + t.width / 2;
+      const cards = [...document.querySelectorAll<HTMLElement>('#hand .card')];
+      cards.sort((a, b) => Math.abs(a.getBoundingClientRect().left + a.getBoundingClientRect().width / 2 - x) - Math.abs(b.getBoundingClientRect().left + b.getBoundingClientRect().width / 2 - x));
+      return cards[0]?.dataset.id ?? null;
+    }, sel);
+    if (under) await walk(page, `#hand .card[data-id="${under}"]`);
+    const r = await walk(page, sel);
+    if (r.steps < 0) console.log(`  · camino a ${sel}: ${r.path.slice(-14).join(' ')}`);
+    return r.steps >= 0;
+  };
+  await page.evaluate(() => (window as unknown as QaWindow).__qa.go('mesa'));
+  await page.waitForSelector('.table-screen #beltbar .belt.can-order');
+  await settled(page);
+  await press(page, BTN.DOWN); // el mando vuelve a ser el dispositivo en uso
+  const start = await tools();
+  check(start.length >= 3, `la mesa de combate tiene al menos tres reliquias (${start.length})`);
+
+  // un doble par de sietes y dieces: cuatro cartas, así el ×M que pide «4 cartas o más» entra en la cuenta
+  await press(page, BTN.B);
+  const ids = await page.evaluate(() =>
+    [['S', '7'], ['D', '7'], ['H', '10'], ['D', '10']].map(([s, r]) =>
+      [...document.querySelectorAll<HTMLElement>(`#hand .card.s-${s}`)].find((c) => c.querySelector('.corner b')?.textContent?.trim() === r)?.dataset.id ?? ''),
+  );
+  let picked = ids.every(Boolean);
+  for (const id of ids) {
+    if (!picked || !(await focusOn(page, `#hand .card[data-id="${id}"]`))) { picked = false; break; }
+    await press(page, BTN.A);
+  }
+  const p0 = await calc();
+  check(picked && /\d/.test(p0) && !p0.endsWith('?'), `con el mando se eligen cuatro cartas y la cuenta se previsualiza (${p0 || 'sin cuenta'})`);
+
+  // RB y LB sobre la primera reliquia
+  check(await reach(slot(0)), 'el foco llega a la primera reliquia de la mesa');
+  await press(page, BTN.RB);
+  await page.waitForTimeout(250);
+  let now = await tools();
+  check(now[0] === start[1] && now[1] === start[0] && now.slice(2).join() === start.slice(2).join(), 'en combate, RB mueve la reliquia enfocada un hueco a la derecha');
+  check(await active(page, slot(1, start[0])), 'y el foco viaja con ella a su hueco nuevo');
+  await page.waitForTimeout(150);
+  check(await ringOk(page), 'con el marco de latón abrazándola');
+  check((await count(page, '.lupa')) === 0, 'RB sobre una reliquia no abre la lupa');
+  await press(page, BTN.LB);
+  await page.waitForTimeout(250);
+  check((await tools()).join() === start.join() && (await active(page, slot(0, start[0]))), 'LB la devuelve a la izquierda, con el foco');
+  check((await count(page, '.deck-modal')) === 0, 'LB sobre una reliquia no abre el mazo');
+
+  // el tope de la izquierda
+  let mark = await sounds();
+  await press(page, BTN.LB);
+  await page.waitForTimeout(200);
+  check((await heardSince(mark)).includes('edge') && (await tools()).join() === start.join(), 'en el primer hueco, LB solo da el toque de tope');
+  check((await active(page, slot(0, start[0]))) && (await count(page, '.deck-modal, .lupa')) === 0, 'y no mueve el foco ni abre nada');
+
+  // el tope de la derecha
+  const last = start.length - 1;
+  check(await reach(slot(last)), 'el foco llega a la última reliquia');
+  mark = await sounds();
+  await press(page, BTN.RB);
+  await page.waitForTimeout(200);
+  check((await heardSince(mark)).includes('edge') && (await tools()).join() === start.join(), 'en el último hueco, RB solo da el toque de tope');
+  check((await active(page, slot(last, start[last]))) && (await count(page, '.deck-modal, .lupa')) === 0, 'y no mueve el foco ni abre la lupa');
+
+  // el orden manda en la cuenta: el ×M de la derecha, llevado a la izquierda, multiplica menos
+  const xm = start[last];
+  let changed = '';
+  for (let i = 0; i < last; i++) {
+    await press(page, BTN.LB);
+    await page.waitForTimeout(220);
+    const c = await calc();
+    if (c !== p0) changed = changed || c;
+  }
+  now = await tools();
+  check(now[0] === xm && now.slice(1).join() === start.slice(0, last).join(), `LB repetido lleva la reliquia de la derecha hasta el primer hueco (${now.join(', ')})`);
+  check(await active(page, slot(0, xm)), 'y el foco la acompaña todo el camino');
+  check(!!changed, `la previsualización del golpe usa el orden nuevo (${p0} → ${changed || 'igual'})`);
+  for (let i = 0; i < last; i++) {
+    await press(page, BTN.RB);
+    await page.waitForTimeout(220);
+  }
+  check((await tools()).join() === start.join() && (await calc()) === p0, 'RB repetido la devuelve a su sitio y la cuenta vuelve a la de antes');
+  await press(page, BTN.B);
+}
+
 export async function gamepadSuite(browser: Browser, url: string, check: Check, problems: string[], shot: (page: Page, name: string) => Promise<unknown>): Promise<void> {
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 } });
   await context.addInitScript({ content: NAME_SHIM });
@@ -224,7 +329,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   await page.waitForSelector('.run');
   check((await run(page))?.phase === 'pack', 'saltar la partida guiada lleva al sobre de la campaña');
 
-  // ── el sobre → el plano → la obra ──
+  // ── el sobre → el mapa → el asalto ──
   const toTable = async () => {
     if (!(await focusOn(page, '#go'))) return false;
     await A();
@@ -234,7 +339,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     await settled(page);
     return (await run(page))?.phase === 'battle';
   };
-  check(await toTable(), 'sobre → plano → ruta → mesa, todo con A y la cruceta');
+  check(await toTable(), 'sobre → mapa → ruta → mesa, todo con A y la cruceta');
 
   // ── mantener Select: reinicio rápido ──
   const holding = hold(page, BTN.SELECT, 950);
@@ -278,9 +383,9 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   check((await count(page, '.modal')) === 0, 'B cierra las reglas');
   check(await focusOn(page, '#hand .card'), 'tras cerrar ventanas, el foco vuelve a la mano');
   await press(page, BTN.RB);
-  check((await count(page, '.lupa')) === 1, 'RB abre la lupa de grabador sobre la carta enfocada');
+  check((await count(page, '.lupa')) === 1, 'RB abre la Lupa sobre la carta enfocada');
   await B();
-  check((await count(page, '.lupa')) === 0, 'B cierra la lupa');
+  check((await count(page, '.lupa')) === 0, 'B cierra la Lupa');
   check((await count(page, '.actions .kh.pd:visible, .bar .kh.pd:visible')) >= 3, 'la mesa enseña insignias de botón (LB, RT, Start, B…)');
   check((await page.locator('#btn-discard .kh.pd').textContent()) === 'L3', '«Descartar» enseña su insignia L3');
 
@@ -301,20 +406,8 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   await press(page, BTN.R3);
   check((await page.evaluate(() => (window as unknown as QaWindow).__fs)) === 1, 'R3 pide pantalla completa, como la tecla F');
 
-  // ── LB / RB con el foco en una herramienta del cinturón de la mesa: la mueven ──
-  const beltTools = (await run(page))?.tools ?? [];
-  if (beltTools.length > 1 && (await count(page, '#beltbar .belt.can-order')) > 0) {
-    check(await focusOn(page, '#beltbar .belt-slot[data-slot="0"]'), 'el foco llega al cinturón de la mesa');
-    await press(page, BTN.RB);
-    await page.waitForTimeout(250);
-    const moved = (await run(page))!.tools;
-    check(moved[1] === beltTools[0] && moved[0] === beltTools[1], 'en la mesa, RB mueve la herramienta enfocada a la derecha');
-    check(await active(page, `#beltbar .belt-slot[data-slot="1"][data-id="${beltTools[0]}"]`), 'y el foco viaja con ella');
-    await press(page, BTN.LB);
-    await page.waitForTimeout(250);
-    check((await run(page))!.tools.join() === beltTools.join() && (await count(page, '.deck-modal')) === 0, 'LB la devuelve a la izquierda (y no abre el mazo)');
-  } else console.log('  (la mesa aún no tiene dos herramientas: LB / RB sobre el cinturón se prueban en la ferretería)');
-  check(await focusOn(page, '#hand .card'), 'fuera del cinturón…');
+  // (LB / RB sobre las reliquias de la mesa se prueban al final, en la mesa de QA con seis)
+  check(await focusOn(page, '#hand .card'), 'fuera de las reliquias…');
   await press(page, BTN.LB);
   check((await count(page, '.deck-modal')) === 1, '…LB sigue abriendo el mazo');
   await B();
@@ -336,16 +429,16 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   }
   await shot(page, 'mando-mesa');
 
-  // ── andamio con Y ──
+  // ── La Manga con Y ──
   const inReserve = await count(page, '#reserve .card');
   check(await focusOn(page, '#hand .card'), 'el foco vuelve a una carta de la mano');
   await press(page, BTN.Y);
   await page.waitForTimeout(250);
   await settled(page);
-  check((await count(page, '#reserve .card')) === inReserve + 1, 'Y guarda la carta enfocada en el andamio');
+  check((await count(page, '#reserve .card')) === inReserve + 1, 'Y guarda la carta enfocada en La Manga');
 
-  // ── la mesa, fila a fila: desde cualquier sitio se llega a cada torre, y de cada torre a la mano ──
-  // (el mismo focusOn voraz de la obra, con 6 pulsaciones como mucho y sin reintentos)
+  // ── la mesa, fila a fila: desde cualquier sitio se llega a cada trono, y de cada trono a la mano ──
+  // (el mismo focusOn voraz del asalto, con 6 pulsaciones como mucho y sin reintentos)
   {
     const towers = ['S', 'D', 'H', 'C'].map((s) => `.tower[data-suit="${s}"]`);
     const misses: string[] = [];
@@ -360,7 +453,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       const ids = await page.locator('#hand .card').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.id!));
       return [...new Set([ids[0], ids[ids.length - 1]])].map((id) => `.handrow .card[data-id="${id}"]`);
     };
-    // de una torre a la mano: solo «abajo», como mucho 6 veces (cinturón, cuenta… y una carta)
+    // de un trono a la mano: solo «abajo», como mucho 6 veces (reliquias, cuenta… y una carta)
     const backToHand = async (t: string) => {
       if (!(await focusDirect(page, t))) return;
       tries++;
@@ -382,14 +475,14 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     };
     await B();
     await settled(page);
-    // un susurro de tiza al margen es una parada más del camino (su «No mostrar más» se alcanza con el
-    // mando): si hay uno, se comprueba que se llega a él desde la torre de la derecha y se aparta. Durante el barrido no
+    // un susurro al margen es una parada más del camino (su «No mostrar más» se alcanza con el
+    // mando): si hay uno, se comprueba que se llega a él desde el trono de la derecha y se aparta. Durante el barrido no
     // se escriben más, para medir la mesa y no el susurro de turno.
     if (await count(page, '.table-screen .side > .whisper')) {
       await focusDirect(page, '.tower[data-suit="C"]');
       const w = await walk(page, '.side > .whisper .whisper-off', false, 2, 30);
-      if (w.steps < 0) console.log(`  · torre de la derecha → susurro: ${w.path.join(' ')}`);
-      check(w.steps >= 0, 'con un susurro al margen, su «No mostrar más» queda a una o dos pulsaciones de la torre de la derecha');
+      if (w.steps < 0) console.log(`  · trono de la derecha → susurro: ${w.path.join(' ')}`);
+      check(w.steps >= 0, 'con un susurro al margen, su «No mostrar más» queda a una o dos pulsaciones del trono de la derecha');
     }
     await page.evaluate(() => {
       (window as unknown as QaWindow).__whispers.force(false);
@@ -406,10 +499,10 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     await B();
     await page.evaluate(() => (window as unknown as QaWindow).__whispers.force(null));
     for (const m of misses.slice(0, 8)) console.log(`  · ${m}`);
-    check(tries > 40 && misses.length === 0, `desde cada sitio de la mesa se llega a cada torre, y de ellas a la mano, en ≤ 6 pulsaciones (${tries - misses.length}/${tries})`);
+    check(tries > 40 && misses.length === 0, `desde cada sitio de la mesa se llega a cada trono, y de ellos a la mano, en ≤ 6 pulsaciones (${tries - misses.length}/${tries})`);
   }
 
-  // ── la obra entera: el bot decide, el mando ejecuta ──
+  // ── el asalto entero: el bot decide, el mando ejecuta ──
   let turns = 0;
   let undone = false;
   let navFails = 0;
@@ -438,8 +531,8 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       ok = (await select(action.type === 'joker' ? [action.card!] : action.cards!)) && (await focusOn(page, `.tower[data-suit="${action.target}"]`, stick));
       if (ok) await press(page, BTN.X);
       // mientras la mesa anima el golpe, la cruceta sigue moviendo el foco (sin esperar a la animación)
-      // (hacia el lado que tiene vecino: en la torre de la izquierda, LEFT topa y no mueve nada)
-      // cinco pulsaciones de ida y vuelta entre torres vecinas; cuenta la mediana (una sola muestra pintando
+      // (hacia el lado que tiene vecino: en el trono de la izquierda, LEFT topa y no mueve nada)
+      // cinco pulsaciones de ida y vuelta entre tronos vecinos; cuenta la mediana (una sola muestra pintando
       // por CPU da falsos fallos). Solo valen las que empiezan con la mesa aún animando.
       if (ok && animLag === null && (await count(page, '.handrow.locked')) > 0) {
         const samples: number[] = [];
@@ -472,57 +565,57 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     }
     await page.waitForTimeout(150);
     await settled(page);
-    // una vez, tras el primer golpe: LT deshace con la tiza de replanteo
+    // una vez, tras el primer golpe: LT deshace con Rebobinar
     if (!undone && action.type === 'attack' && (await run(page))?.phase === 'battle' && (await page.locator('#btn-undo').isEnabled())) {
       const hp = await page.locator('.tower .hp span').allTextContents();
       await press(page, BTN.LT);
       await page.waitForTimeout(300);
       await settled(page);
       const back = await page.locator('.tower .hp span').allTextContents();
-      check(hp.join() !== back.join() && (await page.locator('#btn-undo').isDisabled()), 'LT gasta la tiza de replanteo y deshace el golpe');
+      check(hp.join() !== back.join() && (await page.locator('#btn-undo').isDisabled()), 'LT gasta Rebobinar y deshace el golpe');
       undone = true;
     }
   }
-  check(navFails === 0, `la cruceta y la palanca llegan siempre a la carta y a la torre que tocan${navFails ? ` (${navFails} fallos)` : ''}`);
-  check(undone, 'la tiza se probó con LT durante la obra');
+  check(navFails === 0, `la cruceta y la palanca llegan siempre a la carta y al trono que tocan${navFails ? ` (${navFails} fallos)` : ''}`);
+  check(undone, 'Rebobinar se probó con LT durante el asalto');
   if (animLag !== null)
     check(animLag >= 0 && animLag < 50, `con la mesa animando, el foco responde en menos de 50 ms (mediana ${ms(animLag)} de ${animSamples.map((n) => ms(n)).join(' · ')})`);
   else console.log('  (no se pilló ningún golpe animando para medir el foco)');
   await page.waitForFunction(() => !document.querySelector('.table-screen'), null, { timeout: 20_000 }).catch(() => undefined);
   const after = await run(page);
-  check(after?.phase === 'reward', `la obra 1 se gana jugando solo con el mando (${turns} turnos${after ? `, fase «${after.phase}»` : ''})`);
-  await shot(page, 'mando-cobro');
+  check(after?.phase === 'reward', `el asalto 1 se gana jugando solo con el mando (${turns} turnos${after ? `, fase «${after.phase}»` : ''})`);
+  await shot(page, 'mando-botin');
 
-  // ── cobro: elegir una carta ──
+  // ── Botín: elegir una carta ──
   if (after?.phase === 'reward') {
-    // si el contrato premió con una carta, su ventana llega primero: B la cierra
+    // si el Juramento premió con una carta, su ventana llega primero: B la cierra
     for (let i = 0; i < 3 && (await count(page, '.modal')) > 0; i++) {
       await B();
       await page.waitForTimeout(200);
     }
-    check((await count(page, '.modal')) === 0, 'B cierra la ventana del premio del contrato (si la hay)');
-    check(await focusOn(page, '#picks .choice.pick'), 'en el cobro, el foco llega a la selección');
+    check((await count(page, '.modal')) === 0, 'B cierra la ventana del premio del Juramento (si la hay)');
+    check(await focusOn(page, '#picks .choice.pick'), 'en el Botín, el foco llega a la selección');
     await A();
     await page.waitForTimeout(300);
-    check((await run(page))?.phase === 'shop', 'A elige la carta y abre la ferretería');
+    check((await run(page))?.phase === 'shop', 'A elige la carta y abre el Mercado clandestino');
   }
 
-  // ── ferretería: reordenar el cinturón y forjar una carta ──
+  // ── Mercado clandestino: reordenar las reliquias y sellar una carta en la Mesa de lacre ──
   if ((await run(page))?.phase === 'shop') {
     await page.evaluate(() => (window as unknown as QaWindow).__qa.boost());
     const tools = (await run(page))!.tools;
-    check((await focusOn(page, '.run-belt .belt-slot[data-slot="0"]')) && true, 'el foco llega al cinturón');
+    check((await focusOn(page, '.run-belt .belt-slot[data-slot="0"]')) && true, 'el foco llega a las reliquias');
     await A();
     check(await focusOn(page, '.run-belt .belt-slot[data-slot="1"]'), 'y a su segundo hueco');
     await A();
     await page.waitForTimeout(200);
     const reordered = (await run(page))!.tools;
-    check(reordered[0] === tools[1] && reordered[1] === tools[0], 'A sobre una herramienta y A sobre otro hueco las cambia de sitio');
+    check(reordered[0] === tools[1] && reordered[1] === tools[0], 'A sobre una reliquia y A sobre otro hueco las cambia de sitio');
     check(await focusOn(page, '.run-belt .belt-slot[data-slot="0"]'), 'el foco vuelve al primer hueco');
     await press(page, BTN.RB);
     await page.waitForTimeout(250);
-    check((await run(page))!.tools.slice(0, 2).join() === tools.slice(0, 2).join(), 'en la ferretería, RB mueve la herramienta enfocada a la derecha');
-    check(await active(page, `.run-belt .belt-slot[data-slot="1"][data-id="${reordered[0]}"]`), 'el foco viaja con la herramienta a su hueco nuevo');
+    check((await run(page))!.tools.slice(0, 2).join() === tools.slice(0, 2).join(), 'en el Mercado clandestino, RB mueve la reliquia enfocada a la derecha');
+    check(await active(page, `.run-belt .belt-slot[data-slot="1"][data-id="${reordered[0]}"]`), 'el foco viaja con la reliquia a su hueco nuevo');
     check(await ringOk(page), 'y el marco de latón la sigue');
     await press(page, BTN.LB);
     await page.waitForTimeout(250);
@@ -530,13 +623,13 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     await press(page, BTN.LB);
     await page.waitForTimeout(150);
     check((await count(page, '.deck-modal')) === 0 && (await run(page))!.tools.slice(0, 2).join() === reordered.slice(0, 2).join(), 'en el primer hueco, LB no hace nada (ni abre el mazo)');
-    // la forja estrena su susurro de tiza: se fuerza (en QA solo susurra la mesa de primera campaña)
+    // la Mesa de lacre estrena su susurro: se fuerza (en QA solo susurra la mesa de primera campaña)
     await page.evaluate(() => (window as unknown as QaWindow).__whispers.force(true));
     const marks = (await run(page))!.marks;
-    check(await focusOn(page, '#offers .choice.pick:has(.card[data-id^="forja-"])'), 'el foco llega a la oferta de forja');
+    check(await focusOn(page, '#offers .choice.pick:has(.card[data-id^="forja-"])'), 'el foco llega a la oferta de la Mesa de lacre');
     await A();
     await page.waitForSelector('.pending-modal');
-    check((await count(page, '.pending-modal .whisper')) === 1, 'la mesa de forja trae su susurro de tiza, dentro de la ventana');
+    check((await count(page, '.pending-modal .whisper')) === 1, 'la Mesa de lacre trae su susurro, dentro de la ventana');
     check(await focusOn(page, '.pending-modal .whisper-off'), 'el foco llega a «No mostrar más»');
     await A();
     check((await count(page, '.whisper')) === 0 && (await page.evaluate(() => (window as unknown as QaWindow).__whispers.off())), 'A en «No mostrar más» lo cierra y queda guardado');
@@ -545,7 +638,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       w.reset();
       w.force(null);
     });
-    check(await focusOn(page, '.pending-modal .card.pickable'), 'en la mesa de forja, el foco llega a una carta del mazo');
+    check(await focusOn(page, '.pending-modal .card.pickable'), 'en la Mesa de lacre, el foco llega a una carta del Mazo');
     // la rejilla del mazo se recorre fila a fila con la cruceta sin perder el foco
     const rowsOk = await page.evaluate(async () => {
       const g = (window as unknown as QaWindow).__qaGamepad;
@@ -558,32 +651,35 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       }
       return seen.size >= 4;
     });
-    check(rowsOk, 'la cruceta recorre la rejilla de la forja (derecha, abajo, izquierda, arriba) sin salirse');
+    check(rowsOk, 'la cruceta recorre la rejilla de la Mesa de lacre (derecha, abajo, izquierda, arriba) sin salirse');
     check(await focusOn(page, '.pending-modal .card.pickable'), 'y vuelve a una carta elegible');
     check(await ringOk(page), 'con el marco de latón sobre la carta');
     await A();
     await page.waitForTimeout(400);
-    check((await run(page))!.marks === marks + 1, 'A estampa la marca en la carta elegida');
-    await shot(page, 'mando-forja');
+    check((await run(page))!.marks === marks + 1, 'A estampa el lacre en la carta elegida');
+    await shot(page, 'mando-lacre');
     await B();
     await page.waitForTimeout(200);
-    check((await count(page, '.modal')) === 0 && (await focusIsSane(page)), 'B cierra la carta forjada y no queda ninguna ventana atrapando el foco');
-    check(await focusOn(page, '#go'), 'el foco llega a «Al plano» para seguir la campaña');
+    check((await count(page, '.modal')) === 0 && (await focusIsSane(page)), 'B cierra la carta sellada y no queda ninguna ventana atrapando el foco');
+    check(await focusOn(page, '#go'), 'el foco llega al botón de seguir hacia el mapa');
   }
 
-  // ── un hallazgo en los cimientos: se elige con el mando y la campaña sigue ──
+  // ── un Secreto de la cripta: se elige con el mando y la campaña sigue ──
   await page.evaluate(() => (window as unknown as QaWindow).__qa.go('hallazgo'));
   await page.waitForSelector('.run.event');
-  check(await focusOn(page, '#opts .opt:nth-child(2)'), 'en un hallazgo, el foco llega a sus opciones');
+  check(await focusOn(page, '#opts .opt:nth-child(2)'), 'en un Secreto de la cripta, el foco llega a sus opciones');
   await press(page, BTN.UP);
   await press(page, BTN.DOWN);
-  check(await focusIsSane(page), 'el foco se mueve entre las opciones del hallazgo sin perderse');
+  check(await focusIsSane(page), 'el foco se mueve entre las opciones del secreto sin perderse');
   check(await focusOn(page, '#opts .opt:nth-child(2)'), 'y vuelve a la opción elegida');
   await A();
   await page.waitForTimeout(400);
-  check((await run(page))?.phase !== 'event', 'A resuelve el hallazgo y la campaña sigue');
-  check(await focusIsSane(page), 'tras el hallazgo el foco sigue en la pantalla');
-  await shot(page, 'mando-hallazgo');
+  check((await run(page))?.phase !== 'event', 'A resuelve el secreto y la campaña sigue');
+  check(await focusIsSane(page), 'tras el secreto el foco sigue en la pantalla');
+  await shot(page, 'mando-secreto');
+
+  await combatRelics(page, check);
+  await shot(page, 'mando-reliquias');
 
   // ── las indicaciones siguen al último dispositivo usado ──
   check((await inputMode(page)) === 'pad', 'jugando con mando, las indicaciones son de mando');

@@ -1,7 +1,7 @@
-// Bot: juega obras (chooseAction) y dirige campañas enteras (chooseRunAction).
+// Bot: juega asaltos (chooseAction) y dirige campañas enteras (chooseRunAction).
 // Se usa para balancear las reglas por simulación y para jugar el turno de un jugador
-// desconectado en partidas online. Entiende el cinturón (lo ordena), los sellos, los
-// tratamientos, la selección de cartas y las sinergias entre herramientas.
+// desconectado en partidas online. Entiende las reliquias (las ordena), los sellos de lacre,
+// los acabados, la selección de cartas y las sinergias entre reliquias.
 import { Action, Card, Config, GameState, SUITS, StrikeEnv, Suit, Tower, cardValue, classify, currentPlayer, standing, strike, threatOf } from './engine';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';

@@ -34,7 +34,7 @@ export interface Campaign {
   state: GameState | null;
   /** Identifica esta campaña a efectos de cobrar el renombre una sola vez. */
   key: string;
-  /** La campaña tal como estaba antes de la última jugada, por si se gasta la tiza de replanteo. */
+  /** La campaña tal como estaba antes de la última jugada, por si se gasta el Rebobinar. */
   undoRun?: Run | null;
 }
 export type Screen = 'home' | 'lobby' | 'table' | 'guild' | 'camp' | 'run';
@@ -59,12 +59,12 @@ export const S = {
   selected: [] as string[],
   tutorial: null as Tutorial | null,
   campaign: null as Campaign | null,
-  /** Marcas de tiza de la cuadrilla en sala: jugador → lo que señala. */
+  /** Señas de la conjura en sala: jugador → lo que señala. */
   pings: {} as Record<string, string>,
 };
 
 export const RUN_PLAYER = 'tu';
-/** 'ACERO' → 'Acero': la gótica solo se lee bien en caja baja. */
+/** 'PICAS' → 'Picas': la gótica solo se lee bien en caja baja. */
 export const cap = (s: string) => s[0] + s.slice(1).toLowerCase();
 export const nameOf = (id: string) => (S.shown?.players.find((p) => p.id === id) ?? S.lobby?.players.find((p) => p.id === id))?.name ?? '???';
 /** 1,5 en vez de 1.5. */

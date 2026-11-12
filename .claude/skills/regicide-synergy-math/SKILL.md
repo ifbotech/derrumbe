@@ -1,22 +1,25 @@
 ---
 name: regicide-synergy-math
-description: Matemática de sinergias y balance de DERRUMBE. Validación Monte Carlo con el laboratorio (npm run analyze:meta) y pruebas de invariantes anticomplejidad en Vitest. Úsala antes y después de tocar cualquier número de src/rules, al añadir o rediseñar una herramienta, y al juzgar una propuesta de balance.
+description: Matemática de sinergias y balance de CORONA ROTA. Validación Monte Carlo con el laboratorio (npm run analyze:meta) y pruebas de invariantes anticomplejidad en Vitest. Úsala antes y después de tocar cualquier número de src/rules, al añadir o rediseñar una reliquia, y al juzgar una propuesta de balance.
 ---
 
 # Matemática de sinergias
 
+El nombre de la carpeta (`regicide-synergy-math`) es el identificador de una herramienta interna y no cambia; el juego se llama CORONA ROTA.
+
 ## La cuenta del golpe
 
 ```
-daño = Fuerza × Resonancia        (se redondea al final)
+Daño × Multi = Golpe        (se redondea al final)
 ```
 
-- **Fuerza** se suma: base de la formación + cada carta (su número, ×2 con ventaja de material, ×0 contra la torre de su propio palo) + tratamientos, sellos, especiales y herramientas `kind: 'f'`.
-- **Resonancia** arranca en la de la formación; lo que la suma (`kind: 'r'`) cuenta donde está y lo que la multiplica (`kind: 'x'`) multiplica todo lo acumulado a su izquierda. **El orden del cinturón importa**: sumas primero, multiplicadores al final (`bestOrder` en `tools.ts`).
-- Estados: fractura ×1,5; apuntalado ×0,5 al primer golpe; racha de golpes limpios +0,5 por eslabón (hasta +2); fatiga de cimientos +0,25 por nivel.
-- Rueda de materiales: ♠ rompe ♦ · ♦ corta ♥ · ♥ agrieta ♣ · ♣ sepulta ♠.
+- **Daño** se suma: base de la formación + cada carta (su número, ×2 con ventaja de palo, ×0 contra el trono de su propio palo, que es Inmune) + acabados, sellos de lacre, especiales y reliquias `kind: 'f'` (las píldoras **+D**).
+- **Multi** arranca en el de la formación; lo que lo suma (`kind: 'r'`, píldoras **+M**) cuenta donde está y lo que lo multiplica (`kind: 'x'`, píldoras **×M**) multiplica todo lo acumulado a su izquierda. **El orden de las reliquias importa**: sumas primero, multiplicadores al final (`bestOrder` en `tools.ts`).
+- Estados: Brecha ×1,5; En guardia ×0,5 al primer golpe; Racha de Golpes exactos +0,5 por eslabón (hasta +2); Asedio final +0,25 por nivel.
+- Rueda de palos: ♠ corta ♦ · ♦ compra ♥ · ♥ doblega ♣ · ♣ quiebra ♠.
+- **Golpe exacto**: un Golpe que abate al guardia justo, sin Contraataque; cobras oro, robas y dejas Impulso.
 
-Regla de bolsillo para valorar una pieza: en una obra media un golpe ronda F ≈ 40 y R ≈ 3. Entonces **+1 de Fuerza ≈ +3 de daño** y **+0,1 de Resonancia ≈ +4 de daño**; un ×1,5 vale lo que +1,5 de Resonancia y crece con todo lo demás. Por eso los multiplicadores son de rareza alta y llevan condición.
+Regla de bolsillo para valorar una pieza: en un asalto medio un Golpe ronda D ≈ 40 y M ≈ 3. Entonces **+1 de Daño ≈ +3 de Golpe** y **+0,1 de Multi ≈ +4 de Golpe**; un ×1,5 vale lo que +1,5 de Multi y crece con todo lo demás. Por eso los multiplicadores son de rareza alta (Noble o Regia) y llevan condición.
 
 ## Constitución anticomplejidad
 
@@ -24,10 +27,10 @@ La comprueba `tests/invariantes.test.ts`. No se negocia: si una idea no cabe, se
 
 | Invariante | Límite |
 |---|---|
-| Palabras clave (`KEYWORDS`) | **≤ 6** |
-| Herramientas (`TOOLS`) | **≤ 56** |
-| Toda `desc` (herramienta, especial, jefe, nivel, contrato, sello, tratamiento) | **≤ 115 caracteres**, con su número a la vista |
-| P95 de turnos en las obras 4–8, por baraja | **≤ 19** |
+| Palabras clave (`KEYWORDS`: Daño, Multi, Golpe exacto, Brecha, En guardia, Desarmado) | **≤ 6** |
+| Reliquias (`TOOLS`) | **≤ 56** |
+| Toda `desc` (reliquia, especial, monarca, Reinado, juramento, sello de lacre, acabado) | **≤ 115 caracteres**, con su número a la vista |
+| P95 de turnos en los asaltos 4–8, por baraja | **≤ 19** |
 | Informe publicado (`scripts/meta-report.json`) | sin avisos |
 
 Una pieza nueva sustituye a otra o simplifica algo. Una mecánica que necesita una palabra clave nueva no entra.
@@ -38,28 +41,28 @@ Una pieza nueva sustituye a otra o simplifica algo. Una mecánica que necesita u
 
 ```bash
 npm run analyze:meta                                    # informe completo (~25 min) → scripts/meta-report.json
-npm run analyze:meta -- foco                            # niveles 1 y 8
-npm run analyze:meta -- niveles --n=1500                # los 8 niveles
-npm run analyze:meta -- barajas                         # las 6 barajas en nivel 1
-npm run analyze:meta -- clasica                         # partida clásica, 1 a 4 jugadores
-npm run analyze:meta -- regalos --piezas=timbre,ariete --n=800   # unas piezas, con muestra grande
+npm run analyze:meta -- foco                            # Reinados 1 y 8
+npm run analyze:meta -- niveles --n=1500                # los 8 Reinados
+npm run analyze:meta -- barajas                         # las 6 barajas en el Reinado 1
+npm run analyze:meta -- clasica                         # Asalto único, 1 a 4 jugadores
+npm run analyze:meta -- regalos --piezas=timbre,ariete --n=800   # unas reliquias (Anillo de sello, Ariete), con muestra grande
 LAB_HILOS=6 npm run analyze:meta -- niveles             # deja núcleos libres
 ```
 
-Solo el informe completo escribe `meta-report.json`. Después, `npm run docs` regenera `REGLAS.md` y las tablas del `README.md`.
+Solo el informe completo escribe `meta-report.json`. Después, `npm run docs` regenera `REGLAS.md` y las tablas del `README.md`. Los objetivos numéricos no cambiaron con el cambio de tema: el informe de la V6 da exactamente los porcentajes de la 5.0.
 
 ### Objetivos
 
 | Qué | Objetivo |
 |---|---|
-| Nivel 1, gremio vacío / lleno | 24–30 % / 40–48 % |
-| Nivel 8 «Clausura», vacío / lleno | 6–9 % / 12–17 % |
-| Niveles 5 → 8 | estrictamente decrecientes, vacío y lleno |
-| Barajas (nivel 1), vacío / lleno | 24–31 % / 40–45 % |
-| Letalidad de cada jefe | 0,8×–1,3× de la media |
-| Turnos: obra 1 · obras 2–3 · obras 4–8 | mediana 5–7 (P95 ≤ 10) · 8–10 (≤ 15) · 9–13 (**≤ 19**) |
-| Herramienta dada de salida | nunca < 35 % (trampa) ni > 68 % (victoria regalada); elegida ≥ 5 % |
-| Partida clásica, 1–4 jugadores | 58–65 % |
+| Reinado 1, La Orden vacía / llena | 24–30 % / 40–48 % |
+| Reinado 8 «Puertas selladas», vacía / llena | 6–9 % / 12–17 % |
+| Reinados 5 → 8 | estrictamente decrecientes, vacía y llena |
+| Barajas (Reinado 1), vacía / llena | 24–31 % / 40–45 % |
+| Letalidad de cada monarca | 0,8×–1,3× de la media |
+| Turnos: asalto 1 · asaltos 2–3 · asaltos 4–8 | mediana 5–7 (P95 ≤ 10) · 8–10 (≤ 15) · 9–13 (**≤ 19**) |
+| Reliquia dada de salida | nunca < 35 % (trampa) ni > 68 % (victoria regalada); elegida ≥ 5 % |
+| Asalto único, 1–4 jugadores | 58–65 % |
 
 ### Leer el ruido
 
@@ -72,7 +75,7 @@ Una proporción p medida con n campañas tiene error típico √(p(1−p)/n):
 | 1.500 | 1,2 | ~5 |
 | 3.000 | 0,8 | ~3,5 |
 
-- Las semillas son compartidas entre niveles y entre «con regalo» y «sin regalo»: las **comparaciones** tienen menos ruido que cada celda suelta.
+- Las semillas son compartidas entre Reinados y entre «con regalo» y «sin regalo»: las **comparaciones** tienen menos ruido que cada celda suelta.
 - Con ~80 piezas a 160 campañas, alguna sale fatal por azar. El informe repite las sospechosas con 800 y semillas nuevas antes de avisar. A mano: `-- regalos --piezas=… --n=800`.
 - Repetir la medida sin cambiar reglas da el mismo número: no es confirmación, es la misma muestra.
 - Cualquier cambio de reglas mueve todas las celdas ±1–3 puntos. No se persiguen décimas.
@@ -88,13 +91,13 @@ Cruza cuánto se elige con cuánto gana cuando se da de salida:
 | poco | normal | nicho o texto flojo | texto, y un empujón pequeño (≤ 33 %) |
 | mucho | mucho (> 68 %) | **victoria regalada** | condición, coste o rareza |
 
-Casos de la V5: `timbre` era trampa (56,5 % / 30,0 %) y se rediseñó; `horno` era de claridad (9,2 % / 54,4 %) y subió de 2 a 3, no a 4.
+Casos de la 5.0: `timbre` (hoy Anillo de sello) era trampa (56,5 % / 30,0 %) y se rediseñó; `horno` (hoy Horno) era de claridad (9,2 % / 54,4 %) y subió de 2 a 3, no a 4.
 
 ## Protocolo de un cambio
 
 1. Hipótesis por escrito: qué número, hacia dónde, qué celda se mueve y cuánto.
 2. Medida barata (`foco`, `niveles`, `regalos`) con n suficiente para la diferencia que esperas.
-3. Si funciona, comprueba lo que podías haber roto: nivel 1, P95, letalidad de jefes.
+3. Si funciona, comprueba lo que podías haber roto: Reinado 1, P95, letalidad de monarcas.
 4. Informe completo sin avisos → `npm run docs` → `npm test`.
 5. En el informe de la celda: antes → después con su n.
 
@@ -104,5 +107,5 @@ Las propuestas del panel simulado (`..\panelAgentesGaming`, `PROPUESTA_BALANCE.j
 
 - Un cambio de más del 50 % no se aplica sin medir en dos pasos.
 - Un duelo A/B ganado dice que el cambio **gusta**, no que el juego quede balanceado. Si rompe un objetivo, se descarta.
-- Las palancas gruesas (1 punto de búnker ≈ 6 puntos de victorias; amenaza de un piso) se mueven de una en una.
+- Las palancas gruesas (1 punto de Vida inicial ≈ 6 puntos de victorias; el Ataque de un guardia) se mueven de una en una.
 - No se tapa una pieza mala enseñando al bot a jugarla mal o a no elegirla.

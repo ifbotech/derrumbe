@@ -136,7 +136,7 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
         };
       let state = startStage(run, players);
       for (let turns = 0; state.phase === 'playing'; turns++) {
-        if (turns > 4000) throw new Error(`obra sin fin (${JSON.stringify(spec)}, obra ${run.stage})`);
+        if (turns > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
         const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
         trackEvents(run, res.events);
         state = res.state;

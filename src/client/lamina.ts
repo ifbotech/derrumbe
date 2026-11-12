@@ -1,15 +1,16 @@
-// La lámina del acta: un grabado de 1200 × 630 para compartir una campaña terminada, y el enlace con
+// La lámina de la crónica: un grabado de 1200 × 630 para compartir una campaña terminada, y el enlace con
 // su semilla para que otro la juegue igual.
 //
-//  · El fondo es un SVG dibujado en código (papel, marco de tinta, sol rojo y las cuatro torres con
-//    sus tramas de palo, en pie o hechas escombro). No lleva texto: dentro de un SVG rasterizado las
+//  · El fondo es un SVG dibujado en código (papel, marco de tinta, sol rojo y los cuatro tronos con
+//    sus tramas de palo, en pie o caídos). No lleva texto: dentro de un SVG rasterizado las
 //    fuentes de la página no cargan.
 //  · El texto se escribe encima en el <canvas> con las fuentes ya cargadas en el documento (gótica
 //    solo en el título; las cifras, en Archivo Black y sobre placa).
 //  · Descargar pasa por platform.saveFile; copiar usa ClipboardItem con el PNG y, si no se puede,
-//    copia el acta en texto con el enlace.
+//    copia la crónica en texto con el enlace.
 //  · Enlace: <dirección del juego>?seed=<SEMILLA>&baraja=<id>&nivel=<n>. Al abrirlo, el juego va a la
 //    preparación de campaña con todo cargado y un aviso; no arranca solo ni pisa una campaña en curso.
+import { TITLE, fileName as brandFile } from '../shared/brand';
 import { deckUnlocked } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { BOSS, DECK, LAST_STAGE, Run, depthOf, stageDef, stagesCleared } from '../rules/run';
@@ -48,14 +49,14 @@ const DIM = '#4d463c';
 
 // ───────────────────────── Enlace con semilla ─────────────────────────
 
-/** El enlace que repite la campaña: semilla, baraja y nivel de obra. null en sala o en la obra diaria. */
+/** El enlace que repite la campaña: semilla, baraja y Reinado. null en sala o en el Asalto diario. */
 export function seedLink(run: Run, online: boolean): string | null {
   if (online || run.daily || !run.seedText) return null;
   const q = new URLSearchParams({ seed: run.seedText, baraja: run.deckId, nivel: String(run.ascension + 1) });
   return `${location.href.split(/[?#]/)[0]}?${q}`;
 }
 
-/** El último jefe al que llegó la campaña: el de la obra en curso o el de la última obra con jefe ya pasada. */
+/** El último monarca al que llegó la campaña: el del asalto en curso o el del último asalto con monarca ya pasado. */
 function bossOf(run: Run): string | null {
   const stops = Object.entries(run.bosses ?? {})
     .map(([s, id]) => [Number(s), id] as const)
@@ -65,7 +66,7 @@ function bossOf(run: Run): string | null {
   if (!last) return null;
   const who = BOSS[last[1]]?.who;
   if (!who) return null;
-  return last[0] === run.stage && run.phase === 'lost' ? `ante ${who}` : `jefe ${who}`;
+  return last[0] === run.stage && run.phase === 'lost' ? `ante ${who}` : `monarca: ${who}`;
 }
 
 export function laminaOf(run: Run, online: boolean): Lamina {
@@ -73,10 +74,10 @@ export function laminaOf(run: Run, online: boolean): Lamina {
   const depth = depthOf(run);
   const cleared = Math.min(stagesCleared(run), LAST_STAGE);
   const where = won
-    ? `Torre Madre demolida${depth ? ` + ${depth} abisal${depth > 1 ? 'es' : ''}` : ''}`
+    ? `El último trono cayó${depth ? ` + Trono infinito ${depth}` : ''}`
     : depth
-      ? `Cimientos abisales · abisal ${depth + 1}`
-      : `Obra ${Math.min(run.stage, LAST_STAGE)} de ${LAST_STAGE} · ${stageDef(run.stage).name} · ${cleared} superada${cleared === 1 ? '' : 's'}`;
+      ? `Caída en el Trono infinito ${depth + 1}`
+      : `Asalto ${Math.min(run.stage, LAST_STAGE)} de ${LAST_STAGE} · ${stageDef(run.stage).name} · ${cleared} superada${cleared === 1 ? '' : 's'}`;
   return {
     won,
     where,
@@ -232,14 +233,14 @@ function drawText(ctx: CanvasRenderingContext2D, d: Lamina): void {
   const maxW = R - L;
   ctx.textBaseline = 'alphabetic';
   // cabecera
-  let x = L + plate(ctx, 'ACTA DE DEMOLICIÓN', L, 46, 34, "700 19px 'Space Mono', monospace", RED, PAPER, 12);
-  x += plate(ctx, 'DERRUMBE', x, 46, 34, "400 19px 'Archivo Black', sans-serif", INK, HAZARD, 12);
+  let x = L + plate(ctx, 'CRÓNICA', L, 46, 34, "700 19px 'Space Mono', monospace", RED, PAPER, 12);
+  x += plate(ctx, TITLE, x, 46, 34, "400 19px 'Archivo Black', sans-serif", INK, HAZARD, 12);
   ctx.strokeStyle = INK;
   ctx.lineWidth = 2;
   ctx.strokeRect(L + 1, 47, x - L - 2, 32);
   // título en gótica (sin cifras)
   ctx.fillStyle = d.won ? INK : RED;
-  fitText(ctx, d.won ? 'Demolido' : 'Sepultados', L - 4, 174, maxW, (px) => `900 ${px}px 'Grenze Gotisch', serif`, 108, 64);
+  fitText(ctx, d.won ? 'Corona rota' : 'Conjura deshecha', L - 4, 174, maxW, (px) => `900 ${px}px 'Grenze Gotisch', serif`, 108, 64);
   // dónde acabó
   ctx.fillStyle = INK;
   fitText(ctx, d.where, L, 214, maxW, (px) => `700 ${px}px 'Archivo', sans-serif`, 25, 17);
@@ -265,12 +266,12 @@ function drawText(ctx: CanvasRenderingContext2D, d: Lamina): void {
   ctx.fillText('MAYOR GOLPE', L + 18, y + 26);
   ctx.font = "400 66px 'Archivo Black', sans-serif";
   ctx.fillText(hitTxt, L + 18, y + 90);
-  // turnos, pisos, golpes limpios
+  // turnos, guardias, golpes exactos
   const sx = L + hitW + 26;
   const stats: [string, number][] = [
     ['TURNOS', d.turns],
-    ['PISOS DEMOLIDOS', d.floors],
-    ['GOLPES LIMPIOS', d.cleans],
+    ['GUARDIAS ABATIDOS', d.floors],
+    ['GOLPES EXACTOS', d.cleans],
   ];
   stats.forEach(([k, v], i) => {
     const yy = y + i * 35;
@@ -286,15 +287,15 @@ function drawText(ctx: CanvasRenderingContext2D, d: Lamina): void {
     ctx.fillStyle = PAPER;
     ctx.fillText(String(v), px + 8, yy + 28);
   });
-  // cinturón
+  // reliquias
   y = 394;
   ctx.fillStyle = INK;
   ctx.font = "700 16px 'Space Mono', monospace";
-  ctx.fillText('CINTURÓN', L, y);
-  let tx = L + ctx.measureText('CINTURÓN').width + 14;
+  ctx.fillText('RELIQUIAS', L, y);
+  let tx = L + ctx.measureText('RELIQUIAS').width + 14;
   let ty = y - 22;
   ctx.font = "700 17px 'Archivo', sans-serif";
-  const tools = d.tools.length ? d.tools : ['sin herramientas'];
+  const tools = d.tools.length ? d.tools : ['sin reliquias'];
   for (const name of tools) {
     const w = ctx.measureText(name).width + 18;
     if (tx + w > R) {
@@ -308,13 +309,13 @@ function drawText(ctx: CanvasRenderingContext2D, d: Lamina): void {
     ctx.fillText(name, tx + 9, ty + 21);
     tx += w + 8;
   }
-  // causa del derrumbe (derrota): su primera línea
+  // causa de la derrota: su primera línea
   y = 470;
   if (d.death) {
     ctx.fillStyle = RED;
     ctx.fillRect(L, y - 24, 8, 54);
     ctx.font = "700 15px 'Space Mono', monospace";
-    ctx.fillText('CAUSA DEL DERRUMBE', L + 18, y - 8);
+    ctx.fillText('CAUSA DE LA DERROTA', L + 18, y - 8);
     ctx.fillStyle = INK;
     ctx.font = "700 19px 'Archivo', sans-serif";
     wrapText(ctx, d.death.title, L + 18, y + 18, maxW - 18, 22, 1);
@@ -330,7 +331,7 @@ function drawText(ctx: CanvasRenderingContext2D, d: Lamina): void {
   const seedW = fitText(ctx, d.seed, L + 14 + ctx.measureText('SEMILLA').width + 12, fy + 30, 300, (px) => `400 ${px}px 'Archivo Black', sans-serif`, 26, 16);
   ctx.fillStyle = PAPER;
   ctx.font = "700 15px 'Space Mono', monospace";
-  const meta2 = `${d.deck} · nivel de obra ${d.level}`;
+  const meta2 = `${d.deck} · Reinado ${d.level}`;
   const mx = L + 14 + ctx.measureText('SEMILLA').width + 12 + seedW + 18;
   fitText(ctx, meta2, mx, fy + 28, R - 14 - mx, (px) => `500 ${px}px 'Archivo', sans-serif`, 17, 13);
   ctx.fillStyle = PAPER;
@@ -355,7 +356,7 @@ export async function laminaBlob(d: Lamina): Promise<Blob> {
   return new Promise((ok, ko) => canvas.toBlob((b) => (b ? ok(b) : ko(new Error('sin PNG'))), 'image/png'));
 }
 
-const fileName = (d: Lamina) => `derrumbe-lamina-${(d.seed || 'acta').replace(/[^A-Za-z0-9-]+/g, '-').toLowerCase()}.png`;
+const fileName = (d: Lamina) => brandFile('lamina', 'png', (d.seed || 'cronica').replace(/[^A-Za-z0-9-]+/g, '-').toLowerCase());
 
 /** «Descargar lámina»: el PNG, entregado por la plataforma (descarga en la web; diálogo de guardar en escritorio). */
 export async function downloadLamina(d: Lamina): Promise<void> {
@@ -368,7 +369,7 @@ export async function downloadLamina(d: Lamina): Promise<void> {
 }
 
 /**
- * «Copiar lámina»: la imagen al portapapeles; si el navegador no deja copiar imágenes, el acta en texto
+ * «Copiar lámina»: la imagen al portapapeles; si el navegador no deja copiar imágenes, la crónica en texto
  * con el enlace. Devuelve qué se copió.
  */
 export async function copyLamina(d: Lamina, text: string): Promise<'png' | 'text' | 'none'> {
@@ -394,7 +395,7 @@ export async function copyLamina(d: Lamina, text: string): Promise<'png' | 'text
 let linkNote = '';
 let watcher: MutationObserver | null = null;
 
-/** Pone el aviso «vienes de un acta» arriba de la preparación de campaña (y lo repone si la pantalla se repinta). */
+/** Pone el aviso «vienes de una crónica» arriba de la preparación de campaña (y lo repone si la pantalla se repinta). */
 function placeNote(): void {
   const host = app.querySelector('.camp .camp-run .scroll');
   if (!host) {
@@ -433,14 +434,14 @@ export function openSeedLink(): boolean {
   prefs.seed = seed;
   if (deck && DECK[deck]) {
     if (deckUnlocked(meta, deck)) pickDeck(deck);
-    else notes.push(`la ${DECK[deck].name.toLowerCase()} aún está cerrada en tu gremio y juegas con la tuya`);
+    else notes.push(`la ${DECK[deck].name.toLowerCase()} aún está cerrada en tu Orden y juegas con la tuya`);
   }
   if (Number.isFinite(level) && level >= 1) {
     const want = Math.min(level - 1, 7);
     prefs.ascension = Math.min(want, meta.ascMax);
-    if (want > meta.ascMax) notes.push(`el nivel de obra ${level} aún no está abierto y juegas en el ${prefs.ascension + 1}`);
+    if (want > meta.ascMax) notes.push(`el Reinado ${level} aún no está abierto y juegas en el ${prefs.ascension + 1}`);
   }
-  linkNote = `<b>Vienes de un acta: semilla ${esc(seed)}.</b><span>${notes.length ? `Ojo: ${esc(notes.join('; '))}. ` : 'Baraja y nivel de obra cargados. '}Pulsa «Nueva campaña» para jugarla.</span>`;
+  linkNote = `<b>Vienes de una crónica: semilla ${esc(seed)}.</b><span>${notes.length ? `Ojo: ${esc(notes.join('; '))}. ` : 'Baraja y Reinado cargados. '}Pulsa «Nueva campaña» para jugarla.</span>`;
   setScreen('camp');
   watcher?.disconnect();
   watcher = new MutationObserver(placeNote);

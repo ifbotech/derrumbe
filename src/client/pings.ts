@@ -1,5 +1,5 @@
-// Marcas de tiza: en sala, cualquiera de la cuadrilla señala una torre, una ruta, una oferta o una
-// carta y los demás ven sus iniciales garabateadas encima. No deciden nada (en campaña sigue
+// Señas: en sala, cualquiera de la conjura señala un trono, una ruta, una oferta o una carta y
+// los demás ven sus iniciales garabateadas encima. No deciden nada (en campaña sigue
 // mandando el anfitrión): solo sirven para ponerse de acuerdo sin hablar.
 import { sfx } from './audio';
 import { $$, S, nameOf } from './core';
@@ -49,8 +49,8 @@ export function renderPings(): void {
 }
 
 /**
- * Fuera de la mesa (plano, cobro, ferretería): quien no decide marca con un clic; quien decide,
- * con Alt + clic. Las torres de la mesa llevan su propia lógica.
+ * Fuera de la mesa (mapa, Botín, Mercado clandestino): quien no decide marca con un clic; quien
+ * decide, con Alt + clic. Los tronos de la mesa (.tower) llevan su propia lógica.
  */
 export function bindPings(canDecide: () => boolean): void {
   document.addEventListener(

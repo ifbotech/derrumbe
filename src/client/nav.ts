@@ -2,12 +2,12 @@
 // esa dirección; A / Enter lo pulsa. Sirve igual en todas las pantallas porque no conoce ninguna: solo
 // mira qué se puede pulsar y dónde está.
 //
-//   Teclado   flechas · Enter elegir · Espacio golpear · Y andamio · Z tiza · Supr descartar · L lupa
-//             Tab mazo · Esc atrás · F pantalla completa · Mayús + flechas reordena el cinturón
+//   Teclado   flechas · Enter elegir · Espacio golpear · Y La Manga · Z Rebobinar · Supr descartar · L lupa
+//             Tab mazo · Esc atrás · F pantalla completa · Mayús + flechas reordena las reliquias
 //             · mantener R reinicia la campaña
-//   Mando     cruceta o palanca · A elegir · X golpear · Y andamio · B atrás · L3 descartar · LB mazo
-//             · RB lupa (con el foco en una herramienta, LB / RB la mueven a izquierda y derecha)
-//             · LT tiza · RT velocidad · R3 pantalla completa · Start ajustes · mantener Select reinicia
+//   Mando     cruceta o palanca · A elegir · X golpear · Y La Manga · B atrás · L3 descartar · LB mazo
+//             · RB lupa (con el foco en una reliquia, LB / RB la mueven a izquierda y derecha)
+//             · LT Rebobinar · RT velocidad · R3 pantalla completa · Start ajustes · mantener Select reinicia
 //
 // El foco responde en el mismo fotograma de la pulsación (marco, salto de escala y un toque de latón)
 // y nunca espera a que la mesa acabe de animar. Si la pantalla se redibuja bajo el foco, el foco vuelve
@@ -97,7 +97,7 @@ function showRing(el: Element | null, hop = false): void {
 
 /** Lo último enfocado con teclado o mando, con lo que hace falta para encontrarlo si se vuelve a pintar. */
 let last: { el: HTMLElement; sel: string; x: number; y: number; lost: number } | null = null;
-/** Un destino pedido a mano (la herramienta que se acaba de mover): gana a todo lo demás. */
+/** Un destino pedido a mano (la reliquia que se acaba de mover): gana a todo lo demás. */
 let wanted: { sel: string; until: number } | null = null;
 
 function signature(el: HTMLElement): string {
@@ -255,9 +255,9 @@ export function activate(): boolean {
 
 export const focused = () => (document.activeElement instanceof HTMLElement ? document.activeElement : null);
 
-// ───────────────────────── Cinturón ─────────────────────────
+// ───────────────────────── Reliquias (el cinturón, .belt) ─────────────────────────
 
-/** La herramienta del cinturón que tiene el foco (o que es el destino de una tecla), si la hay. */
+/** La reliquia que tiene el foco (o que es el destino de una tecla), si la hay. */
 export function beltSlot(el: Element | null): HTMLElement | null {
   return el instanceof HTMLElement ? el.closest<HTMLElement>('.belt-slot.tool') : null;
 }

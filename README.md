@@ -1,29 +1,29 @@
-# DERRUMBE
+# CORONA ROTA
 
-Roguelike de construcción de mazo con baraja francesa clásica y estética de grabado brutalista. Diseño original:
-cuatro torres, doce pisos y un búnker que se agrieta con cada sirena. Para 1 a 4 jugadores.
+*La conjura de los naipes.* Roguelike de construcción de mazo con baraja francesa clásica y estética de grabado brutalista. Diseño original:
+sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doce guardias que abatir y tu Vida en juego en cada Contraataque. Para 1 a 4 jugadores.
 
-**Jugar en el navegador:** https://ifbotech.github.io/derrumbe/ (se publica sola en cada cambio; ver [Publicar](#publicar)).
+**Jugar en el navegador:** https://ifbotech.github.io/derrumbe/ (se publica sola en cada cambio; ver [Publicar](#publicar)). La dirección y el repositorio (`ifbotech/derrumbe`) conservan el nombre de antes.
 
-- **Campaña roguelike** en solitario o en cuadrilla: 8 obras cortas y tensas (de 6 a 12 turnos), jefes anunciados en el plano, rutas con contrato, ferretería, hallazgos y cimientos abisales sin final.
-- **Fuerza × Resonancia**: cada golpe se resuelve paso a paso, de izquierda a derecha. Antes de darlo, la mesa enseña el **daño final en grande** con sus avisos (golpe limpio, cae el piso, ventaja, inmune) y, si lo pides, el **recibo**: Base + Cartas + Cinturón × Resonancia = Daño.
-- **La baraja manda**: cartas solas, formaciones de póker y el **As de compañía**. Los cuatro poderes de palo y la **rueda de materiales** (♠ → ♦ → ♥ → ♣ → ♠) están siempre a la vista, y cada torre lleva atornillada su **placa de inmunidad**.
-- **Golpe limpio**: tirar un piso con el daño exacto calla la sirena, paga, roba y castiga al piso de abajo.
-- **Fatiga de cimientos**: ninguna obra se eterniza. A partir del turno 9, tus golpes resuenan más y la sirena también: todo acaba en un crescendo.
-- **Cinturón de herramientas** reordenable (52 herramientas, 4 rarezas, 6 familias). La familia de **aguante** cobra la defensa en daño: el muro se vuelve Fuerza, lo que frena se devuelve y lo que sobra, repara.
-- **Andamio**, **tiza de replanteo** (deshacer una jugada por obra en solitario) y **reinicio rápido** manteniendo R.
-- **8 niveles de obra**, cada uno con un giro, y **sellos de maestría** en la colección.
-- **Lupa de grabador**: clic derecho o pulsación larga sobre cualquier carta, herramienta, piso o jefe.
-- **Causa del derrumbe**: al perder, el acta dice en dos líneas qué tiró el búnker y por qué el muro no lo evitó; un aviso de último turno lo anticipa en la mesa.
-- **Archivo de actas**: las 25 últimas campañas, con su semilla para rejugarlas. Cada acta se descarga o se copia como **lámina** de grabado, con un enlace (`?seed=…`) que carga esa misma campaña. Y **copia de seguridad** del progreso en un archivo.
-- **Cooperativo online** con salas por código, servidor autoritativo y **marcas de tiza** para señalar sin hablar.
-- **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar el cinturón y pantalla completa también con mando), con un marco de foco que se ve a distancia y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
-- **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en gótica y cada palo con su **trama de grabado** (rayado diagonal, punteado, aparejo de ladrillo, rayado cruzado), para distinguirlos sin el color.
-- **Obra diaria** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada**. Ocho **susurros de tiza** saltan la primera vez que te encuentras cada cosa (palo inmune, andamio, golpe limpio, forja, atajo, jefe, fatiga, cantera baja), con «No mostrar más» a un clic.
+- **Campaña roguelike** en solitario o en conjura: 8 asaltos cortos y tensos (de 6 a 12 turnos), cada uno una sala del castillo, con los monarcas anunciados en el **Mapa del castillo**, rutas con **Juramento**, **Mercado clandestino**, **Secretos de la cripta** y un **Trono infinito** sin final.
+- **Daño × Multi = Golpe**: cada golpe se resuelve paso a paso, de izquierda a derecha. Antes de darlo, la mesa enseña el **Golpe en grande** con sus avisos (¡Exacto!, cae el guardia, ventaja, Inmune) y, si lo pides, el **recibo**: Base + Cartas + Reliquias × Multi = Golpe.
+- **La baraja manda**: cartas solas, formaciones de póker y el **As cómplice**. Los cuatro palos —**Picas, Diamantes, Corazones y Tréboles**— tienen su poder (Perfora, Salpica, Cura, Escudo), la **rueda de palos** (♠ → ♦ → ♥ → ♣ → ♠) está siempre a la vista y cada trono lleva su **escudo de armas** de inmunidad.
+- **Golpe exacto**: abatir a un guardia con el Golpe justo anula el Contraataque, paga, roba y deja **Impulso** contra el guardia siguiente.
+- **Asedio final**: ningún asalto se eterniza. A partir del turno 9, tus golpes llevan más Multi y los Contraataques pegan más: todo acaba en un crescendo.
+- **Reliquias** reordenables (52, en 4 rarezas —Común, Rara, Noble y Regia— y 7 familias). La familia **Escudo y réplica** cobra la defensa en Golpe: el Escudo se vuelve Daño, lo que frena se devuelve y lo que sobra, cura.
+- **La Manga** (te guardas una carta), **Rebobinar** (deshacer una jugada por asalto en solitario) y **reinicio rápido** manteniendo R.
+- **8 Reinados**, cada uno con un giro, y **sellos de maestría** en la colección.
+- **Lupa**: clic derecho o pulsación larga sobre cualquier carta, reliquia, guardia o monarca.
+- **Causa de la derrota**: al perder, la Crónica dice en dos líneas qué se llevó tu Vida y por qué el Escudo no lo evitó; un aviso de último turno lo anticipa en la mesa.
+- **Archivo de crónicas**: las 25 últimas campañas, con su semilla para rejugarlas. Cada Crónica se descarga o se copia como **Lámina** de grabado, con un enlace (`?seed=…`) que carga esa misma campaña. Y **copia de seguridad** del progreso en un archivo.
+- **Cooperativo online** con salas por código, servidor autoritativo y **señas** para proponer sin hablar.
+- **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar las reliquias y pantalla completa también con mando), con un marco de foco que se ve a distancia y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
+- **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en letra de título y cada palo con su **trama de grabado** (rayado diagonal de lanzas, punteado de gemas, hiladas de cáliz, rayado cruzado heráldico), para distinguirlos sin el color.
+- **Asalto diario** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada** con la Maestra. Ocho **Susurros** saltan la primera vez que te encuentras cada cosa (trono Inmune, La Manga, Golpe exacto, Mesa de lacre, Atajo, monarca, Asedio final, Mazo bajo), con «No mostrar más» a un clic.
 
-Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo seis palabras tienen significado propio —Fuerza, Resonancia, golpe limpio, fractura, apuntalado y desarmada—; todo lo demás se dice con palabras llanas.
+Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo seis palabras tienen significado propio —Daño, Multi, Golpe exacto, Brecha, En guardia y Desarmado—; todo lo demás se dice con palabras de baraja: Vida, Escudo, Mazo, Descarte, Contraataque.
 
-> DERRUMBE comparte género con los cooperativos de baraja francesa, pero sus reglas son propias: los poderes de palo, el ciclo de materiales (♠ rompe ♦, ♦ corta ♥, ♥ agrieta ♣, ♣ sepulta ♠) y la cuenta Fuerza × Resonancia no vienen de ningún otro juego.
+> Corona rota comparte género con los cooperativos de baraja francesa, pero sus reglas son propias: los poderes de palo, la rueda de palos (♠ corta ♦ · ♦ compra ♥ · ♥ doblega ♣ · ♣ quiebra ♠), la cuenta Daño × Multi = Golpe, las Reliquias y la campaña no vienen de ningún otro juego.
 
 ## Uso
 
@@ -59,13 +59,13 @@ El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, i
 
 | Comando | Qué hace |
 |---|---|
-| `npm test` | Pruebas del motor, la campaña, la fatiga, el tutorial y las palabras clave (Vitest), con 500 partidas de fuzz con semilla |
+| `npm test` | Pruebas del motor, la campaña, el Asedio final, la partida guiada, las palabras clave, la imprenta, el vocabulario y la marca (Vitest), con 500 partidas de fuzz con semilla |
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
-| `npm run analyze:meta` | Laboratorio de balance: ~52.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
-| `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas de la partida clásica y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 25 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras sin gótica y con placa, cero recortes, dianas ≥ 44 px, contraste, tramas de palo → `artifacts/visual-qa/` y su `report.json` |
-| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, obra, reglas, ajustes, cobro, ferretería, forja y hallazgo; descartar con L3, reordenar el cinturón con LB/RB, pantalla completa con R3, foco, susurros e insignias) |
-| `npm run forja` | Forja de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, herramientas, jefes) a 24 y 300 px, mide su tinta y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
+| `npm run analyze:meta` | Laboratorio de balance: ~55.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
+| `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas del Asalto único y de la campaña |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 25 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo y jerga vieja → `artifacts/visual-qa/` y su `report.json` |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, Mercado clandestino, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias) |
+| `npm run forja` | Banco de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, reliquias, especiales, servicios, monarcas) a 24 y 300 px, mide su tinta y su silueta, y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
 | `npm run og` | Regenera la tarjeta para compartir (`public/og-card.png`, 1200 × 630) |
 | `npm run docs` | Regenera `REGLAS.md` y las tablas de balance y controles de este archivo |
 
@@ -85,38 +85,38 @@ Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativ
 
 ## Cómo se juega una campaña
 
-1. **El sobre.** Empiezas con una baraja inicial y tres cartas especiales.
-2. **El plano de demolición.** Enseña las ocho obras y, desde el principio, qué jefe espera en cada una. En las obras sin jefe eliges **ruta** —cada una con un **contrato**— o tomas el **atajo** y te la saltas a cambio de una **etiqueta sindical**.
-3. **La obra.** Eliges cartas y la mesa te enseña **Fuerza × Resonancia = daño** contra cada torre, con sus avisos (golpe limpio, muro, sirena, si la jugada se puede deshacer). Al golpear, cada carta, sello, tratamiento y herramienta se activa en orden. Si la obra se alarga, la **fatiga de cimientos** sube las apuestas para los dos lados.
-4. **A cobrar.** Oro con interés, el resultado del contrato y **una de tres opciones a la vista** para el mazo. Los jefes dejan una herramienta de botín.
-5. **La ferretería.** Herramientas en su chapa (hierro, cobre, latón o carmesí y oro, según la rareza), sobres de especiales, planos, la **mesa de forja**, el quemador y «Revolver cajones».
-6. **Hallazgos en los cimientos** tras cada jefe intermedio: dilemas con premio y precio.
-7. Tras la octava obra, el **acta de demolición** se puede copiar como texto o llevarse como lámina, y queda en el archivo. Y si quedan ganas, los **cimientos abisales**.
+1. **El Sobre lacrado.** Empiezas con una baraja inicial y tres cartas especiales.
+2. **El Mapa del castillo.** Enseña los ocho asaltos y, desde el principio, qué monarca espera en cada uno. En los asaltos sin monarca eliges **ruta** —cada una con un **Juramento**— o tomas el **Atajo** y te lo saltas a cambio de un **Atajo de conspirador**.
+3. **El asalto.** Eliges cartas y la mesa te enseña **Daño × Multi = Golpe** contra cada trono, con sus avisos (Golpe exacto, Escudo, Contraataque, si la jugada se puede rebobinar). Al golpear, cada carta, sello de lacre, acabado y reliquia se activa en orden. Si el asalto se alarga, el **Asedio final** sube las apuestas para los dos lados.
+4. **El Botín.** Oro con interés, el resultado del Juramento y **una de tres opciones a la vista** para el Mazo. Los monarcas dejan una reliquia.
+5. **El Mercado clandestino.** El Tratante vende reliquias en su placa (según la rareza), Sobres lacrados, Pergaminos, la **Mesa de lacre**, **La hoguera** y «Renovar mesa».
+6. **Secretos de la cripta** tras cada monarca intermedio: dilemas con premio y precio.
+7. Tras el octavo asalto, la **Crónica** se puede copiar como texto o llevarse como Lámina, y queda en el archivo. Y si quedan ganas, el **Trono infinito**.
 
-### El gremio
+### La Orden
 
-Ganes o pierdas, cada campaña deja renombre. En el gremio no se compra fuerza bruta: se **abren surtidos**. El surtido base es corto a propósito; seis cajas abren el resto de las herramientas, cada una con su manera de jugar (precisión, sismo, alquimia, riesgo, chatarra y aguante). Los **logros** desbloquean barajas iniciales y cartas legendarias, y ganar una campaña estampa un **sello de maestría** (bronce, hierro u oro, según el nivel de obra) en la baraja y en cada herramienta que llevabas.
+Ganes o pierdas, cada campaña deja **Coronas**. En La Orden no se compra poder bruto: se **abren arcones**. El surtido base es corto a propósito; seis Arcones de la Orden abren el resto de las reliquias, cada uno con su manera de jugar (precisión, eco, alquimia, filo, cenizas y escudo). Los **logros** desbloquean barajas iniciales y cartas legendarias, y ganar una campaña estampa un **sello de maestría** (bronce, hierro u oro, según el Reinado) en la baraja y en cada reliquia que llevabas.
 
-El **archivo de actas** guarda las 25 últimas campañas: resultado, obra y jefe, turnos, mayor golpe, herramientas y semilla, con un botón para **rejugar la semilla** y otro para copiar el acta.
+El **Archivo de crónicas** guarda las 25 últimas campañas: resultado, asalto y monarca, turnos, mayor Golpe, reliquias y semilla, con un botón para **rejugar la semilla** y otro para copiar la Crónica.
 
-En solitario, la campaña y el gremio se guardan en el dispositivo. Desde **Ajustes** se puede **exportar el progreso** a un archivo .json e **importarlo** en otro navegador, otro equipo o la versión de escritorio. Todo lo que el juego le pide a la máquina (guardar, archivos, pantalla completa, vibración, logros del sistema, enlaces, dirección del servidor) pasa por `PlatformBridge` (`src/client/platform.ts`): una envoltura de escritorio solo tiene que llamar a `setPlatform()` con la suya.
+En solitario, la campaña y La Orden se guardan en el dispositivo; las claves del guardado siguen siendo `derrumbe:*`, así que el progreso de antes se conserva. Desde **Ajustes** se puede **exportar el progreso** a un archivo .json e **importarlo** en otro navegador, otro equipo o la versión de escritorio. Todo lo que el juego le pide a la máquina (guardar, archivos, pantalla completa, vibración, logros del sistema, enlaces, dirección del servidor) pasa por `PlatformBridge` (`src/client/platform.ts`): una envoltura de escritorio solo tiene que llamar a `setPlatform()` con la suya.
 
 ### Jugar con amigos
 
 1. Uno crea una sala y comparte el código de 4 letras o el enlace (`/?sala=ABCD`).
-2. Los demás se unen; el anfitrión elige entre una obra clásica y una campaña, y empieza.
+2. Los demás se unen; el anfitrión elige entre un Asalto único y una campaña, y empieza.
 3. Si alguien se desconecta puede volver recargando la página; mientras tanto un bot juega su turno.
 
-En campaña cooperativa el mazo, el oro y el cinturón son compartidos y decide el anfitrión; los demás **marcan con tiza** lo que proponen (una torre, una ruta, una oferta) y sus iniciales aparecen encima para toda la cuadrilla. En sala no hay tiza de replanteo: toda jugada es definitiva.
+En campaña cooperativa el Mazo, el oro y las reliquias son compartidos y decide el anfitrión; los demás **hacen señas** sobre lo que proponen (un trono, una ruta, una oferta) y sus iniciales aparecen encima para toda la conjura. En sala no hay Rebobinar: toda jugada es definitiva.
 
 Para jugar por internet hay que publicar el puerto del servidor (un VPS, Fly.io, Render, Railway… o un túnel). Con Docker:
 
 ```bash
-docker build -t derrumbe .
+docker build -t corona-rota .
 ```
 
 ```bash
-docker run -p 3000:3000 derrumbe
+docker run -p 3000:3000 corona-rota
 ```
 
 Detrás de un proxy inverso, recuerda permitir la actualización a WebSocket en la ruta `/ws`.
@@ -130,14 +130,14 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 |---|---|---|
 | Mover el foco | Flechas | Cruceta o palanca izquierda |
 | Elegir | Enter · 1–9 en la mano · clic | A |
-| Golpear la torre apuntada | Espacio · clic en la torre | X |
-| Guardar en el andamio | Y | Y |
-| Tiza de replanteo (deshacer) | Z | LT |
+| Golpear el trono apuntado | Espacio · clic en el trono | X |
+| Guardar en La Manga | Y | Y |
+| Rebobinar (deshacer) | Z | LT |
 | Descartar lo elegido | Supr | L3 (pulsar la palanca izquierda) |
 | Atrás / soltar la selección | Esc | B |
-| Mazo (cantera y escombrera) | Tab | LB |
-| Lupa de grabador | L · clic derecho · pulsación larga | RB |
-| Reordenar el cinturón | Arrastrar · Mayús + flechas | LB / RB con el foco en la herramienta |
+| Ver el Mazo y el Descarte | Tab | LB |
+| Lupa | L · clic derecho · pulsación larga | RB |
+| Reordenar las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |
 | Cambiar la velocidad (1× → 2× → 4×) | botón de la barra | RT |
 | Pantalla completa | F | R3 (pulsar la palanca derecha) |
 | Reiniciar la campaña | Mantener R | Mantener Select |
@@ -147,65 +147,65 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 ## Balance
 
 <!-- balance:inicio -->
-Medido con `npm run analyze:meta`: **55.640 campañas** con semilla jugadas por el bot de referencia (rutas, contratos, selección, ferretería, forja, hallazgos, andamio y orden del cinturón). El informe completo —cada herramienta, carta especial, sello y tratamiento— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
+Medido con `npm run analyze:meta`: **55.640 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, Mercado clandestino, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
 
-Campañas ganadas por nivel de obra (baraja de obra, 1500 campañas por celda). Objetivos: nivel 1 entre el 24 y el 30 % con el gremio vacío y entre el 40 y el 48 % con el gremio lleno; nivel 8 entre el 6 y el 9 % con el gremio vacío y entre el 12 y el 17 % con el gremio lleno; y cada nivel, más difícil que el anterior.
+Campañas ganadas por Reinado (baraja de la conjura, 1500 campañas por celda). Objetivos: Reinado 1 entre el 24 y el 30 % con la Orden vacía y entre el 40 y el 48 % con la Orden llena; Reinado 8 entre el 6 y el 9 % con la Orden vacía y entre el 12 y el 17 % con la Orden llena; y cada Reinado, más difícil que el anterior.
 
-| Nivel | Gremio vacío | Gremio lleno |
+| Reinado | Orden vacía | Orden llena |
 |---|---|---|
-| 1 · Obra limpia | 29,7 % | 45,1 % |
-| 2 · Hormigón armado | 25,6 % | 41,5 % |
-| 3 · Precios de obra | 23,5 % | 35,9 % |
-| 4 · Vigas maestras | 18,3 % | 34,3 % |
-| 5 · Sirena afinada | 14,1 % | 29,1 % |
-| 6 · Búnker viejo | 12,3 % | 24,9 % |
-| 7 · Turno de noche | 7,9 % | 16,9 % |
-| 8 · Clausura | 6,8 % | 15,3 % |
+| 1 · Reinado de paz | 29,7 % | 45,1 % |
+| 2 · Corazas finas | 25,6 % | 41,5 % |
+| 3 · Impuesto real | 23,5 % | 35,9 % |
+| 4 · Reyes en guardia | 18,3 % | 34,3 % |
+| 5 · Rey colérico | 14,1 % | 29,1 % |
+| 6 · Heridas viejas | 12,3 % | 24,9 % |
+| 7 · Guardia de noche | 7,9 % | 16,9 % |
+| 8 · Puertas selladas | 6,8 % | 15,3 % |
 
-Por baraja inicial (nivel 1, 1500 campañas por celda). Objetivo: todas entre el 24 y el 31 % sin gremio y entre el 40 y el 45 % con él.
+Por baraja inicial (Reinado 1, 1500 campañas por celda). Objetivo: todas entre el 24 y el 31 % sin la Orden y entre el 40 y el 45 % con ella.
 
-| Baraja | Gremio vacío | Gremio lleno | Lo que suma el gremio |
+| Baraja | Orden vacía | Orden llena | Lo que suma la Orden |
 |---|---|---|---|
-| Baraja de obra | 29,7 % | 45,1 % | +15,4 |
+| Baraja de la conjura | 29,7 % | 45,1 % | +15,4 |
 | Baraja negra | 29,3 % | 45,1 % | +15,8 |
 | Baraja del prestamista | 28,7 % | 43,3 % | +14,6 |
 | Baraja de ases | 26,3 % | 41,6 % | +15,3 |
 | Baraja corta | 29,6 % | 42,5 % | +12,9 |
 | Baraja del caos | 28 % | 44 % | +16 |
 
-Jefes: de cada vez que una campaña llega a uno, cuántas acaba ahí (media 14,9 %). Objetivo: todos entre 0,8× y 1,3× de la media.
+Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media 14,9 %). Objetivo: todos entre 0,8× y 1,3× de la media.
 
-| Jefe | Letalidad | Frente a la media |
+| Monarca | Letalidad | Frente a la media |
 |---|---|---|
-| La Sirena | 15 % | ×1,01 |
+| El Rey de Dos Caras | 15 % | ×1,01 |
 | El Usurero | 16,4 % | ×1,1 |
-| El Matasanos | 13,6 % | ×0,91 |
-| La Ventisca | 14 % | ×0,94 |
-| El Coloso | 15,9 % | ×1,07 |
-| La Furia | 15 % | ×1,01 |
-| El Topo | 14,4 % | ×0,97 |
+| La Dama del Cáliz | 13,6 % | ×0,91 |
+| La Reina Helada | 14 % | ×0,94 |
+| El Inquisidor | 15,9 % | ×1,07 |
+| El Verdugo | 15 % | ×1,01 |
+| El Relojero | 14,4 % | ×0,97 |
 
-Turnos por obra. Objetivo: obra 1 de 5 a 7 turnos de mediana (P95 ≤ 10); obras 2 y 3 de 8 a 10 (P95 ≤ 15); obras 4 a 8 de 9 a 13 (P95 ≤ 19), con cualquier baraja.
+Turnos por asalto. Objetivo: asalto 1 de 5 a 7 turnos de mediana (P95 ≤ 10); asaltos 2 y 3 de 8 a 10 (P95 ≤ 15); asaltos 4 a 8 de 9 a 13 (P95 ≤ 19), con cualquier baraja.
 
-| Obra | Mediana | P95 |
+| Asalto | Mediana | P95 |
 |---|---|---|
-| 1 · Caseta de obra | 6 | 9 |
-| 2 · Bloque de pisos | 8 | 11 |
-| 3 · Torre del capataz | 9 | 12 |
-| 4 · Polígono | 11 | 15 |
-| 5 · Ciudadela | 11 | 17 |
-| 6 · Rascacielos | 11 | 16 |
-| 7 · Fortaleza | 11 | 17 |
-| 8 · La Torre Madre | 11 | 17 |
+| 1 · El Puente levadizo | 6 | 9 |
+| 2 · El Patio de armas | 8 | 11 |
+| 3 · La Armería | 9 | 12 |
+| 4 · Las Cocinas | 11 | 15 |
+| 5 · La Capilla | 11 | 17 |
+| 6 · La Biblioteca | 11 | 16 |
+| 7 · La Galería de espejos | 11 | 17 |
+| 8 · El Salón del Trono | 11 | 17 |
 
-Peor percentil 95 de las obras 4 a 8, por baraja: de obra 18 · negra 18 · del prestamista 18 · de ases 17 · corta 16 · del caos 17.
+Peor percentil 95 de los asaltos 4 a 8, por baraja: de la conjura 18 · negra 18 · del prestamista 18 · de ases 17 · corta 16 · del caos 17.
 
-Partida clásica (una obra, 1500 partidas por celda; objetivo 58–65 %): 1 jugador 59,3 % · 2 jugadores 58,5 % · 3 jugadores 64,5 % · 4 jugadores 63,1 %.
+Asalto único (1500 partidas por celda; objetivo 58–65 %): 1 jugador 59,3 % · 2 jugadores 58,5 % · 3 jugadores 64,5 % · 4 jugadores 63,1 %.
 
 El informe no deja ningún aviso: todos los objetivos se cumplen en la muestra.
 <!-- balance:fin -->
 
-El objetivo es un progreso **horizontal**: una cuenta nueva ya gana más de una de cada cuatro campañas, y el gremio completo sube ese número ampliando opciones, no multiplicando estadísticas.
+El objetivo es un progreso **horizontal**: una cuenta nueva ya gana más de una de cada cuatro campañas, y La Orden completa sube ese número ampliando opciones, no multiplicando estadísticas.
 
 ## El estudio
 
@@ -213,16 +213,16 @@ Desde la 5.0 el juego se hace con un pequeño estudio de agentes de Claude Code,
 
 | Subagente (`.claude/agents/`) | Qué es suyo |
 |---|---|
-| `director` | `ROADMAP_V5_V10.md`, `SPECS/`, `CHANGELOG.md` y la decisión de publicar o apartar una versión |
-| `reglas-balance` | `src/rules/`, el laboratorio (`scripts/analyze-meta.ts`) y `tests/`; vigila la constitución anticomplejidad |
-| `arte-ui` | estilos, maquetación, grabado SVG, pantallas, la QA visual y la forja |
-| `juice-ux` | mando y teclado, susurros de tiza, efectos, sonido, la red del cooperativo y la prueba de humo |
+| `director` | `ROADMAP_V5_V10.md`, `SPECS/`, `CHANGELOG.md`, la prosa de este archivo y la decisión de publicar o apartar una versión |
+| `reglas-balance` | `src/rules/`, la marca (`src/shared/brand.ts`), el laboratorio (`scripts/analyze-meta.ts`), el reglamento y `tests/`; vigila la constitución anticomplejidad |
+| `arte-ui` | estilos, maquetación, grabado SVG (tronos, reliquias, monarcas, naipes), textos de pantalla, la QA visual y el banco de grabado |
+| `juice-ux` | mando y teclado, Susurros, la partida guiada con la Maestra, efectos, sonido, la red del cooperativo y la prueba de humo |
 
 Cinco habilidades (`.claude/skills/`) recogen el oficio que se repite: `brutalist-print-ui` (reglas de imprenta), `engraving-svg-forge` (dibujar y comprobar el arte), `playwright-deck-qa` (QA en las cuatro ventanas y con mando virtual), `regicide-synergy-math` (laboratorio e invariantes) y `autonomous-sprint-loop` (el bucle de versiones).
 
-**Constitución anticomplejidad**, comprobada por `npm test`: como mucho 6 palabras clave y 56 herramientas, ninguna descripción de más de 115 caracteres y ninguna obra de la 4 a la 8 con un percentil 95 por encima de 19 turnos.
+**Constitución anticomplejidad**, comprobada por `npm test`: como mucho 6 palabras clave y 56 reliquias, ninguna descripción de más de 115 caracteres y ningún asalto del 4 al 8 con un percentil 95 por encima de 19 turnos.
 
-La hoja de ruta de la 6.0 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). El bucle que las construye:
+La hoja de ruta de la 6.0 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). La 6.0, el cambio de tema, se hizo a mano; el bucle arranca en la V7. Para ver el plan sin tocar nada:
 
 ```powershell
 .\scripts\estudio-autonomo.ps1 -Ensayo
@@ -232,51 +232,54 @@ La hoja de ruta de la 6.0 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.
 .\scripts\estudio-autonomo.ps1
 ```
 
-Por cada versión abre una rama, lanza una sesión por celda de la especificación, pasa las puertas de CPU (`typecheck`, `test`, `analyze:meta`, `docs`, `qa:visual`, `qa:smoke`), audita el commit candidato con un panel **simulado** de jugadores en `..\panelAgentesGaming` y compara aprobación y claridad con la versión anterior: si no empeora, fusiona y etiqueta; si empeora, `main` queda como estaba y la rama se aparta. Con `-Publicar`, además, sube cada versión aceptada. El panel ordena prioridades; no sustituye a jugadores de verdad.
+Por cada versión abre una rama, lanza una sesión por celda de la especificación, pasa las puertas de CPU (`typecheck`, `test`, `analyze:meta`, `docs`, `qa:visual`, `qa:smoke`), audita el commit candidato con un panel **simulado** de jugadores en `..\panelAgentesGaming` (preset `v6-completo`, 240 personas) y compara aprobación y claridad con la versión anterior: si no empeora, fusiona y etiqueta; si empeora, `main` queda como estaba y la rama se aparta. Antes de la V7 audita `main` como línea base: ni la 5.0 ni la 6.0 tienen todavía medida del panel. Con `-Publicar`, además, sube cada versión aceptada. El panel ordena prioridades; no sustituye a jugadores de verdad.
 
 ## Arquitectura
 
 ```
 src/
   rules/        Motor de reglas puro, determinista y sin dependencias
-    engine.ts     estado, acciones, golpe (Fuerza × Resonancia), fatiga, andamio, tiza, eventos, vista por jugador
-    tools.ts      las 52 herramientas del cinturón
-    specials.ts   cartas especiales
+    engine.ts     estado, acciones, golpe (Daño × Multi), Asedio final, La Manga, Rebobinar, eventos, vista por jugador
+    tools.ts      las 52 reliquias
+    specials.ts   cartas especiales y legendarias
     keywords.ts   las seis palabras clave y cómo se marcan en los textos
-    autopsy.ts    causa del derrumbe (qué tiró el búnker) y aviso de último turno
-    run.ts        campaña (reductor): plano, contratos, cobro, ferretería, hallazgos, niveles de obra, gremio
+    autopsy.ts    causa de la derrota (qué se llevó tu Vida) y aviso de último turno
+    run.ts        campaña (reductor): Mapa del castillo, Juramentos, Botín, Mercado clandestino, Secretos de la cripta, Reinados, La Orden
     achievements.ts  logros, colección y lo que desbloquean
-    bot.ts        bot de obra y de campaña (simulación y sustituto de desconectados)
-    tutorial.ts   guion y mazo preparado de la partida guiada
-  shared/       Protocolo de mensajes cliente ⇄ servidor
-  server/       Node + ws: salas, turnos, reconexión, marcas de tiza, estáticos
+    bot.ts        bot de asalto y de campaña (simulación y sustituto de desconectados)
+    tutorial.ts   guion de la Maestra y mazo preparado de la partida guiada
+  shared/
+    brand.ts      la marca: el único sitio donde se escribe el título
+    protocol.ts   protocolo de mensajes cliente ⇄ servidor
+  server/       Node + ws: salas, turnos, reconexión, señas, estáticos
   client/       Vite + TypeScript + CSS/SVG
     core.ts · platform.ts · net.ts · router.ts   estado, puente con la plataforma, conexión
-    home.ts · lobby.ts · guild.ts                portada, vestíbulo, gremio, colección y archivo de actas
-    campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas
-    table.ts · tutorial-ui.ts                    mesa de combate (rueda de materiales, fatiga) y partida guiada
-    cuenta.ts · causa.ts · lamina.ts             cuenta central y su recibo, causa del derrumbe, lámina del acta y enlace con semilla
-    whispers.ts                                  susurros de tiza contextuales
+    home.ts · lobby.ts · guild.ts                portada, vestíbulo, La Orden, colección y Archivo de crónicas
+    campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas (mapa, Botín, Mercado clandestino, Mesa de lacre)
+    table.ts · tutorial-ui.ts                    mesa de combate (los cuatro tronos, rueda de palos, Asedio final) y partida guiada
+    cuenta.ts · causa.ts · lamina.ts             cuenta central y su recibo, causa de la derrota, Lámina de la Crónica y enlace con semilla
+    whispers.ts                                  Susurros contextuales
     nav.ts · prompts.ts                          foco para teclado y mando, e indicaciones de cada botón
-    lupa.ts · flavor.ts · pings.ts               lupa de grabador, epígrafes, marcas de tiza
-    widgets.ts · backup.ts · fx.ts               cinturón, visor de mazos, ajustes, copia de seguridad, efectos
-    card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: cartas, retratos, iconos, tramas de palo y grano
+    lupa.ts · flavor.ts · pings.ts               Lupa, epígrafes, señas
+    widgets.ts · backup.ts · fx.ts               reliquias, visor de Mazo y Descarte, ajustes, copia de seguridad, efectos
+    card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: naipes, tronos, retratos, iconos, tramas de palo y grano
     tinta.ts                                     aviso de tinta desvanecida en las cajas con desplazamiento
     audio.ts                                     efectos y música sintetizados, con mezcla y máster
-    qa.ts · forja-qa.ts                          estados fijos para las capturas y banco de la forja (solo con ?qa)
-tests/          Vitest: motor, campaña, fatiga y aguante, autopsia, tutorial, palabras clave, invariantes anticomplejidad e imprenta
-scripts/        Laboratorio de balance, control de calidad (capturas, humo, mando virtual), tarjeta social y reglamento
+    qa.ts · forja-qa.ts                          estados fijos para las capturas y banco de grabado (solo con ?qa)
+tests/          Vitest: motor, campaña, Asedio final y Escudo, autopsia, partida guiada, palabras clave, invariantes anticomplejidad, imprenta, vocabulario y marca
+scripts/        Laboratorio de balance, control de calidad (capturas, humo, mando virtual), banco de grabado, tarjeta social y reglamento
 ```
 
 - **Motor determinista.** Semilla + lista de acciones reproducen cualquier partida y cualquier campaña, decisión a decisión. Las pruebas lo comprueban con 500 partidas de fuzz.
-- **Servidor autoritativo.** El cliente solo envía intenciones; el servidor valida con el motor y difunde el resultado. Las marcas de tiza son solo señales: no deciden nada.
-- **Información oculta.** Cada jugador recibe únicamente su mano y su andamio (`viewFor`) y sus propias cartas robadas o guardadas (`eventsFor`). La campaña de una sala viaja sin el estado del azar ni la semilla (`publicRun`).
+- **Servidor autoritativo.** El cliente solo envía intenciones; el servidor valida con el motor y difunde el resultado. Las señas son solo señales: no deciden nada.
+- **Información oculta.** Cada jugador recibe únicamente su mano y su Manga (`viewFor`) y sus propias cartas robadas o guardadas (`eventsFor`). La campaña de una sala viaja sin el estado del azar ni la semilla (`publicRun`).
 - **Animación por eventos.** Cada golpe produce una lista de eventos que el cliente encola y anima; las reglas no saben nada de lo visual.
+- **Marca en un solo sitio.** El título y el lema salen de `src/shared/brand.ts`; `index.html` y el manifest, que son estáticos, lo llevan escrito, y `tests/marca.test.ts` falla si no casan. Los identificadores internos (`id` de datos, clases CSS, protocolo, claves `derrumbe:*`) no cambiaron con el tema.
 - **Mando.** `nav.ts` lee el mando estándar del W3C (cruceta, palanca con zona muerta de 0,28, repetición a los 320 ms y cada 110 ms) y lo traduce a las mismas acciones que el teclado. La prueba de humo inyecta un mando virtual y juega una campaña entera con él.
-- **Grabado.** Todo el arte es SVG dibujado a mano: figuras de doble cabeza, tintas planas por material, sombras de buril y cuatro tintas de taller —negro de humo, almagre, ocre y verdín— con opción de las dos clásicas. El grano del papel se hornea una vez en un lienzo; lo que se mueve solo cambia `transform` y `opacity`.
-- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta; la música gana capas con el apuro del búnker.
+- **Grabado.** Todo el arte es SVG dibujado a mano: naipes de corte de doble cabeza, tronos con su estandarte, monarcas reconocibles por su objeto, sombras de buril y cuatro tintas de taller —hierro oscuro, oro bruñido, carmesí real y verdín profundo— con opción de las dos clásicas. El grano del papel se hornea una vez en un lienzo; lo que se mueve solo cambia `transform` y `opacity`.
+- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta; la música gana capas cuando tu Vida está en apuros.
 
-Todo el stack es open source: TypeScript, Vite, ws, Vitest, esbuild, Playwright y las tipografías UnifrakturCook, Grenze Gotisch, Archivo, Archivo Black y Space Mono (OFL).
+Todo el stack es open source: TypeScript, Vite, ws, Vitest, esbuild, Playwright y las tipografías Cinzel (los títulos), UnifrakturCook, Grenze Gotisch, Archivo, Archivo Black y Space Mono (OFL).
 
 ## Licencia
 

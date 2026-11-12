@@ -1,15 +1,15 @@
 {
  "generated": "npm run analyze:meta",
  "quick": false,
- "rules": "dd8cdc93b256c9a5",
+ "rules": "4ce9fc7bf2975d05",
  "curses": {
-  "doble": "Doble sirena",
+  "doble": "Doble Contraataque",
   "escasez": "Escasez",
-  "sequia": "Sin botiquín",
-  "intemperie": "Intemperie",
-  "blindaje": "Blindaje",
+  "sequia": "Cáliz envenenado",
+  "intemperie": "Escarcha",
+  "blindaje": "Guardia de hierro",
   "furia": "Furia",
-  "inestable": "Suelo inestable"
+  "inestable": "Arena rápida"
  },
  "campaigns": 55640,
  "suspects": [
@@ -21,7 +21,7 @@
  "confirmations": [
   {
    "id": "clavos",
-   "name": "Pistola de clavos",
+   "name": "Lluvia de flechas",
    "first": -13.2,
    "n": 800,
    "winrate": 45.3,
@@ -29,7 +29,7 @@
   },
   {
    "id": "chatarrero",
-   "name": "Chatarrero",
+   "name": "Carterista",
    "first": -10.7,
    "n": 800,
    "winrate": 49.1,
@@ -37,7 +37,7 @@
   },
   {
    "id": "gemelo",
-   "name": "Gemelo",
+   "name": "Naipe trucado",
    "first": -10.7,
    "n": 800,
    "winrate": 43.4,
@@ -45,7 +45,7 @@
   },
   {
    "id": "j-blindaje",
-   "name": "El Coloso",
+   "name": "El Inquisidor",
    "first": -10.1,
    "n": 800,
    "winrate": 46.8,
@@ -60,56 +60,56 @@
   "levels": [
    {
     "level": 1,
-    "name": "Obra limpia",
+    "name": "Reinado de paz",
     "vacio": 29.7,
     "lleno": 45.1,
     "n": 1500
    },
    {
     "level": 2,
-    "name": "Hormigón armado",
+    "name": "Corazas finas",
     "vacio": 25.6,
     "lleno": 41.5,
     "n": 1500
    },
    {
     "level": 3,
-    "name": "Precios de obra",
+    "name": "Impuesto real",
     "vacio": 23.5,
     "lleno": 35.9,
     "n": 1500
    },
    {
     "level": 4,
-    "name": "Vigas maestras",
+    "name": "Reyes en guardia",
     "vacio": 18.3,
     "lleno": 34.3,
     "n": 1500
    },
    {
     "level": 5,
-    "name": "Sirena afinada",
+    "name": "Rey colérico",
     "vacio": 14.1,
     "lleno": 29.1,
     "n": 1500
    },
    {
     "level": 6,
-    "name": "Búnker viejo",
+    "name": "Heridas viejas",
     "vacio": 12.3,
     "lleno": 24.9,
     "n": 1500
    },
    {
     "level": 7,
-    "name": "Turno de noche",
+    "name": "Guardia de noche",
     "vacio": 7.9,
     "lleno": 16.9,
     "n": 1500
    },
    {
     "level": 8,
-    "name": "Clausura",
+    "name": "Puertas selladas",
     "vacio": 6.8,
     "lleno": 15.3,
     "n": 1500
@@ -118,7 +118,7 @@
   "decks": [
    {
     "deck": "obra",
-    "name": "Baraja de obra",
+    "name": "Baraja de la conjura",
     "vacio": 29.7,
     "lleno": 45.1,
     "n": 1500
@@ -173,7 +173,7 @@
  "tools": [
   {
    "id": "piqueta",
-   "name": "Piqueta",
+   "name": "Daga de Picas",
    "rarity": "comun",
    "arch": "base",
    "kind": "f",
@@ -192,7 +192,7 @@
   },
   {
    "id": "cortavidrios",
-   "name": "Diamante de corte",
+   "name": "Anillo de Diamantes",
    "rarity": "comun",
    "arch": "base",
    "kind": "f",
@@ -211,7 +211,7 @@
   },
   {
    "id": "paleta",
-   "name": "Paleta de albañil",
+   "name": "Cáliz de Corazones",
    "rarity": "comun",
    "arch": "base",
    "kind": "f",
@@ -230,7 +230,7 @@
   },
   {
    "id": "maza",
-   "name": "Maza de hierro",
+   "name": "Maza de Tréboles",
    "rarity": "comun",
    "arch": "base",
    "kind": "f",
@@ -249,7 +249,7 @@
   },
   {
    "id": "cincel",
-   "name": "Cincel",
+   "name": "Estilete",
    "rarity": "comun",
    "arch": "base",
    "kind": "f",
@@ -268,7 +268,7 @@
   },
   {
    "id": "gemelos",
-   "name": "Cuadrilla doble",
+   "name": "Dagas gemelas",
    "rarity": "comun",
    "arch": "base",
    "kind": "r",
@@ -287,7 +287,7 @@
   },
   {
    "id": "cinta",
-   "name": "Cinta transportadora",
+   "name": "Escalinata",
    "rarity": "comun",
    "arch": "base",
    "kind": "r",
@@ -306,7 +306,7 @@
   },
   {
    "id": "sacos",
-   "name": "Sacos terreros",
+   "name": "Pavés",
    "rarity": "comun",
    "arch": "base",
    "kind": "p",
@@ -325,7 +325,7 @@
   },
   {
    "id": "botiquin",
-   "name": "Botiquín",
+   "name": "Bálsamo",
    "rarity": "comun",
    "arch": "base",
    "kind": "p",
@@ -344,7 +344,7 @@
   },
   {
    "id": "encofrado",
-   "name": "Encofrado",
+   "name": "Broquel",
    "rarity": "comun",
    "arch": "base",
    "kind": "p",
@@ -363,7 +363,7 @@
   },
   {
    "id": "casco",
-   "name": "Casco",
+   "name": "Yelmo",
    "rarity": "comun",
    "arch": "base",
    "kind": "p",
@@ -382,7 +382,7 @@
   },
   {
    "id": "puntales",
-   "name": "Puntales",
+   "name": "Baraja de reserva",
    "rarity": "comun",
    "arch": "base",
    "kind": "p",
@@ -401,7 +401,7 @@
   },
   {
    "id": "hucha",
-   "name": "Hucha",
+   "name": "Bolsa de monedas",
    "rarity": "comun",
    "arch": "base",
    "kind": "p",
@@ -420,7 +420,7 @@
   },
   {
    "id": "taladro",
-   "name": "Taladro",
+   "name": "Lanza",
    "rarity": "oficio",
    "arch": "base",
    "kind": "p",
@@ -477,7 +477,7 @@
   },
   {
    "id": "dinamita",
-   "name": "Dinamita",
+   "name": "Barril de pólvora",
    "rarity": "capataz",
    "arch": "base",
    "kind": "p",
@@ -496,7 +496,7 @@
   },
   {
    "id": "acido",
-   "name": "Ácido",
+   "name": "Gota de veneno",
    "rarity": "capataz",
    "arch": "base",
    "kind": "p",
@@ -515,7 +515,7 @@
   },
   {
    "id": "andamio",
-   "name": "Barracón",
+   "name": "Guantelete",
    "rarity": "capataz",
    "arch": "base",
    "kind": "p",
@@ -534,7 +534,7 @@
   },
   {
    "id": "pasarela",
-   "name": "Pasarela",
+   "name": "Manga doble",
    "rarity": "capataz",
    "arch": "base",
    "kind": "p",
@@ -553,7 +553,7 @@
   },
   {
    "id": "contrapeso",
-   "name": "Contrapeso",
+   "name": "Máscara de traidor",
    "rarity": "reliquia",
    "arch": "base",
    "kind": "p",
@@ -572,7 +572,7 @@
   },
   {
    "id": "sordina",
-   "name": "Sordina",
+   "name": "Pócima de sueño",
    "rarity": "capataz",
    "arch": "base",
    "kind": "p",
@@ -591,7 +591,7 @@
   },
   {
    "id": "plano_maestro",
-   "name": "Plano maestro",
+   "name": "Llave maestra",
    "rarity": "reliquia",
    "arch": "base",
    "kind": "x",
@@ -610,7 +610,7 @@
   },
   {
    "id": "plomada",
-   "name": "Plomada",
+   "name": "Péndulo",
    "rarity": "comun",
    "arch": "precision",
    "kind": "p",
@@ -629,7 +629,7 @@
   },
   {
    "id": "nivel",
-   "name": "Nivel de burbuja",
+   "name": "Balanza",
    "rarity": "oficio",
    "arch": "precision",
    "kind": "p",
@@ -648,7 +648,7 @@
   },
   {
    "id": "tiralineas",
-   "name": "Tiralíneas",
+   "name": "Ganzúa",
    "rarity": "comun",
    "arch": "precision",
    "kind": "p",
@@ -667,7 +667,7 @@
   },
   {
    "id": "calibre",
-   "name": "Calibre",
+   "name": "Compás",
    "rarity": "oficio",
    "arch": "precision",
    "kind": "r",
@@ -686,7 +686,7 @@
   },
   {
    "id": "cizalla",
-   "name": "Cizalla hidráulica",
+   "name": "Tijeras de sastre",
    "rarity": "capataz",
    "arch": "precision",
    "kind": "p",
@@ -705,7 +705,7 @@
   },
   {
    "id": "metralla",
-   "name": "Metralla",
+   "name": "Collar roto",
    "rarity": "oficio",
    "arch": "sismo",
    "kind": "p",
@@ -724,7 +724,7 @@
   },
   {
    "id": "percutor",
-   "name": "Percutor",
+   "name": "Campana",
    "rarity": "oficio",
    "arch": "sismo",
    "kind": "f",
@@ -743,7 +743,7 @@
   },
   {
    "id": "resonador",
-   "name": "Resonador",
+   "name": "Cuerno de guerra",
    "rarity": "capataz",
    "arch": "sismo",
    "kind": "x",
@@ -762,7 +762,7 @@
   },
   {
    "id": "diapason",
-   "name": "Diapasón de obra",
+   "name": "Espejo de mano",
    "rarity": "oficio",
    "arch": "sismo",
    "kind": "copy",
@@ -781,7 +781,7 @@
   },
   {
    "id": "vibrador",
-   "name": "Vibrador de hormigón",
+   "name": "Tambor de guerra",
    "rarity": "oficio",
    "arch": "sismo",
    "kind": "p",
@@ -800,7 +800,7 @@
   },
   {
    "id": "timbre",
-   "name": "Timbre del gremio",
+   "name": "Anillo de sello",
    "rarity": "reliquia",
    "arch": "sismo",
    "kind": "p",
@@ -838,7 +838,7 @@
   },
   {
    "id": "mosaico",
-   "name": "Mosaico",
+   "name": "Vitral",
    "rarity": "oficio",
    "arch": "alquimia",
    "kind": "f",
@@ -857,7 +857,7 @@
   },
   {
    "id": "crisol",
-   "name": "Crisol",
+   "name": "Caldero",
    "rarity": "capataz",
    "arch": "alquimia",
    "kind": "p",
@@ -876,7 +876,7 @@
   },
   {
    "id": "catalizador",
-   "name": "Catalizador",
+   "name": "Piedra filosofal",
    "rarity": "reliquia",
    "arch": "alquimia",
    "kind": "x",
@@ -895,7 +895,7 @@
   },
   {
    "id": "sismografo",
-   "name": "Sismógrafo",
+   "name": "Vela gastada",
    "rarity": "oficio",
    "arch": "limite",
    "kind": "r",
@@ -914,7 +914,7 @@
   },
   {
    "id": "megafono",
-   "name": "Megáfono",
+   "name": "Rosa de espinas",
    "rarity": "oficio",
    "arch": "limite",
    "kind": "p",
@@ -933,7 +933,7 @@
   },
   {
    "id": "piquete",
-   "name": "Piquete",
+   "name": "Antorcha",
    "rarity": "oficio",
    "arch": "limite",
    "kind": "p",
@@ -952,7 +952,7 @@
   },
   {
    "id": "ultimo",
-   "name": "Último turno",
+   "name": "Último aliento",
    "rarity": "capataz",
    "arch": "limite",
    "kind": "x",
@@ -971,7 +971,7 @@
   },
   {
    "id": "corazon",
-   "name": "Corazón de la torre",
+   "name": "Corazón de piedra",
    "rarity": "reliquia",
    "arch": "limite",
    "kind": "x",
@@ -990,7 +990,7 @@
   },
   {
    "id": "trituradora",
-   "name": "Trituradora",
+   "name": "Brasero",
    "rarity": "oficio",
    "arch": "trituradora",
    "kind": "p",
@@ -1009,7 +1009,7 @@
   },
   {
    "id": "montacargas",
-   "name": "Montacargas",
+   "name": "Urna de cenizas",
    "rarity": "oficio",
    "arch": "trituradora",
    "kind": "f",
@@ -1028,7 +1028,7 @@
   },
   {
    "id": "horno",
-   "name": "Horno",
+   "name": "Fuelle",
    "rarity": "comun",
    "arch": "trituradora",
    "kind": "p",
@@ -1047,7 +1047,7 @@
   },
   {
    "id": "contenedor",
-   "name": "Contenedor",
+   "name": "Cofre cerrado",
    "rarity": "oficio",
    "arch": "trituradora",
    "kind": "p",
@@ -1066,7 +1066,7 @@
   },
   {
    "id": "prensa",
-   "name": "Prensa de chatarra",
+   "name": "Cetro de ceniza",
    "rarity": "capataz",
    "arch": "trituradora",
    "kind": "x",
@@ -1104,7 +1104,7 @@
   },
   {
    "id": "contragolpe",
-   "name": "Contragolpe",
+   "name": "Rodela de púas",
    "rarity": "oficio",
    "arch": "aguante",
    "kind": "p",
@@ -1123,7 +1123,7 @@
   },
   {
    "id": "rebosadero",
-   "name": "Rebosadero",
+   "name": "Copa rebosante",
    "rarity": "oficio",
    "arch": "aguante",
    "kind": "p",
@@ -1142,7 +1142,7 @@
   },
   {
    "id": "bastion",
-   "name": "Bastión",
+   "name": "Baluarte",
    "rarity": "capataz",
    "arch": "aguante",
    "kind": "x",
@@ -1163,7 +1163,7 @@
  "specials": [
   {
    "id": "barreno",
-   "name": "Barreno",
+   "name": "Ballesta",
    "legendary": false,
    "pick": 0,
    "offered": 11372,
@@ -1180,7 +1180,7 @@
   },
   {
    "id": "martillo",
-   "name": "Martillo neumático",
+   "name": "Martillo de guerra",
    "legendary": false,
    "pick": 3.8,
    "offered": 10503,
@@ -1197,7 +1197,7 @@
   },
   {
    "id": "saboteador",
-   "name": "Saboteador",
+   "name": "El Espía",
    "legendary": false,
    "pick": 0,
    "offered": 11541,
@@ -1214,7 +1214,7 @@
   },
   {
    "id": "palanca",
-   "name": "Palanca",
+   "name": "Garfio",
    "legendary": false,
    "pick": 0,
    "offered": 10646,
@@ -1231,7 +1231,7 @@
   },
   {
    "id": "grua",
-   "name": "Grúa",
+   "name": "Paloma mensajera",
    "legendary": false,
    "pick": 0,
    "offered": 10789,
@@ -1248,7 +1248,7 @@
   },
   {
    "id": "mordaza",
-   "name": "Mordaza",
+   "name": "Tregua",
    "legendary": false,
    "pick": 0,
    "offered": 11308,
@@ -1265,7 +1265,7 @@
   },
   {
    "id": "clavos",
-   "name": "Pistola de clavos",
+   "name": "Lluvia de flechas",
    "legendary": false,
    "pick": 0,
    "offered": 10933,
@@ -1282,7 +1282,7 @@
   },
   {
    "id": "chatarrero",
-   "name": "Chatarrero",
+   "name": "Carterista",
    "legendary": false,
    "pick": 0,
    "offered": 11239,
@@ -1299,7 +1299,7 @@
   },
   {
    "id": "pico",
-   "name": "Pico de oro",
+   "name": "Rescate",
    "legendary": false,
    "pick": 0,
    "offered": 11110,
@@ -1316,7 +1316,7 @@
   },
   {
    "id": "botica",
-   "name": "Botica",
+   "name": "Elixir",
    "legendary": false,
    "pick": 0,
    "offered": 11278,
@@ -1333,7 +1333,7 @@
   },
   {
    "id": "gemelo",
-   "name": "Gemelo",
+   "name": "Naipe trucado",
    "legendary": false,
    "pick": 0,
    "offered": 10943,
@@ -1350,7 +1350,7 @@
   },
   {
    "id": "nitro",
-   "name": "Nitroglicerina",
+   "name": "Pacto oscuro",
    "legendary": false,
    "pick": 0,
    "offered": 10867,
@@ -1367,7 +1367,7 @@
   },
   {
    "id": "bola",
-   "name": "Bola de demolición",
+   "name": "Clarín",
    "legendary": false,
    "pick": 24.1,
    "offered": 11124,
@@ -1384,7 +1384,7 @@
   },
   {
    "id": "hormigonera",
-   "name": "Hormigonera",
+   "name": "Puerta atrancada",
    "legendary": false,
    "pick": 0,
    "offered": 10980,
@@ -1401,7 +1401,7 @@
   },
   {
    "id": "cemento",
-   "name": "Cemento rápido",
+   "name": "Cota de malla",
    "legendary": false,
    "pick": 0,
    "offered": 11142,
@@ -1435,7 +1435,7 @@
   },
   {
    "id": "sierra",
-   "name": "Sierra radial",
+   "name": "Pasadizo",
    "legendary": false,
    "pick": 3.7,
    "offered": 11001,
@@ -1452,7 +1452,7 @@
   },
   {
    "id": "ferretero",
-   "name": "El Ferretero",
+   "name": "El Tratante",
    "legendary": true,
    "pick": 52.5,
    "offered": 2746,
@@ -1469,7 +1469,7 @@
   },
   {
    "id": "j-doble",
-   "name": "La Sirena",
+   "name": "El Rey de Dos Caras",
    "legendary": true,
    "pick": 52.3,
    "offered": 2739,
@@ -1503,7 +1503,7 @@
   },
   {
    "id": "j-sequia",
-   "name": "El Matasanos",
+   "name": "La Dama del Cáliz",
    "legendary": true,
    "pick": 53.2,
    "offered": 2938,
@@ -1520,7 +1520,7 @@
   },
   {
    "id": "j-intemperie",
-   "name": "La Ventisca",
+   "name": "La Reina Helada",
    "legendary": true,
    "pick": 50.7,
    "offered": 2867,
@@ -1537,7 +1537,7 @@
   },
   {
    "id": "j-blindaje",
-   "name": "El Coloso",
+   "name": "El Inquisidor",
    "legendary": true,
    "pick": 49.1,
    "offered": 2976,
@@ -1554,7 +1554,7 @@
   },
   {
    "id": "j-furia",
-   "name": "La Furia",
+   "name": "El Verdugo",
    "legendary": true,
    "pick": 53.6,
    "offered": 2791,
@@ -1571,7 +1571,7 @@
   },
   {
    "id": "j-inestable",
-   "name": "El Topo",
+   "name": "El Relojero",
    "legendary": true,
    "pick": 52,
    "offered": 2970,
@@ -1590,7 +1590,7 @@
  "marks": [
   {
    "id": "dinamita",
-   "name": "Sello de dinamita",
+   "name": "Sello de pólvora",
    "pick": 68.9,
    "offered": 26189,
    "given": null,
@@ -1616,7 +1616,7 @@
   },
   {
    "id": "jornal",
-   "name": "Sello de jornal",
+   "name": "Sello de oro real",
    "pick": 59.9,
    "offered": 25846,
    "given": null,
@@ -1629,7 +1629,7 @@
   },
   {
    "id": "sindical",
-   "name": "Sello sindical",
+   "name": "Sello de la manga",
    "pick": 67.5,
    "offered": 26854,
    "given": null,
@@ -1642,7 +1642,7 @@
   },
   {
    "id": "forjado",
-   "name": "Forjado",
+   "name": "Filo de plata",
    "pick": 67.8,
    "offered": 27149,
    "given": null,
@@ -1668,7 +1668,7 @@
   },
   {
    "id": "policromado",
-   "name": "Bronce vivo",
+   "name": "Lacre policromo",
    "pick": 76.8,
    "offered": 26662,
    "given": null,
@@ -1681,7 +1681,7 @@
   },
   {
    "id": "agrietado",
-   "name": "Agrietado",
+   "name": "Cristal maldito",
    "pick": 74.2,
    "offered": 25265,
    "given": null,
@@ -1696,7 +1696,7 @@
  "bosses": [
   {
    "id": "doble",
-   "who": "La Sirena",
+   "who": "El Rey de Dos Caras",
    "faced": 7556,
    "deaths": 1137,
    "lethality": 15
@@ -1710,35 +1710,35 @@
   },
   {
    "id": "sequia",
-   "who": "El Matasanos",
+   "who": "La Dama del Cáliz",
    "faced": 7531,
    "deaths": 1027,
    "lethality": 13.6
   },
   {
    "id": "intemperie",
-   "who": "La Ventisca",
+   "who": "La Reina Helada",
    "faced": 7461,
    "deaths": 1048,
    "lethality": 14
   },
   {
    "id": "blindaje",
-   "who": "El Coloso",
+   "who": "El Inquisidor",
    "faced": 7766,
    "deaths": 1232,
    "lethality": 15.9
   },
   {
    "id": "furia",
-   "who": "La Furia",
+   "who": "El Verdugo",
    "faced": 7822,
    "deaths": 1171,
    "lethality": 15
   },
   {
    "id": "inestable",
-   "who": "El Topo",
+   "who": "El Relojero",
    "faced": 7653,
    "deaths": 1105,
    "lethality": 14.4
@@ -1748,56 +1748,56 @@
  "pacing": [
   {
    "stage": 1,
-   "name": "Caseta de obra",
+   "name": "El Puente levadizo",
    "p50": 6,
    "p95": 9,
    "n": 18000
   },
   {
    "stage": 2,
-   "name": "Bloque de pisos",
+   "name": "El Patio de armas",
    "p50": 8,
    "p95": 11,
    "n": 17998
   },
   {
    "stage": 3,
-   "name": "Torre del capataz",
+   "name": "La Armería",
    "p50": 9,
    "p95": 12,
    "n": 17968
   },
   {
    "stage": 4,
-   "name": "Polígono",
+   "name": "Las Cocinas",
    "p50": 11,
    "p95": 15,
    "n": 17400
   },
   {
    "stage": 5,
-   "name": "Ciudadela",
+   "name": "La Capilla",
    "p50": 11,
    "p95": 17,
    "n": 15613
   },
   {
    "stage": 6,
-   "name": "Rascacielos",
+   "name": "La Biblioteca",
    "p50": 11,
    "p95": 16,
    "n": 12444
   },
   {
    "stage": 7,
-   "name": "Fortaleza",
+   "name": "La Galería de espejos",
    "p50": 11,
    "p95": 17,
    "n": 10685
   },
   {
    "stage": 8,
-   "name": "La Torre Madre",
+   "name": "El Salón del Trono",
    "p50": 11,
    "p95": 17,
    "n": 8892
@@ -1806,7 +1806,7 @@
  "pacingByDeck": [
   {
    "deck": "obra",
-   "name": "Baraja de obra",
+   "name": "Baraja de la conjura",
    "worstP95": 18,
    "n": 3000
   },

@@ -1,12 +1,13 @@
-// Susurros de tiza: una línea al margen, en el momento exacto en que el jugador se encuentra algo por
-// primera vez. Una sola vez por perfil, de uno en uno, con «No mostrar más» a un clic (y reversible
-// desde Ajustes). Aquí vive todo: el catálogo, cuándo se puede decir cada uno, dónde se escribe en cada
+// Susurros: una línea al margen, en el momento exacto en que el jugador se encuentra algo por primera
+// vez. Una sola vez por perfil, de uno en uno, con «No mostrar más» a un clic (y reversible desde
+// Ajustes). Aquí vive todo: el catálogo, cuándo se puede decir cada uno, dónde se escribe en cada
 // pantalla y su sonido. Las pantallas solo llaman a whisper('id') en el punto donde ocurre la cosa.
 //
-// Cuándo salen: los tres de lo básico de la mesa (palo inmune, andamio, golpe limpio) solo en la
-// primera campaña del perfil, que es cuando se aprende a golpear; los otros cinco (forja, atajo, primer
-// jefe, fatiga, cantera baja) la primera vez que se ven, sea en la campaña que sea, porque mucha gente
-// no llega a la fatiga ni a la forja en la primera. Nunca en la partida guiada: ahí habla el capataz.
+// Cuándo salen: los tres de lo básico de la mesa (trono Inmune, La Manga, Golpe exacto) solo en la
+// primera campaña del perfil, que es cuando se aprende a golpear; los otros cinco (Mesa de lacre, Atajo,
+// primer monarca, Asedio final, Mazo bajo) la primera vez que se ven, sea en la campaña que sea, porque
+// mucha gente no llega al Asedio final ni a la Mesa de lacre en la primera. Nunca en la partida guiada:
+// ahí habla la Maestra. (Los id internos —andamio, forja, cantera…— no cambian: son el guardado.)
 import { nextCollapse } from '../rules/engine';
 import { BOSS } from '../rules/run';
 import { sfx } from './audio';
@@ -19,14 +20,14 @@ export type WhisperId = 'inmune' | 'andamio' | 'limpio' | 'forja' | 'atajo' | 'j
 
 /** El catálogo: una línea cada uno. `{x}` se rellena con `vars`. */
 const TEXT: Record<WhisperId, string> = {
-  inmune: '<b>Placa de hierro:</b> la torre de {material} no recibe Fuerza de tus {glyph}. Prueba contra otra.',
-  andamio: `<b>Viene un sirenazo:</b> guarda en el andamio${hint('stash')} la carta que no quieras gastar; al reponer robas una más.`,
-  limpio: '<b>Daño exacto:</b> si golpeas ahora es limpio. La sirena calla, cobras 1 de oro y robas una más.',
-  forja: '<b>Mesa de forja:</b> la carta que elijas queda marcada para siempre. Cancelar no gasta nada.',
-  atajo: '<b>Atajo:</b> te saltas la obra sin cobro ni ferretería, pero te llevas «{tag}».',
-  jefe: '<b>Jefe de obra:</b> {who} cambia una regla de esta obra. Su ficha de la barra la recuerda.',
-  fatiga: '<b>Fatiga de cimientos:</b> desde ahora tus golpes resuenan más, pero las sirenas también pegan más.',
-  cantera: '<b>Cantera baja ({n}):</b> cuando se acabe llega un colapso de −{loss} y el muro no lo frena.',
+  inmune: '<b>Inmune:</b> tus {glyph} no le hacen nada al trono de su mismo palo. Prueba contra otro.',
+  andamio: `<b>Viene un Contraataque fuerte:</b> guarda en La Manga${hint('stash')} la carta que no quieras gastar; al reponer robas una más.`,
+  limpio: '<b>Golpe exacto:</b> si golpeas ahora no hay Contraataque, cobras 1 de oro y robas una carta más.',
+  forja: '<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.',
+  atajo: '<b>Atajo:</b> te saltas el asalto sin Botín ni Mercado clandestino, pero te llevas «{tag}».',
+  jefe: '<b>Monarca:</b> {who} impone un decreto en este asalto. Su ficha de la barra te lo recuerda.',
+  fatiga: '<b>Asedio final:</b> desde ahora tus golpes llevan más Multi, pero los Contraataques pegan más fuerte.',
+  cantera: '<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte y pierdes {loss} de Vida. El Escudo no lo frena.',
 };
 /** Lo que se aprende en la primera campaña; el resto sale la primera vez que se ve, en cualquiera. */
 const BASIC = new Set<WhisperId>(['inmune', 'andamio', 'limpio']);
@@ -50,7 +51,7 @@ function allowed(id: WhisperId): boolean {
   return BASIC.has(id) ? meta.runs === 0 : true;
 }
 
-/** Dónde se escribe cada susurro: al margen de la mesa, dentro de la mesa de forja o sobre las rutas del plano. */
+/** Dónde se escribe cada susurro: al margen de la mesa, dentro de la Mesa de lacre o sobre las rutas del mapa. */
 function place(id: WhisperId, el: HTMLElement): boolean {
   if (id === 'forja') {
     const box = document.querySelector('.pending-modal .modal-box h2');
@@ -122,7 +123,7 @@ export function whisper(id: WhisperId, vars: Record<string, string> = {}): void 
   void timer;
 }
 
-/** Los susurros que dependen del estado de la mesa (jefe, fatiga, cantera baja). La mesa lo llama al repintarse. */
+/** Los susurros que dependen del estado de la mesa (monarca, Asedio final, Mazo bajo). La mesa lo llama al repintarse. */
 export function tableWhispers(): void {
   const v = S.shown;
   if (!v || v.phase !== 'playing' || S.screen !== 'table') return;
@@ -135,8 +136,8 @@ export function tableWhispers(): void {
 /** La fila de Ajustes: [nombre, explicación, valor, cambiar]. Encenderlos de nuevo no repite los ya leídos. */
 export function whisperSetting(): [string, string, string, () => void] {
   return [
-    'Susurros de tiza',
-    'Una línea de ayuda la primera vez que te encuentras algo (palo inmune, andamio, forja, fatiga…).',
+    'Susurros',
+    'Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Asedio final…).',
     isOff() ? 'No' : 'Sí',
     () => saveJson(OFF_KEY, !isOff()),
   ];

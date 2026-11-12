@@ -13,7 +13,7 @@ import { maybeSettle, meta, saveMeta, trackMeta } from './guild';
 import { sendMsg } from './net';
 import { setScreen } from './router';
 import { ferreteroSays, renderRun } from './runscreens';
-import { logLine, pump, renderBelt, renderHud } from './table';
+import { logLine, pump, renderBelt, renderHud, renderInteractive } from './table';
 import { choice, toolTile } from './widgets';
 import { platform } from './platform';
 
@@ -56,7 +56,7 @@ export function retireOldSave(): void {
 }
 export const isRunHost = () => !!S.campaign && (!S.campaign.online || S.lobby?.host === S.session?.playerId);
 export const runOpts = (): RunOpts => ({ up: meta.up, ascension: Math.min(prefs.ascension, meta.ascMax), deck: deckUnlocked(meta, prefs.deck) ? prefs.deck : 'obra', pool: unlockedPool(meta), seedText: prefs.seed.trim() || undefined });
-/** La fecha local de hoy (AAAA-MM-DD): la semilla de la Obra diaria. */
+/** La fecha local de hoy (AAAA-MM-DD): la semilla del Asalto diario. */
 export function today(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -95,7 +95,7 @@ export function restartCampaign(): void {
   const { run } = c;
   document.querySelectorAll('.modal, .end:not(.in-page)').forEach((m) => m.remove());
   begin(run.daily ? { daily: run.daily } : { ...runOpts(), ascension: run.ascension, deck: run.deckId, seedText: undefined });
-  toast('Campaña reiniciada: misma baraja, mismo nivel de obra');
+  toast('Campaña reiniciada: misma baraja, mismo Reinado');
 }
 
 export function resumeCampaign(): void {
@@ -121,7 +121,7 @@ export function runDo(a: RunAction): void {
   saveCampaign();
   if (a.t === 'reorder' && S.screen === 'table') {
     if (S.shown && c.state) S.shown.tools = c.state.tools;
-    return renderBelt();
+    return renderBelt(), renderInteractive(); // la cuenta del golpe usa el orden nuevo
   }
   if (c.run.phase === 'battle' && a.t === 'route') return enterStage(true);
   renderRun();
@@ -169,7 +169,7 @@ function afterRunChange(prev: Run | null): void {
     return old ? old.seal !== c.seal || old.tr !== c.tr : surprise ? !!(c.seal || c.tr || c.sp) || prev.pending?.kind === 'dup' : !!c.sp;
   });
   const tools = surprise ? run.tools.filter((t) => !prev.tools.some((o) => o.id === t.id)).map((t) => t.id) : [];
-  if (cards.length || tools.length) reveal(cards, tools, blind ? 'Del sobre clandestino' : 'Ha llegado');
+  if (cards.length || tools.length) reveal(cards, tools, blind ? 'Del Sobre a ciegas' : 'Ha llegado');
   const gold = run.gold - prev.gold;
   if (surprise && prev.phase !== 'battle' && gold > 0) {
     sfx.coins(gold);
@@ -258,15 +258,15 @@ export function stageIntro(): void {
   if (introFor === mark) return;
   introFor = mark;
   const st = stageDef(run.stage);
-  ribbon(`Obra ${run.stage} · ${st.name}`);
+  ribbon(`Asalto ${run.stage} · ${st.name}`);
   if (run.contract) logLine(`<b>Contrato: ${CONTRACT[run.contract].name}.</b> ${CONTRACT[run.contract].desc} Premio: ${CONTRACT[run.contract].reward}.`, 'yel');
   if (!run.boss) return;
   const boss = BOSS[run.boss];
-  const el = modal(`<div class="boss-box"><div class="boss-card"></div><div><small>Jefe de obra</small><h2>${boss.who}</h2><h3>${boss.name}</h3><p>${boss.desc}</p><button class="primary x">A demoler</button></div></div>`, { cls: 'boss-intro' });
+  const el = modal(`<div class="boss-box"><div class="boss-card"></div><div><small>Monarca</small><h2>${boss.who}</h2><h3>Decreto: ${boss.name}</h3><p>${boss.desc}</p><button class="primary x">Al asalto</button></div></div>`, { cls: 'boss-intro' });
   const card = portraitEl(`j-${boss.id}`, boss.who);
   dealIn(card, 0);
   $('.boss-card', el).appendChild(card);
   el.addEventListener('click', () => el.remove());
   sfx.siren();
-  logLine(`<b>Jefe de obra: ${boss.who}.</b> ${boss.desc}`, 'red');
+  logLine(`<b>Monarca: ${boss.who}.</b> ${boss.desc}`, 'red');
 }

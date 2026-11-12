@@ -584,7 +584,8 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
 
 /* ───────────── Retoques tras la primera pasada de capturas ───────────── */
 .belt-label small { font-size: 1em; }
-.deck-opt { height: clamp(62px, 10.5vh, 104px); }
+/* alto mínimo, no fijo: una descripción de cuatro renglones se montaba sobre la fila de abajo */
+.deck-opt { height: auto; min-height: clamp(62px, 10.5vh, 104px); }
 .camp-run h3.sec { margin-top: 2px; }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .home-right .foot button { min-height: 44px; }
@@ -705,7 +706,7 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 .og-card .title .cut { color: var(--red-lit); }
 .og-card p { font-family: var(--mono); font-weight: 700; font-size: 27px; line-height: 1.2; color: var(--card-paper); }
 .og-card small { font-family: var(--cap); font-weight: 700; font-size: 16px; letter-spacing: 0.04em; color: var(--hazard); text-transform: uppercase; }
-.og-card .og-cards { position: absolute; left: 4%; bottom: -70px; display: flex; }
+.og-card .og-cards { position: absolute; left: 1%; bottom: -132px; display: flex; }
 .og-card .og-cards .card { --w: 150px; margin-right: -34px; transform: translateY(var(--y, 0)) rotate(var(--r, 0deg)); }
 /* retoques tras ver las capturas de la 4.0 */
 .wheel { width: clamp(56px, 8.2vh, 78px); }
@@ -728,10 +729,10 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 
 /* ── cifras: una fuente propia para los dígitos. Va primera en la gótica de títulos, así que un «4/8»
       dentro de un título sale en palo seco; y es la base de --num, la variable de toda cifra. ── */
-@font-face { font-family: 'Derrumbe Cifras'; src: url('../../node_modules/@fontsource/archivo-black/files/archivo-black-latin-400-normal.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; unicode-range: U+0025, U+002B, U+0030-0039, U+00D7, U+2212; }
+@font-face { font-family: 'Corona Cifras'; src: url('../../node_modules/@fontsource/archivo-black/files/archivo-black-latin-400-normal.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; unicode-range: U+0025, U+002B, U+0030-0039, U+00D7, U+2212; }
 :root {
-  --num: 'Derrumbe Cifras', 'Archivo Black', 'Arial Black', Impact, sans-serif;
-  --title: 'Derrumbe Cifras', 'UnifrakturCook', 'Grenze Gotisch', 'Old English Text MT', serif;
+  --num: 'Corona Cifras', 'Archivo Black', 'Arial Black', Impact, sans-serif;
+  --title: 'Corona Cifras', 'UnifrakturCook', 'Grenze Gotisch', 'Old English Text MT', serif;
   /* tintas de palo, ≥ 7:1 sobre el papel crema y sobre el papel de las cartas tratadas (♠ 15:1 · ♥ 7,9:1 · ♦ 7,9:1 · ♣ 9,2:1) */
   --suit-H: #7d1a13;
   --suit-D: #5f3704;
@@ -951,3 +952,102 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
   .tower-fx { flex: none; height: 0; position: relative; z-index: 3; align-content: flex-end; align-items: flex-end; overflow: visible; }
   .tower .fx { overflow-wrap: normal; hyphens: manual; line-height: 1.05; }
 }
+
+/* ═════════════ V6 · CORONA ROTA · GRABADO ═════════════
+   Los títulos dejan la gótica: «Sepultados» se leía «SEPUETADOS». Pasan a una romana de inscripción
+   tallada (Cinzel, OFL), de palo grueso y en versales y versalitas, que se lee letra a letra.
+   Las cifras siguen saliendo de 'Corona Cifras' (va primera en la pila). */
+@font-face { font-family: 'Corona Talla'; src: url('../../node_modules/@fontsource/cinzel/files/cinzel-latin-900-normal.woff2') format('woff2'); font-weight: 800 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Corona Talla'; src: url('../../node_modules/@fontsource/cinzel/files/cinzel-latin-700-normal.woff2') format('woff2'); font-weight: 100 799; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Corona Talla'; src: url('../../node_modules/@fontsource/cinzel/files/cinzel-latin-ext-900-normal.woff2') format('woff2'); font-weight: 800 900; font-style: normal; font-display: swap; unicode-range: U+0100-024F, U+1E00-1EFF; }
+:root {
+  --title: 'Corona Cifras', 'Corona Talla', 'Archivo Black', 'Arial Black', serif;
+}
+/* la talla no necesita la tinta rugosa: el borde irregular emborronaba las letras */
+.title, .lobby-code h1, .end h1, .deck-head h1, .bar .brand, .home-right h2, .tower-tag, .modal-box h2, .banner div, .ribbon, .boss-box h2 { filter: none; }
+.title, .end h1, .deck-head h1, .bar .brand, .home-right h2, .tower-tag, .panel h3, .coach h4, .modal-box h2, .banner div, .boss-box h2, .ribbon, .lupa-sheet h2, h3.sec, .choice h4, .stamp-btn b, .resume b, .ach-toast b, .chalk-mark { font-family: var(--title); font-weight: 900; letter-spacing: 0.03em; }
+/* acta.css (se carga después) aún ponía la gótica en la derrota: se gana por especificidad */
+:root .end.lost h1, :root .end h1 { font-family: var(--title); font-weight: 900; letter-spacing: 0.04em; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :root .end h1 { font-size: min(10vw, 44px); white-space: normal; line-height: 1; letter-spacing: 0.02em; }
+}
+/* el título del juego, en versales con aire entre letras */
+.title { text-transform: uppercase; letter-spacing: 0.05em; line-height: 0.92; }
+/* la romana es más ancha que la gótica: en la portada, una palabra por renglón */
+.home-left .title { font-size: min(9.6vw, 19vh); }
+.home-left .title span { display: block; }
+/* tarjeta para compartir: el título en dos renglones, que la romana es ancha */
+.og-card .title { font-size: 74px; line-height: 0.95; letter-spacing: 0.04em; }
+.og-card .title span { display: block; }
+.og-card p { font-size: 25px; }
+
+/* ── los cuatro tronos ──
+   Cabecera con el nombre de la casa (romana tallada) y su palo; el escudo de armas de inmunidad con el palo
+   tachado; la insignia de Ataque ⚔ con su cifra en placa de papel; el paño del guardia en pie bajo su
+   carta y los que esperan apilados; las gradas del trono al pie. */
+.tower-tag { font-size: clamp(14px, 2vh, 24px); letter-spacing: 0.01em; padding-right: 4px; min-width: 0; }
+.tower-tag > span { white-space: nowrap; min-width: 0; }
+.threat { gap: 0; padding: 0 4px 0 2px; background: transparent; }
+.threat span { display: none; }
+.threat b::before, .tower .threat b::before { content: none; }
+@container (max-width: 200px) {
+  .tower-tag .glyph { display: none; }
+}
+.threat b { font-size: clamp(16px, 2.5vh, 26px); line-height: 1.1; padding: 0 0.28em; background: var(--card-paper); color: #7d1a13; border: 2px solid var(--pit); box-shadow: inset 0 -3px 0 rgba(125, 26, 19, 0.22); letter-spacing: 0; }
+.threat b.off, .tower.disarmed .threat b { background: var(--table-3); color: var(--paper-3); text-decoration-color: var(--red-lit); text-decoration-thickness: 2px; }
+/* escudo de armas: hierro con el palo de la casa tachado en lacre = aquí no pega */
+.plate.iron { position: relative; border-radius: 2px 2px 45% 45% / 2px 2px 32% 32%; padding-bottom: 2px; }
+.plate.iron::after { content: ''; position: absolute; left: 3px; top: 50%; width: calc(clamp(13px, 1.9vh, 19px) + 4px); height: 3px; background: var(--red-lit); border: 1px solid var(--pit); transform: translateY(-50%) rotate(-38deg); pointer-events: none; }
+.plate.iron b { text-decoration: none; }
+/* paños de guardia: los que esperan, algo velados; el que está en pie, entero */
+.storey .storey-art { opacity: 0.78; }
+.storey-art .crk path { stroke-width: 7; }
+.storey-art .crk path.in { stroke-width: 2.2; }
+/* gradas del trono */
+.footing { height: clamp(6px, 1vh, 10px); background: linear-gradient(var(--table-4) 0 2px, var(--pit) 2px 45%, var(--table-4) 45% calc(45% + 2px), var(--pit) calc(45% + 2px)); margin: 0 -2px; }
+/* guardia abatido: el paño se rasga por la mitad y cada jirón cae a su lado (solo transform y opacity) */
+.facade.shear { animation: tornfade 0.7s linear both; }
+/* lo dispara la propia mesa (.facade.shear) y juice-ux (.tower.banner-torn, fx.ts guardFall) */
+.facade .hl, .facade .hr { transform-box: fill-box; transform-origin: 50% 0; }
+.facade.shear .hl, .tower.banner-torn .facade .hl { animation: tornl 0.7s cubic-bezier(0.5, 0, 0.8, 0.4) both; }
+.facade.shear .hr, .tower.banner-torn .facade .hr { animation: tornr 0.7s cubic-bezier(0.5, 0, 0.8, 0.4) both; }
+.facade.shear .crk, .tower.banner-torn .facade .crk { opacity: 0; }
+@keyframes tornfade { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tornl { 0% { transform: none; } 25% { transform: translateX(-2%) rotate(-3deg); } 100% { transform: translate(-10%, 120%) rotate(-14deg); } }
+@keyframes tornr { 0% { transform: none; } 25% { transform: translateX(2%) rotate(4deg); } 100% { transform: translate(10%, 135%) rotate(18deg); } }
+.calm .facade .hl, .calm .facade .hr { animation: none !important; }
+/* trono caído: la corona se parte al aparecer */
+.rubble .crn-l, .rubble .crn-r { transform-box: fill-box; transform-origin: 50% 100%; }
+/* la corona se parte cuando juice-ux marca el trono con .crown-split (fx.ts throneFall, ~1,2 s) */
+.tower.crown-split .rubble .crn-l { animation: crownl 1s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+.tower.crown-split .rubble .crn-r { animation: crownr 1s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+@keyframes crownl { from { transform: translate(8%, -30%) rotate(6deg); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
+@keyframes crownr { from { transform: translate(-8%, -30%) rotate(-10deg); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
+.calm .rubble .crn-l, .calm .rubble .crn-r { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .facade .hl, .facade .hr, .rubble .crn-l, .rubble .crn-r { animation: none !important; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* en el trono estrecho del móvil no caben nombre y Ataque: manda el palo, grande y con su contorno */
+  .tower-tag { font-size: clamp(13px, 3.3vw, 18px); letter-spacing: 0; min-height: 30px; }
+  .tower-tag > span { display: none; }
+  .tower-tag .glyph, .tower[data-suit] .tower-tag .glyph { display: block; width: 22px; height: 22px; stroke: var(--pit); stroke-width: 1.2; paint-order: stroke; }
+  .threat b { font-size: 15px; padding: 0 3px; }
+  .plate.iron::after { width: 17px; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* portada en vertical: el título va en un renglón y el lema debajo, en su franja de tinta, y la sala
+     del trono entera debajo de los dos (de las rodelas de los cuatro estandartes al sello), en vez de
+     tapar el título media sala. El alto de la sala sigue al ancho: 0,5 × ancho enseña del lienzo
+     y ≈ 100 hacia abajo, con las cuatro pintas enteras. */
+  .home-left { min-height: 0; padding: 10px 14px 0; gap: 6px; }
+  .home-left .title { font-size: min(10.2vw, 44px); white-space: nowrap; line-height: 1; }
+  .home-left .title span { display: inline-block; }
+  .home-left .title span + span { margin-left: 0.32em; }
+  .home-left .tagline { font-size: 14px; }
+  .home-left .hero-art { position: relative; inset: auto; order: 3; flex: none; height: min(50vw, 40vh); margin: 2px -14px 0; }
+}
+
+/* logros conseguidos: el texto se apaga con tinta gris, no con opacidad, para que el «Desbloquea» en
+   lacre siga a ≥ 4,5:1 sobre el papel */
+.ach.ok span { opacity: 1; color: #4d463c; }

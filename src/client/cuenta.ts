@@ -1,23 +1,23 @@
 // La cuenta central de la mesa.
 //
-//  · Por defecto, limpia: el daño final entero en grande, la torre contra la que va y las insignias
-//    que deciden el golpe (limpio, cae el piso, ventaja, inmune…). Fuerza y Resonancia, en pequeño.
-//  · Bajo demanda, el recibo paso a paso: Base + Cartas + Cinturón × Resonancia = Daño. Se despliega
+//  · Por defecto, limpia: el Golpe final entero en grande, el trono contra el que va y las insignias
+//    que deciden la jugada (exacto, cae el guardia, ventaja, inmune…). Daño y Multi, en pequeño.
+//  · Bajo demanda, el recibo paso a paso: Base + Cartas + Reliquias × Multi = Golpe. Se despliega
 //    al pasar el ratón, al enfocar la cuenta con teclado o mando y al tocarla; cada línea sale de los
 //    eventos `step` de la previsualización, con el nombre de quien aporta. Sube desde la cuenta y
-//    nunca tapa la mano ni las torres (en móvil es una hoja con su botón de cerrar).
-//  · El aviso de último turno (omen) y, cuando cae el golpe final, la causa del derrumbe sobre la mesa.
+//    nunca tapa la mano ni los tronos (en móvil es una hoja con su botón de cerrar).
+//  · El aviso de último turno (omen) y, cuando cae el golpe final, la causa de la derrota sobre la mesa.
 //
 // Los estilos están en cuenta.css. table.ts solo llama a paintScore(), LIVE_HTML y stageOver().
-import { Autopsy, omen } from '../rules/autopsy';
-import { Card, FORMATION_NAME, Formation, MATERIAL, PlayerView, RANK_LABEL, StrikeResult, Suit, multiplier } from '../rules/engine';
+import { Autopsy, Omen, omen } from '../rules/autopsy';
+import { Card, FORMATION_NAME, Formation, MATERIAL, PlayerView, RANK_LABEL, SUITS, StrikeResult, Suit, multiplier, threatOf } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
 import { causeHtml } from './causa';
 import { cap, esc, hideTip, num } from './core';
 import { inputMode } from './nav';
 import { hint } from './prompts';
 
-/** Una jugada válida apuntando a una torre, con su resultado previsto. */
+/** Una jugada válida apuntando a un trono, con su resultado previsto. */
 export interface Preview {
   v: PlayerView;
   cards: Card[];
@@ -28,13 +28,15 @@ export interface Preview {
 
 const CHEVRON = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5,7.8 L6,4.2 L9.5,7.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg>';
 const CROSS = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg>';
+/** Guardia por rango, para el recibo. */
+const GUARD_NAME: Record<number, string> = { 11: 'Sota', 12: 'Reina', 13: 'Rey' };
 const WARN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,2.5 L22.5,21 H1.5 Z" fill="currentColor"/><path d="M12,9 V15 M12,17.6 V18.4" fill="none" stroke="var(--hazard)" stroke-width="2.6" stroke-linecap="square"/></svg>';
 
-/** Resonancia con un decimal como mucho: la línea por defecto no arrastra céntimos (el valor exacto va en el recibo). */
+/** Multi con un decimal como mucho: la línea por defecto no arrastra céntimos (el valor exacto va en el recibo). */
 const res1 = (r: number) => String(Math.round(r * 10) / 10).replace('.', ',');
 const signed = (n: number, text = String(n)) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${text.replace('-', '')}`;
 
-/** Con qué multiplicador pega la jugada contra esa torre: la mayor ventaja y si alguna carta se queda en ×0. */
+/** Con qué multiplicador pega la jugada contra ese trono: la mayor ventaja y si alguna carta se queda en ×0. */
 function material(p: Preview): { adv: number; immune: boolean; own: number } {
   const cfg = p.v.config;
   const allAdv = p.cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.allAdv);
@@ -50,9 +52,9 @@ function material(p: Preview): { adv: number; immune: boolean; own: number } {
 }
 
 /**
- * La línea por defecto: daño final en grande, contra qué torre, y las insignias por orden de peso
- * (lo que decide el golpe primero; lo que solo acompaña, después). `tail` son avisos de la mesa que
- * no salen del golpe (la tiza).
+ * La línea por defecto: Golpe final en grande, contra qué trono, y las insignias por orden de peso
+ * (lo que decide la jugada primero; lo que solo acompaña, después). `tail` son avisos de la mesa que
+ * no salen del golpe (el Rebobinar).
  */
 export function previewHtml(p: Preview, tail = ''): string {
   const { v, r, target } = p;
@@ -61,33 +63,37 @@ export function previewHtml(p: Preview, tail = ''): string {
   const repair = Math.min(r.repair, v.config.maxIntegrity - v.integrity);
   const { adv, immune } = material(p);
   const mat = cap(MATERIAL[target]);
+  // cae el trono entero si el golpe se lleva a todos los guardias que le quedan
+  const throne = fallen > 0 && fallen >= v.towers[target].floors.length;
+  // el Contraataque saca una carta al azar: se avisa del peor Ataque posible entre los tronos en pie
+  const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].disarmed).map((s) => threatOf(v, v.towers[s])));
   const marks = [
-    r.clean ? '<em class="m gold">Golpe limpio</em>' : '',
-    fallen ? `<em class="m red">${fallen > 1 ? `Caen ${fallen} pisos` : 'Cae el piso'}</em>` : '',
-    adv ? `<em class="m adv" data-tip="<b>Ventaja de material</b>Alguna de tus cartas vence al material de esta torre: suma ×${num(adv)} de Fuerza.">Ventaja ×${num(adv)}</em>` : '',
-    immune ? `<em class="m inm" data-tip="<b>Inmune</b>Las cartas del mismo palo que la torre no le suman Fuerza (sus poderes sí cuentan). Prueba contra otra torre.">Inmune ×0</em>` : '',
-    r.hurt ? `<em class="m red">Búnker −${r.hurt}</em>` : '',
-    r.clean || r.noSiren ? '<em class="m good">La sirena calla</em>' : '<em class="m dim">Sonará la sirena</em>',
-    wallGain > 0 ? `<em class="m">Muro +${wallGain}</em>` : '',
-    repair > 0 ? `<em class="m">Repara +${repair}</em>` : '',
+    r.clean ? '<em class="m gold">¡Exacto!</em>' : '',
+    fallen ? `<em class="m red">${throne ? 'Cae el trono' : fallen > 1 ? `Caen ${fallen} guardias` : 'Cae el guardia'}</em>` : '',
+    adv ? `<em class="m adv" data-tip="<b>Ventaja de palo</b>Alguna de tus cartas vence al palo de este trono: suma ×${num(adv)} de Daño.">Ventaja ×${num(adv)}</em>` : '',
+    immune ? `<em class="m inm" data-tip="<b>Inmune</b>Las cartas del mismo palo que el trono no le suman Daño (sus poderes sí cuentan). Prueba contra otro trono.">Inmune ×0</em>` : '',
+    r.hurt ? `<em class="m red">Vida −${r.hurt}</em>` : '',
+    r.clean || r.noSiren ? '<em class="m good">Sin Contraataque</em>' : `<em class="m dim" data-tip="<b>Contraataque</b>Se voltea una carta del Mazo y ataca el trono de ese palo: como mucho ⚔ ${worst}. Primero gasta tu Escudo, luego tu Vida.">Habrá Contraataque ⚔ ${worst}</em>`,
+    wallGain > 0 ? `<em class="m">Escudo +${wallGain}</em>` : '',
+    repair > 0 ? `<em class="m">Cura +${repair}</em>` : '',
     r.gold ? `<em class="m gold">Oro +${r.gold}</em>` : '',
     r.draw ? `<em class="m">Robas +${r.draw}</em>` : '',
     tail,
   ].join('');
   const open = why !== null;
-  return `<div class="calc" tabindex="0" role="button" aria-expanded="${open}" aria-controls="recibo" aria-label="Daño ${r.total} contra ${mat}. ${FORMATION_NAME[p.formation]}: Fuerza ${r.fuerza} por Resonancia ${num(r.res)}. Abre la cuenta paso a paso.">
+  return `<div class="calc" tabindex="0" role="button" aria-expanded="${open}" aria-controls="recibo" aria-label="Golpe ${r.total} contra la Casa de ${mat}. ${FORMATION_NAME[p.formation]}: Daño ${r.fuerza} por Multi ${num(r.res)}. Abre la cuenta paso a paso.">
       <b class="t">${r.total}</b>
       <span class="calc-txt">
         <span class="vs"><span class="forma">${FORMATION_NAME[p.formation]}</span><span>contra</span><strong>${MATERIAL[target]}</strong>${hint('strike')}</span>
-        <span class="fr"><span class="fr-f"><i class="lg">Fuerza</i><i class="sh">F</i><b>${r.fuerza}</b></span><span class="fr-r"><i class="lg">Res.</i><i class="sh">R</i><b>×${res1(r.res)}</b></span><em class="abre">Cuenta${CHEVRON}</em></span>
+        <span class="fr"><span class="fr-f"><i class="lg">Daño</i><i class="sh">D</i><b>${r.fuerza}</b></span><span class="fr-r"><i class="lg">Multi</i><i class="sh">M</i><b>×${res1(r.res)}</b></span><em class="abre">Cuenta${CHEVRON}</em></span>
       </span>
     </div>
     <span class="marks">${marks}</span>`;
 }
 
-/** El marcador mientras se resuelve un golpe: Fuerza × Resonancia = daño, con la misma tipografía de cifras. */
+/** El marcador mientras se resuelve un golpe: Daño × Multi = Golpe, con la misma tipografía de cifras. */
 export const LIVE_HTML =
-  '<span class="tag go" id="live-tag"></span><div class="calc"><small>Fuerza</small><b class="f">0</b><i>×</i><small>Res.</small><b class="r">1</b><i>=</i><b class="t">?</b></div><span class="marks" id="live-marks"></span>';
+  '<span class="tag go" id="live-tag"></span><div class="calc"><small>Daño</small><b class="f">0</b><i>×</i><small>Multi</small><b class="r">1</b><i>=</i><small>Golpe</small><b class="t">?</b></div><span class="marks" id="live-marks"></span>';
 
 // ───────────────────────── El recibo ─────────────────────────
 
@@ -125,7 +131,7 @@ function slip(p: Preview): Slip {
     const who = colon >= 0 ? ev.label.slice(0, colon) : ev.label;
     const note = colon >= 0 ? ev.label.slice(colon + 2) : '';
     if (hit) {
-      // lo que las herramientas y la obra hacen después del golpe: ya no cambia el daño
+      // lo que las reliquias y la mesa hacen después del golpe: ya no cambia el Golpe
       s.after.push({ who, amount: '', kind: 'n', note: note || 'actúa tras el golpe' });
       continue;
     }
@@ -150,10 +156,10 @@ function slip(p: Preview): Slip {
     if (ev.mr !== undefined) s.res.push({ who, amount: `×${num(ev.mr)}`, kind: 'x' });
     if (ev.df === undefined && ev.dr === undefined && ev.mr === undefined) {
       const immune = ev.src === 'card' && note === 'inmune';
-      lines.push({ who, amount: immune ? '×0' : '', kind: 'n', note: immune ? 'inmune: su propio palo' : note });
+      lines.push({ who, amount: immune ? '×0' : '', kind: 'n', note: immune ? 'Inmune: su propio palo' : note });
     }
   }
-  // por si el motor suma algún día Fuerza por un camino sin paso: la Base absorbe la diferencia y la cuenta siempre cuadra
+  // por si el motor suma algún día Daño por un camino sin paso: la Base absorbe la diferencia y la cuenta siempre cuadra
   s.nBase = p.r.fuerza - s.nCards - s.nBelt;
   return s;
 }
@@ -164,25 +170,28 @@ function receiptHtml(p: Preview): string {
   const li = (l: Line) => `<li class="l-${l.kind}${l.cls ? ` ${l.cls}` : ''}"><span>${esc(l.who)}${l.note ? ` <small>${esc(l.note)}</small>` : ''}</span>${l.amount ? `<b>${l.amount}</b>` : ''}</li>`;
   const ficha = (cls: string, op: string, label: string, value: string, lines: Line[], empty: string) =>
     `<section class="ficha ${cls}">${op ? `<i class="op" aria-hidden="true">${op}</i>` : ''}<h4><span>${label}</span><b>${value}</b></h4><ul>${lines.length ? lines.map(li).join('') : `<li class="l-n vacio"><span>${empty}</span></li>`}</ul></section>`;
-  // la torre: lo que le queda al piso y cómo sale del golpe
+  // el trono: lo que le queda al guardia y cómo sale del golpe
   const t = v.towers[target];
   const rank = t.floors[0];
   const hp = v.config.floorHp[rank] ?? 0;
   const left = Math.max(0, hp - t.damage);
   const fallen = r.fallenBy[target] ?? 0;
   const dealt = r.dealt[target] ?? 0;
-  const fate = fallen > 1 ? `caen ${fallen} pisos` : fallen ? (r.fell.some((f) => f.tower === target && f.clean) ? 'cae: golpe limpio' : 'cae') : `le quedarán ${Math.max(0, left - dealt)}`;
+  const fate = fallen > 1 ? `caen ${fallen} guardias` : fallen ? (r.fell.some((f) => f.tower === target && f.clean) ? 'cae: Golpe exacto' : 'cae') : `le quedarán ${Math.max(0, left - dealt)}`;
   const total: Line[] = [
-    { who: `Piso ${RANK_LABEL[rank] ?? ''} de ${cap(MATERIAL[target])}`, amount: `${left}`, kind: 'n', note: fate },
+    { who: `${GUARD_NAME[rank] ?? RANK_LABEL[rank] ?? ''} de ${cap(MATERIAL[target])}`, amount: `${left}`, kind: 'n', note: fate },
     ...s.after,
   ];
-  return `<header class="recibo-cab"><b>La cuenta, paso a paso</b><span>${FORMATION_NAME[p.formation]} contra ${cap(MATERIAL[target])}</span></header>
+  // en el móvil el aviso de último turno va en un renglón: su explicación entera vive aquí, en el recibo
+  const o = omen(v);
+  return `<header class="recibo-cab"><b>La cuenta, paso a paso</b><span>${FORMATION_NAME[p.formation]} contra la Casa de ${cap(MATERIAL[target])}</span></header>
+    ${o ? `<p class="recibo-omen" role="note"><b>${esc(o.title)}</b> ${esc(o.detail)}</p>` : ''}
     <div class="recibo-cuerpo">
       ${ficha('f-base', '', 'Base', String(s.nBase), s.base, '—')}
       ${ficha('f-cartas', '+', 'Cartas', String(s.nCards), s.cards, 'solo cartas especiales')}
-      ${ficha('f-cinto', '+', 'Cinturón', String(s.nBelt), s.belt, v.tools.length ? 'no suma Fuerza a este golpe' : 'sin herramientas')}
-      ${ficha('f-res', '×', 'Resonancia', num(r.res), s.res, '—')}
-      ${ficha('f-total', '=', 'Daño', String(r.total), total, '')}
+      ${ficha('f-cinto', '+', 'Reliquias', String(s.nBelt), s.belt, v.tools.length ? 'no suman Daño a este Golpe' : 'sin reliquias')}
+      ${ficha('f-res', '×', 'Multi', num(r.res), s.res, '—')}
+      ${ficha('f-total', '=', 'Golpe', String(r.total), total, '')}
     </div>
     <button class="recibo-x" type="button" aria-label="Cerrar la cuenta">${CROSS}</button>`;
 }
@@ -411,7 +420,7 @@ export function paintScore(el: HTMLElement, html: string, preview: Preview | nul
 
 // ───────────────────────── Aviso de último turno ─────────────────────────
 
-/** Banda fija junto a la cuenta mientras la próxima sirena o el próximo colapso puedan tirar el búnker. */
+/** Banda fija junto a la cuenta mientras el próximo Contraataque o el Mazo agotado puedan dejarte sin Vida. */
 export function renderOmen(v: PlayerView | null): void {
   const score = document.getElementById('score');
   if (!score) return;
@@ -436,15 +445,28 @@ export function renderOmen(v: PlayerView | null): void {
   if (band.dataset.key === key) return;
   band.dataset.key = key;
   band.className = `omen k-${o.kind}`;
-  band.innerHTML = `<span class="omen-ico">${WARN}</span><p><b>${esc(o.title)}</b><span>${esc(o.detail)}</span></p>`;
+  band.setAttribute('aria-label', `${o.title}. ${o.detail}`);
+  band.innerHTML = `<span class="omen-ico">${WARN}</span><p><b>${esc(o.title)}</b><span>${esc(o.detail)}</span></p><span class="omen-corto" aria-hidden="true">${WARN}<b>${esc(omenShort(o, v?.integrity ?? 0))}</b></span>`;
+}
+
+/**
+ * El aviso en un renglón, para el móvil: «Último turno · ⚔ 9 · Vida 2». Se corta por diseño (las cifras
+ * que deciden), no con puntos suspensivos; la frase entera sigue en la banda para el lector de pantalla
+ * y en el recibo de la cuenta.
+ */
+function omenShort(o: Omen, life: number): string {
+  // las cifras vienen del motor en campos propios (autopsy.ts): no se leen de la frase
+  const vida = o.life ?? life;
+  if (o.kind === 'colapso') return `Último turno · Mazo agotado${o.loss !== undefined ? ` −${o.loss}` : ''} · Vida ${vida}`;
+  return `Último turno · Contraataque${o.threat !== undefined ? ` ⚔ ${o.threat}` : ''} · Vida ${vida}`;
 }
 
 // ───────────────────────── La causa, sobre la mesa ─────────────────────────
 
 /**
- * Fin de la obra en campaña. Si se ganó, deja ver el último derrumbe un momento. Si se perdió, la
- * causa del derrumbe se queda sobre la mesa (sin tapar torres ni búnker) hasta que el jugador pasa
- * al acta: no hay cuenta atrás, se lee con calma.
+ * Fin del asalto en campaña. Si se ganó, deja ver caer el último trono un momento. Si se perdió, la
+ * causa de la derrota se queda sobre la mesa (sin tapar tronos ni la Vida) hasta que el jugador pasa
+ * a la crónica: no hay cuenta atrás, se lee con calma.
  */
 export function stageOver(death: Autopsy | null): Promise<void> {
   closeReceipt();
@@ -454,7 +476,7 @@ export function stageOver(death: Autopsy | null): Promise<void> {
     document.querySelectorAll('.causa-mesa').forEach((n) => n.remove());
     const el = document.createElement('div');
     el.className = 'end causa-mesa';
-    el.innerHTML = `<div class="causa-caja">${causeHtml(death)}<div class="row"><button class="primary" id="to-acta">Ver el acta</button></div></div>`;
+    el.innerHTML = `<div class="causa-caja">${causeHtml(death)}<div class="row"><button class="primary" id="to-acta">Ver la crónica</button></div></div>`;
     document.body.appendChild(el);
     const go = el.querySelector<HTMLButtonElement>('#to-acta')!;
     go.onclick = () => {

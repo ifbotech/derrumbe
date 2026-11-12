@@ -165,7 +165,7 @@ describe('plano de demolición', () => {
     const contract = run.node.routes[1];
     act(run, { t: 'route', i: 1 });
     expect(run).toMatchObject({ phase: 'battle', contract, boss: null });
-    expect(runAction(run, { t: 'route', i: 0 })).toMatch(/plano/);
+    expect(runAction(run, { t: 'route', i: 0 })).toMatch(/Mapa del castillo/);
   });
 
   it('saltar la obra cobra la etiqueta y avanza sin cobro ni ferretería', () => {
@@ -206,7 +206,7 @@ describe('plano de demolición', () => {
     run.phase = 'pack';
     act(run, { t: 'begin' });
     expect(run.node).toEqual({ routes: [], tag: null });
-    expect(runAction(run, { t: 'skip' })).toMatch(/no se puede saltar/);
+    expect(runAction(run, { t: 'skip' })).toMatch(/no tiene Atajo/);
     act(run, { t: 'route', i: 0 });
     expect(run.boss).toBe(run.bosses[3]);
     expect(run.contract).toBeNull();
@@ -275,7 +275,7 @@ describe('cobro y selección', () => {
     const run = newRun({}, 11);
     win(run);
     expect(run.phase).toBe('reward');
-    expect(run.pay[0]).toEqual(['Obra demolida', 5]);
+    expect(run.pay[0]).toEqual(['Asalto ganado', 5]);
     expect(run.integrity).toBe(20);
     expect(run.draft.map((o) => o.kind)).toEqual(['special', 'special', 'card']);
     const card = run.draft[2];
@@ -444,7 +444,7 @@ describe('ferretería', () => {
     act(run, { t: 'sell', i: 0 });
     expect(run.gold).toBe(gold + sellValue(id));
     run.tools = Array.from({ length: TOOL_SLOTS }, () => ({ id: 'piqueta', n: 0 }));
-    expect(runAction(run, { t: 'buy', i: run.shop.findIndex((o) => o.kind === 'tool' && !o.sold) })).toMatch(/solo caben/);
+    expect(runAction(run, { t: 'buy', i: run.shop.findIndex((o) => o.kind === 'tool' && !o.sold) })).toMatch(/Solo caben/);
     run.integrity = 10;
     expect(healCost(run)).toBe(5);
     act(run, { t: 'heal' });
@@ -486,7 +486,7 @@ describe('cinturón', () => {
     expect(reorderBelt(run, state, [1, 2, 0])).toBeNull();
     expect(run.tools.map((t) => t.id)).toEqual(['piqueta', 'prisma', 'ultimo']);
     expect(state.tools).toEqual([{ id: 'piqueta', n: 0 }, { id: 'prisma', n: 0 }, { id: 'ultimo', n: 3 }]);
-    expect(runAction(run, { t: 'sell', i: 0 })).toMatch(/plena obra/);
+    expect(runAction(run, { t: 'sell', i: 0 })).toMatch(/pleno asalto/);
   });
 
   it('las herramientas cambian las reglas de la obra', () => {
@@ -580,7 +580,7 @@ describe('final, cimientos abisales y gremio', () => {
     act(run, { t: 'draft', i: null });
     act(run, { t: 'next' });
     expect(run).toMatchObject({ phase: 'map', stage: 9 });
-    expect(stageDef(9)).toMatchObject({ name: 'Cimiento abisal 1', boss: true });
+    expect(stageDef(9)).toMatchObject({ name: 'Trono infinito 1', boss: true });
     expect(stageDef(10).hp).toBeGreaterThan(stageDef(9).hp);
     expect(stageDef(9).hp).toBeGreaterThan(STAGES[7].hp);
     win(run);

@@ -459,7 +459,7 @@ describe('andamio: el hueco de reserva', () => {
     expect(a.state.players[0].hand.length).toBe(6);
     expect(a.state.turnCount).toBe(0); // sigue siendo tu turno y no ha sonado la sirena
     expect(a.events).toEqual([{ e: 'stash', player: 'a', card: card('S8'), back: null }]);
-    expect(() => applyAction(a.state, 'a', { type: 'stash', card: 'S7' })).toThrow(/andamio/);
+    expect(() => applyAction(a.state, 'a', { type: 'stash', card: 'S7' })).toThrow(/Manga/);
     const b = applyAction(a.state, 'a', { type: 'discard', cards: ['S2'] });
     expect(b.state.players[0].hand.length).toBe(7);
     expect(b.state.players[0].reserve.length).toBe(1);
@@ -505,7 +505,7 @@ describe('andamio: el hueco de reserva', () => {
 
   it('sin huecos (como en la partida guiada) no se puede guardar', () => {
     const s = game(hand(), [], [], { reserveSize: 0 });
-    expect(() => applyAction(s, 'a', { type: 'stash', card: 'S8' })).toThrow(/No hay andamio/);
+    expect(() => applyAction(s, 'a', { type: 'stash', card: 'S8' })).toThrow(/no hay Manga/);
   });
 });
 
@@ -528,7 +528,7 @@ describe('tiza de replanteo', () => {
     expect(state.players[0].hand).toEqual(s.players[0].hand);
     expect(sortCards(state.deck)).toEqual(sortCards(s.deck)); // las mismas cartas…
     expect(state.deck.map((c) => c.id)).not.toEqual(s.deck.map((c) => c.id)); // …en otro orden
-    expect(() => applyAction(state, 'a', { type: 'undo' })).toThrow(/tiza/);
+    expect(() => applyAction(state, 'a', { type: 'undo' })).toThrow(/rebobinados/);
     // y es determinista: deshacer dos veces desde el mismo punto da lo mismo
     expect(JSON.stringify(applyAction(played, 'a', { type: 'undo' }).state)).toBe(JSON.stringify(state));
   });
@@ -537,7 +537,7 @@ describe('tiza de replanteo', () => {
     const s = game(cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'));
     const played = applyAction(s, 'a', { type: 'attack', cards: ['S8'], target: 'D' }).state;
     expect(played.undo).toBeNull();
-    expect(() => applyAction(played, 'a', { type: 'undo' })).toThrow(/tiza/);
+    expect(() => applyAction(played, 'a', { type: 'undo' })).toThrow(/rebobinados/);
   });
 
   it('la historia no se anida: solo se recuerda la jugada anterior', () => {

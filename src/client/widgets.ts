@@ -1,5 +1,5 @@
-// Piezas de interfaz que se repiten en varias pantallas: la opción-carta, el cinturón de
-// herramientas, el visor de mazos, las reglas y los ajustes.
+// Piezas de interfaz que se repiten en varias pantallas: la opción-carta, las Reliquias, el visor
+// de mazos, las reglas y los ajustes.
 import { Card, SUITS, SUIT_GLYPH, MATERIAL, sortCards } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
 import { ARCH, RARITY, TOOL, TOOL_SLOTS, ToolInst } from '../rules/tools';
@@ -35,19 +35,19 @@ export function choice(el: HTMLElement, title: string, desc: string, tag: string
   return box;
 }
 
-// ───────────────────────── Herramientas ─────────────────────────
+// ───────────────────────── Reliquias ─────────────────────────
 
-const KIND_LABEL = { f: '+F', r: '+R', x: '×R', copy: '⇉', p: '•' } as const;
-export const KIND_NAME = { f: 'Suma Fuerza', r: 'Suma Resonancia', x: 'Multiplica la Resonancia', copy: 'Copia a su derecha', p: 'Pasiva' } as const;
+const KIND_LABEL = { f: '+D', r: '+M', x: '×M', copy: '⇉', p: '•' } as const;
+export const KIND_NAME = { f: 'Suma Daño', r: 'Suma Multi', x: 'Multiplica el Multi', copy: 'Copia a su derecha', p: 'Pasiva' } as const;
 
-/** Globo de ayuda de una herramienta. */
+/** Globo de ayuda de una reliquia. */
 export function toolTip(id: string, extra = ''): string {
   const t = TOOL[id];
   if (!t) return '';
   return `<b>${t.name}</b>${t.desc}<small>${RARITY[t.rarity].name} · ${ARCH[t.arch]} · ${KIND_NAME[t.kind]}</small>${extra}`;
 }
 
-/** Ficha de herramienta con el color de su rareza. */
+/** Ficha de reliquia con el color de su rareza. */
 export function toolTile(id: string): HTMLDivElement {
   const el = tileEl(id, TOOL[id]?.name ?? id, 'relic', TOOL[id]?.rarity);
   el.dataset.tip = toolTip(id);
@@ -55,7 +55,7 @@ export function toolTile(id: string): HTMLDivElement {
   return el;
 }
 
-/** Permutación que mueve la herramienta `from` al hueco `to`. */
+/** Permutación que mueve la reliquia `from` al hueco `to`. */
 export function moveOrder(n: number, from: number, to: number): number[] {
   const order = Array.from({ length: n }, (_, i) => i);
   order.splice(to, 0, ...order.splice(from, 1));
@@ -71,7 +71,7 @@ export interface BeltOpts {
 }
 
 /**
- * El cinturón: las herramientas de izquierda a derecha, que es el orden en que se activan.
+ * Las Reliquias: de izquierda a derecha, que es el orden en que se activan.
  * Para reordenar, arrastra una sobre otra o pulsa una y luego el hueco de destino.
  */
 export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
@@ -140,7 +140,7 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
         e.preventDefault();
         click();
       } else if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-        // Mayús + flechas mueven la herramienta; las flechas solas mueven el foco
+        // Mayús + flechas mueven la reliquia; las flechas solas mueven el foco
         e.preventDefault();
         e.stopPropagation();
         if (e.key === 'ArrowLeft' && i > 0) move(i, i - 1);
@@ -245,7 +245,7 @@ export function showSettings(onChange?: () => void): void {
       <div class="set-list" id="set-vol"></div><div class="set-list" id="set-toggles"></div>
       <div class="set server-row"><div><b>Servidor de salas</b><span>Solo para el cooperativo en línea. Vacío: el de esta misma página, si lo hay.</span></div>
         <span class="server-edit"><input id="set-server" autocomplete="off" spellcheck="false" placeholder="wss://mi-servidor/ws" /><button id="set-server-ok">Usar</button></span></div>
-      <div class="set"><div><b>Progreso</b><span>Gremio, colección, actas y ajustes en un archivo .json: para no perderlos y para llevarlos a otro equipo o a la versión de escritorio.</span></div>
+      <div class="set"><div><b>Progreso</b><span>La Orden, colección, crónicas y ajustes en un archivo .json: para no perderlos y para llevarlos a otro equipo o a la versión de escritorio.</span></div>
         <span class="server-edit"><button id="set-export">Exportar progreso</button><button id="set-import">Importar progreso</button><input type="file" id="set-file" accept="application/json,.json" hidden /></span></div>
       <div class="set"><div><b>Comunidad y comentarios</b><span>Errores, ideas y partidas memorables: aquí se leen.</span></div><button id="set-community">Abrir</button></div>
       <h3 class="sec">Controles</h3>
@@ -257,8 +257,8 @@ export function showSettings(onChange?: () => void): void {
   const vol = getVolume();
   const sliders: [keyof Volume, string, string][] = [
     ['master', 'Volumen maestro', 'Todo lo que suena.'],
-    ['music', 'Música', 'Medieval, oscura y hecha al vuelo: cambia con cada obra y con el apuro del búnker.'],
-    ['sfx', 'Efectos', 'Golpes, sirenas, sellos y monedas.'],
+    ['music', 'Música', 'Medieval, oscura y hecha al vuelo: cambia con cada asalto y con lo que te quede de Vida.'],
+    ['sfx', 'Efectos', 'Golpes, Contraataques, sellos y monedas.'],
   ];
   $('#set-vol', el).innerHTML = sliders
     .map(([id, name, desc]) => `<div class="set"><div><b>${name}</b><span>${desc}</span></div><label class="slider"><input type="range" min="0" max="100" step="5" value="${Math.round(vol[id] * 100)}" data-vol="${id}" aria-label="${name}" /><output>${Math.round(vol[id] * 100)}</output></label></div>`)
@@ -272,9 +272,9 @@ export function showSettings(onChange?: () => void): void {
   });
   const draw = () => {
     const rows: [string, string, string, () => void][] = [
-      ['Velocidad', 'Lo rápido que se resuelven los golpes en la mesa.', speedLabel(), () => void cycleSpeed()],
+      ['Velocidad', 'Lo rápido que se resuelven los Golpes en la mesa.', speedLabel(), () => void cycleSpeed()],
       ['Reducir movimiento', 'Sin temblores, destellos ni partículas.', settings.calm ? 'Sí' : 'No', () => ((settings.calm = !settings.calm), applySettings())],
-      ['Tintas de la baraja', 'Cuatro tintas de taller (una por palo) o las dos clásicas, rojo y negro.', settings.inks === 4 ? '4 tintas' : '2 clásicas', () => ((settings.inks = settings.inks === 4 ? 2 : 4), applySettings())],
+      ['Tintas de la baraja', 'Cuatro tintas reales (una por palo) o las dos clásicas, rojo y negro.', settings.inks === 4 ? '4 tintas' : '2 clásicas', () => ((settings.inks = settings.inks === 4 ? 2 : 4), applySettings())],
       ['Pantalla completa', 'También con la tecla F (o R3 en el mando).', platform.isFullscreen() ? 'Sí' : 'No', () => void platform.toggleFullscreen().then(draw)],
       whisperSetting(),
     ];
@@ -301,7 +301,7 @@ export function showSettings(onChange?: () => void): void {
     const backup = readBackup(await picked.text());
     if (typeof backup === 'string') return toast(backup);
     const ask = modal(
-      `<div class="modal-box confirm"><h2>¿Importar este progreso?</h2><p>${describeBackup(backup)}.</p><p>Sustituye todo lo que hay guardado en este equipo (gremio, colección, actas, campaña en curso y ajustes). No se puede deshacer: si dudas, exporta antes lo que tienes.</p>
+      `<div class="modal-box confirm"><h2>¿Importar este progreso?</h2><p>${describeBackup(backup)}.</p><p>Sustituye todo lo que hay guardado en este equipo (la Orden, colección, crónicas, campaña en curso y ajustes). No se puede deshacer: si dudas, exporta antes lo que tienes.</p>
        <div class="row"><button class="x">Cancelar</button><button class="primary" id="yes">Importar y recargar</button></div></div>`,
     );
     $('#yes', ask).onclick = () => {

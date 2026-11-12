@@ -1,11 +1,11 @@
 ---
 name: autonomous-sprint-loop
-description: Bucle autónomo de versiones de DERRUMBE (V6 a V10). Explica scripts/estudio-autonomo.ps1 y ROADMAP_V5_V10.md, cómo se escribe una especificación con celdas, las puertas de CPU y de GPU, y cuándo una versión se etiqueta o se aparta. Úsala para lanzar el bucle, retomarlo, preparar la especificación de una versión o entender por qué una se rechazó.
+description: Bucle autónomo de versiones de CORONA ROTA (V7 a V10). Explica scripts/estudio-autonomo.ps1 y ROADMAP_V5_V10.md, cómo se escribe una especificación con celdas, las puertas de CPU y de GPU, y cuándo una versión se etiqueta o se aparta. Úsala para lanzar el bucle, retomarlo, preparar la especificación de una versión o entender por qué una se rechazó.
 ---
 
 # Bucle autónomo de sprints
 
-Una versión de DERRUMBE es un sprint con tema. El bucle las construye una tras otra sin nadie delante y solo deja pasar la que no empeora.
+Una versión de CORONA ROTA es un sprint con tema. El bucle las construye una tras otra sin nadie delante y solo deja pasar la que no empeora.
 
 | Pieza | Dónde |
 |---|---|
@@ -20,17 +20,18 @@ Una versión de DERRUMBE es un sprint con tema. El bucle las construye una tras 
 
 | Versión | Tema |
 |---|---|
-| V6 | Los tres primeros minutos: enseñanza invisible |
-| V7 | Identidad de jefes y hallazgos del subsuelo |
-| V8 | Sensación cinética y tres horas de audio sin repetirse |
-| V9 | Cooperativo a prueba de balas + `balance-config.json` + telemetría anónima |
-| V10 | Congelación de funciones y pulido de candidata a lanzamiento |
+| V7 | Enseñanza interactiva de 60 segundos y personalidad de los monarcas |
+| V8 | Jugo de la caída de un trono, sellos de lacre con brillo y variaciones de audio de corte |
+| V9 | Cooperativo pulido, `balance-config.json` con autoajuste y telemetría con la privacidad primero |
+| V10 | Candidata a lanzamiento con funciones congeladas: accesibilidad, preparación para traducir y empaquetado para Steam / Tauri v2 |
+
+La V6 (el cambio de tema, de obra y demolición a la conjura de CORONA ROTA) ya está hecha: el bucle arranca en la V7. Su ley está en `SPECS/V6-normas-y-glosario.md`, y las especificaciones nuevas escriben con ese vocabulario.
 
 ## Lanzarlo
 
 ```powershell
 .\scripts\estudio-autonomo.ps1 -Ensayo                     # qué haría, sin tocar nada
-.\scripts\estudio-autonomo.ps1                             # V6 a V10; etiqueta, no publica
+.\scripts\estudio-autonomo.ps1                             # V7 a V10; etiqueta, no publica
 .\scripts\estudio-autonomo.ps1 -Publicar -ReiniciarOllama  # y publica cada versión aceptada
 .\scripts\estudio-autonomo.ps1 -Desde 7 -Hasta 7           # solo una versión
 .\scripts\estudio-autonomo.ps1 -SinGpu                     # solo puertas de CPU (sin panel)
@@ -49,7 +50,7 @@ Parámetros que importan:
 ## Qué hace con cada versión
 
 1. **Rama** `estudio/v{n}` desde `main`.
-2. **Celdas de obra**: por cada bloque `### Celda: <subagente>` de `SPECS/V{n}.md`, en orden y de una en una, una sesión `claude -p --agent <subagente>` con el encargo por la entrada estándar. Antes pone `DUNGEON_HERO=<Sala>`: los ganchos globales de Pixel Dungeon encienden la sala de ese subagente (`Reglas-Balance`, `Arte-UI`, `Juice-UX`) mientras trabaja.
+2. **Celdas de trabajo**: por cada bloque `### Celda: <subagente>` de `SPECS/V{n}.md`, en orden y de una en una, una sesión `claude -p --agent <subagente>` con el encargo por la entrada estándar. Antes pone `DUNGEON_HERO=<Sala>`: los ganchos globales de Pixel Dungeon encienden la sala de ese subagente (`Reglas-Balance`, `Arte-UI`, `Juice-UX`) mientras trabaja.
 3. **Puertas de CPU**, en orden. La primera que falla manda el final de su registro a la celda responsable:
 
    | Puerta | Orden | Pasa si | Responsable |
@@ -62,8 +63,8 @@ Parámetros que importan:
    | humo | `npm run qa:smoke` | «Todo en orden», mando virtual incluido | `juice-ux` |
 
 4. **Cierre**: las celdas `director` corren ahora, con las medidas de las puertas delante, y escriben el registro de cambios.
-5. **Commit candidato** `DERRUMBE {n}.0: <tema>`, con la autoría de quien lanza el bucle.
-6. **Puerta de GPU**: snapshot del commit y corrida del panel (`python -m panel_gaming run --preset v4-completo --commit-esperado <sha> --comparar-con <corrida anterior>`). Mientras corre, la sala `QA-3090` enseña la última línea de su avance (`node %USERPROFILE%\.claude\dungeon_hook.mjs set QA-3090 working "…"`), y al acabar queda en `done` con la aprobación y la claridad.
+5. **Commit candidato** `CORONA ROTA {n}.0: <tema>`, con la autoría de quien lanza el bucle.
+6. **Puerta de GPU**: snapshot del commit y corrida del panel (`python -m panel_gaming run --preset v6-completo --commit-esperado <sha> --comparar-con <corrida anterior>`). Mientras corre, la sala `QA-3090` enseña la última línea de su avance (`node %USERPROFILE%\.claude\dungeon_hook.mjs set QA-3090 working "…"`), y al acabar queda en `done` con la aprobación y la claridad.
 7. **Veredicto**: compara **aprobación por persona** y **claridad media** con la versión anterior.
    - Sin regresión: `git merge --ff-only`, etiqueta `v{n}.0.0` (con el veredicto en su nota) y, con `-Publicar`, push.
    - Con regresión, o con una puerta de CPU que no pasa tras los reintentos: `main` queda como estaba, la rama se renombra a `rechazado/v{n}-<fecha>` y **el bucle se detiene** (la versión siguiente parte de la anterior).
@@ -82,7 +83,7 @@ Nunca reescribe `main`: ni `reset --hard` ni `push --force`. «Revertir» aquí 
 La escribe `director`. El orquestador solo entiende esto:
 
 ```markdown
-# V7 · Identidad de jefes y hallazgos del subsuelo
+# V7 · Enseñanza interactiva de 60 segundos y personalidad de los monarcas
 
 ## 1. Tema y evidencia
 …
@@ -108,7 +109,8 @@ Reglas:
 - Nombres válidos de celda: `reglas-balance`, `arte-ui`, `juice-ux`, `director`. Un bloque termina en la celda siguiente o en un `## `.
 - Las celdas corren **en serie** y comparten rama: la que expone un dato (reglas) va antes que la que lo pinta (arte, juice). Las de `director` siempre van al cierre, estén donde estén.
 - Cada encargo se entiende solo: quien lo lee no ha visto nada más. Di los archivos, el contrato con las otras celdas y la orden que lo comprueba.
-- Constitución anticomplejidad en cada versión: ≤ 6 palabras clave, ≤ 56 herramientas, descripciones ≤ 115 caracteres, P95 ≤ 19 turnos. Una versión no añade un sistema sin retirar o simplificar otro.
+- Constitución anticomplejidad en cada versión: ≤ 6 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 caracteres, P95 ≤ 19 turnos. Una versión no añade un sistema sin retirar o simplificar otro.
+- Vocabulario de la V6 en cada encargo: el título del juego solo se escribe en `src/shared/brand.ts` y ninguna palabra del tema viejo puede aparecer en lo que lee el jugador (`tests/vocabulario.test.ts` y la regla «jerga» de `npm run qa:visual`).
 
 ## Cuando algo se tuerce
 

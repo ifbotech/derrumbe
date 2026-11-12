@@ -1,4 +1,4 @@
-// Partida guiada: conduce la obra de prácticas paso a paso con el capataz.
+// Partida guiada: conduce el asalto de prácticas paso a paso con la Maestra.
 import { Action, RuleError, applyAction, viewFor } from '../rules/engine';
 import { TUTORIAL_INTRO, TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial } from '../rules/tutorial';
 import { rubble, skyline } from './art';
@@ -78,7 +78,7 @@ export function renderCoach(): void {
       btn = moving ? '' : 'Continuar';
     } else body = s.say;
   }
-  el.innerHTML = `<div class="who">Capataz<small>${head}</small></div><div><h4>${title}</h4><p>${body}</p></div>${btn ? `<button class="primary" id="coach-next">${btn}</button>` : '<span></span>'}`;
+  el.innerHTML = `<div class="who">La Maestra<small>${head}</small></div><div><h4>${title}</h4><p>${body}</p></div>${btn ? `<button class="primary" id="coach-next">${btn}</button>` : '<span></span>'}`;
   const next = $('#coach-next', el);
   if (next) next.onclick = coachNext;
 }
@@ -108,8 +108,8 @@ export function showTutorialEnd(): void {
   el.innerHTML = `
     <div class="meta"><span class="hot">TUTORIAL ${won ? 'COMPLETADO' : 'FALLIDO'}</span></div>
     ${won ? rubble('D', 'end-art') : skyline('end-art')}
-    <h1>${won ? 'Listo para<br>la obra' : 'Sepultados'}</h1>
-    <p>${won ? 'Ya conoces la cuenta de Fuerza × Resonancia, los materiales, los poderes de cada palo, la sirena, el muro, el golpe limpio y la huelga. En campaña se suman el cinturón de herramientas, los sellos y tratamientos, el andamio (un hueco para guardar una carta) y la tiza de replanteo (deshacer una jugada por obra). Pasa el puntero sobre cualquier cosa para ver qué hace, o ábrela con clic derecho en la lupa de grabador.' : 'Pasa hasta en las mejores cuadrillas. Repite el tutorial con calma.'}</p>
+    <h1>${won ? 'Lista la<br>conjura' : 'Conjura deshecha'}</h1>
+    <p>${won ? 'Ya conoces la cuenta Daño × Multi, la rueda de palos, el poder de cada palo, el Contraataque, el Escudo, el Golpe exacto y el Motín. En campaña se suman las Reliquias, los Sellos de lacre y los Acabados, La Manga (un hueco para guardarte una carta) y Rebobinar (deshacer una jugada por asalto). Pasa el puntero sobre cualquier cosa para ver qué hace, o ábrela con clic derecho en la Lupa.' : 'Pasa hasta en las mejores conjuras. Repite el tutorial con calma.'}</p>
     <div class="row"><button class="primary" id="t-home">${then ? 'A la campaña' : 'Jugar de verdad'}</button><button id="t-again">Repetir tutorial</button><button id="t-rules">Reglas</button></div>`;
   document.body.appendChild(el);
   if (won) platform.save(TUTO_KEY, '1');

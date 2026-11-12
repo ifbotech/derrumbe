@@ -1,4 +1,4 @@
-// Efectos de la mesa: tiempos, vuelos de cartas, golpes, temblores, escombros y rótulos.
+// Efectos de la mesa: tiempos, vuelos de cartas, golpes, temblores, astillas y rótulos.
 // Todo respeta dos ajustes: la velocidad (1×, 2×, 4×) y «Reducir movimiento».
 import type { GameEvent } from '../rules/engine';
 import { sfx } from './audio';
@@ -217,7 +217,7 @@ export function coins(from: Element | null, to: Element | null, n: number): void
   }
 }
 
-/** Un sello de tinta que cae sobre un elemento (DEMOLIDO, CUMPLIDO, VENDIDO…). */
+/** Un sello de tinta que cae sobre un elemento (ABATIDO, CUMPLIDO, VENDIDO…). */
 export function stampOn(host: HTMLElement | null, text: string, cls = ''): void {
   if (!host) return;
   const s = document.createElement('div');
@@ -227,9 +227,31 @@ export function stampOn(host: HTMLElement | null, text: string, cls = ''): void 
 }
 
 /**
- * Insignia flotante cuando una herramienta se cobra (Ariete, Contragolpe, Rebosadero…): lee el campo
- * `proc` del paso del golpe. «+12 Fuerza · Ariete» junto a la cuenta, «−12 · Contragolpe» sobre la
- * torre, «+2 integridad · Rebosadero» sobre el búnker. ~1,2 s, solo transform y opacity, y su sonido.
+ * Guardia abatido: marca el trono con `.banner-torn` mientras dura la caída (~0,9 s), para que el
+ * grabado (arte-ui) anime el estandarte rasgado con transform y opacity. El sonido (estandarte que cae)
+ * ya lo pone sfx.crash en la mesa. Con «Reducir movimiento» no marca nada.
+ */
+export function guardFall(tower: HTMLElement | null): void {
+  if (!tower || settings.calm) return;
+  restart(tower, 'banner-torn');
+  setTimeout(() => tower.classList.remove('banner-torn'), 900 * Math.max(0.5, speed()) + 100);
+}
+
+/**
+ * Trono caído: la corona que se parte. Suena (metal y piedra) y marca el trono con `.crown-split`
+ * (~1,2 s) para la animación de arte-ui. Con «Reducir movimiento» suena pero no marca.
+ */
+export function throneFall(tower: HTMLElement | null): void {
+  sfx.crownBreak();
+  if (!tower || settings.calm) return;
+  restart(tower, 'crown-split');
+  setTimeout(() => tower.classList.remove('crown-split'), 1200 * Math.max(0.5, speed()) + 100);
+}
+
+/**
+ * Insignia flotante cuando una reliquia se cobra: lee el campo `proc` del paso del golpe.
+ * «+12 Daño · <reliquia>» junto a la cuenta, «−12 · <reliquia>» sobre el trono que recibe y
+ * «+2 Vida · <reliquia>» sobre tu Vida (#bunker). ~1,2 s, solo transform y opacity, y su sonido.
  * La mesa la llama en cada paso (`case 'step'` de animate); sin `proc` no hace nada.
  */
 export function procBadge(ev: GameEvent): void {
@@ -237,16 +259,16 @@ export function procBadge(ev: GameEvent): void {
   const { what, n, tower } = ev.proc;
   const who = ev.label.includes(': ') ? ev.label.slice(0, ev.label.indexOf(': ')) : ev.label;
   const [num, word, at] =
-    what === 'fuerza' ? [`+${n}`, 'Fuerza', $('#score .calc') ?? $('#score')]
-    : what === 'carga' ? [`+${n}`, 'Fuerza guardada', $('#score .calc') ?? $('#score')]
-    : what === 'repara' ? [`+${n}`, 'integridad', $('#bunker')]
+    what === 'fuerza' ? [`+${n}`, 'Daño', $('#score .calc') ?? $('#score')]
+    : what === 'carga' ? [`+${n}`, 'Daño guardado', $('#score .calc') ?? $('#score')]
+    : what === 'repara' ? [`+${n}`, 'Vida', $('#bunker')]
     : [`−${n}`, '', (tower && $(`.tower[data-suit="${tower}"] .floor-slot`)) || $('#score')];
   if (!at) return;
   const r = at.getBoundingClientRect();
   const el = document.createElement('div');
   el.className = `proc-badge ${what}`;
   el.innerHTML = `<b>${num}</b> <span>${word ? `${word} · ` : '· '}${who}</span>`;
-  // junto a la cuenta va a su derecha; sobre la torre y el búnker, centrada encima
+  // junto a la cuenta va a su derecha; sobre el trono y sobre tu Vida, centrada encima
   const x = what === 'fuerza' || what === 'carga' ? r.right + 90 : r.left + r.width / 2;
   el.style.setProperty('--x', `${Math.round(Math.max(90, Math.min(innerWidth - 90, x)))}px`);
   el.style.setProperty('--y', `${Math.round(Math.max(40, r.top + (what === 'dano' ? r.height * 0.3 : 0)))}px`);
@@ -255,5 +277,5 @@ export function procBadge(ev: GameEvent): void {
   sfx.proc(what);
   setTimeout(() => el.remove(), 1250);
 }
-// la prueba de humo dispara insignias a mano (con ?qa): no depende de que el azar traiga un Ariete
+// la prueba de humo dispara insignias a mano (con ?qa): no depende de que el azar traiga la reliquia
 if (new URLSearchParams(location.search).has('qa')) Object.assign(window, { __qaProc: procBadge });

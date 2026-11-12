@@ -1,18 +1,18 @@
-// Constitución anticomplejidad de DERRUMBE. Si un cambio rompe una de estas pruebas, el cambio está mal:
+// Constitución anticomplejidad de CORONA ROTA. Si un cambio rompe una de estas pruebas, el cambio está mal:
 // no se sube el límite, se simplifica otra cosa.
 //
-//   · como mucho 6 palabras clave y 56 herramientas, con identificadores únicos
+//   · como mucho 6 palabras clave y 56 reliquias (TOOLS), con identificadores únicos
 //   · toda descripción cabe en 115 caracteres y no inventa palabras clave
 //   · el informe publicado del laboratorio (scripts/meta-report.json) es de estas reglas, no trae avisos,
-//     ninguna obra de la 4 a la 8 pasa de 19 turnos en el percentil 95 y los niveles 1 y 8 están en rango
+//     ningún asalto del 4 al 8 pasa de 19 turnos en el percentil 95 y los niveles 1 y 8 están en rango
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fingerprint } from '../scripts/lab';
 import { FORMATION_NAME, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
-import { KEYWORDS } from '../src/rules/keywords';
+import { KEYWORDS, TERMS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FATIGUE, TAGS, UPGRADES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
-import { TOOLS } from '../src/rules/tools';
+import { RARITY, TOOLS } from '../src/rules/tools';
 
 const MAX_DESC = 115;
 
@@ -60,7 +60,7 @@ describe('constitución anticomplejidad', () => {
   });
 
   it('ninguna descripción usa una palabra clave que no exista', () => {
-    // Una palabra clave se reconoce porque va con mayúscula en mitad de la frase (Fuerza, Resonancia).
+    // Una palabra clave se reconoce porque va con mayúscula en mitad de la frase (Daño, Multi).
     // Las únicas mayúsculas interiores permitidas son esas y los nombres propios del juego.
     const nombres = [
       ...KEYWORDS.map((k) => k.name),
@@ -73,6 +73,9 @@ describe('constitución anticomplejidad', () => {
       ...Object.values(FORMATION_NAME),
       ...TREATMENTS.map((t) => TREATMENT[t].name),
       ...SEALS.map((s) => SEAL[s].name),
+      ...Object.values(RARITY).map((r) => r.name),
+      // vocabulario de mesa con mayúscula (Vida, Escudo, Mazo…): no son palabras clave
+      ...TERMS,
     ];
     const propias = new Set(nombres.flatMap((n) => n.split(/[^\p{L}]+/u)).filter((w) => /^\p{Lu}/u.test(w)));
     for (const w of ['K', 'Q', 'J', 'A', 'As', 'Ej']) propias.add(w);

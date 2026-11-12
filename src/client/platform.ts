@@ -5,11 +5,11 @@
 
 export interface PlatformBridge {
   readonly name: string;
-  /** Guardado local (partida, gremio, ajustes). En Steam, aquí iría Steam Cloud. */
+  /** Guardado local (partida, la Orden, ajustes). En Steam, aquí iría Steam Cloud. */
   load(key: string): string | null;
   save(key: string, value: string): void;
   remove(key: string): void;
-  /** Avisa a la plataforma de un logro recién conseguido (el juego ya lo ha anotado en el gremio). */
+  /** Avisa a la plataforma de un logro recién conseguido (el juego ya lo ha anotado en la Orden). */
   unlockAchievement(id: string, name: string): void;
   isFullscreen(): boolean;
   toggleFullscreen(): Promise<void>;

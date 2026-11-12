@@ -1,12 +1,12 @@
-// DERRUMBE — motor de reglas puro (sin dependencias, determinista con semilla).
+// CORONA ROTA — motor de reglas puro (sin dependencias, determinista con semilla).
 // Lo usan el servidor (autoridad), el cliente (validar y previsualizar jugadas), el bot y los tests.
 //
 // Cada golpe se resuelve en dos ejes, de izquierda a derecha:
 //
-//     Daño final = redondear(Fuerza × Resonancia)
+//     Golpe = redondear(Daño × Multi)      (en el código: fuerza × res)
 //
-// La formación pone la base; cada carta suma su impacto; tratamientos, sellos, cartas especiales
-// y herramientas del cinturón suman Fuerza, suman Resonancia o la multiplican, en ese orden.
+// La formación pone la base; cada carta suma su Daño; acabados, sellos de lacre, cartas especiales
+// y reliquias suman Daño, suman Multi o lo multiplican, en ese orden.
 // Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
 import { MAX_SPECIALS, SPECIAL } from './specials';
 import { TOOL } from './tools';
@@ -34,26 +34,27 @@ export interface Card {
 export const SUITS: Suit[] = ['S', 'D', 'H', 'C'];
 /** BEATS[a] === b  →  el palo a hace daño doble a la torre b. */
 export const BEATS: Record<Suit, Suit> = { S: 'D', D: 'H', H: 'C', C: 'S' };
-export const MATERIAL: Record<Suit, string> = { S: 'ACERO', D: 'VIDRIO', H: 'LADRILLO', C: 'HORMIGÓN' };
+/** Nombre del palo en mayúsculas, tal como se escribe en la mesa («Contraataque de PICAS»). */
+export const MATERIAL: Record<Suit, string> = { S: 'PICAS', D: 'DIAMANTES', H: 'CORAZONES', C: 'TRÉBOLES' };
 export const SUIT_GLYPH: Record<CardSuit, string> = { S: '♠', D: '♦', H: '♥', C: '♣', X: '★' };
 export const RANK_LABEL = ['★', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
 export const SEALS: Seal[] = ['dinamita', 'eco', 'jornal', 'sindical'];
 export const SEAL: Record<Seal, { name: string; desc: string }> = {
-  dinamita: { name: 'Sello de dinamita', desc: 'Al golpear, las torres vecinas reciben el valor de esta carta.' },
-  eco: { name: 'Sello de eco', desc: 'Su impacto y el poder de su palo se aplican 2 veces.' },
-  jornal: { name: 'Sello de jornal', desc: '+2 de oro si el golpe derriba un piso.' },
-  sindical: { name: 'Sello sindical', desc: 'Robas 1 carta extra al jugarla o descartarla.' },
+  dinamita: { name: 'Sello de pólvora', desc: 'Al golpear, los tronos vecinos (orden ♠ ♦ ♥ ♣) reciben el valor de esta carta.' },
+  eco: { name: 'Sello de eco', desc: 'Su Daño y el poder de su palo cuentan 2 veces.' },
+  jornal: { name: 'Sello de oro real', desc: '+2 de oro si el golpe abate a un guardia.' },
+  sindical: { name: 'Sello de la manga', desc: 'Robas 1 carta extra al jugarla o descartarla.' },
 };
 export const TREATMENTS: Treatment[] = ['forjado', 'templado', 'policromado', 'agrietado'];
 export const TREATMENT: Record<Treatment, { name: string; desc: string }> = {
-  forjado: { name: 'Forjado', desc: '+6 de Fuerza.' },
-  templado: { name: 'Templado', desc: '+0,3 de Resonancia.' },
-  policromado: { name: 'Bronce vivo', desc: '×1,5 de Resonancia.' },
-  agrietado: { name: 'Agrietado', desc: '×2,5 de Resonancia, pero 1 de cada 4 veces se hace añicos.' },
+  forjado: { name: 'Filo de plata', desc: '+6 de Daño.' },
+  templado: { name: 'Templado', desc: '+0,3 de Multi.' },
+  policromado: { name: 'Lacre policromo', desc: '×1,5 de Multi.' },
+  agrietado: { name: 'Cristal maldito', desc: '×2,5 de Multi, pero 1 de cada 4 veces la carta se hace añicos.' },
 };
 
-/** Valor de una carta para Fuerza y poderes. El As es la carta fuerte: vale 11. */
+/** Valor de una carta para el Daño y los poderes. El As es la carta fuerte: vale 11. */
 export const cardValue = (c: Card): number => (c.rank === 1 ? 11 : c.rank);
 export const cardLabel = (c: Card): string => (c.sp ? (SPECIAL[c.sp]?.name ?? '?') : `${RANK_LABEL[c.rank]}${SUIT_GLYPH[c.suit]}`);
 /** Orden estable de lectura (palo y número): sirve para mostrar montones sin revelar su orden real. */
@@ -68,7 +69,7 @@ export type Formation = 'solo' | 'compania' | 'grupo' | 'doblepar' | 'escalera' 
 export const FORMATIONS: Formation[] = ['solo', 'compania', 'grupo', 'escalera', 'doblepar', 'color', 'full', 'escaleracolor', 'poker'];
 export const FORMATION_NAME: Record<Formation, string> = {
   solo: 'Carta sola',
-  compania: 'As de compañía',
+  compania: 'As cómplice',
   grupo: 'Grupo',
   doblepar: 'Doble par',
   escalera: 'Escalera',
@@ -213,9 +214,9 @@ export interface TowerFx {
   apuntalado?: boolean;
 }
 export const TOWER_FX: Record<keyof TowerFx, { name: string; desc: string }> = {
-  fractura: { name: 'Fractura', desc: 'El próximo golpe contra esta torre resuena ×1,5.' },
-  sobrecarga: { name: 'Desarmada ×1', desc: 'Esta torre se salta su próxima sirena.' },
-  apuntalado: { name: 'Apuntalado', desc: 'El primer golpe contra este piso resuena a la mitad.' },
+  fractura: { name: 'Brecha', desc: 'El próximo golpe contra este trono hace ×1,5 de Multi.' },
+  sobrecarga: { name: 'Desarmado ×1', desc: 'Este trono se salta su próximo Contraataque.' },
+  apuntalado: { name: 'En guardia', desc: '×0,5 de Multi en el primer golpe contra este guardia.' },
 };
 
 export interface Tower {
@@ -410,6 +411,9 @@ export function standing(t: Tower): boolean {
 }
 export const floorHp = (t: Tower, cfg: Config): number => cfg.floorHp[t.floors[0]];
 
+/** Etiqueta en mesa del decreto «inestable» (cada guardia abatido sin Golpe exacto te cuesta Vida). */
+export const CRUMBLE_LABEL = 'Arena rápida';
+
 /** Lo que un golpe necesita saber del estado. Lo cumplen tanto GameState como PlayerView. */
 export interface StrikeEnv {
   config: Config;
@@ -598,7 +602,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
 
   // 2 · lo que arrastra la mesa: racha de golpes limpios, carga acumulada y estado de la torre
   if (env.chain > 0) {
-    cur = { src: 'chain', id: 'onda', label: 'Racha limpia' };
+    cur = { src: 'chain', id: 'onda', label: 'Racha' };
     x.R(0.5 * env.chain);
   }
   if (env.charge > 0) {
@@ -607,7 +611,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     env.charge = 0;
   }
   if ((env.fatigue ?? 0) > 0) {
-    cur = { src: 'state', id: 'fatiga', label: 'Fatiga de cimientos' };
+    cur = { src: 'state', id: 'fatiga', label: 'Asedio final' };
     x.R(r2((cfg.fatigueRes ?? 0.25) * env.fatigue!));
   }
   if (standing(tower) && tower.fx.fractura) {
@@ -661,10 +665,10 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
           power[suit] += v;
         } else if (c.seal === 'dinamita') {
           adjacent += v;
-          x.note(`${v} a las torres vecinas`);
+          x.note(`${v} a los tronos vecinos`);
         } else if (c.seal === 'jornal') {
           jornal++;
-          x.note('+2 de oro si cae un piso');
+          x.note('+2 de oro si cae un guardia');
         } else {
           x.draw++;
           x.note('robas 1');
@@ -752,9 +756,9 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   // suelo inestable: cada piso que cae sin golpe limpio se lleva algo del búnker
   const rough = tally.fell.filter((f) => !f.clean).length;
   if (cfg.crumbleHurt && rough) {
-    cur = { src: 'state', id: 'inestable', label: 'Suelo inestable' };
+    cur = { src: 'state', id: 'inestable', label: CRUMBLE_LABEL };
     x.hurt += cfg.crumbleHurt * rough;
-    x.note(`el búnker pierde ${cfg.crumbleHurt * rough}`);
+    x.note(`pierdes ${cfg.crumbleHurt * rough} de Vida`);
   }
 
   // 9 · estados estructurales que deja la mezcla de materiales
@@ -828,13 +832,13 @@ function hookFor(turn: Turn, slot: number): Hook {
     heal(n) {
       const before = state.integrity;
       state.integrity = Math.min(state.config.maxIntegrity, state.integrity + n);
-      mark(`+${state.integrity - before} de integridad`, { what: 'repara', n: state.integrity - before });
+      mark(`+${state.integrity - before} de Vida`, { what: 'repara', n: state.integrity - before });
       events.push({ e: 'repair', amount: state.integrity - before, total: state.integrity });
     },
     wall(n) {
       const before = state.wall;
       state.wall = Math.min(state.config.wallCap, state.wall + n);
-      mark(`+${state.wall - before} de muro`);
+      mark(`+${state.wall - before} de Escudo`);
       events.push({ e: 'wall', amount: state.wall - before, total: state.wall });
     },
     draw(n) {
@@ -842,7 +846,7 @@ function hookFor(turn: Turn, slot: number): Hook {
       turn.draw += n;
     },
     charge(n) {
-      mark(`+${n} de Fuerza cargada`, { what: 'carga', n });
+      mark(`+${n} de Daño cargado`, { what: 'carga', n });
       state.charge += n;
     },
     hit(tower, n, why) {
@@ -982,11 +986,11 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   const p = currentPlayer(state);
   const events: GameEvent[] = [];
   if (action.type === 'stash') {
-    if (state.stashed) throw new RuleError('Ya moviste el andamio este turno.');
+    if (state.stashed) throw new RuleError('Ya usaste la Manga este turno.');
     const card = p.hand.find((c) => c.id === action.card);
     if (!card) throw new RuleError('Esa carta no está en tu mano.');
     const size = state.config.reserveSize ?? 1;
-    if (size <= 0) throw new RuleError('No hay andamio en esta obra.');
+    if (size <= 0) throw new RuleError('En este asalto no hay Manga.');
     p.hand = p.hand.filter((c) => c !== card);
     const back = p.reserve.length >= size ? p.reserve.shift()! : null;
     if (back) p.hand.push(back);
@@ -1009,7 +1013,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     const formation = classify(cards);
     if (!formation) throw new RuleError('Formación inválida: carta sola, grupo, doble par, full, póker, escalera o color.');
     const tower = state.towers[action.target];
-    if (!tower || !standing(tower)) throw new RuleError('Esa torre ya está en ruinas.');
+    if (!tower || !standing(tower)) throw new RuleError('Ese trono ya cayó.');
     spend(p, action.cards);
     events.push({ e: 'play', player: p.id, cards, target: action.target, formation });
     const res = strike(state, cards, action.target, state);
@@ -1025,7 +1029,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
       if (mend > 0) {
         repair += mend;
         const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
-        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: ${spill} de muro que no cabe ÷ ${state.config.overwallRepair} = repara ${mend}`, fuerza: 0, res: 0, proc: { what: 'repara', n: mend } });
+        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `${TOOL.rebosadero?.name ?? 'Rebosadero'}: ${spill} de Escudo que no cabe ÷ ${state.config.overwallRepair} = cura ${mend}`, fuerza: 0, res: 0, proc: { what: 'repara', n: mend } });
       }
     }
     if (repair > 0) {
@@ -1038,7 +1042,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
         const gain = over * state.config.overhealCharge;
         state.charge += gain;
         const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
-        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `Rebosadero: ${over} de reparación que no cabe × ${state.config.overhealCharge} = +${gain} de Fuerza cargada`, fuerza: 0, res: 0, proc: { what: 'carga', n: gain } });
+        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `${TOOL.rebosadero?.name ?? 'Rebosadero'}: ${over} de curación que no cabe × ${state.config.overhealCharge} = +${gain} de Daño cargado`, fuerza: 0, res: 0, proc: { what: 'carga', n: gain } });
       }
     }
     if (res.hurt > 0) {
@@ -1067,9 +1071,9 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     } else state.discard.push(...rest);
   } else if (action.type === 'joker') {
     const [card] = takeFromHand(p, [action.card]);
-    if (card.suit !== 'X' || card.sp) throw new RuleError('Esa carta no es un comodín.');
+    if (card.suit !== 'X' || card.sp) throw new RuleError('Esa carta no es un Comodín.');
     const tower = state.towers[action.target];
-    if (!tower || !standing(tower)) throw new RuleError('Esa torre ya está en ruinas.');
+    if (!tower || !standing(tower)) throw new RuleError('Ese trono ya cayó.');
     spend(p, [card.id]);
     tower.disarmed = true;
     state.exhausted.push(card); // el comodín no vuelve esta obra
@@ -1112,7 +1116,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
  * la cantera se baraja de nuevo: lo que viste salir ya no vale.
  */
 function rewind(prev: GameState): { state: GameState; events: GameEvent[] } {
-  if (prev.chalk <= 0 || !prev.undo) throw new RuleError('No queda tiza de replanteo.');
+  if (prev.chalk <= 0 || !prev.undo) throw new RuleError('No te quedan rebobinados.');
   const state = structuredClone(prev.undo);
   state.undo = null;
   state.chalk = prev.chalk - 1;

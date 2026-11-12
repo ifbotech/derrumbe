@@ -2,8 +2,10 @@
 // y en sala online (corre en el servidor): es un reductor puro y determinista. Con la misma
 // semilla y las mismas decisiones, la campaña es idéntica.
 //
-//   sobre → [ plano: ruta con contrato · o atajo → obra → cobro + selección (+ botín de jefe)
-//             → ferretería → (hallazgo tras cada jefe) ] × 8 → Cimientos abisales (infinito)
+//   Sobre lacrado → [ Mapa del castillo: ruta con Juramento · o Atajo → asalto → Botín + selección
+//                     (+ botín de monarca) → Mercado clandestino → (Secreto de la cripta tras cada
+//                     monarca) ] × 8 → Trono infinito
+// En el código los nombres internos siguen siendo los de antes (stage, boss, contract, shop, event…).
 import { Autopsy, autopsy } from './autopsy';
 import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
 import { BASE_POOL, SPECIAL } from './specials';
@@ -23,14 +25,14 @@ export interface Ascension {
   desc: string;
 }
 export const ASCENSIONS: Ascension[] = [
-  { name: 'Obra limpia', desc: 'Las reglas de siempre.' },
-  { name: 'Hormigón armado', desc: 'Todos los pisos aguantan un 5 % más.' },
-  { name: 'Precios de obra', desc: 'Todo en la ferretería cuesta 2 de oro más.' },
-  { name: 'Vigas maestras', desc: 'En las obras con jefe, las K llegan apuntaladas.' },
-  { name: 'Sirena afinada', desc: 'La amenaza de las K sube 1.' },
-  { name: 'Búnker viejo', desc: 'El búnker tiene 1 punto menos de integridad.' },
-  { name: 'Turno de noche', desc: 'La amenaza de las J y las Q sube 1.' },
-  { name: 'Clausura', desc: 'Solo en la obra 8, la amenaza de todas las torres sube 1.' },
+  { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
+  { name: 'Corazas finas', desc: 'Todos los guardias tienen un 5 % más de Vida.' },
+  { name: 'Impuesto real', desc: 'Todo en el Mercado clandestino cuesta 2 de oro más.' },
+  { name: 'Reyes en guardia', desc: 'En los asaltos con monarca, los Reyes llegan En guardia.' },
+  { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube 1.' },
+  { name: 'Heridas viejas', desc: 'Tienes 1 punto menos de Vida.' },
+  { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y las Reinas sube 1.' },
+  { name: 'Puertas selladas', desc: 'Solo en el asalto 8, el Ataque de los cuatro tronos sube 1.' },
 ];
 export const MAX_ASCENSION = ASCENSIONS.length - 1;
 
@@ -51,20 +53,20 @@ export interface StageDef {
  * no por pisos interminables.
  */
 export const STAGES: StageDef[] = [
-  { name: 'Caseta de obra', floors: [11], hp: 3.93, threat: 2, boss: false },
-  { name: 'Bloque de pisos', floors: [11, 12], hp: 2.8, threat: 3, boss: false },
-  { name: 'Torre del capataz', floors: [11, 12], hp: 3.35, threat: 4, boss: true },
-  { name: 'Polígono', floors: [11, 12, 13], hp: 4.05, threat: 5, boss: false },
-  { name: 'Ciudadela', floors: [11, 12, 13], hp: 4.5, threat: 5, boss: true },
-  { name: 'Rascacielos', floors: [11, 12, 13], hp: 5, threat: 6, boss: false },
-  { name: 'Fortaleza', floors: [11, 12, 13], hp: 5.3, threat: 5, boss: true },
-  { name: 'La Torre Madre', floors: [11, 12, 13], hp: 6.25, threat: 6, boss: true },
+  { name: 'El Puente levadizo', floors: [11], hp: 3.93, threat: 2, boss: false },
+  { name: 'El Patio de armas', floors: [11, 12], hp: 2.8, threat: 3, boss: false },
+  { name: 'La Armería', floors: [11, 12], hp: 3.35, threat: 4, boss: true },
+  { name: 'Las Cocinas', floors: [11, 12, 13], hp: 4.05, threat: 5, boss: false },
+  { name: 'La Capilla', floors: [11, 12, 13], hp: 4.5, threat: 5, boss: true },
+  { name: 'La Biblioteca', floors: [11, 12, 13], hp: 5, threat: 6, boss: false },
+  { name: 'La Galería de espejos', floors: [11, 12, 13], hp: 5.3, threat: 5, boss: true },
+  { name: 'El Salón del Trono', floors: [11, 12, 13], hp: 6.25, threat: 6, boss: true },
 ];
 /** La obra n. Más allá de la octava empiezan los Cimientos abisales: siempre con jefe y cada vez más duros. */
 export function stageDef(n: number): StageDef {
   if (n <= LAST_STAGE) return STAGES[n - 1];
   const depth = n - LAST_STAGE;
-  return { name: `Cimiento abisal ${depth}`, floors: [11, 12, 13], hp: Math.round(STAGES[LAST_STAGE - 1].hp * 1.45 ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
+  return { name: `Trono infinito ${depth}`, floors: [11, 12, 13], hp: Math.round(STAGES[LAST_STAGE - 1].hp * 1.45 ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
 }
 /** Tras estas obras aparece un hallazgo en los cimientos. */
 export const EVENT_AFTER = [3, 5, 7];
@@ -81,13 +83,13 @@ export interface Boss {
 const eachHand = (c: Config, n: number) => void (c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, Math.max(3, v + n)])));
 const eachThreat = (c: Config, n: number) => void [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + n)));
 export const BOSSES: Boss[] = [
-  { id: 'doble', who: 'La Sirena', name: 'Doble sirena', desc: 'La sirena voltea 2 cartas cada turno, pero cada golpe pega un 40 % menos.', apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))) },
+  { id: 'doble', who: 'El Rey de Dos Caras', name: 'Doble Contraataque', desc: 'Hay 2 Contraataques cada turno, pero cada uno ataca un 40 % menos.', apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))) },
   { id: 'escasez', who: 'El Usurero', name: 'Escasez', desc: 'Jugáis con 1 carta menos en la mano.', apply: (c) => eachHand(c, -1) },
-  { id: 'sequia', who: 'El Matasanos', name: 'Sin botiquín', desc: 'Los ♥ no reparan el búnker.', apply: (c) => void (c.repairDiv = 9999) },
-  { id: 'intemperie', who: 'La Ventisca', name: 'Intemperie', desc: 'El muro no puede pasar de 4.', apply: (c) => void (c.wallCap = Math.min(c.wallCap, 4)) },
-  { id: 'blindaje', who: 'El Coloso', name: 'Blindaje', desc: 'Todos los pisos llegan apuntalados y, mientras lo estén, su amenaza sube 1.', apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = 1)) },
-  { id: 'furia', who: 'La Furia', name: 'Furia', desc: 'La amenaza de todas las torres sube 2.', apply: (c) => eachThreat(c, 2) },
-  { id: 'inestable', who: 'El Topo', name: 'Suelo inestable', desc: 'La fatiga de cimientos empieza 3 turnos antes, y cada piso que cae sin golpe limpio le cuesta 1 al búnker.', apply: (c) => void ((c.crumbleHurt = 1), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? 8) - 3))) },
+  { id: 'sequia', who: 'La Dama del Cáliz', name: 'Cáliz envenenado', desc: 'Tus ♥ no curan.', apply: (c) => void (c.repairDiv = 9999) },
+  { id: 'intemperie', who: 'La Reina Helada', name: 'Escarcha', desc: 'El Escudo no puede pasar de 4.', apply: (c) => void (c.wallCap = Math.min(c.wallCap, 4)) },
+  { id: 'blindaje', who: 'El Inquisidor', name: 'Guardia de hierro', desc: 'Todos los guardias llegan En guardia y, mientras lo estén, su Ataque sube 1.', apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = 1)) },
+  { id: 'furia', who: 'El Verdugo', name: 'Furia', desc: 'El Ataque de los cuatro tronos sube 2.', apply: (c) => eachThreat(c, 2) },
+  { id: 'inestable', who: 'El Relojero', name: 'Arena rápida', desc: 'El Asedio final empieza 3 turnos antes, y cada guardia abatido sin Golpe exacto te quita 1 de Vida.', apply: (c) => void ((c.crumbleHurt = 1), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? 8) - 3))) },
 ];
 export const BOSS: Record<string, Boss> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
 
@@ -115,15 +117,15 @@ export interface Contract {
 }
 const turnLimit = (run: Run) => 3 + 4 * stageDef(run.stage).floors.length;
 export const CONTRACTS: Contract[] = [
-  { id: 'intacto', name: 'Sin un rasguño', desc: 'Termina la obra sin que el búnker pierda integridad.', reward: '+8 de oro', done: (b) => b.taken === 0, pay: (run) => void (run.gold += 8) },
-  { id: 'limpios', name: 'Pulso firme', desc: 'Da 3 golpes limpios.', reward: 'Un sello al azar', done: (b) => b.cleans >= 3, pay: (run) => void stampRandom(run, 1) },
-  { id: 'rapido', name: 'A destajo', desc: 'Demuele la obra en pocos turnos (4 por piso, más 3).', reward: '+6 de oro', done: (_, s, run) => s.turnCount < turnLimit(run), pay: (run) => void (run.gold += 6) },
-  { id: 'sincolapso', name: 'Cantera medida', desc: 'Termina sin provocar ningún colapso.', reward: '+5 de oro', done: (_, s) => s.collapses === 0, pay: (run) => void (run.gold += 5) },
-  { id: 'austero', name: 'Sin huelgas', desc: 'No juegues ningún comodín.', reward: 'Un tratamiento al azar', done: (b) => b.jokers === 0, pay: (run) => void treatRandom(run) },
-  { id: 'maestra', name: 'Jugada maestra', desc: 'Juega un color, un full, un póker o una escalera de color.', reward: 'Un plano al azar', done: (b) => b.forms.some((f) => ['color', 'full', 'poker', 'escaleracolor'].includes(f)), pay: (run) => void run.levels[pick(run, FORMATIONS, 1)[0]]++ },
-  { id: 'horas', name: 'Horas extra', desc: 'La amenaza de todas las torres sube 1.', reward: '+10 de oro', risk: true, cfg: (c) => eachThreat(c, 1), pay: (run) => void (run.gold += 10) },
-  { id: 'sinred', name: 'Sin red', desc: 'El muro no puede pasar de 2.', reward: 'Una herramienta de oficio o mejor', risk: true, cfg: (c) => void (c.wallCap = Math.min(c.wallCap, 2)), pay: (run) => void grantTool(run, ['oficio', 'capataz', 'reliquia']) },
-  { id: 'corta', name: 'Cuadrilla corta', desc: 'Jugáis con 1 carta menos en la mano.', reward: '+12 de oro', risk: true, cfg: (c) => eachHand(c, -1), pay: (run) => void (run.gold += 12) },
+  { id: 'intacto', name: 'Piel intacta', desc: 'Termina el asalto sin perder Vida.', reward: '+8 de oro', done: (b) => b.taken === 0, pay: (run) => void (run.gold += 8) },
+  { id: 'limpios', name: 'Pulso firme', desc: 'Da 3 Golpes exactos.', reward: 'Un sello de lacre al azar', done: (b) => b.cleans >= 3, pay: (run) => void stampRandom(run, 1) },
+  { id: 'rapido', name: 'Al galope', desc: 'Gana el asalto en 3 turnos + 4 por guardia de cada trono, o menos (3 guardias: 15).', reward: '+6 de oro', done: (_, s, run) => s.turnCount < turnLimit(run), pay: (run) => void (run.gold += 6) },
+  { id: 'sincolapso', name: 'Mazo medido', desc: 'Termina sin que se agote el Mazo.', reward: '+5 de oro', done: (_, s) => s.collapses === 0, pay: (run) => void (run.gold += 5) },
+  { id: 'austero', name: 'Sin motines', desc: 'No juegues ningún Comodín.', reward: 'Un acabado al azar', done: (b) => b.jokers === 0, pay: (run) => void treatRandom(run) },
+  { id: 'maestra', name: 'Jugada maestra', desc: 'Juega un color, un full, un póker o una escalera de color.', reward: 'Un Pergamino al azar', done: (b) => b.forms.some((f) => ['color', 'full', 'poker', 'escaleracolor'].includes(f)), pay: (run) => void run.levels[pick(run, FORMATIONS, 1)[0]]++ },
+  { id: 'horas', name: 'Noche larga', desc: 'El Ataque de los cuatro tronos sube 1.', reward: '+10 de oro', risk: true, cfg: (c) => eachThreat(c, 1), pay: (run) => void (run.gold += 10) },
+  { id: 'sinred', name: 'Sin escudo', desc: 'El Escudo no puede pasar de 2.', reward: 'Una reliquia Rara o mejor', risk: true, cfg: (c) => void (c.wallCap = Math.min(c.wallCap, 2)), pay: (run) => void grantTool(run, ['oficio', 'capataz', 'reliquia']) },
+  { id: 'corta', name: 'Conjura corta', desc: 'Jugáis con 1 carta menos en la mano.', reward: '+12 de oro', risk: true, cfg: (c) => eachHand(c, -1), pay: (run) => void (run.gold += 12) },
 ];
 export const CONTRACT: Record<string, Contract> = Object.fromEntries(CONTRACTS.map((c) => [c.id, c]));
 
@@ -136,11 +138,11 @@ export interface Tag {
   apply(run: Run): void;
 }
 export const TAGS: Tag[] = [
-  { id: 'vale', name: 'Vale de ferretería', desc: 'En la próxima ferretería, herramientas, sobres y forja son gratis.', apply: (run) => void (run.freeShop = true) },
-  { id: 'envio', name: 'Envío urgente', desc: 'Recibes ya una herramienta de capataz o una reliquia.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
-  { id: 'molde', name: 'Molde', desc: 'Duplicas una carta de tu mazo, la que elijas.', apply: (run) => void (run.pending = { kind: 'dup' }) },
-  { id: 'liquidacion', name: 'Liquidación', desc: '+15 de oro.', apply: (run) => void (run.gold += 15) },
-  { id: 'timbrado', name: 'Timbrado', desc: 'Dos cartas al azar de tu mazo reciben un sello.', apply: (run) => void stampRandom(run, 2) },
+  { id: 'vale', name: 'Llave del mercado', desc: 'En el próximo Mercado clandestino, reliquias, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
+  { id: 'envio', name: 'Contrabando', desc: 'Recibes ya una reliquia Noble o Regia.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
+  { id: 'molde', name: 'Molde de cera', desc: 'Duplicas la carta de tu Mazo que elijas.', apply: (run) => void (run.pending = { kind: 'dup' }) },
+  { id: 'liquidacion', name: 'Botín escondido', desc: '+15 de oro.', apply: (run) => void (run.gold += 15) },
+  { id: 'timbrado', name: 'Lacre doble', desc: 'Dos cartas al azar de tu Mazo reciben un sello de lacre.', apply: (run) => void stampRandom(run, 2) },
 ];
 export const TAG: Record<string, Tag> = Object.fromEntries(TAGS.map((t) => [t.id, t]));
 
@@ -161,47 +163,47 @@ export interface EventDef {
 export const EVENTS: EventDef[] = [
   {
     id: 'caja',
-    name: 'La caja fuerte sepultada',
-    text: 'Bajo un forjado partido asoma una caja fuerte del antiguo contratista. Forzarla hará temblar medio búnker.',
+    name: 'El cofre enterrado',
+    text: 'Entre dos tumbas asoma un cofre con candado. Forzarlo hará temblar media cripta.',
     options: [
-      { label: 'Forzarla', desc: 'El búnker pierde 5 de integridad. Te llevas una herramienta de capataz o una reliquia.', can: (run) => run.integrity > 5 && run.tools.length < TOOL_SLOTS, apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
-      { label: 'Vendérsela al chatarrero', desc: '+8 de oro.', apply: (run) => void (run.gold += 8) },
+      { label: 'Forzarlo', desc: 'Pierdes 5 de Vida. Te llevas una reliquia Noble o Regia.', can: (run) => run.integrity > 5 && run.tools.length < TOOL_SLOTS, apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
+      { label: 'Vendérselo al Tratante', desc: '+8 de oro.', apply: (run) => void (run.gold += 8) },
     ],
   },
   {
     id: 'horno',
-    name: 'El horno de fundición',
-    text: 'Un horno que nadie apagó sigue al rojo en el segundo sótano. Lo que entre, sale convertido en otra cosa.',
+    name: 'El caldero del alquimista',
+    text: 'Un caldero hierve solo en un rincón. Lo que entra, sale convertido en otra cosa.',
     options: [
-      { label: 'Fundir dos cartas', desc: 'Eliges dos cartas: se destruyen y nace una con el número más alto de las dos, en Bronce vivo y con el sello que llevaran.', can: (run) => run.deck.filter(isPlain).length > MIN_DECK, apply: (run) => void (run.pending = { kind: 'fuse' }) },
-      { label: 'Calentarse y seguir', desc: '+4 de integridad.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 4)) },
+      { label: 'Fundir dos cartas', desc: 'Eliges dos: arden y nace una con el número más alto, en Lacre policromo y con el sello que llevaran.', can: (run) => run.deck.filter(isPlain).length > MIN_DECK, apply: (run) => void (run.pending = { kind: 'fuse' }) },
+      { label: 'Calentarse y seguir', desc: '+4 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 4)) },
     ],
   },
   {
     id: 'contrato',
-    name: 'El contrato maldito',
-    text: 'Clavado en un puntal hay un contrato con la tinta aún fresca y una cifra obscena. La letra pequeña habla de la próxima obra.',
+    name: 'El decreto maldito',
+    text: 'Un decreto clavado en la puerta promete una cifra enorme. La letra pequeña habla del próximo asalto.',
     options: [
-      { label: 'Firmar', desc: '+20 de oro ahora. En la próxima obra, la amenaza de todas las torres sube 1.', apply: (run) => void ((run.gold += 20), (run.curse = true)) },
-      { label: 'Romperlo', desc: 'El papel vale para la estufa: +3 de oro.', apply: (run) => void (run.gold += 3) },
+      { label: 'Firmar', desc: '+20 de oro ahora. En el próximo asalto, el Ataque de los cuatro tronos sube 1.', apply: (run) => void ((run.gold += 20), (run.curse = true)) },
+      { label: 'Romperlo', desc: 'El papel arde bien: +3 de oro.', apply: (run) => void (run.gold += 3) },
     ],
   },
   {
     id: 'clandestino',
-    name: 'El gremio clandestino',
-    text: 'Tres timbradores trabajan a la luz de un candil. Sellan lo que les pongas delante, y no aceptan regateos.',
+    name: 'Los lacradores ciegos',
+    text: 'Tres monjes sellan a la luz de una vela lo que les pongas delante, y no aceptan regateos.',
     options: [
-      { label: 'Pagar con sangre', desc: 'El búnker pierde 6 de integridad. Tres cartas al azar reciben un sello.', can: (run) => run.integrity > 6, apply: (run) => void ((run.integrity -= 6), stampRandom(run, 3)) },
-      { label: 'Pagar con oro', desc: '8 de oro. Tu carta más alta recibe Bronce vivo.', can: (run) => run.gold >= 8, apply: (run) => void ((run.gold -= 8), treatBest(run, 'policromado')) },
+      { label: 'Pagar con Vida', desc: 'Pierdes 6 de Vida. Tres cartas al azar reciben un sello de lacre.', can: (run) => run.integrity > 6, apply: (run) => void ((run.integrity -= 6), stampRandom(run, 3)) },
+      { label: 'Pagar con oro', desc: '8 de oro. Tu carta más alta recibe Lacre policromo.', can: (run) => run.gold >= 8, apply: (run) => void ((run.gold -= 8), treatBest(run, 'policromado')) },
       { label: 'Seguir de largo', desc: 'Nada cambia.', apply: () => {} },
     ],
   },
   {
     id: 'planos',
-    name: 'Los planos del arquitecto',
-    text: 'Empotrados en el muro maestro están los planos originales. Arrancarlos debilita lo poco que os sostiene.',
+    name: 'Los mapas escondidos',
+    text: 'Tras una losa están los mapas del castillo. Arrancarlos hace crujir lo poco que os protege.',
     options: [
-      { label: 'Arrancarlos', desc: 'El búnker pierde 3 de integridad máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 8, apply: (run) => void ((run.maxIntegrity -= 3), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
+      { label: 'Arrancarlos', desc: 'Pierdes 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 8, apply: (run) => void ((run.maxIntegrity -= 3), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
       { label: 'Copiarlos a mano', desc: '5 de oro. Una formación al azar sube 1 nivel.', can: (run) => run.gold >= 5, apply: (run) => void ((run.gold -= 5), run.levels[pick(run, FORMATIONS, 1)[0]]++) },
       { label: 'Dejarlos donde están', desc: 'Nada cambia.', apply: () => {} },
     ],
@@ -227,18 +229,18 @@ const boxUp = (arch: Arch, name: string, glyph: string): Upgrade => ({
   desc: `Añade al surtido: ${Object.values(TOOL).filter((t) => t.box === arch).map((t) => t.name).join(', ')}.`,
 });
 export const UPGRADES: Upgrade[] = [
-  boxUp('precision', 'Caja de precisión', 'calibre'),
-  boxUp('sismo', 'Caja sísmica', 'diapason'),
-  boxUp('alquimia', 'Caja de alquimia', 'crisol'),
-  boxUp('limite', 'Caja de riesgo', 'megafono'),
-  boxUp('trituradora', 'Caja de chatarra', 'prensa'),
-  boxUp('aguante', 'Caja de aguante', 'ariete'),
-  { id: 'tampones', name: 'Tampones nuevos', desc: 'La forja también ofrece los sellos de dinamita y sindical.', costs: [5], glyph: 'sello' },
-  { id: 'bronce', name: 'Taller de bronce', desc: 'La forja también ofrece Bronce vivo y Agrietado.', costs: [6], glyph: 'forja' },
-  { id: 'vale', name: 'Vale de remesa', desc: 'Un «Revolver cajones» gratis en cada ferretería, por nivel.', costs: [4, 8], glyph: 'cinta' },
-  { id: 'tienda', name: 'Proveedor', desc: '+1 herramienta en oferta en cada ferretería, por nivel.', costs: [8, 12], glyph: 'andamio' },
-  { id: 'caja', name: 'Caja chica', desc: '+2 de oro inicial por nivel.', costs: [3, 6], glyph: 'hucha' },
-  { id: 'rutas', name: 'Topógrafo', desc: 'Cada obra sin jefe ofrece 3 rutas con contrato en vez de 2.', costs: [6], glyph: 'plano' },
+  boxUp('precision', 'Arcón de precisión', 'calibre'),
+  boxUp('sismo', 'Arcón del eco', 'diapason'),
+  boxUp('alquimia', 'Arcón de alquimia', 'crisol'),
+  boxUp('limite', 'Arcón del filo', 'megafono'),
+  boxUp('trituradora', 'Arcón de cenizas', 'prensa'),
+  boxUp('aguante', 'Arcón del escudo', 'ariete'),
+  { id: 'tampones', name: 'Lacres nuevos', desc: 'La Mesa de lacre también ofrece los sellos de pólvora y de la manga.', costs: [5], glyph: 'sello' },
+  { id: 'bronce', name: 'Cristalero real', desc: 'La Mesa de lacre también ofrece Lacre policromo y Cristal maldito.', costs: [6], glyph: 'forja' },
+  { id: 'vale', name: 'Favor del Tratante', desc: 'Un «Renovar mesa» gratis en cada Mercado clandestino, por nivel.', costs: [4, 8], glyph: 'cinta' },
+  { id: 'tienda', name: 'Puesto grande', desc: '+1 reliquia en oferta en cada Mercado clandestino, por nivel.', costs: [8, 12], glyph: 'andamio' },
+  { id: 'caja', name: 'Bolsa de la Orden', desc: '+2 de oro inicial por nivel.', costs: [3, 6], glyph: 'hucha' },
+  { id: 'rutas', name: 'Cartógrafo', desc: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.', costs: [6], glyph: 'plano' },
 ];
 /** Mejoras de versiones anteriores que ya no existen: se devuelve el renombre gastado en ellas. */
 const RETIRED: Record<string, number[]> = { seguro: [4, 8, 14], interes: [3, 6, 10], manos: [18], caja: [2, 4, 7, 11, 16], cimientos: [3, 5, 8, 12, 17], tienda: [8, 15] };
@@ -536,11 +538,11 @@ export interface DeckDef {
 }
 const copyOf = (c: Card): Card => ({ ...c, id: `${c.id}b` });
 export const DECKS: DeckDef[] = [
-  { id: 'obra', name: 'Baraja de obra', desc: 'La de siempre: 40 cartas, 2 comodines y un sobre de 3 especiales.', unlock: null, build: () => {} },
+  { id: 'obra', name: 'Baraja de la conjura', desc: 'La de siempre: 40 cartas, 2 Comodines y un Sobre lacrado de 3 especiales.', unlock: null, build: () => {} },
   {
     id: 'acero',
     name: 'Baraja negra',
-    desc: 'Solo ♠ y ♣, por duplicado: ni reparas ni lanzas esquirlas. Empiezas con Ácido y Sacos terreros y un búnker reforzado (+5); con la Caja de aguante del gremio, también con el Bastión.',
+    desc: 'Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +5 de Vida (+Baluarte con su arcón).',
     unlock: 'capataz',
     build: (run) => {
       const black = run.deck.filter((c) => c.suit === 'S' || c.suit === 'C');
@@ -555,7 +557,7 @@ export const DECKS: DeckDef[] = [
   {
     id: 'prestamista',
     name: 'Baraja del prestamista',
-    desc: '+12 de oro inicial y el interés rinde el doble, pero el búnker tiene 1 menos.',
+    desc: '+12 de oro inicial y el interés rinde el doble, pero tienes 1 de Vida menos.',
     unlock: 'media',
     build: (run) => {
       run.gold += 12;
@@ -567,7 +569,7 @@ export const DECKS: DeckDef[] = [
   {
     id: 'ases',
     name: 'Baraja de ases',
-    desc: 'Ocho ases y ningún 2: más compañías y más pegada, pero el búnker tiene 4 menos.',
+    desc: 'Ocho ases y ningún 2: más Ases cómplices y más pegada, pero tienes 4 de Vida menos.',
     unlock: 'madre',
     build: (run) => {
       const aces = run.deck.filter((c) => c.rank === 1);
@@ -579,7 +581,7 @@ export const DECKS: DeckDef[] = [
   {
     id: 'corta',
     name: 'Baraja corta',
-    desc: 'Sin doses ni treses. Golpes gordos, pero la cantera se agota enseguida y el búnker tiene 6 menos. Empiezas con +3 de oro.',
+    desc: 'Sin doses ni treses: golpes gordos, el Mazo se agota antes y tienes 6 de Vida menos. +3 de oro inicial.',
     unlock: 'golpe100',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.rank < 2 || c.rank > 3);
@@ -591,7 +593,7 @@ export const DECKS: DeckDef[] = [
   {
     id: 'caos',
     name: 'Baraja del caos',
-    desc: 'Un solo comodín, pero el sobre inicial trae 5 cartas especiales.',
+    desc: 'Un solo Comodín, pero el Sobre lacrado inicial trae 5 cartas especiales.',
     unlock: 'coleccion',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.id !== 'X2');
@@ -864,12 +866,12 @@ export function finishBattle(run: Run, state: GameState): void {
   }
   const st = stageDef(run.stage);
   const lines: [string, number][] = [
-    ['Obra demolida', 4 + Math.min(run.stage, LAST_STAGE)],
-    ['Golpes limpios', Math.min(5, run.battle.cleans)],
-    ['Búnker en pie', Math.floor(state.integrity / 5)],
+    ['Asalto ganado', 4 + Math.min(run.stage, LAST_STAGE)],
+    ['Golpes exactos', Math.min(5, run.battle.cleans)],
+    ['Vida que te queda (1 por cada 5)', Math.floor(state.integrity / 5)],
     ['Interés (1 por cada 5 de oro)', Math.min(run.interestCap, Math.floor(run.gold / 5))],
   ];
-  if (run.tools.some((t) => t.id === 'hucha')) lines.push(['Hucha', 4]);
+  if (run.tools.some((t) => t.id === 'hucha')) lines.push([TOOL.hucha?.name ?? 'Hucha', 4]);
   run.pay = lines.filter(([, n]) => n > 0);
   const total = run.pay.reduce((a, [, n]) => a + n, 0);
   run.gold += total;
@@ -915,7 +917,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       toMap(run);
       return null;
     case 'route': {
-      if (run.phase !== 'map') return 'No estás en el plano.';
+      if (run.phase !== 'map') return 'No estás en el Mapa del castillo.';
       const boss = stageDef(run.stage).boss;
       if (!boss && !run.node.routes[a.i]) return 'Esa ruta no existe.';
       run.contract = boss ? null : run.node.routes[a.i];
@@ -927,7 +929,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'skip': {
-      if (run.phase !== 'map' || !run.node.tag) return 'Esta obra no se puede saltar.';
+      if (run.phase !== 'map' || !run.node.tag) return 'Este asalto no tiene Atajo.';
       const tag = TAG[run.node.tag];
       run.stats.skips++;
       run.skipped.push(run.stage);
@@ -952,8 +954,8 @@ export function runAction(run: Run, a: RunAction): string | null {
     case 'loot':
       if (run.phase !== 'reward' || run.looted) return 'No hay botín que elegir.';
       if (a.id !== null) {
-        if (!run.loot.includes(a.id)) return 'Esa herramienta no está en el botín.';
-        if (run.tools.length >= TOOL_SLOTS) return `En el cinturón solo caben ${TOOL_SLOTS} herramientas.`;
+        if (!run.loot.includes(a.id)) return 'Esa reliquia no está en el botín.';
+        if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias.`;
         run.tools.push({ id: a.id, n: 0 });
       }
       run.looted = true;
@@ -966,12 +968,12 @@ export function runAction(run: Run, a: RunAction): string | null {
       const cost = offerCost(run, o);
       if (run.gold < cost) return 'No te alcanza el oro.';
       if (o.kind === 'forja') {
-        if (!run.deck.some(isPlain)) return 'No tienes cartas que forjar.';
+        if (!run.deck.some(isPlain)) return 'No tienes cartas que sellar.';
         run.pending = { kind: 'forge', i: a.i }; // se cobra al elegir la carta
         return null;
       }
       if (o.kind === 'tool') {
-        if (run.tools.length >= TOOL_SLOTS) return `En el cinturón solo caben ${TOOL_SLOTS} herramientas. Vende una antes.`;
+        if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias. Vende una antes.`;
         run.tools.push({ id: o.id!, n: 0 });
       } else if (o.kind === 'sobre') run.sobre = rollSpecials(run, 3);
       else if (o.kind === 'clandestino') addSpecial(run, rollSpecials(run, 1)[0]);
@@ -996,7 +998,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       if (run.phase === 'event') advance(run);
       return null;
     case 'burn': {
-      if (run.phase !== 'shop') return 'Solo se queman cartas en la ferretería.';
+      if (run.phase !== 'shop') return 'Solo se queman cartas en la hoguera del Mercado clandestino.';
       if (run.gold < removeCost(run)) return 'No te alcanza el oro.';
       if (run.deck.length <= MIN_DECK) return `El mazo no puede bajar de ${MIN_DECK} cartas.`;
       const i = run.deck.findIndex((c) => c.id === a.card);
@@ -1009,23 +1011,23 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'heal':
-      if (run.phase !== 'shop') return 'Solo en la ferretería.';
-      if (run.integrity >= run.maxIntegrity) return 'El búnker ya está entero.';
+      if (run.phase !== 'shop') return 'Solo en el Mercado clandestino.';
+      if (run.integrity >= run.maxIntegrity) return 'Tu Vida ya está al máximo.';
       if (run.gold < healCost(run)) return 'No te alcanza el oro.';
       run.gold -= healCost(run);
       run.heals++;
       run.integrity = Math.min(run.maxIntegrity, run.integrity + 6);
       return null;
     case 'sell': {
-      if (run.phase === 'battle') return 'En plena obra no se vende.';
+      if (run.phase === 'battle') return 'En pleno asalto no se vende.';
       const t = run.tools[a.i];
-      if (!t) return 'Esa herramienta no está en el cinturón.';
+      if (!t) return 'No llevas esa reliquia.';
       run.gold += sellValue(t.id);
       run.tools.splice(a.i, 1);
       return null;
     }
     case 'reroll':
-      if (run.phase !== 'shop') return 'Solo en la ferretería.';
+      if (run.phase !== 'shop') return 'Solo en el Mercado clandestino.';
       if (run.sobre) return 'Antes elige una carta del sobre abierto.';
       if (run.gold < rerollCost(run)) return 'No te alcanza el oro.';
       run.gold -= rerollCost(run);
@@ -1046,7 +1048,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       advance(run);
       return null;
     case 'event': {
-      if (run.phase !== 'event' || !run.event) return 'No hay ningún hallazgo.';
+      if (run.phase !== 'event' || !run.event) return 'No hay ningún Secreto de la cripta.';
       const opt = EVENT[run.event].options[a.i];
       if (!opt) return 'Esa opción no existe.';
       if (opt.can && !opt.can(run)) return 'No puedes elegir eso ahora.';
@@ -1055,7 +1057,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'endless':
-      if (run.phase !== 'won' || run.endless) return 'Los cimientos abisales se abren al ganar la campaña.';
+      if (run.phase !== 'won' || run.endless) return 'El Trono infinito se abre al ganar la campaña.';
       run.endless = true;
       run.draft = draftOptions(run);
       run.drafted = false;

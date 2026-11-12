@@ -1,25 +1,28 @@
-// Forja de grabado: renderiza cada pieza del arte suelta (palos, tramas de palo, cartas, herramientas
-// y jefes) a 24 y a 300 px sobre papel crema, mide su tinta y comprueba que los cuatro palos se
+// Forja de grabado: renderiza cada pieza del arte suelta (palos, tramas de palo, cartas, reliquias
+// —grupo «herramientas»—, especiales y monarcas —grupo «jefes»—) a 24 y a 300 px sobre papel crema, mide su tinta y comprueba que los cuatro palos se
 // distinguen sin color. Abre el juego construido con ?qa=1 y usa el banco de src/client/forja-qa.ts.
 //
 //   npm run forja                        todas las piezas
-//   npm run forja -- palos tramas        solo esos grupos (palos, tramas, cartas, herramientas, jefes)
+//   npm run forja -- palos tramas        solo esos grupos (palos, tramas, cartas, herramientas, especiales, servicios, jefes)
 //   NO_BUILD=1 npm run forja             sin reconstruir · QA_DIR=dist/qa-forja para construcción propia
 //
 // Deja en artifacts/svg-forge/: <grupo>/<id>@24.png y @300.png, informe.json, hoja.png (hoja de
 // contacto) y hoja-gris.png (la misma en escala de grises: la prueba de daltonismo a ojo).
 //
 // Falla (código 1) si: dos tramas de palo no se distinguen, un glifo de palo no llega a 7:1 sobre el
-// papel, o una pieza queda en blanco o hecha una mancha. Lo demás son avisos para mirar la hoja.
+// papel, o una pieza queda en blanco o hecha una mancha. Las reliquias (grupo «herramientas») son más
+// estrictas: fallan con la tinta a 300 px fuera de 22–58 % o con la silueta a 24 px por debajo del 55 %.
+// Lo demás son avisos para mirar la hoja.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
-const OUT = resolve('artifacts/svg-forge');
+/** FORJA_OUT=artifacts/svg-forge-loquesea: dos celdas forjando a la vez no se pisan las hojas. */
+const OUT = resolve(process.env.FORJA_OUT?.trim() || 'artifacts/svg-forge');
 const SIZES = [24, 300] as const;
-const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'jefes'];
+const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'servicios', 'jefes'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const groups = wanted.length ? GROUPS.filter((g) => wanted.includes(g)) : GROUPS;
 
@@ -32,6 +35,10 @@ const LIMITS = {
    */
   inkFail: [0.03, 0.93],
   inkWarn: [0.12, 0.62],
+  /** Reliquias (grupo «herramientas»): fuera de este margen de tinta a 300 px, falla. Ni hilo suelto ni borrón. */
+  relicInk: [0.22, 0.58],
+  /** Reliquias: a 24 px el mayor cuerpo de tinta tiene que ocupar al menos esto, o falla. */
+  relicBody: 0.55,
   /** Cuánto puede cambiar la densidad al bajar a 24 px antes de avisar de empaste. */
   driftWarn: 0.18,
   /** A 24 px, el mayor cuerpo conexo de tinta ocupa al menos esta parte del alto o del ancho de la pieza. */
@@ -279,11 +286,14 @@ async function main(): Promise<void> {
       row.shape = shape(big.m.mask, big.img.w, big.img.h).map((n) => round(n));
       masks.set(p.id, { mask: big.m.mask, w: big.img.w, h: big.img.h });
     } else {
-      const icon = p.grupo === 'palos' || p.grupo === 'herramientas';
+      const icon = p.grupo === 'palos' || p.grupo === 'herramientas' || p.grupo === 'especiales' || p.grupo === 'servicios';
+      const relic = p.grupo === 'herramientas';
       if (row.ink300 < (icon ? LIMITS.inkFail[0] : 0.01)) row.fails.push(`casi sin tinta a 300 px (${(row.ink300 * 100).toFixed(1)} %)`);
       else if (icon && row.ink300 > LIMITS.inkFail[1]) row.fails.push(`mancha a 300 px (${(row.ink300 * 100).toFixed(1)} % de tinta)`);
+      else if (relic && (row.ink300 < LIMITS.relicInk[0] || row.ink300 > LIMITS.relicInk[1])) row.fails.push(`densidad de tinta ${(row.ink300 * 100).toFixed(1)} % (una reliquia va entre ${Math.round(LIMITS.relicInk[0] * 100)} y ${Math.round(LIMITS.relicInk[1] * 100)} %)`);
       else if (icon && (row.ink300 < LIMITS.inkWarn[0] || row.ink300 > LIMITS.inkWarn[1])) row.warns.push(`densidad de tinta ${(row.ink300 * 100).toFixed(1)} % (cómodo entre ${LIMITS.inkWarn[0] * 100} y ${LIMITS.inkWarn[1] * 100} %)`);
       if (row.ink24 === 0) row.fails.push('a 24 px no queda tinta');
+      else if (relic && row.body24 < LIMITS.relicBody) row.fails.push(`a 24 px la silueta se deshace (mayor cuerpo: ${(row.body24 * 100).toFixed(0)} % de la pieza; mínimo ${Math.round(LIMITS.relicBody * 100)} %)`);
       else if (row.body24 < LIMITS.bodyWarn) row.warns.push(`a 24 px la silueta se deshace (mayor cuerpo: ${(row.body24 * 100).toFixed(0)} % de la pieza)`);
       if (row.drift > LIMITS.driftWarn) row.warns.push(`la tinta cambia ${(row.drift * 100).toFixed(0)} puntos entre 300 y 24 px (trazos demasiado finos)`);
     }

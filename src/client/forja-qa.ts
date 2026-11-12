@@ -4,11 +4,12 @@
 import { BOSSES } from '../rules/run';
 import { SUITS, type Card, type Suit } from '../rules/engine';
 import { TOOLS } from '../rules/tools';
+import { SPECIAL } from '../rules/specials';
 import { ALL_CARDS, cardEl, ensureDefs, portraitEl, suitSvg } from './card';
 import { glyphSvg } from './glyphs';
 
 export interface Pieza {
-  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'jefes';
+  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'servicios' | 'jefes';
   id: string;
 }
 
@@ -17,6 +18,11 @@ const PAPEL = '#eae0ce';
 /** Cartas de muestra: un as, un número bajo, uno alto y las tres figuras de cada palo, y el comodín. */
 const RANGOS = [1, 7, 10, 11, 12, 13];
 const carta = (id: string): Card | undefined => ALL_CARDS.find((c) => c.id === id);
+
+/** Iconos de servicio, de la Orden, del mapa, de los logros y de los juramentos (no son reliquias: solo avisos). */
+const SERVICIOS = ['sello', 'cajones', 'atajo', 'oro', 'jefe', 'abismo', 'diaria', 'cuadrilla', 'engranaje', 'pergamino', 'forja', 'plano', 'reparacion', 'retirar', 'incognita', 'sobre', 'comodin',
+  // V6: logros, juramentos, atajos y portada
+  'corona_rota', 'coronas', 'naipes_par', 'naipes_color', 'naipes_full', 'naipes_poker', 'naipes_real', 'abanico', 'abanico_corto', 'rayo', 'cometa', 'relicario', 'carambano', 'herradura', 'luna', 'escudo_roto', 'fardo', 'senal', 'toldo'];
 
 /** Un retal de la trama de un palo: lo que distingue el material sin mirar el color. */
 const retal = (s: Suit) => `<svg viewBox="0 0 96 96" width="96" height="96" aria-hidden="true"><rect width="96" height="96" fill="url(#pat-${s})"/></svg>`;
@@ -28,6 +34,9 @@ function lista(): Pieza[] {
     ...SUITS.flatMap((s) => RANGOS.map((r): Pieza => ({ grupo: 'cartas', id: `${s}${r}` }))),
     { grupo: 'cartas', id: 'X1' },
     ...TOOLS.map((t): Pieza => ({ grupo: 'herramientas', id: t.id })),
+    // especiales del sorteo con emblema propio (las legendarias llevan retrato)
+    ...Object.keys(SPECIAL).filter((id) => !id.startsWith('j-') && id !== 'ferretero').map((id): Pieza => ({ grupo: 'especiales', id })),
+    ...SERVICIOS.map((id): Pieza => ({ grupo: 'servicios', id })),
     ...BOSSES.map((b): Pieza => ({ grupo: 'jefes', id: b.id })),
   ];
 }
@@ -42,7 +51,7 @@ function nodo(p: Pieza): HTMLElement {
     svg.style.width = '220px';
     svg.style.height = '230px';
   } else if (p.grupo === 'tramas') box.innerHTML = retal(p.id as Suit);
-  else if (p.grupo === 'herramientas') {
+  else if (p.grupo === 'herramientas' || p.grupo === 'especiales' || p.grupo === 'servicios') {
     box.innerHTML = glyphSvg(p.id);
     const svg = box.firstElementChild as SVGElement;
     svg.style.width = '200px';

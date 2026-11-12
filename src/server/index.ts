@@ -1,4 +1,4 @@
-// DERRUMBE — servidor autoritativo: salas, turnos, reconexión y estáticos.
+// Servidor autoritativo del juego (el título vive en shared/brand.ts): salas, turnos, reconexión y estáticos.
 import { createServer } from 'node:http';
 import { existsSync, readFile, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -8,6 +8,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { DIFFICULTY, Difficulty, GameEvent, GameState, RuleError, applyAction, createGame, currentPlayer, eventsFor, reorder, viewFor } from '../rules/engine';
 import { chooseAction } from '../rules/bot';
 import { Run, finishBattle, newRun, publicRun, runAction, startStage, trackEvents } from '../rules/run';
+import { TITLE } from '../shared/brand';
 import type { ClientMsg, LobbyInfo, Mode, ServerMsg } from '../shared/protocol';
 
 const portArg = process.argv.find((a) => a.startsWith('--port='))?.split('=')[1];
@@ -85,7 +86,7 @@ function broadcastRun(room: Room): void {
   for (const s of room.seats) send(s.ws, { t: 'run', run });
 }
 
-/** Tras cada jugada: en campaña, anota los eventos y cierra la obra si terminó. */
+/** Tras cada jugada: en campaña, anota los eventos y cierra el asalto si terminó. */
 function afterAction(room: Room, events: GameEvent[]): void {
   broadcastState(room, events);
   if (room.run && room.state) {
@@ -98,7 +99,7 @@ function afterAction(room: Room, events: GameEvent[]): void {
   scheduleBot(room);
 }
 
-/** Arranca la obra actual de la campaña. */
+/** Arranca el asalto actual de la campaña. */
 function beginStage(room: Room): void {
   if (!room.run) return;
   room.state = startStage(room.run, room.seats.map((s) => ({ id: s.id, name: s.name })));
@@ -193,7 +194,7 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
       detach(ws, true);
       return send(ws, { t: 'left' });
     case 'ping': {
-      // marcas de tiza: no cambian nada del juego, solo se reparten a la cuadrilla
+      // señas: no cambian nada del juego, solo se reparten a la conjura
       const target = typeof msg.target === 'string' && /^(?:[a-z]+:[\w-]{1,24})?$/.test(msg.target) ? msg.target : null;
       if (target === null) return;
       for (const s of room.seats) send(s.ws, { t: 'ping', player: seat.id, target });
@@ -212,10 +213,10 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
       const err = runAction(room.run, action);
       if (err) return send(ws, { t: 'error', message: err });
       if (action.t === 'route' && room.run.phase === 'battle') return beginStage(room);
-      // la semilla ya se enseñó en el acta: los cimientos abisales se siembran de nuevo
+      // la semilla ya se enseñó en la crónica: el Trono infinito se siembra de nuevo
       if (action.t === 'endless') room.run.rng = randomInt(2 ** 31);
       broadcastRun(room);
-      // el cinturón se puede reordenar en plena obra: la mesa sigue la misma permutación
+      // las reliquias se pueden reordenar en pleno asalto: la mesa sigue la misma permutación
       if (action.t === 'reorder' && room.state && room.state.phase === 'playing') {
         room.state.tools = reorder(room.state.tools, action.order) ?? room.state.tools;
         broadcastState(room, []);
@@ -231,7 +232,7 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
       if (seat.id !== room.host) return send(ws, { t: 'error', message: 'Solo el anfitrión puede empezar.' });
       if (room.state || room.run) return;
       if (room.mode === 'campana') {
-        // la Obra diaria es en solitario: en sala no se acepta
+        // el Asalto diario es en solitario: en sala no se acepta
         room.run = newRun({ up: msg.up, ascension: msg.ascension, deck: msg.deck, pool: msg.pool, seedText: msg.seedText }, randomInt(2 ** 31));
         room.runUid = randomInt(1, 2 ** 31);
         broadcastLobby(room);
@@ -290,7 +291,7 @@ const http = createServer((req, res) => {
   }
   if (!clientDir) {
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-    return res.end('Servidor DERRUMBE activo. En desarrollo abre http://localhost:5173 (npm run dev).');
+    return res.end(`Servidor de ${TITLE} activo. En desarrollo abre http://localhost:5173 (npm run dev).`);
   }
   const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
   let file = normalize(join(clientDir, urlPath));
@@ -346,4 +347,4 @@ setInterval(() => {
   }
 }, 60000).unref();
 
-http.listen(PORT, () => console.log(`DERRUMBE escuchando en http://localhost:${PORT}`));
+http.listen(PORT, () => console.log(`${TITLE} escuchando en http://localhost:${PORT}`));

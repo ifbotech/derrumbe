@@ -1,5 +1,5 @@
 // Control de calidad visual. Solo se carga si la dirección lleva ?qa: monta a mano, y siempre igual,
-// los estados que fotografía scripts/visual-qa.ts (mesa llena, lupa, plano, ferretería, forja…).
+// los estados que fotografía scripts/visual-qa.ts (mesa llena, lupa, mapa, mercado, mesa de lacre…).
 // Nada de lo que pasa aquí se guarda: el guardado queda desactivado mientras dura la sesión.
 import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
@@ -10,7 +10,8 @@ import { TOOLS } from '../rules/tools';
 import { hero } from './art';
 import { prefs } from './campaign';
 import { cardEl } from './card';
-import { RUN_PLAYER, S, app } from './core';
+import { SUBTITLE, TITLE } from '../shared/brand';
+import { RUN_PLAYER, S, app, cap } from './core';
 import { archive, meta, openGuild } from './guild';
 import { openLupa } from './lupa';
 import { InputMode, setMode } from './nav';
@@ -44,9 +45,9 @@ function clean(): void {
   S.screen = null;
 }
 
-/** Una campaña a medio camino: cinturón lleno, oro y unas cuantas cartas con sello o tratamiento. */
+/** Una campaña a medio camino: Reliquias llenas, oro y unas cuantas cartas con sello o acabado. */
 function baseRun(stage = 1): Run {
-  const run = newRun({ seedText: 'QA-DERRUMBE', deck: 'obra', ascension: 2, up: { tienda: 1, rutas: 1 } }, 7);
+  const run = newRun({ seedText: 'QA-CORONA', deck: 'obra', ascension: 2, up: { tienda: 1, rutas: 1 } }, 7);
   runAction(run, { t: 'begin' });
   run.stage = stage;
   run.tools = TOOLKIT.map((id) => ({ id, n: id === 'calibre' ? 4 : 0 }));
@@ -66,7 +67,7 @@ function show(run: Run, state: GameState | null = null): void {
 
 async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6): Promise<void> {
   setMode(input);
-  // los susurros de tiza solo salen en la primera campaña de un perfil
+  // los Susurros solo salen en la primera campaña de un perfil
   meta.runs = firstRun ? 0 : Math.max(1, meta.runs);
   const run = baseRun(4);
   runAction(run, { t: 'route', i: 0 });
@@ -77,7 +78,7 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6): P
   const hand = [...MARKS.map(([s, r]) => find(all, s, r)), all.find((c) => c.sp), all.find((c) => c.suit === 'X' && !c.sp)].filter((c): c is Card => !!c);
   state.deck = all.filter((c) => !hand.includes(c));
   p.hand = hand;
-  // una obra ya empezada: daño, un piso caído, estados y algo de muro
+  // un asalto ya empezado: daño, un guardia abatido, estados y algo de Escudo
   const hp = state.config.floorHp;
   state.towers.S.damage = Math.floor(hp[state.towers.S.floors[0]] * 0.72);
   state.towers.H.floors.shift();
@@ -102,7 +103,7 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6): P
   renderInteractive();
 }
 
-/** Da por ganada la obra en curso y deja la campaña en el cobro. */
+/** Da por ganado el asalto en curso y deja la campaña en el Botín. */
 function winStage(run: Run): void {
   runAction(run, { t: 'route', i: 0 });
   const state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
@@ -203,6 +204,13 @@ const STATES: Record<string, () => void | Promise<void>> = {
     for (const a of ACHIEVEMENTS.slice(0, 9)) meta.ach[a.id] = true;
     openGuild('ups');
   },
+  // la pestaña de logros, con la mitad conseguidos: cada logro con su icono
+  logros: () => {
+    clean();
+    meta.renown = 37;
+    ACHIEVEMENTS.forEach((a, i) => i % 2 === 0 && (meta.ach[a.id] = true));
+    openGuild('ach');
+  },
   coleccion: () => {
     clean();
     meta.seen.tools = TOOLS.slice(0, 30).map((t) => t.id);
@@ -227,7 +235,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     setScreen('home');
     showSettings();
   },
-  // primera campaña y jugando con teclado: susurro de tiza al margen e indicaciones de tecla
+  // primera campaña y jugando con teclado: Susurro al margen e indicaciones de tecla
   'mesa-susurro': () => mesa(true, 'keys'),
   // la mesa tal como se ve jugando con mando: cada botón enseña el suyo
   // con mando: insignias de botón en cada acción y el marco de foco sobre la primera carta elegida
@@ -235,7 +243,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     await mesa(false, 'pad');
     document.querySelector<HTMLElement>('#hand .card.sel, #hand .card')?.focus({ preventScroll: true });
   },
-  // una obra que se alarga: fatiga de cimientos de nivel 3, con su Resonancia y su amenaza de más
+  // un asalto que se alarga: Asedio final de nivel 3, con su Multi y su Ataque de más
   'mesa-fatiga': () => mesa(false, 'pointer', 12),
   archivo: () => {
     clean();
@@ -257,43 +265,43 @@ const STATES: Record<string, () => void | Promise<void>> = {
       daily: null,
       online: false,
       gain: won ? 13 : stage - 1,
-      text: 'DERRUMBE · Acta de demolición',
+      text: `${TITLE} · Crónica`,
       death,
     });
     archive.push(
-      sample(0, true, 8, 'La Furia', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
-      sample(1, false, 5, 'El Coloso', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
+      sample(0, true, 8, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
+      sample(1, false, 5, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
         kind: 'sirena',
-        title: 'Sirena de HORMIGÓN: amenaza 18 contra muro 4 → entran 14',
-        detail: 'Al búnker le quedaban 11. Un ♣ más o un golpe limpio la callaban.',
+        title: 'Contraataque de TRÉBOLES: ⚔ 18 contra Escudo 4 → entran 14',
+        detail: 'Te quedaba 11 de Vida. Un ♣ más o un Golpe exacto lo evitaban.',
         before: 11,
         threat: 18,
         blocked: 4,
         taken: 14,
         tower: 'C',
       }),
-      sample(2, false, 7, 'La Ventisca', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3, {
+      sample(2, false, 7, 'La Reina Helada', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3, {
         kind: 'colapso',
-        title: 'Cantera agotada: el colapso quitó 4 y el muro no lo frena',
-        detail: 'Al búnker le quedaban 3. Cada colapso quita 1 más que el anterior: cuenta la cantera antes de robar.',
+        title: 'Mazo agotado: te quitó 4 de Vida y el Escudo no lo frena',
+        detail: 'Te quedaba 3 de Vida. Cada vez que se agota el Mazo quita 1 más: cuenta el Mazo antes de robar.',
         before: 3,
         threat: 4,
         blocked: 0,
         taken: 4,
       }),
-      sample(3, true, 8, 'El Topo', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
+      sample(3, true, 8, 'El Relojero', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
       sample(4, false, 3, 'El Usurero', ['hucha', 'cinta'], '4HH2PA'),
     );
     openGuild('arc');
   },
-  // ── arte-ui B: cuenta central, aviso de último turno y acta con la causa del derrumbe ──
+  // ── arte-ui B: cuenta central, aviso de último turno y crónica con la causa de la derrota ──
   // el recibo paso a paso desplegado (fijado, como tras un toque)
   'mesa-cuenta': async () => {
     await mesa();
     const { pinReceipt } = await import('./cuenta');
     pinReceipt();
   },
-  // último turno: la próxima sirena puede tirar el búnker y la banda de aviso sale junto a la cuenta
+  // último turno: el próximo Contraataque puede dejarte sin Vida y la banda de aviso sale junto a la cuenta
   'mesa-peligro': async () => {
     await mesa();
     const state = S.campaign?.state;
@@ -306,7 +314,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     S.selected.splice(0, S.selected.length, ...keep);
     renderInteractive();
   },
-  // el acta de una campaña que cayó en la mesa: causa del derrumbe, semilla con enlace y botones de lámina
+  // la crónica de una campaña que cayó en la mesa: causa de la derrota, semilla con enlace y botones de lámina
   'acta-derrota': () => {
     const run = baseRun(6);
     run.phase = 'lost';
@@ -314,7 +322,17 @@ const STATES: Record<string, () => void | Promise<void>> = {
     run.stats.turns = 71;
     run.stats.gold = 143;
     run.stats.contracts = 3;
-    run.death = { kind: 'sirena', title: 'Sirena de ACERO: amenaza 14 contra muro 3 → entran 11', detail: 'Al búnker le quedaban 9. Un ♣ más o un golpe limpio la callaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+    run.death = { kind: 'sirena', title: 'Contraataque de PICAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Un ♣ más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+    show(run);
+    setScreen('run');
+  },
+  // la crónica de una campaña ganada: sello «Corona rota», el más ancho, junto a la ficha de la baraja y el Reinado
+  'acta-victoria': () => {
+    const run = baseRun(8);
+    run.phase = 'won';
+    run.stats.turns = 96;
+    run.stats.gold = 188;
+    run.stats.contracts = 5;
     show(run);
     setScreen('run');
   },
@@ -322,7 +340,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
   og: () => {
     clean();
     S.campaign = null;
-    app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt"><h1 class="title"><span>Derr</span><span class="cut">umbe</span></h1><p>Roguelike de demolición con baraja francesa</p><small>Cuatro torres · doce pisos · un búnker · de 1 a 4 jugadores</small></div><div class="og-cards"></div></div>`;
+    app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt"><h1 class="title">${TITLE.split(' ').map((w, i) => `<span${i ? ' class="cut"' : ''}>${cap(w)}</span>`).join('')}</h1><p>${SUBTITLE}</p><small>Cuatro tronos · doce guardias · tu Vida · de 1 a 4 jugadores</small></div><div class="og-cards"></div></div>`;
     const fan = app.querySelector('.og-cards')!;
     ([['S', 13], ['D', 12], ['H', 11], ['C', 13]] as [Suit, number][]).forEach(([suit, rank], i) => {
       const c = cardEl({ id: `og-${suit}`, suit, rank }, { tilt: false });
@@ -334,7 +352,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
 };
 
 export function installQa(): void {
-  // nada de esto debe tocar la partida ni el gremio guardados: el guardado pasa a ser de quita y pon
+  // nada de esto debe tocar la partida ni la Orden guardadas: el guardado pasa a ser de quita y pon
   const memory = new Map<string, string>();
   platform.load = (key) => memory.get(key) ?? null;
   platform.save = (key, value) => void memory.set(key, value);
@@ -360,14 +378,14 @@ export function installQa(): void {
       settle,
       /** Semilla de la próxima campaña (el mando no escribe). */
       seed: (text: string) => void (prefs.seed = text),
-      /** Lo que el bot de referencia haría ahora en la obra en curso (la prueba lo ejecuta con el mando). */
+      /** Lo que el bot de referencia haría ahora en el asalto en curso (la prueba lo ejecuta con el mando). */
       bot: () => (S.campaign?.state && S.campaign.state.phase === 'playing' ? chooseAction(S.campaign.state) : null),
       /** Resumen de la campaña en curso, para comprobar lo que hizo el mando. */
       run: () => {
         const run = S.campaign?.run;
         return run ? { phase: run.phase, stage: run.stage, gold: run.gold, tools: run.tools.map((t) => t.id), marks: run.deck.filter((c) => c.seal || c.tr).length, pending: run.pending?.kind ?? null, shop: run.shop.map((o) => o.kind) } : null;
       },
-      /** En la ferretería: oro de sobra y dos herramientas, para probar el cinturón y la forja sin depender del azar. */
+      /** En el Mercado: oro de sobra y dos reliquias, para probar las Reliquias y la Mesa de lacre sin depender del azar. */
       boost: () => {
         const run = S.campaign?.run;
         if (!run) return false;

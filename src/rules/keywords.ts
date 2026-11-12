@@ -1,4 +1,4 @@
-// Las seis palabras clave del juego. Todo lo demás se dice con palabras llanas.
+// Las seis palabras clave de CORONA ROTA. Todo lo demás se dice con palabras llanas.
 // La interfaz las resalta en negrita allí donde aparezcan y encadena su definición en los globos
 // de ayuda; el reglamento (REGLAS.md) las lista desde aquí.
 
@@ -11,21 +11,28 @@ export interface Keyword {
 }
 
 export const KEYWORDS: Keyword[] = [
-  { id: 'fuerza', name: 'Fuerza', match: /\bFuerza\b/g, desc: 'Lo que suman tus cartas: su número, doblado con ventaja de material y anulado contra la torre de su propio palo.' },
-  { id: 'resonancia', name: 'Resonancia', match: /\bResonancia\b/g, desc: 'Lo que multiplica a la Fuerza. La pone la formación; lo que la suma cuenta donde está y lo que la multiplica, multiplica todo lo anterior.' },
+  // Los `id` no cambian (los usa el cliente para el globo de ayuda); el nombre y el texto, sí.
+  // «Daño» solo es palabra clave con mayúscula inicial: «daño» en minúscula es la palabra corriente.
+  { id: 'fuerza', name: 'Daño', match: /(?<![\p{L}\p{N}])Daño(?![\p{L}\p{N}])/gu, desc: 'Lo que suman tus cartas: su número, el doble con ventaja de palo y nada contra el trono de su palo (Inmune).' },
+  {
+    id: 'resonancia',
+    name: 'Multi',
+    match: /(?<![\p{L}\p{N}])Multi(?![\p{L}\p{N}])/gu,
+    desc: 'Lo que multiplica al Daño: Daño × Multi = Golpe. Lo pone la formación; lo que suma cuenta donde está y lo que multiplica, multiplica todo lo anterior.',
+  },
   {
     id: 'limpio',
-    name: 'Golpe limpio',
-    match: /\bgolpes? limpios?\b/gi,
-    desc: 'Tirar un piso con el daño exacto. La sirena calla, cobras 1 de oro, robas 1 carta, el piso de abajo pierde un cuarto de su resistencia y tu próximo golpe resuena +0,5 (la racha se acumula hasta +2).',
+    name: 'Golpe exacto',
+    match: /(?<![\p{L}\p{N}])(?:golpes? exactos?|¡EXACTO!)(?![\p{L}\p{N}])/giu,
+    desc: 'Abatir a un guardia con el Golpe justo (igual a su Vida): sin Contraataque, +1 de oro, robas 1, Impulso (el siguiente guardia pierde ¼ de su Vida) y Racha (+0,5 de Multi al próximo golpe, hasta +2).',
   },
-  { id: 'fractura', name: 'Fractura', match: /\bfractura(?:s|n)?\b/gi, desc: 'La deja un golpe de un solo palo (2 cartas o más). El próximo golpe contra esa torre resuena ×1,5.' },
-  { id: 'apuntalado', name: 'Apuntalado', match: /\bapuntalad[oa]s?\b/gi, desc: 'El primer golpe contra ese piso resuena a la mitad. Lo traen algunos jefes y niveles de obra.' },
+  { id: 'fractura', name: 'Brecha', match: /(?<![\p{L}\p{N}])brechas?(?![\p{L}\p{N}])/giu, desc: 'La deja un golpe de un solo palo (2 cartas o más). El próximo golpe contra ese trono hace ×1,5 de Multi.' },
+  { id: 'apuntalado', name: 'En guardia', match: /(?<![\p{L}\p{N}])en guardia(?![\p{L}\p{N}])/giu, desc: 'El primer golpe contra ese guardia hace la mitad de Multi (×0,5). Lo traen algunos monarcas y Reinados.' },
   {
     id: 'desarmada',
-    name: 'Desarmada',
-    match: /\bdesarm(?:ad[oa]s?|ar|an|a)\b/gi,
-    desc: 'Una torre desarmada no golpea cuando la sirena saca su palo. La huelga (comodín) la desarma hasta que caiga el piso; un golpe que mezcla 3 palos, solo para su próxima sirena (×1).',
+    name: 'Desarmado',
+    match: /(?<![\p{L}\p{N}])desarm(?:ad[oa]s?|ar|an|a)(?![\p{L}\p{N}])/giu,
+    desc: 'Un trono Desarmado no ataca cuando el Contraataque saca su palo. El Motín (Comodín) lo desarma hasta que caiga su guardia; un golpe de 3 palos, solo para su próximo Contraataque (×1).',
   },
 ];
 
@@ -49,3 +56,60 @@ export function markKeywords(html: string): string {
     .replace(/\u0001(\w+)\u0002/g, '<b class="kw" data-kw="$1">')
     .replace(/\u0003/g, '</b>');
 }
+
+/**
+ * Vocabulario de mesa que se escribe con mayúscula pero NO es palabra clave (no lleva definición
+ * encadenada ni cuenta para el límite de seis): las partes de la mesa, los poderes de palo y las
+ * jugadas con nombre propio. La constitución (tests/invariantes.test.ts) las acepta en mitad de frase.
+ */
+export const TERMS: string[] = [
+  'Vida',
+  'Escudo',
+  'Ataque',
+  'Golpe',
+  'Golpes',
+  'Mazo',
+  'Descarte',
+  'Contraataque',
+  'Contraataques',
+  'Impulso',
+  'Racha',
+  'Perfora',
+  'Perforan',
+  'Salpica',
+  'Cura',
+  'Inmune',
+  'Comodín',
+  'Comodines',
+  'Motín',
+  'Manga',
+  'Asedio',
+  'Ases',
+  'Sotas',
+  'Reinas',
+  'Reyes',
+  'Sota',
+  'Reina',
+  'Rey',
+  'Reinado',
+  'Juramento',
+  'Juramentos',
+  'Pergamino',
+  'Sobre',
+  'Mercado',
+  'Mesa',
+  'Tratante',
+  'Orden',
+  'Coronas',
+  'Trono',
+  'Tronos',
+  'Asalto',
+  'Atajo',
+  'Secreto',
+  'Lacre',
+  'Cristal',
+  'PICAS',
+  'DIAMANTES',
+  'CORAZONES',
+  'TRÉBOLES',
+];

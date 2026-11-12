@@ -17,11 +17,17 @@
 //   diana     dianas ≥ 44 × 44 px (48 en la barra del pulgar del móvil)
 //   aire      ≥ 8 px entre dianas vecinas y nada pulsable a menos de 8 px del borde físico
 //   mano      cartas de la mano separadas ≥ 8 px o con una franja visible ≥ 44 px
-//   pulgar    en móvil: Golpear, Andamio, Descartar y Tiza abajo, la mano encima y las torres arriba
+//   pulgar    en móvil: Golpear, Manga, Descartar y Deshacer abajo, la mano encima y los tronos arriba
 //   trama     las cuatro tramas de palo existen, se distinguen en grises a 24 px y se usan
 //   contraste texto ≥ 4,5:1; cifras críticas y palos sobre papel ≥ 7:1 (cuentas WCAG)
 //   placa     las cifras críticas llevan placa de respaldo opaca
 //   maqueta   sin desbordamiento, zonas de la mesa que no se pisan
+//             (y las dos notas de la 5.0: la semilla entera a la vista en 1366×768 y el aviso de
+//             último turno de ≤ 28 px en móvil, o sin quitar altura a los tronos)
+//   jerga     ningún texto visible, data-tip, aria-label, title, placeholder ni alt con una palabra
+//             prohibida de las normas V6 (obra y demolición), sin distinguir mayúsculas ni tildes
+//   cabecera  en la crónica (acta, acta-derrota, acta-victoria) el sello, las fichas de la cabecera y los
+//             renglones del título no se pisan entre sí (cajas del DOM)
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -34,7 +40,7 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota'];
+const ALL = ['portada', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const STATES = wanted.length ? ALL.filter((s) => wanted.includes(s)) : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
@@ -356,7 +362,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
       if (/\d/.test(cs.content) && GOTHIC.test(first(cs.fontFamily))) fail('gotica', `cifra en gótica: ${name(el)}${pseudo}`, el);
     }
   }
-  if (!document.fonts.check("800 16px 'Derrumbe Cifras'", '0123456789')) fail('gotica', 'la fuente de cifras (Derrumbe Cifras) no está cargada: los títulos góticos pintarían sus números en gótica');
+  if (!document.fonts.check("800 16px 'Corona Cifras'", '0123456789')) fail('gotica', 'la fuente de cifras (Corona Cifras) no está cargada: los títulos góticos pintarían sus números en gótica');
 
   // ───────── placa: las cifras críticas no van nunca sobre la trama ─────────
   for (const el of scope.querySelectorAll<HTMLElement>(PLACA)) {
@@ -595,7 +601,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
         for (const sel of ['.causa-1', '.causa-2']) if (!causa.querySelector(sel)?.textContent?.trim()) fail('causa', `a la causa le falta su línea ${sel}`, causa);
         if (!causa.querySelector('.causa-barra .cb-pista')) fail('causa', 'a la causa le falta la barra', causa);
       }
-      for (const id of ['lamina-dl', 'lamina-copy', 'copy']) if (!document.getElementById(id)) fail('causa', `falta el botón #${id} en el acta`, document.querySelector('.acta-sheet'));
+      for (const id of ['lamina-dl', 'lamina-copy', 'copy']) if (!document.getElementById(id)) fail('causa', `falta el botón #${id} en la crónica`, document.querySelector('.acta-sheet'));
       // botones del acta separados ≥ 12 px
       const bs = [...document.querySelectorAll('.acta-acciones button')].filter(visible).map((b) => b.getBoundingClientRect());
       for (let i = 0; i < bs.length; i++)
@@ -604,8 +610,133 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
           const b = bs[j];
           const gx = Math.max(a.left - b.right, b.left - a.right);
           const gy = Math.max(a.top - b.bottom, b.top - a.bottom);
-          if (Math.max(gx, gy) < 11.5) fail('aire', `botones del acta a ${Math.round(Math.max(gx, gy))} px (mínimo 12)`, document.querySelector('.acta-sheet'));
+          if (Math.max(gx, gy) < 11.5) fail('aire', `botones de la crónica a ${Math.round(Math.max(gx, gy))} px (mínimo 12)`, document.querySelector('.acta-sheet'));
         }
+    }
+  }
+
+  // ── cabecera de la crónica (V6) ──
+  // en acta, acta-derrota y acta-victoria ningún sello (Corona rota / Deshecha), ficha de la cabecera
+  // (CRÓNICA, baraja · Reinado) ni renglón del título se pisa con otro. Cajas del DOM: el sello girado
+  // cuenta con su caja entera; los renglones del título, con la caja de su texto (Range), no la del bloque.
+  // Las fichas vecinas comparten el filete (≤ 3 px a propósito): se perdona un solape de hasta 4 px.
+  if (opts.state === 'acta' || opts.state === 'acta-derrota' || opts.state === 'acta-victoria') {
+    const sheet = document.querySelector('.acta-sheet');
+    const piezas: { n: string; r: DOMRect }[] = [];
+    const sello = sheet?.querySelector(':scope > .inkstamp');
+    if (!sello || !visible(sello)) fail('cabecera', 'la crónica no lleva su sello', sheet);
+    else piezas.push({ n: `sello «${sello.textContent?.trim()}»`, r: sello.getBoundingClientRect() });
+    for (const f of sheet?.querySelectorAll('.meta span') ?? []) if (visible(f)) piezas.push({ n: `ficha «${f.textContent?.trim()}»`, r: f.getBoundingClientRect() });
+    const h1 = sheet?.querySelector('h1');
+    if (h1 && visible(h1)) {
+      // la caja de un renglón (Range) mide el alto entero de la fuente, más que el interlineado corto
+      // del título: se recorta a la tinta de verdad (ascendente y descendente medidas del texto)
+      const cs = getComputedStyle(h1);
+      const ctx = document.createElement('canvas').getContext('2d')!;
+      ctx.font = `${cs.fontStyle} ${cs.fontVariant} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const m = ctx.measureText((h1.textContent ?? '').toUpperCase());
+      const range = document.createRange();
+      range.selectNodeContents(h1);
+      [...range.getClientRects()]
+        .filter((r) => r.width > 2 && r.height > 2)
+        .forEach((r, i) => {
+          const base = r.top + (r.height - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+          piezas.push({ n: `título (renglón ${i + 1})`, r: new DOMRect(r.left, base - m.actualBoundingBoxAscent, r.width, m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) });
+        });
+    }
+    for (let i = 0; i < piezas.length; i++)
+      for (let j = i + 1; j < piezas.length; j++) {
+        const a = piezas[i].r;
+        const b = piezas[j].r;
+        const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (w > 4 && h > 4) fail('cabecera', `en la crónica se pisan ${piezas[i].n} y ${piezas[j].n} (${Math.round(w)}×${Math.round(h)} px)`, sheet);
+      }
+  }
+
+  // ── notas de maquetación de la 5.0 ──
+  // preparación en 1366×768: el campo de la semilla, entero a la vista sin desplazar el panel
+  if (opts.state === 'preparacion' && W === 1366 && H === 768) {
+    const seed = document.getElementById('seed');
+    if (!seed || !visible(seed)) fail('maqueta', 'no se ve el campo de la semilla (#seed)', seed);
+    else {
+      const r = seed.getBoundingClientRect();
+      let hidden = r.top < 0 || r.left < 0 || r.bottom > H || r.right > W;
+      for (let p = seed.parentElement; p && !hidden; p = p.parentElement) {
+        const cs = getComputedStyle(p);
+        if (!/(auto|scroll|hidden)/.test(cs.overflowY + cs.overflowX)) continue;
+        const pr = p.getBoundingClientRect();
+        if (r.top < pr.top - 0.5 || r.bottom > pr.bottom + 0.5 || r.left < pr.left - 0.5 || r.right > pr.right + 0.5) hidden = true;
+      }
+      if (hidden) fail('maqueta', `la semilla (#seed) no está entera a la vista sin desplazar (${Math.round(r.top)}…${Math.round(r.bottom)} de ${H})`, seed);
+    }
+  }
+  // móvil: el aviso de último turno, compacto (≤ 28 px) o sin quitar altura a los tronos respecto a la mesa
+  const towersBox = document.querySelector('.towers')?.getBoundingClientRect();
+  const memo = window as unknown as { __qaTowersH?: number };
+  if (opts.state === 'mesa' && towersBox) memo.__qaTowersH = towersBox.height;
+  if (opts.state === 'mesa-peligro' && opts.mobile) {
+    const o = document.getElementById('omen');
+    const r = o && visible(o) ? o.getBoundingClientRect() : null;
+    const before = memo.__qaTowersH;
+    const shrunk = before !== undefined && towersBox ? before - towersBox.height : 0;
+    if (r && r.height > 28.5 && shrunk > 1) fail('maqueta', `el aviso de último turno mide ${Math.round(r.height)} px de alto (máximo 28) y quita ${Math.round(shrunk)} px a los tronos`, o);
+  }
+
+  // texto que se sale de su propia caja sin que nada lo recorte (y pisa lo de al lado): botones y las
+  // fichas de oferta. Se mide el texto con un Range, no scrollWidth, para no contar insignias absolutas.
+  for (const el of document.querySelectorAll('button, .choice h4, .choice p')) {
+    if (!visible(el)) continue;
+    const box = el.getBoundingClientRect();
+    for (const node of el.childNodes) {
+      if (node.nodeType !== Node.TEXT_NODE || !node.textContent?.trim()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const t = range.getBoundingClientRect();
+      // a lo ancho, 2 px; a lo alto se perdona el remonte de los rasgos de la romana sobre un interlineado
+      // corto (≈ 0,1 em) y se cuenta como pisado un renglón que se sale (≥ 0,4 em)
+      const fs = parseFloat(getComputedStyle(el).fontSize) || 16;
+      const wide = Math.max(box.left - t.left, t.right - box.right);
+      const tall = Math.max(box.top - t.top, t.bottom - box.bottom);
+      const over = wide > 2 ? wide : tall > fs * 0.4 ? tall : 0;
+      if (over) {
+        fail('maqueta', `el texto «${node.textContent.trim().slice(0, 30)}» se sale ${Math.round(over)} px de ${path(el)} y pisa lo de al lado`, el);
+        break;
+      }
+    }
+  }
+
+  // ── jerga: ninguna palabra de la obra vieja en lo que lee una persona (normas V6, red 2) ──
+  // sin distinguir mayúsculas ni tildes; las raíces cogen sus derivadas, las palabras corrientes van enteras
+  const ROOTS = ['derrumbe', 'bunker', 'escombrera', 'cantera', 'ferreteri', 'ferretero', 'andamio', 'hormigon', 'ladrillo', 'vidrio', 'sirena', 'demoli', 'demoler', 'capataz', 'gremio', 'sindical', 'cimiento', 'tiza', 'forja', 'quemador', 'integridad', 'resonancia', 'fractura', 'apuntalad', 'huelga', 'herramienta', 'cinturon', 'regicid'];
+  const WORDS = ['acero', 'obras?', 'pisos?', 'torres?', 'muros?', 'fuerza', 'golpes? limpios?'];
+  const JERGA = new RegExp(`(?<![\\p{L}\\p{N}])(?:(?:${ROOTS.join('|')})\\p{L}*|(?:${WORDS.join('|')})(?![\\p{L}\\p{N}]))`, 'iu');
+  const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '');
+  const jerga = (where: string, text: string | null | undefined, el: Element | null) => {
+    if (!text) return;
+    const plain = fold(text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+    const m = plain.match(JERGA);
+    if (!m) return;
+    const at = Math.max(0, (m.index ?? 0) - 24);
+    fail('jerga', `«${m[0]}» en ${where}: …${plain.slice(at, (m.index ?? 0) + m[0].length + 24)}…`, el);
+  };
+  jerga('el título de la página', document.title, null);
+  const jw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = jw.nextNode(); node; node = jw.nextNode()) {
+    const el = node.parentElement;
+    if (!el || !node.textContent?.trim() || el.closest('script, style, template')) continue;
+    if (!visible(el)) continue;
+    jerga(`el texto de ${path(el)}`, node.textContent, el);
+  }
+  for (const el of document.querySelectorAll('[data-tip], [aria-label], [title], [placeholder], [alt]')) {
+    for (const attr of ['data-tip', 'aria-label', 'title', 'placeholder', 'alt']) if (el.hasAttribute(attr)) jerga(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
+  }
+  // también el texto que pone el CSS (content de ::before y ::after), que el recorrido del DOM no ve
+  for (const el of document.body.querySelectorAll('*')) {
+    if (!visible(el)) continue;
+    for (const pseudo of ['::before', '::after']) {
+      const c = getComputedStyle(el, pseudo).content;
+      if (c && c !== 'none' && c !== 'normal' && /^["'].*\p{L}/u.test(c)) jerga(`el ${pseudo} de ${path(el)}`, c.slice(1, -1), el);
     }
   }
 

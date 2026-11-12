@@ -5,7 +5,7 @@
 //    una carta o temblar una torre ya no vuelve a pasar ningún filtro.
 //  · Tramas de buril. Rayados, contrarrayados y semitonos como patrones SVG, para sombrear a la
 //    manera de una xilografía: la sombra es tinta tallada, no un degradado.
-//  · Piezas. Fachadas de las torres, marcos de chapa según la rareza y remaches de maestría.
+//  · Piezas. Paños de los guardias de cada trono, marcos de chapa según la rareza y remaches de maestría.
 import type { Suit } from '../rules/engine';
 
 const INK = '#181614';
@@ -65,14 +65,14 @@ export function bakeGrain(): void {
   set('--grain-ink', tile(192, [234, 224, 206], 0.1, 0.22, 23)); // calvas de papel sobre la tinta
   set('--grain-table', tile(256, [255, 236, 200], 0.06, 0.07, 37)); // polvo claro sobre la mesa oscura
   // las cifras de los títulos góticos salen de su propia fuente (theme.css): se carga ya, antes del primer título
-  void document.fonts?.load("800 16px 'Derrumbe Cifras'", '0123456789').catch(() => undefined);
+  void document.fonts?.load("800 16px 'Corona Cifras'", '0123456789').catch(() => undefined);
 }
 
 // ───────────────────────── Tramas de palo ─────────────────────────
 
 /**
  * Las cuatro tramas de material, una por palo, que distinguen el palo sin mirar el color (daltonismo):
- *   ♠ ACERO rayado diagonal · ♦ VIDRIO punteado · ♥ LADRILLO aparejo de ladrillo · ♣ HORMIGÓN rayado cruzado.
+ *   ♠ PICAS rayado diagonal · ♦ DIAMANTES punteado · ♥ CORAZONES aparejo en hiladas · ♣ TRÉBOLES rayado cruzado.
  * Cada una en dos tiradas que comparten el dibujo:
  *   pat-X    tinta del material con el dibujo tallado en papel (ropajes, fachadas, rótulos, rueda)
  *   trama-X  el mismo dibujo en tinta del palo sobre el papel de la carta (el marco de la carta)
@@ -115,6 +115,8 @@ export function engravingDefs(): string {
     dots('tone-ink', 5, 1.15, INK), // semitono: el sangrado de la tinta
     dots('tone-paper', 5, 1.05, PAPER),
     dots('tone-heavy', 4, 1.45, INK),
+    // mitades de un paño de guardia: se rasgan y caen por separado al abatirlo
+    '<clipPath id="half-l" clipPathUnits="objectBoundingBox"><rect width="0.5" height="1"/></clipPath><clipPath id="half-r" clipPathUnits="objectBoundingBox"><rect x="0.5" width="0.5" height="1"/></clipPath>',
     // chapas de los marcos de herramienta, una por rareza
     `<pattern id="plate-comun" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#6f6a62"/><path d="M0,16 L16,0" stroke="#55514b" stroke-width="2.4"/><path d="M0,4 H16 M0,12 H16" stroke="#857f76" stroke-width="0.8"/></pattern>`,
     `<pattern id="plate-oficio" width="18" height="18" patternUnits="userSpaceOnUse"><rect width="18" height="18" fill="#2f6f63"/><circle cx="5" cy="6" r="3.4" fill="#3f8b7b"/><circle cx="13" cy="13" r="2.6" fill="#255a50"/><path d="M0,9 H18" stroke="#8a5a2b" stroke-width="1.2" opacity="0.7"/></pattern>`,
@@ -126,41 +128,47 @@ export function engravingDefs(): string {
 /** Sombra de buril: la misma silueta, recortada y rellena de rayado. `d` es el contorno de la zona en sombra. */
 export const shade = (d: string, pattern = 'hatch-ink', opacity = 0.9) => `<path d="${d}" fill="url(#${pattern})" opacity="${opacity}"/>`;
 
-// ───────────────────────── Torres ─────────────────────────
+// ───────────────────────── Tronos ─────────────────────────
 
-/** Tinta de cada material (va por variable CSS para poder cambiar a «2 tintas clásicas»). */
+/** Tinta de cada palo (va por variable CSS para poder cambiar a «2 tintas clásicas»). */
 export const SUIT_INK: Record<Suit, string> = { S: 'var(--suit-S)', D: 'var(--suit-D)', H: 'var(--suit-H)', C: 'var(--suit-C)' };
 
+/** Tocado de cada guardia, en una caja de 46 × 46: gorra con pluma (Sota), diadema (Reina) y corona (Rey). */
+const HEADWEAR: Record<number, string> = {
+  11: `<path d="M9,31 C10,21 16,16 24,16 C32,16 37,21 38,31 Z" fill="${INK}"/><path d="M8,31 H39 V36 H8 Z" fill="${INK}"/><path d="M29,17 C33,8 39,5 43,6 C40,10 36,15 33,21" fill="${INK}"/><path d="M13,26 H34" stroke="${PAPER}" stroke-width="2"/>`,
+  12: `<path d="M7,34 C8,18 15,12 23,12 C31,12 38,18 39,34 Z" fill="${INK}"/><circle cx="23" cy="9" r="4.2" fill="${INK}"/><path d="M12,30 C14,22 18,19 23,19 C28,19 32,22 34,30" fill="none" stroke="${PAPER}" stroke-width="2"/><circle cx="23" cy="25" r="2.6" fill="${PAPER}"/>`,
+  13: `<path d="M7,35 V15 L15,23 L23,9 L31,23 L39,15 V35 Z" fill="${INK}"/><path d="M10,29 H36" stroke="${PAPER}" stroke-width="2.2"/><circle cx="16" cy="32" r="1.6" fill="${PAPER}"/><circle cx="23" cy="32" r="1.6" fill="${PAPER}"/><circle cx="30" cy="32" r="1.6" fill="${PAPER}"/>`,
+};
+
 /**
- * Un piso de torre visto en alzado: losa, pilares, huecos tallados y viguería, cada material con
- * su manera de construir. Lienzo 200 × 46. Las grietas (.crk) se enseñan según el daño (data-level).
+ * El paño de un guardia: una franja de estandarte con la trama de su casa y, en una rodela de papel,
+ * el tocado del guardia (Sota, Reina o Rey). Sirve para el guardia en pie (bajo su carta) y para los
+ * que esperan apilados debajo. Se dibuja sin deformar a cualquier ancho: la trama va en unidades de
+ * pantalla y la rodela se centra con su propio viewBox. Las dos mitades (.hl y .hr) se rasgan y caen
+ * por separado cuando el guardia es abatido; los desgarros (.crk) se enseñan según el daño (data-level).
  */
 export function storeySvg(suit: Suit, rank: number): string {
   const label = 'JQK'[rank - 11] ?? '?';
-  const body: Record<Suit, string> = {
-    // acero: celosía de vigas roblonadas
-    S: `<rect x="2" y="6" width="196" height="36" fill="url(#pat-S)"/><path d="M2,6 L50,42 M50,6 L2,42 M50,6 L98,42 M98,6 L50,42 M102,6 L150,42 M150,6 L102,42 M150,6 L198,42 M198,6 L150,42" stroke="${PAPER}" stroke-width="1.8" fill="none" opacity="0.5"/><path d="M50,6 V42 M100,6 V42 M150,6 V42" stroke="${INK}" stroke-width="5"/>${[8, 50, 100, 150, 192].map((x) => `<circle cx="${x}" cy="10" r="2" fill="${PAPER}"/><circle cx="${x}" cy="38" r="2" fill="${PAPER}"/>`).join('')}`,
-    // vidrio: muro cortina de paños ámbar con montantes
-    D: `<rect x="2" y="6" width="196" height="36" fill="url(#pat-D)"/>${[2, 35, 68, 101, 134, 167].map((x, i) => `<rect x="${x + 3}" y="10" width="27" height="28" fill="${PAPER}" opacity="${0.18 + (i % 3) * 0.12}"/><path d="M${x + 6},34 L${x + 26},13" stroke="${PAPER}" stroke-width="1.4" opacity="0.7"/>`).join('')}<path d="M35,6 V42 M68,6 V42 M101,6 V42 M134,6 V42 M167,6 V42" stroke="${INK}" stroke-width="3"/>`,
-    // ladrillo: fábrica con arcos de medio punto
-    H: `<rect x="2" y="6" width="196" height="36" fill="url(#pat-H)"/>${[22, 66, 110, 154].map((x) => `<path d="M${x},42 V24 a12,12 0 0 1 24,0 V42 Z" fill="${INK}"/><path d="M${x + 4},42 V25 a8,8 0 0 1 16,0 V42" fill="none" stroke="${PAPER}" stroke-width="1.3" opacity="0.6"/>`).join('')}`,
-    // hormigón: pantallas ciegas, ventanas rasgadas y huella de encofrado
-    C: `<rect x="2" y="6" width="196" height="36" fill="url(#pat-C)"/><path d="M14,16 H86 V24 H14 Z M114,16 H186 V24 H114 Z M30,30 H70 V36 H30 Z M130,30 H170 V36 H130 Z" fill="${INK}"/><path d="M100,6 V42" stroke="${INK}" stroke-width="7"/><path d="M2,14 H198 M2,28 H198" stroke="${PAPER}" stroke-width="0.8" opacity="0.35"/>`,
-  };
-  return `<svg class="storey-art" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
-    ${body[suit]}
-    <rect x="0" y="0" width="200" height="7" fill="${INK}"/><rect x="0" y="41" width="200" height="5" fill="${INK}"/>
-    <path d="M0,7 H200" stroke="${PAPER}" stroke-width="1" opacity="0.5"/>
-    <g class="crk" fill="none" stroke-linejoin="bevel">
+  const field = `<rect width="100%" height="100%" fill="url(#pat-${suit})"/>
+      <rect width="100%" height="5" fill="${INK}"/><rect y="100%" width="100%" height="5" transform="translate(0 -5)" fill="${INK}"/>
+      <svg width="100%" height="100%" viewBox="0 0 46 46" preserveAspectRatio="xMidYMid meet" overflow="visible">
+        <path d="M-30,23 H-4 M50,23 H76" stroke="${PAPER}" stroke-width="2.5" stroke-dasharray="4 4"/>
+        <circle cx="23" cy="23" r="20" fill="${PAPER}" stroke="${INK}" stroke-width="3.5"/>
+        ${HEADWEAR[rank] ?? ''}
+      </svg>`;
+  return `<svg class="storey-art" width="100%" height="100%" aria-hidden="true">
+    <g class="hl" clip-path="url(#half-l)">${field}</g>
+    <g class="hr" clip-path="url(#half-r)">${field}</g>
+    <svg class="crk" width="100%" height="100%" viewBox="0 0 200 46" preserveAspectRatio="none" fill="none" stroke-linejoin="bevel">
       ${[
-        ['c1', 'M62,7 L56,20 L66,27 L58,41'],
-        ['c2', 'M138,7 L146,18 L134,30 L142,41 M134,30 L118,34'],
-        ['c3', 'M24,7 L30,22 L18,41 M176,7 L170,24 L182,41 M96,7 L104,26 L94,41'],
+        ['c1', 'M62,5 L56,20 L66,27 L58,41'],
+        ['c2', 'M138,5 L146,18 L134,30 L142,41 M134,30 L118,34'],
+        ['c3', 'M24,5 L30,22 L18,41 M176,5 L170,24 L182,41 M96,5 L104,26 L94,41'],
       ]
         .map(([c, d]) => `<path class="${c}" d="${d}"/><path class="${c} in" d="${d}"/>`)
         .join('')}
-    </g>
-    <text class="storey-rank" x="100" y="33" text-anchor="middle">${label}</text>
+    </svg>
+    <text class="storey-rank" x="50%" y="70%" text-anchor="middle">${label}</text>
   </svg>`;
 }
 
@@ -189,5 +197,5 @@ export const masteryMetal = (level: number) => (level >= 7 ? 'oro' : level >= 4 
 export function masteryBadge(level: number): string {
   const metal = masteryMetal(level);
   if (!metal) return '';
-  return `<span class="mastery m-${metal}" data-tip="<b>Sello de maestría</b>Ganaste una campaña en el nivel de obra ${level} con esto. Bronce: niveles 1–3 · hierro: 4–6 · oro: 7–8."><i>${level}</i></span>`;
+  return `<span class="mastery m-${metal}" data-tip="<b>Sello de maestría</b>Ganaste una campaña en el Reinado ${level} con esto. Bronce: Reinados 1–3 · hierro: 4–6 · oro: 7–8."><i>${level}</i></span>`;
 }

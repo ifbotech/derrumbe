@@ -3,18 +3,18 @@
 //
 //   npm run analyze:meta              informe completo (≈ 52.000 campañas) → scripts/meta-report.json
 //   npm run analyze:meta -- rapido    todo menos el estudio pieza a pieza, con muestra pequeña
-//   npm run analyze:meta -- foco      solo los niveles 1 y 8 (para afinar la dureza)
-//   npm run analyze:meta -- niveles   los 8 niveles · barajas: las 6 barajas en nivel 1 · clasica: la partida clásica
+//   npm run analyze:meta -- foco      solo los Reinados 1 y 8 (para afinar la dureza)
+//   npm run analyze:meta -- niveles   los 8 Reinados · barajas: las 6 barajas en el Reinado 1 · clasica: el Asalto único
 //   npm run analyze:meta -- regalos --piezas=clavos,ariete --n=600   unas pocas piezas, con muestra grande
 //   … --n=2000 cambia las campañas por celda; --barajas=corta,ases mide solo esas barajas.
 //   Solo el informe completo escribe meta-report.json.
 //
 // Qué mide:
-//   · porcentaje de campañas ganadas por baraja y por nivel de obra, con el gremio vacío y lleno
-//   · cada herramienta, carta especial, sello y tratamiento: cuánto se elige, cuánto se activa y
+//   · porcentaje de campañas ganadas por baraja y por Reinado, con la Orden vacía y llena
+//   · cada reliquia, carta especial, sello de lacre y acabado: cuánto se elige, cuánto se activa y
 //     cuánto cambia el resultado (dada de salida frente a las campañas sin regalo, y llevándola a
 //     media campaña)
-//   · letalidad de cada jefe y duración de cada obra (mediana y percentil 95 de turnos)
+//   · letalidad de cada monarca y duración de cada asalto (mediana y percentil 95 de turnos)
 // Las piezas que salen mal paradas de regalo pasan una segunda vuelta con más campañas y semillas
 // nuevas antes de dar aviso: con tantas piezas, alguna cae siempre por azar.
 import { spawn } from 'node:child_process';
@@ -27,6 +27,7 @@ import { DIFFICULTY, SEAL, SEALS, TREATMENT, TREATMENTS, applyAction, createGame
 import { ASCENSIONS, BOSS, BOSSES, DECKS, LAST_STAGE, STAGES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
+import { TITLE } from '../src/shared/brand';
 import { Log, Spec, fingerprint, playCampaign } from './lab';
 
 const args = process.argv.slice(2);
@@ -234,23 +235,23 @@ function report(logs: Log[], confirm: Log[] = []) {
   const has = (c: { n: number }) => c.n > 0;
   const l1 = winrate.levels[0];
   const l8 = winrate.levels[7];
-  if (has(l1) && (l1.vacio < 24 || l1.vacio > 30)) flags.push(`Nivel 1 con gremio vacío: ${l1.vacio} % (objetivo 24–30)`);
-  if (has(l1) && (l1.lleno < 40 || l1.lleno > 48)) flags.push(`Nivel 1 con gremio lleno: ${l1.lleno} % (objetivo 40–48)`);
-  if (has(l8) && (l8.vacio < 6 || l8.vacio > 9)) flags.push(`Nivel 8 con gremio vacío: ${l8.vacio} % (objetivo 6–9)`);
-  if (has(l8) && (l8.lleno < 12 || l8.lleno > 17)) flags.push(`Nivel 8 con gremio lleno: ${l8.lleno} % (objetivo 12–17)`);
+  if (has(l1) && (l1.vacio < 24 || l1.vacio > 30)) flags.push(`Reinado 1 con la Orden vacía: ${l1.vacio} % (objetivo 24–30)`);
+  if (has(l1) && (l1.lleno < 40 || l1.lleno > 48)) flags.push(`Reinado 1 con la Orden llena: ${l1.lleno} % (objetivo 40–48)`);
+  if (has(l8) && (l8.vacio < 6 || l8.vacio > 9)) flags.push(`Reinado 8 con la Orden vacía: ${l8.vacio} % (objetivo 6–9)`);
+  if (has(l8) && (l8.lleno < 12 || l8.lleno > 17)) flags.push(`Reinado 8 con la Orden llena: ${l8.lleno} % (objetivo 12–17)`);
   // cada nivel tiene que ser más difícil que el anterior, con el gremio vacío y con el lleno
   for (let i = 1; i < winrate.levels.length; i++) {
     const a = winrate.levels[i - 1];
     const b = winrate.levels[i];
     if (!has(a) || !has(b)) continue;
-    if (b.vacio >= a.vacio) flags.push(`Niveles ${a.level} → ${b.level} con gremio vacío: ${a.vacio} % → ${b.vacio} % (no baja)`);
-    if (b.lleno >= a.lleno) flags.push(`Niveles ${a.level} → ${b.level} con gremio lleno: ${a.lleno} % → ${b.lleno} % (no baja)`);
+    if (b.vacio >= a.vacio) flags.push(`Reinados ${a.level} → ${b.level} con la Orden vacía: ${a.vacio} % → ${b.vacio} % (no baja)`);
+    if (b.lleno >= a.lleno) flags.push(`Reinados ${a.level} → ${b.level} con la Orden llena: ${a.lleno} % → ${b.lleno} % (no baja)`);
   }
   for (const d of winrate.decks) {
     if (!has(d) || d.deck === 'obra') continue;
-    if (d.lleno < 38 || d.lleno > 48) flags.push(`${d.name}: ${d.lleno} % con gremio lleno (objetivo 40–45, margen 38–48)`);
-    if (d.vacio < 22 || d.vacio > 32) flags.push(`${d.name}: ${d.vacio} % con gremio vacío (objetivo 24–31)`);
-    if (d.lleno - d.vacio < 6) flags.push(`${d.name}: el gremio lleno solo le suma ${Math.round((d.lleno - d.vacio) * 10) / 10} puntos`);
+    if (d.lleno < 38 || d.lleno > 48) flags.push(`${d.name}: ${d.lleno} % con la Orden llena (objetivo 40–45, margen 38–48)`);
+    if (d.vacio < 22 || d.vacio > 32) flags.push(`${d.name}: ${d.vacio} % con la Orden vacía (objetivo 24–31)`);
+    if (d.lleno - d.vacio < 6) flags.push(`${d.name}: la Orden llena solo le suma ${Math.round((d.lleno - d.vacio) * 10) / 10} puntos`);
   }
   /**
    * Piezas que la primera vuelta deja por debajo del ruido, o fuera de 35–68 % de victorias dadas de salida
@@ -268,10 +269,10 @@ function report(logs: Log[], confirm: Log[] = []) {
   };
   for (const t of tools) {
     const [won, n] = final(t);
-    if (won !== null && won > GIFT_MAX) flags.push(`Herramienta ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${GIFT_MAX}: victoria regalada)`);
-    if (won !== null && won < TRAP) flags.push(`Herramienta ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${TRAP}: trampa)`);
-    if (t.pick < 5 && t.offered >= 40 && (t.delta ?? 0) <= 0) flags.push(`Herramienta ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`);
-    worse('Herramienta', t);
+    if (won !== null && won > GIFT_MAX) flags.push(`Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${GIFT_MAX}: victoria regalada)`);
+    if (won !== null && won < TRAP) flags.push(`Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${TRAP}: trampa)`);
+    if (t.pick < 5 && t.offered >= 40 && (t.delta ?? 0) <= 0) flags.push(`Reliquia ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`);
+    worse('Reliquia', t);
   }
   for (const sp of specials) {
     const [won, n] = final(sp);
@@ -281,15 +282,15 @@ function report(logs: Log[], confirm: Log[] = []) {
   // jefes: todos entre 0,8× y 1,3× de la letalidad media
   for (const b of bosses) {
     const ratio = avgLethality ? b.lethality / avgLethality : 1;
-    if (b.faced >= 150 && (ratio < 0.8 || ratio > 1.3)) flags.push(`Jefe ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo 0,8×–1,3×)`);
+    if (b.faced >= 150 && (ratio < 0.8 || ratio > 1.3)) flags.push(`Monarca ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo 0,8×–1,3×)`);
   }
   // ritmo: obra 1 de 5 a 7 turnos (P95 ≤ 10), obras 2 y 3 de 8 a 10 (P95 ≤ 15), obras 4 a 8 de 9 a 13 (P95 ≤ 19)
   for (const p of pacing) {
     if (!p.n) continue;
     const [lo, hi, top] = p.stage === 1 ? [5, 7, 10] : p.stage <= 3 ? [8, 10, 15] : [9, 13, 19];
-    if (p.p50 < lo || p.p50 > hi || p.p95 > top) flags.push(`Obra ${p.stage} (${p.name}): mediana ${p.p50} y percentil 95 ${p.p95} (objetivo ${lo}–${hi} y ≤ ${top})`);
+    if (p.p50 < lo || p.p50 > hi || p.p95 > top) flags.push(`Asalto ${p.stage} (${p.name}): mediana ${p.p50} y percentil 95 ${p.p95} (objetivo ${lo}–${hi} y ≤ ${top})`);
   }
-  for (const d of pacingByDeck) if (d.worstP95 > 19) flags.push(`${d.name}: percentil 95 de ${d.worstP95} turnos en alguna obra de la 4 a la 8 (objetivo ≤ 19)`);
+  for (const d of pacingByDeck) if (d.worstP95 > 19) flags.push(`${d.name}: percentil 95 de ${d.worstP95} turnos en algún asalto del 4 al 8 (objetivo ≤ 19)`);
 
   const pieces = [...tools, ...specials];
   const suspects = pieces.filter(suspect).map((x) => x.id);
@@ -301,28 +302,28 @@ function print(r: ReturnType<typeof report>): void {
   if (!r.campaigns) return;
   const pad = (s: string | number, n: number) => String(s).padEnd(n);
   const num = (x: number | null, n = 6) => (x === null ? '—' : String(x)).padStart(n);
-  console.log(`\nDERRUMBE · laboratorio de balance · ${r.campaigns} campañas\n`);
-  if (r.winrate.levels.some((l) => l.n)) console.log('Campañas ganadas por nivel de obra (baraja de obra)');
+  console.log(`\n${TITLE} · laboratorio de balance · ${r.campaigns} campañas\n`);
+  if (r.winrate.levels.some((l) => l.n)) console.log(`Campañas ganadas por Reinado (${DECKS[0].name.toLowerCase()})`);
   for (const l of r.winrate.levels) if (l.n) console.log(`  ${l.level} ${pad(l.name, 18)} vacío ${num(l.vacio)} %   lleno ${num(l.lleno)} %   (${l.n} por celda)`);
-  if (r.winrate.decks.some((d) => d.n)) console.log('\nPor baraja inicial (nivel 1)');
+  if (r.winrate.decks.some((d) => d.n)) console.log('\nPor baraja inicial (Reinado 1)');
   for (const d of r.winrate.decks) if (d.n) console.log(`  ${pad(d.name, 24)} vacío ${num(d.vacio)} %   lleno ${num(d.lleno)} %   (${d.n} por celda)`);
-  if (r.winrate.levels[0]?.n) console.log(`\nDónde se pierde (gremio vacío, % de campañas por obra): ${r.deaths.join(' · ')}`);
+  if (r.winrate.levels[0]?.n) console.log(`\nDónde se pierde (Orden vacía, % de campañas por asalto): ${r.deaths.join(' · ')}`);
   const gifts = !quick || mode === 'regalos';
   const shown = <T extends { givenN: number }>(rows: T[]) => (mode === 'regalos' ? rows.filter((x) => x.givenN) : rows);
-  if (gifts) console.log(`\nHerramientas (de regalo al empezar; sin regalo: ${r.giftBaseline} % en ${r.giftBaselineN} campañas; por debajo de ±${r.giftNoise} puntos es ruido)`);
+  if (gifts) console.log(`\nReliquias (de regalo al empezar; sin regalo: ${r.giftBaseline} % en ${r.giftBaselineN} campañas; por debajo de ±${r.giftNoise} puntos es ruido)`);
   if (gifts) console.log(`  ${pad('', 22)} ${pad('rareza', 9)} elige%  salida%  Δ      a media  sin    activ.`);
   for (const t of !gifts ? [] : shown([...r.tools]).sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0)))
     console.log(`  ${pad(t.name, 22)} ${pad(t.rarity, 9)} ${num(t.pick)} ${num(t.given, 8)} ${num(t.delta, 6)} ${num(t.withMid, 8)} ${num(t.withoutMid, 6)} ${num(t.activations, 8)}`);
   if (gifts) console.log('\nCartas especiales (misma referencia)');
   for (const s of !gifts ? [] : shown([...r.specials]).sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0))) console.log(`  ${pad(s.name, 22)} ${pad(s.legendary ? 'legend.' : 'común', 9)} ${num(s.pick)} ${num(s.given, 8)} ${num(s.delta, 6)} ${num(s.withMid, 8)} ${num(s.withoutMid, 6)}`);
   if (r.confirmations.length) console.log(`\nSegunda vuelta (${r.confirmations[0].n} campañas por pieza, semillas nuevas): ${r.confirmations.map((c) => `${c.name} ${c.winrate} % (${(c.delta ?? 0) > 0 ? '+' : ''}${c.delta}; antes ${c.first})`).join(' · ')}`);
-  if (!quick) console.log('\nSellos y tratamientos (llevándolos a media campaña)');
+  if (!quick) console.log('\nSellos de lacre y acabados (llevándolos a media campaña)');
   for (const m of quick ? [] : r.marks) console.log(`  ${pad(m.name, 22)} elige ${num(m.pick)} %   con ${num(m.withMid)} %   sin ${num(m.withoutMid)} %`);
-  if (r.bosses.some((b) => b.faced)) console.log(`\nJefes (letalidad media ${r.avgLethality} %)`);
+  if (r.bosses.some((b) => b.faced)) console.log(`\nMonarcas (letalidad media ${r.avgLethality} %)`);
   for (const b of r.bosses) if (b.faced) console.log(`  ${pad(b.who, 14)} ${num(b.lethality)} %  (${b.deaths}/${b.faced})  ×${(b.lethality / (r.avgLethality || 1)).toFixed(2)}`);
-  if (r.pacing.some((p) => p.n)) console.log('\nTurnos por obra (mediana · percentil 95)');
+  if (r.pacing.some((p) => p.n)) console.log('\nTurnos por asalto (mediana · percentil 95)');
   for (const p of r.pacing) if (p.n) console.log(`  ${p.stage} ${pad(p.name, 20)} ${num(p.p50, 3)} · ${num(p.p95, 3)}`);
-  if (r.pacingByDeck.length) console.log(`  peor percentil 95 en las obras 4–8, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}`);
+  if (r.pacingByDeck.length) console.log(`  peor percentil 95 en los asaltos 4–8, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}`);
   console.log(r.flags.length ? `\nAVISOS (${r.flags.length})\n${r.flags.map((f) => `  ! ${f}`).join('\n')}` : '\nSin avisos: todo dentro de objetivo.');
 }
 
@@ -350,9 +351,9 @@ const logs = mode === 'clasica' ? [] : await running;
 const suspects = mode === 'todo' ? report(logs).suspects : [];
 const confirmLogs = suspects.length ? await runAll(['regalos', `--piezas=${suspects.join(',')}`, `--n=${CONFIRM_N}`, '--sal=37']) : [];
 const result = { ...report(logs, confirmLogs), classic: classicRows };
-for (const c of classicRows) if (c.winrate < 58 || c.winrate > 65) result.flags.push(`Partida clásica con ${c.players} jugador${c.players > 1 ? 'es' : ''}: ${c.winrate} % (objetivo 58–65)`);
+for (const c of classicRows) if (c.winrate < 58 || c.winrate > 65) result.flags.push(`Asalto único con ${c.players} jugador${c.players > 1 ? 'es' : ''}: ${c.winrate} % (objetivo 58–65)`);
 print(result);
-if (classicRows.length) console.log(`\nPartida clásica (victorias del bot): ${classicRows.map((c) => `${c.players}J ${c.winrate} %`).join(' · ')}`);
+if (classicRows.length) console.log(`\nAsalto único (victorias del bot): ${classicRows.map((c) => `${c.players}J ${c.winrate} %`).join(' · ')}`);
 const out = quick ? join(tmpdir(), `derrumbe-meta-${mode}.json`) : fileURLToPath(new URL('./meta-report.json', import.meta.url));
 writeFileSync(out, JSON.stringify({ generated: 'npm run analyze:meta', quick, rules: fingerprint(), curses: Object.fromEntries(BOSSES.map((b) => [b.id, BOSS[b.id].name])), ...result }, null, 1) + '\n');
 console.log(`\n${out} · ${Math.round((Date.now() - started) / 1000)} s`);

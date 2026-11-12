@@ -38,16 +38,16 @@ function report(deck: string, full: boolean): void {
   }
   const dist = reached.map((n) => String(Math.round((n / runs) * 100)).padStart(3)).join(' ');
   const mean = reached.reduce((a, n, i) => a + n * i, 0) / runs;
-  console.log(`  ${deck.padEnd(12)} gana ${((reached[LAST_STAGE] / runs) * 100).toFixed(1).padStart(5)}% · media ${mean.toFixed(2)} obras · cae tras [${dist}]`);
+  console.log(`  ${deck.padEnd(12)} gana ${((reached[LAST_STAGE] / runs) * 100).toFixed(1).padStart(5)}% · media ${mean.toFixed(2)} asaltos · cae tras [${dist}]`);
   const q = (xs: number[], p: number) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(p * xs.length))] : 0);
-  console.log(`      turnos por obra (mediana/p95): ${turns.map((t) => `${q(t, 0.5)}/${q(t, 0.95)}`).join(' · ')}`);
+  console.log(`      turnos por asalto (mediana/p95): ${turns.map((t) => `${q(t, 0.5)}/${q(t, 0.95)}`).join(' · ')}`);
   if (verbose) {
     const top = Object.entries(use).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id, n]) => `${id} ${n}`).join(', ');
-    console.log(`      oro medio ${(gold / runs).toFixed(0)} · herramientas al final ${(tools / runs).toFixed(1)} · mayor golpe ${hit} · más llevadas: ${top}`);
+    console.log(`      oro medio ${(gold / runs).toFixed(0)} · reliquias al final ${(tools / runs).toFixed(1)} · mayor golpe ${hit} · más llevadas: ${top}`);
   }
 }
 
 for (const full of guild === 'ambos' ? [false, true] : [guild === 'lleno']) {
-  console.log(`Gremio ${full ? 'lleno' : 'vacío'} · ${players} jugador(es) · ${runs} campañas por baraja · nivel de obra ${ascension + 1}`);
+  console.log(`Orden ${full ? 'llena' : 'vacía'} · ${players} jugador(es) · ${runs} campañas por baraja · Reinado ${ascension + 1}`);
   for (const deck of which === 'todas' ? DECKS.map((d) => d.id) : [which]) report(deck, full);
 }

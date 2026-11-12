@@ -42,6 +42,13 @@
 .acta-sheet h1 { font-size: min(9vw, 12vh); }
 .acta-sheet .acta-stats { font-size: clamp(13px, 1.65vh, 16px); }
 .acta-sheet .acta-stats td + td { font-variant-numeric: tabular-nums; }
+/* cabecera: el sello (Corona rota / Deshecha) entra en la rejilla, en la fila de las fichas y a su
+   derecha, en vez de flotar encima de ellas. Así nunca pisa la ficha de la baraja ni el título
+   (lo comprueba la regla «cabecera» de la QA visual). */
+.end.acta .acta-sheet { grid-template-columns: minmax(0, 1fr) auto; }
+.end.acta .acta-sheet > *, .end.acta .acta-sheet::after { grid-column: 1 / -1; }
+.end.acta .acta-sheet > .meta { grid-column: 1; grid-row: 1; align-self: center; }
+.end.acta .acta-sheet > .inkstamp.big { grid-column: 2; grid-row: 1; position: relative; inset: auto; align-self: center; justify-self: end; margin: 0 4px 0 0; transform: rotate(-6deg); opacity: 1; mix-blend-mode: normal; font-size: clamp(18px, 3.4vh, 34px); border-width: 4px; padding: 4px 12px 5px; }
 /* semilla y enlace para repetirla */
 .acta-semilla { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; padding: 7px 10px; background: var(--ink); color: var(--card-paper); font-family: var(--mono); font-weight: 700; font-size: 14px; line-height: 1.3; }
 .acta-semilla b { font-family: var(--display); font-weight: 400; font-size: 17px; letter-spacing: 0.03em; color: var(--hazard); overflow-wrap: anywhere; }
@@ -75,6 +82,12 @@
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .acta-cols { grid-template-columns: minmax(0, 1fr); }
   .acta-sheet h1 { font-size: min(15vw, 9vh); }
+  /* móvil: las fichas pasan a ser piezas de la rejilla; CRÓNICA comparte fila con el sello y la
+     ficha de la baraja y el Reinado baja a la suya, entera, debajo de los dos */
+  .end.acta .acta-sheet > .meta { display: contents; }
+  .end.acta .acta-sheet > .meta > span { grid-column: 1 / -1; justify-self: start; margin-right: 0; }
+  .end.acta .acta-sheet > .meta > span.hot { grid-column: 1; grid-row: 1; align-self: center; }
+  .end.acta .acta-sheet > .inkstamp.big { font-size: 19px; letter-spacing: 0.04em; padding: 3px 8px 4px; border-width: 3px; margin-right: 2px; transform: rotate(-4deg); }
   .causa { padding: 8px 10px 9px; border-left-width: 6px; }
   .causa .causa-1 { font-size: 16px; }
   .causa .causa-2, .cb-ley { font-size: 14px; }

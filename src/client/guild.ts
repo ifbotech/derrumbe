@@ -1,4 +1,4 @@
-// El gremio: progreso permanente del jugador (renombre, mejoras, logros y colección).
+// La Orden: progreso permanente del jugador (Coronas, mejoras, logros y colección).
 // Vive en el navegador de cada uno, así que cuenta igual en solitario y en sala online.
 import { Card, FORMATIONS, FORMATION_NAME, SEAL, SEALS, TREATMENT, TREATMENTS } from '../rules/engine';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteRun, unlocksOf } from '../rules/achievements';
@@ -26,10 +26,10 @@ export const meta: Meta = loadMeta(loadJson(META_KEY));
 export const saveMeta = () => platform.save(META_KEY, JSON.stringify(meta));
 saveMeta(); // deja guardada la migración, si la hubo
 
-/** Renombre que dio la última campaña cerrada (para el acta). */
+/** Coronas que dio la última campaña cerrada (para la crónica). */
 export let lastGain = 0;
 
-// ── archivo de actas: las 25 últimas campañas terminadas ──
+// ── archivo de crónicas: las 25 últimas campañas terminadas ──
 const ARCHIVE_KEY = 'derrumbe:actas';
 export const ARCHIVE_SIZE = 25;
 export interface Acta {
@@ -113,7 +113,7 @@ export function maybeSettle(c: Campaign): void {
   saveMeta();
 }
 
-/** Pasa al gremio lo que ha ocurrido y avisa de los logros nuevos. */
+/** Pasa a la Orden lo que ha ocurrido y avisa de los logros nuevos. */
 export function trackMeta(): void {
   if (S.campaign) noteRun(meta, S.campaign.run);
   const fresh = claim(meta);
@@ -136,12 +136,51 @@ function achToast(name: string, renown: number, unlock: string | null): void {
   setTimeout(() => el.remove(), 5200);
 }
 
+// Icono de cada logro: el emblema de GLYPH que mejor dice la imagen de la biblia de nombres (§16).
+// Los emblemas se regrabaron en la V6 con las mismas claves, así que la clave no dice el dibujo:
+// el comentario de cada línea, sí.
 const ACH_GLYPH: Record<string, string> = {
-  primera: 'maza', capataz: 'casco', media: 'andamio', madre: 'estandarte', asc3: 'plomada', abismo: 'abismo', abismo3: 'abismo', diaria: 'diaria',
-  doblepar: 'gemelos', color: 'cortavidrios', full: 'dados', poker: 'comodin', real: 'cinta', golpe100: 'bola', golpe500: 'nitro', golpe2000: 'resonador',
-  limpio10: 'cincel', limpio50: 'calibre', pisos100: 'taladro', pisos500: 'dinamita', intacto: 'sacos', rico: 'hucha', cinturon: 'engranaje', forja: 'forja',
-  contratos: 'pergamino', atajo: 'atajo', coleccion: 'incognita', ferretero: 'paleta', jefes: 'jefe', 'j-doble': 'sordina', 'j-escasez': 'chatarrero',
-  'j-sequia': 'botiquin', 'j-intemperie': 'acido', 'j-blindaje': 'encofrado', 'j-furia': 'dinamita', 'j-inestable': 'piqueta',
+  primera: 'cinta', // escalinata (bota sobre un peldaño)
+  capataz: 'contenedor', // cofre con candado (el carcelero)
+  media: 'bastion', // almena (medio castillo)
+  madre: 'corona_rota', // corona partida en dos
+  asc3: 'gemelos', // dagas cruzadas (el gran conspirador)
+  abismo: 'abismo', // trono con la escalera que baja
+  abismo3: 'coronas', // tres coronas apiladas
+  diaria: 'diaria', // calendario de la ronda
+  doblepar: 'naipes_par', // dos parejas de naipes
+  color: 'naipes_color', // cinco picas en abanico
+  full: 'naipes_full', // tres y dos naipes
+  poker: 'naipes_poker', // cuatro ases
+  real: 'naipes_real', // escalera de corazones con corona
+  golpe100: 'comodin', // puño en alto
+  golpe500: 'rayo', // rayo
+  golpe2000: 'cometa', // cometa
+  limpio10: 'cincel', // estilete (la aguja de la mano firme)
+  limpio50: 'tiralineas', // ganzúa
+  pisos100: 'casco', // yelmo
+  pisos500: 'maza', // maza (azote de la corte)
+  intacto: 'reparacion', // corazón entero
+  rico: 'oro', // montón de monedas
+  cinturon: 'relicario', // relicario con seis huecos llenos
+  forja: 'sello', // sello de lacre
+  contratos: 'pergamino', // pergamino (la palabra dada)
+  atajo: 'atajo', // puerta pequeña en una muralla
+  coleccion: 'puntales', // mazo de naipes atado
+  ferretero: 'hucha', // bolsa de monedas del Tratante
+  jefes: 'jefe', // corona
+  'j-doble': 'contrapeso', // máscara (el de dos caras)
+  'j-escasez': 'nivel', // balanza del Usurero
+  'j-sequia': 'paleta', // cáliz
+  'j-intemperie': 'carambano', // carámbanos
+  'j-blindaje': 'plano_maestro', // llave grande
+  'j-furia': 'saboteador', // capucha negra
+  'j-inestable': 'ultimo', // reloj de arena
+};
+/** Mejoras de la Orden cuyo emblema (`glyph` en run.ts, de reglas) ya no dice lo que son tras el regrabado. */
+const UP_GLYPH: Record<string, string> = {
+  vale: 'cajones', // Favor del Tratante: un «Renovar mesa» gratis (antes la escalinata)
+  tienda: 'toldo', // Puesto grande (antes el guantelete)
 };
 
 type Tab = 'ups' | 'ach' | 'col' | 'arc';
@@ -155,8 +194,8 @@ export function renderGuild(): void {
   const done = ACHIEVEMENTS.filter((a) => meta.ach[a.id]).length;
   app.innerHTML = `
   <div class="camp guild">
-    <header class="deck-head"><div><h1>El gremio</h1><p class="sub">Lo que se queda contigo entre campañas: surtidos nuevos, no más fuerza bruta.</p></div>
-      <div class="purse"><b>${meta.renown} ✦</b><span>renombre · ${meta.runs} campañas · ${meta.wins} ganadas</span></div></header>
+    <header class="deck-head"><div><h1>La Orden</h1><p class="sub">Lo que se queda contigo entre campañas: reliquias nuevas, no más pegada.</p></div>
+      <div class="purse"><b>${meta.renown} ✦</b><span>Coronas · ${meta.runs} campañas · ${meta.wins} ganadas</span></div></header>
     <div class="guild-body">
       <div class="row tabs">
         <button data-tab="ups" class="${tab === 'ups' ? 'on' : ''}">Mejoras</button>
@@ -192,10 +231,10 @@ export function renderGuild(): void {
   );
 }
 
-/** Archivo de actas: cómo acabó cada una de las últimas campañas, con su semilla para volver a jugarla. */
+/** Archivo de crónicas: cómo acabó cada una de las últimas campañas, con su semilla para volver a jugarla. */
 function archiveTab(list: HTMLElement): void {
   if (!archive.length) {
-    list.innerHTML = `<p class="col-note">Aún no hay actas. Cada campaña que termines, la ganes o no, queda archivada aquí (las ${ARCHIVE_SIZE} últimas), con su semilla para volver a jugarla.</p>`;
+    list.innerHTML = `<p class="col-note">Aún no hay crónicas. Cada campaña que termines, la ganes o no, queda archivada aquí (las ${ARCHIVE_SIZE} últimas), con su semilla para volver a jugarla.</p>`;
     return;
   }
   const wins = archive.filter((a) => a.won).length;
@@ -203,25 +242,25 @@ function archiveTab(list: HTMLElement): void {
     const d = new Date(iso);
     return Number.isNaN(d.getTime()) ? '' : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
-  list.innerHTML = `<p class="col-note">${archive.length} actas · ${wins} ganadas · mayor golpe ${Math.max(...archive.map((a) => a.maxHit))} · campaña más rápida ganada: ${wins ? `${Math.min(...archive.filter((a) => a.won).map((a) => a.turns))} turnos` : '—'}.</p>
+  list.innerHTML = `<p class="col-note">${archive.length} crónicas · ${wins} ganadas · mayor Golpe ${Math.max(...archive.map((a) => a.maxHit))} · campaña más rápida ganada: ${wins ? `${Math.min(...archive.filter((a) => a.won).map((a) => a.turns))} turnos` : '—'}.</p>
   <div class="actas">${archive
     .map((a, i) => {
-      const where = a.won ? (a.depth ? `Torre Madre demolida + ${a.depth} abisal${a.depth > 1 ? 'es' : ''}` : 'Torre Madre demolida') : `obra ${Math.min(a.stage, LAST_STAGE)}/${LAST_STAGE} · ${stageDef(a.stage).name}${a.boss ? ` · ante ${a.boss}` : ''}`;
+      const where = a.won ? (a.depth ? `Corona rota + Trono infinito ${a.depth}` : 'Corona rota') : `asalto ${Math.min(a.stage, LAST_STAGE)}/${LAST_STAGE} · ${stageDef(a.stage).name}${a.boss ? ` · ante ${a.boss}` : ''}`;
       const replay = !!a.seed && !a.daily && !a.online;
-      // la causa del derrumbe, con la voz del acta: rótulo rojo, título en mono gruesa y detalle debajo
+      // la causa de la derrota, con la voz de la crónica: rótulo rojo, título en mono gruesa y detalle debajo
       const death = !a.won && validDeath(a.death) ? a.death : null;
       const cause = death
-        ? `<p class="acta-causa k-${death.kind}"><span class="ac-rot">Causa del derrumbe</span><b>${esc(death.title)}</b>${death.detail ? `<small>${esc(death.detail)}</small>` : ''}</p>`
+        ? `<p class="acta-causa k-${death.kind}"><span class="ac-rot">Causa de la derrota</span><b>${esc(death.title)}</b>${death.detail ? `<small>${esc(death.detail)}</small>` : ''}</p>`
         : '';
       return `<article class="acta-row ${a.won ? 'won' : 'lost'}">
-        <span class="acta-stamp">${a.won ? 'Demolido' : 'Sepultados'}</span>
+        <span class="acta-stamp">${a.won ? 'Corona rota' : 'Deshecha'}</span>
         <div class="acta-main">
-          <b>${DECK[a.deck]?.name ?? a.deck} · nivel de obra ${a.level}${a.daily ? ` · diaria ${a.daily}` : ''}${a.online ? ' · en sala' : ''}</b>
-          <span>${day(a.when)} · ${where} · ${a.turns} turnos · mayor golpe ${a.maxHit}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
-          <span class="acta-tools">${a.tools.map((id) => glyphSvg(id, 'mini-ico')).join('') || '<em>sin herramientas</em>'}<em>${a.seed ? `semilla ${a.seed}` : 'semilla del servidor'}</em></span>
+          <b>${DECK[a.deck]?.name ?? a.deck} · Reinado ${a.level}${a.daily ? ` · diaria ${a.daily}` : ''}${a.online ? ' · en sala' : ''}</b>
+          <span>${day(a.when)} · ${where} · ${a.turns} turnos · mayor Golpe ${a.maxHit}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
+          <span class="acta-tools">${a.tools.map((id) => glyphSvg(id, 'mini-ico')).join('') || '<em>sin reliquias</em>'}<em>${a.seed ? `semilla ${a.seed}` : 'semilla del servidor'}</em></span>
           ${cause}
         </div>
-        <div class="acta-btns"><button data-replay="${i}" ${replay ? '' : 'disabled'} data-tip="<b>Rejugar semilla</b>${replay ? 'Empieza una campaña nueva con la misma semilla, baraja y nivel de obra: las mismas decisiones darán exactamente la misma campaña.' : a.daily ? 'La obra diaria solo se juega en su día.' : 'En sala la semilla la pone el servidor.'}">Rejugar semilla</button><button data-copy="${i}">Copiar acta</button></div>
+        <div class="acta-btns"><button data-replay="${i}" ${replay ? '' : 'disabled'} data-tip="<b>Rejugar semilla</b>${replay ? 'Empieza una campaña nueva con la misma semilla, baraja y Reinado: las mismas decisiones darán exactamente la misma campaña.' : a.daily ? 'El Asalto diario solo se juega en su día.' : 'En sala la semilla la pone el servidor.'}">Rejugar semilla</button><button data-copy="${i}">Copiar crónica</button></div>
       </article>`;
     })
     .join('')}</div>`;
@@ -230,7 +269,7 @@ function archiveTab(list: HTMLElement): void {
       (b.onclick = () => {
         const text = archive[Number(b.dataset.copy)]?.text ?? '';
         void navigator.clipboard?.writeText(text).then(
-          () => toast('Acta copiada'),
+          () => toast('Crónica copiada'),
           () => toast('No se pudo copiar'),
         );
       }),
@@ -255,7 +294,7 @@ function upgradesHtml(): string {
     const level = meta.up[u.id] ?? 0;
     const cost = u.costs[level];
     const pips = u.costs.map((_, i) => `<i class="${i < level ? 'on' : ''}"></i>`).join('');
-    return `<div class="up ${cost === undefined ? 'maxed' : ''}">${glyphSvg(u.glyph, 'badge')}<div><b>${u.name}</b><span>${u.desc}</span><div class="pips">${pips}</div></div>
+    return `<div class="up ${cost === undefined ? 'maxed' : ''}">${glyphSvg(UP_GLYPH[u.id] ?? u.glyph, 'badge')}<div><b>${u.name}</b><span>${u.desc}</span><div class="pips">${pips}</div></div>
       <button data-up="${u.id}" ${cost === undefined || meta.renown < cost ? 'disabled' : ''}>${cost === undefined ? 'Hecho' : `${cost} ✦`}</button></div>`;
   }).join('')}</div>`;
 }
@@ -287,7 +326,7 @@ function collection(list: HTMLElement): void {
     return box;
   };
 
-  const decks = sec('Barajas', DECKS.filter((d) => deckUnlocked(meta, d.id)).length, DECKS.length, 'Cada baraja inicial tiene su dorso. Se desbloquean con logros y se eligen al empezar una campaña. El remache marca el nivel de obra más alto que has ganado con ella.');
+  const decks = sec('Barajas', DECKS.filter((d) => deckUnlocked(meta, d.id)).length, DECKS.length, 'Cada baraja inicial tiene su dorso. Se desbloquean con logros y se eligen al empezar una campaña. El sello marca el Reinado más alto que has ganado con ella.');
   for (const d of DECKS) {
     const back = backEl(d.id);
     back.dataset.lupa = `deck:${d.id}`;
@@ -304,15 +343,15 @@ function collection(list: HTMLElement): void {
   }
 
   const seenTools = TOOLS.filter((t) => have(meta.seen.tools, t.id)).length;
-  const tools = sec('Herramientas', seenTools, TOOLS.length, 'Las que has llevado en el cinturón. El marco dice la rareza: hierro (común), cobre con verdín (de oficio), latón (de capataz) o carmesí y oro (reliquia). El remache es tu sello de maestría: el nivel de obra más alto que has ganado con ella puesta.');
+  const tools = sec('Reliquias', seenTools, TOOLS.length, 'Las que has llevado contigo. El marco dice la rareza: liso (Común), con filete de plata (Rara), con flor de lis (Noble) o con corona (Regia). El sello de maestría marca el Reinado más alto que has ganado con ella puesta.');
   const boxes = (Object.keys(ARCH) as Arch[]).flatMap((a) => TOOLS.filter((t) => t.arch === a));
   for (const t of boxes) {
     const locked = t.box && !meta.up[`caja_${t.box}`];
-    const box = tools.appendChild(have(meta.seen.tools, t.id) ? choice(toolTile(t.id), t.name, t.desc, ARCH[t.arch], null) : hidden('???', locked ? `En una caja del gremio: ${ARCH[t.box!]}.` : `${ARCH[t.arch]}. Aún no la has llevado.`));
+    const box = tools.appendChild(have(meta.seen.tools, t.id) ? choice(toolTile(t.id), t.name, t.desc, ARCH[t.arch], null) : hidden('???', locked ? `En un arcón de la Orden: ${ARCH[t.box!]}.` : `${ARCH[t.arch]}. Aún no la has llevado.`));
     box.insertAdjacentHTML('beforeend', masteryBadge(meta.mastery.tools[t.id] ?? 0));
   }
 
-  const marks = sec('Sellos y tratamientos', SEALS.length + TREATMENTS.length, SEALS.length + TREATMENTS.length, 'Marcas que se estampan en las cartas de baraja: en la forja de la ferretería, en la selección tras cada obra o como premio de un contrato.');
+  const marks = sec('Sellos de lacre y acabados', SEALS.length + TREATMENTS.length, SEALS.length + TREATMENTS.length, 'Marcas que se estampan en las cartas de baraja: en la Mesa de lacre del Mercado clandestino, en la selección tras cada asalto o como premio de un Juramento.');
   const sample: Card = { id: 'm', suit: 'S', rank: 7 };
   SEALS.forEach((s, i) => marks.appendChild(choice(cardEl({ ...sample, id: `m-s${i}`, suit: (['H', 'S', 'D', 'C'] as const)[i], seal: s }), SEAL[s].name, SEAL[s].desc, null, null)));
   TREATMENTS.forEach((t, i) => marks.appendChild(choice(cardEl({ ...sample, id: `m-t${i}`, rank: 9 + (i % 2), suit: (['C', 'D', 'H', 'S'] as const)[i], tr: t }), TREATMENT[t].name, TREATMENT[t].desc, null, null)));
@@ -323,9 +362,9 @@ function collection(list: HTMLElement): void {
   forms.innerHTML = FORMATIONS.map((f) => `<span class="form-chip ${have(meta.seen.forms, f) ? 'on' : ''}">${FORMATION_NAME[f]}</span>`).join('');
 
   const seenBoss = BOSSES.filter((b) => have(meta.seen.bosses, b.id)).length;
-  const people = sec('Personajes', 1 + seenBoss, 1 + BOSSES.length, 'El Ferretero y los jefes de obra que has derrotado.');
-  people.appendChild(choice(ferreteroEl(), 'El Ferretero', 'Vende, gruñe y cobra.', null, null));
-  for (const b of BOSSES) people.appendChild(have(meta.seen.bosses, b.id) ? choice(portraitEl(`j-${b.id}`, b.who), b.who, `${b.name}: ${b.desc}`, null, null) : hidden('???', 'Un jefe de obra que aún no has derrotado.'));
+  const people = sec('Personajes', 1 + seenBoss, 1 + BOSSES.length, 'El Tratante y los monarcas que has derrotado.');
+  people.appendChild(choice(ferreteroEl(), 'El Tratante', 'Vende, gruñe y cobra.', null, null));
+  for (const b of BOSSES) people.appendChild(have(meta.seen.bosses, b.id) ? choice(portraitEl(`j-${b.id}`, b.who), b.who, `${b.name}: ${b.desc}`, null, null) : hidden('???', 'Un monarca que aún no has derrotado.'));
 
   const french = sec('Baraja francesa', 54, 54, 'Las 52 cartas de siempre y dos comodines.');
   const order = (c: Card) => (c.rank > 10 ? 0 : c.rank === 1 ? 1 : c.rank === 0 ? 3 : 2);

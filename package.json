@@ -1,8 +1,8 @@
 {
-  "name": "derrumbe",
-  "version": "5.0.0",
+  "name": "corona-rota",
+  "version": "6.0.0",
   "private": true,
-  "description": "DERRUMBE — roguelike de demolición con baraja francesa: Fuerza × Resonancia, cinturón de herramientas, andamio, niveles de obra y campaña cooperativa online (1-4 jugadores)",
+  "description": "CORONA ROTA — roguelike de conjura con baraja francesa: Daño × Multi = Golpe, seis reliquias, La Manga, ocho Reinados y campaña cooperativa online (1-4 jugadores)",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@fontsource/archivo": "^5.3.0",
     "@fontsource/archivo-black": "^5.1.0",
+    "@fontsource/cinzel": "^5.3.0",
     "@fontsource/grenze-gotisch": "^5.3.0",
     "@fontsource/space-mono": "^5.1.0",
     "@fontsource/unifrakturcook": "^5.3.0",

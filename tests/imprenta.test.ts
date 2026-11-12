@@ -2,7 +2,7 @@
 //
 //   · ninguna letra por debajo de 13 px (también el mínimo de un clamp() o de un max())
 //   · ninguna cifra en gótica: las cifras van en var(--num), y la gótica de títulos lleva delante
-//     la fuente «Derrumbe Cifras», que solo tiene dígitos y signos de cuenta
+//     la fuente «Corona Cifras», que solo tiene dígitos y signos de cuenta
 //
 // Son estrictas en las hojas de arte-ui A (styles, campaign y theme). Las de otras celdas (juice,
 // cuenta, acta) se revisan igual, pero solo avisan: lo que falte ahí lo pisa theme.css o es de su celda.
@@ -115,8 +115,8 @@ describe('imprenta: cifras sin gótica', () => {
 
   it('la gótica de títulos lleva delante la fuente de cifras', () => {
     const title = raiz.flatMap((r) => decl(r.cuerpo, '--title')).at(-1) ?? '';
-    expect(title.split(',')[0].replace(/['"]/g, '').trim()).toBe('Derrumbe Cifras');
-    const cara = readFileSync(new URL('theme.css', DIR), 'utf8').match(/@font-face\s*\{[^}]*Derrumbe Cifras[^}]*\}/)?.[0] ?? '';
+    expect(title.split(',')[0].replace(/['"]/g, '').trim()).toBe('Corona Cifras');
+    const cara = readFileSync(new URL('theme.css', DIR), 'utf8').match(/@font-face\s*\{[^}]*Corona Cifras[^}]*\}/)?.[0] ?? '';
     expect(cara).toMatch(/unicode-range:[^;]*U\+0030-0039/);
   });
 

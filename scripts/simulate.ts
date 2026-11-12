@@ -21,5 +21,5 @@ for (let n = 1; n <= 4; n++) {
     collapses += state.collapses;
     floors += 12 - SUITS.reduce((a, s) => a + state.towers[s].floors.length, 0);
   }
-  console.log(`${n} jugador(es): victorias ${((wins / games) * 100).toFixed(1)}% · turnos ${(turns / games).toFixed(1)} · pisos demolidos ${(floors / games).toFixed(1)}/12 · colapsos ${(collapses / games).toFixed(2)}`);
+  console.log(`${n} jugador(es): victorias ${((wins / games) * 100).toFixed(1)}% · turnos ${(turns / games).toFixed(1)} · guardias abatidos ${(floors / games).toFixed(1)}/12 · colapsos ${(collapses / games).toFixed(2)}`);
 }
