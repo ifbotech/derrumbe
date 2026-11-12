@@ -1,17 +1,19 @@
 // Portada y preparación de campaña.
 import { ACHIEVEMENTS, deckUnlocked, unlockedPool } from '../rules/achievements';
 import { SEAL, TREATMENT } from '../rules/engine';
-import { BOSSES, DECK, DECKS, LAST_STAGE, STAGES, newRun } from '../rules/run';
+import { ASCENSIONS, BOSSES, DECK, DECKS, LAST_STAGE, STAGES, newRun } from '../rules/run';
 import { hero } from './art';
 import { backEl } from './card';
+import { masteryBadge } from './engraving';
 import { $, $$, S, app, esc, modal } from './core';
 import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, savedCampaign, today } from './campaign';
 import { glyphSvg } from './glyphs';
 import { meta, openGuild } from './guild';
-import { sendMsg, updateConn } from './net';
+import { hasServer, sendMsg, updateConn } from './net';
 import { setScreen } from './router';
 import { startTutorial, tutorialDone } from './tutorial-ui';
 import { showRules, showSettings } from './widgets';
+import { platform } from './platform';
 
 const stamp = (id: string, glyph: string, title: string, sub: string, cls = '') =>
   `<button class="stamp-btn ${cls}" id="${id}">${glyphSvg(glyph, 'stamp-ico')}<span><b>${title}</b><small>${sub}</small></span></button>`;
@@ -80,7 +82,7 @@ export function renderHome(): void {
 }
 
 function coopModal(code = ''): void {
-  const savedName = localStorage.getItem('derrumbe:name') ?? '';
+  const savedName = platform.load('derrumbe:name') ?? '';
   const el = modal(
     `<div class="modal-box coop"><h2>Cuadrilla en línea <button class="x">CERRAR</button></h2>
       <p>Crea una sala y comparte el código, o entra en la de tu cuadrilla. De 1 a 4 jugadores; quien crea la sala elige entre una obra clásica y una campaña entera.</p>
@@ -89,12 +91,13 @@ function coopModal(code = ''): void {
       <button class="primary" id="create">Crear sala</button>
       <div class="or">o únete a una</div>
       <div class="row"><input id="code" maxlength="4" autocomplete="off" placeholder="CÓDIGO" value="${esc(code.replace(/[^A-Za-z]/g, '').slice(0, 4))}" /><button id="join">Unirse</button></div>
+      ${hasServer() ? '' : '<p class="note">Esta instalación no tiene servidor de salas: escribe su dirección en Ajustes para jugar en línea. La campaña en solitario no lo necesita.</p>'}
       <p class="conn"></p></div>`,
     { onClose: () => history.replaceState(null, '', location.pathname) },
   );
   const name = () => {
     const v = $<HTMLInputElement>('#name', el).value.trim();
-    localStorage.setItem('derrumbe:name', v);
+    platform.save('derrumbe:name', v);
     return v;
   };
   $('#create', el).onclick = () => sendMsg({ t: 'create', name: name() });
@@ -105,7 +108,7 @@ function coopModal(code = ''): void {
   $<HTMLInputElement>(code ? '#name' : '#name', el).focus();
 }
 
-/** Preparación de campaña: baraja inicial, ascenso y semilla. */
+/** Preparación de campaña: baraja inicial, nivel de obra y semilla. */
 export function renderCamp(): void {
   S.campaign = null;
   const saved = savedCampaign();
@@ -114,12 +117,13 @@ export function renderCamp(): void {
   const decks = DECKS.map((d) => {
     const open = deckUnlocked(meta, d.id);
     const need = d.unlock ? ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name : '';
-    return `<button class="deck-opt ${d.id === prefs.deck ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><span class="deck-back" data-back="${d.id}"></span><span class="deck-txt"><b>${d.name}</b><span>${open ? d.desc : `Bloqueada. Logro: ${need}.`}</span></span></button>`;
+    return `<button class="deck-opt ${d.id === prefs.deck ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><span class="deck-back" data-back="${d.id}"></span><span class="deck-txt"><b>${d.name}</b><span>${open ? d.desc : `Bloqueada. Logro: ${need}.`}</span></span>${masteryBadge(meta.mastery.decks[d.id] ?? 0)}</button>`;
   }).join('');
-  const asc =
-    meta.ascMax > 0
-      ? `<div class="asc"><span>Ascenso</span>${Array.from({ length: meta.ascMax + 1 }, (_, i) => `<button data-asc="${i}" class="${i === prefs.ascension ? 'on' : ''}">${i}</button>`).join('')}<small>Cada ascenso: torres +10 % y renombre +25 %. Desde el 2, las K llegan apuntaladas; desde el 3, +1 de amenaza.</small></div>`
-      : '';
+  // niveles de obra: cada uno suma un giro a todos los anteriores
+  const level = prefs.ascension;
+  const asc = `<h3 class="sec">Nivel de obra</h3>
+        <div class="levels">${ASCENSIONS.map((a, i) => `<button class="level ${i === level ? 'on' : i < level ? 'in' : ''}" data-asc="${i}" ${i > meta.ascMax ? 'disabled' : ''} data-tip="<b>Nivel ${i + 1} · ${a.name}</b>${a.desc}${i > meta.ascMax ? '<hr>Gana una campaña en el nivel anterior para abrirlo.' : ''}"><b>${i + 1}</b><span>${a.name}</span></button>`).join('')}</div>
+        <ul class="level-twists">${level === 0 ? '<li>Obra limpia: las reglas de siempre. Ganar un nivel abre el siguiente, con un giro más y un 25 % más de renombre.</li>' : ASCENSIONS.slice(1, level + 1).map((a, i) => `<li><b>${i + 2}</b>${a.desc}</li>`).join('')}</ul>`;
   // lo que el gremio aporta a esta campaña, calculado con el mismo reductor
   const probe = newRun(runOpts(), 1);
   const legends = unlockedPool(meta).length;

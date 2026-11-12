@@ -7,16 +7,18 @@ import { SPECIALS } from '../rules/specials';
 import { ARCH, Arch, TOOLS } from '../rules/tools';
 import { sfx } from './audio';
 import { ALL_CARDS, backEl, cardEl, ferreteroEl, portraitEl } from './card';
+import { masteryBadge } from './engraving';
 import { $, $$, Campaign, S, app, loadJson } from './core';
 import { glyphSvg } from './glyphs';
 import { setScreen } from './router';
 import { choice, toolTile } from './widgets';
+import { platform } from './platform';
 
 const META_KEY = 'derrumbe:meta';
 const SETTLED_KEY = 'derrumbe:settled';
 
 export const meta: Meta = loadMeta(loadJson(META_KEY));
-export const saveMeta = () => localStorage.setItem(META_KEY, JSON.stringify(meta));
+export const saveMeta = () => platform.save(META_KEY, JSON.stringify(meta));
 saveMeta(); // deja guardada la migración, si la hubo
 
 /** Renombre que dio la última campaña cerrada (para el acta). */
@@ -30,8 +32,8 @@ export function maybeSettle(c: Campaign): void {
   const run = c.run;
   if (run.phase !== 'won' && run.phase !== 'lost') return;
   const mark = run.endless ? c.key + ':abismo' : c.key;
-  if (localStorage.getItem(SETTLED_KEY) === mark) return;
-  localStorage.setItem(SETTLED_KEY, mark);
+  if (platform.load(SETTLED_KEY) === mark) return;
+  platform.save(SETTLED_KEY, mark);
   if (run.daily && meta.daily.date === run.daily && !run.endless) {
     // la Obra diaria paga una vez al día; repetirla solo puede mejorar la marca
     lastGain = 0;
@@ -160,8 +162,13 @@ function collection(list: HTMLElement): void {
     return box;
   };
 
-  const decks = sec('Barajas', DECKS.filter((d) => deckUnlocked(meta, d.id)).length, DECKS.length, 'Cada baraja inicial tiene su dorso. Se desbloquean con logros y se eligen al empezar una campaña.');
-  for (const d of DECKS) decks.appendChild(deckUnlocked(meta, d.id) ? choice(backEl(d.id), d.name, d.desc, null, null) : hidden(d.name, `Bloqueada. Logro: ${achName(d.unlock)}.`, d.id));
+  const decks = sec('Barajas', DECKS.filter((d) => deckUnlocked(meta, d.id)).length, DECKS.length, 'Cada baraja inicial tiene su dorso. Se desbloquean con logros y se eligen al empezar una campaña. El remache marca el nivel de obra más alto que has ganado con ella.');
+  for (const d of DECKS) {
+    const back = backEl(d.id);
+    back.dataset.lupa = `deck:${d.id}`;
+    const box = decks.appendChild(deckUnlocked(meta, d.id) ? choice(back, d.name, d.desc, null, null) : hidden(d.name, `Bloqueada. Logro: ${achName(d.unlock)}.`, d.id));
+    box.insertAdjacentHTML('beforeend', masteryBadge(meta.mastery.decks[d.id] ?? 0));
+  }
 
   const seenSp = SPECIALS.filter((s) => have(meta.seen.specials, s.id)).length;
   const specials = sec('Cartas especiales', seenSp, SPECIALS.length, 'Aparecen aquí cuando te tocan en una campaña. Las ocho últimas son legendarias: raras de ver, y hay que ganárselas.');
@@ -172,11 +179,12 @@ function collection(list: HTMLElement): void {
   }
 
   const seenTools = TOOLS.filter((t) => have(meta.seen.tools, t.id)).length;
-  const tools = sec('Herramientas', seenTools, TOOLS.length, 'Las que has llevado en el cinturón. Su color dice la rareza: común, de oficio, de capataz o reliquia.');
+  const tools = sec('Herramientas', seenTools, TOOLS.length, 'Las que has llevado en el cinturón. El marco dice la rareza: hierro (común), cobre con verdín (de oficio), latón (de capataz) o carmesí y oro (reliquia). El remache es tu sello de maestría: el nivel de obra más alto que has ganado con ella puesta.');
   const boxes = (Object.keys(ARCH) as Arch[]).flatMap((a) => TOOLS.filter((t) => t.arch === a));
   for (const t of boxes) {
     const locked = t.box && !meta.up[`caja_${t.box}`];
-    tools.appendChild(have(meta.seen.tools, t.id) ? choice(toolTile(t.id), t.name, t.desc, ARCH[t.arch], null) : hidden('???', locked ? `En una caja del gremio: ${ARCH[t.box!]}.` : `${ARCH[t.arch]}. Aún no la has llevado.`));
+    const box = tools.appendChild(have(meta.seen.tools, t.id) ? choice(toolTile(t.id), t.name, t.desc, ARCH[t.arch], null) : hidden('???', locked ? `En una caja del gremio: ${ARCH[t.box!]}.` : `${ARCH[t.arch]}. Aún no la has llevado.`));
+    box.insertAdjacentHTML('beforeend', masteryBadge(meta.mastery.tools[t.id] ?? 0));
   }
 
   const marks = sec('Sellos y tratamientos', SEALS.length + TREATMENTS.length, SEALS.length + TREATMENTS.length, 'Marcas que se estampan en las cartas de baraja: en la forja de la ferretería, en la selección tras cada obra o como premio de un contrato.');

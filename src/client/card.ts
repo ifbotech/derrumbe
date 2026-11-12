@@ -3,6 +3,7 @@
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
 import { Card, CardSuit, MATERIAL, RANK_LABEL, SEAL, Seal, Suit, TREATMENT, Treatment } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
+import { engravingDefs, plateFrame, shade } from './engraving';
 import { GLYPH } from './glyphs';
 
 // ───────────────────────── Palos ─────────────────────────
@@ -19,14 +20,19 @@ export function suitSvg(suit: Suit, cls = ''): string {
   return `<svg class="glyph s-${suit} ${cls}" viewBox="-11 -11.5 22 23" aria-hidden="true">${PIP[suit]}</svg>`;
 }
 
-const FILL: Record<Suit, string> = { S: 'ink', C: 'ink', H: 'rd', D: 'rd' };
+const FILL: Record<Suit, string> = { S: 'kS', C: 'kC', H: 'kH', D: 'kD' };
+/** La pinta tal como se estampa: las picas llevan además un contrarrayado, para distinguirlas sin depender del color. */
+const SPADE_D = PIP.S.match(/d="([^"]+)"/)![1];
+const pipInk = (suit: Suit) => PIP[suit] + (suit === 'S' ? `<path class="xh" d="${SPADE_D}" fill="url(#hatch-pip)"/>` : '');
 const pipAt = (suit: Suit, x: number, y: number, scale: number, cls = FILL[suit], rot = 0) =>
   `<g transform="translate(${x} ${y})${rot ? ` rotate(${rot})` : ''} scale(${scale})" class="${cls}">${PIP[suit]}</g>`;
 
 // ───────────────────────── Definiciones compartidas ─────────────────────────
 
-const PAPER = '#f1ebdc';
-const INK = '#151311';
+const PAPER = '#eae0ce';
+const INK = '#181614';
+/** Qué carta representa cada elemento pintado (para la lupa de grabador). */
+export const cardOf = new WeakMap<Element, Card>();
 export function ensureDefs(): void {
   if (document.getElementById('deck-defs')) return;
   const holder = document.createElement('div');
@@ -42,13 +48,15 @@ export function ensureDefs(): void {
       <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="5" result="n"/>
       <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
-    <pattern id="pat-S" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#2c5fa3"/><path d="M7,0 V14" stroke="${PAPER}" stroke-width="1.5"/><circle cx="2.6" cy="3.5" r="1.3" fill="${INK}"/><circle cx="11.4" cy="10.5" r="1.3" fill="${INK}"/></pattern>
-    <pattern id="pat-H" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" fill="#e2231a"/><path d="M0,0.8 H24 M0,8.8 H24 M6,0.8 V8.8 M18,8.8 V16.8" stroke="${PAPER}" stroke-width="1.7"/></pattern>
-    <pattern id="pat-D" width="18" height="18" patternUnits="userSpaceOnUse"><rect width="18" height="18" fill="#3fae9f"/><path d="M0,18 L18,0 M-2,2 L2,-2 M16,20 L20,16" stroke="${PAPER}" stroke-width="1.5"/><path d="M0,0 L18,18" stroke="${INK}" stroke-width="0.8" opacity="0.55"/></pattern>
-    <pattern id="pat-C" width="22" height="18" patternUnits="userSpaceOnUse"><rect width="22" height="18" fill="#8d8b7e"/><circle cx="4" cy="5" r="1.4" fill="${INK}"/><circle cx="14" cy="3" r="0.9" fill="${INK}"/><circle cx="9" cy="12" r="1.6" fill="${INK}"/><circle cx="18" cy="13" r="1" fill="${INK}"/><path d="M0,17.2 H22" stroke="${PAPER}" stroke-width="1.3"/></pattern>
+    <pattern id="pat-S" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" style="fill:var(--mat-S)"/><path d="M7,0 V14" stroke="${PAPER}" stroke-width="1.5"/><path d="M0,14 L14,0" stroke="${PAPER}" stroke-width="0.7" opacity="0.45"/><circle cx="2.6" cy="3.5" r="1.3" fill="${PAPER}"/><circle cx="11.4" cy="10.5" r="1.3" fill="${PAPER}"/></pattern>
+    <pattern id="pat-H" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" style="fill:var(--mat-H)"/><path d="M0,0.8 H24 M0,8.8 H24 M6,0.8 V8.8 M18,8.8 V16.8" stroke="${PAPER}" stroke-width="1.7"/></pattern>
+    <pattern id="pat-D" width="18" height="18" patternUnits="userSpaceOnUse"><rect width="18" height="18" style="fill:var(--mat-D)"/><path d="M0,18 L18,0 M-2,2 L2,-2 M16,20 L20,16" stroke="${PAPER}" stroke-width="1.5"/><path d="M0,0 L18,18" stroke="${INK}" stroke-width="0.8" opacity="0.55"/></pattern>
+    <pattern id="pat-C" width="22" height="18" patternUnits="userSpaceOnUse"><rect width="22" height="18" style="fill:var(--mat-C)"/><circle cx="4" cy="5" r="1.4" fill="${INK}"/><circle cx="14" cy="3" r="0.9" fill="${PAPER}"/><circle cx="9" cy="12" r="1.6" fill="${INK}"/><circle cx="18" cy="13" r="1" fill="${PAPER}"/><path d="M0,17.2 H22" stroke="${INK}" stroke-width="1" opacity="0.6"/></pattern>
+    ${engravingDefs()}
+    <pattern id="hatch-pip" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0,1.2 H2.4 M1.2,0 V2.4" stroke="${PAPER}" stroke-width="0.3" opacity="0.55"/></pattern>
     <pattern id="pat-back" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${PAPER}" stroke-width="1" opacity="0.5"/><rect x="8" y="8" width="4" height="4" fill="${PAPER}"/></pattern>
     <pattern id="pat-back-ink" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${INK}" stroke-width="1" opacity="0.45"/><rect x="8" y="8" width="4" height="4" fill="${INK}"/></pattern>
-    <pattern id="pat-haz" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="20" height="20" fill="#f2b90f"/><rect width="10" height="20" fill="${INK}"/></pattern>
+    <pattern id="pat-haz" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="20" height="20" fill="#e0a43a"/><rect width="10" height="20" fill="${INK}"/></pattern>
   </defs></svg>`;
   document.body.appendChild(holder.firstElementChild!);
 }
@@ -133,7 +141,7 @@ function queen(s: Suit): [string, string] {
     <path class="cut" d="M112,116 C118,119 121,125 119,131"/>
     <path class="cut" d="M95,87 C104,80 115,80 123,85 M98,77 C118,66 144,70 157,94 M150,72 C158,86 160,102 158,120 M84,111 l5,-1 M100,90 l-3,-5 M107,88 l-1,-6 M114,89 l2,-5"/>
     <path class="pearl" d="M119,160 C128,166 142,166 151,158"/>
-    <circle class="gd" cx="147" cy="120" r="6" stroke="#f1ebdc" stroke-width="2"/>
+    <circle class="gd" cx="147" cy="120" r="6" stroke="#eae0ce" stroke-width="2"/>
     <path class="gd ol" d="M92,60 L101,34 L110,60 Z M114,60 L125,23 L136,60 Z M140,60 L149,34 L158,60 Z"/>
     <path class="gd ol" d="M90,73 L87,59 H163 L160,73 Z"/>`;
   const live = `
@@ -172,13 +180,16 @@ function figure(suit: Suit, rank: number): string {
   const mirror = rank === 12 ? ` transform="translate(250 0) scale(-1 1) ${zoom}"` : ` transform="${zoom}"`;
   const sx = rank === 12 ? -1 : 1;
   const cap = `<text class="cap" transform="translate(23 188) rotate(-90)">${TITLE[rank]} · ${MATERIAL[suit]}</text>`;
+  // capas de estampación: el sangrado de la tinta detrás del busto y la sombra tallada sobre el ropaje
+  const bleed = '<circle cx="128" cy="104" r="96" fill="url(#tone-ink)" opacity="0.32"/><path d="M10,10 H96 L10,118 Z" fill="url(#hatch-fine)" opacity="0.5"/>';
+  const carve = shade('M150,146 C170,138 184,136 192,138 L214,236 H150 Z', 'hatch-paper', 0.55) + shade('M40,236 L48,200 H98 L96,236 Z', 'hatch-cross', 0.5);
   const halves = (body: string, extra = '') => `
     <g clip-path="url(#half)" data-sx="${sx}" data-sy="1"><g${mirror}${extra}>${body}</g></g>
     <g transform="rotate(180 125 175)"><g clip-path="url(#half)" data-sx="${-sx}" data-sy="-1"><g${mirror}${extra}>${body}</g></g></g>`;
   return `
     <svg class="ly art still" viewBox="0 0 250 350" aria-hidden="true">
       <g filter="url(#rough)">
-        <g clip-path="url(#inframe)">${halves(still)}</g>
+        <g clip-path="url(#inframe)">${halves(bleed + still + carve)}</g>
         <path class="belt" d="M-6,199.1 L256,150.9"/><path class="stitch" d="M-6,199.1 L256,150.9"/>
       </g>
       ${cap}<g transform="rotate(180 125 175)">${cap}</g>
@@ -203,7 +214,7 @@ const LAYOUT: Record<number, [number, number][]> = {
 
 function numberArt(suit: Suit, rank: number): string {
   const pips = LAYOUT[rank]
-    .map(([c, y], i) => `<g transform="translate(${X[c]} ${y})${y > 176 ? ' rotate(180)' : ''}"><g class="stamp" style="--i:${i}"><g class="pip" style="--i:${i}"><g class="${FILL[suit]}" transform="scale(${rank >= 7 ? 1.95 : 2.3})">${PIP[suit]}</g></g></g></g>`)
+    .map(([c, y], i) => `<g transform="translate(${X[c]} ${y})${y > 176 ? ' rotate(180)' : ''}"><g class="stamp" style="--i:${i}"><g class="pip" style="--i:${i}"><g class="${FILL[suit]}" transform="scale(${rank >= 7 ? 1.95 : 2.3})">${pipInk(suit)}</g></g></g></g>`)
     .join('');
   const marks = '<path class="reg" d="M125,12 v9 M125,329 v9 M12,175 h9 M229,175 h9"/>';
   return `<svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">${marks}${pips}</svg>`;
@@ -217,7 +228,7 @@ function aceArt(suit: Suit): string {
       <path class="ink" d="M60,291 L190,284 L187,311 L57,318 Z"/>
     </g>
     <text class="banner-txt" x="123" y="307" text-anchor="middle" transform="rotate(-3.1 123 301)">${MATERIAL[suit]}</text>
-    <g transform="translate(125 168)"><g class="stamp" style="--i:1"><g class="pip ace-pip" style="--i:0"><g class="${FILL[suit]}" transform="scale(4.6)">${PIP[suit]}</g></g></g></g>
+    <g transform="translate(125 168)"><g class="stamp" style="--i:1"><g class="pip ace-pip" style="--i:0"><g class="${FILL[suit]}" transform="scale(4.6)">${pipInk(suit)}</g></g></g></g>
   </svg>`;
 }
 
@@ -256,12 +267,12 @@ interface BackDef {
 const TOWER = `<path d="M101,214 h48 v-24 h-8 v-24 h-8 v-26 h-16 v26 h-8 v24 h-8 Z" fill="${PAPER}"/><path d="M125,140 l-5,22 l8,10 l-6,18 l7,10 l-3,14" fill="none" stroke="${INK}" stroke-width="2.4"/>`;
 const inDiamond = (glyph: string) => `<svg x="85" y="135" width="80" height="80" viewBox="0 0 100 100">${GLYPH[glyph]}</svg>`;
 const BACKS: Record<string, BackDef> = {
-  obra: { field: INK, dark: true, diamond: '#e2231a', emblem: TOWER },
+  obra: { field: INK, dark: true, diamond: '#ae2d24', emblem: TOWER },
   acero: { field: 'url(#pat-S)', dark: true, diamond: INK, emblem: `<g transform="translate(125 158) scale(2.5)" fill="${PAPER}">${PIP.S}</g><g transform="translate(125 206) scale(1.7)" fill="${PAPER}">${PIP.C}</g>` },
   prestamista: { field: '#f0b415', dark: false, diamond: INK, emblem: `<ellipse cx="125" cy="204" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><ellipse cx="125" cy="188" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><ellipse cx="125" cy="172" rx="34" ry="11" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><circle cx="125" cy="140" r="17" fill="#f0b415" stroke="${PAPER}" stroke-width="3"/><path d="M125,130 V150" stroke="${INK}" stroke-width="4"/>` },
-  ases: { field: '#e2231a', dark: true, diamond: PAPER, emblem: `<text x="125" y="208" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#e2231a">${PIP.S}</g>` },
+  ases: { field: '#ae2d24', dark: true, diamond: PAPER, emblem: `<text x="125" y="208" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#ae2d24">${PIP.S}</g>` },
   corta: { field: PAPER, dark: false, diamond: '#f0b415', emblem: inDiamond('sierra') },
-  caos: { field: '#3fae9f', dark: false, diamond: PAPER, emblem: inDiamond('incognita') },
+  caos: { field: '#2a6359', dark: false, diamond: PAPER, emblem: inDiamond('incognita') },
 };
 let currentBack = 'obra';
 /** Dorso con el que se dibujan las cartas a partir de ahora (la baraja de la campaña en curso). */
@@ -297,6 +308,8 @@ function specialArt(card: Card): string {
   return `<svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
     <g filter="url(#rough)">
       <rect class="ink" x="10" y="10" width="230" height="330"/>
+      <rect x="10" y="10" width="230" height="330" fill="url(#tone-paper)" opacity="0.13"/>
+      <path d="M10,10 H74 L10,74 Z M240,340 H176 L240,276 Z" fill="url(#hatch-paper)" opacity="0.55"/>
       ${PORTRAIT[s.id] ? '<rect class="pp" x="44" y="22" width="162" height="212"/>' : `<g transform="translate(125 142)"><g class="pp burst">${RAYS}</g><circle class="pp" r="70"/><circle class="sp-ring" r="62"/></g>`}
       ${PORTRAIT[s.id] ? '' : `<svg x="67" y="84" width="116" height="116" viewBox="0 0 100 100">${GLYPH[s.id] ?? ''}</svg>`}
     </g>
@@ -306,23 +319,21 @@ function specialArt(card: Card): string {
   </svg><div class="ly sp-desc">${s.desc}</div>`;
 }
 
-/** Fondo y rayos de una ficha según su rareza (las de servicio van en amarillo de obra). */
-const TILE_INK: Record<string, [string, string]> = { service: ['gd', 'ink'], comun: ['cn', 'ink'], oficio: ['gl', 'ink'], capataz: ['rd', 'ink'], reliquia: ['ink', 'gd'] };
-
-/** Ficha con forma de carta para herramientas (su color dice la rareza) y servicios de la ferretería. */
+/** Ficha con forma de carta: las herramientas van en chapa estampada (el metal dice la rareza); los servicios, en cartón de obra. */
 export function tileEl(glyph: string, name: string, kind: 'relic' | 'service', rarity = 'capataz'): HTMLDivElement {
   ensureDefs();
   const el = document.createElement('div');
-  const [bg, rays] = TILE_INK[kind === 'service' ? 'service' : rarity] ?? TILE_INK.capataz;
-  el.className = `card k-tile t-${kind} r-${kind === 'service' ? 'service' : rarity}`;
+  const tone = kind === 'service' ? 'service' : rarity;
+  el.className = `card k-tile t-${kind} r-${tone}`;
+  const ground = kind === 'service' ? '<rect class="gd" x="10" y="10" width="230" height="330"/><rect x="10" y="10" width="230" height="330" fill="url(#hatch-fine)" opacity="0.28"/>' : plateFrame(rarity);
   el.innerHTML = `
     <div class="card-in"><div class="card-front">
       <div class="ly paper"></div>
       <svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
         <g filter="url(#rough)">
-          <rect class="${bg}" x="10" y="10" width="230" height="330"/>
-          <g transform="translate(125 150)"><g class="${rays} burst">${RAYS}</g><circle class="pp" r="72"/><circle class="sp-ring" r="63"/></g>
-          <path class="${bg === 'ink' ? 'rd' : 'ink'}" d="M30,250 L222,241 L219,278 L27,287 Z"/>
+          ${ground}
+          <g transform="translate(125 150)"><g class="ink burst">${RAYS}</g><circle class="pp" r="72"/><circle r="72" fill="url(#tone-ink)" opacity="0.2"/><circle class="sp-ring" r="63"/></g>
+          <path class="ink" d="M30,250 L222,241 L219,278 L27,287 Z"/>
           <svg x="65" y="90" width="120" height="120" viewBox="0 0 100 100">${GLYPH[glyph] ?? ''}</svg>
         </g>
         ${nameText(name, 'on-ink').replace('y="264"', 'y="271"').replace('124 258', '124 265')}
@@ -347,7 +358,7 @@ const HEAD_YOUNG = `
     <path class="ink" d="M96,72 L91,97 L80,111 L90,116 L88,123 L93,127 L90,134 C92,142 100,148 112,150 L118,186 L152,186 L156,140 L160,100 L156,70 Z"/>
     <path class="cut" d="M84,111 l5,-1 M116,106 C121,111 122,117 120,122"/>
     <path class="cut heavy" d="M94,90 L120,84"/>`;
-const CLOAK = (fill: string, d: string) => `<path ${fill.startsWith('url') ? `fill="${fill}"` : `class="${fill}"`} stroke="#151311" stroke-width="4" stroke-linejoin="round" d="${d}"/>`;
+const CLOAK = (fill: string, d: string) => `<path ${fill.startsWith('url') ? `fill="${fill}"` : `class="${fill}"`} stroke="#181614" stroke-width="4" stroke-linejoin="round" d="${d}"/>`;
 const iris = (x: number, y: number) => `<g transform="translate(${x} ${y})"><g class="lid"><g class="iris"><circle class="rd" r="6"/><circle class="pp" r="2.2"/></g></g></g>`;
 const mirrored = (body: string, live = false) => `<g transform="translate(250 0) scale(-1 1)"${live ? ' data-sx="-1" data-sy="1"' : ''}><g transform="translate(-52 -50) scale(1.5)">${body}</g></g>`;
 
@@ -395,7 +406,7 @@ const PORTRAIT: Record<string, Portrait> = {
       <path class="cut heavy" d="M84,134 H110"/>
       <path class="pp" d="M125,170 C108,158 84,162 68,182 C90,174 108,180 125,188 C142,180 160,174 182,182 C166,162 142,158 125,170 Z"/>
       <path class="rd ol" d="M103,230 L125,242 L147,230 V256 L125,244 L103,256 Z"/>
-      <circle cx="154" cy="136" r="21" fill="none" stroke="#f0b415" stroke-width="5.5"/><path d="M171,150 C188,172 188,204 178,228" fill="none" stroke="#f0b415" stroke-width="3" stroke-dasharray="4 3"/>
+      <circle cx="154" cy="136" r="21" fill="none" stroke="#c98a1e" stroke-width="5.5"/><path d="M171,150 C188,172 188,204 178,228" fill="none" stroke="#c98a1e" stroke-width="3" stroke-dasharray="4 3"/>
       <rect class="gd ol" x="22" y="284" width="48" height="11" rx="4"/><rect class="gd ol" x="26" y="272" width="48" height="11" rx="4"/><rect class="gd ol" x="20" y="260" width="48" height="11" rx="4"/><circle class="gd ol" cx="54" cy="244" r="12"/>`,
     live: eye(154, 136, 13, 10),
   },
@@ -477,7 +488,7 @@ const PORTRAIT: Record<string, Portrait> = {
 /** Cuerpo de un retrato para incrustarlo donde haga falta (250 × 312, sin la banda del nombre). */
 function portraitBody(id: string): string {
   const p = PORTRAIT[id];
-  return `<g filter="url(#rough)"><rect class="${p.bg}" x="10" y="10" width="230" height="330"/>${p.rays ? `<g transform="translate(125 150)" class="${p.bg === 'rd' ? 'ink' : 'pp'} port-rays">${RAYS}${RAYS.replace(/rotate\\((\\d+\\.?\\d*)\\)/g, (_, a) => `rotate(${Number(a) + 11.25}) scale(1.45)`)}</g>` : ''}${p.still}</g>${p.live}`;
+  return `<g filter="url(#rough)"><rect class="${p.bg}" x="10" y="10" width="230" height="330"/>${p.rays ? `<g transform="translate(125 150)" class="${p.bg === 'rd' ? 'ink' : 'pp'} port-rays">${RAYS}${RAYS.replace(/rotate\\((\\d+\\.?\\d*)\\)/g, (_, a) => `rotate(${Number(a) + 11.25}) scale(1.45)`)}</g>` : ''}${p.still}${shade('M240,312 H128 L240,170 Z', 'tone-ink', 0.3)}${shade('M10,10 H104 L10,126 Z', 'hatch-fine', 0.42)}</g>${p.live}`;
 }
 
 /** Carta de personaje: el Ferretero ('ferretero') o un jefe de obra ('j-' + id del jefe). */
@@ -485,6 +496,7 @@ export function portraitEl(id: string, name: string): HTMLDivElement {
   ensureDefs();
   const el = document.createElement('div');
   el.className = 'card k-npc';
+  el.dataset.lupa = id.startsWith('j-') ? `boss:${id.slice(2)}` : `npc:${id}`;
   el.innerHTML = `
     <div class="card-in"><div class="card-front">
       <div class="ly paper"></div>
@@ -502,7 +514,7 @@ export const ferreteroEl = () => portraitEl('ferretero', 'El Ferretero');
 // El sello es un tampón de goma abajo a la izquierda; el tratamiento, un cartabón de tinta arriba a la
 // derecha más un acabado sobre toda la carta. Las esquinas con el índice quedan siempre libres.
 
-const SEAL_INK: Record<Seal, string> = { dinamita: '#e30613', eco: '#2c5fa3', jornal: '#a87400', sindical: '#151311' };
+const SEAL_INK: Record<Seal, string> = { dinamita: '#ae2d24', eco: '#1f4e63', jornal: '#a06a10', sindical: '#181614' };
 const SEAL_ICON: Record<Seal, string> = {
   dinamita: '<path d="M-9,-2 H9 V16 H-9 Z"/><path d="M0,-2 C0,-12 9,-8 10,-17" fill="none" stroke-width="3.4"/><path d="M10,-24 l3,5 l6,-1 l-4,5 l3,5 l-6,-1 l-3,5 l-2,-6 l-6,-1 l5,-4 Z"/>',
   eco: '<circle r="4.5"/><path d="M-11,-11 C-17,-4 -17,4 -11,11 M11,-11 C17,-4 17,4 11,11 M-19,-17 C-28,-6 -28,6 -19,17 M19,-17 C28,-6 28,6 19,17" fill="none" stroke-width="3.4"/>',
@@ -520,7 +532,7 @@ function sealLayer(seal: Seal): string {
   </g></svg>`;
 }
 
-const TREAT_FILL: Record<Treatment, string> = { forjado: '#2b2f33', templado: '#2c5fa3', policromado: '#f0b415', agrietado: '#e30613' };
+const TREAT_FILL: Record<Treatment, string> = { forjado: '#33363a', templado: '#1f4e63', policromado: '#c98a1e', agrietado: '#ae2d24' };
 const TREAT_ICON: Record<Treatment, string> = {
   forjado: `<circle cx="218" cy="26" r="5" fill="${PAPER}"/><circle cx="226" cy="46" r="4" fill="${PAPER}"/><circle cx="202" cy="20" r="4" fill="${PAPER}"/>`,
   templado: `<path d="M196,22 q7,-9 14,0 t14,0 M208,38 q6,-8 12,0 t12,0" fill="none" stroke="${PAPER}" stroke-width="3.6" stroke-linecap="round"/>`,
@@ -529,10 +541,10 @@ const TREAT_ICON: Record<Treatment, string> = {
 };
 const TREAT_BODY: Record<Treatment, string> = {
   // largueros de acero remachados a los lados
-  forjado: `<path fill="#2b2f33" d="M10,92 H19 V262 H10 Z M231,96 H240 V258 H231 Z"/>${[108, 150, 192, 234].map((y) => `<circle cx="14.5" cy="${y}" r="2.4" fill="${PAPER}"/><circle cx="235.5" cy="${y + 4}" r="2.4" fill="${PAPER}"/>`).join('')}`,
+  forjado: `<path fill="#33363a" d="M10,92 H19 V262 H10 Z M231,96 H240 V258 H231 Z"/>${[108, 150, 192, 234].map((y) => `<circle cx="14.5" cy="${y}" r="2.4" fill="${PAPER}"/><circle cx="235.5" cy="${y + 4}" r="2.4" fill="${PAPER}"/>`).join('')}`,
   // la línea de temple cruza la carta
-  templado: `<path d="M10,214 q20,-16 40,0 t40,0 t40,0 t40,0 t40,0 t30,-6" fill="none" stroke="#2c5fa3" stroke-width="3.2" opacity="0.8"/><path d="M10,224 q20,-16 40,0 t40,0 t40,0 t40,0 t40,0 t30,-6" fill="none" stroke="#2c5fa3" stroke-width="1.4" opacity="0.6"/>`,
-  policromado: `<rect x="14" y="14" width="222" height="322" fill="none" stroke="#f0b415" stroke-width="4" stroke-dasharray="14 5"/>`,
+  templado: `<path d="M10,214 q20,-16 40,0 t40,0 t40,0 t40,0 t40,0 t30,-6" fill="none" stroke="#1f4e63" stroke-width="3.2" opacity="0.8"/><path d="M10,224 q20,-16 40,0 t40,0 t40,0 t40,0 t40,0 t30,-6" fill="none" stroke="#1f4e63" stroke-width="1.4" opacity="0.6"/>`,
+  policromado: `<rect x="14" y="14" width="222" height="322" fill="none" stroke="#c98a1e" stroke-width="4" stroke-dasharray="14 5"/>`,
   agrietado: `<path d="M152,10 L140,62 L161,96 L134,140 L150,182 L120,226 L138,270 L112,340 M134,140 L96,160 L70,150 M150,182 L190,204 L206,244" fill="none" stroke="${INK}" stroke-width="5" stroke-linejoin="bevel"/><path d="M152,10 L140,62 L161,96 L134,140 L150,182 L120,226 L138,270 L112,340 M134,140 L96,160 L70,150 M150,182 L190,204 L206,244" fill="none" stroke="${PAPER}" stroke-width="1.6" stroke-linejoin="bevel"/>`,
 };
 
@@ -566,6 +578,7 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
   const kind = card.sp ? 'special' : card.suit === 'X' ? 'joker' : card.rank > 10 ? 'figure' : card.rank === 1 ? 'ace' : 'number';
   el.className = `card s-${card.suit} k-${kind}${card.tr ? ` t-${card.tr}` : ''}${card.seal ? ` z-${card.seal}` : ''}${opts.faceDown ? ' flipped' : ''}`;
   el.dataset.id = card.id;
+  cardOf.set(el, card);
   const tip = cardTip(card);
   if (tip) el.dataset.tip = tip;
   const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : card.rank > 10 ? figure(card.suit, card.rank) : card.rank === 1 ? aceArt(card.suit) : numberArt(card.suit, card.rank);

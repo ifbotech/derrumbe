@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Card, Config, DEFAULT_CONFIG, GameEvent, GameState, StrikeEnv, Suit, applyAction, classify, createGame, currentPlayer, eventsFor, newTowers, previewStrike, reorder, seedFrom, sortCards, strike, viewFor } from '../src/rules/engine';
+import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameEvent, GameState, StrikeEnv, Suit, applyAction, classify, createGame, currentPlayer, eventsFor, newTowers, previewStrike, reorder, seedFrom, sortCards, strike, viewFor } from '../src/rules/engine';
 import { chooseAction, formations } from '../src/rules/bot';
 import { ARCH, RARITY, TOOL, TOOLS, bestOrder, toolPool } from '../src/rules/tools';
 
@@ -39,6 +39,9 @@ describe('formaciones', () => {
     expect(classify(cards('S2', 'S4', 'S6', 'S8', 'S10'))).toBe('color');
     expect(classify(cards('S9', 'H10', 'D1'))).toBe('escalera'); // el As enlaza por arriba
     expect(classify(cards('S1', 'H2', 'D3'))).toBe('escalera'); // y por abajo
+    expect(classify(cards('S1', 'H9'))).toBe('compania'); // un As acompaña a cualquier carta
+    expect(classify(cards('S1', 'H1'))).toBe('grupo'); // dos ases son un grupo
+    expect(classify(cards('S1', 'H9', 'D4'))).toBeNull();
     expect(classify(cards('S2', 'H9'))).toBeNull();
     expect(classify(cards('S2', 'X1'))).toBeNull();
   });
@@ -69,6 +72,8 @@ describe('Fuerza × Resonancia', () => {
   it('cada formación pone su base y redondea el producto', () => {
     expect(hit(['H6', 'C6'], 'C')).toMatchObject({ fuerza: 14, res: 1.2, total: 17, wallGain: 2, repair: 2 });
     expect(hit(['S3', 'H4', 'D5'], 'C')).toMatchObject({ fuerza: 20, res: 1.3, total: 26 });
+    // as de compañía: el As suma sus 11 y el poder de su palo (aquí, perforar)
+    expect(hit(['H7', 'S1'], 'D')).toMatchObject({ formation: 'compania', fuerza: 29, res: 1.1, total: 32, repair: 3 });
     expect(hit(['S4', 'H4', 'D9', 'C9'], 'H')).toMatchObject({ fuerza: 37, res: 1.5, total: 56 });
     expect(hit(['S2', 'S4', 'S6', 'S8', 'S10'], 'D')).toMatchObject({ fuerza: 68, res: 1.8, total: 122 });
     expect(hit(['H5', 'C5', 'D5', 'S9', 'H9'], 'D')).toMatchObject({ fuerza: 47, res: 2, total: 94 });
@@ -108,8 +113,8 @@ describe('cinturón: el orden importa', () => {
   const run = cards('S5', 'S6', 'S7'); // escalera de color contra ♦: 10 + 36 de Fuerza, ×2
 
   it('lo que suma Resonancia cuenta donde está; lo que multiplica, multiplica todo lo de su izquierda', () => {
-    expect(strike(env(['prisma', 'plano_maestro']), run, 'D')).toMatchObject({ fuerza: 46, res: 6, total: 276 }); // (2 + 1) × 2
-    expect(strike(env(['plano_maestro', 'prisma']), run, 'D')).toMatchObject({ fuerza: 46, res: 5, total: 230 }); // 2 × 2 + 1
+    expect(strike(env(['prisma', 'plano_maestro']), run, 'D')).toMatchObject({ fuerza: 46, res: 7, total: 322 }); // (2 + 1,5) × 2
+    expect(strike(env(['plano_maestro', 'prisma']), run, 'D')).toMatchObject({ fuerza: 46, res: 5.5, total: 253 }); // 2 × 2 + 1,5
   });
 
   it('el Diapasón copia la herramienta de su derecha', () => {
@@ -140,7 +145,7 @@ describe('cinturón: el orden importa', () => {
     expect(new Set(TOOLS.map((t) => t.rarity))).toEqual(new Set(Object.keys(RARITY)));
     for (const arch of ['precision', 'sismo', 'alquimia', 'limite', 'trituradora'] as const) expect(TOOLS.filter((t) => t.arch === arch).length).toBeGreaterThanOrEqual(4);
     for (const t of TOOLS) expect(ARCH[t.arch], t.id).toBeTruthy();
-    expect(toolPool([]).length).toBe(30);
+    expect(toolPool([]).length).toBe(32);
     expect(toolPool(['precision', 'sismo', 'alquimia', 'limite', 'trituradora']).length).toBe(TOOLS.length);
     // ninguna revienta al resolverse sobre una mesa cualquiera
     for (const t of TOOLS) expect(() => strike(env([t.id, 'piqueta']), cards('S5', 'S6', 'S7'), 'D'), t.id).not.toThrow();
@@ -156,7 +161,7 @@ describe('herramientas con sinergia', () => {
     expect(e.tools[1].n).toBe(1);
     // onda sísmica (un cuarto de 30 = 8) + cizalla (la mitad = 15)
     expect(e.towers.D).toMatchObject({ floors: [12, 13], damage: 23 });
-    expect(strike(e, cards('H2'), 'S').res).toBe(1.2); // el Calibre ya suma +0,2
+    expect(strike(e, cards('H2'), 'S').res).toBe(1.15); // el Calibre ya suma +0,15
   });
 
   it('sismo: el Vibrador salpica la mitad del daño de un grupo y la Metralla afila las esquirlas', () => {
@@ -171,9 +176,9 @@ describe('herramientas con sinergia', () => {
     expect(e.towers.D.fx.fractura).toBe(true);
     strike(e, cards('S3', 'H4', 'D5'), 'C');
     expect(e.towers.C.fx.sobrecarga).toBe(true);
-    // contra ♦: fractura ×1,5 y, con dos estados activos al llegar al cinturón… uno ya se gastó: ×1,25
+    // contra ♦: fractura ×1,5 y, al llegar al cinturón, queda un estado activo en la mesa: ×1,5 más
     const res = strike(e, cards('S5'), 'D');
-    expect(res).toMatchObject({ fuerza: 10, res: 1.88, total: 19 });
+    expect(res).toMatchObject({ fuerza: 10, res: 2.25, total: 23 });
     expect(e.towers.D.fx.fractura).toBe(false);
     const crisol = env(['crisol'], { floorHp: { 11: 500, 12: 500, 13: 500 } });
     strike(crisol, cards('S3', 'H4', 'D5'), 'C');
@@ -185,7 +190,10 @@ describe('herramientas con sinergia', () => {
     const e = env(['sismografo', 'ultimo', 'corazon']);
     e.integrity = 8;
     const res = strike(e, cards('S5'), 'D');
-    expect(res).toMatchObject({ fuerza: 10, res: 11, total: 110, hurt: 1 }); // (1 + 1,2) × 2 × 2,5
+    expect(res).toMatchObject({ fuerza: 10, res: 8.8, total: 88, hurt: 0 }); // (1 + 1,2) × 2 × 2; tira el piso: el Corazón no cobra
+    // si el golpe no derriba nada, el Corazón le cuesta 1 al búnker
+    const hard = env(['corazon'], { floorHp: { 11: 500, 12: 500, 13: 500 } });
+    expect(strike(hard, cards('S5'), 'D').hurt).toBe(1);
   });
 
   it('trituradora: destruir cartas ceba el Montacargas y la Prensa', () => {
@@ -275,6 +283,7 @@ describe('golpe limpio y estados de las torres', () => {
     expect(of(events, 'gold')[0].amount).toBe(1);
     expect(of(events, 'siren')[0]).toMatchObject({ reason: 'clean', taken: 0 });
     expect(state.chain).toBe(1);
+    expect(state.players[0].hand.length).toBe(8); // el golpe limpio da una carta de impulso
     // el golpe siguiente resuena +0,5, y si no es limpio la racha se corta
     const next = applyAction(state, 'a', { type: 'attack', cards: ['S5'], target: 'D' });
     expect(of(next.events, 'step').find((st) => st.src === 'chain')).toMatchObject({ dr: 0.5 });
@@ -342,10 +351,10 @@ describe('turno: sirena, muro, descartes, huelga y colapso', () => {
     expect(state.scrap).toBe(1);
     expect(state.exhausted.map((c) => c.id)).toEqual(['S3', 'S4']);
     expect(state.discard.some((c) => ['S2', 'S3', 'S4'].includes(c.id))).toBe(false);
-    expect(state.charge).toBe(8);
+    expect(state.charge).toBe(12);
     expect(of(events, 'burn').length).toBe(1);
     const hit = applyAction(state, 'a', { type: 'attack', cards: ['S5'], target: 'D' });
-    expect(of(hit.events, 'impact')[0].fuerza).toBe(18);
+    expect(of(hit.events, 'impact')[0].fuerza).toBe(22);
     expect(hit.state.charge).toBe(0);
   });
 
@@ -406,8 +415,8 @@ describe('información oculta en partidas online', () => {
     const state = createGame(players, 77);
     const view = viewFor(state, 'a');
     expect(view.hand).toEqual(state.players[0].hand);
-    expect(view.players).toEqual([{ id: 'a', name: 'A', handCount: 6 }, { id: 'b', name: 'B', handCount: 6 }]);
-    for (const key of ['deck', 'rng', 'burnedIds']) expect(view).not.toHaveProperty(key);
+    expect(view.players).toEqual([{ id: 'a', name: 'A', handCount: 6, reserveCount: 0 }, { id: 'b', name: 'B', handCount: 6, reserveCount: 0 }]);
+    for (const key of ['deck', 'rng', 'burnedIds', 'undo']) expect(view).not.toHaveProperty(key);
     // lo no visto (cantera + mano ajena) llega mezclado y ordenado: no delata ni el orden ni quién tiene qué
     const hidden = [...state.deck, ...state.players[1].hand];
     expect(view.unseen).toEqual(sortCards(hidden));
@@ -435,5 +444,140 @@ describe('información oculta en partidas online', () => {
     state.tools = [{ id: 'piqueta', n: 0 }];
     const hand = state.players[0].hand.filter((c) => c.suit !== 'X').slice(0, 1);
     expect(previewStrike(viewFor(state, 'a'), hand, 'D').total).toBe(previewStrike(state, hand, 'D').total);
+  });
+});
+
+describe('andamio: el hueco de reserva', () => {
+  const hand = () => cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8');
+
+  it('guardar una carta no gasta el turno, y al reponer la mano hay una carta más en juego', () => {
+    const s = game(hand(), cards('H9', 'H10', 'D9'));
+    const a = applyAction(s, 'a', { type: 'stash', card: 'S8' });
+    expect(a.state.players[0].reserve.map((c) => c.id)).toEqual(['S8']);
+    expect(a.state.players[0].hand.length).toBe(6);
+    expect(a.state.turnCount).toBe(0); // sigue siendo tu turno y no ha sonado la sirena
+    expect(a.events).toEqual([{ e: 'stash', player: 'a', card: card('S8'), back: null }]);
+    expect(() => applyAction(a.state, 'a', { type: 'stash', card: 'S7' })).toThrow(/andamio/);
+    const b = applyAction(a.state, 'a', { type: 'discard', cards: ['S2'] });
+    expect(b.state.players[0].hand.length).toBe(7);
+    expect(b.state.players[0].reserve.length).toBe(1);
+    expect(b.state.stashed).toBe(false);
+  });
+
+  it('la carta guardada se juega como si estuviera en la mano', () => {
+    const s = game(hand(), cards('H9', 'H10'));
+    const a = applyAction(s, 'a', { type: 'stash', card: 'S8' }).state;
+    const b = applyAction(a, 'a', { type: 'attack', cards: ['S7', 'S8', 'S6'], target: 'D' });
+    expect(of(b.events, 'play')[0].formation).toBe('escaleracolor');
+    expect(b.state.players[0].reserve).toEqual([]);
+  });
+
+  it('con el hueco lleno, guardar otra devuelve la más antigua a la mano; la Pasarela da un segundo hueco', () => {
+    let s = game(hand(), cards('H9', 'H10', 'D9'));
+    s = applyAction(s, 'a', { type: 'stash', card: 'S8' }).state;
+    s = applyAction(s, 'a', { type: 'discard', cards: ['S2'] }).state;
+    const swap = applyAction(s, 'a', { type: 'stash', card: 'S7' });
+    expect(swap.state.players[0].reserve.map((c) => c.id)).toEqual(['S7']);
+    expect(swap.state.players[0].hand.some((c) => c.id === 'S8')).toBe(true);
+    expect(of(swap.events, 'stash')[0].back?.id).toBe('S8');
+    let two = game(hand(), [], ['pasarela']);
+    two = applyAction(two, 'a', { type: 'stash', card: 'S8' }).state;
+    two = applyAction(two, 'a', { type: 'discard', cards: ['S2'] }).state;
+    two = applyAction(two, 'a', { type: 'stash', card: 'S7' }).state;
+    expect(two.players[0].reserve.map((c) => c.id)).toEqual(['S8', 'S7']);
+  });
+
+  it('en sala, el andamio es tan privado como la mano', () => {
+    const state = createGame([{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], 77);
+    const id = state.players[0].hand[0].id;
+    const res = applyAction(state, 'a', { type: 'stash', card: id });
+    expect(eventsFor(res.events, 'b')).toEqual([{ e: 'stash', player: 'a' }]);
+    expect(JSON.stringify(eventsFor(res.events, 'b'))).not.toContain(id);
+    const mine = viewFor(res.state, 'a');
+    const theirs = viewFor(res.state, 'b');
+    expect(mine.reserve.map((c) => c.id)).toEqual([id]);
+    expect(theirs.reserve).toEqual([]);
+    expect(theirs.players[0]).toMatchObject({ handCount: 5, reserveCount: 1 });
+    expect(theirs.unseen.some((c) => c.id === id)).toBe(true); // va mezclada con la cantera: no se sabe dónde está
+  });
+
+  it('sin huecos (como en la partida guiada) no se puede guardar', () => {
+    const s = game(hand(), [], [], { reserveSize: 0 });
+    expect(() => applyAction(s, 'a', { type: 'stash', card: 'S8' })).toThrow(/No hay andamio/);
+  });
+});
+
+describe('tiza de replanteo', () => {
+  const start = () => {
+    const s = game(cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'));
+    s.chalk = 1;
+    return s;
+  };
+
+  it('deshace la última jugada y vuelve a barajar la cantera, para que lo visto no valga', () => {
+    const s = start();
+    const played = applyAction(s, 'a', { type: 'attack', cards: ['S8'], target: 'D' }).state;
+    expect(played.undo).not.toBeNull();
+    expect(viewFor(played, 'a')).toMatchObject({ chalk: 1, canUndo: true });
+    const { state, events } = applyAction(played, 'a', { type: 'undo' });
+    expect(events).toEqual([{ e: 'undo', chalk: 0 }]);
+    expect(state).toMatchObject({ chalk: 0, undo: null, turnCount: 0, integrity: s.integrity });
+    expect(state.towers).toEqual(s.towers);
+    expect(state.players[0].hand).toEqual(s.players[0].hand);
+    expect(sortCards(state.deck)).toEqual(sortCards(s.deck)); // las mismas cartas…
+    expect(state.deck.map((c) => c.id)).not.toEqual(s.deck.map((c) => c.id)); // …en otro orden
+    expect(() => applyAction(state, 'a', { type: 'undo' })).toThrow(/tiza/);
+    // y es determinista: deshacer dos veces desde el mismo punto da lo mismo
+    expect(JSON.stringify(applyAction(played, 'a', { type: 'undo' }).state)).toBe(JSON.stringify(state));
+  });
+
+  it('sin tiza no se guarda historia ni se puede deshacer', () => {
+    const s = game(cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'));
+    const played = applyAction(s, 'a', { type: 'attack', cards: ['S8'], target: 'D' }).state;
+    expect(played.undo).toBeNull();
+    expect(() => applyAction(played, 'a', { type: 'undo' })).toThrow(/tiza/);
+  });
+
+  it('la historia no se anida: solo se recuerda la jugada anterior', () => {
+    let s = start();
+    s = applyAction(s, 'a', { type: 'stash', card: 'S2' }).state;
+    s = applyAction(s, 'a', { type: 'attack', cards: ['S8'], target: 'D' }).state;
+    expect(s.undo?.undo).toBeNull();
+    const back = applyAction(s, 'a', { type: 'undo' }).state;
+    expect(back.players[0].reserve.map((c) => c.id)).toEqual(['S2']); // vuelve a después de guardar
+  });
+});
+
+describe('fuzz: 500 partidas con semilla', () => {
+  const players = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }];
+  const count = (s: GameState) => s.deck.length + s.discard.length + s.exhausted.length + s.burned.length + s.players.reduce((n, p) => n + p.hand.length + p.reserve.length, 0);
+
+  it('ninguna rompe una invariante y todas se reproducen desde su registro de acciones', { timeout: 240_000 }, () => {
+    let wins = 0;
+    for (let seed = 1; seed <= 500; seed++) {
+      const n = 1 + (seed % 2);
+      let state = createGame(players.slice(0, n), seed * 7919, DIFFICULTY.obra);
+      const log: [string, ReturnType<typeof chooseAction>][] = [];
+      for (let guard = 0; state.phase === 'playing'; guard++) {
+        if (guard > 600) throw new Error(`partida sin fin, semilla ${seed}`);
+        const player = currentPlayer(state).id;
+        const action = chooseAction(state);
+        log.push([player, action]);
+        state = applyAction(state, player, action).state;
+        if (count(state) !== 42) throw new Error(`se perdieron cartas, semilla ${seed}`);
+        if (state.wall < 0 || state.wall > state.config.wallCap || state.integrity > state.config.maxIntegrity) throw new Error(`búnker fuera de rango, semilla ${seed}`);
+        for (const t of Object.values(state.towers)) if (t.floors.length && (t.damage < 0 || t.damage >= state.config.floorHp[t.floors[0]])) throw new Error(`piso mal cerrado, semilla ${seed}`);
+        for (const p of state.players) if (p.reserve.length > 1) throw new Error(`andamio desbordado, semilla ${seed}`);
+      }
+      if (state.phase === 'won') wins++;
+      if (seed % 10 === 0) {
+        let replay = createGame(players.slice(0, n), seed * 7919, DIFFICULTY.obra);
+        for (const [player, action] of log) replay = applyAction(replay, player, action).state;
+        if (JSON.stringify(replay) !== JSON.stringify(state)) throw new Error(`la repetición difiere, semilla ${seed}`);
+      }
+    }
+    // la obra clásica está equilibrada para que el bot gane en torno al 60 %
+    expect(wins).toBeGreaterThan(200);
+    expect(wins).toBeLessThan(420);
   });
 });

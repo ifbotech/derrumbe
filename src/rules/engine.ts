@@ -64,10 +64,11 @@ export function sortCards(cards: Card[]): Card[] {
 
 // ───────────────────────── Formaciones ─────────────────────────
 
-export type Formation = 'solo' | 'grupo' | 'doblepar' | 'escalera' | 'color' | 'full' | 'poker' | 'escaleracolor';
-export const FORMATIONS: Formation[] = ['solo', 'grupo', 'escalera', 'doblepar', 'color', 'full', 'escaleracolor', 'poker'];
+export type Formation = 'solo' | 'compania' | 'grupo' | 'doblepar' | 'escalera' | 'color' | 'full' | 'poker' | 'escaleracolor';
+export const FORMATIONS: Formation[] = ['solo', 'compania', 'grupo', 'escalera', 'doblepar', 'color', 'full', 'escaleracolor', 'poker'];
 export const FORMATION_NAME: Record<Formation, string> = {
   solo: 'Carta sola',
+  compania: 'As de compañía',
   grupo: 'Grupo',
   doblepar: 'Doble par',
   escalera: 'Escalera',
@@ -79,6 +80,7 @@ export const FORMATION_NAME: Record<Formation, string> = {
 /** Base de cada formación (f Fuerza, r Resonancia) y lo que gana por nivel de plano (lf, lr). */
 export const FORM: Record<Formation, { f: number; r: number; lf: number; lr: number }> = {
   solo: { f: 0, r: 1, lf: 4, lr: 0.15 },
+  compania: { f: 0, r: 1.1, lf: 3, lr: 0.15 },
   grupo: { f: 2, r: 1.2, lf: 3, lr: 0.2 },
   escalera: { f: 4, r: 1.3, lf: 3, lr: 0.2 },
   doblepar: { f: 6, r: 1.5, lf: 3, lr: 0.2 },
@@ -90,7 +92,8 @@ export const FORM: Record<Formation, { f: number; r: number; lf: number; lr: num
 
 /**
  * Devuelve el tipo de formación o null si las cartas no forman una jugada legal de ataque.
- *  solo · grupo (2-3 iguales) · póker (4 iguales) · doble par · full (trío + par)
+ *  solo · as de compañía (un As con cualquier otra carta) · grupo (2-3 iguales) · póker (4 iguales)
+ *  doble par · full (trío + par)
  *  escalera (3+ seguidas) · escalera de color (3+ seguidas del mismo palo) · color (5+ del mismo palo)
  * El As enlaza por abajo (A-2-3) y por arriba (9-10-A). Las cartas especiales no cuentan para la
  * formación: acompañan al golpe (hasta MAX_SPECIALS) o se juegan solas.
@@ -105,6 +108,7 @@ export function classify(all: Card[]): Formation | null {
   if (n === 1) return 'solo';
   const sameSuit = cards.every((c) => c.suit === cards[0].suit);
   if (cards.every((c) => c.rank === cards[0].rank)) return n >= 4 ? 'poker' : 'grupo';
+  if (n === 2 && cards.some((c) => c.rank === 1)) return 'compania';
   const ranks = cards.map((c) => c.rank).sort((a, b) => a - b);
   const seq = (rs: number[]) => rs.every((r, i) => i === 0 || r === rs[i - 1] + 1);
   const high = cards.map((c) => (c.rank === 1 ? 11 : c.rank)).sort((a, b) => a - b);
@@ -121,6 +125,7 @@ export function classify(all: Card[]): Formation | null {
 export interface Config {
   maxIntegrity: number;
   wallCap: number;
+  /** Lo que quita el primer colapso; después sube 1 por cada tanda de colapsos (uno por jugador). */
   collapseLoss: number;
   /** Divisores de los poderes: muro = ⌈♣/wallDiv⌉, reparación = ⌈♥/repairDiv⌉, esquirlas = ⌊♦/shardDiv⌋. */
   wallDiv: number;
@@ -150,6 +155,8 @@ export interface Config {
   sealTwice?: boolean;
   /** Las cartas descartadas se agotan (no vuelven esta obra) y cargan Fuerza para el próximo golpe. */
   discardExhaust?: number;
+  /** Huecos de andamio: cartas que cada jugador puede guardar aparte de su mano (1 por defecto). */
+  reserveSize?: number;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -166,7 +173,7 @@ export const DEFAULT_CONFIG: Config = {
 
 export type Difficulty = 'obra' | 'brutal';
 /** Partida clásica (una obra). Balanceado por simulación (npm run simulate): el bot gana ~60 % en OBRA y ~40 % en BRUTAL. */
-const OBRA: Config = { ...DEFAULT_CONFIG, floorHp: { 11: 80, 12: 115, 13: 150 }, floorThreat: { 11: 3, 12: 5, 13: 7 }, handSize: { 1: 6, 2: 6, 3: 6, 4: 6 } };
+const OBRA: Config = { ...DEFAULT_CONFIG, floorHp: { 11: 126, 12: 180, 13: 235 }, floorThreat: { 11: 3, 12: 5, 13: 7 }, handSize: { 1: 6, 2: 6, 3: 6, 4: 6 } };
 export const DIFFICULTY: Record<Difficulty, Config> = {
   obra: OBRA,
   brutal: { ...OBRA, maxIntegrity: 16, collapseLoss: 6 },
@@ -182,8 +189,8 @@ export interface TowerFx {
   apuntalado?: boolean;
 }
 export const TOWER_FX: Record<keyof TowerFx, { name: string; desc: string }> = {
-  fractura: { name: 'Fractura expuesta', desc: 'El próximo golpe contra esta torre resuena ×1,5.' },
-  sobrecarga: { name: 'Sobrecarga', desc: 'Esta torre se salta su próximo golpe de sirena.' },
+  fractura: { name: 'Fractura', desc: 'El próximo golpe contra esta torre resuena ×1,5.' },
+  sobrecarga: { name: 'Desarmada ×1', desc: 'Esta torre se salta su próxima sirena.' },
   apuntalado: { name: 'Apuntalado', desc: 'El primer golpe contra este piso resuena a la mitad.' },
 };
 
@@ -200,6 +207,8 @@ export interface Player {
   id: string;
   name: string;
   hand: Card[];
+  /** El andamio: cartas guardadas aparte de la mano. Se juegan como si estuvieran en ella. */
+  reserve: Card[];
 }
 
 export type Phase = 'playing' | 'won' | 'lost';
@@ -230,13 +239,23 @@ export interface GameState {
   burned: string[];
   /** Cartas agotadas: fuera de juego hasta la obra siguiente. */
   exhausted: Card[];
+  /** El jugador de turno ya movió el andamio este turno. */
+  stashed: boolean;
+  /** Tizas de replanteo: jugadas que aún se pueden deshacer en esta obra (solo en solitario). */
+  chalk: number;
+  /** La mesa justo antes de la última jugada, mientras quede tiza. */
+  undo: GameState | null;
 }
 
 export type Action =
   | { type: 'attack'; cards: string[]; target: Suit }
   | { type: 'discard'; cards: string[] }
   | { type: 'joker'; card: string; target: Suit }
-  | { type: 'pass' };
+  | { type: 'pass' }
+  /** Guarda una carta de la mano en el andamio (si está lleno, la más antigua vuelve a la mano). No gasta el turno. */
+  | { type: 'stash'; card: string }
+  /** Gasta una tiza de replanteo: deshace la última jugada y vuelve a barajar la cantera. */
+  | { type: 'undo' };
 
 export type StepSrc = 'form' | 'chain' | 'state' | 'card' | 'treat' | 'seal' | 'special' | 'tool';
 
@@ -248,6 +267,8 @@ export type GameEvent =
   | { e: 'discard'; player: string; cards: Card[] }
   | { e: 'joker'; player: string; card: Card; target: Suit }
   | { e: 'pass'; player: string }
+  | { e: 'stash'; player: string; card?: Card; back?: Card | null }
+  | { e: 'undo'; chalk: number }
   | { e: 'hit'; tower: Suit; amount: number; splash: boolean; damage: number; hp: number }
   | { e: 'floorDown'; tower: Suit; rank: number; clean: boolean; towerDown: boolean; damage: number }
   | { e: 'onda'; tower: Suit; amount: number }
@@ -309,7 +330,7 @@ export function createGame(players: { id: string; name: string }[], seed: number
   const state: GameState = {
     config,
     rng: seed | 0,
-    players: players.map((p) => ({ id: p.id, name: p.name, hand: [] })),
+    players: players.map((p) => ({ id: p.id, name: p.name, hand: [], reserve: [] })),
     deck: standardDeck(),
     discard: [],
     towers: newTowers([11, 12, 13], config),
@@ -326,6 +347,9 @@ export function createGame(players: { id: string; name: string }[], seed: number
     scrap: 0,
     burned: [],
     exhausted: [],
+    stashed: false,
+    chalk: 0,
+    undo: null,
   };
   shuffle(state.deck, state);
   const size = config.handSize[players.length];
@@ -524,7 +548,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
 
   // 2 · lo que arrastra la mesa: racha de golpes limpios, carga acumulada y estado de la torre
   if (env.chain > 0) {
-    cur = { src: 'chain', id: 'onda', label: 'Onda sísmica' };
+    cur = { src: 'chain', id: 'onda', label: 'Racha limpia' };
     x.R(0.5 * env.chain);
   }
   if (env.charge > 0) {
@@ -645,7 +669,8 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     applyDamage(env.towers[s], shards + near, false, true, cfg, tally);
   });
 
-  // 7 · golpe limpio: onda sísmica sobre el piso siguiente y un jornal extra
+  // 7 · golpe limpio: onda sísmica sobre el piso siguiente, un jornal extra y una carta de impulso
+  if (tally.fell.some((f) => f.clean)) x.draw += 1;
   for (const f of [...tally.fell]) {
     if (!f.clean) continue;
     x.gold += 1;
@@ -765,20 +790,31 @@ function hookFor(turn: Turn, slot: number): Hook {
       applyDamage(state.towers[tower], n, false, true, state.config, tally);
     },
     burn(card) {
-      mark(`destruye ${cardLabel(card)}`);
-      destroy(turn, card);
+      if (destroy(turn, card)) mark(`destruye ${cardLabel(card)}`);
     },
   };
 }
 
-/** Destruye una carta para toda la campaña: suma un escombro y avisa a las herramientas. */
-function destroy(turn: Turn, card: Card): void {
+/** Cartas de baraja que como mínimo quedan siempre en juego: por debajo, ninguna se destruye. */
+export const MIN_PLAIN = 12;
+const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
+
+/**
+ * Destruye una carta para toda la campaña: suma un escombro y avisa a las herramientas.
+ * Devuelve false (y no hace nada) si con ello el mazo se quedaría sin cartas de baraja suficientes.
+ */
+function destroy(turn: Turn, card: Card): boolean {
   const { state, events } = turn;
-  if (state.burned.includes(card.id)) return;
+  if (state.burned.includes(card.id)) return true;
+  if (isPlain(card)) {
+    const left = [...state.deck, ...state.discard, ...state.exhausted, ...state.players.flatMap((p) => [...p.hand, ...p.reserve])].filter((c) => isPlain(c) && c.id !== card.id).length;
+    if (left < MIN_PLAIN) return false;
+  }
   state.burned.push(card.id);
   state.scrap++;
   events.push({ e: 'burn', card });
   state.tools.forEach((t, slot) => TOOL[t.id]?.burn?.(hookFor(turn, slot), t, card));
+  return true;
 }
 
 function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
@@ -786,9 +822,11 @@ function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   state.deck = state.discard;
   state.discard = [];
   shuffle(state.deck, state);
+  // cada vuelta completa de la cuadrilla a la cantera encarece el colapso en 1
+  const loss = state.config.collapseLoss + Math.floor(state.collapses / state.players.length);
   state.collapses++;
-  state.integrity -= state.config.collapseLoss;
-  events.push({ e: 'collapse', loss: state.config.collapseLoss, integrity: Math.max(0, state.integrity) });
+  state.integrity -= loss;
+  events.push({ e: 'collapse', loss, integrity: Math.max(0, state.integrity) });
 }
 
 function drawOne(state: GameState, events: GameEvent[]): Card | null {
@@ -805,7 +843,11 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   };
   if (skip) return say(null, null, skip);
   const card = drawOne(state, events);
-  if (state.integrity <= 0) return;
+  if (state.integrity <= 0) {
+    // el colapso fue mortal: la carta no llega a sonar, pero tampoco se pierde
+    if (card) state.discard.push(card);
+    return;
+  }
   if (!card) return say(null, null, 'empty');
   state.discard.push(card);
   state.lastSiren = card;
@@ -839,10 +881,16 @@ function refill(state: GameState, p: Player, events: GameEvent[], extra = 0): vo
   if (drawn.length) events.push({ e: 'draw', player: p.id, count: drawn.length, cards: drawn });
 }
 
+/** Quita de la mano y del andamio las cartas jugadas. */
+function spend(p: Player, ids: string[]): void {
+  p.hand = p.hand.filter((c) => !ids.includes(c.id));
+  p.reserve = p.reserve.filter((c) => !ids.includes(c.id));
+}
+
 function takeFromHand(p: Player, ids: string[]): Card[] {
   if (new Set(ids).size !== ids.length) throw new RuleError('Cartas repetidas.');
   return ids.map((id) => {
-    const c = p.hand.find((h) => h.id === id);
+    const c = p.hand.find((h) => h.id === id) ?? p.reserve.find((h) => h.id === id);
     if (!c) throw new RuleError('Esa carta no está en tu mano.');
     return c;
   });
@@ -858,9 +906,27 @@ const allDown = (state: GameState) => SUITS.every((s) => !standing(state.towers[
 export function applyAction(prev: GameState, playerId: string, action: Action): { state: GameState; events: GameEvent[] } {
   if (prev.phase !== 'playing') throw new RuleError('La partida ya terminó.');
   if (currentPlayer(prev).id !== playerId) throw new RuleError('No es tu turno.');
-  const state = structuredClone(prev);
+  if (action.type === 'undo') return rewind(prev);
+  const state = structuredClone({ ...prev, undo: null }) as GameState;
+  // mientras quede tiza se guarda la mesa anterior (sin su propia historia) para poder deshacer
+  state.undo = prev.chalk > 0 ? (structuredClone({ ...prev, undo: null }) as GameState) : null;
   const p = currentPlayer(state);
   const events: GameEvent[] = [];
+  if (action.type === 'stash') {
+    if (state.stashed) throw new RuleError('Ya moviste el andamio este turno.');
+    const card = p.hand.find((c) => c.id === action.card);
+    if (!card) throw new RuleError('Esa carta no está en tu mano.');
+    const size = state.config.reserveSize ?? 1;
+    if (size <= 0) throw new RuleError('No hay andamio en esta obra.');
+    p.hand = p.hand.filter((c) => c !== card);
+    const back = p.reserve.length >= size ? p.reserve.shift()! : null;
+    if (back) p.hand.push(back);
+    p.reserve.push(card);
+    state.stashed = true;
+    // mover el andamio no gasta el punto de replanteo: la tiza sigue apuntando a la última jugada de verdad
+    state.undo = prev.undo ?? null;
+    return { state, events: [{ e: 'stash', player: p.id, card, back }] };
+  }
   const turn: Turn = { state, events, draw: 0 };
   let skip: 'clean' | 'huelga' | null = null;
   const win = () => {
@@ -875,7 +941,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     if (!formation) throw new RuleError('Formación inválida: carta sola, grupo, doble par, full, póker, escalera o color.');
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Esa torre ya está en ruinas.');
-    p.hand = p.hand.filter((c) => !action.cards.includes(c.id));
+    spend(p, action.cards);
     events.push({ e: 'play', player: p.id, cards, target: action.target, formation });
     const res = strike(state, cards, action.target, state);
     events.push(...res.events);
@@ -897,14 +963,14 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     turn.draw += res.draw;
     state.chain = res.clean ? Math.min(4, state.chain + 1) : 0;
     state.discard.push(...cards.filter((c) => !res.shattered.includes(c)));
-    for (const c of res.shattered) destroy(turn, c);
+    for (const c of res.shattered) if (!destroy(turn, c)) state.discard.push(c);
     if (res.clean) skip = 'clean';
     else if (res.noSiren) skip = 'huelga';
     if (allDown(state)) return win();
   } else if (action.type === 'discard') {
     const cards = takeFromHand(p, action.cards);
     if (cards.length === 0) throw new RuleError('Elige al menos una carta para descartar.');
-    p.hand = p.hand.filter((c) => !action.cards.includes(c.id));
+    spend(p, action.cards);
     events.push({ e: 'discard', player: p.id, cards });
     turn.draw += cards.filter((c) => c.seal === 'sindical').length * (state.config.sealTwice ? 2 : 1);
     state.tools.forEach((t, slot) => TOOL[t.id]?.discard?.(hookFor(turn, slot), t, cards));
@@ -918,15 +984,17 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     if (card.suit !== 'X' || card.sp) throw new RuleError('Esa carta no es un comodín.');
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Esa torre ya está en ruinas.');
-    p.hand = p.hand.filter((c) => c.id !== card.id);
+    spend(p, [card.id]);
     tower.disarmed = true;
     state.exhausted.push(card); // el comodín no vuelve esta obra
     skip = 'huelga';
     events.push({ e: 'joker', player: p.id, card, target: action.target });
     state.tools.forEach((t, slot) => TOOL[t.id]?.joker?.(hookFor(turn, slot), t));
   } else if (action.type === 'pass') {
-    if (p.hand.length > 0) throw new RuleError('Solo puedes pasar con la mano vacía.');
+    if (p.hand.length + p.reserve.length > 0) throw new RuleError('Solo puedes pasar con la mano vacía.');
     events.push({ e: 'pass', player: p.id });
+    // nadie tiene cartas y no queda cantera ni escombrera: no hay con qué seguir
+    if (state.deck.length + state.discard.length === 0 && state.players.every((q) => q.hand.length + q.reserve.length === 0)) state.integrity = 0;
   } else {
     throw new RuleError('Acción desconocida.');
   }
@@ -943,8 +1011,23 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   }
   state.turn = (state.turn + 1) % state.players.length;
   state.turnCount++;
+  state.stashed = false;
   events.push({ e: 'turn', player: currentPlayer(state).id });
   return { state, events };
+}
+
+/**
+ * Tiza de replanteo: vuelve a la mesa de antes de la última jugada. Para que deshacer no enseñe nada,
+ * la cantera se baraja de nuevo: lo que viste salir ya no vale.
+ */
+function rewind(prev: GameState): { state: GameState; events: GameEvent[] } {
+  if (prev.chalk <= 0 || !prev.undo) throw new RuleError('No queda tiza de replanteo.');
+  const state = structuredClone(prev.undo);
+  state.undo = null;
+  state.chalk = prev.chalk - 1;
+  state.rng = (prev.rng ^ 0x2545f491) | 0;
+  shuffle(state.deck, state);
+  return { state, events: [{ e: 'undo', chalk: state.chalk }] };
 }
 
 /** Reordena una lista con una permutación de sus índices; null si la permutación no es válida. */
@@ -957,8 +1040,16 @@ export function reorder<T>(items: T[], order: number[]): T[] | null {
 
 export interface PlayerView extends StrikeEnv {
   you: string;
-  players: { id: string; name: string; handCount: number }[];
+  players: { id: string; name: string; handCount: number; reserveCount: number }[];
   hand: Card[];
+  /** Tu andamio. */
+  reserve: Card[];
+  reserveSize: number;
+  /** Ya moviste el andamio este turno. */
+  stashed: boolean;
+  /** Tizas de replanteo que quedan, y si hay una jugada que deshacer. */
+  chalk: number;
+  canUndo: boolean;
   deckCount: number;
   discardCount: number;
   lastSiren: Card | null;
@@ -979,8 +1070,13 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
   return {
     you: playerId,
     config: state.config,
-    players: state.players.map((p) => ({ id: p.id, name: p.name, handCount: p.hand.length })),
+    players: state.players.map((p) => ({ id: p.id, name: p.name, handCount: p.hand.length, reserveCount: p.reserve.length })),
     hand: me?.hand ?? [],
+    reserve: me?.reserve ?? [],
+    reserveSize: state.config.reserveSize ?? 1,
+    stashed: state.stashed,
+    chalk: state.chalk,
+    canUndo: state.chalk > 0 && !!state.undo,
     towers: state.towers,
     tools: state.tools,
     chain: state.chain,
@@ -995,14 +1091,18 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     turnCount: state.turnCount,
     collapses: state.collapses,
     phase: state.phase,
-    unseen: sortCards([...state.deck, ...state.players.filter((p) => p.id !== playerId).flatMap((p) => p.hand)]),
+    unseen: sortCards([...state.deck, ...state.players.filter((p) => p.id !== playerId).flatMap((p) => [...p.hand, ...p.reserve])]),
     discard: sortCards(state.discard),
     exhausted: state.exhausted.length,
     burned: state.burned.length,
   };
 }
 
-/** Oculta las cartas robadas a quien no es su dueño. */
+/** Oculta a quien no es su dueño las cartas robadas y las que pasan por el andamio. */
 export function eventsFor(events: GameEvent[], playerId: string): GameEvent[] {
-  return events.map((ev) => (ev.e === 'draw' && ev.player !== playerId ? { e: 'draw', player: ev.player, count: ev.count } : ev));
+  return events.map((ev) => {
+    if (ev.e === 'draw' && ev.player !== playerId) return { e: 'draw', player: ev.player, count: ev.count };
+    if (ev.e === 'stash' && ev.player !== playerId) return { e: 'stash', player: ev.player };
+    return ev;
+  });
 }

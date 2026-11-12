@@ -14,6 +14,7 @@ import { glyphSvg } from './glyphs';
 import { lastGain } from './guild';
 import { sendMsg } from './net';
 import { setScreen } from './router';
+import { renderPings } from './pings';
 import { beltEl, choice, deckModal, spCard, toolTile } from './widgets';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
@@ -66,6 +67,14 @@ export function renderRun(): void {
   lastPhase = run.phase;
   const dv = $('#deck-view');
   if (dv) dv.onclick = () => deckModal(`Tu mazo · ${run.deck.length} cartas`, [{ label: 'Mazo', cards: run.deck }]);
+  // lo que la cuadrilla puede señalar con tiza en sala
+  const tag = (sel: string, name: string) => $$(sel).forEach((el, i) => (el.dataset.ping = el.classList.contains('skip') ? 'skip:0' : `${name}:${i}`));
+  tag('#routes > .choice', 'route');
+  tag('#picks > .choice', 'pick');
+  tag('#loot > .choice', 'loot');
+  tag('#offers > .choice', 'offer');
+  tag('#opts > button', 'event');
+  renderPings();
   if (isRunHost()) {
     if (run.sobre) openSobre(run);
     else if (run.pending) openPending(run);
@@ -107,7 +116,7 @@ function confirmSell(run: Run, i: number): void {
 // ───────────────────────── Sobre inicial ─────────────────────────
 
 function packScreen(run: Run): void {
-  app.innerHTML = `<div class="run">${head(run, 'El sobre', `Campaña nueva · ascenso ${run.ascension}${run.seedText && !run.daily ? ` · semilla ${run.seedText}` : ''}`)}
+  app.innerHTML = `<div class="run">${head(run, 'El sobre', `Campaña nueva · nivel de obra ${run.ascension + 1}${run.seedText && !run.daily ? ` · semilla ${run.seedText}` : ''}`)}
     <div class="run-body"><p class="lead">Tu cuadrilla llega con estas cartas especiales. No tienen palo ni número: acompañan a cualquier golpe (hasta dos por golpe) o se juegan solas, y hacen su efecto.</p>
     <div class="choices" id="picks"></div>${waitNote()}
     <div class="row end-row"><button id="deck-view">Ver mazo (${run.deck.length})</button><button class="primary big" id="go" ${host() ? '' : 'disabled'}>Al plano<small>${stageDef(1).name}</small></button></div></div></div>`;
@@ -269,7 +278,7 @@ function shopScreen(run: Run): void {
           ${boss ? `<p class="boss"><b>${boss.who} · ${boss.name}</b>${boss.desc}</p>` : next.boss ? '<p class="boss"><b>Jefe de obra</b>Se sabrá al llegar.</p>' : '<p>Sin jefe: rutas con contrato o atajo.</p>'}</div></div></div>
         <div class="grid2">
           <button id="heal" data-tip="<b>Reparación</b>+6 de integridad. El búnker está en ${run.integrity}/${run.maxIntegrity}. Cada vez cuesta 1 más." ${can && run.gold >= healCost(run) && run.integrity < run.maxIntegrity ? '' : 'disabled'}>Reparar · ${healCost(run)}</button>
-          <button id="burn" data-tip="<b>Quemador</b>Destruye una carta de tu mazo para siempre. Suma un escombro. Cada vez cuesta 2 más." ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>Quemador · ${removeCost(run)}</button>
+          <button id="burn" data-tip="<b>Quemador</b>Destruye una carta de tu mazo para siempre (cuenta como carta destruida). Cada vez cuesta 2 más." ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>Quemador · ${removeCost(run)}</button>
           <button id="reroll" data-tip="<b>Revolver cajones</b>Cambia todo el surtido. Cada vez cuesta 1 más${run.vouchers ? `; te quedan ${run.vouchers} vales del gremio` : ''}." ${can && run.gold >= rerollCost(run) ? '' : 'disabled'}>Revolver cajones · ${rerollCost(run) || 'vale'}</button>
           <button class="primary" id="go" ${can ? '' : 'disabled'}>${!run.endless && [3, 5, 7].includes(run.stage) && run.events.length ? 'Bajar a los cimientos' : 'Al plano'}</button>
         </div>
@@ -360,7 +369,7 @@ function showBurned(card: Card): void {
   const el = modal(`<div class="reveal-box"><small>Al quemador</small><div class="choices"></div></div>`, { cls: 'reveal burned' });
   const ce = cardEl(card, { tilt: false });
   ce.classList.add('burning');
-  $('.choices', el).appendChild(choice(ce, cardLabel(card), 'Sale del mazo para siempre. Un escombro más.', null, null));
+  $('.choices', el).appendChild(choice(ce, cardLabel(card), 'Sale del mazo para siempre.', null, null));
   sfx.hiss();
   ferreteroSays('burn');
   const r = ce.getBoundingClientRect();
@@ -410,7 +419,7 @@ export function actaText(run: Run): string {
     `🏢 Pisos: ${run.stats.floors} · 🎯 Golpes limpios: ${run.stats.cleans}`,
     mvp ? `🔧 Herramienta más activa: ${TOOL[mvp]?.name ?? mvp} (${run.stats.toolUse[mvp]})` : '🔧 Sin herramientas',
     `📜 Contratos: ${run.stats.contracts} · 🔥 Cartas destruidas: ${run.stats.burned} · ⏱️ Turnos: ${run.stats.turns}`,
-    `🃏 ${DECK[run.deckId].name}${run.ascension ? ` · ascenso ${run.ascension}` : ''}${run.seedText ? ` · 🌱 ${run.seedText}` : ''}`,
+    `🃏 ${DECK[run.deckId].name}${run.ascension ? ` · nivel de obra ${run.ascension + 1}` : ''}${run.seedText ? ` · 🌱 ${run.seedText}` : ''}`,
   ].join('\n');
 }
 
@@ -439,11 +448,11 @@ function actaScreen(run: Run): void {
   app.innerHTML = `<div class="end ${won ? 'won' : 'lost'} in-page acta">
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
     <div class="acta-sheet">
-      <div class="meta"><span class="hot">ACTA DE DEMOLICIÓN</span><span>${run.daily ? `OBRA DIARIA ${run.daily}` : `${DECK[run.deckId].name}${run.ascension ? ` · ASCENSO ${run.ascension}` : ''}`}</span></div>
+      <div class="meta"><span class="hot">ACTA DE DEMOLICIÓN</span><span>${run.daily ? `OBRA DIARIA ${run.daily}` : `${DECK[run.deckId].name}${run.ascension ? ` · NIVEL DE OBRA ${run.ascension + 1}` : ''}`}</span></div>
       <h1>${won ? 'Demolido' : 'Sepultados'}</h1>
       <p>${won ? 'Cayó la Torre Madre. Debajo aún hay cimientos, si os quedan ganas.' : depth ? `Los cimientos os tragaron en el abisal ${depth + 1}.` : `El búnker cedió en la obra ${run.stage}: ${stageDef(run.stage).name}.`}</p>
       <table class="acta-stats">${stats.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
-      <p class="gain">+${lastGain} ✦ de renombre${won && !run.endless ? ` · ascenso ${run.ascension + 1} desbloqueado` : ''}</p>
+      <p class="gain">+${lastGain} ✦ de renombre${won && !run.endless && run.ascension < 7 ? ` · nivel de obra ${run.ascension + 2} desbloqueado` : ''}</p>
       <div class="row">
         <button id="copy">Copiar acta</button>
         ${won && canBack ? '<button id="deeper">Cimientos abisales<small>seguir sin final</small></button>' : ''}

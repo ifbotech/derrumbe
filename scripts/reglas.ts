@@ -3,7 +3,8 @@
 import { writeFileSync } from 'node:fs';
 import { DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formation, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { ACHIEVEMENTS, unlocksOf } from '../src/rules/achievements';
-import { BOSSES, CONTRACTS, DECKS, EVENTS, EVENT_AFTER, LAST_STAGE, MIN_DECK, STAGES, TAGS, UPGRADES, stageDef } from '../src/rules/run';
+import { KEYWORDS } from '../src/rules/keywords';
+import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, EVENT_AFTER, LAST_STAGE, MIN_DECK, STAGES, TAGS, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
 import { ARCH, Arch, RARITY, TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 
@@ -12,6 +13,7 @@ const n = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',');
 const table = (head: string[], rows: string[][]) => [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.join(' | ')} |`)].join('\n');
 const FORM_CARDS: Record<Formation, string> = {
   solo: '1 carta',
+  compania: 'un As con cualquier otra carta',
   grupo: '2 o 3 del mismo número',
   escalera: '3 o más números seguidos, de cualquier palo',
   doblepar: '2 parejas',
@@ -82,21 +84,31 @@ Además de su Fuerza, las cartas de cada palo activan su poder (aunque no sumen 
 - ♥ **Reparar**: el búnker recupera un tercio (hacia arriba) del valor de tus corazones.
 - ♣ **Muro**: levantas un tercio (hacia arriba) del valor de tus tréboles como muro.
 
-### Golpe limpio y onda sísmica
+### Golpe limpio
 
-- **Golpe limpio**: tirar un piso con el daño exacto. La sirena no suena ese turno y cobras 1 de oro.
-- **Onda sísmica**: el piso de debajo pierde un cuarto de su resistencia, y empiezas una **racha**: tu próximo golpe resuena +0,5 por cada golpe limpio seguido (hasta +2). La racha se corta si el golpe no es limpio.
+Tirar un piso con el **daño exacto** es la jugada maestra del juego. Cuando lo consigues:
+
+- la **sirena calla** ese turno,
+- cobras **1 de oro** y **robas 1 carta** de más,
+- el piso de debajo pierde **un cuarto de su resistencia** (la onda del golpe sigue torre abajo),
+- y empiezas una **racha**: tu próximo golpe resuena +0,5 por cada golpe limpio seguido (hasta +2). La racha se corta si el golpe no es limpio.
+
+La mesa te lo avisa antes de golpear: la previsualización de cada torre dice si el golpe sería limpio.
 
 ### Estados de las torres
 
 - **${TOWER_FX.fractura.name}**: la provoca un golpe de un solo material (2 o más cartas, todas del mismo palo). ${TOWER_FX.fractura.desc}
 - **${TOWER_FX.sobrecarga.name}**: la provoca un golpe que mezcla 3 palos o más. ${TOWER_FX.sobrecarga.desc}
-- **${TOWER_FX.apuntalado.name}**: lo traen algunos jefes y ascensos. ${TOWER_FX.apuntalado.desc}
+- **${TOWER_FX.apuntalado.name}**: lo traen algunos jefes y niveles de obra. ${TOWER_FX.apuntalado.desc}
 
 ### Reglas especiales
 
 - **Comodín · Huelga**: se juega solo sobre una torre. Su piso actual queda **desarmado** (amenaza 0 hasta que caiga) y la sirena no suena. El comodín sale de la obra.
-- **Colapso**: si la cantera se agota, la escombrera se baraja y vuelve a ser cantera, pero el búnker pierde **${cfg.collapseLoss}** de integridad (el muro no lo evita).
+- **Colapso**: si la cantera se agota, la escombrera se baraja y vuelve a ser cantera, pero el búnker pierde **${cfg.collapseLoss}** de integridad (el muro no lo evita). Cada vuelta completa de la cuadrilla a la cantera encarece el colapso en 1: las obras no se pueden estirar sin fin.
+- **As de compañía**: un As forma jugada con **cualquier otra carta** (×${n(FORM.compania.r)} de Resonancia) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar muro, uno de ♥ para reparar, uno de ♠ para perforar.
+- **Andamio**: junto a la mano hay un hueco de reserva. Una vez por turno, y sin gastar el turno, puedes guardar en él una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La herramienta *Pasarela* añade un segundo hueco. En la partida guiada no hay andamio.
+- **Tiza de replanteo** (solo en campaña en solitario): una vez por obra puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y la cantera se baraja de nuevo, así que lo que viste salir ya no vale. Mover el andamio no gasta la tiza. En sala no hay tiza: toda jugada es definitiva, y la mesa lo indica.
+- Las cartas de baraja nunca bajan de 12 en el mazo: lo que las destruye deja de hacerlo al llegar a ese mínimo.
 - **Victoria**: las cuatro torres en ruinas. **Derrota**: la integridad del búnker llega a 0.
 - Modo **BRUTAL** (partida clásica): búnker de ${DIFFICULTY.brutal.maxIntegrity} y colapsos de ${DIFFICULTY.brutal.collapseLoss}.
 
@@ -146,12 +158,17 @@ Tras los jefes de las obras ${EVENT_AFTER.join(', ')} aparece un dilema. Cada ca
 
 ${EVENTS.map((e) => `- **${e.name}.** ${e.text}\n${e.options.map((o) => `  - *${o.label}*: ${o.desc}`).join('\n')}`).join('\n')}
 
-### Cimientos abisales, semillas y ascenso
+### Cimientos abisales, semillas y niveles de obra
 
 - Después de la obra ${LAST_STAGE} puedes seguir a los **cimientos abisales**: obras sin final, siempre con jefe, cada una un 45 % más resistente que la anterior (la primera, ×${n(stageDef(LAST_STAGE + 1).hp)}).
 - **Semilla**: la misma semilla y las mismas decisiones dan exactamente la misma campaña. Puedes escribir la tuya al empezar.
-- **Obra diaria**: usa la fecha como semilla, con la baraja de obra, sin ascenso y sin nada del gremio. Igual para todo el mundo.
-- **Ascenso**: cada victoria abre un nivel más. Cada nivel: torres +10 % y renombre +25 %; desde el 2 las K llegan apuntaladas, desde el 3 la amenaza sube 1 y desde el 4 los colapsos quitan 2 más.
+- **Obra diaria**: usa la fecha como semilla, con la baraja de obra, en el nivel 1 y sin nada del gremio. Igual para todo el mundo.
+- **Niveles de obra**: hay ${ASCENSIONS.length}. Ganar una campaña abre el nivel siguiente; cada nivel añade **un giro** a todos los anteriores y da un 25 % más de renombre.
+
+${table(['Nivel', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), a.name, a.desc]))}
+
+- **Sellos de maestría**: al ganar, la baraja usada y cada herramienta que llevabas en el cinturón quedan marcadas en la colección con el nivel de obra más alto que has ganado con ellas: remache de **bronce** (niveles 1–3), de **hierro** (4–6) o de **oro** (7–8).
+- **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con la misma baraja y el mismo nivel de obra. La que dejas no cuenta como derrota ni cobra renombre.
 
 ## Cinturón de herramientas
 
@@ -169,7 +186,7 @@ ${table(['Sello', 'Efecto'], SEALS.map((s) => [SEAL[s].name, SEAL[s].desc]))}
 
 ${table(['Tratamiento', 'Efecto'], TREATMENTS.map((t) => [TREATMENT[t].name, TREATMENT[t].desc]))}
 
-Las cartas destruidas (agrietadas que se hacen añicos, quemadas o fundidas) salen del mazo para siempre y cuentan como **escombros**, que ceban a las herramientas de la trituradora.
+Las cartas destruidas (agrietadas que se hacen añicos, quemadas o fundidas) salen del mazo para siempre; algunas herramientas (la familia de la trituradora) se ceban con cada carta destruida.
 
 ## Cartas especiales
 
@@ -191,9 +208,31 @@ ${table(['Mejora', 'Efecto', 'Coste'], UPGRADES.map((u) => [u.name, u.desc, u.co
 
 ${table(['Logro', 'Cómo', 'Renombre', 'Desbloquea'], ACHIEVEMENTS.map((a) => [a.name, a.desc, `+${a.renown}`, unlocksOf(a.id) ?? '—']))}
 
-## Atajos de teclado
+## Palabras clave
 
-**1–9** eligen carta · **← →** apuntan a una torre · **Espacio** o **Enter** golpean · **Supr** descarta · **Esc** suelta la selección · **Tab** abre la cantera y la escombrera.
+El juego usa solo seis palabras con significado propio. Todo lo demás se dice con palabras llanas. En pantalla van en negrita y, al pasar el puntero sobre cualquier texto que las mencione, el globo de ayuda encadena su definición.
+
+${KEYWORDS.map((k) => `- **${k.name}**: ${k.desc}`).join('\n')}
+
+## Controles
+
+${table(['Acción', 'Teclado y ratón', 'Mando'], [
+  ['Mover el foco', 'Flechas', 'Cruceta o palanca'],
+  ['Elegir', 'Enter · 1–9 en la mano', 'A'],
+  ['Golpear la torre apuntada', 'Espacio', 'X'],
+  ['Guardar en el andamio', 'Y', 'Y'],
+  ['Tiza de replanteo (deshacer)', 'Z', '—'],
+  ['Lupa de grabador', 'L · clic derecho · pulsación larga', 'RB'],
+  ['Mazo (cantera y escombrera)', 'Tab', 'LB'],
+  ['Descartar lo elegido', 'Supr', '—'],
+  ['Atrás / soltar la selección', 'Esc', 'B'],
+  ['Reordenar el cinturón', 'Arrastrar · Mayús + flechas', '—'],
+  ['Reiniciar la campaña', 'Mantener R', 'Mantener Select'],
+  ['Pantalla completa', 'F', '—'],
+  ['Ajustes', '—', 'Start'],
+])}
+
+La **lupa de grabador** abre cualquier carta, herramienta, piso de torre o jefe a tamaño de lámina, con la cuenta exacta de lo que aporta en ese momento. En sala, pulsar una torre cuando no es tu turno (o cualquier ruta, oferta o carta con Alt) deja una **marca de tiza** con tus iniciales para la cuadrilla: no decide nada, solo señala.
 `;
 
 writeFileSync(new URL('../REGLAS.md', import.meta.url), md);

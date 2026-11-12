@@ -9,6 +9,7 @@ export const TUTORIAL_CONFIG: Config = {
   collapseLoss: 2,
   floorHp: { 11: 10, 12: 14, 13: 18 },
   floorThreat: { 11: 1, 12: 2, 13: 2 },
+  reserveSize: 0,
 };
 
 const TREATED: Record<string, Treatment> = { S10: 'forjado' };
@@ -30,7 +31,7 @@ export function createTutorial(): GameState {
   return {
     config: TUTORIAL_CONFIG,
     rng: 7,
-    players: [{ id: TUTORIAL_PLAYER, name: 'TÚ', hand: HAND.map(card) }],
+    players: [{ id: TUTORIAL_PLAYER, name: 'TÚ', hand: HAND.map(card), reserve: [] }],
     deck: DECK.map(card),
     discard: [],
     towers,
@@ -47,6 +48,9 @@ export function createTutorial(): GameState {
     scrap: 0,
     burned: [],
     exhausted: [],
+    stashed: false,
+    chalk: 0,
+    undo: null,
   };
 }
 

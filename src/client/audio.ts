@@ -1,44 +1,104 @@
 // Sonido de DERRUMBE: todo sintetizado con WebAudio (sin archivos ni dependencias).
-// Efectos de piedra, hierro y cuerno de guerra, y una marcha fúnebre en re menor armónico
-// (bordón grave, tambores, laúd, coro, cuernos y campana) que se genera en bucle.
+// Efectos de piedra, hierro y cuerno de guerra, y una marcha en re menor armónico (bordón grave,
+// tambores, laúd, coro, cuernos y campana) que nunca suena dos veces igual: cada vuelta varía la
+// melodía y entran o callan instrumentos según la presión de la obra.
+//
+// Mezcla pensada para sesiones largas:
+//   efectos ─┐                       ┌─ sala de hormigón (reverberación corta y oscura)
+//   música ──┴─► máster ─► estante de agudos (−5 dB) ─► compresor ─► salida
+import { loadJson, platform, saveJson } from './platform';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let wet: GainNode | null = null;
 let musicBus: GainNode | null = null;
-let sfxOn = localStorage.getItem('derrumbe:sound') !== '0';
-let musicOn = localStorage.getItem('derrumbe:music') !== '0';
+let sfxBus: GainNode | null = null;
+
+export interface Volume {
+  master: number;
+  music: number;
+  sfx: number;
+}
+const VOLUME_KEY = 'derrumbe:volume';
+// ajustes de versiones anteriores: sonido y música eran interruptores
+const legacy = { sfx: platform.load('derrumbe:sound') === '0' ? 0 : 0.9, music: platform.load('derrumbe:music') === '0' ? 0 : 0.7 };
+const volume: Volume = { master: 0.8, ...legacy, ...loadJson<Partial<Volume>>(VOLUME_KEY) };
+const clamp01 = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
+/** Los deslizadores van de 0 a 1; el oído no es lineal, así que la ganancia va al cuadrado. */
+const gainOf = (v: number) => clamp01(v) ** 2;
+
+export const getVolume = (): Volume => ({ ...volume });
+export function setVolume(kind: keyof Volume, value: number): void {
+  volume[kind] = clamp01(value);
+  saveJson(VOLUME_KEY, volume);
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  master?.gain.setTargetAtTime(gainOf(volume.master), t, 0.05);
+  sfxBus?.gain.setTargetAtTime(gainOf(volume.sfx), t, 0.05);
+  if (kind === 'music') {
+    if (volume.music > 0) startLoop();
+    else stopLoop();
+  }
+  if (timer !== null) musicBus?.gain.setTargetAtTime(0.6 * gainOf(volume.music), t, 0.1);
+}
 
 function ac(): AudioContext | null {
   try {
     if (!ctx) {
       ctx = new AudioContext();
+      // máster → estante de agudos → compresor → salida: nada chilla y nada satura
       master = ctx.createGain();
-      master.gain.value = 0.9;
-      master.connect(ctx.destination);
-      // reverberación de nave de piedra: ruido con caída exponencial
-      const len = Math.floor(ctx.sampleRate * 3.8);
+      master.gain.value = gainOf(volume.master);
+      const shelf = ctx.createBiquadFilter();
+      shelf.type = 'highshelf';
+      shelf.frequency.value = 5200;
+      shelf.gain.value = -5;
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -18;
+      comp.knee.value = 20;
+      comp.ratio.value = 3.5;
+      comp.attack.value = 0.006;
+      comp.release.value = 0.24;
+      master.connect(shelf).connect(comp).connect(ctx.destination);
+      // sala de hormigón: cola corta, primeras reflexiones marcadas y agudos apagados
+      const len = Math.floor(ctx.sampleRate * 2.3);
       const impulse = ctx.createBuffer(2, len, ctx.sampleRate);
       for (let ch = 0; ch < 2; ch++) {
         const d = impulse.getChannelData(ch);
-        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2.2;
+        let last = 0;
+        for (let i = 0; i < len; i++) {
+          const white = (Math.random() * 2 - 1) * (1 - i / len) ** 2.6;
+          last = last * 0.72 + white * 0.28; // paso bajo de un polo: el hormigón se come los agudos
+          d[i] = last + (i < 2400 && i % (311 + ch * 47) === 0 ? 0.5 * (1 - i / 2400) : 0);
+        }
       }
       const hall = ctx.createConvolver();
       hall.buffer = impulse;
       wet = ctx.createGain();
-      wet.gain.value = 0.42;
+      wet.gain.value = 0.34;
       wet.connect(hall).connect(master);
+      sfxBus = ctx.createGain();
+      sfxBus.gain.value = gainOf(volume.sfx);
+      sfxBus.connect(master);
+      sfxBus.connect(wet);
       musicBus = ctx.createGain();
       musicBus.gain.value = 0;
       musicBus.connect(master);
       musicBus.connect(wet);
     }
-    if (ctx.state === 'suspended') void ctx.resume();
+    if (ctx.state === 'suspended' && !document.hidden) void ctx.resume();
     return ctx;
   } catch {
     return null;
   }
 }
+
+// con la pestaña en segundo plano el audio se suspende entero (ni suena ni gasta)
+document.addEventListener('visibilitychange', () => {
+  if (!ctx) return;
+  if (document.hidden) void ctx.suspend();
+  else void ctx.resume();
+});
 
 interface Voice {
   type?: OscillatorType;
@@ -104,13 +164,10 @@ function noise(out: AudioNode, t: number, dur: number, vol: number, type: Biquad
 // ───────────────────────── Efectos ─────────────────────────
 
 function fx(play: (a: AudioContext, out: AudioNode, t: number) => void): void {
-  if (!sfxOn) return;
+  if (volume.sfx <= 0 || document.hidden) return;
   const a = ac();
-  if (!a || !master || !wet) return;
-  const out = a.createGain();
-  out.connect(master);
-  out.connect(wet);
-  play(a, out, a.currentTime + 0.01);
+  if (!a || !sfxBus) return;
+  play(a, sfxBus, a.currentTime + 0.01);
 }
 
 const horn = (out: AudioNode, f: number, t: number, dur: number, vol: number, slide?: number) => {
@@ -188,6 +245,12 @@ export const sfx = {
     }),
   /** cuerda pulsada breve */
   select: () => fx((_, o, t) => note(o, 587, t, 0.12, { vol: 0.05 })),
+  /** tiza sobre el plano: dos trazos cortos */
+  chalk: () =>
+    fx((_, o, t) => {
+      noise(o, t, 0.07, 0.1, 'bandpass', 2400);
+      noise(o, t + 0.09, 0.09, 0.12, 'bandpass', 1900);
+    }),
   /** pergamino */
   card: () => fx((_, o, t) => noise(o, t, 0.07, 0.12, 'highpass', 2600)),
   /** mazo contra piedra, con el canto del hierro */
@@ -306,7 +369,59 @@ let timer: number | null = null;
 let step = 0;
 let nextTime = 0;
 let drone: OscillatorNode[] = [];
-let tense = false;
+/** Presión de la obra, de 0 (pensando con calma) a 1 (el búnker se cae): decide qué capas suenan. */
+let pressure = 0.3;
+let pressureNow = 0.3;
+
+// Escala de re menor armónico, para adornar la melodía con notas de paso.
+const SCALE = ['D3', 'E3', 'F3', 'G3', 'A3', 'Bb3', 'C#4', 'D4', 'E4', 'F4', 'G4', 'A4'];
+/** Azar con semilla: cada vuelta tiene su variación, pero siempre la misma para esa vuelta. */
+function seeded(seed: number): () => number {
+  let x = (seed * 2654435761) >>> 0 || 1;
+  return () => ((x = (Math.imul(x ^ (x >>> 15), x | 1) + 0x6d2b79f5) >>> 0) / 4294967296);
+}
+/** Lo que suena en una vuelta de 8 compases. */
+interface Loop {
+  phrase: string[];
+  /** Compases en los que el laúd calla. */
+  rest: boolean[];
+  /** Compases que el laúd toca una octava abajo. */
+  low: boolean[];
+  /** Vuelta de respiro: solo bordón, bajo y campana. */
+  breath: boolean;
+  /** El eco: la frase vuelve un tiempo después, más floja. */
+  echo: boolean;
+}
+let current: Loop | null = null;
+let currentKey = '';
+
+function makeLoop(index: number): Loop {
+  const rnd = seeded(index * 31 + scene.bpm * 7 + scene.shift * 13 + 5);
+  const base = (index + (scene.lead === 'a' ? 0 : 1)) % 3 === 2 ? SECOND : MELODY;
+  const phrase = [...base];
+  const rest = Array.from({ length: 8 }, () => false);
+  const low = Array.from({ length: 8 }, () => false);
+  for (let bar = 0; bar < 8; bar++) {
+    const r = rnd();
+    const at = bar * 8;
+    if (bar !== 0 && bar !== 7 && r < 0.14) rest[bar] = true; // un compás de silencio
+    else if (r < 0.26) low[bar] = true; // el compás baja una octava
+    else if (r < 0.44) {
+      // nota de paso entre dos notas vecinas de la escala
+      for (let p = 0; p < 6; p++) {
+        const a = SCALE.indexOf(phrase[at + p]);
+        const b = SCALE.indexOf(phrase[at + p + 2]);
+        if (a >= 0 && b >= 0 && phrase[at + p + 1] === '.' && Math.abs(a - b) === 2) phrase[at + p + 1] = SCALE[(a + b) / 2];
+      }
+    } else if (r < 0.54 && bar < 7) {
+      // el compás se toca del revés
+      const notes = phrase.slice(at, at + 8).reverse();
+      const shift = notes.findIndex((n) => n !== '.');
+      for (let p = 0; p < 8; p++) phrase[at + p] = notes[(p + Math.max(0, shift)) % 8];
+    }
+  }
+  return { phrase, rest, low, breath: index % 5 === 4 && !scene.boss, echo: rnd() < 0.35 };
+}
 
 function schedule(t: number, s: number): void {
   const out = musicBus!;
@@ -315,47 +430,58 @@ function schedule(t: number, s: number): void {
   const STEP = stepLen();
   const bar = Math.floor(s / 8) % 8;
   const pos = s % 8;
-  const loop = Math.floor(s / 64);
-  const battle = sc.kind === 'battle';
-  // 0 entrada · 1 laúd · 2 laúd + coro · 3 segunda voz. Un jefe no da tregua: empieza ya con coro.
-  const section = sc.boss ? 2 + (loop % 2) : sc.kind === 'menu' ? 1 + (loop % 2) * 2 : loop % 4;
-  // tambores de piel floja, graves (en la ferretería, apenas un pulso)
-  const fill = battle && bar === 7 && pos >= 5;
-  if (sc.drums[pos] || fill || (battle && tense && pos % 2 === 0)) {
-    const soft = battle ? 1 : 0.45;
-    note(out, pos === 0 ? 92 : 74, t, 0.6, { type: 'sine', vol: (pos === 0 ? 0.62 : 0.4) * soft, slide: 30 });
-    noise(out, t, 0.14, 0.24 * soft, 'lowpass', 170);
+  const index = Math.floor(s / 64);
+  const key = `${sc.kind}:${sc.bpm}:${sc.shift}:${index}`;
+  if (!current || currentKey !== key) {
+    current = makeLoop(index);
+    currentKey = key;
   }
-  // cadenas: un roce metálico apagado en los contratiempos
-  if (battle && section > 0 && pos % 4 === 2) noise(out, t, 0.09, tense ? 0.07 : 0.04, 'bandpass', 820);
+  const loop = current;
+  pressureNow += (pressure - pressureNow) * 0.06; // la música no salta: sube y baja poco a poco
+  const battle = sc.kind === 'battle';
+  const p = battle ? (sc.boss ? Math.max(0.55, pressureNow) : pressureNow) : sc.kind === 'shop' ? 0.2 : 0.35;
+  const breath = loop.breath && p < 0.6;
+
+  // tambores: latido suelto con calma, el ritmo de la obra a media presión, redoble cuando aprieta
+  const beat = p < 0.28 ? pos === 0 : sc.drums[pos] === 1 || (p > 0.7 && pos % 2 === 0) || (battle && bar === 7 && pos >= 5 && p > 0.4);
+  if (beat && !breath) {
+    const soft = (battle ? 0.55 + 0.6 * p : 0.4) * (0.9 + 0.2 * Math.sin(s * 1.7)); // cada golpe, un poco distinto
+    note(out, pos === 0 ? 92 : 74, t, 0.6, { type: 'sine', vol: (pos === 0 ? 0.6 : 0.38) * soft, slide: 30 });
+    noise(out, t, 0.14, 0.22 * soft, 'lowpass', 170);
+  }
+  // cadenas: un roce metálico apagado en los contratiempos, solo cuando hay tensión
+  if (battle && p > 0.45 && pos % 4 === 2) noise(out, t, 0.09, 0.03 + 0.05 * p, 'bandpass', 820);
   // campana a lo lejos al abrir cada vuelta (con jefe, cada cuatro compases)
-  if (sc.kind !== 'shop' && (s % 64 === 0 || (sc.boss && s % 32 === 0))) [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(out, 73.42 * k * m, t, 4.5 - i * 0.6, { type: 'sine', vol: 0.11 / (i + 1) }));
-  // cuernos graves: fundamental y quinta por compás (la ferretería va sin cuernos)
-  if (pos === 0 && sc.kind !== 'shop') {
+  if (sc.kind !== 'shop' && (s % 64 === 0 || (sc.boss && s % 32 === 0))) [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(out, 73.42 * k * m, t, 4.5 - i * 0.6, { type: 'sine', vol: 0.1 / (i + 1) }));
+  // cuernos graves: fundamental y quinta por compás; crecen con la presión
+  if (pos === 0 && sc.kind !== 'shop' && !breath) {
     const [root, fifth] = CHORDS[bar];
     const dur = STEP * 8 * 0.97;
-    const loud = sc.boss ? 1.35 : battle ? 1 : 0.6;
+    const loud = sc.boss ? 1.25 : battle ? 0.45 + 0.8 * p : 0.55;
     for (const [n, vol] of [[root, 0.075], [fifth, 0.045]] as [string, number][]) {
       note(out, F[n] * k, t, dur, { type: 'sawtooth', vol: vol * loud, attack: 0.45, cutoff: sc.boss ? 460 : 380, detune: -7 });
       note(out, F[n] * k, t, dur, { type: 'sawtooth', vol: vol * loud, attack: 0.45, cutoff: sc.boss ? 460 : 380, detune: 7 });
     }
   }
-  // en la ferretería el bajo lo lleva un laúd grave, a contratiempo
-  if (sc.kind === 'shop' && (pos === 0 || pos === 3 || pos === 6)) note(out, F[CHORDS[bar][pos === 0 ? 0 : 1]] * k, t, 0.7, { type: 'triangle', vol: 0.11, cutoff: 900 });
-  // melodía
-  if (section === 0) return;
-  const main = sc.lead === 'a' ? MELODY : SECOND;
-  const other = sc.lead === 'a' ? SECOND : MELODY;
-  const n = (section === 3 ? other : main)[s % 64];
+  // bajo de laúd a contratiempo: en la ferretería siempre; en la obra, mientras se piensa con calma
+  if ((sc.kind === 'shop' || breath || (battle && p < 0.45)) && (pos === 0 || pos === 3 || pos === 6)) note(out, F[CHORDS[bar][pos === 0 ? 0 : 1]] * k, t, 0.7, { type: 'triangle', vol: sc.kind === 'shop' ? 0.11 : 0.08, cutoff: 900 });
+  // melodía: el laúd entra en la segunda vuelta, y respira
+  if (index === 0 && !sc.boss && sc.kind === 'battle') return;
+  if (breath || loop.rest[bar]) return;
+  const n = loop.phrase[s % 64];
   if (n === '.') return;
-  const bright = sc.kind === 'shop' ? 2600 : 1500;
-  note(out, F[n] * k, t, 1.1, { type: 'triangle', vol: 0.12, cutoff: bright }); // laúd
-  note(out, (F[n] * k) / 2, t, 0.9, { type: 'triangle', vol: 0.05, cutoff: 900 });
-  if (sc.kind === 'shop') note(out, F[n] * k * 2, t, 0.35, { type: 'sine', vol: 0.03 }); // un punteo agudo, de mercado
-  // coro de monjes: la misma línea, una octava abajo, con ataque lento
-  if (section >= 2 && sc.kind !== 'shop') {
-    note(out, (F[n] * k) / 2, t, STEP * 2.6, { type: 'sawtooth', vol: 0.035, attack: 0.18, cutoff: 520, vibrato: 2.5, detune: -5 });
-    note(out, (F[n] * k) / 2, t, STEP * 2.6, { type: 'sine', vol: 0.06, attack: 0.18, vibrato: 2.5, detune: 5 });
+  const f = F[n] * k * (loop.low[bar] ? 0.5 : 1);
+  const bright = sc.kind === 'shop' ? 2600 : 1300 + 500 * p;
+  const touch = 0.85 + 0.3 * Math.abs(Math.sin(s * 2.3)); // pulsación humana
+  note(out, f, t, 1.1, { type: 'triangle', vol: 0.115 * touch, cutoff: bright }); // laúd
+  note(out, f / 2, t, 0.9, { type: 'triangle', vol: 0.05, cutoff: 900 });
+  if (loop.echo) note(out, f, t + STEP * 2, 0.8, { type: 'triangle', vol: 0.04, cutoff: 1100 });
+  if (sc.kind === 'shop') note(out, f * 2, t, 0.35, { type: 'sine', vol: 0.03 }); // un punteo agudo, de mercado
+  // coro de monjes: solo cuando la obra aprieta (o hay jefe); la misma línea, una octava abajo
+  if (sc.kind !== 'shop' && (sc.boss || p > 0.55 || (sc.kind === 'menu' && index % 2 === 1))) {
+    const amt = sc.kind === 'menu' ? 0.7 : Math.min(1, 0.5 + p * 0.6);
+    note(out, f / 2, t, STEP * 2.6, { type: 'sawtooth', vol: 0.035 * amt, attack: 0.18, cutoff: 520, vibrato: 2.5, detune: -5 });
+    note(out, f / 2, t, STEP * 2.6, { type: 'sine', vol: 0.06 * amt, attack: 0.18, vibrato: 2.5, detune: 5 });
   }
 }
 
@@ -383,7 +509,7 @@ function startLoop(): void {
   const a = ac();
   if (!a || !musicBus || timer !== null) return;
   musicBus.gain.cancelScheduledValues(a.currentTime);
-  musicBus.gain.setTargetAtTime(0.55, a.currentTime, 0.8);
+  musicBus.gain.setTargetAtTime(0.6 * gainOf(volume.music), a.currentTime, 0.8);
   // bordón de quinta: re + la
   drone = DRONE.map((base, i) => {
     const f = base * tr();
@@ -424,25 +550,13 @@ function stopLoop(): void {
 
 /** Llamar tras un gesto del usuario (los navegadores bloquean el audio hasta entonces). */
 export function startMusic(): void {
-  if (musicOn) startLoop();
+  if (volume.music > 0) startLoop();
 }
 
-/** Con el búnker en peligro los tambores redoblan. */
-export function setTension(on: boolean): void {
-  tense = on;
-}
-
-export const soundOn = () => sfxOn;
-export const musicIsOn = () => musicOn;
-export function toggleSound(): boolean {
-  sfxOn = !sfxOn;
-  localStorage.setItem('derrumbe:sound', sfxOn ? '1' : '0');
-  return sfxOn;
-}
-export function toggleMusic(): boolean {
-  musicOn = !musicOn;
-  localStorage.setItem('derrumbe:music', musicOn ? '1' : '0');
-  if (musicOn) startLoop();
-  else stopLoop();
-  return musicOn;
+/**
+ * Presión de la obra, de 0 a 1. Con calma suenan el bordón, un latido y el laúd; al subir entran
+ * el ritmo de tambor, las cadenas, los cuernos y el coro, y por encima de 0,7 los tambores redoblan.
+ */
+export function setPressure(level: number): void {
+  pressure = clamp01(level);
 }

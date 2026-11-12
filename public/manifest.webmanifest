@@ -1,0 +1,23 @@
+{
+  "name": "DERRUMBE",
+  "short_name": "DERRUMBE",
+  "description": "Roguelike de demolición con baraja francesa: Fuerza × Resonancia, cinturón de herramientas y campaña cooperativa.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#151412",
+  "theme_color": "#151412",
+  "categories": [
+    "games"
+  ],
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

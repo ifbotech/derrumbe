@@ -10,6 +10,28 @@ import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool } fro
 
 export const MIN_DECK = 12;
 export const LAST_STAGE = 8;
+/** Versión del formato de campaña guardada: una campaña de otra versión no se puede continuar. */
+export const RUN_VERSION = 3;
+
+/**
+ * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
+ * a todos los anteriores. `run.ascension` es el índice: 0 para el nivel 1, 7 para el nivel 8.
+ */
+export interface Ascension {
+  name: string;
+  desc: string;
+}
+export const ASCENSIONS: Ascension[] = [
+  { name: 'Obra limpia', desc: 'Las reglas de siempre.' },
+  { name: 'Hormigón armado', desc: 'Todos los pisos aguantan un 3 % más.' },
+  { name: 'Vigas maestras', desc: 'Las K llegan apuntaladas.' },
+  { name: 'Precios de obra', desc: 'Todo en la ferretería cuesta 1 de oro más.' },
+  { name: 'Sirena afinada', desc: 'La amenaza de las K sube 1.' },
+  { name: 'Suelo cansado', desc: 'Los colapsos quitan 1 más.' },
+  { name: 'Sin relevo', desc: 'Al terminar cada obra el búnker se repara 2 en vez de 4.' },
+  { name: 'Clausura', desc: 'Las obras con jefe aguantan un 14 % más.' },
+];
+export const MAX_ASCENSION = ASCENSIONS.length - 1;
 
 // ───────────────────────── Obras y jefes ─────────────────────────
 
@@ -22,22 +44,25 @@ export interface StageDef {
   threat: number;
   boss: boolean;
 }
-/** Balanceado por simulación (npm run simulate:run): el bot gana ~25 % de las campañas con el gremio vacío y ~45 % con el gremio lleno. */
+/**
+ * Balanceado con el laboratorio (npm run analyze:meta). Las obras son cortas (de 6 a 19 turnos de mediana)
+ * y la dificultad sube sobre todo por la amenaza de la sirena, no por pisos interminables.
+ */
 export const STAGES: StageDef[] = [
-  { name: 'Caseta de obra', floors: [11], hp: 2.4, threat: -1, boss: false },
-  { name: 'Bloque de pisos', floors: [11, 12], hp: 3.1, threat: -1, boss: false },
-  { name: 'Torre del capataz', floors: [11, 12, 13], hp: 3.8, threat: 0, boss: true },
-  { name: 'Polígono', floors: [11, 12, 13], hp: 5, threat: 0, boss: false },
-  { name: 'Ciudadela', floors: [11, 12, 13], hp: 6.5, threat: 0, boss: true },
-  { name: 'Rascacielos', floors: [11, 12, 13], hp: 8.4, threat: 1, boss: false },
-  { name: 'Fortaleza', floors: [11, 12, 13], hp: 10.8, threat: 1, boss: true },
-  { name: 'La Torre Madre', floors: [11, 12, 13], hp: 14, threat: 1, boss: true },
+  { name: 'Caseta de obra', floors: [11], hp: 3.93, threat: 2, boss: false },
+  { name: 'Bloque de pisos', floors: [11, 12], hp: 3.93, threat: 2, boss: false },
+  { name: 'Torre del capataz', floors: [11, 12], hp: 4.7, threat: 3, boss: true },
+  { name: 'Polígono', floors: [11, 12, 13], hp: 5.68, threat: 3, boss: false },
+  { name: 'Ciudadela', floors: [11, 12, 13], hp: 6.56, threat: 4, boss: true },
+  { name: 'Rascacielos', floors: [11, 12, 13], hp: 7.32, threat: 4, boss: false },
+  { name: 'Fortaleza', floors: [11, 12, 13], hp: 8.09, threat: 5, boss: true },
+  { name: 'La Torre Madre', floors: [11, 12, 13], hp: 9.61, threat: 6, boss: true },
 ];
 /** La obra n. Más allá de la octava empiezan los Cimientos abisales: siempre con jefe y cada vez más duros. */
 export function stageDef(n: number): StageDef {
   if (n <= LAST_STAGE) return STAGES[n - 1];
   const depth = n - LAST_STAGE;
-  return { name: `Cimiento abisal ${depth}`, floors: [11, 12, 13], hp: Math.round(STAGES[LAST_STAGE - 1].hp * 1.45 ** depth * 10) / 10, threat: 1 + Math.ceil(depth / 2), boss: true };
+  return { name: `Cimiento abisal ${depth}`, floors: [11, 12, 13], hp: Math.round(STAGES[LAST_STAGE - 1].hp * 1.45 ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
 }
 /** Tras estas obras aparece un hallazgo en los cimientos. */
 export const EVENT_AFTER = [3, 5, 7];
@@ -54,12 +79,12 @@ export interface Boss {
 const eachHand = (c: Config, n: number) => void (c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, Math.max(3, v + n)])));
 const eachThreat = (c: Config, n: number) => void [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + n)));
 export const BOSSES: Boss[] = [
-  { id: 'doble', who: 'La Sirena', name: 'Doble sirena', desc: 'La sirena voltea 2 cartas cada turno.', apply: (c) => void (c.sirenCount = 2) },
+  { id: 'doble', who: 'La Sirena', name: 'Doble sirena', desc: 'La sirena voltea 2 cartas cada turno, pero cada golpe pega un 40 % menos.', apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))) },
   { id: 'escasez', who: 'El Usurero', name: 'Escasez', desc: 'Jugáis con 1 carta menos en la mano.', apply: (c) => eachHand(c, -1) },
   { id: 'sequia', who: 'El Matasanos', name: 'Sin botiquín', desc: 'Los ♥ no reparan el búnker.', apply: (c) => void (c.repairDiv = 9999) },
   { id: 'intemperie', who: 'La Ventisca', name: 'Intemperie', desc: 'El muro no puede pasar de 2.', apply: (c) => void (c.wallCap = 2) },
-  { id: 'blindaje', who: 'El Coloso', name: 'Blindaje', desc: 'Todos los pisos empiezan apuntalados: el primer golpe contra cada uno resuena a la mitad.', apply: (c) => void (c.apuntalado = [11, 12, 13]) },
-  { id: 'furia', who: 'La Furia', name: 'Furia', desc: 'La amenaza de todas las torres sube 1.', apply: (c) => eachThreat(c, 1) },
+  { id: 'blindaje', who: 'El Coloso', name: 'Blindaje', desc: 'Todos los pisos llegan apuntalados y aguantan un 15 % más.', apply: (c) => void ((c.apuntalado = [11, 12, 13]), [11, 12, 13].forEach((r) => (c.floorHp[r] = Math.round(c.floorHp[r] * 1.15)))) },
+  { id: 'furia', who: 'La Furia', name: 'Furia', desc: 'La amenaza de todas las torres sube 2.', apply: (c) => eachThreat(c, 2) },
   { id: 'inestable', who: 'El Topo', name: 'Suelo inestable', desc: 'Los colapsos quitan el doble.', apply: (c) => void (c.collapseLoss *= 2) },
 ];
 export const BOSS: Record<string, Boss> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
@@ -232,6 +257,8 @@ export interface Meta {
   seen: { tools: string[]; specials: string[]; bosses: string[]; forms: string[] };
   /** Para no contar dos veces lo que acumula una campaña en curso. */
   last: { id: number; forged: number; contracts: number; skips: number };
+  /** Sellos de maestría: el nivel de obra más alto ganado con cada herramienta en el cinturón y con cada baraja. */
+  mastery: { tools: Record<string, number>; decks: Record<string, number> };
   /** Mejor resultado en la Obra diaria. */
   daily: { date: string; cleared: number; won: boolean };
 }
@@ -248,6 +275,7 @@ export const newMeta = (): Meta => ({
   stats: { floors: 0, cleans: 0, maxHit: 0, maxGold: 0, reach: 0, winAsc: -1, intact: 0, depth: 0, forged: 0, contracts: 0, skips: 0, maxTools: 0, dailies: 0 },
   seen: { tools: [], specials: [], bosses: [], forms: [] },
   last: { id: 0, forged: 0, contracts: 0, skips: 0 },
+  mastery: { tools: {}, decks: {} },
   daily: { date: '', cleared: 0, won: false },
 });
 
@@ -256,7 +284,8 @@ export function loadMeta(saved: unknown): Meta {
   const base = newMeta();
   if (!saved || typeof saved !== 'object') return base;
   const old = saved as Partial<Meta> & { seen?: { relics?: string[] } & Partial<Meta['seen']> };
-  const meta: Meta = { ...base, ...old, ach: { ...old.ach }, stats: { ...base.stats, ...old.stats }, seen: { ...base.seen, ...old.seen }, last: { ...base.last, ...old.last }, daily: { ...base.daily, ...old.daily }, up: { ...old.up } };
+  const meta: Meta = { ...base, ...old, ach: { ...old.ach }, stats: { ...base.stats, ...old.stats }, seen: { ...base.seen, ...old.seen }, last: { ...base.last, ...old.last }, daily: { ...base.daily, ...old.daily }, up: { ...old.up }, mastery: { tools: { ...old.mastery?.tools }, decks: { ...old.mastery?.decks } } };
+  meta.ascMax = Math.max(0, Math.min(MAX_ASCENSION, meta.ascMax));
   if ((old.v ?? 1) < META_VERSION) {
     // las mejoras cambiaron de arriba abajo: se devuelve todo lo gastado y se empieza de cero
     for (const [id, level] of Object.entries(meta.up)) for (let i = 0; i < level; i++) meta.renown += RETIRED[id]?.[i] ?? 0;
@@ -352,6 +381,8 @@ export interface RunOpts {
 }
 
 export interface Run {
+  /** Versión del formato (RUN_VERSION). */
+  v: number;
   id: number;
   /** La semilla, tal como se muestra y se comparte. */
   seedText: string;
@@ -412,7 +443,7 @@ export interface Run {
   /** Jefes derrotados y obras terminadas con el búnker entero. */
   beaten: string[];
   intact: number;
-  stats: { floors: number; cleans: number; turns: number; gold: number; maxHit: number; burned: number; forged: number; contracts: number; skips: number; toolUse: Record<string, number> };
+  stats: { floors: number; cleans: number; turns: number; gold: number; maxHit: number; burned: number; forged: number; contracts: number; skips: number; toolUse: Record<string, number>; stageTurns: number[] };
 }
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
@@ -499,59 +530,60 @@ export const DECKS: DeckDef[] = [
   {
     id: 'acero',
     name: 'Baraja negra',
-    desc: 'Solo ♠ y ♣, por duplicado. Empiezas con Ácido (nada te es inmune), +6 de oro y un búnker reforzado (+8).',
+    desc: 'Solo ♠ y ♣, por duplicado: ni reparas ni lanzas esquirlas. Empiezas con Ácido, Casco y Sacos terreros, +6 de oro y un búnker reforzado (+10).',
     unlock: 'capataz',
     build: (run) => {
       const black = run.deck.filter((c) => c.suit === 'S' || c.suit === 'C');
       run.deck = [...black, ...black.map(copyOf), ...run.deck.filter((c) => c.suit === 'X')];
-      run.tools.push({ id: 'acido', n: 0 });
+      run.tools.push({ id: 'acido', n: 0 }, { id: 'casco', n: 0 }, { id: 'sacos', n: 0 });
       run.gold += 6;
-      run.maxIntegrity += 8;
+      run.maxIntegrity += 10;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'prestamista',
     name: 'Baraja del prestamista',
-    desc: '+12 de oro inicial y el interés rinde el doble, pero el búnker tiene 2 menos.',
+    desc: '+12 de oro inicial y el interés rinde el doble, pero el búnker tiene 1 menos.',
     unlock: 'media',
     build: (run) => {
       run.gold += 12;
       run.interestCap += 3;
-      run.maxIntegrity -= 2;
+      run.maxIntegrity -= 1;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'ases',
     name: 'Baraja de ases',
-    desc: 'Ocho ases y ningún 2. Más pegada, pero el búnker tiene 5 menos.',
+    desc: 'Ocho ases y ningún 2: más compañías y más pegada, pero el búnker tiene 3 menos.',
     unlock: 'madre',
     build: (run) => {
       const aces = run.deck.filter((c) => c.rank === 1);
       run.deck = [...run.deck.filter((c) => c.rank !== 2), ...aces.map(copyOf)];
-      run.maxIntegrity -= 5;
+      run.maxIntegrity -= 3;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'corta',
     name: 'Baraja corta',
-    desc: 'Sin doses ni treses. Golpes gordos, pero la cantera se agota enseguida y el búnker tiene 7 menos.',
+    desc: 'Sin doses ni treses. Golpes gordos, pero la cantera se agota enseguida y el búnker tiene 6 menos.',
     unlock: 'golpe100',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.rank < 2 || c.rank > 3);
-      run.maxIntegrity -= 7;
+      run.maxIntegrity -= 6;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'caos',
     name: 'Baraja del caos',
-    desc: 'Un solo comodín, pero el sobre inicial trae 6 cartas especiales.',
+    desc: 'Un solo comodín, pero el sobre inicial trae 6 cartas especiales y empiezas con +4 de oro.',
     unlock: 'coleccion',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.id !== 'X2');
+      run.gold += 4;
       for (const id of rollSpecials(run, 3)) {
         run.pack.push(id);
         addSpecial(run, id);
@@ -572,11 +604,12 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   const boxes = BOXES.filter((b) => up[`caja_${b}`]);
   const maxIntegrity = 20;
   const run: Run = {
+    v: RUN_VERSION,
     id: seed,
     seedText: seedText || (seed >>> 0).toString(36).toUpperCase(),
     daily,
     rng: seed,
-    ascension: daily ? 0 : Math.max(0, Math.min(20, Math.floor(opts.ascension ?? 0) || 0)),
+    ascension: daily ? 0 : Math.max(0, Math.min(MAX_ASCENSION, Math.floor(opts.ascension ?? 0) || 0)),
     deckId: !daily && DECK[opts.deck ?? ''] ? opts.deck! : 'obra',
     up,
     pool: [...new Set([...BASE_POOL, ...(!daily && Array.isArray(opts.pool) ? opts.pool.filter((id) => typeof id === 'string' && SPECIAL[id]) : [])])],
@@ -623,7 +656,7 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     skipped: [],
     beaten: [],
     intact: 0,
-    stats: { floors: 0, cleans: 0, turns: 0, gold: 0, maxHit: 0, burned: 0, forged: 0, contracts: 0, skips: 0, toolUse: {} },
+    stats: { floors: 0, cleans: 0, turns: 0, gold: 0, maxHit: 0, burned: 0, forged: 0, contracts: 0, skips: 0, toolUse: {}, stageTurns: [] },
   };
   run.pack = rollSpecials(run, 3);
   for (const id of run.pack) addSpecial(run, id);
@@ -638,20 +671,21 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
 /** Cuánto más aguantan las obras según el tamaño de la cuadrilla (1 a 4 jugadores). */
 const COOP_HP = [1, 1.3, 1.4, 1.48];
 
-/** Reglas efectivas de la obra actual: base + ascenso + planos + herramientas + jefe + contrato. */
+/** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
   const st = stageDef(run.stage);
   const cfg: Config = structuredClone(DEFAULT_CONFIG);
   cfg.maxIntegrity = run.maxIntegrity;
   cfg.handSize = { [players]: 7 + run.handBonus };
   // en cuadrilla hay más manos entre las que elegir: las obras aguantan más
-  const scale = st.hp * (1 + 0.1 * run.ascension) * COOP_HP[Math.min(players, 4) - 1];
+  const a = run.ascension;
+  const scale = st.hp * (a >= 1 ? 1.03 : 1) * (a >= 7 && st.boss ? 1.14 : 1) * COOP_HP[Math.min(players, 4) - 1];
   for (const r of [11, 12, 13]) {
     cfg.floorHp[r] = Math.round(DEFAULT_CONFIG.floorHp[r] * scale);
-    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (run.ascension >= 3 ? 1 : 0));
+    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? 1 : 0));
   }
-  if (run.ascension >= 2) cfg.apuntalado = [13];
-  if (run.ascension >= 4) cfg.collapseLoss += 2;
+  if (a >= 2) cfg.apuntalado = [13];
+  if (a >= 5) cfg.collapseLoss += 1;
   cfg.formLevel = { ...run.levels };
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
   if (run.boss) BOSS[run.boss]?.apply(cfg);
@@ -670,7 +704,7 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
   return {
     config,
     rng: (run.rng ^ 0x5bd1e995) | 0,
-    players: players.map((p) => ({ id: p.id, name: p.name, hand: deck.splice(0, size) })),
+    players: players.map((p) => ({ id: p.id, name: p.name, hand: deck.splice(0, size), reserve: [] })),
     deck,
     discard: [],
     towers: newTowers(stageDef(run.stage).floors, config),
@@ -687,6 +721,10 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
     scrap: run.scrap,
     burned: [],
     exhausted: [],
+    stashed: false,
+    // una tiza de replanteo por obra, solo en solitario
+    chalk: players.length === 1 ? 1 : 0,
+    undo: null,
   };
 }
 
@@ -720,6 +758,12 @@ export const offerCost = (run: Run, o: Offer) => (run.freeShop ? 0 : o.cost);
 export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?.rarity ?? 'comun'].cost / 2));
 
 function generateShop(run: Run): Offer[] {
+  const offers = stock(run);
+  if (run.ascension >= 3) for (const o of offers) o.cost += 1;
+  return offers;
+}
+
+function stock(run: Run): Offer[] {
   const offers: Offer[] = [];
   const seen: string[] = [];
   for (let i = 0; i < 2 + lvl(run, 'tienda'); i++) {
@@ -785,6 +829,7 @@ export function finishBattle(run: Run, state: GameState): void {
   run.deck = run.deck.filter((c) => !state.burned.includes(c.id));
   run.scrap = state.scrap;
   run.stats.turns += state.turnCount;
+  run.stats.stageTurns.push(state.turnCount);
   if (state.phase === 'lost') {
     run.integrity = 0;
     run.phase = 'lost';
@@ -797,14 +842,14 @@ export function finishBattle(run: Run, state: GameState): void {
     ['Búnker en pie', Math.floor(state.integrity / 5)],
     ['Interés (1 por cada 5 de oro)', Math.min(run.interestCap, Math.floor(run.gold / 5))],
   ];
-  if (run.tools.some((t) => t.id === 'hucha')) lines.push(['Hucha', 3]);
+  if (run.tools.some((t) => t.id === 'hucha')) lines.push(['Hucha', 4]);
   run.pay = lines.filter(([, n]) => n > 0);
   const total = run.pay.reduce((a, [, n]) => a + n, 0);
   run.gold += total;
   run.stats.gold += total;
   if (state.integrity >= run.maxIntegrity) run.intact++;
   if (run.boss) run.beaten.includes(run.boss) || run.beaten.push(run.boss);
-  run.integrity = Math.min(run.maxIntegrity, state.integrity + 4);
+  run.integrity = Math.min(run.maxIntegrity, state.integrity + (run.ascension >= 6 ? 2 : 4));
   const contract = run.contract ? CONTRACT[run.contract] : null;
   if (contract) {
     run.contractDone = contract.risk ? true : !!contract.done?.(run.battle, state, run);
@@ -1048,7 +1093,11 @@ export function settle(meta: Meta, run: Run): number {
   meta.best = Math.max(meta.best, Math.min(LAST_STAGE, stagesCleared(run)));
   if (run.conquered) {
     meta.wins++;
-    meta.ascMax = Math.max(meta.ascMax, run.ascension + 1);
+    meta.ascMax = Math.min(MAX_ASCENSION, Math.max(meta.ascMax, run.ascension + 1));
+    // sellos de maestría: el nivel más alto ganado con cada herramienta puesta y con esta baraja
+    const level = run.ascension + 1;
+    for (const t of run.tools) meta.mastery.tools[t.id] = Math.max(meta.mastery.tools[t.id] ?? 0, level);
+    meta.mastery.decks[run.deckId] = Math.max(meta.mastery.decks[run.deckId] ?? 0, level);
   }
   if (run.daily) {
     const cleared = stagesCleared(run);

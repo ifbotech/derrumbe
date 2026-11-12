@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
-import { BOSSES, CONTRACT, DECKS, EVENT, EVENTS, LAST_STAGE, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, LAST_STAGE, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS } from '../src/rules/tools';
 
@@ -89,7 +89,8 @@ describe('preparación', () => {
     expect(Object.keys(run.bosses).map(Number)).toEqual(bossStages);
     expect(new Set(Object.values(run.bosses)).size).toBe(bossStages.length);
     expect(run.events.length).toBe(3);
-    expect(run.toolPool.length).toBe(30);
+    expect(run.toolPool.length).toBe(32);
+    expect(run.v).toBe(RUN_VERSION);
     expect(run.seals).toEqual(['eco', 'jornal']);
     expect(run.treats).toEqual(['forjado', 'templado']);
   });
@@ -112,7 +113,7 @@ describe('preparación', () => {
       expect(run.integrity, d.id).toBe(run.maxIntegrity);
       expect(startStage(Object.assign(run, { phase: 'battle' as const }), P).players[0].hand.length).toBe(7 + run.handBonus);
     }
-    expect(newRun({ deck: 'acero' }, 3).tools).toEqual([{ id: 'acido', n: 0 }]);
+    expect(newRun({ deck: 'acero' }, 3).tools.map((t) => t.id)).toEqual(['acido', 'casco', 'sacos']);
     expect(newRun({ deck: 'ases' }, 3).deck.filter((c) => c.rank === 1).length).toBe(8);
     expect(newRun({ deck: 'caos' }, 3).pack.length).toBe(6);
   });
@@ -570,6 +571,9 @@ describe('final, cimientos abisales y gremio', () => {
     expect(stageConfig(run, 3).floorHp[11]).toBeGreaterThan(solo);
     expect(stageConfig(newRun({ ascension: 2 }, 13), 1).floorHp[11]).toBeGreaterThan(solo);
     expect(stageConfig(newRun({ ascension: 2 }, 13), 1).apuntalado).toEqual([13]);
+    // en solitario hay una tiza de replanteo por obra; en cuadrilla, ninguna
+    expect(startStage(Object.assign(newRun({}, 13), { phase: 'battle' as const }), P).chalk).toBe(1);
+    expect(startStage(Object.assign(newRun({}, 13), { phase: 'battle' as const }), [...P, { id: 'b', name: 'B' }]).chalk).toBe(0);
   });
 
   it('lo que viaja a los clientes de una sala no lleva el azar ni la semilla hasta que termina', () => {
@@ -648,5 +652,74 @@ describe('final, cimientos abisales y gremio', () => {
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
     for (const d of DECKS) if (d.unlock) expect(ACHIEVEMENTS.some((a) => a.id === d.unlock), d.id).toBe(true);
     for (const s of SPECIALS) if (s.locked) expect(ACHIEVEMENTS.some((a) => a.id === s.locked), s.id).toBe(true);
+  });
+});
+
+describe('niveles de obra y maestría', () => {
+  const at = (ascension: number, stage = 1) => Object.assign(newRun({ ascension }, 5), { stage });
+
+  it('hay 8 niveles y cada uno añade un giro a los anteriores', () => {
+    expect(ASCENSIONS.length).toBe(8);
+    expect(MAX_ASCENSION).toBe(7);
+    expect(newRun({ ascension: 99 }, 1).ascension).toBe(7);
+    const base = stageConfig(at(0, 3));
+    const harder = stageConfig(at(1, 3)).floorHp[13] / base.floorHp[13]; // 2 · hormigón armado: +3 % (con el redondeo a enteros)
+    expect(harder).toBeGreaterThan(1.015);
+    expect(harder).toBeLessThan(1.045);
+    expect(stageConfig(at(1, 3)).apuntalado).toBeUndefined();
+    expect(stageConfig(at(2, 3)).apuntalado).toEqual([13]); // 3 · vigas maestras
+    expect(stageConfig(at(3, 3)).floorThreat[11]).toBe(base.floorThreat[11]);
+    expect(stageConfig(at(4, 3)).floorThreat[13]).toBe(base.floorThreat[13] + 1); // 5 · sirena afinada: solo las K
+    expect(stageConfig(at(4, 3)).floorThreat[11]).toBe(base.floorThreat[11]);
+    expect(stageConfig(at(4, 3)).collapseLoss).toBe(base.collapseLoss);
+    expect(stageConfig(at(5, 3)).collapseLoss).toBe(base.collapseLoss + 1); // 6 · suelo cansado
+    // 8 · clausura: solo las obras con jefe
+    expect(stageConfig(at(7, 3)).floorHp[13]).toBeGreaterThan(stageConfig(at(6, 3)).floorHp[13]);
+    expect(stageConfig(at(7, 4)).floorHp[13]).toBe(stageConfig(at(6, 4)).floorHp[13]);
+  });
+
+  it('4 · precios de obra: la ferretería cuesta 1 más; 7 · sin relevo: el búnker se repara la mitad', () => {
+    const cheap = at(2);
+    const dear = at(3);
+    toShop(cheap);
+    toShop(dear);
+    expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost + 1));
+    const healed = at(5);
+    const tired = at(6);
+    win(healed, (s) => (s.integrity = 10));
+    win(tired, (s) => (s.integrity = 10));
+    expect(healed.integrity).toBe(14);
+    expect(tired.integrity).toBe(12);
+  });
+
+  it('ganar estampa el sello de maestría en la baraja y en cada herramienta del cinturón', () => {
+    const meta = newMeta();
+    const run = Object.assign(newRun({ ascension: 3, deck: 'obra' }, 5), { stage: LAST_STAGE });
+    run.tools = [{ id: 'prisma', n: 0 }, { id: 'calibre', n: 2 }];
+    win(run);
+    settle(meta, run);
+    expect(meta.mastery).toEqual({ tools: { prisma: 4, calibre: 4 }, decks: { obra: 4 } });
+    expect(meta.ascMax).toBe(4);
+    // una victoria en un nivel más bajo no rebaja el sello
+    const again = Object.assign(newRun({ ascension: 0 }, 6), { stage: LAST_STAGE });
+    again.tools = [{ id: 'prisma', n: 0 }];
+    win(again);
+    settle(meta, again);
+    expect(meta.mastery.tools.prisma).toBe(4);
+    expect(loadMeta(JSON.parse(JSON.stringify(meta))).mastery).toEqual(meta.mastery);
+    expect(loadMeta({ ascMax: 20 }).ascMax).toBe(7);
+  });
+
+  it('30 campañas del bot con semilla: mismas decisiones, mismo resultado, y nada se sale de sus límites', { timeout: 240_000 }, () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const a = botRun(newRun({ ascension: seed % 8 }, seed * 104729));
+      const b = botRun(newRun({ ascension: seed % 8 }, seed * 104729));
+      expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+      expect(a.gold).toBeGreaterThanOrEqual(0);
+      expect(a.tools.length).toBeLessThanOrEqual(TOOL_SLOTS);
+      expect(a.deck.length).toBeGreaterThanOrEqual(12);
+      expect(new Set(a.deck.map((c) => c.id)).size).toBe(a.deck.length);
+      expect(a.stats.stageTurns.length).toBeGreaterThan(0);
+    }
   });
 });

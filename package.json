@@ -1,8 +1,8 @@
 {
   "name": "derrumbe",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
-  "description": "DERRUMBE — roguelike de demolición con baraja francesa: Fuerza × Resonancia, cinturón de herramientas, sellos y campaña cooperativa online (1-4 jugadores)",
+  "description": "DERRUMBE — roguelike de demolición con baraja francesa: Fuerza × Resonancia, cinturón de herramientas, andamio, niveles de obra y campaña cooperativa online (1-4 jugadores)",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -10,12 +10,17 @@
     "dev:server": "tsx watch src/server/index.ts --port=3000",
     "dev:client": "vite",
     "build": "vite build && esbuild src/server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server/index.js",
+    "build:web": "vite build --mode web",
+    "preview:web": "vite preview --mode web --outDir dist/web",
     "start": "node dist/server/index.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "simulate": "tsx scripts/simulate.ts",
     "simulate:run": "tsx scripts/simulate-run.ts",
-    "docs": "tsx scripts/reglas.ts"
+    "docs": "tsx scripts/reglas.ts",
+    "analyze:meta": "tsx scripts/analyze-meta.ts",
+    "qa:visual": "tsx scripts/visual-qa.ts",
+    "qa:smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
     "ws": "^8.18.0"
@@ -30,6 +35,7 @@
     "@types/ws": "^8.5.13",
     "concurrently": "^9.1.0",
     "esbuild": "^0.28.2",
+    "playwright": "^1.65.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vite": "^8.3.8",

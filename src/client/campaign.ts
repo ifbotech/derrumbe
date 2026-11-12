@@ -2,7 +2,7 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, cardLabel, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { BOSS, CONTRACT, Run, RunAction, RunOpts, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
+import { BOSS, CONTRACT, RUN_VERSION, Run, RunAction, RunOpts, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
 import { TOOL } from '../rules/tools';
 import { sfx } from './audio';
@@ -15,39 +15,40 @@ import { setScreen } from './router';
 import { ferreteroSays, renderRun } from './runscreens';
 import { logLine, pump, renderBelt, renderHud } from './table';
 import { choice, toolTile } from './widgets';
+import { platform } from './platform';
 
 const RUN_KEY = 'derrumbe:run';
 const DECK_KEY = 'derrumbe:deck';
 
 /** Con qué se montará la próxima campaña. */
-export const prefs = { ascension: 0, deck: localStorage.getItem(DECK_KEY) ?? 'obra', seed: '' };
+export const prefs = { ascension: 0, deck: platform.load(DECK_KEY) ?? 'obra', seed: '' };
 export function pickDeck(id: string): void {
   prefs.deck = id;
-  localStorage.setItem(DECK_KEY, id);
+  platform.save(DECK_KEY, id);
 }
 
 export function savedCampaign(): Campaign | null {
   const c = loadJson<Campaign>(RUN_KEY);
   // descarta guardados de versiones anteriores del juego
-  return c && c.run && c.key && Array.isArray(c.run.tools) && c.run.node && c.run.stats?.toolUse ? c : null;
+  return c && c.run && c.key && c.run.v === RUN_VERSION && Array.isArray(c.run.tools) && c.run.node && c.run.stats?.toolUse ? c : null;
 }
 export function saveCampaign(): void {
   const c = S.campaign;
   if (!c || c.online) return;
-  if (c.run.phase === 'lost') localStorage.removeItem(RUN_KEY);
-  else localStorage.setItem(RUN_KEY, JSON.stringify(c));
+  if (c.run.phase === 'lost') platform.remove(RUN_KEY);
+  else platform.save(RUN_KEY, JSON.stringify(c));
 }
-export const forgetSaved = () => localStorage.removeItem(RUN_KEY);
+export const forgetSaved = () => platform.remove(RUN_KEY);
 
 /**
  * Una campaña guardada con las reglas de la versión anterior no se puede continuar:
  * se da por cerrada y se cobra el renombre de las obras que llevaba superadas.
  */
 export function retireOldSave(): void {
-  const old = loadJson<{ run?: { stage?: number; relics?: unknown } }>(RUN_KEY);
+  const old = loadJson<{ run?: { stage?: number; phase?: string } }>(RUN_KEY);
   if (!old?.run || savedCampaign()) return;
-  localStorage.removeItem(RUN_KEY);
-  if (!Array.isArray(old.run.relics)) return;
+  platform.remove(RUN_KEY);
+  if (old.run.phase === 'won' || old.run.phase === 'lost') return; // ya estaba cobrada
   const gain = Math.max(1, Math.min(8, Math.floor(Number(old.run.stage) || 1) - 1));
   meta.renown += gain;
   saveMeta();
@@ -68,10 +69,33 @@ export function newCampaign(opts: RunOpts): void {
     saved.run.phase = 'lost';
     maybeSettle(saved);
   }
+  begin(opts);
+}
+function begin(opts: RunOpts): void {
   const run = newRun(opts, (Math.random() * 2 ** 31) | 0);
   S.campaign = { run, online: false, state: null, key: run.daily ? `diaria:${run.daily}` : `local:${Date.now()}` };
+  S.shown = null;
+  S.queue.length = 0;
+  S.screen = null;
   saveCampaign();
   setScreen('run');
+}
+
+/** Se puede reiniciar: campaña local en marcha (ni sala, ni tutorial, ni acta). */
+export const canRestart = () => !!S.campaign && !S.campaign.online && S.campaign.run.phase !== 'won' && S.campaign.run.phase !== 'lost';
+
+/**
+ * Reinicio rápido (mantener R): la campaña empieza de cero con la misma baraja y el mismo nivel de
+ * obra, y con una semilla nueva (la diaria repite la del día). La que se deja no cuenta como
+ * derrota ni cobra renombre: es borrón y cuenta nueva.
+ */
+export function restartCampaign(): void {
+  const c = S.campaign;
+  if (!c || !canRestart()) return;
+  const { run } = c;
+  document.querySelectorAll('.modal, .end:not(.in-page)').forEach((m) => m.remove());
+  begin(run.daily ? { daily: run.daily } : { ...runOpts(), ascension: run.ascension, deck: run.deckId, seedText: undefined });
+  toast('Campaña reiniciada: misma baraja, mismo nivel de obra');
 }
 
 export function resumeCampaign(): void {
@@ -176,7 +200,10 @@ export function reveal(cards: Card[], tools: string[], title: string): void {
 /** Entra a la mesa con la obra actual (solo en local). */
 export function enterStage(fresh: boolean): void {
   const c = S.campaign!;
-  if (fresh || !c.state) c.state = startStage(c.run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  if (fresh || !c.state) {
+    c.state = startStage(c.run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+    c.undoRun = null;
+  }
   lastRouted = structuredClone(c.run);
   saveCampaign();
   S.tutorial = null;
@@ -195,10 +222,18 @@ export function campaignAct(action: Action): void {
   const c = S.campaign!;
   if (!c.state) return;
   try {
+    const before = action.type !== 'undo' && action.type !== 'stash' && c.state.chalk > 0 ? structuredClone(c.run) : undefined;
     const res = applyAction(c.state, RUN_PLAYER, action);
     c.state = res.state;
-    trackEvents(c.run, res.events);
-    if (res.state.phase !== 'playing') finishBattle(c.run, res.state);
+    if (action.type === 'undo') {
+      // la tiza también devuelve la campaña (oro, estadísticas, cartas destruidas) a como estaba
+      if (c.undoRun) c.run = c.undoRun;
+      c.undoRun = null;
+    } else {
+      if (action.type !== 'stash') c.undoRun = before ?? null;
+      trackEvents(c.run, res.events);
+      if (res.state.phase !== 'playing') finishBattle(c.run, res.state);
+    }
     S.selected.length = 0;
     saveCampaign();
     S.queue.push({ view: viewFor(res.state, RUN_PLAYER), events: res.events });

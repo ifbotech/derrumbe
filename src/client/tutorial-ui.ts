@@ -8,9 +8,10 @@ import { forget } from './net';
 import { setScreen } from './router';
 import { pump, renderInteractive } from './table';
 import { showRules } from './widgets';
+import { platform } from './platform';
 
 const TUTO_KEY = 'derrumbe:tutorial';
-export const tutorialDone = () => localStorage.getItem(TUTO_KEY) === '1';
+export const tutorialDone = () => platform.load(TUTO_KEY) === '1';
 export const guidedStep = () => (S.tutorial && S.tutorial.mode === 'do' ? TUTORIAL_STEPS[S.tutorial.step] : null);
 
 export function startTutorial(then?: () => void): void {
@@ -31,7 +32,7 @@ export function startTutorial(then?: () => void): void {
 /** Salta el tutorial previo a la primera campaña y sigue con ella. */
 export function skipTutorial(): void {
   const go = S.tutorial?.then;
-  localStorage.setItem(TUTO_KEY, '1');
+  platform.save(TUTO_KEY, '1');
   S.tutorial = null;
   go?.();
 }
@@ -108,10 +109,10 @@ export function showTutorialEnd(): void {
     <div class="meta"><span class="hot">TUTORIAL ${won ? 'COMPLETADO' : 'FALLIDO'}</span></div>
     ${won ? rubble('D', 'end-art') : skyline('end-art')}
     <h1>${won ? 'Listo para<br>la obra' : 'Sepultados'}</h1>
-    <p>${won ? 'Ya conoces la cuenta de Fuerza × Resonancia, los materiales, los poderes de cada palo, la sirena, el muro, el golpe limpio y la huelga. En campaña se suman el cinturón de herramientas, los sellos y los tratamientos de las cartas: pasa el puntero sobre cualquier cosa para ver qué hace.' : 'Pasa hasta en las mejores cuadrillas. Repite el tutorial con calma.'}</p>
+    <p>${won ? 'Ya conoces la cuenta de Fuerza × Resonancia, los materiales, los poderes de cada palo, la sirena, el muro, el golpe limpio y la huelga. En campaña se suman el cinturón de herramientas, los sellos y tratamientos, el andamio (un hueco para guardar una carta) y la tiza de replanteo (deshacer una jugada por obra). Pasa el puntero sobre cualquier cosa para ver qué hace, o ábrela con clic derecho en la lupa de grabador.' : 'Pasa hasta en las mejores cuadrillas. Repite el tutorial con calma.'}</p>
     <div class="row"><button class="primary" id="t-home">${then ? 'A la campaña' : 'Jugar de verdad'}</button><button id="t-again">Repetir tutorial</button><button id="t-rules">Reglas</button></div>`;
   document.body.appendChild(el);
-  if (won) localStorage.setItem(TUTO_KEY, '1');
+  if (won) platform.save(TUTO_KEY, '1');
   $('#t-home', el).onclick = () => {
     if (!then) return forget();
     el.remove();

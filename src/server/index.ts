@@ -192,6 +192,13 @@ function handle(ws: WebSocket, msg: ClientMsg): void {
     case 'leave':
       detach(ws, true);
       return send(ws, { t: 'left' });
+    case 'ping': {
+      // marcas de tiza: no cambian nada del juego, solo se reparten a la cuadrilla
+      const target = typeof msg.target === 'string' && /^(?:[a-z]+:[\w-]{1,24})?$/.test(msg.target) ? msg.target : null;
+      if (target === null) return;
+      for (const s of room.seats) send(s.ws, { t: 'ping', player: seat.id, target });
+      return;
+    }
     case 'mode':
       if (seat.id !== room.host || room.state || room.run) return;
       if (msg.value !== 'clasica' && msg.value !== 'campana') return;
@@ -268,6 +275,7 @@ const MIME: Record<string, string> = {
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
   '.png': 'image/png',

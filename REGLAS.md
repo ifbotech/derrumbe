@@ -17,9 +17,9 @@ Se gana o se pierde en equipo. La partida clásica también se puede jugar en me
 
 | Piso | Resistencia | Amenaza |
 |---|---|---|
-| J | 80 | 3 |
-| Q | 115 | 5 |
-| K | 150 | 7 |
+| J | 126 | 3 |
+| Q | 180 | 5 |
+| K | 235 | 7 |
 
 Cada palo es un material: ♠ **ACERO**, ♦ **VIDRIO**, ♥ **LADRILLO**, ♣ **HORMIGÓN**.
 
@@ -48,6 +48,7 @@ Lo que **suma** cuenta donde está. Lo que **multiplica** la Resonancia multipli
 | Formación | Cartas | Fuerza base | Resonancia | Por nivel de plano |
 |---|---|---|---|---|
 | Carta sola | 1 carta | +0 | ×1 | +4 F · +0,15 R |
+| As de compañía | un As con cualquier otra carta | +0 | ×1,1 | +3 F · +0,15 R |
 | Grupo | 2 o 3 del mismo número | +2 | ×1,2 | +3 F · +0,2 R |
 | Escalera | 3 o más números seguidos, de cualquier palo | +4 | ×1,3 | +3 F · +0,2 R |
 | Doble par | 2 parejas | +6 | ×1,5 | +3 F · +0,2 R |
@@ -76,21 +77,31 @@ Además de su Fuerza, las cartas de cada palo activan su poder (aunque no sumen 
 - ♥ **Reparar**: el búnker recupera un tercio (hacia arriba) del valor de tus corazones.
 - ♣ **Muro**: levantas un tercio (hacia arriba) del valor de tus tréboles como muro.
 
-### Golpe limpio y onda sísmica
+### Golpe limpio
 
-- **Golpe limpio**: tirar un piso con el daño exacto. La sirena no suena ese turno y cobras 1 de oro.
-- **Onda sísmica**: el piso de debajo pierde un cuarto de su resistencia, y empiezas una **racha**: tu próximo golpe resuena +0,5 por cada golpe limpio seguido (hasta +2). La racha se corta si el golpe no es limpio.
+Tirar un piso con el **daño exacto** es la jugada maestra del juego. Cuando lo consigues:
+
+- la **sirena calla** ese turno,
+- cobras **1 de oro** y **robas 1 carta** de más,
+- el piso de debajo pierde **un cuarto de su resistencia** (la onda del golpe sigue torre abajo),
+- y empiezas una **racha**: tu próximo golpe resuena +0,5 por cada golpe limpio seguido (hasta +2). La racha se corta si el golpe no es limpio.
+
+La mesa te lo avisa antes de golpear: la previsualización de cada torre dice si el golpe sería limpio.
 
 ### Estados de las torres
 
-- **Fractura expuesta**: la provoca un golpe de un solo material (2 o más cartas, todas del mismo palo). El próximo golpe contra esta torre resuena ×1,5.
-- **Sobrecarga**: la provoca un golpe que mezcla 3 palos o más. Esta torre se salta su próximo golpe de sirena.
-- **Apuntalado**: lo traen algunos jefes y ascensos. El primer golpe contra este piso resuena a la mitad.
+- **Fractura**: la provoca un golpe de un solo material (2 o más cartas, todas del mismo palo). El próximo golpe contra esta torre resuena ×1,5.
+- **Desarmada ×1**: la provoca un golpe que mezcla 3 palos o más. Esta torre se salta su próxima sirena.
+- **Apuntalado**: lo traen algunos jefes y niveles de obra. El primer golpe contra este piso resuena a la mitad.
 
 ### Reglas especiales
 
 - **Comodín · Huelga**: se juega solo sobre una torre. Su piso actual queda **desarmado** (amenaza 0 hasta que caiga) y la sirena no suena. El comodín sale de la obra.
-- **Colapso**: si la cantera se agota, la escombrera se baraja y vuelve a ser cantera, pero el búnker pierde **5** de integridad (el muro no lo evita).
+- **Colapso**: si la cantera se agota, la escombrera se baraja y vuelve a ser cantera, pero el búnker pierde **5** de integridad (el muro no lo evita). Cada vuelta completa de la cuadrilla a la cantera encarece el colapso en 1: las obras no se pueden estirar sin fin.
+- **As de compañía**: un As forma jugada con **cualquier otra carta** (×1,1 de Resonancia) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar muro, uno de ♥ para reparar, uno de ♠ para perforar.
+- **Andamio**: junto a la mano hay un hueco de reserva. Una vez por turno, y sin gastar el turno, puedes guardar en él una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La herramienta *Pasarela* añade un segundo hueco. En la partida guiada no hay andamio.
+- **Tiza de replanteo** (solo en campaña en solitario): una vez por obra puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y la cantera se baraja de nuevo, así que lo que viste salir ya no vale. Mover el andamio no gasta la tiza. En sala no hay tiza: toda jugada es definitiva, y la mesa lo indica.
+- Las cartas de baraja nunca bajan de 12 en el mazo: lo que las destruye deja de hacerlo al llegar a ese mínimo.
 - **Victoria**: las cuatro torres en ruinas. **Derrota**: la integridad del búnker llega a 0.
 - Modo **BRUTAL** (partida clásica): búnker de 16 y colapsos de 6.
 
@@ -100,14 +111,14 @@ Un roguelike de construcción de mazo: **8 obras** cada vez más duras, 4 de ell
 
 | Obra | Nombre | Pisos por torre | Resistencia | Amenaza | Jefe |
 |---|---|---|---|---|---|
-| 1 | Caseta de obra | 1 | ×2,4 | -1 | — |
-| 2 | Bloque de pisos | 2 | ×3,1 | -1 | — |
-| 3 | Torre del capataz | 3 | ×3,8 | base | sí |
-| 4 | Polígono | 3 | ×5 | base | — |
-| 5 | Ciudadela | 3 | ×6,5 | base | sí |
-| 6 | Rascacielos | 3 | ×8,4 | +1 | — |
-| 7 | Fortaleza | 3 | ×10,8 | +1 | sí |
-| 8 | La Torre Madre | 3 | ×14 | +1 | sí |
+| 1 | Caseta de obra | 1 | ×3,93 | +2 | — |
+| 2 | Bloque de pisos | 2 | ×3,93 | +2 | — |
+| 3 | Torre del capataz | 2 | ×4,7 | +3 | sí |
+| 4 | Polígono | 3 | ×5,68 | +3 | — |
+| 5 | Ciudadela | 3 | ×6,56 | +4 | sí |
+| 6 | Rascacielos | 3 | ×7,32 | +4 | — |
+| 7 | Fortaleza | 3 | ×8,09 | +5 | sí |
+| 8 | La Torre Madre | 3 | ×9,61 | +6 | sí |
 
 En cuadrilla (2 a 4 jugadores) las obras aguantan un 30 % más.
 
@@ -146,12 +157,12 @@ El plano enseña **desde el principio** qué jefe espera en cada obra y cuál es
 
 | Jefe | Maldición | Efecto |
 |---|---|---|
-| La Sirena | Doble sirena | La sirena voltea 2 cartas cada turno. |
+| La Sirena | Doble sirena | La sirena voltea 2 cartas cada turno, pero cada golpe pega un 40 % menos. |
 | El Usurero | Escasez | Jugáis con 1 carta menos en la mano. |
 | El Matasanos | Sin botiquín | Los ♥ no reparan el búnker. |
 | La Ventisca | Intemperie | El muro no puede pasar de 2. |
-| El Coloso | Blindaje | Todos los pisos empiezan apuntalados: el primer golpe contra cada uno resuena a la mitad. |
-| La Furia | Furia | La amenaza de todas las torres sube 1. |
+| El Coloso | Blindaje | Todos los pisos llegan apuntalados y aguantan un 15 % más. |
+| La Furia | Furia | La amenaza de todas las torres sube 2. |
 | El Topo | Suelo inestable | Los colapsos quitan el doble. |
 
 ### Al cobrar
@@ -189,16 +200,30 @@ Tras los jefes de las obras 3, 5, 7 aparece un dilema. Cada campaña ve 3 de est
   - *Copiarlos a mano*: 5 de oro. Una formación al azar sube 1 nivel.
   - *Dejarlos donde están*: Nada cambia.
 
-### Cimientos abisales, semillas y ascenso
+### Cimientos abisales, semillas y niveles de obra
 
-- Después de la obra 8 puedes seguir a los **cimientos abisales**: obras sin final, siempre con jefe, cada una un 45 % más resistente que la anterior (la primera, ×20,3).
+- Después de la obra 8 puedes seguir a los **cimientos abisales**: obras sin final, siempre con jefe, cada una un 45 % más resistente que la anterior (la primera, ×13,9).
 - **Semilla**: la misma semilla y las mismas decisiones dan exactamente la misma campaña. Puedes escribir la tuya al empezar.
-- **Obra diaria**: usa la fecha como semilla, con la baraja de obra, sin ascenso y sin nada del gremio. Igual para todo el mundo.
-- **Ascenso**: cada victoria abre un nivel más. Cada nivel: torres +10 % y renombre +25 %; desde el 2 las K llegan apuntaladas, desde el 3 la amenaza sube 1 y desde el 4 los colapsos quitan 2 más.
+- **Obra diaria**: usa la fecha como semilla, con la baraja de obra, en el nivel 1 y sin nada del gremio. Igual para todo el mundo.
+- **Niveles de obra**: hay 8. Ganar una campaña abre el nivel siguiente; cada nivel añade **un giro** a todos los anteriores y da un 25 % más de renombre.
+
+| Nivel | Nombre | Giro |
+|---|---|---|
+| 1 | Obra limpia | Las reglas de siempre. |
+| 2 | Hormigón armado | Todos los pisos aguantan un 3 % más. |
+| 3 | Vigas maestras | Las K llegan apuntaladas. |
+| 4 | Precios de obra | Todo en la ferretería cuesta 1 de oro más. |
+| 5 | Sirena afinada | La amenaza de las K sube 1. |
+| 6 | Suelo cansado | Los colapsos quitan 1 más. |
+| 7 | Sin relevo | Al terminar cada obra el búnker se repara 2 en vez de 4. |
+| 8 | Clausura | Las obras con jefe aguantan un 14 % más. |
+
+- **Sellos de maestría**: al ganar, la baraja usada y cada herramienta que llevabas en el cinturón quedan marcadas en la colección con el nivel de obra más alto que has ganado con ellas: remache de **bronce** (niveles 1–3), de **hierro** (4–6) o de **oro** (7–8).
+- **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con la misma baraja y el mismo nivel de obra. La que dejas no cuenta como derrota ni cobra renombre.
 
 ## Cinturón de herramientas
 
-Llevas hasta **6 herramientas**, y se activan **de izquierda a derecha**. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en plena obra. Hay 46: 30 en el surtido de salida y 16 más en las cajas del gremio.
+Llevas hasta **6 herramientas**, y se activan **de izquierda a derecha**. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en plena obra. Hay 48: 32 en el surtido de salida y 16 más en las cajas del gremio.
 
 ### Obra general
 
@@ -210,19 +235,21 @@ Llevas hasta **6 herramientas**, y se activan **de izquierda a derecha**. Puedes
 | Maza de hierro | Común | +F suma Fuerza | +3 de Fuerza por cada ♣ del golpe. | de salida |
 | Cincel | Común | +F suma Fuerza | +8 de Fuerza si juegas una carta sola. | de salida |
 | Cuadrilla doble | Común | +R suma Resonancia | +0,5 de Resonancia en grupos, doble par, full y póker. | de salida |
-| Cinta transportadora | Común | +R suma Resonancia | +0,5 de Resonancia en escaleras. | de salida |
+| Cinta transportadora | Común | +R suma Resonancia | +0,7 de Resonancia en escaleras. | de salida |
 | Sacos terreros | Común | • pasiva | El muro sube la mitad de tus ♣ y su tope crece +4. | de salida |
 | Botiquín | Común | • pasiva | Reparas la mitad de tus ♥ en vez de un tercio. | de salida |
 | Encofrado | Común | • pasiva | Cada piso demolido: +2 de muro. | de salida |
 | Casco | Común | • pasiva | Cada piso demolido: +1 de integridad. | de salida |
 | Puntales | Común | • pasiva | Los colapsos quitan 3 menos. | de salida |
-| Hucha | Común | • pasiva | +3 de oro al terminar cada obra. | de salida |
+| Hucha | Común | • pasiva | +4 de oro al terminar cada obra. | de salida |
 | Taladro | Oficio | • pasiva | Todos tus golpes perforan, lleven o no picas. | de salida |
-| Estandarte | Oficio | +R suma Resonancia | +1 de Resonancia en color y escalera de color. | de salida |
+| Estandarte | Oficio | +R suma Resonancia | +1,5 de Resonancia en color y escalera de color. | de salida |
 | Dados cargados | Oficio | +R suma Resonancia | +1 de Resonancia en doble par y full. | de salida |
 | Dinamita | Capataz | • pasiva | La ventaja de material multiplica ×3 en vez de ×2. | de salida |
 | Ácido | Capataz | • pasiva | Tus cartas ya no son inmunes: ×1 contra la torre de su palo. | de salida |
-| Andamio | Capataz | • pasiva | +1 carta en la mano. | de salida |
+| Barracón | Capataz | • pasiva | +1 carta en la mano. | de salida |
+| Pasarela | Capataz | • pasiva | +1 hueco de andamio: guardas dos cartas aparte de la mano. | de salida |
+| Contrapeso | Reliquia | • pasiva | La inmunidad se invierte: las cartas del palo de la torre pegan con ventaja. | de salida |
 | Sordina | Capataz | • pasiva | La amenaza de todas las torres baja 1. | de salida |
 | Plano maestro | Reliquia | ×R multiplica | ×2 de Resonancia en el primer golpe contra cada piso. | de salida |
 
@@ -233,7 +260,7 @@ Llevas hasta **6 herramientas**, y se activan **de izquierda a derecha**. Puedes
 | Plomada | Común | • pasiva | Cada golpe limpio: +4 de integridad. | de salida |
 | Nivel de burbuja | Oficio | • pasiva | El golpe limpio admite un margen de ±1. | de salida |
 | Tiralíneas | Común | • pasiva | Cada golpe limpio: +2 de oro. | caja del gremio |
-| Calibre | Oficio | +R suma Resonancia | Gana +0,2 de Resonancia para siempre con cada golpe limpio. | caja del gremio |
+| Calibre | Oficio | +R suma Resonancia | Gana +0,15 de Resonancia para siempre con cada golpe limpio. | caja del gremio |
 | Cizalla hidráulica | Capataz | • pasiva | Tras un golpe limpio, el piso siguiente pierde la mitad de su resistencia. | caja del gremio |
 
 ### Sismo y vibración
@@ -251,10 +278,10 @@ Llevas hasta **6 herramientas**, y se activan **de izquierda a derecha**. Puedes
 
 | Herramienta | Rareza | Tipo | Efecto | Surtido |
 |---|---|---|---|---|
-| Prisma | Oficio | +R suma Resonancia | +1 de Resonancia si todas las cartas del golpe (2 o más) son del mismo palo. | de salida |
+| Prisma | Oficio | +R suma Resonancia | +0,5 de Resonancia por cada carta del golpe que comparta palo con otra (hasta +2). | de salida |
 | Mosaico | Oficio | +F suma Fuerza | +10 de Fuerza si el golpe mezcla 3 palos o más. | caja del gremio |
-| Crisol | Capataz | • pasiva | La fractura expuesta multiplica ×2 y los golpes de 3 palos también fracturan. | caja del gremio |
-| Catalizador | Reliquia | ×R multiplica | ×1,25 de Resonancia por cada estado activo en las torres. | caja del gremio |
+| Crisol | Capataz | • pasiva | La fractura multiplica ×2 y los golpes de 3 palos también dejan fractura. | caja del gremio |
+| Catalizador | Reliquia | ×R multiplica | ×1,5 de Resonancia por cada torre con fractura, apuntalada o desarmada ×1 (se suman). | caja del gremio |
 
 ### Búnker al límite
 
@@ -264,17 +291,17 @@ Llevas hasta **6 herramientas**, y se activan **de izquierda a derecha**. Puedes
 | Megáfono | Oficio | • pasiva | Cuando la sirena daña al búnker, la torre que golpeó recibe 8. | caja del gremio |
 | Piquete | Oficio | • pasiva | Cada huelga (comodín): +3 de oro y robas 2 cartas. | caja del gremio |
 | Último turno | Capataz | ×R multiplica | ×2 de Resonancia con el búnker a la mitad o menos. | caja del gremio |
-| Corazón de la torre | Reliquia | ×R multiplica | ×2,5 de Resonancia, pero cada golpe le cuesta 1 al búnker. | caja del gremio |
+| Corazón de la torre | Reliquia | ×R multiplica | ×2 de Resonancia. Si el golpe no derriba ningún piso, le cuesta 1 al búnker. | caja del gremio |
 
 ### Trituradora
 
 | Herramienta | Rareza | Tipo | Efecto | Surtido |
 |---|---|---|---|---|
 | Trituradora | Oficio | • pasiva | Al descartar, la primera carta se destruye: sale del mazo para siempre. | de salida |
-| Montacargas | Oficio | +F suma Fuerza | +2 de Fuerza por cada escombro (carta destruida en la campaña). | de salida |
+| Montacargas | Oficio | +F suma Fuerza | +2 de Fuerza por cada carta destruida en la campaña. | de salida |
 | Horno | Común | • pasiva | Cada carta destruida: +2 de oro. | caja del gremio |
-| Contenedor | Oficio | • pasiva | Las cartas que descartas se agotan y cada una carga +4 de Fuerza al próximo golpe. | caja del gremio |
-| Prensa de chatarra | Capataz | ×R multiplica | ×(1 + 0,05 por escombro) de Resonancia. | caja del gremio |
+| Contenedor | Oficio | • pasiva | Las cartas que descartas no vuelven en esta obra, y cada una da +6 de Fuerza a tu próximo golpe. | caja del gremio |
+| Prensa de chatarra | Capataz | ×R multiplica | ×1,05 de Resonancia por cada carta destruida en la campaña (se suman: 4 cartas, ×1,2). | caja del gremio |
 
 ## Sellos y tratamientos
 
@@ -294,7 +321,7 @@ Una carta de baraja puede llevar un sello y un tratamiento a la vez.
 | Bronce vivo | ×1,5 de Resonancia. |
 | Agrietado | ×2,5 de Resonancia, pero 1 de cada 4 veces se hace añicos. |
 
-Las cartas destruidas (agrietadas que se hacen añicos, quemadas o fundidas) salen del mazo para siempre y cuentan como **escombros**, que ceban a las herramientas de la trituradora.
+Las cartas destruidas (agrietadas que se hacen añicos, quemadas o fundidas) salen del mazo para siempre; algunas herramientas (la familia de la trituradora) se ceban con cada carta destruida.
 
 ## Cartas especiales
 
@@ -302,18 +329,18 @@ No tienen palo ni número: acompañan a cualquier golpe (hasta 2 por golpe) o se
 
 | Carta | Efecto | Tipo |
 |---|---|---|
-| Barreno | El golpe perfora y suma +8 de Fuerza. | común |
+| Barreno | El golpe perfora y suma +12 de Fuerza. | común |
 | Martillo neumático | La carta más alta del golpe cuenta dos veces. | común |
 | Saboteador | Desarma el piso que golpeas. | común |
-| Palanca | +3 de Fuerza por cada carta del golpe. | común |
+| Palanca | +4 de Fuerza por cada carta del golpe. | común |
 | Grúa | Robas 2 cartas extra este turno. | común |
 | Mordaza | La sirena no suena este turno. | común |
-| Pistola de clavos | 6 de daño a cada una de las otras torres. | común |
+| Pistola de clavos | 9 de daño a cada una de las otras torres. | común |
 | Chatarrero | +3 de oro. | común |
 | Pico de oro | Si el golpe tira un piso, +5 de oro. | común |
 | Botica | +5 de integridad. | común |
 | Gemelo | Todas las cartas del golpe valen como la más alta. | común |
-| Nitroglicerina | ×2 de Resonancia, pero el búnker pierde 3. | común |
+| Nitroglicerina | ×2 de Resonancia, pero el búnker pierde 2. | común |
 | Bola de demolición | ×1,5 de Resonancia. | común |
 | Hormigonera | +5 de muro. | común |
 | Cemento rápido | +2 de muro por cada carta del golpe. | común |
@@ -325,18 +352,18 @@ No tienen palo ni número: acompañan a cualquier golpe (hasta 2 por golpe) o se
 | La Ventisca | +3 de muro y la sirena no suena. | legendaria |
 | El Coloso | ×1,75 de Resonancia. | legendaria |
 | La Furia | +14 de Fuerza y el golpe perfora. | legendaria |
-| El Topo | 9 de daño a cada una de las otras torres. | legendaria |
+| El Topo | 14 de daño a cada una de las otras torres. | legendaria |
 
 ## Barajas iniciales
 
 | Baraja | Cómo cambia la campaña | Se desbloquea con |
 |---|---|---|
 | Baraja de obra | La de siempre: 40 cartas, 2 comodines y un sobre de 3 especiales. | — |
-| Baraja negra | Solo ♠ y ♣, por duplicado. Empiezas con Ácido (nada te es inmune), +6 de oro y un búnker reforzado (+8). | Adiós, capataz |
-| Baraja del prestamista | +12 de oro inicial y el interés rinde el doble, pero el búnker tiene 2 menos. | Media ciudad |
-| Baraja de ases | Ocho ases y ningún 2. Más pegada, pero el búnker tiene 5 menos. | La Torre Madre |
-| Baraja corta | Sin doses ni treses. Golpes gordos, pero la cantera se agota enseguida y el búnker tiene 7 menos. | De un solo golpe |
-| Baraja del caos | Un solo comodín, pero el sobre inicial trae 6 cartas especiales. | Coleccionista |
+| Baraja negra | Solo ♠ y ♣, por duplicado: ni reparas ni lanzas esquirlas. Empiezas con Ácido, Casco y Sacos terreros, +6 de oro y un búnker reforzado (+10). | Adiós, capataz |
+| Baraja del prestamista | +12 de oro inicial y el interés rinde el doble, pero el búnker tiene 1 menos. | Media ciudad |
+| Baraja de ases | Ocho ases y ningún 2: más compañías y más pegada, pero el búnker tiene 3 menos. | La Torre Madre |
+| Baraja corta | Sin doses ni treses. Golpes gordos, pero la cantera se agota enseguida y el búnker tiene 6 menos. | De un solo golpe |
+| Baraja del caos | Un solo comodín, pero el sobre inicial trae 6 cartas especiales y empiezas con +4 de oro. | Coleccionista |
 
 ## El gremio
 
@@ -364,7 +391,7 @@ Ganes o pierdas, cada campaña deja **renombre**. En el gremio se gasta en **abr
 | Adiós, capataz | Supera la obra 3. | +2 | Baraja negra |
 | Media ciudad | Supera la obra 5. | +3 | Baraja del prestamista |
 | La Torre Madre | Gana una campaña. | +5 | Baraja de ases |
-| Maestro de obras | Gana una campaña en ascenso 3 o más. | +8 | — |
+| Maestro de obras | Gana una campaña en el nivel de obra 4 o superior. | +8 | — |
 | Más abajo | Supera un cimiento abisal. | +4 | — |
 | Sin fondo | Supera tres cimientos abisales en una campaña. | +8 | — |
 | Parte diario | Termina una Obra diaria. | +2 | — |
@@ -397,6 +424,33 @@ Ganes o pierdas, cada campaña deja **renombre**. En el gremio se gasta en **abr
 | Trofeo: El Topo | Derrota a El Topo (suelo inestable). | +2 | Carta legendaria: El Topo |
 | Cazajefes | Derrota a los 7 jefes de obra. | +8 | — |
 
-## Atajos de teclado
+## Palabras clave
 
-**1–9** eligen carta · **← →** apuntan a una torre · **Espacio** o **Enter** golpean · **Supr** descarta · **Esc** suelta la selección · **Tab** abre la cantera y la escombrera.
+El juego usa solo seis palabras con significado propio. Todo lo demás se dice con palabras llanas. En pantalla van en negrita y, al pasar el puntero sobre cualquier texto que las mencione, el globo de ayuda encadena su definición.
+
+- **Fuerza**: Lo que suman tus cartas: su número, doblado con ventaja de material y anulado contra la torre de su propio palo.
+- **Resonancia**: Lo que multiplica a la Fuerza. La pone la formación; lo que la suma cuenta donde está y lo que la multiplica, multiplica todo lo anterior.
+- **Golpe limpio**: Tirar un piso con el daño exacto. La sirena calla, cobras 1 de oro, robas 1 carta, el piso de abajo pierde un cuarto de su resistencia y tu próximo golpe resuena +0,5 (la racha se acumula hasta +2).
+- **Fractura**: La deja un golpe de un solo palo (2 cartas o más). El próximo golpe contra esa torre resuena ×1,5.
+- **Apuntalado**: El primer golpe contra ese piso resuena a la mitad. Lo traen algunos jefes y niveles de obra.
+- **Desarmada**: Una torre desarmada no golpea cuando la sirena saca su palo. La huelga (comodín) la desarma hasta que caiga el piso; un golpe que mezcla 3 palos, solo para su próxima sirena (×1).
+
+## Controles
+
+| Acción | Teclado y ratón | Mando |
+|---|---|---|
+| Mover el foco | Flechas | Cruceta o palanca |
+| Elegir | Enter · 1–9 en la mano | A |
+| Golpear la torre apuntada | Espacio | X |
+| Guardar en el andamio | Y | Y |
+| Tiza de replanteo (deshacer) | Z | — |
+| Lupa de grabador | L · clic derecho · pulsación larga | RB |
+| Mazo (cantera y escombrera) | Tab | LB |
+| Descartar lo elegido | Supr | — |
+| Atrás / soltar la selección | Esc | B |
+| Reordenar el cinturón | Arrastrar · Mayús + flechas | — |
+| Reiniciar la campaña | Mantener R | Mantener Select |
+| Pantalla completa | F | — |
+| Ajustes | — | Start |
+
+La **lupa de grabador** abre cualquier carta, herramienta, piso de torre o jefe a tamaño de lámina, con la cuenta exacta de lo que aporta en ese momento. En sala, pulsar una torre cuando no es tu turno (o cualquier ruta, oferta o carta con Alt) deja una **marca de tiza** con tus iniciales para la cuadrilla: no decide nada, solo señala.

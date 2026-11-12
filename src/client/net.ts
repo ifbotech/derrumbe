@@ -1,36 +1,70 @@
 // Conexión con el servidor de salas (WebSocket /ws): reconecta sola y reparte lo que llega.
+// El juego en solitario no la necesita: si esta instalación no tiene servidor (versión estática,
+// escritorio sin conexión), simplemente no se abre y el cooperativo queda apagado.
 import type { ClientMsg, ServerMsg } from '../shared/protocol';
 import { applyRun } from './campaign';
 import { $, S, toast } from './core';
+import { applyPing } from './pings';
+import { platform } from './platform';
 import { setScreen } from './router';
 import { pump, renderAll, renderInteractive } from './table';
 
 let ws: WebSocket | null = null;
 let retry = 0;
+let retryTimer = 0;
+
+export const hasServer = () => !!platform.serverUrl();
 
 export function sendMsg(msg: ClientMsg): void {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
-  else toast('Sin conexión con el servidor');
+  else if (msg.t !== 'ping') toast(hasServer() ? 'Sin conexión con el servidor' : 'Esta instalación no tiene servidor de salas: escribe uno en Ajustes');
 }
 
 export function connect(): void {
-  ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
-  ws.onopen = () => {
+  clearTimeout(retryTimer);
+  const url = platform.serverUrl();
+  if (!url) {
+    S.connected = false;
+    return updateConn();
+  }
+  let socket: WebSocket;
+  try {
+    socket = new WebSocket(url);
+  } catch {
+    S.connected = false;
+    return updateConn();
+  }
+  ws = socket;
+  socket.onopen = () => {
     S.connected = true;
     retry = 0;
     if (S.session) sendMsg({ t: 'rejoin', ...S.session });
     updateConn();
   };
-  ws.onclose = (ev) => {
+  socket.onclose = (ev) => {
+    if (ws !== socket) return; // se cambió de servidor: esta conexión ya no cuenta
     S.connected = false;
     updateConn();
     if (ev.code === 4000) {
       forget();
       toast('Sesión abierta en otra pestaña');
     }
-    setTimeout(connect, Math.min(5000, 400 * 2 ** retry++));
+    retryTimer = window.setTimeout(connect, Math.min(8000, 400 * 2 ** retry++));
   };
-  ws.onmessage = (e) => onMsg(JSON.parse(e.data as string) as ServerMsg);
+  socket.onmessage = (e) => onMsg(JSON.parse(e.data as string) as ServerMsg);
+}
+
+/** Vuelve a conectar (al cambiar la dirección del servidor en Ajustes). */
+export function reconnect(): void {
+  const old = ws;
+  ws = null;
+  retry = 0;
+  try {
+    old?.close();
+  } catch {
+    /* ya estaba cerrada */
+  }
+  connect();
 }
 
 /** Olvida la sala (o la partida local) y vuelve a la portada. */
@@ -41,6 +75,7 @@ export function forget(): void {
   sessionStorage.removeItem('derrumbe');
   S.lobby = null;
   S.shown = null;
+  S.pings = {};
   S.queue.length = 0;
   history.replaceState(null, '', location.pathname);
   setScreen('home');
@@ -51,6 +86,7 @@ function onMsg(msg: ServerMsg): void {
     case 'joined':
       S.session = { room: msg.room, playerId: msg.playerId, token: msg.token };
       S.tutorial = null;
+      S.pings = {};
       if (S.campaign && !S.campaign.online) S.campaign = null; // la campaña local sigue guardada
       sessionStorage.setItem('derrumbe', JSON.stringify(S.session));
       history.replaceState(null, '', `?sala=${msg.room}`);
@@ -74,6 +110,9 @@ function onMsg(msg: ServerMsg): void {
       if (S.screen !== 'table') setScreen('table');
       void pump();
       break;
+    case 'ping':
+      applyPing(msg.player, msg.target);
+      break;
     case 'left':
       forget();
       break;
@@ -88,6 +127,6 @@ function onMsg(msg: ServerMsg): void {
 export function updateConn(): void {
   const el = $('.conn');
   if (!el) return;
-  el.textContent = S.connected ? '● servidor en línea' : '○ conectando con el servidor…';
-  el.classList.toggle('bad', !S.connected);
+  el.textContent = !hasServer() ? '○ sin servidor de salas: campaña en local' : S.connected ? '● servidor en línea' : '○ conectando con el servidor…';
+  el.classList.toggle('bad', hasServer() && !S.connected);
 }

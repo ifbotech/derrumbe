@@ -29,6 +29,8 @@ export function formations(hand: Card[]): Card[][] {
       if (sub.length >= 2) out.push(sub);
     }
   }
+  // as de compañía: un As con cualquier otra carta
+  for (const ace of byRank.get(1) ?? []) for (const c of cards) if (c.rank !== 1) out.push([c, ace]);
   // escaleras: el As enlaza por abajo (posición 1) y por arriba (posición 11)
   const at = (pos: number) => byRank.get(pos === 11 ? 1 : pos);
   for (let start = 1; start <= 9; start++) {
@@ -79,6 +81,9 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
   }
   if (res.clean || res.noSiren) score += risk * 1.7 * low;
   if (res.clean) score += 3;
+  // un piso que queda desarmado deja de golpear lo que le quede de vida (unos cuantos turnos)
+  const hitTower = env.towers[target];
+  if (standing(hitTower) && hitTower.disarmed && !state.towers[target].disarmed) score += (cfg.floorThreat[hitTower.floors[0]] / 4) * 3 * 1.7 * low;
   score += Math.min(res.wallGain, cfg.wallCap - state.wall) * 1.3;
   score += Math.min(res.repair, cfg.maxIntegrity - state.integrity) * 1.6 * low;
   score += res.gold * 0.7 + res.draw * 1.2;
@@ -90,10 +95,12 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
 
 export function chooseAction(state: GameState): Action {
   const p = currentPlayer(state);
-  if (p.hand.length === 0) return { type: 'pass' };
+  // el andamio se juega como si fuera mano
+  const held = [...p.hand, ...p.reserve];
+  if (held.length === 0) return { type: 'pass' };
 
   const targets = SUITS.filter((s) => standing(state.towers[s]));
-  const joker = p.hand.find((c) => c.suit === 'X' && !c.sp);
+  const joker = held.find((c) => c.suit === 'X' && !c.sp);
   if (joker) {
     const armed = targets.filter((s) => !state.towers[s].disarmed);
     const pool = armed.length ? armed : targets;
@@ -104,10 +111,10 @@ export function chooseAction(state: GameState): Action {
 
   type Play = { score: number; cards: Card[]; target: Suit };
   const plays: Play[] = [];
-  for (const cards of formations(p.hand)) for (const target of targets) plays.push({ score: evaluate(state, cards, target), cards, target });
+  for (const cards of formations(held)) for (const target of targets) plays.push({ score: evaluate(state, cards, target), cards, target });
   plays.sort((a, b) => b.score - a.score);
   // las cartas especiales se prueban sobre las mejores jugadas, y también solas
-  const specials = p.hand.filter((c) => c.sp);
+  const specials = held.filter((c) => c.sp);
   if (specials.length) {
     const riders: Card[][] = [...specials.map((s) => [s]), ...specials.flatMap((a, i) => specials.slice(i + 1).map((b) => [a, b]))];
     const tops = plays.slice(0, 6);
@@ -118,11 +125,17 @@ export function chooseAction(state: GameState): Action {
     plays.sort((a, b) => b.score - a.score);
   }
   const best = plays[0];
+  // andamio: antes de jugar, aparta la mejor carta que esta jugada no necesita (al reponer, hay una más)
+  if (!state.stashed && p.reserve.length < (state.config.reserveSize ?? 1) && p.hand.length > 1) {
+    const used = new Set(best && best.score > 1.5 ? best.cards.map((c) => c.id) : []);
+    const keep = p.hand.filter((c) => !used.has(c.id)).sort((a, b) => cardWorth(b) - cardWorth(a))[0];
+    if (keep) return { type: 'stash', card: keep.id };
+  }
   if (best && best.score > 1.5) return { type: 'attack', cards: best.cards.map((c) => c.id), target: best.target };
   // Sin jugada útil: descarta las dos cartas más bajas.
-  const lowest = [...p.hand].filter((c) => c.suit !== 'X').sort((a, b) => cardValue(a) - cardValue(b)).slice(0, 2);
+  const lowest = held.filter((c) => c.suit !== 'X').sort((a, b) => cardValue(a) - cardValue(b)).slice(0, 2);
   if (lowest.length) return { type: 'discard', cards: lowest.map((c) => c.id) };
-  const spare = p.hand.find((c) => c.sp);
+  const spare = held.find((c) => c.sp);
   if (spare) return { type: 'discard', cards: [spare.id] };
   return { type: 'joker', card: joker!.id, target: targets[0] };
 }
@@ -161,7 +174,7 @@ export function toolValue(id: string, run: Run): number {
   if (id === 'catalizador') v += has('crisol') ? 2 : 0;
   if (id === 'timbre') v += Math.min(3, run.deck.filter((c) => c.seal).length * 0.5) - 2;
   if (id === 'corazon') v += run.tools.some((t) => t.id === 'casco' || t.id === 'plomada' || t.id === 'botiquin') ? 1 : -1;
-  if (id === 'andamio' || id === 'sordina' || id === 'dinamita') v += 1.5;
+  if (id === 'andamio' || id === 'sordina' || id === 'dinamita' || id === 'pasarela') v += 1.5;
   if (id === 'hucha') v += run.stage <= 3 ? 1.5 : -1;
   if (id === 'cincel') v -= 1;
   return v;

@@ -43,18 +43,18 @@ export interface Special {
 }
 
 export const SPECIALS: Special[] = [
-  { id: 'barreno', name: 'Barreno', desc: 'El golpe perfora y suma +8 de Fuerza.', fx: { flat: 8, pierce: true } },
+  { id: 'barreno', name: 'Barreno', desc: 'El golpe perfora y suma +12 de Fuerza.', fx: { flat: 12, pierce: true } },
   { id: 'martillo', name: 'Martillo neumático', desc: 'La carta más alta del golpe cuenta dos veces.', fx: { highDouble: true } },
   { id: 'saboteador', name: 'Saboteador', desc: 'Desarma el piso que golpeas.', fx: { disarm: true } },
-  { id: 'palanca', name: 'Palanca', desc: '+3 de Fuerza por cada carta del golpe.', fx: { flatPerCard: 3 } },
+  { id: 'palanca', name: 'Palanca', desc: '+4 de Fuerza por cada carta del golpe.', fx: { flatPerCard: 4 } },
   { id: 'grua', name: 'Grúa', desc: 'Robas 2 cartas extra este turno.', fx: { draw: 2 } },
   { id: 'mordaza', name: 'Mordaza', desc: 'La sirena no suena este turno.', fx: { noSiren: true } },
-  { id: 'clavos', name: 'Pistola de clavos', desc: '6 de daño a cada una de las otras torres.', fx: { splash: 6 } },
+  { id: 'clavos', name: 'Pistola de clavos', desc: '9 de daño a cada una de las otras torres.', fx: { splash: 9 } },
   { id: 'chatarrero', name: 'Chatarrero', desc: '+3 de oro.', fx: { gold: 3 } },
   { id: 'pico', name: 'Pico de oro', desc: 'Si el golpe tira un piso, +5 de oro.', fx: { goldOnKill: 5 } },
   { id: 'botica', name: 'Botica', desc: '+5 de integridad.', fx: { heal: 5 } },
   { id: 'gemelo', name: 'Gemelo', desc: 'Todas las cartas del golpe valen como la más alta.', fx: { allHigh: true } },
-  { id: 'nitro', name: 'Nitroglicerina', desc: '×2 de Resonancia, pero el búnker pierde 3.', fx: { strikeMult: 2, hurt: 3 } },
+  { id: 'nitro', name: 'Nitroglicerina', desc: '×2 de Resonancia, pero el búnker pierde 2.', fx: { strikeMult: 2, hurt: 2 } },
   { id: 'bola', name: 'Bola de demolición', desc: '×1,5 de Resonancia.', fx: { strikeMult: 1.5 } },
   { id: 'hormigonera', name: 'Hormigonera', desc: '+5 de muro.', fx: { wall: 5 } },
   { id: 'cemento', name: 'Cemento rápido', desc: '+2 de muro por cada carta del golpe.', fx: { wallPerCard: 2 } },
@@ -67,7 +67,7 @@ export const SPECIALS: Special[] = [
   { id: 'j-intemperie', name: 'La Ventisca', desc: '+3 de muro y la sirena no suena.', fx: { wall: 3, noSiren: true }, locked: 'j-intemperie' },
   { id: 'j-blindaje', name: 'El Coloso', desc: '×1,75 de Resonancia.', fx: { strikeMult: 1.75 }, locked: 'j-blindaje' },
   { id: 'j-furia', name: 'La Furia', desc: '+14 de Fuerza y el golpe perfora.', fx: { flat: 14, pierce: true }, locked: 'j-furia' },
-  { id: 'j-inestable', name: 'El Topo', desc: '9 de daño a cada una de las otras torres.', fx: { splash: 9 }, locked: 'j-inestable' },
+  { id: 'j-inestable', name: 'El Topo', desc: '14 de daño a cada una de las otras torres.', fx: { splash: 14 }, locked: 'j-inestable' },
 ];
 export const SPECIAL: Record<string, Special> = Object.fromEntries(SPECIALS.map((s) => [s.id, s]));
 /** Las que entran en el sorteo sin desbloquear nada. */

@@ -3,10 +3,12 @@
 import { Card, SUITS, SUIT_GLYPH, MATERIAL, sortCards } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
 import { ARCH, RARITY, TOOL, TOOL_SLOTS, ToolInst } from '../rules/tools';
-import { musicIsOn, sfx, soundOn, toggleMusic, toggleSound } from './audio';
+import { Volume, getVolume, setVolume, sfx } from './audio';
 import { cardEl, suitSvg, tileEl } from './card';
-import { $, $$, S, applySettings, closeModal, cycleSpeed, modal, settings, speedLabel } from './core';
+import { $, $$, S, applySettings, closeModal, cycleSpeed, kw, modal, settings, speedLabel } from './core';
 import { glyphSvg } from './glyphs';
+import { reconnect } from './net';
+import { customServer, platform, setCustomServer } from './platform';
 import { rulesHtml } from './rules-text';
 
 export const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
@@ -16,7 +18,7 @@ export function choice(el: HTMLElement, title: string, desc: string, tag: string
   const box = document.createElement('div');
   box.className = `choice ${cls}`;
   box.appendChild(el);
-  box.insertAdjacentHTML('beforeend', `<h4>${title}</h4><p>${desc}</p>${tag ? `<span class="tag-act">${tag}</span>` : ''}`);
+  box.insertAdjacentHTML('beforeend', `<h4>${title}</h4><p>${kw(desc)}</p>${tag ? `<span class="tag-act">${tag}</span>` : ''}`);
   if (onClick) {
     box.classList.add('pick');
     box.tabIndex = 0;
@@ -33,7 +35,7 @@ export function choice(el: HTMLElement, title: string, desc: string, tag: string
 // ───────────────────────── Herramientas ─────────────────────────
 
 const KIND_LABEL = { f: '+F', r: '+R', x: '×R', copy: '⇉', p: '•' } as const;
-const KIND_NAME = { f: 'Suma Fuerza', r: 'Suma Resonancia', x: 'Multiplica la Resonancia', copy: 'Copia a su derecha', p: 'Pasiva' } as const;
+export const KIND_NAME = { f: 'Suma Fuerza', r: 'Suma Resonancia', x: 'Multiplica la Resonancia', copy: 'Copia a su derecha', p: 'Pasiva' } as const;
 
 /** Globo de ayuda de una herramienta. */
 export function toolTip(id: string, extra = ''): string {
@@ -46,6 +48,7 @@ export function toolTip(id: string, extra = ''): string {
 export function toolTile(id: string): HTMLDivElement {
   const el = tileEl(id, TOOL[id]?.name ?? id, 'relic', TOOL[id]?.rarity);
   el.dataset.tip = toolTip(id);
+  el.dataset.lupa = `tool:${id}`;
   return el;
 }
 
@@ -91,9 +94,10 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
     slot.className = `belt-slot tool r-${def.rarity} k-${def.kind}`;
     slot.dataset.slot = String(i);
     slot.dataset.id = t.id;
+    slot.dataset.lupa = `tool:${t.id}`;
     slot.tabIndex = 0;
     const sell = opts.onSell ? `<hr>Pulsa dos veces para venderla por ${opts.sellValue?.(t.id) ?? 0} de oro.` : '';
-    const order = opts.onReorder ? '<hr>Arrástrala, o púlsala y luego pulsa otro hueco, para cambiar el orden.' : '';
+    const order = opts.onReorder ? '<hr>Arrástrala, o púlsala y luego pulsa otro hueco, para cambiar el orden (con teclado: Mayús + flechas).' : '';
     slot.dataset.tip = toolTip(t.id, `<small>Hueco ${i + 1} de ${TOOL_SLOTS}: se activa ${i === 0 ? 'la primera' : `después de ${i}`}.</small>${order}${sell}`);
     slot.innerHTML = `${glyphSvg(t.id, 'belt-ico')}<span class="kind">${KIND_LABEL[def.kind]}</span>${count ? `<span class="cnt">${count}</span>` : ''}<span class="pos">${i + 1}</span>`;
     if (opts.onReorder) {
@@ -132,8 +136,13 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         click();
-      } else if (e.key === 'ArrowLeft' && i > 0) move(i, i - 1);
-      else if (e.key === 'ArrowRight' && i < tools.length - 1) move(i, i + 1);
+      } else if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        // Mayús + flechas mueven la herramienta; las flechas solas mueven el foco
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === 'ArrowLeft' && i > 0) move(i, i - 1);
+        else if (e.key === 'ArrowRight' && i < tools.length - 1) move(i, i + 1);
+      }
     });
     el.appendChild(slot);
   }
@@ -222,16 +231,59 @@ export function showRules(): void {
   modal(`<div class="modal-box"><h2>Reglas <button class="x">CERRAR</button></h2>${rulesHtml(S.shown?.config)}</div>`);
 }
 
+const KEYS: [string, string, string][] = [
+  ['Mover el foco', 'Flechas', 'Cruceta o palanca'],
+  ['Elegir', 'Enter · 1–9 en la mano', 'A'],
+  ['Golpear la torre apuntada', 'Espacio', 'X'],
+  ['Guardar en el andamio', 'Y', 'Y'],
+  ['Tiza de replanteo (deshacer)', 'Z', '—'],
+  ['Lupa de grabador', 'L · clic derecho · mantener pulsado', 'RB'],
+  ['Mazo', 'Tab', 'LB'],
+  ['Descartar lo elegido', 'Supr', '—'],
+  ['Atrás / soltar', 'Esc', 'B'],
+  ['Reiniciar la campaña', 'Mantener R', 'Mantener Select'],
+  ['Pantalla completa', 'F', '—'],
+  ['Ajustes', '—', 'Start'],
+];
+
+/** Ajustes: mezcla de sonido, ritmo de la mesa, tintas, pantalla y controles. */
 export function showSettings(onChange?: () => void): void {
-  const el = modal(`<div class="modal-box settings"><h2>Ajustes <button class="x">CERRAR</button></h2><div class="set-list"></div></div>`);
+  if (document.querySelector('.settings-modal')) return;
+  const el = modal(
+    `<div class="modal-box settings"><h2>Ajustes <button class="x">CERRAR</button></h2>
+      <div class="set-list" id="set-vol"></div><div class="set-list" id="set-toggles"></div>
+      <div class="set server-row"><div><b>Servidor de salas</b><span>Solo para el cooperativo en línea. Vacío: el de esta misma página, si lo hay.</span></div>
+        <span class="server-edit"><input id="set-server" autocomplete="off" spellcheck="false" placeholder="wss://mi-servidor/ws" /><button id="set-server-ok">Usar</button></span></div>
+      <h3 class="sec">Controles</h3>
+      <table class="keys"><tr><th></th><th>Teclado y ratón</th><th>Mando</th></tr>${KEYS.map(([what, key, pad]) => `<tr><td>${what}</td><td>${key}</td><td>${pad}</td></tr>`).join('')}</table>
+    </div>`,
+    { cls: 'settings-modal' },
+  );
+  // la mezcla: tres deslizadores independientes
+  const vol = getVolume();
+  const sliders: [keyof Volume, string, string][] = [
+    ['master', 'Volumen maestro', 'Todo lo que suena.'],
+    ['music', 'Música', 'Medieval, oscura y hecha al vuelo: cambia con cada obra y con el apuro del búnker.'],
+    ['sfx', 'Efectos', 'Golpes, sirenas, sellos y monedas.'],
+  ];
+  $('#set-vol', el).innerHTML = sliders
+    .map(([id, name, desc]) => `<div class="set"><div><b>${name}</b><span>${desc}</span></div><label class="slider"><input type="range" min="0" max="100" step="5" value="${Math.round(vol[id] * 100)}" data-vol="${id}" aria-label="${name}" /><output>${Math.round(vol[id] * 100)}</output></label></div>`)
+    .join('');
+  $$<HTMLInputElement>('[data-vol]', el).forEach((input) => {
+    input.oninput = () => {
+      setVolume(input.dataset.vol as keyof Volume, Number(input.value) / 100);
+      input.nextElementSibling!.textContent = input.value;
+    };
+    input.onchange = () => input.dataset.vol !== 'music' && sfx.stamp();
+  });
   const draw = () => {
     const rows: [string, string, string, () => void][] = [
-      ['Sonido', 'Golpes, sirenas, sellos y monedas.', soundOn() ? 'Sí' : 'No', () => void toggleSound()],
-      ['Música', 'Medieval, oscura y hecha al vuelo: cambia con cada obra.', musicIsOn() ? 'Sí' : 'No', () => void toggleMusic()],
       ['Velocidad', 'Lo rápido que se resuelven los golpes en la mesa.', speedLabel(), () => void cycleSpeed()],
       ['Reducir movimiento', 'Sin temblores, destellos ni partículas.', settings.calm ? 'Sí' : 'No', () => ((settings.calm = !settings.calm), applySettings())],
+      ['Tintas de la baraja', 'Cuatro tintas de taller (una por palo) o las dos clásicas, rojo y negro.', settings.inks === 4 ? '4 tintas' : '2 clásicas', () => ((settings.inks = settings.inks === 4 ? 2 : 4), applySettings())],
+      ['Pantalla completa', 'También con la tecla F.', platform.isFullscreen() ? 'Sí' : 'No', () => void platform.toggleFullscreen().then(draw)],
     ];
-    const list = $('.set-list', el);
+    const list = $('#set-toggles', el);
     list.innerHTML = rows.map(([name, desc, value], i) => `<div class="set"><div><b>${name}</b><span>${desc}</span></div><button data-set="${i}" class="${value === 'No' ? '' : 'on'}">${value}</button></div>`).join('');
     $$('[data-set]', list).forEach(
       (b) =>
@@ -243,4 +295,11 @@ export function showSettings(onChange?: () => void): void {
     );
   };
   draw();
+  const server = $<HTMLInputElement>('#set-server', el);
+  server.value = customServer();
+  $('#set-server-ok', el).onclick = () => {
+    setCustomServer(server.value);
+    reconnect();
+    sfx.stamp();
+  };
 }
