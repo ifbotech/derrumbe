@@ -11,7 +11,8 @@ El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este 
   - **`rapido-60`**: 60 personas, estratificada y con semilla fija. Línea base de la 6.1, y puertas de la V7 y la V9. Ruido de la aprobación: unos **±12 puntos** (IC95 con n = 60).
   - **Censo de 240**: solo en la V10. Ruido: unos **±6 puntos**. La última corrida de 240 es la de la V4 (`panelAgentesGaming\salidas\v4-completo-20261112-084346\`), sobre el juego viejo.
 - Solo se comparan corridas del mismo preset: `rapido-60` contra `rapido-60` (con `--comparar-con <run_id>`), censo contra censo.
-- **Todavía no hay ninguna medida del panel sobre la 5.0, la 6.0 ni la 6.1.** Las cifras de panel que citan las especificaciones son de la V4 y hablan del juego viejo: orientan, no son línea base.
+- Corridas `rapido-60` hechas: la 6.1 (`rapido-60-20261113-112234`, línea base) y la 7.0 (`rapido-60-20261113-141123`, contra la 6.1). La V9 se compara contra la de la 7.0. Las cifras de la V4 hablan del juego viejo: orientan, no son línea base.
+- El panel no publica el IC95 de la claridad media. Para la puerta se calcula a partir de las 60 reseñas (`resenas[].claridad` de `agregados.json`, aproximación normal). En la 6.1 sale 4,63–5,24 y en la 7.0, 4,62–5,25.
 - Los números de balance (victorias, ritmo, letalidad) no vienen del panel: vienen del laboratorio (`npm run analyze:meta`). Si chocan, manda el laboratorio.
 - Laboratorio de referencia: el de la 6.1, idéntico al de la 6.0 (`artifacts/mision/v6.1/meta-report-6.0.json`; 55.640 campañas; sin avisos; peor P95 de los asaltos 4–8: 18).
 
@@ -21,8 +22,8 @@ El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este 
 |---|---|---|---|---|
 | V5 | Claridad de cristal, ergonomía y balance con datos (DERRUMBE) | a mano | sin correr | Hecha (`6d319ec`) |
 | V6 | Cambio de tema 360° y vocabulario universal (CORONA ROTA) | a mano, en paralelo | sin correr | Hecha (`2308e18`) |
-| 6.1 | Marca dual SANGRE Y PALO · BLOOD & SUITS y La Taberna | reglas-balance → arte-ui → juice-ux → director → panel | `rapido-60`: línea base | Celdas entregadas; falta la etiqueta y la corrida |
-| V7 | Partida guiada de 60 segundos y Mesa brava: monarcas con cara, maldición a la vista y voz | director → reglas-balance → arte-ui → juice-ux | `rapido-60` contra la 6.1 | Planificada (`SPECS/V7.md`) |
+| 6.1 | Marca dual SANGRE Y PALO · BLOOD & SUITS y La Taberna | reglas-balance → arte-ui → juice-ux → director → panel | `rapido-60`: línea base | Hecha (`71ae962`) |
+| V7 | Partida guiada de 60 segundos y Mesa brava: monarcas con cara, maldición a la vista y voz | director → reglas-balance → arte-ui → juice-ux | `rapido-60` contra la 6.1: sin regresión | Puertas pasadas; candidata `44714cb` |
 | V8 | Jugo visceral, lacre con brillo y banda sonora de corte de 3 horas | director → arte-ui → juice-ux | ninguno (no lo pide el encargo) | Planificada (`SPECS/V8.md`) |
 | V9 | Cooperativo a prueba de cortes, `balance-config.json` con autoajuste y telemetría de prueba | director → reglas-balance → juice-ux → arte-ui | `rapido-60` contra la V7 | Planificada (`SPECS/V9.md`) |
 | V10 | Candidata de lanzamiento con funciones congeladas: ES / EN, accesibilidad y Steam | director → reglas-balance → arte-ui → juice-ux | censo de 240 | Planificada (`SPECS/V10.md`) |
@@ -54,7 +55,7 @@ Lo lleva el orquestador de la misión. El guion por lotes `scripts/estudio-auton
 
 ## 6.1 · Marca dual y La Taberna
 
-**Celdas entregadas** (2026-11-13). Falta la etiqueta `v6.1.0` y la corrida `rapido-60` de línea base. Encargo en `artifacts/mision/v6.1/encargos.md`.
+**Hecha** (2026-11-13, `71ae962`). Línea base del panel: `rapido-60-20261113-112234`, con una aprobación del 23,3 % (IC95 14,4–35,4) y una claridad media de 4,93. Encargo en `artifacts/mision/v6.1/encargos.md`.
 
 - Marca dual en `src/shared/brand.ts`; candado de grabado en la portada con la cinta de lacre del otro nombre; `index.html`, manifest, tarjeta para compartir, lámina y Crónica con los dos títulos.
 - La tienda pasa a **La Taberna**; el final de victoria, a **«Corte vencida»**.
@@ -74,6 +75,20 @@ Lo lleva el orquestador de la misión. El guion por lotes `scripts/estudio-auton
 
 **Puertas.** CPU completas (incluida la forja) + `rapido-60` contra la 6.1. Detalle en `SPECS/V7.md`.
 
+**Resultado** (2026-11-13, candidata `44714cb`). Todas las puertas de CPU pasan.
+- Partida guiada: 5 pasos y 5 jugadas, de 29,1 a 32,5 s según el dispositivo.
+- Laboratorio idéntico al de la 6.1.
+- QA visual: 132 capturas sin fallos.
+- Prueba de humo: 193 comprobaciones en orden.
+- Panel: aprobación 23,3 % → 25,0 %, claridad media 4,93 → 4,93. **Sin regresión y sin mejora medible.**
+
+No se movieron:
+- las quejas de texto chico (82 → 84) y de contraste (61 → 67);
+- la claridad en móvil (4,93 → 4,60, n = 15);
+- la aprobación en Steam Deck (0 de 9).
+
+Esto pasa a la V8 con dueño y comprobación (`SPECS/V8.md`, apartado 1.2). Detalle en `CHANGELOG.md` y `artifacts/mision/v7/puertas.md`.
+
 ## V8 · Jugo visceral, lacre con brillo y banda sonora de corte de 3 horas
 
 **Tema.** Cada golpe se siente a 60 fotogramas por segundo, y tres horas de juego no cansan el oído.
@@ -82,6 +97,11 @@ Lo lleva el orquestador de la misión. El guion por lotes `scripts/estudio-auton
 1. **Coreografía del golpe**: esquirlas de corona que se parte y tajo de naipe en SVG, impacto de sello de lacre caliente, brillo de lámina en las cartas con acabado, monedas en La Taberna y muelles de selección inmediatos. Solo `transform` y `opacity`; «Reducir movimiento» respetado. Dibujos (`arte-ui`), coreografía (`juice-ux`).
 2. **Música generativa en re menor** que evoluciona del asalto 1 al 8: laúd y bajo cálido en La Taberna y el Mapa; tambores y metales ante un monarca o con poca Vida. Foley de tajo, bloqueo de Escudo, carta a La Manga, sello de lacre y cadenas de Golpe exacto con tono que sube (`juice-ux`).
 3. Presupuesto de fotograma medido y medidor de variedad del audio.
+4. Lo que dejó abierto la V7 y es de sensación: el foco del mando en la mano (Steam Deck), el bocadillo del monarca fuera de los tronos y la barra del pulgar en móvil.
+
+Se construye sobre lo que la 7.0 ya trae y no se rehace:
+- `fx.ts`: pausa de impacto, temblor, escombros, estandarte rasgado, corona partida, sello «¡Exacto!» y monedas en combate;
+- `audio.ts`: marcha en re menor por escena, con cuernos ante un monarca y presión con poca Vida.
 
 **Puertas.** `typecheck`, `test`, `qa:visual` + presupuesto de 60 fps, `qa:smoke`, `build`, `build:web`. Sin panel. Detalle en `SPECS/V8.md`.
 

@@ -2,6 +2,61 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 7.0.0 — 2026-11-13
+
+Partida guiada que se juega y Mesa brava. Sin cambios de reglas. Motivo: la queja «reglas confusas / tutorial» y la claridad del casual (3,50 sobre 10 en la línea base de la 6.1), y unos monarcas que solo eran un decreto de una línea.
+
+### Partida guiada
+- Cinco pasos de una línea (≤ 60 caracteres), haciendo y sin ventanas de texto: poder del palo, trono Inmune, La Manga, Daño × Multi = Golpe y Golpe exacto. Cada paso atenúa la mesa, enciende un foco sobre lo que hay que mirar y escribe su línea con el botón del dispositivo en uso.
+- Cinco jugadas, una por paso (el tope era 7). La última gana el asalto con un Golpe exacto. 400 partidas de jugadas legales al azar, con semilla fija: ninguna derrota.
+- Medido a 1×, pensando 1,5 s cada jugada: **29,1 s con teclado, 29,1 s con ratón, 32,5 s con mando** (la prueba de humo falla por encima de 60 s). Ninguna animación se acortó.
+- «Saltar» siempre a mano (Esc / B), con su fila en la tabla de controles. La Manga se abre en la partida guiada (`reserveSize` 1).
+- Se retiran las tres ventanas de texto (`TUTORIAL_INTRO` queda vacío) y el cuadro de la Maestra.
+
+### Monarcas
+- Siete retratos de grabado, cada uno con dos caras (calma y vencido), distintos por silueta y objeto: naipe partido, balanza, cáliz, corona de carámbanos, llave, hacha y reloj de arena. La forja los separa a 24 px (diferencia mínima 0,114; el tope es 0,1).
+- Maldición a la vista: placa con el decreto junto al retrato y la parte de la mesa que castiga marcada con la misma tinta (doble ⚔, hueco en la mano, cáliz tachado sobre las ♥, tope del Escudo, guardias En guardia, +2 de Ataque, Asedio final adelantado).
+- Voz de mesa brava: 21 frases (entrada, primer Contraataque y uno de cada tres después, caída), de ≤ 70 caracteres, sin cifras ni palabras de mecánica. Bocadillo de 2,5 s a 1× (1,77 s a 2×, 1,25 s a 4×), solo fundido con «Reducir movimiento».
+- Un motivo sonoro de ≤ 2 s por monarca al entrar y al caer.
+- Letalidad por monarca, igual que en la 6.1 (52.158 asaltos con monarca): de 13,6 % (La Dama del Cáliz, ×0,91) a 16,4 % (El Usurero, ×1,10); media 14,9 %; objetivo 0,8×–1,3×.
+
+### Secretos de la cripta
+- Las 12 opciones se leen como cartas: icono, «Da» en verdín y «Cuesta» en carmesí (o «Nada»), cifras de 15 a 20 px, la descripción larga detrás. Se dan vuelta de una en una con su sonido; con teclado y mando el foco cae en la primera opción.
+
+### Fricciones de la 6.1
+- **F1 · palo Inmune.** Con un trono apuntado, cada carta de la mano y de La Manga lleva el sello de su factor contra él: hierro «×0» o latón «×2»/«×3». Nada si es ×1 o es un comodín. Con mando, el sello cambia al cambiar de trono.
+- **F2 · texto chico.** La cuenta en dos renglones: arriba el Golpe y contra qué trono; abajo Daño × Multi, cifras de 16 a 20 px y etiquetas de 14 a 16 px, con las palabras enteras también en móvil.
+- **F3 · contraste.** La Vida del trono sale de las rayas: placa propia de papel con borde de tinta de 2 px, 14 a 18 px, contraste ≥ 7:1.
+- Reglas nuevas de la QA visual: «sello», «cuenta», «vida», «guia», «voz» y «secreto».
+
+### Puertas
+- Laboratorio completo (55.640 campañas, 1.543 s): sin avisos, **idéntico** número a número al de la 6.1; peor P95 de los asaltos 4–8 por baraja: 18 (tope 19).
+- 205 pruebas en verde (nuevas: `tests/monarcas.test.ts`; `tests/tutorial.test.ts`, reescrita). Forja limpia: 159 piezas, 14 bustos nuevos, 8 avisos (2 nuevos, de deriva de tinta).
+- QA visual: 33 estados × 4 ventanas = 132 capturas, cero fallos y cero recortes (estados nuevos: `guia-palo`, `guia-manga`, `guia-exacto`, `mesa-monarca`, `monarcas`).
+- Prueba de humo: 193 comprobaciones, «Todo en orden» con ratón, teclado y mando virtual (dos pasadas seguidas en la celda y una en la puerta).
+
+### Panel simulado contra la 6.1
+Corrida `rapido-60-20261113-141123` contra la base `rapido-60-20261113-112234`: mismas 60 personas y mismo reparto de escenas.
+- **Aprobación: 23,3 % → 25,0 %** (IC95 de la 6.1: 14,4–35,4; de la 7.0: 15,8–37,2).
+- **Claridad media: 4,93 → 4,93.** El panel no publica su IC95. Calculado a partir de las 60 reseñas: 4,63–5,24 en la 6.1 y 4,62–5,25 en la 7.0.
+- **Veredicto: sin regresión, y tampoco hay mejora medible.** Las dos diferencias caen dentro del ruido de n = 60.
+- Lo que no se movió:
+  - Quejas de texto chico: 82 → 84. De contraste: 61 → 67. Las tres fricciones están arregladas en el código y pasan sus reglas de QA, pero el panel no lo nota.
+  - Claridad en móvil: 4,93 → 4,60 (n = 15; IC95 de 4,10 a 5,10, dentro del ruido). PC: 4,81 → 5,10 (n = 21). Laptop: 5,07 → 5,00 (n = 15). Steam Deck: 5,00 → 5,00 (n = 9).
+  - Aprobación en Steam Deck: **0 de 9**, igual que en la 6.1.
+- Lo que más repiten las reseñas:
+  - En Steam Deck, que con el mando no se ve qué carta tiene el foco.
+  - En móvil, que la barra de acciones va pegada al borde inferior y los botones están muy juntos.
+  - En `mesa-monarca`, que el bocadillo tapa parte de los tronos.
+- Esos tres puntos pasan a la V8 (`SPECS/V8.md`, apartado 1.2), cada uno con su dueño y una comprobación.
+- Precio justo (mediana): 8,0 → 8,0 USD. En deseados: 61,7 → 55,0 %.
+- Los duelos A/B no se comparan con la 6.1, porque cada corrida votó las hipótesis de su versión. Aun así, la de la 7.0 da una señal para la V8: «La racha de Golpes exactos se oye» gana con el 95 %, y los otros dos duelos empatan. Ojo: el 41,7 % de los pares tienen sesgo de posición.
+
+### Estudio
+- Orden de celdas: director → reglas-balance → arte-ui → juice-ux. Cada una dejó su bitácora en `artifacts/mision/v7/`.
+- El clasificador de quejas del panel convertía «×0» en «0», así que contaba como «palo Inmune» cualquier queja que llevara un cero. Esa cubeta tenía 87 menciones y las reales eran 32. Arreglado en el panel. La base se reclasificó con el clasificador nuevo, así que las dos corridas se comparan con la misma vara.
+- Pendiente para la V9: retirar `TUTORIAL_INTRO`, `say`, `after` y los modos `intro` y `explain` del cliente. Ya no los usa nadie.
+
 ## 6.1.0 — 2026-11-13
 
 Marca dual y La Taberna. Sin cambios de reglas. Motivo: el usuario no quería «CORONA ROTA» como título, y un nombre en cada idioma sirve a la vez a la mesa rioplatense y a la búsqueda en Steam.
@@ -25,7 +80,7 @@ Marca dual y La Taberna. Sin cambios de reglas. Motivo: el usuario no quería «
 - Las pruebas con navegador fijan `locale: 'es-ES'`: el Chromium de Playwright puede venir en inglés.
 - La prueba de humo comprueba la marca dual en la portada y la copia `sangre-y-palo-progreso-AAAA-MM-DD.json`.
 
-Medidas de la 6.1: informe completo del laboratorio sin avisos e **idéntico** al de la 6.0 (`node artifacts/v6/comparar-meta.mjs`); 188 pruebas en verde; QA visual con 28 estados × 4 ventanas = 112 capturas y cero fallos; prueba de humo con 164 comprobaciones, «Todo en orden» en dos pasadas seguidas. El panel no ha medido todavía la 6.1: su auditoría de 60 personas es la línea base de la V7.
+Medidas de la 6.1: informe completo del laboratorio sin avisos e **idéntico** al de la 6.0 (`node artifacts/v6/comparar-meta.mjs`); 188 pruebas en verde; QA visual con 28 estados × 4 ventanas = 112 capturas y cero fallos; prueba de humo con 164 comprobaciones, «Todo en orden» en dos pasadas seguidas. Panel: la auditoría `rapido-60-20261113-112234` de la 6.1 es la línea base de la V7 (aprobación 23,3 %, IC95 14,4–35,4; claridad media 4,93).
 
 ## 6.0.0 — 2026-11-12
 
