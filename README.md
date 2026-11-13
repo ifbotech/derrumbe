@@ -19,8 +19,9 @@ sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doc
 - **Causa de la derrota**: al perder, la Crónica dice en dos líneas qué se llevó tu Vida y por qué el Escudo no lo evitó; un aviso de último turno lo anticipa en la mesa.
 - **Archivo de crónicas**: las 25 últimas campañas, con su semilla para rejugarlas. Cada Crónica se descarga o se copia como **Lámina** de grabado, con un enlace (`?seed=…`) que carga esa misma campaña. Y **copia de seguridad** del progreso en un archivo.
 - **Cooperativo online** con salas por código, servidor autoritativo y **señas** para proponer sin hablar.
-- **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar las reliquias y pantalla completa también con mando), con un marco de foco que se ve a distancia y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
+- **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar las reliquias y pantalla completa también con mando), con un marco de foco de papel y tinta que se ve a distancia (la carta enfocada se levanta) y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
 - **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en letra de título y cada palo con su **trama de grabado** (rayado diagonal de lanzas, punteado de gemas, hiladas de cáliz, rayado cruzado heráldico), para distinguirlos sin el color.
+- **Golpes que se sienten**: el naipe del guardia se parte de un tajo, la corona del trono estalla en esquirlas, el sello de lacre cae caliente sobre la carta y las monedas vuelan al contador, también en La Taberna. Todo a 60 fotogramas por segundo y con **«Reducir movimiento»**, que lo deja en fundidos.
 - **Siete monarcas tiranos**, cada uno con su retrato de grabado, su maldición marcada sobre la mesa y su voz de mesa brava al entrar, al contraatacar y al caer.
 - **Asalto diario** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada** que se aprende jugando: cinco pasos de una línea, en menos de un minuto y sin ventanas de texto. Ocho **Susurros** saltan la primera vez que te encuentras cada cosa (trono Inmune, La Manga, Golpe exacto, Mesa de lacre, Atajo, monarca, Asedio final, Mazo bajo), con «No mostrar más» a un clic.
 
@@ -66,8 +67,10 @@ El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, i
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
 | `npm run analyze:meta` | Laboratorio de balance: ~55.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
 | `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas del Asalto único y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 28 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo y jerga vieja → `artifacts/visual-qa/` y su `report.json` |
-| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Taberna, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias) |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 37 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo, jerga vieja y animaciones que solo mueven `transform` y `opacity` → `artifacts/visual-qa/` y su `report.json` |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Taberna, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias), y una segunda pasada con «Reducir movimiento» |
+| `npm run qa:fps` | Mide los fotogramas de cinco efectos (tajo, caída de un trono, lacre, monedas y barrido del foco) en 3 tamaños, con aceleración gráfica real: falla si el renderizador es por software, si el p95 pasa del refresco de la pantalla o si un fotograma pasa de 50 ms → `artifacts/mision/v8/fps.json` |
+| `npm run qa:audio` | Escucha sin altavoces: genera unas 3 h de música y efectos con 3 semillas y falla si un tramo de más de 30 s se repite, si un efecto suena igual más de 8 veces seguidas o si una nota sale de re menor |
 | `npm run forja` | Banco de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, reliquias, especiales, servicios, monarcas) a 24 y 300 px, mide su tinta y su silueta, y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
 | `npm run og` | Regenera la tarjeta para compartir (`public/og-card.png`, 1200 × 630) |
 | `npm run docs` | Regenera `REGLAS.md` y las tablas de balance y controles de este archivo |
@@ -269,7 +272,7 @@ src/
     widgets.ts · backup.ts · fx.ts               reliquias, visor de Mazo y Descarte, ajustes, copia de seguridad, efectos
     card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: naipes, tronos, retratos, iconos, tramas de palo y grano
     tinta.ts                                     aviso de tinta desvanecida en las cajas con desplazamiento
-    audio.ts                                     efectos y música sintetizados, con mezcla y máster
+    audio.ts · audio-frases.ts                   efectos y música sintetizados, con mezcla y máster; el generador de frases con semilla
     qa.ts · forja-qa.ts                          estados fijos para las capturas y banco de grabado (solo con ?qa)
 tests/          Vitest: motor, campaña, Asedio final y Escudo, autopsia, partida guiada, palabras clave, invariantes anticomplejidad, imprenta, vocabulario y marca
 scripts/        Laboratorio de balance, control de calidad (capturas, humo, mando virtual), banco de grabado, tarjeta social y reglamento
@@ -282,7 +285,7 @@ scripts/        Laboratorio de balance, control de calidad (capturas, humo, mand
 - **Marca en un solo sitio.** Las dos caras de la marca (título, sello y lema de cada idioma) salen de `src/shared/brand.ts`, que elige la cara por el idioma del navegador; `index.html` y el manifest, que son estáticos, lo llevan escrito, y `tests/marca.test.ts` falla si no casan. Los identificadores internos (`id` de datos, clases CSS, protocolo, claves `derrumbe:*`) no cambiaron con el tema.
 - **Mando.** `nav.ts` lee el mando estándar del W3C (cruceta, palanca con zona muerta de 0,28, repetición a los 320 ms y cada 110 ms) y lo traduce a las mismas acciones que el teclado. La prueba de humo inyecta un mando virtual y juega una campaña entera con él.
 - **Grabado.** Todo el arte es SVG dibujado a mano: naipes de corte de doble cabeza, tronos con su estandarte, monarcas reconocibles por su objeto, sombras de buril y cuatro tintas de taller —hierro oscuro, oro bruñido, carmesí real y verdín profundo— con opción de las dos clásicas. El grano del papel se hornea una vez en un lienzo; lo que se mueve solo cambia `transform` y `opacity`.
-- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta; la música gana capas cuando tu Vida está en apuros.
+- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta. Un generador puro con semilla (`audio-frases.ts`) escribe la partitura compás a compás, en re menor, con motivos propios en cada asalto y en el Mapa, La Taberna y la portada; el WebAudio solo la toca. La música gana tambores y metales ante un monarca o cuando tu Vida está en apuros, y la campana del Golpe exacto sube un semitono por cada exacto seguido.
 
 Todo el stack es open source: TypeScript, Vite, ws, Vitest, esbuild, Playwright y las tipografías Cinzel (los títulos), UnifrakturCook, Grenze Gotisch, Archivo, Archivo Black y Space Mono (OFL).
 

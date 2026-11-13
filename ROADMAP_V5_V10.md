@@ -11,8 +11,8 @@ El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este 
   - **`rapido-60`**: 60 personas, estratificada y con semilla fija. Línea base de la 6.1, y puertas de la V7, la V8 y la V9. Ruido de la aprobación: unos **±12 puntos** (IC95 con n = 60).
   - **Censo de 240**: solo en la V10. Ruido: unos **±6 puntos**. La última corrida de 240 es la de la V4 (`panelAgentesGaming\salidas\v4-completo-20261112-084346\`), sobre el juego viejo.
 - Solo se comparan corridas del mismo preset: `rapido-60` contra `rapido-60` (con `--comparar-con <run_id>`), censo contra censo.
-- Corridas `rapido-60` hechas: la 6.1 (`rapido-60-20261113-112234`, línea base) y la 7.0 (`rapido-60-20261113-141123`, contra la 6.1). La V8 se compara contra la de la 7.0, y la V9 contra la de la V8. Las cifras de la V4 hablan del juego viejo: orientan, no son línea base.
-- El panel no publica el IC95 de la claridad media. Para la puerta se calcula a partir de las 60 reseñas (`resenas[].claridad` de `agregados.json`, aproximación normal). En la 6.1 sale 4,63–5,24 y en la 7.0, 4,62–5,25.
+- Corridas `rapido-60` hechas: la 6.1 (`rapido-60-20261113-112234`, línea base), la 7.0 (`rapido-60-20261113-141123`, contra la 6.1) y la 8.0 (`rapido-60-20261113-164104`, contra la 7.0). La V9 se compara contra la de la 8.0. Las cifras de la V4 hablan del juego viejo: orientan, no son línea base.
+- El panel no publica el IC95 de la claridad media. Para la puerta se calcula a partir de las 60 reseñas (`resenas[].claridad` de `agregados.json`, aproximación normal). En la 6.1 sale 4,63–5,24; en la 7.0, 4,62–5,25; en la 8.0, 4,91–5,49.
 - Los números de balance (victorias, ritmo, letalidad) no vienen del panel: vienen del laboratorio (`npm run analyze:meta`). Si chocan, manda el laboratorio.
 - Laboratorio de referencia: el de la 6.1, idéntico al de la 6.0 (`artifacts/mision/v6.1/meta-report-6.0.json`; 55.640 campañas; sin avisos; peor P95 de los asaltos 4–8: 18).
 
@@ -23,8 +23,8 @@ El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este 
 | V5 | Claridad de cristal, ergonomía y balance con datos (DERRUMBE) | a mano | sin correr | Hecha (`6d319ec`) |
 | V6 | Cambio de tema 360° y vocabulario universal (CORONA ROTA) | a mano, en paralelo | sin correr | Hecha (`2308e18`) |
 | 6.1 | Marca dual SANGRE Y PALO · BLOOD & SUITS y La Taberna | reglas-balance → arte-ui → juice-ux → director → panel | `rapido-60`: línea base | Hecha (`71ae962`) |
-| V7 | Partida guiada de 60 segundos y Mesa brava: monarcas con cara, maldición a la vista y voz | director → reglas-balance → arte-ui → juice-ux | `rapido-60` contra la 6.1: sin regresión | Puertas pasadas; candidata `44714cb` |
-| V8 | Jugo visceral, lacre con brillo y banda sonora de corte de 3 horas | director → arte-ui → juice-ux | `rapido-60` contra la 7.0 | Abierta (`SPECS/V8.md`) |
+| V7 | Partida guiada de 60 segundos y Mesa brava: monarcas con cara, maldición a la vista y voz | director → reglas-balance → arte-ui → juice-ux | `rapido-60` contra la 6.1: sin regresión | Hecha (`1c33ef6`, `v7.0.0`) |
+| V8 | Jugo visceral, lacre con brillo y banda sonora de corte de 3 horas | director → arte-ui → juice-ux | `rapido-60` contra la 7.0: sin regresión | Puertas pasadas; candidata `c12191c` |
 | V9 | Cooperativo a prueba de cortes, `balance-config.json` con autoajuste y telemetría de prueba | director → reglas-balance → juice-ux → arte-ui | `rapido-60` contra la V8 | Planificada (`SPECS/V9.md`) |
 | V10 | Candidata de lanzamiento con funciones congeladas: ES / EN, accesibilidad y Steam | director → reglas-balance → arte-ui → juice-ux | censo de 240 | Planificada (`SPECS/V10.md`) |
 
@@ -105,16 +105,31 @@ Se construye sobre lo que la 7.0 ya trae y no se rehace:
 
 **Puertas.** CPU completas (incluida la forja) + `qa:audio` + `qa:fps` (presupuesto de 60 fps, con aceleración gráfica) + `rapido-60` contra la 7.0 (`rapido-60-20261113-141123`). Regresión: aprobación por debajo del 15,8 % o claridad media por debajo de 4,62, los límites inferiores del IC95 de la 7.0. El encargo pide el panel en cada versión, y la V8 trae los arreglos de claridad A1–A3. Detalle en `SPECS/V8.md`.
 
+**Resultado** (2026-11-13, candidata `c12191c`). Todas las puertas de CPU pasan.
+- Caída del trono: 1.142 ms a 1×, 595 ms a 2×, 311 ms a 4×. Reserva de piezas: 0 nodos nuevos tras calentarse.
+- `qa:fps` con GPU real: p95 de 6,1 a 12,2 ms en 5 escenarios × 3 ventanas, 0 fotogramas > 50 ms.
+- `qa:audio`: 3 h × 3 semillas, tramo repetido más largo 3,3 s (tope 30), todas las notas en re menor.
+- A1–A3 hechos y con su regla de QA en verde. QA visual: 148 capturas sin fallos. Humo: 213 comprobaciones en orden.
+- Laboratorio idéntico al de la 6.1 (no se tocaron las reglas).
+- Panel (`rapido-60-20261113-164104`): aprobación 25,0 % → 25,0 %, claridad media 4,93 → 5,20. **Sin regresión y sin mejora medible.** El panel no oye ni ve movimiento: del trabajo de la versión solo juzga capturas quietas.
+
+No se movió:
+- la aprobación en Steam Deck: **0 de 9 por tercera corrida**, con la claridad del estrato en 5,00 → 4,44 (n = 9, dentro del ruido, y con una auditoría más que en la 7.0, la de `mesa-mando`);
+- las quejas de contraste (67 → 68) y de fatiga visual (46 → 53).
+
+Lo que tiene base en las capturas de Steam Deck pasa a la V9 (`SPECS/V9.md`, apartado 1.2). Detalle en `CHANGELOG.md` y `artifacts/mision/v8/puertas.md`.
+
 ## V9 · Cooperativo a prueba de cortes, autoajuste y telemetría de prueba
 
 **Tema.** El balance vive en un archivo y una herramienta propone ajustes acotados; amigos y familia mandan su partida en un toque; y una conjura de cuatro sobrevive a un corte de red.
 
 **Entregables.**
-1. `src/rules/balance-config.json` con tipos y `npm run balance:tune` (`scripts/auto-balance.ts`): busca variaciones de ±15 % como mucho contra los objetivos del laboratorio y propone, no aplica (`reglas-balance`).
-2. `src/client/telemetry.ts`: métricas locales de cada campaña (< 5 KB, nada que identifique a nadie), baliza opcional con `VITE_TELEMETRY_URL` y botón de un toque **«Enviar Crónica / Feedback de prueba»** en la Crónica y en Ajustes (`juice-ux` el módulo, `arte-ui` los botones).
-3. Batería de cooperativo de 2 a 4 jugadores con WebSocket de verdad: señas en La Taberna y el Mapa, corte a mitad de turno, el bot cubre y la reconexión vuelve sin costuras; dentro de `npm test` (`juice-ux`).
+1. `src/rules/balance-config.json` con tipos y `npm run balance:tune` (`scripts/auto-balance.ts`): busca variaciones de ±15 % como mucho contra los objetivos del laboratorio y, por defecto, solo propone; aplica únicamente con una bandera explícita (`reglas-balance`). Sacar los números al archivo no cambia ninguno: el laboratorio sale idéntico.
+2. `src/client/telemetry.ts`: métricas locales de cada campaña (< 5 KB, nada que identifique a nadie), envío con `VITE_TELEMETRY_URL` solo si la versión se construyó con esa variable **y** el jugador pulsa el botón de un toque **«Enviar Crónica / Feedback de Prueba»**, en la Crónica y en Ajustes; nunca en segundo plano. Sin la variable, el botón copia o descarga la crónica (`juice-ux` el módulo, `arte-ui` los botones).
+3. Batería de cooperativo de 2 a 4 jugadores con WebSocket de verdad: señas en La Taberna y el Mapa, corte a mitad de turno, el bot cubre y la reconexión vuelve sin costuras; dentro de `npm test`, deterministas y sin alargarlo más de unos 20 s (`juice-ux`).
+4. Lo que la 8.0 dejó abierto con base en las capturas de Steam Deck: la placa «−n CAE» que pisa la de ventaja, el Escudo bajo el rótulo de la Vida y el foco en La Taberna con mando (`arte-ui`); y el nombre por defecto «OBRERO» del servidor (`juice-ux`).
 
-**Puertas.** CPU completas + `rapido-60` contra la V8. Detalle en `SPECS/V9.md`.
+**Puertas.** CPU completas + `rapido-60` contra la 8.0 (`rapido-60-20261113-164104`). Regresión: aprobación por debajo del 15,8 % o claridad media por debajo de 4,91, los límites inferiores del IC95 de la 8.0. Detalle en `SPECS/V9.md`.
 
 ## V10 · Candidata de lanzamiento con funciones congeladas
 
