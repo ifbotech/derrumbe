@@ -107,16 +107,16 @@ export function rulesHtml(cfg: Config = DIFFICULTY.obra): string {
     <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardas una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
     <li><b>Rebobinar</b> ↩ (campaña en solitario): una vez por asalto deshaces tu última jugada. El Mazo se baraja de nuevo. En sala toda jugada es definitiva.</li>
     <li>Solo se puede <b>pasar</b> con la mano vacía.</li>
-    <li><b>Victoria</b>: caen los cuatro tronos (<b>Corona rota</b>). <b>Derrota</b>: tu Vida llega a 0 (<b>Conjura deshecha</b>).</li>
+    <li><b>Victoria</b>: caen los cuatro tronos (<b>Corte vencida</b>). <b>Derrota</b>: tu Vida llega a 0 (<b>Conjura deshecha</b>).</li>
     <li>Modo <b>BRUTAL</b> (Asalto único): ${DIFFICULTY.brutal.maxIntegrity} de Vida y el Mazo agotado cuesta ${DIFFICULTY.brutal.collapseLoss}.</li>
   </ul>
 
   <h3>Campaña</h3>
   <p>Un roguelike de mazo: <b>ocho asaltos</b>, cada uno una sala del castillo y cada vez más duro; cuatro con <b>monarca</b>. Empiezas con un <b>Sobre lacrado</b> de cartas especiales y, entre asalto y asalto, mejoras el mazo y tus Reliquias.</p>
   <ul>
-    <li><b>El Mapa del castillo</b> enseña desde el principio qué monarca espera en cada asalto y su <b>decreto</b>. En los asaltos sin monarca eliges <b>ruta</b>: cada una trae un <b>Juramento</b> (una condición con premio; los de riesgo endurecen el asalto y pagan siempre). O tomas el <b>Atajo</b>: te saltas el asalto (sin Botín ni Mercado) a cambio de un <b>Atajo de conspirador</b>.</li>
+    <li><b>El Mapa del castillo</b> enseña desde el principio qué monarca espera en cada asalto y su <b>decreto</b>. En los asaltos sin monarca eliges <b>ruta</b>: cada una trae un <b>Juramento</b> (una condición con premio; los de riesgo endurecen el asalto y pagan siempre). O tomas el <b>Atajo</b>: te saltas el asalto (sin Botín ni Taberna) a cambio de un <b>Atajo de conspirador</b>.</li>
     <li><b>En el Botín</b> eliges una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasas por 3 de oro. Los monarcas dejan además una reliquia.</li>
-    <li><b>El Mercado clandestino</b> del Tratante vende reliquias, Sobres lacrados (abres uno y eliges 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
+    <li><b>La Taberna</b> del Tratante vende reliquias, Sobres lacrados (abres uno y eliges 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
     <li>Tras cada monarca intermedio hay un <b>Secreto de la cripta</b>: un dilema con premio y precio.</li>
     <li>Después del octavo asalto puedes seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
     <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña. El <b>Asalto diario</b> usa la fecha como semilla, con la baraja de la conjura y sin mejoras de la Orden.</li>

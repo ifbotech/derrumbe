@@ -1,11 +1,11 @@
 ---
 name: brutalist-print-ui
-description: Reglas de imprenta de CORONA ROTA para cualquier cambio de interfaz. Tipografía mínima de 13 px, títulos en romana de inscripción y nunca cifras en la fuente de títulos, contraste WCAG, dianas de 44 px (48 en la barra del pulgar del móvil) y cero recortes en las cuatro ventanas. Úsala al tocar CSS, SVG o el HTML de una pantalla, y al revisar una captura.
+description: Reglas de imprenta de SANGRE Y PALO para cualquier cambio de interfaz. Tipografía mínima de 13 px, títulos en romana de inscripción y nunca cifras en la fuente de títulos, contraste WCAG, dianas de 44 px (48 en la barra del pulgar del móvil) y cero recortes en las cuatro ventanas. Úsala al tocar CSS, SVG o el HTML de una pantalla, y al revisar una captura.
 ---
 
 # Imprenta brutalista
 
-CORONA ROTA es linograbado: tinta plana, papel crema, cuatro tintas de taller. La estética no excusa la lectura. La regla que manda sobre todas: **el número y el palo de una carta se leen en menos de 0,3 segundos**.
+SANGRE Y PALO es linograbado: tinta plana, papel crema, cuatro tintas de taller. La estética no excusa la lectura. La regla que manda sobre todas: **el número y el palo de una carta se leen en menos de 0,3 segundos**.
 
 ## Las ocho reglas
 

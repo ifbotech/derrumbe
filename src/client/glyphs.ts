@@ -1,5 +1,5 @@
-// Emblemas linograbados de CORONA ROTA: las reliquias, las cartas especiales y los iconos de servicio
-// (Mercado clandestino, Mesa de lacre, la Orden, el mapa). Cada uno se dibuja en una caja de 100 × 100
+// Emblemas linograbados del juego: las reliquias, las cartas especiales y los iconos de servicio
+// (la Taberna, Mesa de lacre, la Orden, el mapa). Cada uno se dibuja en una caja de 100 × 100
 // con las tintas de la baraja (.ink .pp .rd .gd .gl .ol .cut .thin) y pasa por el filtro de borde
 // irregular. Un solo objeto por emblema, sin texto, con silueta cerrada que se lea a 24 px; la forja
 // (npm run forja -- herramientas) exige a las reliquias entre 22 y 58 % de tinta y silueta entera a 24 px.
@@ -224,7 +224,7 @@ export const GLYPH: Record<string, string> = {
   sobre: `<rect class="pp ol" x="8" y="22" width="84" height="60"/><path class="thin" d="M8,22 L50,58 L92,22"/><circle class="rd ol" cx="50" cy="60" r="11"/><path class="pp" d="M44,62 L43,56 L47,59 L50,54 L53,59 L57,56 L56,62 Z"/>`,
   // Comodín · Motín: un puño en alto
   // ───────────── logros, juramentos, atajos y portada (V6) ─────────────
-  // Fin del reinado · corona rota: corona de oro partida en dos mitades que se separan
+  // Fin del reinado · corona partida: corona de oro partida en dos mitades que se separan
   corona_rota: `<g transform="rotate(-9 26 86)"><path class="gd ol" d="M6,86 V40 L19,56 L30,30 L40,50 L45,42 L39,60 L47,70 L41,86 Z"/><rect class="ink" x="6" y="72" width="35" height="10"/><circle class="rd ol" cx="22" cy="62" r="5"/></g><g transform="rotate(9 74 86)"><path class="gd ol" d="M59,86 L53,70 L61,60 L55,42 L60,50 L70,30 L81,56 L94,40 V86 Z"/><rect class="ink" x="59" y="72" width="35" height="10"/><circle class="rd ol" cx="78" cy="62" r="5"/></g>${line('M50,20 L46,34 L54,44 L48,56', INK, 3)}<path class="ink" d="M8,94 H92 V99 H8 Z"/>`,
   // Sin fin: tres coronas apiladas
   coronas: `${[0, 1, 2].map((k) => `<g transform="translate(${20 - k * 2} ${64 - k * 30}) scale(${1 + k * 0.03} 0.82)"><path class="${['ink', 'rd ol', 'gd ol'][k]}" d="${CROWN}"/></g>`).join('')}<path class="cut" d="M24,86 H76"/><circle class="pp" cx="50" cy="86" r="3"/>`,

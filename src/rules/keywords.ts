@@ -1,4 +1,4 @@
-// Las seis palabras clave de CORONA ROTA. Todo lo demás se dice con palabras llanas.
+// Las seis palabras clave del juego. Todo lo demás se dice con palabras llanas.
 // La interfaz las resalta en negrita allí donde aparezcan y encadena su definición en los globos
 // de ayuda; el reglamento (REGLAS.md) las lista desde aquí.
 
@@ -96,7 +96,7 @@ export const TERMS: string[] = [
   'Juramentos',
   'Pergamino',
   'Sobre',
-  'Mercado',
+  'Taberna',
   'Mesa',
   'Tratante',
   'Orden',

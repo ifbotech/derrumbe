@@ -1,4 +1,4 @@
-// Pantallas de campaña: el sobre lacrado, el Mapa del castillo, el Botín con su selección, el Mercado
+// Pantallas de campaña: el sobre lacrado, el Mapa del castillo, el Botín con su selección, la Taberna
 // clandestino, los Secretos de la cripta y la Crónica final.
 import { whisper } from './whispers';
 import { Card, FORM, FORMATION_NAME, SEAL, TREATMENT, cardLabel } from '../rules/engine';
@@ -9,7 +9,7 @@ import { rubble, skyline } from './art';
 import { setScene, sfx } from './audio';
 import { isRunHost, runDo } from './campaign';
 import { cardEl, ferreteroEl, portraitEl, setDeckBack, tileEl } from './card';
-import { TITLE } from '../shared/brand';
+import { FULL_TITLE } from '../shared/brand';
 import { $, $$, S, app, esc, modal, num, toast } from './core';
 import { causeHtml, causeText, validDeath } from './causa';
 import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
@@ -36,7 +36,7 @@ const CONTRACT_GLYPH: Record<string, string> = {
   corta: 'abanico_corto', // cuatro naipes y el hueco del que falta
 };
 const TAG_GLYPH: Record<string, string> = {
-  vale: 'plano_maestro', // llave (Llave del mercado)
+  vale: 'plano_maestro', // llave (Llave de la Taberna)
   envio: 'fardo', // fardo atado (Contrabando)
   molde: 'gemelo', // naipe con la esquina doblada (Molde de cera)
   liquidacion: 'oro', // monedas (Botín escondido)
@@ -114,7 +114,7 @@ const waitNote = () => (host() ? '' : '<p class="wait">El anfitrión decide por 
 function head(run: Run, h1: string, sub: string): string {
   return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${run.daily ? `Asalto diario ${run.daily}` : DECK[run.deckId].name} · Vida ♥ ${run.integrity}/${run.maxIntegrity} · Mazo ${run.deck.length}</p></div><div class="purse"><b id="purse-n">${run.gold}</b><span>de oro</span></div></header>`;
 }
-/** Las Reliquias en las pantallas de campaña: aquí se reordenan con calma (y en el Mercado se venden). */
+/** Las Reliquias en las pantallas de campaña: aquí se reordenan con calma (y en la Taberna se venden). */
 function beltStrip(run: Run, sell = false): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'run-belt';
@@ -199,7 +199,7 @@ function mapScreen(run: Run): void {
     const tag = run.node.tag ? TAG[run.node.tag] : null;
     if (tag) {
       routes.appendChild(
-        choice(tileEl(TAG_GLYPH[tag.id] ?? 'atajo', 'Atajo', 'service'), `Saltar el asalto`, `Sin Botín, sin selección y sin Mercado. A cambio, Atajo de conspirador: <b>${tag.name}.</b> ${tag.desc}`, 'Saltar', can ? () => (sfx.stamp(), runDo({ t: 'skip' })) : null, 'skip'),
+        choice(tileEl(TAG_GLYPH[tag.id] ?? 'atajo', 'Atajo', 'service'), `Saltar el asalto`, `Sin Botín, sin selección y sin Taberna. A cambio, Atajo de conspirador: <b>${tag.name}.</b> ${tag.desc}`, 'Saltar', can ? () => (sfx.stamp(), runDo({ t: 'skip' })) : null, 'skip'),
       );
       whisper('atajo', { tag: tag.name });
     }
@@ -249,11 +249,11 @@ function rewardScreen(run: Run): void {
   if (loot && !run.looted) {
     const full = run.tools.length >= TOOL_SLOTS;
     run.loot.forEach((id) => loot.appendChild(choice(toolTile(id), TOOL[id].name, TOOL[id].desc, full ? 'Reliquias llenas' : 'Llevar', host() && !full ? () => runDo({ t: 'loot', id }) : null)));
-    loot.appendChild(choice(tileEl('retirar', 'Ninguna', 'service'), 'Pasar', full ? `Caben ${TOOL_SLOTS} reliquias: vende una en el Mercado clandestino la próxima vez.` : `Caben ${TOOL_SLOTS} reliquias; llevas ${run.tools.length}.`, 'Pasar', host() ? () => runDo({ t: 'loot', id: null }) : null));
+    loot.appendChild(choice(tileEl('retirar', 'Ninguna', 'service'), 'Pasar', full ? `Caben ${TOOL_SLOTS} reliquias: vende una en la Taberna la próxima vez.` : `Caben ${TOOL_SLOTS} reliquias; llevas ${run.tools.length}.`, 'Pasar', host() ? () => runDo({ t: 'loot', id: null }) : null));
   }
 }
 
-// ───────────────────────── Mercado clandestino ─────────────────────────
+// ───────────────────────── La Taberna ─────────────────────────
 
 function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   const cost = offerCost(run, o);
@@ -296,7 +296,7 @@ function shopScreen(run: Run): void {
   const next = stageDef(nextN);
   const boss = run.bosses[nextN] ? BOSS[run.bosses[nextN]] : null;
   const can = host();
-  app.innerHTML = `<div class="run">${head(run, 'Mercado clandestino', `Asalto ${run.stage} superado${run.freeShop ? ' · vale de conspirador: hoy todo es gratis' : ''}`)}
+  app.innerHTML = `<div class="run">${head(run, 'La Taberna', `Asalto ${run.stage} superado${run.freeShop ? ' · vale de conspirador: hoy todo es gratis' : ''}`)}
     <div class="run-body shop">
       <aside class="keeper"><div id="npc"></div><p class="say" id="say">…</p></aside>
       <section class="stock"><div class="rail"></div><div class="choices hangers" id="offers"></div>${waitNote()}<div id="belt-host"></div></section>
@@ -444,8 +444,8 @@ export function actaText(run: Run, online = false): string {
   const mvp = mvpTool(run);
   const depth = depthOf(run);
   return [
-    `👑 ${TITLE} · Crónica${run.daily ? ` · Asalto diario ${run.daily}` : ''}`,
-    `${row} ${run.conquered ? '👑 Corona rota' : `Asalto ${Math.min(cleared, LAST_STAGE)}/${LAST_STAGE}`}${depth ? ` · 🕳️ Trono infinito ${depth}` : ''}`,
+    `👑 ${FULL_TITLE} · Crónica${run.daily ? ` · Asalto diario ${run.daily}` : ''}`,
+    `${row} ${run.conquered ? '👑 Corte vencida' : `Asalto ${Math.min(cleared, LAST_STAGE)}/${LAST_STAGE}`}${depth ? ` · 🕳️ Trono infinito ${depth}` : ''}`,
     `💥 Mayor Golpe: ${run.stats.maxHit}`,
     `🗡️ Guardias: ${run.stats.floors} · 🎯 Golpes exactos: ${run.stats.cleans}`,
     mvp ? `💍 Reliquia más activa: ${TOOL[mvp]?.name ?? mvp} (${run.stats.toolUse[mvp]})` : '💍 Sin reliquias',
@@ -497,7 +497,7 @@ function actaScreen(run: Run): void {
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
     <div class="acta-sheet">
       <div class="meta"><span class="hot">CRÓNICA</span><span>${run.daily ? `ASALTO DIARIO ${run.daily}` : `${DECK[run.deckId].name}${run.ascension ? ` · REINADO ${run.ascension + 1}` : ''}`}</span></div>
-      <h1>${won ? 'Corona rota' : 'Conjura deshecha'}</h1>
+      <h1>${won ? 'Corte vencida' : 'Conjura deshecha'}</h1>
       <div class="acta-cols">
         <div class="acta-izq">
           <p>${won ? 'Cayó el último trono. Más abajo espera el Trono infinito, si os quedan ganas.' : depth ? `El Trono infinito ${depth + 1} os venció.` : `Te quedaste sin Vida en el asalto ${run.stage}: ${stageDef(run.stage).name}.`}</p>
@@ -517,7 +517,7 @@ function actaScreen(run: Run): void {
     </div>
   </div>`;
   const sheet = $('.acta-sheet');
-  stampOn(sheet, won ? 'Corona rota' : 'Deshecha', won ? 's-done big' : 's-skip big');
+  stampOn(sheet, won ? 'Corte vencida' : 'Deshecha', won ? 's-done big' : 's-skip big');
   inkFade(sheet);
   const copyText = (text: string, ok: string) => {
     const done = () => toast(ok);

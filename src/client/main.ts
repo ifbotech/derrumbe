@@ -1,4 +1,4 @@
-// DERRUMBE — arranque del cliente. Cada pantalla vive en su módulo:
+// Arranque del cliente (el título vive en shared/brand.ts). Cada pantalla vive en su módulo:
 //   core (estado y ajustes) · platform (guardado, pantalla, vibración) · net (servidor de salas)
 //   router · home · lobby · guild · campaign · runscreens · table (mesa de combate) · tutorial-ui
 //   widgets · lupa · pings · nav (teclado y mando) · fx · card / art / glyphs / engraving · audio

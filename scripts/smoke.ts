@@ -37,7 +37,8 @@ async function main(): Promise<void> {
   // navegador sin ventana lo pinta todo por CPU y los tiempos de fotograma solo son orientativos.
   const gpu = !!process.env.GPU;
   const browser = await chromium.launch(gpu ? { channel: 'chromium', args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-zero-copy'] } : {});
-  const context = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  // La marca sale de navigator.language: se fija el español para ver siempre «SANGRE Y PALO».
+  const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES' });
   await context.addInitScript({ content: NAME_SHIM });
   const page = await context.newPage();
   page.on('pageerror', (e) => problems.push(`error de página: ${e.message}`));
@@ -317,7 +318,7 @@ async function main(): Promise<void> {
   check((await count(page, '.run, .end')) > 0, 'al terminar el asalto se pasa al Botín o a la crónica');
   await page.screenshot({ path: join(OUT, 'fin-de-asalto.png') });
 
-  // ── la campaña jugada solo con un mando (virtual): menú, asalto entero, Botín y Mercado clandestino ──
+  // ── la campaña jugada solo con un mando (virtual): menú, asalto entero, Botín y La Taberna ──
   if (!process.env.NO_PAD) {
     console.log('Mando virtual');
     await gamepadSuite(browser, site.url, check, problems, (p, name) => p.screenshot({ path: join(OUT, `${name}.png`) }));
@@ -326,7 +327,7 @@ async function main(): Promise<void> {
   // ── copia de seguridad, con el guardado de verdad (sin ?qa): exportar, perderlo todo e importar ──
   console.log('Copia de seguridad');
   {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, acceptDownloads: true });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES', acceptDownloads: true });
     await ctx.addInitScript({ content: NAME_SHIM });
     const p = await ctx.newPage();
     p.on('pageerror', (e) => problems.push(`[copia] error de página: ${e.message}`));
@@ -348,7 +349,7 @@ async function main(): Promise<void> {
     const saved = join(OUT, 'copia.json');
     await download.saveAs(saved);
     const copy = JSON.parse(readFileSync(saved, 'utf8')) as { app: string; data: Record<string, string> };
-    check(/^corona-rota-progreso-\d{4}-\d{2}-\d{2}\.json$/.test(download.suggestedFilename()), `Exportar progreso descarga corona-rota-progreso-AAAA-MM-DD.json (${download.suggestedFilename()})`);
+    check(/^sangre-y-palo-progreso-\d{4}-\d{2}-\d{2}\.json$/.test(download.suggestedFilename()), `Exportar progreso descarga sangre-y-palo-progreso-AAAA-MM-DD.json (${download.suggestedFilename()})`);
     check(copy.app === 'derrumbe' && JSON.parse(copy.data['derrumbe:meta']).renown === 77 && copy.data['derrumbe:name'] === 'Conjurada QA', 'la copia lleva la Orden y el nombre (marcador interno app: «derrumbe»)');
     check(!Object.keys(copy.data).includes('derrumbe:server'), 'la copia no se lleva la dirección del servidor de esta instalación');
     // se pierde todo…

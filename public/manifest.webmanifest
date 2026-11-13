@@ -1,7 +1,7 @@
 {
-  "name": "CORONA ROTA",
-  "short_name": "CORONA ROTA",
-  "description": "La conjura de los naipes: roguelike con baraja francesa. Daño × Multi = Golpe, seis reliquias y campaña cooperativa.",
+  "name": "SANGRE Y PALO · Blood & Suits",
+  "short_name": "Sangre y Palo",
+  "description": "SANGRE Y PALO (BLOOD & SUITS): la conjura de los naipes. Roguelike con baraja francesa: Daño × Multi = Golpe, seis reliquias y campaña cooperativa.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

@@ -1,4 +1,4 @@
-# CORONA ROTA — Reglas
+# SANGRE Y PALO — Reglas
 
 > Este archivo se genera con `npm run docs` a partir de los datos del motor (`src/rules`). No lo edites a mano.
 
@@ -103,7 +103,7 @@ La mesa te lo avisa antes de golpear: la previsualización de cada trono dice si
 - **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *Manga doble* añade un segundo hueco. En la partida guiada no hay Manga.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
-- **Victoria** (*Corona rota*): los cuatro tronos caídos. **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
+- **Victoria** (*Corte vencida*): los cuatro tronos caídos. **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
 - Modo **BRUTAL** (Asalto único): 16 de Vida y el Mazo agotado quita 6.
 - **Asalto único en conjura de varios**: lo que quita el Mazo agotado se ajusta a cuántos jugáis, porque con más manos el Mazo se acaba antes: 5 con 1, 6 con 2, 5 con 3, 4 con 4.
 
@@ -129,7 +129,7 @@ En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuál es su decreto. En los asaltos sin monarca eliges:
 
 - una **ruta** (dos a elegir; tres con el Cartógrafo de la Orden), cada una con su **Juramento**;
-- o el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Mercado clandestino) a cambio de un **Atajo de conspirador**.
+- o el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Taberna) a cambio de un **Atajo de conspirador**.
 
 **Juramentos.** Los normales piden una condición y pagan si la cumples; los de **riesgo** endurecen el asalto y pagan siempre que lo ganes.
 
@@ -149,7 +149,7 @@ El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuá
 
 | Atajo | Efecto |
 |---|---|
-| Llave del mercado | En el próximo Mercado clandestino, reliquias, sobres y Mesa de lacre son gratis. |
+| Llave de la Taberna | En la próxima Taberna, reliquias, sobres y Mesa de lacre son gratis. |
 | Contrabando | Recibes ya una reliquia Noble o Regia. |
 | Molde de cera | Duplicas la carta de tu Mazo que elijas. |
 | Botín escondido | +15 de oro. |
@@ -171,7 +171,7 @@ El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuá
 
 Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada 5 de oro guardado), recuperas 4 de Vida y eliges **una de tres opciones a la vista** —dos cartas especiales y una carta de baraja ya marcada con un sello de lacre o un acabado— o pasas a cambio de 3 de oro.
 
-### El Mercado clandestino
+### La Taberna
 
 Lo atiende el Tratante.
 
@@ -215,7 +215,7 @@ Tras los monarcas de los asaltos 3, 5, 7 aparece un dilema. Cada campaña ve 3 d
 |---|---|---|
 | 1 | Reinado de paz | Las reglas de siempre. |
 | 2 | Corazas finas | Todos los guardias tienen un 5 % más de Vida. |
-| 3 | Impuesto real | Todo en el Mercado clandestino cuesta 2 de oro más. |
+| 3 | Impuesto real | Todo en la Taberna cuesta 2 de oro más. |
 | 4 | Reyes en guardia | En los asaltos con monarca, los Reyes llegan En guardia. |
 | 5 | Rey colérico | El Ataque de los Reyes sube 1. |
 | 6 | Heridas viejas | Tienes 1 punto menos de Vida. |
@@ -393,8 +393,8 @@ Ganes o pierdas, cada campaña deja **Coronas**. En la Orden se gastan en **abri
 | Arcón del escudo | Añade al surtido: Guantelete, Ariete, Rodela de púas, Copa rebosante, Baluarte. | 4 ✦ |
 | Lacres nuevos | La Mesa de lacre también ofrece los sellos de pólvora y de la manga. | 5 ✦ |
 | Cristalero real | La Mesa de lacre también ofrece Lacre policromo y Cristal maldito. | 6 ✦ |
-| Favor del Tratante | Un «Renovar mesa» gratis en cada Mercado clandestino, por nivel. | 4 ✦ · 8 ✦ |
-| Puesto grande | +1 reliquia en oferta en cada Mercado clandestino, por nivel. | 8 ✦ · 12 ✦ |
+| Favor del Tratante | Un «Renovar mesa» gratis en cada Taberna, por nivel. | 4 ✦ · 8 ✦ |
+| Puesto grande | +1 reliquia en oferta en cada Taberna, por nivel. | 8 ✦ · 12 ✦ |
 | Bolsa de la Orden | +2 de oro inicial por nivel. | 3 ✦ · 6 ✦ |
 | Cartógrafo | Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2. | 6 ✦ |
 

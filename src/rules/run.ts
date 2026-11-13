@@ -3,7 +3,7 @@
 // semilla y las mismas decisiones, la campaña es idéntica.
 //
 //   Sobre lacrado → [ Mapa del castillo: ruta con Juramento · o Atajo → asalto → Botín + selección
-//                     (+ botín de monarca) → Mercado clandestino → (Secreto de la cripta tras cada
+//                     (+ botín de monarca) → La Taberna → (Secreto de la cripta tras cada
 //                     monarca) ] × 8 → Trono infinito
 // En el código los nombres internos siguen siendo los de antes (stage, boss, contract, shop, event…).
 import { Autopsy, autopsy } from './autopsy';
@@ -27,7 +27,7 @@ export interface Ascension {
 export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
   { name: 'Corazas finas', desc: 'Todos los guardias tienen un 5 % más de Vida.' },
-  { name: 'Impuesto real', desc: 'Todo en el Mercado clandestino cuesta 2 de oro más.' },
+  { name: 'Impuesto real', desc: 'Todo en la Taberna cuesta 2 de oro más.' },
   { name: 'Reyes en guardia', desc: 'En los asaltos con monarca, los Reyes llegan En guardia.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube 1.' },
   { name: 'Heridas viejas', desc: 'Tienes 1 punto menos de Vida.' },
@@ -138,7 +138,7 @@ export interface Tag {
   apply(run: Run): void;
 }
 export const TAGS: Tag[] = [
-  { id: 'vale', name: 'Llave del mercado', desc: 'En el próximo Mercado clandestino, reliquias, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
+  { id: 'vale', name: 'Llave de la Taberna', desc: 'En la próxima Taberna, reliquias, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
   { id: 'envio', name: 'Contrabando', desc: 'Recibes ya una reliquia Noble o Regia.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
   { id: 'molde', name: 'Molde de cera', desc: 'Duplicas la carta de tu Mazo que elijas.', apply: (run) => void (run.pending = { kind: 'dup' }) },
   { id: 'liquidacion', name: 'Botín escondido', desc: '+15 de oro.', apply: (run) => void (run.gold += 15) },
@@ -237,8 +237,8 @@ export const UPGRADES: Upgrade[] = [
   boxUp('aguante', 'Arcón del escudo', 'ariete'),
   { id: 'tampones', name: 'Lacres nuevos', desc: 'La Mesa de lacre también ofrece los sellos de pólvora y de la manga.', costs: [5], glyph: 'sello' },
   { id: 'bronce', name: 'Cristalero real', desc: 'La Mesa de lacre también ofrece Lacre policromo y Cristal maldito.', costs: [6], glyph: 'forja' },
-  { id: 'vale', name: 'Favor del Tratante', desc: 'Un «Renovar mesa» gratis en cada Mercado clandestino, por nivel.', costs: [4, 8], glyph: 'cinta' },
-  { id: 'tienda', name: 'Puesto grande', desc: '+1 reliquia en oferta en cada Mercado clandestino, por nivel.', costs: [8, 12], glyph: 'andamio' },
+  { id: 'vale', name: 'Favor del Tratante', desc: 'Un «Renovar mesa» gratis en cada Taberna, por nivel.', costs: [4, 8], glyph: 'cinta' },
+  { id: 'tienda', name: 'Puesto grande', desc: '+1 reliquia en oferta en cada Taberna, por nivel.', costs: [8, 12], glyph: 'andamio' },
   { id: 'caja', name: 'Bolsa de la Orden', desc: '+2 de oro inicial por nivel.', costs: [3, 6], glyph: 'hucha' },
   { id: 'rutas', name: 'Cartógrafo', desc: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.', costs: [6], glyph: 'plano' },
 ];
@@ -998,7 +998,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       if (run.phase === 'event') advance(run);
       return null;
     case 'burn': {
-      if (run.phase !== 'shop') return 'Solo se queman cartas en la hoguera del Mercado clandestino.';
+      if (run.phase !== 'shop') return 'Solo se queman cartas en la hoguera de la Taberna.';
       if (run.gold < removeCost(run)) return 'No te alcanza el oro.';
       if (run.deck.length <= MIN_DECK) return `El mazo no puede bajar de ${MIN_DECK} cartas.`;
       const i = run.deck.findIndex((c) => c.id === a.card);
@@ -1011,7 +1011,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'heal':
-      if (run.phase !== 'shop') return 'Solo en el Mercado clandestino.';
+      if (run.phase !== 'shop') return 'Solo en la Taberna.';
       if (run.integrity >= run.maxIntegrity) return 'Tu Vida ya está al máximo.';
       if (run.gold < healCost(run)) return 'No te alcanza el oro.';
       run.gold -= healCost(run);
@@ -1027,7 +1027,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'reroll':
-      if (run.phase !== 'shop') return 'Solo en el Mercado clandestino.';
+      if (run.phase !== 'shop') return 'Solo en la Taberna.';
       if (run.sobre) return 'Antes elige una carta del sobre abierto.';
       if (run.gold < rerollCost(run)) return 'No te alcanza el oro.';
       run.gold -= rerollCost(run);

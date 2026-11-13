@@ -64,7 +64,7 @@ export function buildTable(): void {
     <header class="bar">
       <div class="brand">${TITLE}</div>
       <div class="room" id="room"></div>
-      ${c ? `<div class="chip gold" id="gold-chip" data-tip="<b>Oro</b>Se gasta en el Mercado clandestino. Cada 5 de oro guardado da 1 de interés al cobrar."><span>Oro</span><b id="gold-n">${c.run.gold}</b></div>` : ''}
+      ${c ? `<div class="chip gold" id="gold-chip" data-tip="<b>Oro</b>Se gasta en la Taberna. Cada 5 de oro guardado da 1 de interés al cobrar."><span>Oro</span><b id="gold-n">${c.run.gold}</b></div>` : ''}
       <div class="obra-chips" id="obra"></div>
       <div class="players" id="players"></div>
       <button id="btn-deck" data-tip="<b>Mazo y Descarte</b>Qué cartas quedan por salir.">Mazo${hint('deck')}</button>
@@ -1256,7 +1256,7 @@ function showEnd(): void {
   el.innerHTML = `
     <div class="meta"><span class="hot">${won ? 'ASALTO GANADO' : 'SIN VIDA'}</span><span>SALA ${S.session?.room ?? ''}</span></div>
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
-    <h1>${won ? 'Corona rota' : 'Conjura deshecha'}</h1>
+    <h1>${won ? 'Corte vencida' : 'Conjura deshecha'}</h1>
     <p>${won ? 'Los cuatro tronos han caído. La conjura sale del castillo por la puerta grande.' : 'Te quedaste sin Vida antes de que cayeran los tronos. Volved a intentarlo.'}</p>
     ${death ? causeHtml(death) : ''}
     <p>Guardias abatidos ${floors}/12 · Turnos ${v.turnCount} · Mazo agotado ×${v.collapses} · Vida final ${v.integrity}/${v.config.maxIntegrity}</p>

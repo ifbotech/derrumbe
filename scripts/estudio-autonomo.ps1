@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  Bucle autónomo del estudio de CORONA ROTA: construye una versión tras otra (V7 → V10) y solo deja pasar
+  Bucle autónomo del estudio de SANGRE Y PALO: construye una versión tras otra (V7 → V10) y solo deja pasar
   la que no empeora. Windows PowerShell 5.1 o superior.
 
 .DESCRIPTION
@@ -13,7 +13,7 @@
     3. Puertas de CPU, en orden: typecheck, test, analyze:meta (sin avisos), docs, qa:visual, qa:smoke.
        Si una falla, la celda responsable recibe el registro y lo arregla (-Intentos veces).
     4. Cierre: las celdas del director corren después de las puertas, con sus medidas delante, y
-       escriben el registro de cambios. Commit candidato "CORONA ROTA N.0" en la rama.
+       escriben el registro de cambios. Commit candidato "SANGRE Y PALO N.0" en la rama.
     5. Puerta de GPU: el panel simulado de ..\panelAgentesGaming sobre ese commit (RTX 3090), con la
        sala QA-3090 animada mientras corre.
     6. Veredicto: compara aprobación por persona y claridad media con v(N-1). Si no hay regresión,
@@ -160,7 +160,7 @@ function LanzarCelda([int]$n, [string]$nombre, [string]$encargo, [string]$etique
   $pedido = Join-Path $carpeta "$etiqueta.pedido.md"
   $log = Join-Path $carpeta "$etiqueta.log"
   $cabecera = @"
-Sprint de CORONA ROTA, V$n, rama estudio/v$n. Eres la celda '$nombre' del estudio: sigue tu reglamento.
+Sprint de SANGRE Y PALO, V$n, rama estudio/v$n. Eres la celda '$nombre' del estudio: sigue tu reglamento.
 Otras celdas ya trabajaron o trabajarán después de ti en esta misma rama: toca solo tus archivos.
 No ejecutes git commit, push, stash, reset, restore ni checkout: el commit lo hace el orquestador.
 Cuando termines, deja en verde tus propias comprobaciones y acaba con un informe breve de lo que cambió.
@@ -393,7 +393,7 @@ try {
     Repo "add -A" | Out-Null
     if (-not (Repo "status --porcelain")) { Apartar $n "las celdas no cambiaron nada"; break }
     $mensaje = Join-Path $carpeta "commit.txt"
-    [System.IO.File]::WriteAllText($mensaje, "CORONA ROTA $n.0: $($spec.Tema)`n", $Utf8)
+    [System.IO.File]::WriteAllText($mensaje, "SANGRE Y PALO $n.0: $($spec.Tema)`n", $Utf8)
     Repo "commit -F `"$mensaje`"" | Out-Null
     $sha = Repo "rev-parse HEAD"
     Decir "Commit candidato $($sha.Substring(0, 7))" "Green"
@@ -415,8 +415,8 @@ try {
     Repo "switch main" | Out-Null
     Repo "merge --ff-only estudio/v$n" | Out-Null
     # la etiqueta lleva el veredicto del panel: queda en el historial sin tocar más archivos
-    $nota = "CORONA ROTA $n.0"
-    if ($panel) { $nota = "CORONA ROTA {0}.0 - panel {1}: aprobacion {2} % ({3:+0.0;-0.0}), claridad {4} ({5:+0.00;-0.00})" -f $n, $panel.RunId, $panel.Aprobacion, $dA, $panel.Claridad, $dC }
+    $nota = "SANGRE Y PALO $n.0"
+    if ($panel) { $nota = "SANGRE Y PALO {0}.0 - panel {1}: aprobacion {2} % ({3:+0.0;-0.0}), claridad {4} ({5:+0.00;-0.00})" -f $n, $panel.RunId, $panel.Aprobacion, $dA, $panel.Claridad, $dC }
     Repo "tag -a v$n.0.0 -m `"$nota`"" | Out-Null
     Repo "branch -d estudio/v$n" | Out-Null
     if ($Publicar) { Repo "push origin main --follow-tags" | Out-Null; Decir "Publicada: main y v$n.0.0 en origin." "Green" }

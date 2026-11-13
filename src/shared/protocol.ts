@@ -13,7 +13,7 @@ export type ClientMsg =
   /** En campaña, el anfitrión aporta sus mejoras de la Orden, el Reinado, la baraja, sus cartas legendarias y, si quiere, una semilla. */
   | ({ t: 'start' } & RunOpts)
   | { t: 'action'; action: Action }
-  /** Decisiones de campaña (mapa, Botín, Mercado clandestino, secretos, orden de las reliquias): solo el anfitrión. */
+  /** Decisiones de campaña (mapa, Botín, la Taberna, secretos, orden de las reliquias): solo el anfitrión. */
   | { t: 'run'; action: RunAction }
   /** Seña: cualquiera de la conjura señala una ruta, una oferta, una carta o un trono. */
   | { t: 'ping'; target: string }

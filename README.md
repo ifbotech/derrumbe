@@ -1,11 +1,13 @@
-# CORONA ROTA
+# SANGRE Y PALO · BLOOD & SUITS
 
 *La conjura de los naipes.* Roguelike de construcción de mazo con baraja francesa clásica y estética de grabado brutalista. Diseño original:
 sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doce guardias que abatir y tu Vida en juego en cada Contraataque. Para 1 a 4 jugadores.
 
+**Dos nombres, un juego.** En un navegador en español se llama **SANGRE Y PALO** y lleva, en una cinta de lacre, el sello **BLOOD & SUITS**. En cualquier otro idioma es al revés: **BLOOD & SUITS**, con el sello de origen **SANGRE Y PALO**. Así toda captura enseña los dos nombres. El resto de la interfaz sigue en español hasta la 10.0. Hasta la 6.0 se llamó `CORONA ROTA` y, antes, `DERRUMBE`.
+
 **Jugar en el navegador:** https://ifbotech.github.io/derrumbe/ (se publica sola en cada cambio; ver [Publicar](#publicar)). La dirección y el repositorio (`ifbotech/derrumbe`) conservan el nombre de antes.
 
-- **Campaña roguelike** en solitario o en conjura: 8 asaltos cortos y tensos (de 6 a 12 turnos), cada uno una sala del castillo, con los monarcas anunciados en el **Mapa del castillo**, rutas con **Juramento**, **Mercado clandestino**, **Secretos de la cripta** y un **Trono infinito** sin final.
+- **Campaña roguelike** en solitario o en conjura: 8 asaltos cortos y tensos (de 6 a 12 turnos), cada uno una sala del castillo, con los monarcas anunciados en el **Mapa del castillo**, rutas con **Juramento**, **La Taberna**, **Secretos de la cripta** y un **Trono infinito** sin final.
 - **Daño × Multi = Golpe**: cada golpe se resuelve paso a paso, de izquierda a derecha. Antes de darlo, la mesa enseña el **Golpe en grande** con sus avisos (¡Exacto!, cae el guardia, ventaja, Inmune) y, si lo pides, el **recibo**: Base + Cartas + Reliquias × Multi = Golpe.
 - **La baraja manda**: cartas solas, formaciones de póker y el **As cómplice**. Los cuatro palos —**Picas, Diamantes, Corazones y Tréboles**— tienen su poder (Perfora, Salpica, Cura, Escudo), la **rueda de palos** (♠ → ♦ → ♥ → ♣ → ♠) está siempre a la vista y cada trono lleva su **escudo de armas** de inmunidad.
 - **Golpe exacto**: abatir a un guardia con el Golpe justo anula el Contraataque, paga, roba y deja **Impulso** contra el guardia siguiente.
@@ -23,7 +25,7 @@ sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doc
 
 Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo seis palabras tienen significado propio —Daño, Multi, Golpe exacto, Brecha, En guardia y Desarmado—; todo lo demás se dice con palabras de baraja: Vida, Escudo, Mazo, Descarte, Contraataque.
 
-> Corona rota comparte género con los cooperativos de baraja francesa, pero sus reglas son propias: los poderes de palo, la rueda de palos (♠ corta ♦ · ♦ compra ♥ · ♥ doblega ♣ · ♣ quiebra ♠), la cuenta Daño × Multi = Golpe, las Reliquias y la campaña no vienen de ningún otro juego.
+> SANGRE Y PALO comparte género con los cooperativos de baraja francesa, pero sus reglas son propias: los poderes de palo, la rueda de palos (♠ corta ♦ · ♦ compra ♥ · ♥ doblega ♣ · ♣ quiebra ♠), la cuenta Daño × Multi = Golpe, las Reliquias y la campaña no vienen de ningún otro juego.
 
 ## Uso
 
@@ -63,8 +65,8 @@ El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, i
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
 | `npm run analyze:meta` | Laboratorio de balance: ~55.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
 | `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas del Asalto único y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 25 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo y jerga vieja → `artifacts/visual-qa/` y su `report.json` |
-| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, Mercado clandestino, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias) |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 28 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo y jerga vieja → `artifacts/visual-qa/` y su `report.json` |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Taberna, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias) |
 | `npm run forja` | Banco de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, reliquias, especiales, servicios, monarcas) a 24 y 300 px, mide su tinta y su silueta, y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
 | `npm run og` | Regenera la tarjeta para compartir (`public/og-card.png`, 1200 × 630) |
 | `npm run docs` | Regenera `REGLAS.md` y las tablas de balance y controles de este archivo |
@@ -89,7 +91,7 @@ Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativ
 2. **El Mapa del castillo.** Enseña los ocho asaltos y, desde el principio, qué monarca espera en cada uno. En los asaltos sin monarca eliges **ruta** —cada una con un **Juramento**— o tomas el **Atajo** y te lo saltas a cambio de un **Atajo de conspirador**.
 3. **El asalto.** Eliges cartas y la mesa te enseña **Daño × Multi = Golpe** contra cada trono, con sus avisos (Golpe exacto, Escudo, Contraataque, si la jugada se puede rebobinar). Al golpear, cada carta, sello de lacre, acabado y reliquia se activa en orden. Si el asalto se alarga, el **Asedio final** sube las apuestas para los dos lados.
 4. **El Botín.** Oro con interés, el resultado del Juramento y **una de tres opciones a la vista** para el Mazo. Los monarcas dejan una reliquia.
-5. **El Mercado clandestino.** El Tratante vende reliquias en su placa (según la rareza), Sobres lacrados, Pergaminos, la **Mesa de lacre**, **La hoguera** y «Renovar mesa».
+5. **La Taberna.** El Tratante vende reliquias en su placa (según la rareza), Sobres lacrados, Pergaminos, la **Mesa de lacre**, **La hoguera** y «Renovar mesa».
 6. **Secretos de la cripta** tras cada monarca intermedio: dilemas con premio y precio.
 7. Tras el octavo asalto, la **Crónica** se puede copiar como texto o llevarse como Lámina, y queda en el archivo. Y si quedan ganas, el **Trono infinito**.
 
@@ -112,11 +114,11 @@ En campaña cooperativa el Mazo, el oro y las reliquias son compartidos y decide
 Para jugar por internet hay que publicar el puerto del servidor (un VPS, Fly.io, Render, Railway… o un túnel). Con Docker:
 
 ```bash
-docker build -t corona-rota .
+docker build -t sangre-y-palo .
 ```
 
 ```bash
-docker run -p 3000:3000 corona-rota
+docker run -p 3000:3000 sangre-y-palo
 ```
 
 Detrás de un proxy inverso, recuerda permitir la actualización a WebSocket en la ruta `/ws`.
@@ -147,7 +149,7 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 ## Balance
 
 <!-- balance:inicio -->
-Medido con `npm run analyze:meta`: **55.640 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, Mercado clandestino, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
+Medido con `npm run analyze:meta`: **55.640 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Taberna, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
 
 Campañas ganadas por Reinado (baraja de la conjura, 1500 campañas por celda). Objetivos: Reinado 1 entre el 24 y el 30 % con la Orden vacía y entre el 40 y el 48 % con la Orden llena; Reinado 8 entre el 6 y el 9 % con la Orden vacía y entre el 12 y el 17 % con la Orden llena; y cada Reinado, más difícil que el anterior.
 
@@ -222,7 +224,7 @@ Cinco habilidades (`.claude/skills/`) recogen el oficio que se repite: `brutalis
 
 **Constitución anticomplejidad**, comprobada por `npm test`: como mucho 6 palabras clave y 56 reliquias, ninguna descripción de más de 115 caracteres y ningún asalto del 4 al 8 con un percentil 95 por encima de 19 turnos.
 
-La hoja de ruta de la 6.0 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). La 6.0, el cambio de tema, se hizo a mano; el bucle arranca en la V7. Para ver el plan sin tocar nada:
+La hoja de ruta de la 6.1 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). Desde la 6.1 cada versión se hace por celdas, de una en una y en el orden que fija su especificación, sobre la rama `release/v{n}`; cada celda deja su señal de fin en `artifacts/mision/v{n}/`. El panel simulado audita con 60 personas la 6.1, la V7 y la V9, y con las 240 la V10. El guion por lotes de la 5.0 sigue disponible; para ver su plan sin tocar nada:
 
 ```powershell
 .\scripts\estudio-autonomo.ps1 -Ensayo
@@ -232,7 +234,7 @@ La hoja de ruta de la 6.0 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.
 .\scripts\estudio-autonomo.ps1
 ```
 
-Por cada versión abre una rama, lanza una sesión por celda de la especificación, pasa las puertas de CPU (`typecheck`, `test`, `analyze:meta`, `docs`, `qa:visual`, `qa:smoke`), audita el commit candidato con un panel **simulado** de jugadores en `..\panelAgentesGaming` (preset `v6-completo`, 240 personas) y compara aprobación y claridad con la versión anterior: si no empeora, fusiona y etiqueta; si empeora, `main` queda como estaba y la rama se aparta. Antes de la V7 audita `main` como línea base: ni la 5.0 ni la 6.0 tienen todavía medida del panel. Con `-Publicar`, además, sube cada versión aceptada. El panel ordena prioridades; no sustituye a jugadores de verdad.
+Por cada versión abre una rama, lanza una sesión por celda de la especificación, pasa las puertas de CPU (`typecheck`, `test`, `analyze:meta`, `docs`, `qa:visual`, `qa:smoke`), audita el commit candidato con un panel **simulado** de jugadores en `..\panelAgentesGaming` (preset `v6-completo`, 240 personas) y compara aprobación y claridad con la versión anterior: si no empeora, fusiona y etiqueta; si empeora, `main` queda como estaba y la rama se aparta. La línea base del panel es la auditoría de 60 personas de la 6.1: ni la 5.0 ni la 6.0 se midieron. Con `-Publicar`, además, sube cada versión aceptada. El panel ordena prioridades; no sustituye a jugadores de verdad.
 
 ## Arquitectura
 
@@ -244,18 +246,18 @@ src/
     specials.ts   cartas especiales y legendarias
     keywords.ts   las seis palabras clave y cómo se marcan en los textos
     autopsy.ts    causa de la derrota (qué se llevó tu Vida) y aviso de último turno
-    run.ts        campaña (reductor): Mapa del castillo, Juramentos, Botín, Mercado clandestino, Secretos de la cripta, Reinados, La Orden
+    run.ts        campaña (reductor): Mapa del castillo, Juramentos, Botín, la Taberna, Secretos de la cripta, Reinados, La Orden
     achievements.ts  logros, colección y lo que desbloquean
     bot.ts        bot de asalto y de campaña (simulación y sustituto de desconectados)
     tutorial.ts   guion de la Maestra y mazo preparado de la partida guiada
   shared/
-    brand.ts      la marca: el único sitio donde se escribe el título
+    brand.ts      la marca dual: el único sitio donde se escriben los dos títulos
     protocol.ts   protocolo de mensajes cliente ⇄ servidor
   server/       Node + ws: salas, turnos, reconexión, señas, estáticos
   client/       Vite + TypeScript + CSS/SVG
     core.ts · platform.ts · net.ts · router.ts   estado, puente con la plataforma, conexión
     home.ts · lobby.ts · guild.ts                portada, vestíbulo, La Orden, colección y Archivo de crónicas
-    campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas (mapa, Botín, Mercado clandestino, Mesa de lacre)
+    campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas (mapa, Botín, la Taberna, Mesa de lacre)
     table.ts · tutorial-ui.ts                    mesa de combate (los cuatro tronos, rueda de palos, Asedio final) y partida guiada
     cuenta.ts · causa.ts · lamina.ts             cuenta central y su recibo, causa de la derrota, Lámina de la Crónica y enlace con semilla
     whispers.ts                                  Susurros contextuales
@@ -274,7 +276,7 @@ scripts/        Laboratorio de balance, control de calidad (capturas, humo, mand
 - **Servidor autoritativo.** El cliente solo envía intenciones; el servidor valida con el motor y difunde el resultado. Las señas son solo señales: no deciden nada.
 - **Información oculta.** Cada jugador recibe únicamente su mano y su Manga (`viewFor`) y sus propias cartas robadas o guardadas (`eventsFor`). La campaña de una sala viaja sin el estado del azar ni la semilla (`publicRun`).
 - **Animación por eventos.** Cada golpe produce una lista de eventos que el cliente encola y anima; las reglas no saben nada de lo visual.
-- **Marca en un solo sitio.** El título y el lema salen de `src/shared/brand.ts`; `index.html` y el manifest, que son estáticos, lo llevan escrito, y `tests/marca.test.ts` falla si no casan. Los identificadores internos (`id` de datos, clases CSS, protocolo, claves `derrumbe:*`) no cambiaron con el tema.
+- **Marca en un solo sitio.** Las dos caras de la marca (título, sello y lema de cada idioma) salen de `src/shared/brand.ts`, que elige la cara por el idioma del navegador; `index.html` y el manifest, que son estáticos, lo llevan escrito, y `tests/marca.test.ts` falla si no casan. Los identificadores internos (`id` de datos, clases CSS, protocolo, claves `derrumbe:*`) no cambiaron con el tema.
 - **Mando.** `nav.ts` lee el mando estándar del W3C (cruceta, palanca con zona muerta de 0,28, repetición a los 320 ms y cada 110 ms) y lo traduce a las mismas acciones que el teclado. La prueba de humo inyecta un mando virtual y juega una campaña entera con él.
 - **Grabado.** Todo el arte es SVG dibujado a mano: naipes de corte de doble cabeza, tronos con su estandarte, monarcas reconocibles por su objeto, sombras de buril y cuatro tintas de taller —hierro oscuro, oro bruñido, carmesí real y verdín profundo— con opción de las dos clásicas. El grano del papel se hornea una vez en un lienzo; lo que se mueve solo cambia `transform` y `opacity`.
 - **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta; la música gana capas cuando tu Vida está en apuros.

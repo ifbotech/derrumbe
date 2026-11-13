@@ -1,6 +1,6 @@
 // Cartas especiales: no son de la baraja francesa. No tienen palo ni número: se suman a cualquier
 // golpe como apoyo (hasta dos por golpe) o se juegan solas, y hacen su efecto.
-// Se consiguen a la vista (selección tras cada asalto, Sobre lacrado del Mercado clandestino) o a ciegas
+// Se consiguen a la vista (selección tras cada asalto, Sobre lacrado de la Taberna) o a ciegas
 // (Sobre a ciegas). Las legendarias (el Tratante y los monarcas) solo entran en el sorteo tras su logro.
 
 export interface Fx {

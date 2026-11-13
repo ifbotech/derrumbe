@@ -2,10 +2,10 @@
 import { ACHIEVEMENTS, deckUnlocked, unlockedPool } from '../rules/achievements';
 import { SEAL, TREATMENT } from '../rules/engine';
 import { ASCENSIONS, BOSSES, DECK, DECKS, LAST_STAGE, STAGES, newRun } from '../rules/run';
-import { hero } from './art';
+import { hero, waxSeal } from './art';
 import { backEl } from './card';
 import { masteryBadge } from './engraving';
-import { SUBTITLE, TITLE } from '../shared/brand';
+import { BRAND, LOCALE, Locale } from '../shared/brand';
 import { $, $$, S, app, cap, esc, modal } from './core';
 import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, savedCampaign, today } from './campaign';
 import { glyphSvg } from './glyphs';
@@ -18,6 +18,22 @@ import { platform } from './platform';
 
 const stamp = (id: string, glyph: string, title: string, sub: string, cls = '') =>
   `<button class="stamp-btn ${cls}" id="${id}">${glyphSvg(glyph, 'stamp-ico')}<span><b>${title}</b><small>${sub}</small></span></button>`;
+
+/**
+ * Candado de la marca: el título del idioma en grande (primera palabra en un renglón, el resto en
+ * lacre debajo) y, cosida a él, la cinta grabada con su sello de lacre que lleva el nombre del otro
+ * idioma; debajo, el lema. Así cualquier captura enseña los dos nombres. `face` fuerza una cara (la
+ * QA monta la inglesa en `portada-en`); por defecto, la del navegador.
+ */
+export function brandLockup(face: Locale = LOCALE): string {
+  const b = BRAND[face];
+  const other: Locale = face === 'es' ? 'en' : 'es';
+  const [head, ...rest] = b.title.split(' ');
+  const word = (w: string) => esc(w.length > 1 ? cap(w) : w);
+  return `<h1 class="title" lang="${face}" aria-label="${esc(b.title)}"><span>${word(head)}</span>${rest.length ? `<span class="cut">${rest.map(word).join(' ')}</span>` : ''}</h1>
+      <p class="brand-seal" lang="${other}">${waxSeal('brand-wax')}<span class="seal-ribbon">${esc(b.seal)}</span></p>
+      <p class="tagline" lang="${face}">${esc(b.subtitle)}</p>`;
+}
 
 /** La primera campaña empieza por la partida guiada (se puede saltar). */
 const withTutorial = (begin: () => void) => (tutorialDone() ? begin() : startTutorial(begin));
@@ -36,7 +52,7 @@ export function confirmAbandon(then: () => void): void {
   };
 }
 
-export function renderHome(): void {
+export function renderHome(face: Locale = LOCALE): void {
   const saved = savedCampaign();
   const date = today();
   const dailyDone = meta.daily.date === date;
@@ -50,8 +66,7 @@ export function renderHome(): void {
   <div class="home">
     <section class="home-left">
       ${hero()}
-      <h1 class="title" aria-label="${TITLE} · ${SUBTITLE}">${TITLE.split(' ').map((w, i) => `<span${i ? ' class="cut"' : ''}>${cap(w)}</span>`).join('')}</h1>
-      <p class="tagline">${SUBTITLE}</p>
+      ${brandLockup(face)}
     </section>
     <section class="home-right">
       ${saved ? `<button class="resume" id="resume"><small>${wonRun ? 'Campaña ganada' : 'Seguir donde lo dejaste'}</small><b>${wonRun ? 'Ver la crónica' : 'Continuar campaña'}</b><span>${resumeSub}</span></button>` : ''}
@@ -150,12 +165,12 @@ export function renderCamp(): void {
         <h3 class="sec">Tu surtido</h3>
         <p class="note">Lo que has abierto en la Orden no te hace más fuerte: te da más con qué conspirar.</p>
         <ul class="kit">
-          <li>${glyphSvg('relicario', 'ico')}<div><b>${probe.toolPool.length} reliquias</b><span>pueden salir en el Mercado clandestino y en los botines. Llevas 6, y su orden importa.</span></div></li>
+          <li>${glyphSvg('relicario', 'ico')}<div><b>${probe.toolPool.length} reliquias</b><span>pueden salir en la Taberna y en los botines. Llevas 6, y su orden importa.</span></div></li>
           <li>${glyphSvg('sello', 'ico')}<div><b>Sellos de lacre</b><span>${probe.seals.map((s) => SEAL[s].name.replace('Sello de lacre ', '').replace('Sello ', '')).join(', ')}.</span></div></li>
           <li>${glyphSvg('forja', 'ico')}<div><b>Acabados</b><span>${probe.treats.map((t) => TREATMENT[t].name).join(', ')}.</span></div></li>
           <li>${glyphSvg('incognita', 'ico')}<div><b>${probe.pool.length} cartas especiales</b><span>${legends ? `${legends} de ellas legendarias, raras de ver.` : 'Las legendarias se ganan derrotando monarcas.'}</span></div></li>
           <li>${glyphSvg('jefe', 'ico')}<div><b>Monarcas</b><span>${BOSSES.length} posibles; el mapa te dice desde el principio cuáles te tocan.</span></div></li>
-          <li>${glyphSvg('oro', 'ico')}<div><b>${probe.gold} de oro</b><span>para empezar${probe.up.vale ? ` · ${probe.up.vale} «Renovar mesa» gratis por Mercado` : ''}${probe.up.tienda ? ' · una reliquia más en oferta' : ''}${probe.up.rutas ? ' · tres rutas por asalto' : ''}.</span></div></li>
+          <li>${glyphSvg('oro', 'ico')}<div><b>${probe.gold} de oro</b><span>para empezar${probe.up.vale ? ` · ${probe.up.vale} «Renovar mesa» gratis en cada Taberna` : ''}${probe.up.tienda ? ' · una reliquia más en oferta' : ''}${probe.up.rutas ? ' · tres rutas por asalto' : ''}.</span></div></li>
         </ul>
         </div>
         <div class="row"><button id="guild">Abrir la Orden</button></div>

@@ -109,7 +109,7 @@ function toolSheet(id: string): Sheet | null {
 }
 
 function bossSheet(id: string): Sheet | null {
-  if (id === 'ferretero') return { art: portraitEl('ferretero', 'El Tratante'), kicker: 'Personaje', name: 'El Tratante', epi: bossFlavor('ferretero'), rules: 'Tras cada asalto abre el Mercado clandestino: reliquias, sobres, lacre y pergaminos. No fía.', rows: [] };
+  if (id === 'ferretero') return { art: portraitEl('ferretero', 'El Tratante'), kicker: 'Personaje', name: 'El Tratante', epi: bossFlavor('ferretero'), rules: 'Tras cada asalto abre la Taberna: reliquias, sobres, lacre y pergaminos. No fía.', rows: [] };
   const b = BOSS[id];
   if (!b) return null;
   const beaten = meta.seen.bosses.includes(id);

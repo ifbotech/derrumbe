@@ -4,7 +4,7 @@
 //
 // Con él se juega una campaña de principio a fin sin tocar teclado ni ratón: portada → preparación
 // → mapa → un asalto entero (el bot de referencia decide la jugada; el mando la ejecuta) → Botín →
-// Mercado clandestino, donde se reordenan las reliquias (A sobre A, y LB / RB con el foco en la
+// La Taberna, donde se reordenan las reliquias (A sobre A, y LB / RB con el foco en la
 // reliquia) y se sella una carta en la Mesa de lacre, y un Secreto de la cripta. Por el camino abre y
 // cierra cada ventana (mazo, ajustes, reglas, Lupa) para comprobar que ninguna atrapa el foco, descarta
 // con L3, pide pantalla completa con R3, mide que el foco responda en menos de 50 ms (también mientras
@@ -13,6 +13,7 @@
 // y cierra un susurro con «No mostrar más». Al final, en una mesa con seis reliquias, LB / RB las
 // reordenan en pleno combate y la cuenta del golpe sigue el orden nuevo.
 import type { Browser, Page } from 'playwright';
+import { BRAND } from '../src/shared/brand';
 import { NAME_SHIM } from './web';
 
 export const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, SELECT: 8, START: 9, L3: 10, R3: 11, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
@@ -297,7 +298,8 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
 }
 
 export async function gamepadSuite(browser: Browser, url: string, check: Check, problems: string[], shot: (page: Page, name: string) => Promise<unknown>): Promise<void> {
-  const context = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  // La marca sale de navigator.language: se fija el español para ver siempre «SANGRE Y PALO».
+  const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES' });
   await context.addInitScript({ content: NAME_SHIM });
   await context.addInitScript({ content: VIRTUAL_GAMEPAD });
   const page = await context.newPage();
@@ -314,6 +316,12 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   const B = () => press(page, BTN.B);
 
   // ── portada → preparación ──
+  {
+    // el título se compone en versalitas por CSS: se lee su nombre accesible, y el sello tal cual
+    const title = await page.locator('.home h1.title').getAttribute('aria-label');
+    const seal = (await page.locator('.home .brand-seal .seal-ribbon').textContent())?.trim();
+    check(title === BRAND.es.title && seal === BRAND.es.seal,`la portada enseña la marca dual: «${BRAND.es.title}» con el sello «${BRAND.es.seal}»`);
+  }
   await press(page, BTN.DOWN);
   check((await inputMode(page)) === 'pad', 'el primer toque del mando cambia las indicaciones a botones');
   check(await focusOn(page, '#m-camp'), 'la cruceta lleva el foco a «Campaña» en la portada');
@@ -597,10 +605,10 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     check(await focusOn(page, '#picks .choice.pick'), 'en el Botín, el foco llega a la selección');
     await A();
     await page.waitForTimeout(300);
-    check((await run(page))?.phase === 'shop', 'A elige la carta y abre el Mercado clandestino');
+    check((await run(page))?.phase === 'shop', 'A elige la carta y abre La Taberna');
   }
 
-  // ── Mercado clandestino: reordenar las reliquias y sellar una carta en la Mesa de lacre ──
+  // ── La Taberna: reordenar las reliquias y sellar una carta en la Mesa de lacre ──
   if ((await run(page))?.phase === 'shop') {
     await page.evaluate(() => (window as unknown as QaWindow).__qa.boost());
     const tools = (await run(page))!.tools;
@@ -614,7 +622,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     check(await focusOn(page, '.run-belt .belt-slot[data-slot="0"]'), 'el foco vuelve al primer hueco');
     await press(page, BTN.RB);
     await page.waitForTimeout(250);
-    check((await run(page))!.tools.slice(0, 2).join() === tools.slice(0, 2).join(), 'en el Mercado clandestino, RB mueve la reliquia enfocada a la derecha');
+    check((await run(page))!.tools.slice(0, 2).join() === tools.slice(0, 2).join(), 'en La Taberna, RB mueve la reliquia enfocada a la derecha');
     check(await active(page, `.run-belt .belt-slot[data-slot="1"][data-id="${reordered[0]}"]`), 'el foco viaja con la reliquia a su hueco nuevo');
     check(await ringOk(page), 'y el marco de latón la sigue');
     await press(page, BTN.LB);
@@ -655,8 +663,13 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     check(await focusOn(page, '.pending-modal .card.pickable'), 'y vuelve a una carta elegible');
     check(await ringOk(page), 'con el marco de latón sobre la carta');
     await A();
-    await page.waitForTimeout(400);
-    check((await run(page))!.marks === marks + 1, 'A estampa el lacre en la carta elegida');
+    // el lacre se estampa tras su animación: se sondea hasta 2 s en vez de una espera fija
+    let stamped = false;
+    for (let t = 0; t < 20 && !stamped; t++) {
+      await page.waitForTimeout(100);
+      stamped = (await run(page))!.marks === marks + 1;
+    }
+    check(stamped, 'A estampa el lacre en la carta elegida');
     await shot(page, 'mando-lacre');
     await B();
     await page.waitForTimeout(200);

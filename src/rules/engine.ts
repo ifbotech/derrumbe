@@ -1,4 +1,4 @@
-// CORONA ROTA — motor de reglas puro (sin dependencias, determinista con semilla).
+// Motor de reglas puro (sin dependencias, determinista con semilla).
 // Lo usan el servidor (autoridad), el cliente (validar y previsualizar jugadas), el bot y los tests.
 //
 // Cada golpe se resuelve en dos ejes, de izquierda a derecha:

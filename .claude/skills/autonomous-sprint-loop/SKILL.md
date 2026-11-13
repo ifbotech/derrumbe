@@ -1,11 +1,11 @@
 ---
 name: autonomous-sprint-loop
-description: Bucle autónomo de versiones de CORONA ROTA (V7 a V10). Explica scripts/estudio-autonomo.ps1 y ROADMAP_V5_V10.md, cómo se escribe una especificación con celdas, las puertas de CPU y de GPU, y cuándo una versión se etiqueta o se aparta. Úsala para lanzar el bucle, retomarlo, preparar la especificación de una versión o entender por qué una se rechazó.
+description: Bucle autónomo de versiones de SANGRE Y PALO (V7 a V10). Explica scripts/estudio-autonomo.ps1 y ROADMAP_V5_V10.md, cómo se escribe una especificación con celdas, las puertas de CPU y de GPU, y cuándo una versión se etiqueta o se aparta. Úsala para lanzar el bucle, retomarlo, preparar la especificación de una versión o entender por qué una se rechazó.
 ---
 
 # Bucle autónomo de sprints
 
-Una versión de CORONA ROTA es un sprint con tema. El bucle las construye una tras otra sin nadie delante y solo deja pasar la que no empeora.
+Una versión de SANGRE Y PALO es un sprint con tema. El bucle las construye una tras otra sin nadie delante y solo deja pasar la que no empeora.
 
 | Pieza | Dónde |
 |---|---|
@@ -25,7 +25,7 @@ Una versión de CORONA ROTA es un sprint con tema. El bucle las construye una tr
 | V9 | Cooperativo pulido, `balance-config.json` con autoajuste y telemetría con la privacidad primero |
 | V10 | Candidata a lanzamiento con funciones congeladas: accesibilidad, preparación para traducir y empaquetado para Steam / Tauri v2 |
 
-La V6 (el cambio de tema, de obra y demolición a la conjura de CORONA ROTA) ya está hecha: el bucle arranca en la V7. Su ley está en `SPECS/V6-normas-y-glosario.md`, y las especificaciones nuevas escriben con ese vocabulario.
+La V6 (el cambio de tema, de obra y demolición a la conjura) ya está hecha; desde la 6.1 el juego se llama SANGRE Y PALO · BLOOD & SUITS y la tienda, La Taberna: el bucle arranca en la V7. Su ley está en `SPECS/V6-normas-y-glosario.md`, y las especificaciones nuevas escriben con ese vocabulario.
 
 ## Lanzarlo
 
@@ -63,7 +63,7 @@ Parámetros que importan:
    | humo | `npm run qa:smoke` | «Todo en orden», mando virtual incluido | `juice-ux` |
 
 4. **Cierre**: las celdas `director` corren ahora, con las medidas de las puertas delante, y escriben el registro de cambios.
-5. **Commit candidato** `CORONA ROTA {n}.0: <tema>`, con la autoría de quien lanza el bucle.
+5. **Commit candidato** `SANGRE Y PALO {n}.0: <tema>`, con la autoría de quien lanza el bucle.
 6. **Puerta de GPU**: snapshot del commit y corrida del panel (`python -m panel_gaming run --preset v6-completo --commit-esperado <sha> --comparar-con <corrida anterior>`). Mientras corre, la sala `QA-3090` enseña la última línea de su avance (`node %USERPROFILE%\.claude\dungeon_hook.mjs set QA-3090 working "…"`), y al acabar queda en `done` con la aprobación y la claridad.
 7. **Veredicto**: compara **aprobación por persona** y **claridad media** con la versión anterior.
    - Sin regresión: `git merge --ff-only`, etiqueta `v{n}.0.0` (con el veredicto en su nota) y, con `-Publicar`, push.

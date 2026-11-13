@@ -1,4 +1,4 @@
-/* DERRUMBE — taller de grabado. Última capa de estilos.
+/* SANGRE Y PALO — taller de grabado. Última capa de estilos.
    · Paleta de estampa para sesiones largas: mesa de pizarra templada, cartulina de marfil y tintas
      de taller. Nada es blanco puro ni negro puro.
    · La mesa de combate: torres en alzado, placas de inmunidad, poderes de palo, andamio y tiza.
@@ -953,7 +953,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
   .tower .fx { overflow-wrap: normal; hyphens: manual; line-height: 1.05; }
 }
 
-/* ═════════════ V6 · CORONA ROTA · GRABADO ═════════════
+/* ═════════════ V6 · GRABADO ═════════════
    Los títulos dejan la gótica: «Sepultados» se leía «SEPUETADOS». Pasan a una romana de inscripción
    tallada (Cinzel, OFL), de palo grueso y en versales y versalitas, que se lee letra a letra.
    Las cifras siguen saliendo de 'Corona Cifras' (va primera en la pila). */
@@ -980,6 +980,37 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 .og-card .title { font-size: 74px; line-height: 0.95; letter-spacing: 0.04em; }
 .og-card .title span { display: block; }
 .og-card p { font-size: 25px; }
+
+/* ── 6.1 · candado de la marca dual ──
+   El título del idioma en dos renglones (la primera palabra en papel; el resto en lacre) y, cosida
+   bajo el segundo, una cinta grabada en lacre oscuro que cierra un sello de lacre con la corona en
+   relieve: lleva el nombre del otro idioma. Romana en versales, sin cifras; papel sobre lacre ≈ 9:1.
+   Quieta: ni animación ni filtros. Vale para las dos caras («SANGRE Y PALO», «BLOOD & SUITS»). */
+.home-left .title { font-size: min(8.4vw, 16.5vh); }
+.brand-seal { position: relative; z-index: 1; align-self: flex-start; display: flex; align-items: center; margin: calc(-1 * clamp(2px, 0.8vh, 10px)) 0 0 clamp(14px, 2.6vw, 44px); font-size: clamp(14px, 2.3vh, 22px); transform: rotate(-2.5deg); transform-origin: 0 50%; }
+.brand-seal .brand-wax { position: relative; z-index: 1; flex: none; width: 2.7em; height: 2.7em; filter: none; }
+.brand-seal .brand-wax .rd { fill: var(--red); }
+.brand-seal .seal-ribbon {
+  margin-left: -1em;
+  padding: 0.34em 1.7em 0.36em 1.5em;
+  font-family: var(--title);
+  font-weight: 700;
+  font-size: 1em;
+  line-height: 1.1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--card-paper);
+  background:
+    linear-gradient(rgba(234, 224, 206, 0.5), rgba(234, 224, 206, 0.5)) 0 4px / 100% 1px no-repeat,
+    linear-gradient(rgba(234, 224, 206, 0.5), rgba(234, 224, 206, 0.5)) 0 calc(100% - 4px) / 100% 1px no-repeat,
+    #7d1a13;
+  border-block: 2px solid var(--pit);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.8em) 50%, 100% 100%, 0 100%);
+}
+/* tarjeta para compartir: la cinta, a la medida del título de 74 px */
+.og-card .brand-seal { font-size: 24px; margin: -4px 0 4px 8px; }
+.og-card .tagline { margin: 0; }
 
 /* ── los cuatro tronos ──
    Cabecera con el nombre de la casa (romana tallada) y su palo; el escudo de armas de inmunidad con el palo
@@ -1041,7 +1072,8 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
      tapar el título media sala. El alto de la sala sigue al ancho: 0,5 × ancho enseña del lienzo
      y ≈ 100 hacia abajo, con las cuatro pintas enteras. */
   .home-left { min-height: 0; padding: 10px 14px 0; gap: 6px; }
-  .home-left .title { font-size: min(10.2vw, 44px); white-space: nowrap; line-height: 1; }
+  .home-left .title { font-size: min(9.4vw, 40px); white-space: nowrap; line-height: 1; }
+  .brand-seal { font-size: 14px; margin: -2px 0 0 6px; }
   .home-left .title span { display: inline-block; }
   .home-left .title span + span { margin-left: 0.32em; }
   .home-left .tagline { font-size: 14px; }

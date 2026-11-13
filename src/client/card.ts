@@ -1,4 +1,4 @@
-// Baraja de CORONA ROTA — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
+// Baraja del juego — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
 // líneas talladas en color papel, tintas planas por palo y textura de imprenta.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
 import { Card, CardSuit, MATERIAL, RANK_LABEL, SEAL, Seal, Suit, TREATMENT, Treatment } from '../rules/engine';

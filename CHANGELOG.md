@@ -1,6 +1,31 @@
 # Registro de cambios
 
-Todas las versiones notables de CORONA ROTA (hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`); las del panel salen de una simulación con n = 240 y tienen unos ±6 puntos de ruido.
+Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
+
+## 6.1.0 — 2026-11-13
+
+Marca dual y La Taberna. Sin cambios de reglas. Motivo: el usuario no quería «CORONA ROTA» como título, y un nombre en cada idioma sirve a la vez a la mesa rioplatense y a la búsqueda en Steam.
+
+### Marca
+- Dos caras, una marca: en español, **SANGRE Y PALO** con el sello «BLOOD & SUITS»; en cualquier otro idioma, **BLOOD & SUITS** con el sello de origen «SANGRE Y PALO». Lemas: «La conjura de los naipes» y «A card conspiracy against the court».
+- Todo sale de `src/shared/brand.ts` (`BRAND`, `brandLocale`, `LOCALE`, `TITLE`, `SEAL`, `SLUG`). La cara se elige por el idioma del navegador; fuera del navegador (pruebas, scripts, servidor), la española.
+- Portada: candado de grabado con el título en grande y, cosida debajo, una cinta de lacre con el otro nombre y su sello. Estado de QA nuevo `portada-en` para la cara inglesa.
+- `index.html` (`SANGRE Y PALO · Blood & Suits`), descripción y etiquetas `og:`/`twitter:` con los dos títulos; manifest (`Sangre y Palo`); `package.json` (`sangre-y-palo`); tarjeta para compartir regenerada con el candado.
+- Lámina y Crónica con título y sello. Los archivos que se descargan se llaman `sangre-y-palo-…`.
+
+### Vocabulario
+- La tienda pasa de «Mercado clandestino» a **La Taberna** (y la Llave del mercado, a Llave de la Taberna).
+- El final de victoria pasa a llamarse **«Corte vencida»**. La derrota sigue siendo «Conjura deshecha».
+- «corona rota» y «mercado clandestino» entran en la lista prohibida de `tests/vocabulario.test.ts` y de la regla «jerga» de la QA visual.
+- No cambian, a propósito: claves `derrumbe:*`, la semilla de la diaria, el marcador `app: 'derrumbe'` de la copia de seguridad, la dirección `/derrumbe/` y los `id` de datos.
+
+### Pruebas
+- `tests/marca.test.ts`: las dos caras de `BRAND`, `brandLocale` (`es-AR` → es; `en-US` y `pt-BR` → en; sin idioma → es), `index.html`, manifest, `package.json` y la primera línea del README.
+- QA visual, regla nueva «marca»: en `portada` y `portada-en` la cinta dice el otro nombre, mide ≥ 13 px (14 en móvil), va cosida al título y cabe en la ventana.
+- Las pruebas con navegador fijan `locale: 'es-ES'`: el Chromium de Playwright puede venir en inglés.
+- La prueba de humo comprueba la marca dual en la portada y la copia `sangre-y-palo-progreso-AAAA-MM-DD.json`.
+
+Medidas de la 6.1: informe completo del laboratorio sin avisos e **idéntico** al de la 6.0 (`node artifacts/v6/comparar-meta.mjs`); 188 pruebas en verde; QA visual con 28 estados × 4 ventanas = 112 capturas y cero fallos; prueba de humo con 164 comprobaciones, «Todo en orden» en dos pasadas seguidas. El panel no ha medido todavía la 6.1: su auditoría de 60 personas es la línea base de la V7.
 
 ## 6.0.0 — 2026-11-12
 

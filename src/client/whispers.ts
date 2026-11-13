@@ -24,7 +24,7 @@ const TEXT: Record<WhisperId, string> = {
   andamio: `<b>Viene un Contraataque fuerte:</b> guarda en La Manga${hint('stash')} la carta que no quieras gastar; al reponer robas una más.`,
   limpio: '<b>Golpe exacto:</b> si golpeas ahora no hay Contraataque, cobras 1 de oro y robas una carta más.',
   forja: '<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.',
-  atajo: '<b>Atajo:</b> te saltas el asalto sin Botín ni Mercado clandestino, pero te llevas «{tag}».',
+  atajo: '<b>Atajo:</b> te saltas el asalto sin Botín ni Taberna, pero te llevas «{tag}».',
   jefe: '<b>Monarca:</b> {who} impone un decreto en este asalto. Su ficha de la barra te lo recuerda.',
   fatiga: '<b>Asedio final:</b> desde ahora tus golpes llevan más Multi, pero los Contraataques pegan más fuerte.',
   cantera: '<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte y pierdes {loss} de Vida. El Escudo no lo frena.',

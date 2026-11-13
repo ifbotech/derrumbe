@@ -1,4 +1,4 @@
-/* DERRUMBE — causa del derrumbe, acta de demolición, lámina compartible y aviso de semilla (arte-ui B).
+/* SANGRE Y PALO — causa de la derrota, crónica, lámina compartible y aviso de semilla (arte-ui B).
    Va después de theme.css y de cuenta.css.
    · Cifras en Archivo Black o en sans de peso alto, tabular-nums y sobre placa. Nunca en gótica.
    · La causa se pinta igual sobre tinta (mesa, final clásico) y sobre papel (acta): cambian sus dos tintas. */
@@ -42,7 +42,7 @@
 .acta-sheet h1 { font-size: min(9vw, 12vh); }
 .acta-sheet .acta-stats { font-size: clamp(13px, 1.65vh, 16px); }
 .acta-sheet .acta-stats td + td { font-variant-numeric: tabular-nums; }
-/* cabecera: el sello (Corona rota / Deshecha) entra en la rejilla, en la fila de las fichas y a su
+/* cabecera: el sello (Corte vencida / Deshecha) entra en la rejilla, en la fila de las fichas y a su
    derecha, en vez de flotar encima de ellas. Así nunca pisa la ficha de la baraja ni el título
    (lo comprueba la regla «cabecera» de la QA visual). */
 .end.acta .acta-sheet { grid-template-columns: minmax(0, 1fr) auto; }

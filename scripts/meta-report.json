@@ -1,7 +1,7 @@
 {
  "generated": "npm run analyze:meta",
  "quick": false,
- "rules": "4ce9fc7bf2975d05",
+ "rules": "1f35e8832ffbad09",
  "curses": {
   "doble": "Doble Contraataque",
   "escasez": "Escasez",

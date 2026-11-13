@@ -121,7 +121,7 @@ La mesa te lo avisa antes de golpear: la previsualización de cada trono dice si
 - **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *${tool('pasarela')}* añade un segundo hueco. En la partida guiada no hay Manga.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
-- **Victoria** (*Corona rota*): los cuatro tronos caídos. **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
+- **Victoria** (*Corte vencida*): los cuatro tronos caídos. **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
 - Modo **BRUTAL** (Asalto único): ${DIFFICULTY.brutal.maxIntegrity} de Vida y el Mazo agotado quita ${DIFFICULTY.brutal.collapseLoss}.
 - **Asalto único en conjura de varios**: lo que quita el Mazo agotado se ajusta a cuántos jugáis, porque con más manos el Mazo se acaba antes: ${[1, 2, 3, 4].map((p) => `${cfg.collapseLoss - (cfg.collapseRelief?.[p - 1] ?? 0)} con ${p}`).join(', ')}.
 
@@ -138,7 +138,7 @@ En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuál es su decreto. En los asaltos sin monarca eliges:
 
 - una **ruta** (dos a elegir; tres con el ${up('rutas')} de la Orden), cada una con su **Juramento**;
-- o el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Mercado clandestino) a cambio de un **Atajo de conspirador**.
+- o el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Taberna) a cambio de un **Atajo de conspirador**.
 
 **Juramentos.** Los normales piden una condición y pagan si la cumples; los de **riesgo** endurecen el asalto y pagan siempre que lo ganes.
 
@@ -156,7 +156,7 @@ ${table(['Monarca', 'Decreto', 'Efecto'], BOSSES.map((b) => [b.who, b.name, b.de
 
 Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada 5 de oro guardado), recuperas 4 de Vida y eliges **una de tres opciones a la vista** —dos cartas especiales y una carta de baraja ya marcada con un sello de lacre o un acabado— o pasas a cambio de 3 de oro.
 
-### El Mercado clandestino
+### La Taberna
 
 Lo atiende el Tratante.
 
@@ -261,7 +261,7 @@ function balanceMd(r: Report): string {
   const levels = r.winrate.levels.filter((l) => l.n);
   const decks = r.winrate.decks.filter((d) => d.n);
   return [
-    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, Mercado clandestino, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
+    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Taberna, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
     `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 entre el 24 y el 30 % con la Orden vacía y entre el 40 y el 48 % con la Orden llena; Reinado 8 entre el 6 y el 9 % con la Orden vacía y entre el 12 y el 17 % con la Orden llena; y cada Reinado, más difícil que el anterior.`,
     '',

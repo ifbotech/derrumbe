@@ -1,6 +1,6 @@
 ---
 name: playwright-deck-qa
-description: Control de calidad de CORONA ROTA con Playwright. Auditoría del DOM (cajas, desplazamiento, recortes, tipografía, dianas, jerga del tema viejo) en todos los estados fijos y en las cuatro ventanas, incluida la de Steam Deck, más una campaña entera jugada con un mando virtual W3C. Úsala antes de dar por buena cualquier pantalla o cambio de entrada, y para añadir un estado o una comprobación.
+description: Control de calidad de SANGRE Y PALO con Playwright. Auditoría del DOM (cajas, desplazamiento, recortes, tipografía, dianas, jerga del tema viejo) en todos los estados fijos y en las cuatro ventanas, incluida la de Steam Deck, más una campaña entera jugada con un mando virtual W3C. Úsala antes de dar por buena cualquier pantalla o cambio de entrada, y para añadir un estado o una comprobación.
 ---
 
 # QA de mesa y de Steam Deck
@@ -37,7 +37,7 @@ Capturas en `artifacts/visual-qa/<ventana>/<estado>.png`; resumen en `artifacts/
 
 Viven en `src/client/qa.ts` y en la lista `ALL` de `scripts/visual-qa.ts`. **Los nombres de los estados son identificadores y no cambian con el tema**; entre paréntesis, qué pantalla es cada uno hoy:
 
-- Base: `portada`, `preparacion`, `mesa`, `lupa`, `lupa-herramienta` (Lupa sobre una reliquia), `lupa-piso` (Lupa sobre un guardia), `lupa-especial`, `mazo`, `plano` (Mapa del castillo), `cobro` (Botín), `ferreteria` (Mercado clandestino), `forja` (Mesa de lacre), `hallazgo` (Secreto de la cripta), `gremio` (La Orden), `coleccion`, `archivo` (Archivo de crónicas), `acta` (Crónica), `ajustes`, `reglas`, `mesa-mando`, `mesa-susurro` (un Susurro sobre la mesa), `mesa-fatiga` (Asedio final).
+- Base: `portada`, `preparacion`, `mesa`, `lupa`, `lupa-herramienta` (Lupa sobre una reliquia), `lupa-piso` (Lupa sobre un guardia), `lupa-especial`, `mazo`, `plano` (Mapa del castillo), `cobro` (Botín), `ferreteria` (La Taberna), `forja` (Mesa de lacre), `hallazgo` (Secreto de la cripta), `gremio` (La Orden), `coleccion`, `archivo` (Archivo de crónicas), `acta` (Crónica), `ajustes`, `reglas`, `mesa-mando`, `mesa-susurro` (un Susurro sobre la mesa), `mesa-fatiga` (Asedio final).
 - Desde la 5.0: `mesa-cuenta` (recibo desplegado), `mesa-peligro` (aviso de último turno) y `acta-derrota` (causa de la Conjura deshecha).
 
 Para añadir uno: una entrada en `qa.ts` que monte el estado **de forma determinista** (semilla fija, sin `Date`, sin azar) y su nombre en `ALL`. Si tiene que caber sin desplazamiento, también en `NO_SCROLL`.
@@ -68,7 +68,7 @@ La auditoría es necesaria y no suficiente: **abre las capturas**. Una cifra ile
 Toda acción del mando tiene su comprobación en la campaña de humo. Las de la 5.0 (siguen vigentes):
 
 - **L3** descarta lo elegido (la mano cambia y suena el Contraataque).
-- **LB / RB** con el foco en las reliquias las mueven a izquierda y derecha; fuera de ellas siguen abriendo Mazo y Lupa. La prueba de humo lo comprueba **en el Mercado clandestino y también en combate**, sobre la mesa, con seis reliquias: RB mueve la reliquia enfocada un hueco a la derecha, LB a la izquierda, y ninguna de las dos abre la Lupa.
+- **LB / RB** con el foco en las reliquias las mueven a izquierda y derecha; fuera de ellas siguen abriendo Mazo y Lupa. La prueba de humo lo comprueba **en la Taberna y también en combate**, sobre la mesa, con seis reliquias: RB mueve la reliquia enfocada un hueco a la derecha, LB a la izquierda, y ninguna de las dos abre la Lupa.
 - **R3** pide pantalla completa (se comprueba la llamada; sin ventana no hay modo real).
 
 Al añadir una acción: botón en `BUTTONS` de `nav.ts`, fila en `CONTROLS` de `prompts.ts`, comprobación en `gamepad-qa.ts` y `npm run docs` para la tabla del README.

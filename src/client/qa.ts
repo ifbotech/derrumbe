@@ -1,5 +1,5 @@
 // Control de calidad visual. Solo se carga si la dirección lleva ?qa: monta a mano, y siempre igual,
-// los estados que fotografía scripts/visual-qa.ts (mesa llena, lupa, mapa, mercado, mesa de lacre…).
+// los estados que fotografía scripts/visual-qa.ts (mesa llena, lupa, mapa, Taberna, mesa de lacre…).
 // Nada de lo que pasa aquí se guarda: el guardado queda desactivado mientras dura la sesión.
 import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
@@ -10,8 +10,9 @@ import { TOOLS } from '../rules/tools';
 import { hero } from './art';
 import { prefs } from './campaign';
 import { cardEl } from './card';
-import { SUBTITLE, TITLE } from '../shared/brand';
-import { RUN_PLAYER, S, app, cap } from './core';
+import { FULL_TITLE } from '../shared/brand';
+import { RUN_PLAYER, S, app } from './core';
+import { brandLockup, renderHome } from './home';
 import { archive, meta, openGuild } from './guild';
 import { openLupa } from './lupa';
 import { InputMode, setMode } from './nav';
@@ -125,6 +126,13 @@ const STATES: Record<string, () => void | Promise<void>> = {
     clean();
     S.campaign = null;
     setScreen('home');
+  },
+  // la otra cara de la marca (BLOOD & SUITS con el sello SANGRE Y PALO), sin depender del idioma del navegador
+  'portada-en': () => {
+    clean();
+    S.campaign = null;
+    setScreen('home');
+    renderHome('en');
   },
   preparacion: () => {
     clean();
@@ -265,7 +273,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
       daily: null,
       online: false,
       gain: won ? 13 : stage - 1,
-      text: `${TITLE} · Crónica`,
+      text: `${FULL_TITLE} · Crónica`,
       death,
     });
     archive.push(
@@ -326,10 +334,11 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(run);
     setScreen('run');
   },
-  // la crónica de una campaña ganada: sello «Corona rota», el más ancho, junto a la ficha de la baraja y el Reinado
+  // la crónica de una campaña ganada: sello «Corte vencida», el más ancho, junto a la ficha de la baraja y el Reinado
   'acta-victoria': () => {
     const run = baseRun(8);
     run.phase = 'won';
+    run.conquered = true; // como en una partida de verdad: la lámina y la crónica copiada lo leen de aquí
     run.stats.turns = 96;
     run.stats.gold = 188;
     run.stats.contracts = 5;
@@ -340,7 +349,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
   og: () => {
     clean();
     S.campaign = null;
-    app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt"><h1 class="title">${TITLE.split(' ').map((w, i) => `<span${i ? ' class="cut"' : ''}>${cap(w)}</span>`).join('')}</h1><p>${SUBTITLE}</p><small>Cuatro tronos · doce guardias · tu Vida · de 1 a 4 jugadores</small></div><div class="og-cards"></div></div>`;
+    // siempre la cara española: es la que enseña el enlace (index.html va en español)
+    app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt">${brandLockup('es')}<small>Cuatro tronos · doce guardias · tu Vida · de 1 a 4 jugadores</small></div><div class="og-cards"></div></div>`;
     const fan = app.querySelector('.og-cards')!;
     ([['S', 13], ['D', 12], ['H', 11], ['C', 13]] as [Suit, number][]).forEach(([suit, rank], i) => {
       const c = cardEl({ id: `og-${suit}`, suit, rank }, { tilt: false });
@@ -385,7 +395,7 @@ export function installQa(): void {
         const run = S.campaign?.run;
         return run ? { phase: run.phase, stage: run.stage, gold: run.gold, tools: run.tools.map((t) => t.id), marks: run.deck.filter((c) => c.seal || c.tr).length, pending: run.pending?.kind ?? null, shop: run.shop.map((o) => o.kind) } : null;
       },
-      /** En el Mercado: oro de sobra y dos reliquias, para probar las Reliquias y la Mesa de lacre sin depender del azar. */
+      /** En la Taberna: oro de sobra y dos reliquias, para probar las Reliquias y la Mesa de lacre sin depender del azar. */
       boost: () => {
         const run = S.campaign?.run;
         if (!run) return false;

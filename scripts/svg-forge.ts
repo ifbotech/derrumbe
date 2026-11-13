@@ -252,7 +252,7 @@ async function main(): Promise<void> {
   ensureBuilt();
   const site = await serveWeb();
   const browser = await chromium.launch();
-  const context = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 1 });
+  const context = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 1, locale: 'es-ES' });
   await context.addInitScript({ content: NAME_SHIM });
   const page = await context.newPage();
   const errors: string[] = [];

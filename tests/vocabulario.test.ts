@@ -55,6 +55,9 @@ const PROHIBIDAS: [string, RegExp][] = [
   ['herramienta', /\bherramienta/],
   ['cinturón', /\bcinturon/],
   ['regicid', /\bregicid/],
+  // desde la 6.1: el título viejo y el nombre viejo de la tienda
+  ['Corona rota (título viejo)', /\bcorona rota\b/],
+  ['Mercado clandestino (hoy La Taberna)', /\bmercado clandestino\b/],
 ];
 
 /**
@@ -238,7 +241,7 @@ function textoHtml(html: string): string[] {
     .filter((l) => /\p{L}/u.test(l));
 }
 
-describe('vocabulario de CORONA ROTA: nada de jerga vieja en lo que se lee', () => {
+describe('vocabulario del juego: nada de jerga vieja en lo que se lee', () => {
   it('el detector reconoce las palabras prohibidas y deja en paz las nuevas', () => {
     expect(prohibidasEn('El búnker aguanta')).toEqual(['búnker']);
     expect(prohibidasEn('Cada golpe limpio suma')).toEqual(['golpe limpio']);
@@ -247,6 +250,9 @@ describe('vocabulario de CORONA ROTA: nada de jerga vieja en lo que se lee', () 
     expect(prohibidasEn('Mazo agotado: pierdes 5 de Vida; el Escudo no lo frena')).toEqual([]);
     // palabra entera: «obrar», «pisotón» o «torreón» no son el piso ni la torre de antes
     expect(prohibidasEn('Maniobra, pisotón y refuerzas')).toEqual([]);
+    expect(prohibidasEn('CORONA ROTA · La conjura')).toEqual(['Corona rota (título viejo)']);
+    expect(prohibidasEn('Todo en el Mercado clandestino')).toEqual(['Mercado clandestino (hoy La Taberna)']);
+    expect(prohibidasEn('Las Coronas de la Orden; en la Taberna, el Tratante')).toEqual([]);
     expect(literales("const a = 'hola mundo'; // 'comentario con torre'\nconst b = `x ${'dentro de plantilla'} y`; const r = /'no'/g;")).toEqual(['hola mundo', 'dentro de plantilla', 'x  ·  y']);
   });
 

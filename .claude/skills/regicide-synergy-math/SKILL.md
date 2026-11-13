@@ -1,11 +1,11 @@
 ---
 name: regicide-synergy-math
-description: Matemática de sinergias y balance de CORONA ROTA. Validación Monte Carlo con el laboratorio (npm run analyze:meta) y pruebas de invariantes anticomplejidad en Vitest. Úsala antes y después de tocar cualquier número de src/rules, al añadir o rediseñar una reliquia, y al juzgar una propuesta de balance.
+description: Matemática de sinergias y balance de SANGRE Y PALO. Validación Monte Carlo con el laboratorio (npm run analyze:meta) y pruebas de invariantes anticomplejidad en Vitest. Úsala antes y después de tocar cualquier número de src/rules, al añadir o rediseñar una reliquia, y al juzgar una propuesta de balance.
 ---
 
 # Matemática de sinergias
 
-El nombre de la carpeta (`regicide-synergy-math`) es el identificador de una herramienta interna y no cambia; el juego se llama CORONA ROTA.
+El nombre de la carpeta (`regicide-synergy-math`) es el identificador de una herramienta interna y no cambia; el juego se llama SANGRE Y PALO.
 
 ## La cuenta del golpe
 

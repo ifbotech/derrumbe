@@ -49,7 +49,7 @@ export function renderPings(): void {
 }
 
 /**
- * Fuera de la mesa (mapa, Botín, Mercado clandestino): quien no decide marca con un clic; quien
+ * Fuera de la mesa (mapa, Botín, La Taberna): quien no decide marca con un clic; quien
  * decide, con Alt + clic. Los tronos de la mesa (.tower) llevan su propia lógica.
  */
 export function bindPings(canDecide: () => boolean): void {

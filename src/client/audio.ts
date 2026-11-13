@@ -1,4 +1,4 @@
-// Sonido de DERRUMBE: todo sintetizado con WebAudio (sin archivos ni dependencias).
+// Sonido del juego: todo sintetizado con WebAudio (sin archivos ni dependencias).
 // Efectos de piedra, hierro y cuerno de guerra, y una marcha en re menor armónico (bordón grave,
 // tambores, laúd, coro, cuernos y campana) que nunca suena dos veces igual: cada vuelta varía la
 // melodía y entran o callan instrumentos según la presión de la obra.
@@ -681,7 +681,7 @@ function schedule(t: number, s: number): void {
   note(out, f, t, 1.1, { type: 'triangle', vol: 0.115 * touch, cutoff: bright }); // laúd
   note(out, f / 2, t, 0.9, { type: 'triangle', vol: 0.05, cutoff: 900 });
   if (loop.echo) note(out, f, t + STEP * 2, 0.8, { type: 'triangle', vol: 0.04, cutoff: 1100 });
-  if (sc.kind === 'shop') note(out, f * 2, t, 0.35, { type: 'sine', vol: 0.03 }); // un punteo agudo, de mercado
+  if (sc.kind === 'shop') note(out, f * 2, t, 0.35, { type: 'sine', vol: 0.03 }); // un punteo agudo, de taberna
   // coro de monjes: solo cuando la obra aprieta (o hay jefe); la misma línea, una octava abajo
   if (sc.kind !== 'shop' && (sc.boss || p > 0.55 || (sc.kind === 'menu' && index % 2 === 1))) {
     const amt = sc.kind === 'menu' ? 0.7 : Math.min(1, 0.5 + p * 0.6);

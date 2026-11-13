@@ -26,6 +26,8 @@
 //             último turno de ≤ 28 px en móvil, o sin quitar altura a los tronos)
 //   jerga     ningún texto visible, data-tip, aria-label, title, placeholder ni alt con una palabra
 //             prohibida de las normas V6 (obra y demolición), sin distinguir mayúsculas ni tildes
+//   marca     en portada y portada-en se leen los dos nombres: el título del idioma y, en la cinta de
+//             lacre cosida a él, el del otro (≥ 13 px, 14 en móvil), con su sello y dentro de la ventana
 //   cabecera  en la crónica (acta, acta-derrota, acta-victoria) el sello, las fichas de la cabecera y los
 //             renglones del título no se pisan entre sí (cajas del DOM)
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -40,11 +42,11 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const STATES = wanted.length ? ALL.filter((s) => wanted.includes(s)) : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro'];
 
 interface Fail {
   regla: string;
@@ -556,6 +558,39 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
 
   // ───────── comprobaciones de otras celdas (arte-ui B, juice-ux): añadid las vuestras aquí, en bloque aparte ─────────
 
+  // ── arte-ui 6.1 · candado de la marca dual: en la portada se leen los dos nombres ──
+  // título del idioma y, en su cinta de lacre, el otro: visibles, dentro de la ventana, sin pisarse,
+  // la cinta ≥ 13 px (14 en móvil) y en romana, y sin tapar las rodelas de los cuatro estandartes
+  if (opts.state === 'portada' || opts.state === 'portada-en') {
+    const want = opts.state === 'portada-en' ? ['BLOOD & SUITS', 'SANGRE Y PALO'] : ['SANGRE Y PALO', 'BLOOD & SUITS'];
+    const norm = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+    const title = document.querySelector('.home-left .title');
+    const ribbon = document.querySelector('.home-left .brand-seal .seal-ribbon');
+    const wax = document.querySelector('.home-left .brand-seal .brand-wax');
+    if (!title || !visible(title)) fail('marca', 'la portada no enseña el título', document.querySelector('.home-left'));
+    // los renglones del título son cajas aparte: se comparan las letras, sin espacios
+    else if (norm(title.textContent).replace(/ /g, '') !== want[0].replace(/ /g, '')) fail('marca', `el título dice «${norm(title.textContent)}» y debía decir «${want[0]}»`, title);
+    if (!ribbon || !visible(ribbon)) fail('marca', 'la portada no enseña la cinta con el otro nombre', document.querySelector('.home-left'));
+    else {
+      if (norm(ribbon.textContent) !== want[1]) fail('marca', `la cinta dice «${norm(ribbon.textContent)}» y debía decir «${want[1]}»`, ribbon);
+      const px = parseFloat(getComputedStyle(ribbon).fontSize) * scaleOf(ribbon);
+      if (px < (opts.mobile ? 13.95 : 12.95)) fail('marca', `la cinta mide ${px.toFixed(1)} px`, ribbon);
+      for (const el of [title, ribbon, wax]) {
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        if (r.left < -1 || r.top < -1 || r.right > W + 1 || r.bottom > H + 1) fail('marca', `${path(el)} se sale de la ventana`, el);
+      }
+      if (title) {
+        const t = title.getBoundingClientRect();
+        const c = ribbon.getBoundingClientRect();
+        // la cinta va cosida al título: pegada (≤ 24 px) pero sin montarse sobre las letras más de 6 px
+        if (c.top - t.bottom > 24) fail('marca', `la cinta queda suelta, a ${Math.round(c.top - t.bottom)} px del título`, ribbon);
+        if (t.bottom - c.top > 6 && Math.min(t.right, c.right) - Math.max(t.left, c.left) > 2) fail('marca', `la cinta pisa ${Math.round(t.bottom - c.top)} px del título`, ribbon);
+      }
+    }
+    if (!wax || !visible(wax)) fail('marca', 'falta el sello de lacre de la cinta', document.querySelector('.home-left .brand-seal'));
+  }
+
   // ── arte-ui B · cuenta central, recibo, aviso de último turno y causa del derrumbe ──
   {
     const box = (el: Element | null) => (el && visible(el) ? el.getBoundingClientRect() : null);
@@ -616,7 +651,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
   }
 
   // ── cabecera de la crónica (V6) ──
-  // en acta, acta-derrota y acta-victoria ningún sello (Corona rota / Deshecha), ficha de la cabecera
+  // en acta, acta-derrota y acta-victoria ningún sello (Corte vencida / Deshecha), ficha de la cabecera
   // (CRÓNICA, baraja · Reinado) ni renglón del título se pisa con otro. Cajas del DOM: el sello girado
   // cuenta con su caja entera; los renglones del título, con la caja de su texto (Range), no la del bloque.
   // Las fichas vecinas comparten el filete (≤ 3 px a propósito): se perdona un solape de hasta 4 px.
@@ -709,7 +744,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
   // ── jerga: ninguna palabra de la obra vieja en lo que lee una persona (normas V6, red 2) ──
   // sin distinguir mayúsculas ni tildes; las raíces cogen sus derivadas, las palabras corrientes van enteras
   const ROOTS = ['derrumbe', 'bunker', 'escombrera', 'cantera', 'ferreteri', 'ferretero', 'andamio', 'hormigon', 'ladrillo', 'vidrio', 'sirena', 'demoli', 'demoler', 'capataz', 'gremio', 'sindical', 'cimiento', 'tiza', 'forja', 'quemador', 'integridad', 'resonancia', 'fractura', 'apuntalad', 'huelga', 'herramienta', 'cinturon', 'regicid'];
-  const WORDS = ['acero', 'obras?', 'pisos?', 'torres?', 'muros?', 'fuerza', 'golpes? limpios?'];
+  // desde la 6.1, también el título viejo y el nombre viejo de la tienda (hoy La Taberna)
+  const WORDS = ['acero', 'obras?', 'pisos?', 'torres?', 'muros?', 'fuerza', 'golpes? limpios?', 'corona rota', 'mercado clandestino'];
   const JERGA = new RegExp(`(?<![\\p{L}\\p{N}])(?:(?:${ROOTS.join('|')})\\p{L}*|(?:${WORDS.join('|')})(?![\\p{L}\\p{N}]))`, 'iu');
   const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '');
   const jerga = (where: string, text: string | null | undefined, el: Element | null) => {
@@ -762,7 +798,7 @@ async function main(): Promise<void> {
     errores: [],
   };
   for (const view of VIEWS) {
-    const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
+    const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, locale: 'es-ES', hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
     // tsx envuelve las funciones con un ayudante que la página no conoce
     await context.addInitScript({ content: NAME_SHIM });
     const page = await context.newPage();

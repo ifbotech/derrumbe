@@ -1,4 +1,4 @@
-/* DERRUMBE 2.0 — pantallas de campaña: gremio, preparación, plano de demolición, cobro,
+/* SANGRE Y PALO — pantallas de campaña: gremio, preparación, plano de demolición, cobro,
    ferretería, hallazgos, acta y visor de mazos. */
 
 /* ───────────── GREMIO Y COLECCIÓN ───────────── */
@@ -266,7 +266,7 @@ h3.sec, .camp-run h3.sec, .col-sec h3.sec { line-height: 1.22; }
   .seed-foot .note { grid-column: 1 / -1; font-size: 14px; }
 }
 
-/* Mercado: los nombres de la romana Cinzel son más anchos; la ficha crece con el título (nada de 2,1em
+/* Taberna: los nombres de la romana Cinzel son más anchos; la ficha crece con el título (nada de 2,1em
    fijos que dejaban el título encima de la descripción) y la palabra larga se parte con guion, no a hachazo */
 .run-body.shop .choice.hang h4 { height: auto; min-height: 2.3em; letter-spacing: 0; overflow-wrap: normal; word-break: normal; hyphens: auto; -webkit-hyphens: auto; }
 .choice h4 { hyphens: auto; -webkit-hyphens: auto; }
@@ -284,7 +284,7 @@ h3.sec, .camp-run h3.sec, .col-sec h3.sec { line-height: 1.22; }
   .camp-run .level-twists { margin: 0; }
 }
 
-/* ── V6 · Mercado clandestino en columnas estrechas ──
+/* ── V6 · La Taberna en columnas estrechas ──
    El nombre de cada oferta en la letra de rótulos (cabe entero: «ESTANDARTE» ya no se parte con guion). */
 @media (min-width: 641px) and (max-width: 1420px) {
   .run-body.shop .choice.hang h4 { font-family: var(--cap); font-weight: 800; font-size: 13px; line-height: 1.15; letter-spacing: 0; text-transform: uppercase; hyphens: manual; overflow-wrap: normal; }

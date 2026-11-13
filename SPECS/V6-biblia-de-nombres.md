@@ -1,4 +1,6 @@
-# CORONA ROTA · biblia de nombres (V6)
+# Biblia de nombres (V6)
+
+> **Desde la 6.1:** el juego se titula **SANGRE Y PALO** (sello **BLOOD & SUITS**; en inglés, al revés), la tienda es **La Taberna** y el final de victoria, **Corte vencida**. Las filas de abajo ya lo dicen.
 
 Fuente única de nombres, descripciones e imágenes para el cambio de tema. Manda el glosario de `SPECS/V6-normas-y-glosario.md`; esta biblia lo baja a cada pieza.
 
@@ -209,7 +211,7 @@ No tienen descripción en los datos: la columna resume qué guardias salen, que 
 |---|---|---|---|---|
 | 0 | Obra limpia | Reinado de paz | Las reglas de siempre. | Corona sencilla de tres puntas. |
 | 1 | Hormigón armado | Corazas finas | Todos los guardias tienen un 5 % más de Vida. | Peto de armadura. |
-| 2 | Precios de obra | Impuesto real | Todo en el Mercado clandestino cuesta 2 de oro más. | Moneda con una corona y una muesca. |
+| 2 | Precios de obra | Impuesto real | Todo en la Taberna cuesta 2 de oro más. | Moneda con una corona y una muesca. |
 | 3 | Vigas maestras | Reyes en guardia | En los asaltos con monarca, los Reyes llegan En guardia. | Corona sobre un escudo. |
 | 4 | Sirena afinada | Rey colérico | El Ataque de los Reyes sube 1. | Corona con una espada atravesada. |
 | 5 | Búnker viejo | Heridas viejas | Tienes 1 punto menos de Vida. | Corazón con un vendaje cruzado. |
@@ -249,7 +251,7 @@ La columna «descripción nueva» lleva la condición y, tras « · », el premi
 
 | id | nombre viejo | nombre nuevo | descripción nueva | imagen que se graba |
 |---|---|---|---|---|
-| vale | Vale de ferretería | Llave del mercado | En el próximo Mercado clandestino, reliquias, sobres y Mesa de lacre son gratis. | Llave pequeña con una moneda en el ojo. |
+| vale | Vale de ferretería | Llave de la Taberna | En la próxima Taberna, reliquias, sobres y Mesa de lacre son gratis. | Llave pequeña con una moneda en el ojo. |
 | envio | Envío urgente | Contrabando | Recibes ya una reliquia Noble o Regia. | Fardo atado con cuerda. |
 | molde | Molde | Molde de cera | Duplicas la carta de tu Mazo que elijas. | Molde de cera con la silueta de un naipe. |
 | liquidacion | Liquidación | Botín escondido | +15 de oro. | Cofre abierto con monedas. |
@@ -286,8 +288,8 @@ Una fila para el secreto (nombre y texto) y una por cada opción (`label` y `des
 |---|---|---|---|---|
 | tampones | Tampones nuevos | Lacres nuevos | La Mesa de lacre también ofrece los sellos de pólvora y de la manga. | Dos barras de lacre cruzadas. |
 | bronce | Taller de bronce | Cristalero real | La Mesa de lacre también ofrece Lacre policromo y Cristal maldito. | Copa de cristal facetado. |
-| vale | Vale de remesa | Favor del Tratante | Un «Renovar mesa» gratis en cada Mercado clandestino, por nivel. | Moneda partida por la mitad. |
-| tienda | Proveedor | Puesto grande | +1 reliquia en oferta en cada Mercado clandestino, por nivel. | Toldo de puesto de mercado. |
+| vale | Vale de remesa | Favor del Tratante | Un «Renovar mesa» gratis en cada Taberna, por nivel. | Moneda partida por la mitad. |
+| tienda | Proveedor | Puesto grande | +1 reliquia en oferta en cada Taberna, por nivel. | Toldo de puesto de mercado. |
 | caja | Caja chica | Bolsa de la Orden | +2 de oro inicial por nivel. | Bolsa con el emblema de la Orden (una daga y una llave). |
 | rutas | Topógrafo | Cartógrafo | Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2. | Rosa de los vientos. |
 
@@ -380,7 +382,7 @@ Las filas `j-*` las genera el código a partir de `BOSSES` (`Trofeo: ${who}`, `D
 
 | id | nombre viejo | nombre nuevo | descripción nueva | imagen que se graba |
 |---|---|---|---|---|
-| shop | Ferretería · el Ferretero | Mercado clandestino · el Tratante | Donde compras reliquias, sobres y lacre. | Farol colgado sobre un toldo. |
+| shop | Ferretería · el Ferretero | La Taberna · el Tratante | Donde compras reliquias, sobres y lacre. | Farol colgado sobre un toldo. |
 | forge | Mesa de forja | Mesa de lacre | Pones sellos de lacre y acabados en tus cartas. | Vela, barra de lacre y sello. |
 | burn | Quemador | La hoguera | Quemas una carta de tu Mazo. | Hoguera pequeña. |
 | reroll | Revolver cajones | Renovar mesa | Cambia lo que hay en oferta. | Dos flechas en círculo. |
@@ -391,7 +393,7 @@ Las filas `j-*` las genera el código a partir de `BOSSES` (`Trofeo: ${who}`, `D
 | undo | Tiza | Rebobinar | Deshace la última jugada del turno. | Flecha curva hacia atrás. |
 | guild | Gremio · renombre | La Orden · Coronas | Tu progreso entre campañas y su moneda. | Escudo de la Orden: daga y llave cruzadas. |
 | acta | Acta de demolición | Crónica | El resumen de una campaña terminada. | Libro con un marcapáginas. |
-| end-win | Demolido | Corona rota | Has ganado. | Corona partida en dos. |
+| end-win | Demolido | Corte vencida | Has ganado. | Corona partida en dos. |
 | end-lose | Sepultados | Conjura deshecha | Has perdido. | Daga rota. |
 | guide | Capataz (guía) · marcas de tiza | La Maestra · señas | La que te enseña; las marcas que te deja en la mesa. | Mano señalando con el índice. |
 

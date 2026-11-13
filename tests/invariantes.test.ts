@@ -1,4 +1,4 @@
-// Constitución anticomplejidad de CORONA ROTA. Si un cambio rompe una de estas pruebas, el cambio está mal:
+// Constitución anticomplejidad del juego. Si un cambio rompe una de estas pruebas, el cambio está mal:
 // no se sube el límite, se simplifica otra cosa.
 //
 //   · como mucho 6 palabras clave y 56 reliquias (TOOLS), con identificadores únicos

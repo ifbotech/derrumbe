@@ -5,7 +5,7 @@ La V6 cambia el tema entero del juego —de obra y demolición a **conjura contr
 ## 0. Tres reglas que mandan sobre todo lo demás
 
 1. **Ni una cuenta cambia.** Mismos identificadores (`id` de herramientas, especiales, jefes, barajas, contratos, sellos, tratamientos, niveles), mismos números, mismas fórmulas, mismo protocolo de red. Solo cambian nombres, descripciones, textos, arte y sonido. Al final, `npm run analyze:meta` tiene que dar **exactamente** los mismos porcentajes que el informe de la 5.0 (`git show HEAD:scripts/meta-report.json`): si un número se mueve, alguien tocó una regla.
-2. **Título propio.** El juego se llama **CORONA ROTA** y vive en `src/shared/brand.ts` (`TITLE`, `SUBTITLE`): nadie escribe el título a mano en otro sitio. No se usa «Regicidio» / «Regicide» como título ni en ningún texto: es el nombre de un juego comercial que ya existe. Por lo mismo no se copian sus nombres propios: la tienda es «Mercado clandestino» (no «la Taberna»), el comodín es «Comodín» y su jugada «Motín» (no «Bufón»), y el as que acompaña es «As cómplice».
+2. **Título propio.** **Desde la 6.1:** el juego estrena marca dual —**SANGRE Y PALO** en español, con el sello **BLOOD & SUITS**; **BLOOD & SUITS** en inglés, con el sello **SANGRE Y PALO**— definida en `src/shared/brand.ts` (`BRAND`, `TITLE`, `SEAL`), y la tienda se llama **La Taberna**: es lo que pidió el usuario, y su texto manda sobre la nota de la V6 que sigue. Hasta la 6.0, el juego se llamaba **CORONA ROTA** y vivía en `src/shared/brand.ts` (`TITLE`, `SUBTITLE`): nadie escribe el título a mano en otro sitio. No se usa «Regicidio» / «Regicide» como título ni en ningún texto: es el nombre de un juego comercial que ya existe. Por lo mismo no se copian sus nombres propios: la tienda fue «Mercado clandestino» hasta la 6.0 (hoy es La Taberna, por decisión del usuario), el comodín es «Comodín» y su jugada «Motín» (no «Bufón»), y el as que acompaña es «As cómplice».
 3. **Lo entiende un niño de ocho años en dos segundos.** Palabras de baraja y de cuento: Picas, Corazones, Vida, Escudo, Mazo, Descarte. Si un texto necesita explicación, está mal escrito. Tono: oscuro y de conjura, nunca gore; nada de sangre explícita ni de ejecuciones descritas.
 
 ## 1. Lo que NO se renombra (identificadores internos)
@@ -19,7 +19,7 @@ Sí cambia **todo lo que lee una persona**: textos en pantalla, globos de ayuda,
 ### Marca
 | Antes | Ahora |
 |---|---|
-| DERRUMBE | **CORONA ROTA** (`TITLE`) · lema `SUBTITLE`: «La conjura de los naipes» |
+| DERRUMBE · CORONA ROTA (hasta la 6.0) | **SANGRE Y PALO** · sello **BLOOD & SUITS** (`TITLE`, `SEAL`; en inglés, al revés) · lema `SUBTITLE`: «La conjura de los naipes» (desde la 6.1) |
 | roguelike de demolición | roguelike de conjura con baraja francesa |
 
 ### Palos
@@ -80,7 +80,7 @@ Rueda de palos (antes «ciclo de materiales»): **♠ corta ♦ · ♦ compra �
 | tratamiento (forjado, templado, policromado, agrietado) | **Acabado**: Filo de plata, Templado, Lacre policromo, Cristal maldito |
 | carta especial · legendaria | **carta especial** · **legendaria** |
 | jefe · maldición | **monarca** · **decreto** (la regla que impone) |
-| ferretería · el Ferretero | **Mercado clandestino** · **el Tratante** |
+| ferretería · el Ferretero · Mercado clandestino (hasta la 6.0) | **La Taberna** · **el Tratante** (desde la 6.1) |
 | mesa de forja | **Mesa de lacre** |
 | quemador | **La hoguera** |
 | revolver cajones | **Renovar mesa** |
@@ -101,7 +101,7 @@ Rueda de palos (antes «ciclo de materiales»): **♠ corta ♦ · ♦ compra �
 | cuadrilla · capataz (guía) · marcas de tiza | **conjura** · **la Maestra** · **señas** |
 | susurros de tiza | **Susurros** |
 | lupa de grabador | **Lupa** |
-| Demolido / Sepultados (finales) | **Corona rota** / **Conjura deshecha** |
+| Demolido / Sepultados (finales) · Corona rota (hasta la 6.0) | **Corte vencida** / **Conjura deshecha** (desde la 6.1) |
 
 La **biblia de nombres** —las 52 reliquias, las especiales, los siete monarcas, las barajas, los ocho asaltos, los ocho Reinados, juramentos, atajos, secretos, logros, arcones, con su `id`, nombre nuevo, descripción nueva (≤ 115 caracteres) y la **imagen** que debe grabarse— la escribe `director` en `SPECS/V6-biblia-de-nombres.md` nada más empezar. Hasta que exista, cada celda avanza con lo que no depende de ella.
 

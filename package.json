@@ -1,8 +1,8 @@
 {
-  "name": "corona-rota",
-  "version": "6.0.0",
+  "name": "sangre-y-palo",
+  "version": "6.1.0",
   "private": true,
-  "description": "CORONA ROTA — roguelike de conjura con baraja francesa: Daño × Multi = Golpe, seis reliquias, La Manga, ocho Reinados y campaña cooperativa online (1-4 jugadores)",
+  "description": "SANGRE Y PALO · BLOOD & SUITS — roguelike de conjura con baraja francesa: Daño × Multi = Golpe, seis reliquias, La Manga, ocho Reinados y campaña cooperativa online (1-4 jugadores)",
   "type": "module",
   "license": "MIT",
   "scripts": {

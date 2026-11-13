@@ -1,11 +1,11 @@
 ---
 name: engraving-svg-forge
-description: Bucle de dibujar y comprobar para el arte SVG de CORONA ROTA (cartas, reliquias, palos, monarcas). Renderiza cada pieza suelta a 24 px y a 300 px, mide densidad de tinta y claridad de silueta, y garantiza las cuatro tramas de palo aptas para daltonismo. Úsala al dibujar o retocar cualquier SVG del juego.
+description: Bucle de dibujar y comprobar para el arte SVG de SANGRE Y PALO (cartas, reliquias, palos, monarcas). Renderiza cada pieza suelta a 24 px y a 300 px, mide densidad de tinta y claridad de silueta, y garantiza las cuatro tramas de palo aptas para daltonismo. Úsala al dibujar o retocar cualquier SVG del juego.
 ---
 
 # Forja de grabado SVG
 
-Todo el arte de CORONA ROTA es SVG dibujado en código (`src/client/card.ts`, `art.ts`, `glyphs.ts`, `engraving.ts`). Una pieza está bien cuando funciona en sus dos tamaños extremos: **24 px** (icono en una ficha, miniatura del Mazo) y **300 px** (la Lupa). Esta skill es un bucle: dibujar → renderizar → medir → mirar → corregir.
+Todo el arte de SANGRE Y PALO es SVG dibujado en código (`src/client/card.ts`, `art.ts`, `glyphs.ts`, `engraving.ts`). Una pieza está bien cuando funciona en sus dos tamaños extremos: **24 px** (icono en una ficha, miniatura del Mazo) y **300 px** (la Lupa). Esta skill es un bucle: dibujar → renderizar → medir → mirar → corregir.
 
 ## El bucle
 

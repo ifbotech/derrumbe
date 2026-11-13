@@ -10,7 +10,7 @@
 //    copia la crónica en texto con el enlace.
 //  · Enlace: <dirección del juego>?seed=<SEMILLA>&baraja=<id>&nivel=<n>. Al abrirlo, el juego va a la
 //    preparación de campaña con todo cargado y un aviso; no arranca solo ni pisa una campaña en curso.
-import { TITLE, fileName as brandFile } from '../shared/brand';
+import { SEAL, TITLE, fileName as brandFile } from '../shared/brand';
 import { deckUnlocked } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { BOSS, DECK, LAST_STAGE, Run, depthOf, stageDef, stagesCleared } from '../rules/run';
@@ -235,12 +235,14 @@ function drawText(ctx: CanvasRenderingContext2D, d: Lamina): void {
   // cabecera
   let x = L + plate(ctx, 'CRÓNICA', L, 46, 34, "700 19px 'Space Mono', monospace", RED, PAPER, 12);
   x += plate(ctx, TITLE, x, 46, 34, "400 19px 'Archivo Black', sans-serif", INK, HAZARD, 12);
+  // el sello: el nombre del otro idioma, en papel sobre lacre oscuro (la cinta de la portada)
+  x += plate(ctx, SEAL, x, 46, 34, "700 17px 'Space Mono', monospace", '#7d1a13', PAPER, 12);
   ctx.strokeStyle = INK;
   ctx.lineWidth = 2;
   ctx.strokeRect(L + 1, 47, x - L - 2, 32);
   // título en gótica (sin cifras)
   ctx.fillStyle = d.won ? INK : RED;
-  fitText(ctx, d.won ? 'Corona rota' : 'Conjura deshecha', L - 4, 174, maxW, (px) => `900 ${px}px 'Grenze Gotisch', serif`, 108, 64);
+  fitText(ctx, d.won ? 'Corte vencida' : 'Conjura deshecha', L - 4, 174, maxW, (px) => `900 ${px}px 'Grenze Gotisch', serif`, 108, 64);
   // dónde acabó
   ctx.fillStyle = INK;
   fitText(ctx, d.where, L, 214, maxW, (px) => `700 ${px}px 'Archivo', sans-serif`, 25, 17);

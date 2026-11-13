@@ -35,7 +35,7 @@ export function renderLobby(): void {
         </div>
         <p class="note">${
           lobby.mode === 'campana'
-            ? `Roguelike cooperativo: ocho asaltos con mazo, oro y Reliquias compartidos. Se juega con el surtido de la Orden y la baraja del anfitrión${isHost ? ` (${DECK[opts.deck ?? 'obra'].name})` : ''}; el anfitrión decide la ruta y las compras en el Mercado clandestino, y todos ganáis Coronas y logros.`
+            ? `Roguelike cooperativo: ocho asaltos con mazo, oro y Reliquias compartidos. Se juega con el surtido de la Orden y la baraja del anfitrión${isHost ? ` (${DECK[opts.deck ?? 'obra'].name})` : ''}; el anfitrión decide la ruta y las compras en la Taberna, y todos ganáis Coronas y logros.`
             : 'Un solo asalto: los cuatro tronos con su guardia de Sota, Reina y Rey, sin reliquias ni sellos.'
         }</p>
       </div>

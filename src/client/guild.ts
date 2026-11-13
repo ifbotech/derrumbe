@@ -245,7 +245,7 @@ function archiveTab(list: HTMLElement): void {
   list.innerHTML = `<p class="col-note">${archive.length} crónicas · ${wins} ganadas · mayor Golpe ${Math.max(...archive.map((a) => a.maxHit))} · campaña más rápida ganada: ${wins ? `${Math.min(...archive.filter((a) => a.won).map((a) => a.turns))} turnos` : '—'}.</p>
   <div class="actas">${archive
     .map((a, i) => {
-      const where = a.won ? (a.depth ? `Corona rota + Trono infinito ${a.depth}` : 'Corona rota') : `asalto ${Math.min(a.stage, LAST_STAGE)}/${LAST_STAGE} · ${stageDef(a.stage).name}${a.boss ? ` · ante ${a.boss}` : ''}`;
+      const where = a.won ? (a.depth ? `Corte vencida + Trono infinito ${a.depth}` : 'Corte vencida') : `asalto ${Math.min(a.stage, LAST_STAGE)}/${LAST_STAGE} · ${stageDef(a.stage).name}${a.boss ? ` · ante ${a.boss}` : ''}`;
       const replay = !!a.seed && !a.daily && !a.online;
       // la causa de la derrota, con la voz de la crónica: rótulo rojo, título en mono gruesa y detalle debajo
       const death = !a.won && validDeath(a.death) ? a.death : null;
@@ -253,7 +253,7 @@ function archiveTab(list: HTMLElement): void {
         ? `<p class="acta-causa k-${death.kind}"><span class="ac-rot">Causa de la derrota</span><b>${esc(death.title)}</b>${death.detail ? `<small>${esc(death.detail)}</small>` : ''}</p>`
         : '';
       return `<article class="acta-row ${a.won ? 'won' : 'lost'}">
-        <span class="acta-stamp">${a.won ? 'Corona rota' : 'Deshecha'}</span>
+        <span class="acta-stamp">${a.won ? 'Corte vencida' : 'Deshecha'}</span>
         <div class="acta-main">
           <b>${DECK[a.deck]?.name ?? a.deck} · Reinado ${a.level}${a.daily ? ` · diaria ${a.daily}` : ''}${a.online ? ' · en sala' : ''}</b>
           <span>${day(a.when)} · ${where} · ${a.turns} turnos · mayor Golpe ${a.maxHit}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
@@ -351,7 +351,7 @@ function collection(list: HTMLElement): void {
     box.insertAdjacentHTML('beforeend', masteryBadge(meta.mastery.tools[t.id] ?? 0));
   }
 
-  const marks = sec('Sellos de lacre y acabados', SEALS.length + TREATMENTS.length, SEALS.length + TREATMENTS.length, 'Marcas que se estampan en las cartas de baraja: en la Mesa de lacre del Mercado clandestino, en la selección tras cada asalto o como premio de un Juramento.');
+  const marks = sec('Sellos de lacre y acabados', SEALS.length + TREATMENTS.length, SEALS.length + TREATMENTS.length, 'Marcas que se estampan en las cartas de baraja: en la Mesa de lacre de la Taberna, en la selección tras cada asalto o como premio de un Juramento.');
   const sample: Card = { id: 'm', suit: 'S', rank: 7 };
   SEALS.forEach((s, i) => marks.appendChild(choice(cardEl({ ...sample, id: `m-s${i}`, suit: (['H', 'S', 'D', 'C'] as const)[i], seal: s }), SEAL[s].name, SEAL[s].desc, null, null)));
   TREATMENTS.forEach((t, i) => marks.appendChild(choice(cardEl({ ...sample, id: `m-t${i}`, rank: 9 + (i % 2), suit: (['C', 'D', 'H', 'S'] as const)[i], tr: t }), TREATMENT[t].name, TREATMENT[t].desc, null, null)));

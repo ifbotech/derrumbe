@@ -1,6 +1,6 @@
 // Ilustraciones de interfaz en el mismo linograbado que la baraja:
 // tinta, papel, tramas de palo y borde irregular (filtro #rough de card.ts).
-// CORONA ROTA: la sala del trono de una corte de naipes, vista por los conjurados.
+// La sala del trono de una corte de naipes, vista por los conjurados.
 import type { Suit } from '../rules/engine';
 import { pipPath } from './card';
 
@@ -115,7 +115,14 @@ const DAIS = `<path class="ink" d="M-400,392 H1040 V420 H-400 Z" stroke="#eae0ce
     <path class="ink" d="M120,372 H520 V392 H120 Z" stroke="#eae0ce" stroke-width="3"/>
     <path class="cut" d="M150,382 h40 M240,382 h30 M380,382 h50 M460,382 h30 M40,406 h60 M560,406 h50"/>`;
 
-const RIDGE = (whole: boolean) => `${DAIS}${DAGGERS}${crown(whole)}${SEAL}`;
+/**
+ * El mismo sello de lacre, suelto y sin cintas: lo que cierra la cinta grabada del candado de la
+ * portada (el título y, sellado junto a él, el nombre del otro idioma).
+ */
+export const waxSeal = (cls = ''): string =>
+  `<svg class="art wax ${cls}" viewBox="284 354 72 72" aria-hidden="true" focusable="false">${SEAL.slice(SEAL.indexOf('<path class="rd"'))}</svg>`;
+
+const RIDGE = (whole: boolean) =>`${DAIS}${DAGGERS}${crown(whole)}${SEAL}`;
 const TORCHES = `${torch(129, 300)}${torch(511, 300)}`;
 
 /**
