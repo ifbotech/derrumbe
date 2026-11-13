@@ -9,6 +9,7 @@ import { sfx } from './audio';
 import { cardEl, portraitEl } from './card';
 import { $, Campaign, RUN_PLAYER, S, loadJson, modal, toast } from './core';
 import { dealIn, ribbon } from './fx';
+import { voiceEnter } from './voces';
 import { maybeSettle, meta, saveMeta, trackMeta } from './guild';
 import { sendMsg } from './net';
 import { setScreen } from './router';
@@ -269,4 +270,5 @@ export function stageIntro(): void {
   el.addEventListener('click', () => el.remove());
   sfx.siren();
   logLine(`<b>Monarca: ${boss.who}.</b> ${boss.desc}`, 'red');
+  voiceEnter(run.boss); // juice-ux: su frase de entrada, al cerrarse la presentación
 }

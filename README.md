@@ -21,7 +21,8 @@ sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doc
 - **Cooperativo online** con salas por código, servidor autoritativo y **señas** para proponer sin hablar.
 - **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar las reliquias y pantalla completa también con mando), con un marco de foco que se ve a distancia y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
 - **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en letra de título y cada palo con su **trama de grabado** (rayado diagonal de lanzas, punteado de gemas, hiladas de cáliz, rayado cruzado heráldico), para distinguirlos sin el color.
-- **Asalto diario** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada** con la Maestra. Ocho **Susurros** saltan la primera vez que te encuentras cada cosa (trono Inmune, La Manga, Golpe exacto, Mesa de lacre, Atajo, monarca, Asedio final, Mazo bajo), con «No mostrar más» a un clic.
+- **Siete monarcas tiranos**, cada uno con su retrato de grabado, su maldición marcada sobre la mesa y su voz de mesa brava al entrar, al contraatacar y al caer.
+- **Asalto diario** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada** que se aprende jugando: cinco pasos de una línea, en menos de un minuto y sin ventanas de texto. Ocho **Susurros** saltan la primera vez que te encuentras cada cosa (trono Inmune, La Manga, Golpe exacto, Mesa de lacre, Atajo, monarca, Asedio final, Mazo bajo), con «No mostrar más» a un clic.
 
 Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo seis palabras tienen significado propio —Daño, Multi, Golpe exacto, Brecha, En guardia y Desarmado—; todo lo demás se dice con palabras de baraja: Vida, Escudo, Mazo, Descarte, Contraataque.
 
@@ -137,6 +138,7 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 | Rebobinar (deshacer) | Z | LT |
 | Descartar lo elegido | Supr | L3 (pulsar la palanca izquierda) |
 | Atrás / soltar la selección | Esc | B |
+| Saltar la partida guiada (sin nada elegido) | Esc | B |
 | Ver el Mazo y el Descarte | Tab | LB |
 | Lupa | L · clic derecho · pulsación larga | RB |
 | Reordenar las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |
@@ -218,7 +220,7 @@ Desde la 5.0 el juego se hace con un pequeño estudio de agentes de Claude Code,
 | `director` | `ROADMAP_V5_V10.md`, `SPECS/`, `CHANGELOG.md`, la prosa de este archivo y la decisión de publicar o apartar una versión |
 | `reglas-balance` | `src/rules/`, la marca (`src/shared/brand.ts`), el laboratorio (`scripts/analyze-meta.ts`), el reglamento y `tests/`; vigila la constitución anticomplejidad |
 | `arte-ui` | estilos, maquetación, grabado SVG (tronos, reliquias, monarcas, naipes), textos de pantalla, la QA visual y el banco de grabado |
-| `juice-ux` | mando y teclado, Susurros, la partida guiada con la Maestra, efectos, sonido, la red del cooperativo y la prueba de humo |
+| `juice-ux` | mando y teclado, Susurros, la partida guiada, la voz de los monarcas, efectos, sonido, la red del cooperativo y la prueba de humo |
 
 Cinco habilidades (`.claude/skills/`) recogen el oficio que se repite: `brutalist-print-ui` (reglas de imprenta), `engraving-svg-forge` (dibujar y comprobar el arte), `playwright-deck-qa` (QA en las cuatro ventanas y con mando virtual), `regicide-synergy-math` (laboratorio e invariantes) y `autonomous-sprint-loop` (el bucle de versiones).
 
@@ -249,7 +251,7 @@ src/
     run.ts        campaña (reductor): Mapa del castillo, Juramentos, Botín, la Taberna, Secretos de la cripta, Reinados, La Orden
     achievements.ts  logros, colección y lo que desbloquean
     bot.ts        bot de asalto y de campaña (simulación y sustituto de desconectados)
-    tutorial.ts   guion de la Maestra y mazo preparado de la partida guiada
+    tutorial.ts   los cinco pasos y la mesa preparada de la partida guiada
   shared/
     brand.ts      la marca dual: el único sitio donde se escriben los dos títulos
     protocol.ts   protocolo de mensajes cliente ⇄ servidor
@@ -259,6 +261,7 @@ src/
     home.ts · lobby.ts · guild.ts                portada, vestíbulo, La Orden, colección y Archivo de crónicas
     campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas (mapa, Botín, la Taberna, Mesa de lacre)
     table.ts · tutorial-ui.ts                    mesa de combate (los cuatro tronos, rueda de palos, Asedio final) y partida guiada
+    guia.ts · voces.ts                           foco y placa de la partida guiada, monarca y maldición en la mesa, y su voz
     cuenta.ts · causa.ts · lamina.ts             cuenta central y su recibo, causa de la derrota, Lámina de la Crónica y enlace con semilla
     whispers.ts                                  Susurros contextuales
     nav.ts · prompts.ts                          foco para teclado y mando, e indicaciones de cada botón

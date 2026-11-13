@@ -10,7 +10,7 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium, Page } from 'playwright';
-import { gamepadSuite } from './gamepad-qa';
+import { gamepadSuite, guidedRun, sealCheck } from './gamepad-qa';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
 const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : 'artifacts/visual-qa/smoke');
@@ -278,19 +278,67 @@ async function main(): Promise<void> {
   await page.screenshot({ path: join(OUT, 'lupa-jefe.png') });
   await page.keyboard.press('Escape');
 
-  // ── la partida guiada arranca y la Maestra habla ──
-  await go(page, 'portada');
-  await page.locator('#m-tuto').click();
-  await page.waitForSelector('.table-screen');
-  await page.waitForTimeout(600);
-  check((await count(page, '#coach:not([hidden])')) === 1 && /La Maestra/.test((await page.locator('#coach .who').textContent()) ?? ''), 'la partida guiada enseña a la Maestra');
-  check(/Los cuatro tronos/.test((await page.locator('#coach h4').textContent()) ?? ''), 'y empieza por «Los cuatro tronos»');
-  for (let i = 0; i < 4 && (await count(page, '#coach button')) > 0; i++) {
-    await page.locator('#coach button').first().click();
-    await page.waitForTimeout(250);
-  }
-  check((await count(page, '#reserve:not([hidden])')) === 0, 'en la partida guiada no hay Manga');
+  // ── V7 · la partida guiada se juega entera: con el teclado (medida) y con el ratón ──
+  console.log('Partida guiada');
+  const shot = (p: Page, name: string) => p.screenshot({ path: join(OUT, `${name}.png`) });
+  await page.keyboard.press('ArrowDown'); // el teclado vuelve a ser el dispositivo en uso
+  await guidedRun(page, 'keys', check, shot);
   await page.screenshot({ path: join(OUT, 'partida-guiada.png') });
+  await page.locator('#t-home').click();
+  await page.waitForSelector('#m-tuto');
+  check((await count(page, '.end')) === 0 && !(await page.evaluate(() => document.documentElement.dataset.guia)), '«Jugar de verdad» vuelve a la portada sin dejar el foco de la guía');
+  await guidedRun(page, 'mouse', check);
+  await page.locator('#t-again').click();
+  await page.waitForSelector('.table-screen');
+  await page.waitForFunction(() => document.documentElement.dataset.guia === '1', null, { timeout: 10_000 });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  check((await count(page, '.table-screen')) === 0 && (await count(page, '#m-tuto')) === 1 && !(await page.evaluate(() => document.documentElement.dataset.guia)), 'Esc salta la partida guiada de un toque y vuelve a la portada');
+
+  // ── V7 · F1 con el teclado: el sello «×0» sigue al trono enfocado ──
+  await sealCheck(page, 'keys', check);
+
+  // ── V7 · la voz del monarca: su frase de entrada, sin tapar mano ni cuenta, y se va sola ──
+  {
+    await go(page, 'mesa-monarca');
+    await page.waitForTimeout(400);
+    const bark = await page.evaluate(() => {
+      const el = document.getElementById('bark');
+      const w = window as unknown as { __qaVoz: { heard: string[]; ms(): number } };
+      if (!el || el.hidden) return null;
+      const r = el.getBoundingClientRect();
+      const hit = (sel: string) => [...document.querySelectorAll(sel)].some((o) => {
+        const b = o.getBoundingClientRect();
+        return b.width > 0 && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top;
+      });
+      return { text: el.textContent ?? '', heard: [...w.__qaVoz.heard], ms: w.__qaVoz.ms(), covers: hit('#hand .card') || hit('#score'), n: document.querySelectorAll('#bark, .bark').length };
+    });
+    check(bark?.heard.includes('sequia:entrada'), `un asalto con monarca enseña su bocadillo de entrada${bark ? ` («${bark.text}»)` : ''}`);
+    check(bark && !bark.covers && bark.n === 1, 'el bocadillo no tapa la mano ni la cuenta, y hay uno solo');
+    check(bark && bark.ms <= 2500, `el bocadillo dura ≤ 2,5 s a 1× (${bark?.ms} ms)`);
+    check((await sounds(page)).some((s) => s === 'monarch:sequia:entrada'), 'el monarca entra con su firma sonora');
+    await page.waitForTimeout(2900);
+    check(await page.evaluate(() => document.getElementById('bark')?.hidden !== false), 'y se va solo');
+    // con «Reducir movimiento» entra sin animación
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const calm = await page.evaluate(async () => {
+      const w = window as unknown as { __qaVoz: { say(id: string, kind: string): void } };
+      w.__qaVoz.say('furia', 'contraataque');
+      await new Promise((r) => setTimeout(r, 60));
+      const el = document.getElementById('bark');
+      return el && !el.hidden ? getComputedStyle(el).animationName : 'oculto';
+    });
+    check(calm === 'none', `con «Reducir movimiento» el bocadillo aparece sin animación (${calm})`);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const stacked = await page.evaluate(async () => {
+      const w = window as unknown as { __qaVoz: { say(id: string, kind: string): void } };
+      w.__qaVoz.say('furia', 'caida');
+      w.__qaVoz.say('furia', 'entrada');
+      await new Promise((r) => setTimeout(r, 60));
+      return { n: document.querySelectorAll('.bark:not([hidden])').length, text: document.getElementById('bark')?.textContent ?? '' };
+    });
+    check(stacked.n === 1, `las voces no se apilan: la nueva sustituye a la anterior («${stacked.text}»)`);
+  }
 
   // ── un asalto entero jugado con el teclado: 1–9 eligen, espacio golpea ──
   await go(page, 'plano');

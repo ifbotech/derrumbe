@@ -78,20 +78,106 @@ export interface Boss {
   /** Su maldición. */
   name: string;
   desc: string;
+  /** Su voz de mesa (≤ 70 caracteres, sin cifras ni palabras de reglas): al entrar, al contraatacar y al caer. */
+  barks: BossBarks;
+  /** La maldición a la vista: qué parte de la mesa toca y su placa (≤ 28 caracteres). */
+  curse: BossCurse;
   apply(cfg: Config): void;
+}
+export interface BossBarks {
+  entrada: string;
+  contraataque: string;
+  caida: string;
+}
+/** La parte de la mesa que castiga cada maldición (una distinta por monarca). */
+export type CurseMark = 'contraataque' | 'mano' | 'corazones' | 'escudo' | 'guardias' | 'ataque' | 'asedio';
+export interface BossCurse {
+  mark: CurseMark;
+  badge: string;
 }
 const eachHand = (c: Config, n: number) => void (c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, Math.max(3, v + n)])));
 const eachThreat = (c: Config, n: number) => void [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + n)));
 export const BOSSES: Boss[] = [
-  { id: 'doble', who: 'El Rey de Dos Caras', name: 'Doble Contraataque', desc: 'Hay 2 Contraataques cada turno, pero cada uno ataca un 40 % menos.', apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))) },
-  { id: 'escasez', who: 'El Usurero', name: 'Escasez', desc: 'Jugáis con 1 carta menos en la mano.', apply: (c) => eachHand(c, -1) },
-  { id: 'sequia', who: 'La Dama del Cáliz', name: 'Cáliz envenenado', desc: 'Tus ♥ no curan.', apply: (c) => void (c.repairDiv = 9999) },
-  { id: 'intemperie', who: 'La Reina Helada', name: 'Escarcha', desc: 'El Escudo no puede pasar de 4.', apply: (c) => void (c.wallCap = Math.min(c.wallCap, 4)) },
-  { id: 'blindaje', who: 'El Inquisidor', name: 'Guardia de hierro', desc: 'Todos los guardias llegan En guardia y, mientras lo estén, su Ataque sube 1.', apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = 1)) },
-  { id: 'furia', who: 'El Verdugo', name: 'Furia', desc: 'El Ataque de los cuatro tronos sube 2.', apply: (c) => eachThreat(c, 2) },
-  { id: 'inestable', who: 'El Relojero', name: 'Arena rápida', desc: 'El Asedio final empieza 3 turnos antes, y cada guardia abatido sin Golpe exacto te quita 1 de Vida.', apply: (c) => void ((c.crumbleHurt = 1), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? 8) - 3))) },
+  {
+    id: 'doble',
+    who: 'El Rey de Dos Caras',
+    name: 'Doble Contraataque',
+    desc: 'Hay 2 Contraataques cada turno, pero cada uno ataca un 40 % menos.',
+    barks: { entrada: '¿Envido? Tengo dos caras y canto con las dos.', contraataque: '¡Retruco! Y cuando te des vuelta, retruco otra vez.', caida: 'Se me dio vuelta el naipe... y por los dos lados.' },
+    curse: { mark: 'contraataque', badge: '2 Contraataques por turno' },
+    apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))),
+  },
+  {
+    id: 'escasez',
+    who: 'El Usurero',
+    name: 'Escasez',
+    desc: 'Jugáis con 1 carta menos en la mano.',
+    barks: { entrada: 'Acá no se fía, querido. Jugá con lo justo y gracias.', contraataque: 'Vengo a cobrar los intereses. ¿Quiero? Siempre quiero.', caida: 'Me dejaron sin un cobre... anotá la deuda, che.' },
+    curse: { mark: 'mano', badge: '1 carta menos en la mano' },
+    apply: (c) => eachHand(c, -1),
+  },
+  {
+    id: 'sequia',
+    who: 'La Dama del Cáliz',
+    name: 'Cáliz envenenado',
+    desc: 'Tus ♥ no curan.',
+    barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
+    curse: { mark: 'corazones', badge: 'Tus ♥ no curan' },
+    apply: (c) => void (c.repairDiv = 9999),
+  },
+  {
+    id: 'intemperie',
+    who: 'La Reina Helada',
+    name: 'Escarcha',
+    desc: 'El Escudo no puede pasar de 4.',
+    barks: { entrada: 'Abrigate, naipe. En mi mesa ni la manta te tapa entero.', contraataque: 'Quiero retruco, y te lo canto con escarcha en la boca.', caida: 'Me derrito... y vos con las manos tibias. Qué injusto.' },
+    curse: { mark: 'escudo', badge: 'Escudo máx. 4' },
+    apply: (c) => void (c.wallCap = Math.min(c.wallCap, 4)),
+  },
+  {
+    id: 'blindaje',
+    who: 'El Inquisidor',
+    name: 'Guardia de hierro',
+    desc: 'Todos los guardias llegan En guardia y, mientras lo estén, su Ataque sube 1.',
+    barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
+    curse: { mark: 'guardias', badge: 'En guardia: +1 de Ataque' },
+    apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = 1)),
+  },
+  {
+    id: 'furia',
+    who: 'El Verdugo',
+    name: 'Furia',
+    desc: 'El Ataque de los cuatro tronos sube 2.',
+    barks: { entrada: 'Afilé el hacha toda la noche. ¡Vale cuatro, y sin piedad!', contraataque: '¡Truco! Y esta vez no me tiembla el pulso.', caida: 'Se me cayó la capucha. Mala mano, la mía.' },
+    curse: { mark: 'ataque', badge: '+2 de Ataque en cada trono' },
+    apply: (c) => eachThreat(c, 2),
+  },
+  {
+    id: 'inestable',
+    who: 'El Relojero',
+    name: 'Arena rápida',
+    desc: 'El Asedio final empieza 3 turnos antes, y cada guardia abatido sin Golpe exacto te quita 1 de Vida.',
+    barks: { entrada: 'Tic, tac. Cada grano de arena juega de mi lado.', contraataque: 'Se te acaba la arena, compadre. Yo no apuro: espero.', caida: 'Se me paró el reloj... justo a tu hora.' },
+    curse: { mark: 'asedio', badge: 'Asedio final 3 turnos antes' },
+    apply: (c) => void ((c.crumbleHurt = 1), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? 8) - 3))),
+  },
 ];
 export const BOSS: Record<string, Boss> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
+
+/** Lo que la mesa necesita para reconocer a un monarca: quién es, su maldición, su voz y su placa. */
+export interface BossIdentity {
+  who: string;
+  name: string;
+  desc: string;
+  barks: BossBarks;
+  curse: BossCurse;
+}
+/** La identidad de un monarca por su `id`; null si no existe. Pura: copia los datos, no los comparte. */
+export function bossIdentity(id: string): BossIdentity | null {
+  const b = BOSS[id];
+  if (!b) return null;
+  return { who: b.who, name: b.name, desc: b.desc, barks: { ...b.barks }, curse: { ...b.curse } };
+}
 
 // ───────────────────────── Contratos (rutas del plano) ─────────────────────────
 
@@ -148,9 +234,17 @@ export const TAG: Record<string, Tag> = Object.fromEntries(TAGS.map((t) => [t.id
 
 // ───────────────────────── Hallazgos en los cimientos ─────────────────────────
 
+/** Una opción leída en dos segundos: lo que da y lo que cuesta (≤ 24 caracteres; `cost` vacío si es gratis) y su emblema. */
+export interface EventRead {
+  gain: string;
+  cost: string;
+  /** Clave del emblema en el arte (GLYPH de src/client/glyphs.ts). */
+  glyph: string;
+}
 export interface EventOption {
   label: string;
   desc: string;
+  read: EventRead;
   can?(run: Run): boolean;
   apply(run: Run): void;
 }
@@ -166,8 +260,8 @@ export const EVENTS: EventDef[] = [
     name: 'El cofre enterrado',
     text: 'Entre dos tumbas asoma un cofre con candado. Forzarlo hará temblar media cripta.',
     options: [
-      { label: 'Forzarlo', desc: 'Pierdes 5 de Vida. Te llevas una reliquia Noble o Regia.', can: (run) => run.integrity > 5 && run.tools.length < TOOL_SLOTS, apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
-      { label: 'Vendérselo al Tratante', desc: '+8 de oro.', apply: (run) => void (run.gold += 8) },
+      { label: 'Forzarlo', read: { gain: 'Reliquia Noble o Regia', cost: '−5 de Vida', glyph: 'contenedor' }, desc: 'Pierdes 5 de Vida. Te llevas una reliquia Noble o Regia.', can: (run) => run.integrity > 5 && run.tools.length < TOOL_SLOTS, apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
+      { label: 'Vendérselo al Tratante', read: { gain: '+8 de oro', cost: '', glyph: 'oro' }, desc: '+8 de oro.', apply: (run) => void (run.gold += 8) },
     ],
   },
   {
@@ -175,8 +269,8 @@ export const EVENTS: EventDef[] = [
     name: 'El caldero del alquimista',
     text: 'Un caldero hierve solo en un rincón. Lo que entra, sale convertido en otra cosa.',
     options: [
-      { label: 'Fundir dos cartas', desc: 'Eliges dos: arden y nace una con el número más alto, en Lacre policromo y con el sello que llevaran.', can: (run) => run.deck.filter(isPlain).length > MIN_DECK, apply: (run) => void (run.pending = { kind: 'fuse' }) },
-      { label: 'Calentarse y seguir', desc: '+4 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 4)) },
+      { label: 'Fundir dos cartas', read: { gain: 'Carta en Lacre policromo', cost: 'Dos cartas arden', glyph: 'crisol' }, desc: 'Eliges dos: arden y nace una con el número más alto, en Lacre policromo y con el sello que llevaran.', can: (run) => run.deck.filter(isPlain).length > MIN_DECK, apply: (run) => void (run.pending = { kind: 'fuse' }) },
+      { label: 'Calentarse y seguir', read: { gain: '+4 de Vida', cost: '', glyph: 'reparacion' }, desc: '+4 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 4)) },
     ],
   },
   {
@@ -184,8 +278,8 @@ export const EVENTS: EventDef[] = [
     name: 'El decreto maldito',
     text: 'Un decreto clavado en la puerta promete una cifra enorme. La letra pequeña habla del próximo asalto.',
     options: [
-      { label: 'Firmar', desc: '+20 de oro ahora. En el próximo asalto, el Ataque de los cuatro tronos sube 1.', apply: (run) => void ((run.gold += 20), (run.curse = true)) },
-      { label: 'Romperlo', desc: 'El papel arde bien: +3 de oro.', apply: (run) => void (run.gold += 3) },
+      { label: 'Firmar', read: { gain: '+20 de oro', cost: '+1 Ataque próximo asalto', glyph: 'nitro' }, desc: '+20 de oro ahora. En el próximo asalto, el Ataque de los cuatro tronos sube 1.', apply: (run) => void ((run.gold += 20), (run.curse = true)) },
+      { label: 'Romperlo', read: { gain: '+3 de oro', cost: '', glyph: 'retirar' }, desc: 'El papel arde bien: +3 de oro.', apply: (run) => void (run.gold += 3) },
     ],
   },
   {
@@ -193,9 +287,9 @@ export const EVENTS: EventDef[] = [
     name: 'Los lacradores ciegos',
     text: 'Tres monjes sellan a la luz de una vela lo que les pongas delante, y no aceptan regateos.',
     options: [
-      { label: 'Pagar con Vida', desc: 'Pierdes 6 de Vida. Tres cartas al azar reciben un sello de lacre.', can: (run) => run.integrity > 6, apply: (run) => void ((run.integrity -= 6), stampRandom(run, 3)) },
-      { label: 'Pagar con oro', desc: '8 de oro. Tu carta más alta recibe Lacre policromo.', can: (run) => run.gold >= 8, apply: (run) => void ((run.gold -= 8), treatBest(run, 'policromado')) },
-      { label: 'Seguir de largo', desc: 'Nada cambia.', apply: () => {} },
+      { label: 'Pagar con Vida', read: { gain: '3 cartas con sello', cost: '−6 de Vida', glyph: 'sello' }, desc: 'Pierdes 6 de Vida. Tres cartas al azar reciben un sello de lacre.', can: (run) => run.integrity > 6, apply: (run) => void ((run.integrity -= 6), stampRandom(run, 3)) },
+      { label: 'Pagar con oro', read: { gain: 'Tu mejor carta policroma', cost: '−8 de oro', glyph: 'forja' }, desc: '8 de oro. Tu carta más alta recibe Lacre policromo.', can: (run) => run.gold >= 8, apply: (run) => void ((run.gold -= 8), treatBest(run, 'policromado')) },
+      { label: 'Seguir de largo', read: { gain: 'Nada cambia', cost: '', glyph: 'atajo' }, desc: 'Nada cambia.', apply: () => {} },
     ],
   },
   {
@@ -203,9 +297,9 @@ export const EVENTS: EventDef[] = [
     name: 'Los mapas escondidos',
     text: 'Tras una losa están los mapas del castillo. Arrancarlos hace crujir lo poco que os protege.',
     options: [
-      { label: 'Arrancarlos', desc: 'Pierdes 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 8, apply: (run) => void ((run.maxIntegrity -= 3), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
-      { label: 'Copiarlos a mano', desc: '5 de oro. Una formación al azar sube 1 nivel.', can: (run) => run.gold >= 5, apply: (run) => void ((run.gold -= 5), run.levels[pick(run, FORMATIONS, 1)[0]]++) },
-      { label: 'Dejarlos donde están', desc: 'Nada cambia.', apply: () => {} },
+      { label: 'Arrancarlos', read: { gain: '2 formaciones +2 niveles', cost: '−3 de Vida máxima', glyph: 'plano' }, desc: 'Pierdes 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 8, apply: (run) => void ((run.maxIntegrity -= 3), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
+      { label: 'Copiarlos a mano', read: { gain: '1 formación +1 nivel', cost: '−5 de oro', glyph: 'pergamino' }, desc: '5 de oro. Una formación al azar sube 1 nivel.', can: (run) => run.gold >= 5, apply: (run) => void ((run.gold -= 5), run.levels[pick(run, FORMATIONS, 1)[0]]++) },
+      { label: 'Dejarlos donde están', read: { gain: 'Nada cambia', cost: '', glyph: 'atajo' }, desc: 'Nada cambia.', apply: () => {} },
     ],
   },
 ];

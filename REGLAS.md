@@ -100,7 +100,7 @@ La mesa te lo avisa antes de golpear: la previsualización de cada trono dice si
 - **Asedio final**: ningún asalto dura para siempre. En campaña, desde el turno 9 de cada asalto y cada 2 turnos, el asedio sube un nivel; cada nivel da **+0,25 de Multi** a todos los golpes y **+1 de Ataque** a los cuatro tronos. El asalto se acelera en los dos sentidos: pegas más y te pegan más. La mesa avisa tres turnos antes. En conjura de varios empieza más tarde, en proporción a lo que aguantan los guardias; en el Asalto único, en el turno 33 y cada 3 turnos.
 - **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo, pero pierdes **5** de Vida (el Escudo no lo frena). Cada vuelta completa de la conjura al Mazo lo encarece en 1: los asaltos no se pueden estirar sin fin.
 - **As cómplice**: un As forma jugada con **cualquier otra carta** (×1,1 de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar Escudo, uno de ♥ para curar, uno de ♠ para perforar.
-- **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *Manga doble* añade un segundo hueco. En la partida guiada no hay Manga.
+- **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *Manga doble* añade un segundo hueco. La partida guiada te enseña a usarla en su tercer paso.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
 - **Victoria** (*Corte vencida*): los cuatro tronos caídos. **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
@@ -466,6 +466,7 @@ El juego usa solo seis palabras con significado propio. Todo lo demás se dice c
 | Rebobinar (deshacer) | Z | LT |
 | Descartar lo elegido | Supr | L3 (pulsar la palanca izquierda) |
 | Atrás / soltar la selección | Esc | B |
+| Saltar la partida guiada (sin nada elegido) | Esc | B |
 | Ver el Mazo y el Descarte | Tab | LB |
 | Lupa | L · clic derecho · pulsación larga | RB |
 | Reordenar las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |

@@ -308,3 +308,10 @@ button.whisper-off:hover:not(:disabled), button.whisper-off:focus-visible { --bg
 @keyframes procbadge { 0% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -40%) scale(1.5); } 14% { opacity: 1; transform: translate(var(--x), var(--y)) translate(-50%, -100%) scale(1); } 78% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -170%); } }
 .calm .proc-badge { animation-name: calmbadge; animation-timing-function: linear; }
 @keyframes calmbadge { 0% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -100%); } 12%, 80% { opacity: 1; transform: translate(var(--x), var(--y)) translate(-50%, -100%); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) translate(-50%, -100%); } }
+
+/* V7 · Secreto de la cripta: cada opción se da vuelta como un naipe, de una en una (solo transform y
+   opacity; «backwards» para que al acabar mande el estilo propio del botón, hover incluido) */
+.opt.secreto.revela { animation: revela 0.22s cubic-bezier(0.2, 0.7, 0.3, 1) var(--rv, 0ms) backwards; }
+@keyframes revela { from { opacity: 0; transform: perspective(600px) rotateY(-70deg) translateY(6px); } to { opacity: 1; transform: none; } }
+.calm .opt.secreto.revela { animation-name: calmin; animation-duration: 0.12s; }
+@media (prefers-reduced-motion: reduce) { .opt.secreto.revela { animation-name: calmin; animation-duration: 0.12s; } }

@@ -104,6 +104,29 @@
 .stamp-btn.opt b { font-size: clamp(18px, 2.9vh, 30px); }
 .stamp-btn.opt small { font-size: clamp(13px, 1.5vh, 15px); }
 
+/* V7 · secretos de la cripta: cada opción, una carta grabada con lo que da y lo que cuesta a la vista */
+.event-opts:has(.secreto) { max-width: 1040px; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); align-items: stretch; }
+.stamp-btn.opt.secreto { grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 12px; padding: 10px 12px; }
+.secreto .sec-art { display: block; }
+.secreto .sec-ico { display: block; width: clamp(56px, 8vh, 86px); height: clamp(56px, 8vh, 86px); padding: 4px; background: var(--paper-2); border: 2px solid var(--pit); }
+.secreto .sec-txt { display: grid; gap: 4px; min-width: 0; }
+.stamp-btn.opt.secreto b { font-size: clamp(18px, 2.5vh, 26px); line-height: 1.05; }
+.secreto .sec-da, .secreto .sec-cuesta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; padding: 2px 8px; font-family: var(--mono); font-weight: 700; font-size: clamp(15px, 2vh, 20px); line-height: 1.25; text-transform: none; letter-spacing: 0; }
+.secreto .sec-da i, .secreto .sec-cuesta i { font-style: normal; font-family: var(--cap); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+.secreto .sec-da { background: var(--verd); color: var(--card-paper); }
+.secreto .sec-cuesta { background: var(--red); color: var(--card-paper); }
+.secreto .sec-cuesta.gratis { background: transparent; color: #4a4339; border: 1.5px dashed #4a4339; }
+.stamp-btn.opt.secreto small { font-size: clamp(13px, 1.4vh, 14px); font-weight: 500; color: #4a4339; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .event-opts:has(.secreto) { grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 8px; }
+  .stamp-btn.opt.secreto { gap: 8px; padding: 6px 8px; }
+  .secreto .sec-ico { width: 44px; height: 44px; padding: 2px; }
+  .stamp-btn.opt.secreto b { font-size: 18px; }
+  .secreto .sec-da, .secreto .sec-cuesta { font-size: 15px; padding: 1px 6px; }
+  .secreto .sec-da i, .secreto .sec-cuesta i { font-size: 13px; }
+  .event-box:has(.secreto) .event-art { display: none; }
+}
+
 /* ───────────── ACTA DE DEMOLICIÓN ───────────── */
 .end.acta { justify-content: center; align-items: flex-start; }
 .acta-sheet { position: relative; z-index: 1; width: min(700px, 100%); max-height: 100%; overflow-y: auto; background: var(--card-paper) var(--noise); color: var(--ink); border: 5px solid var(--ink); box-shadow: 10px 10px 0 var(--red); padding: clamp(12px, 2.8vh, 30px) clamp(14px, 2.4vw, 32px); display: grid; gap: clamp(5px, 1.2vh, 12px); text-transform: none; }

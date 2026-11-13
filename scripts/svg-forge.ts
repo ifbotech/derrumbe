@@ -22,7 +22,7 @@ import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 /** FORJA_OUT=artifacts/svg-forge-loquesea: dos celdas forjando a la vez no se pisan las hojas. */
 const OUT = resolve(process.env.FORJA_OUT?.trim() || 'artifacts/svg-forge');
 const SIZES = [24, 300] as const;
-const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'servicios', 'jefes'];
+const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'servicios', 'jefes', 'monarcas'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const groups = wanted.length ? GROUPS.filter((g) => wanted.includes(g)) : GROUPS;
 
@@ -48,6 +48,11 @@ const LIMITS = {
   /** Dos tramas son distintas si difieren en estructura (dirección de sus trazos) o en esta fracción de píxeles. */
   patternShape: 0.12,
   patternPixels: 0.25,
+  /**
+   * V7 · monarcas: a 24 px, dos bustos en calma son distintos si su diferencia media en grises (0–1) llega a
+   * esto. Por debajo, falla: la mesa los enseña a ese tamaño y se tienen que reconocer por silueta y objeto.
+   */
+  monarchApart: 0.1,
 };
 
 interface Image {
@@ -268,6 +273,8 @@ async function main(): Promise<void> {
   const banco = page.locator('#forja-banco');
   const rows: Row[] = [];
   const masks = new Map<string, { mask: Uint8Array; w: number; h: number }>();
+  /** Los bustos en calma a 24 px, en grises (0–1), para compararlos dos a dos. */
+  const busts = new Map<string, Float32Array>();
 
   for (const p of pieces) {
     mkdirSync(join(OUT, p.grupo), { recursive: true });
@@ -282,6 +289,11 @@ async function main(): Promise<void> {
     const big = got[300]!;
     const small = got[24]!;
     const row: Row = { grupo: p.grupo, id: p.id, ink300: round(big.m.ink), ink24: round(small.m.ink), drift: round(Math.abs(big.m.ink - small.m.ink)), body24: round(biggestBody(small.m, small.img.w, small.img.h)), fails: [], warns: [] };
+    if (p.grupo === 'monarcas' && p.id.endsWith('-calma')) {
+      const g = new Float32Array(small.img.w * small.img.h);
+      for (let k = 0; k < g.length; k++) g[k] = (0.299 * small.img.px[k * 4] + 0.587 * small.img.px[k * 4 + 1] + 0.114 * small.img.px[k * 4 + 2]) / 255;
+      busts.set(p.id, g);
+    }
     if (p.grupo === 'tramas') {
       row.shape = shape(big.m.mask, big.img.w, big.img.h).map((n) => round(n));
       masks.set(p.id, { mask: big.m.mask, w: big.img.w, h: big.img.h });
@@ -324,6 +336,22 @@ async function main(): Promise<void> {
   }
   for (const t of tramas) if (t.ink300 < 0.08 || t.ink300 > 0.92) t.fails.push(`la trama de ${t.id} es casi lisa (${(t.ink300 * 100).toFixed(0)} % de tinta): no distingue el palo`);
 
+  // V7 · los siete bustos en calma, dos a dos a 24 px: ninguno se confunde con otro
+  const bustPairs: { a: string; b: string; diferencia: number; ok: boolean }[] = [];
+  const ids = [...busts.keys()];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = busts.get(ids[i])!;
+      const b = busts.get(ids[j])!;
+      let d = 0;
+      for (let k = 0; k < Math.min(a.length, b.length); k++) d += Math.abs(a[k] - b[k]);
+      const diferencia = round(d / Math.min(a.length, b.length));
+      const ok = diferencia >= LIMITS.monarchApart;
+      bustPairs.push({ a: ids[i], b: ids[j], diferencia, ok });
+      if (!ok) rows.find((r) => r.grupo === 'monarcas' && r.id === ids[i])?.fails.push(`a 24 px se confunde con ${ids[j]} (diferencia ${diferencia}; mínimo ${LIMITS.monarchApart})`);
+    }
+  }
+
   // hojas de contacto, en color y en gris
   for (const gris of [false, true]) {
     await page.evaluate(([g, gs]) => (window as unknown as { __forja: Forja }).__forja.hoja(g as boolean, gs as string[]), [gris, groups] as [boolean, string[]]);
@@ -337,7 +365,7 @@ async function main(): Promise<void> {
   const fails = rows.flatMap((r) => r.fails.map((f) => `${r.grupo}/${r.id}: ${f}`));
   const warns = rows.flatMap((r) => r.warns.map((f) => `${r.grupo}/${r.id}: ${f}`));
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, 'informe.json'), JSON.stringify({ generado: 'npm run forja', limites: LIMITS, papel: paperHex, piezas: rows, tramas: pairs, fallos: fails, avisos: warns, errores: errors }, null, 1) + '\n');
+  writeFileSync(join(OUT, 'informe.json'), JSON.stringify({ generado: 'npm run forja', limites: LIMITS, papel: paperHex, piezas: rows, tramas: pairs, monarcas: bustPairs, fallos: fails, avisos: warns, errores: errors }, null, 1) + '\n');
 
   const pct = (n: number) => `${(n * 100).toFixed(1).padStart(5)} %`;
   for (const g of groups) {
@@ -346,6 +374,7 @@ async function main(): Promise<void> {
     console.log(`\n${g} (${list.length})   tinta@300  tinta@24  cuerpo@24${g === 'palos' ? '  contraste' : ''}`);
     for (const r of list) console.log(`  ${r.fails.length ? '✗' : r.warns.length ? '!' : '✓'} ${r.id.padEnd(16)} ${pct(r.ink300)}   ${pct(r.ink24)}   ${pct(r.body24)}${r.contrast ? `   ${r.contrast}:1` : ''}`);
   }
+  if (bustPairs.length) console.log(`\nMonarcas dos a dos a 24 px: menor diferencia ${Math.min(...bustPairs.map((p) => p.diferencia))} (mínimo ${LIMITS.monarchApart}) ${bustPairs.every((p) => p.ok) ? '✓' : '✗'}`);
   if (pairs.length) console.log(`\nTramas dos a dos: ${pairs.map((p) => `${p.a}–${p.b} forma ${p.forma} · píxeles ${(p.pixeles * 100).toFixed(0)} % ${p.ok ? '✓' : '✗'}`).join(' | ')}`);
   for (const w of warns) console.log(`! ${w}`);
   for (const f of fails) console.log(`✗ ${f}`);

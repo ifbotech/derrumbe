@@ -1,0 +1,144 @@
+/* SANGRE Y PALO V7 — el foco de la partida guiada, los siete monarcas en busto, la maldición a la vista y el
+   bocadillo de voz. Lo pinta guia.ts; la coreografía es de juice-ux.
+   · Tinta de la maldición: morado de veneno (--curse), ≥ 7:1 con el papel encima. Una sola tinta para la
+     placa del decreto y para la parte de la mesa que castiga: una mirada basta para unirlas.
+   · Lo que se anima solo cambia transform y opacity, y se calla con «Reducir movimiento». */
+
+:root {
+  --curse: #6d3580;
+  --curse-lit: #c9a0d9;
+}
+
+/* ───────────── los bustos (art.ts monarchSvg) ───────────── */
+.monarca { display: block; width: 100%; height: 100%; overflow: hidden; }
+.monarca .o { stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; }
+.monarca .o-pp { stroke: var(--card-paper); stroke-width: 2; stroke-linejoin: round; }
+.monarca .o-thin { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
+.monarca .o-thin.m-paper { stroke: var(--card-paper); }
+.monarca .m-x { fill: none; stroke: var(--red-lit); stroke-width: 2.6; stroke-linecap: round; }
+.monarca .m-crack { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linejoin: bevel; }
+.monarca .m-humo { fill: none; stroke: var(--verd); stroke-width: 2.8; stroke-linecap: round; }
+.monarca .m-veneno { fill: var(--verd-lit); }
+.monarca .m-tacha { fill: none; stroke: var(--red); stroke-width: 5; stroke-linecap: round; opacity: 0.85; }
+.monarca .m-frame { fill: none; stroke: var(--ink); stroke-width: 3; }
+.monarca .m-bg-rd { fill: #d9a497; }
+.monarca .m-bg-pp { fill: var(--paper-2); }
+.monarca .m-bg-vd { fill: #a9c6b9; }
+.monarca .m-bg-gl { fill: #c5d6da; }
+.monarca .m-bg-gd { fill: #e2c07f; }
+.monarca.vencido .m-bg-rd, .monarca.vencido .m-bg-pp, .monarca.vencido .m-bg-vd, .monarca.vencido .m-bg-gl, .monarca.vencido .m-bg-gd { fill: var(--paper-3); }
+
+/* ───────────── placa del decreto e iconos de la maldición ───────────── */
+.curse-ico { display: block; flex: none; width: 1.3em; height: 1.3em; }
+.curse-plate { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 8px 2px 5px; background: var(--curse); color: var(--card-paper); border: 2px solid var(--pit); box-shadow: 0 2px 0 var(--pit); font-family: var(--mono); font-weight: 700; font-size: max(13px, 1.45vh); line-height: 1.2; letter-spacing: 0; text-transform: none; }
+.curse-plate b { font-weight: 700; min-width: 0; }
+
+/* ───────────── el monarca en el lateral de la mesa ───────────── */
+.table-screen #monarch { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(8px, 0.8vw, 12px); padding: clamp(4px, 0.7vh, 8px); background: var(--table-2); border: 2px solid var(--curse-lit); box-shadow: 0 4px 0 var(--pit); color: var(--card-paper); }
+.table-screen #monarch[hidden] { display: none; }
+#monarch .mon-port { width: clamp(46px, 7.4vh, 84px); aspect-ratio: 1; cursor: help; }
+#monarch .mon-txt { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+#monarch .mon-who { font-family: var(--cap); font-weight: 700; font-size: max(14px, 1.5vh); line-height: 1.15; text-transform: uppercase; letter-spacing: 0.04em; color: var(--card-paper); }
+/* en escritorio la placa va en un renglón; el bunker le cede su grabado y, si falta alto, el título y algo de los montones */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  #monarch .curse-plate { white-space: nowrap; }
+  .table-screen:has(#monarch:not([hidden])) .bunker-art { display: none; }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 900px) {
+  #monarch .curse-plate { font-size: 13px; padding-right: 6px; gap: 4px; }
+  .table-screen:has(#monarch:not([hidden])) .bunker h3:has(#collapses:empty) { display: none; }
+  .table-screen:has(#monarch:not([hidden])) .pile .card { --w: clamp(26px, 4.6vh, 48px); }
+  #monarch .mon-port { width: clamp(40px, 5.8vh, 60px); }
+}
+/* con la guía encendida, su placa dice el paso: la caja de la Maestra se retira y la mesa no pierde alto */
+html[data-guia] .table-screen #coach { display: none !important; }
+
+/* ───────────── la mesa marcada con la tinta de la maldición ───────────── */
+.curse-tag { display: inline-flex; align-items: center; gap: 3px; padding: 0 5px 0 3px; background: var(--curse); color: var(--card-paper); border: 1.5px solid var(--pit); font-style: normal; font-family: var(--num); font-weight: 400; font-size: 13px; line-height: 1.35; letter-spacing: 0; white-space: nowrap; }
+.curse-tag .curse-ico { width: 14px; height: 14px; }
+.curse-tag.mini .curse-ico { display: none; }
+.pile:has(> .curse-tag) { position: relative; }
+.pile .curse-tag { position: absolute; z-index: 3; top: -9px; right: -4px; }
+.stat .curse-tag { order: 1; margin: 0 auto 0 8px; }
+.stat:has(> .curse-tag) > b { order: 2; }
+.threat .curse-tag { margin-left: 4px; align-self: center; }
+#fatigue .curse-tag { margin-left: 6px; }
+[data-curse='escudo'] #wall-blocks i:last-child { box-shadow: 6px 0 0 -1px var(--curse-lit); }
+[data-curse='guardias'] .tower .fx-apuntalado { background: var(--curse); color: var(--card-paper); border-color: var(--pit); }
+[data-curse='ataque'] .tower .threat b { box-shadow: 0 0 0 2px var(--curse-lit); }
+[data-curse='asedio'] #fatigue { border-color: var(--curse-lit); }
+#score .marks .m.curse { background: var(--curse); color: var(--card-paper); border-color: var(--pit); }
+[data-curse='contraataque'] #siren-slot { outline: 2px dashed var(--curse-lit); outline-offset: 2px; }
+/* Escasez: el hueco de la carta que falta, al final de la mano */
+.hand > .curse-ghost { flex: none; width: var(--w, 80px); aspect-ratio: 250 / 350; display: grid; place-items: center; border: 3px dashed var(--curse-lit); color: var(--curse-lit); background: rgba(109, 53, 128, 0.14); pointer-events: none; }
+.hand > .curse-ghost .curse-ico { width: 46%; height: auto; }
+/* Cáliz envenenado: el cáliz tachado sobre cada ♥ de la mano, arriba a la derecha (las esquinas, libres) */
+.card > .curse-chalice { position: absolute; z-index: 6; right: 6%; top: 22%; width: max(18px, calc(var(--w, 100px) * 0.2)); aspect-ratio: 1; display: grid; place-items: center; padding: 2px; background: var(--curse); color: var(--card-paper); border: 2px solid var(--pit); border-radius: 50%; pointer-events: none; }
+.card > .curse-chalice .curse-ico { width: 100%; height: 100%; }
+
+/* ───────────── bocadillo de voz ───────────── */
+.bark { position: fixed; z-index: 62; left: 0; top: 0; width: max-content; max-width: 600px; padding: 8px 14px; background: var(--card-paper); color: var(--ink); border: 3px solid var(--pit); box-shadow: 0 0 0 2px var(--curse-lit), 0 6px 0 2px var(--pit); font-family: var(--mono); font-weight: 700; font-size: clamp(14px, 1.75vh, 18px); line-height: 1.3; letter-spacing: 0; text-transform: none; pointer-events: none; }
+.bark[hidden] { display: none; }
+.bark p { margin: 0; }
+.bark::after { content: ''; position: absolute; width: 16px; height: 16px; background: var(--card-paper); border: 3px solid var(--pit); border-left: 0; border-bottom: 0; }
+.bark[data-pico='derecha']::after { right: -10px; top: calc(var(--pico-y, 50%) - 8px); transform: rotate(45deg); }
+.bark[data-pico='arriba']::after { top: -10px; left: calc(var(--pico-x, 50%) - 8px); transform: rotate(-45deg); }
+.bark.sale { animation: bark-sale 0.2s ease-out both; }
+@keyframes bark-sale { from { opacity: 0; transform: translateY(6px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* ───────────── foco de la partida guiada ───────────── */
+.guia { position: fixed; inset: 0; z-index: 36; pointer-events: none; }
+.guia[hidden] { display: none; }
+.guia-hueco { position: fixed; border-radius: 6px; box-shadow: 0 0 0 200vmax rgba(10, 9, 8, 0.6); opacity: 0; transition: opacity 0.25s ease-out; }
+.guia.on .guia-hueco { opacity: 1; }
+.guia-aro { position: fixed; border: 3px solid var(--hazard); border-radius: 8px; box-shadow: 0 0 0 2px var(--pit), inset 0 0 0 2px var(--pit); animation: aro-late 1.4s ease-in-out infinite; }
+.guia-aro[hidden] { display: none; }
+@keyframes aro-late { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+.guia-placa { position: fixed; left: 0; top: 0; margin: 0; width: max-content; padding: 8px 16px; background: var(--hazard); color: var(--ink); border: 3px solid var(--pit); box-shadow: 0 5px 0 var(--pit); font-family: var(--mono); font-weight: 700; font-size: clamp(15px, 1.9vh, 20px); line-height: 1.25; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.guia-placa b { padding: 0 5px; background: var(--ink); color: var(--card-paper); font-weight: 700; }
+
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* la barra de arriba: fichas en un renglón y los cinco botones siempre en el suyo */
+  .table-screen .bar::after { content: ""; order: 5; flex: 1 1 100%; height: 0; }
+  .table-screen .bar > button { order: 6; }
+  .table-screen .bar .players { order: 3; flex: 0 1 auto; }
+  /* el monarca ya tiene su renglón con retrato y placa: su ficha de la barra sobra */
+  .table-screen:has(#monarch:not([hidden])) .bar .boss-chip[data-lupa] { display: none; }
+  .guia-placa { font-size: 15px; padding: 6px 10px; white-space: normal; text-align: center; }
+  .bark { font-size: 15px; padding: 6px 10px; }
+  .curse-tag, .curse-plate { font-size: 14px; }
+  /* en la fila de Vida y Escudo no hay ancho: la marca va solo con su icono */
+  .bunker .curse-tag { font-size: 0; padding: 1px; gap: 0; margin-left: 3px; }
+  /* el monarca, en su renglón sobre Vida y Escudo */
+  .side { flex-wrap: wrap; }
+  .table-screen #monarch { order: -1; flex: 1 1 100%; padding: 3px 6px; gap: 8px; grid-template-columns: auto auto minmax(0, 1fr); box-shadow: none; }
+  #monarch .mon-port { width: 34px; }
+  #monarch .mon-txt { display: contents; }
+  #monarch .mon-who { font-size: 13px; letter-spacing: 0.02em; }
+  #monarch .curse-plate { justify-self: end; }
+  .threat .curse-tag { margin-left: 2px; padding: 0 2px; }
+}
+
+/* quieto con «Reducir movimiento» o con la mesa en calma */
+.calm .bark.sale, .calm .guia-aro { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .bark.sale, .guia-aro { animation: none; }
+  .guia-hueco { transition: none; }
+}
+
+/* ───────────── galería de los siete (estado de QA «monarcas») ───────────── */
+.monarcas-galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); align-content: start; align-items: start; gap: 16px; padding: 16px; }
+.mon-ficha { margin: 0; display: grid; gap: 10px; justify-items: start; align-content: start; padding: 12px; background: var(--table-2); border: 2px solid var(--curse-lit); color: var(--card-paper); }
+.mon-pareja { display: grid; grid-template-columns: 112px 48px; gap: 10px; align-items: end; }
+.mon-pareja .monarca { width: 112px; height: 112px; }
+.mon-pareja .monarca.mini { width: 48px; height: 48px; }
+.mon-ficha figcaption { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.mon-ficha .mon-who { font-family: var(--cap); font-weight: 700; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .monarcas-galeria { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 8px; }
+  .mon-ficha { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 6px 8px; }
+  .mon-pareja { grid-template-columns: 56px 28px; gap: 4px; }
+  .mon-pareja .monarca { width: 56px; height: 56px; }
+  .mon-pareja .monarca.mini { width: 28px; height: 28px; }
+  .mon-ficha .mon-who { font-size: 14px; }
+}

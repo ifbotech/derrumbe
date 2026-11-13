@@ -1083,3 +1083,33 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 /* logros conseguidos: el texto se apaga con tinta gris, no con opacidad, para que el «Desbloquea» en
    lacre siga a ≥ 4,5:1 sobre el papel */
 .ach.ok span { opacity: 1; color: #4d463c; }
+
+/* ───────────── V7 · F1: sello de factor en las cartas de la mano ─────────────
+   Con un trono apuntado, la misma placa que el trono (hierro «×0», latón «×2»/«×3») en el centro de la
+   carta: las dos esquinas del índice y el número de orden de arriba a la derecha quedan libres. */
+.card > .plate.factor { position: absolute; z-index: 7; left: 50%; top: 50%; translate: -50% -50%; height: auto; padding: 1px 6px 1px 4px; gap: 3px; pointer-events: none; box-shadow: 0 2px 0 var(--pit), inset 0 2px 0 rgba(255, 243, 214, 0.16); }
+.card > .plate.factor b { font-size: clamp(14px, 1.75vh, 18px); line-height: 1.1; }
+.card > .plate.factor .glyph { width: clamp(13px, 1.75vh, 18px); height: clamp(13px, 1.75vh, 18px); }
+.card > .plate.factor.iron::after { width: calc(clamp(13px, 1.75vh, 18px) + 4px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* en la carta de 44 px del móvil (un 10 llena casi todo el alto con sus esquinas) el sello va sin palo,
+     con filete fino y asomando por el canto izquierdo, justo debajo del índice de arriba */
+  .card > .plate.factor { left: -5px; top: 42%; translate: none; padding: 0 3px; gap: 0; border-width: 1.5px; box-shadow: 0 1px 0 var(--pit); }
+  .card > .plate.factor b { font-size: 14px; line-height: 1; letter-spacing: -0.03em; }
+  .card > .plate.factor .glyph, .card > .plate.factor.iron::after { display: none; }
+}
+
+/* ───────────── V7 · F3: la Vida del trono sale de las rayas ─────────────
+   La cifra va en su propia placa de papel con tinta (≥ 7:1), centrada sobre la barra y un poco más
+   alta que ella; la barra lleva su borde de tinta de 2 px que la separa de la franja de trama. El
+   relleno y su animación (transform) no cambian. */
+.tower .hp { overflow: visible; border: 2px solid var(--pit); box-shadow: 0 -2px 0 var(--pit); margin-top: 2px; }
+.tower .hp-fill { overflow: hidden; }
+.tower .hp span { inset: auto; left: 50%; top: 50%; translate: -50% -50%; display: block; padding: 1px 7px; background: var(--card-paper); color: var(--ink); border: 2px solid var(--pit); text-shadow: none; white-space: nowrap; font-size: clamp(15px, 1.6vh, 18px); line-height: 1; letter-spacing: 0; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .tower .hp span { font-size: 14px; padding: 1px 3px; }
+}
+
+/* V7: el naipe del Contraataque en su montón lleva su índice en la tinta de su palo (no en la del rótulo del montón) */
+.pile .card .corner b { color: inherit; }
+.blocks.wall { grid-template-columns: repeat(var(--cols, var(--cap, 8)), 1fr); }
