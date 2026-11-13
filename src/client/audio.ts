@@ -1,4 +1,7 @@
 // Sonido del juego: todo sintetizado con WebAudio (sin archivos ni dependencias).
+// V8 · La partitura sale del generador puro (audio-frases.ts): de (semilla, escena, asalto, compás) sale cada
+// compás, y aquí solo se toca. Los efectos repetidos varían tono, ataque y panorama con ese mismo azar
+// sembrado (variacion), así qa:audio mide exactamente lo que suena. La semilla vive solo en este cliente.
 // Efectos de piedra, hierro y cuerno de guerra, y una marcha en re menor armónico (bordón grave,
 // tambores, laúd, coro, cuernos y campana) que nunca suena dos veces igual: cada vuelta varía la
 // melodía y entran o callan instrumentos según la presión de la obra.
@@ -12,7 +15,18 @@
 // dos toques de madera hacia abajo, la sirena que el muro frena entera es piedra contra piedra con un
 // respiro que sube, y la que entra es hierro, un cuerno que se desploma y cascotes. Lo que se repite
 // (elegir carta, mover el foco) nunca suena dos veces igual: cambia unos cents, el ataque y la nota.
+import { PAN, campana, compas, flujo, mezcla, variacion, type Escena, type Evento, type Voz } from './audio-frases';
 import { loadJson, platform, saveJson } from './platform';
+
+/** La semilla de la música y de las variaciones: una por sesión (con ?qa, siempre 1). */
+const QA = new URLSearchParams(location.search).has('qa');
+const SEMILLA = QA ? 1 : crypto.getRandomValues(new Uint32Array(1))[0] || 1;
+/** Azar sembrado para los detalles internos de cada efecto (nada de Math.random en lo que suena). */
+const azar = flujo(mezcla(SEMILLA, 77));
+/** Cuántas veces ha sonado cada efecto: la vez n pide su variación al generador. */
+const vez: Record<string, number> = {};
+const vario = (efecto: string) => variacion(SEMILLA, efecto, (vez[efecto] = (vez[efecto] ?? 0) + 1));
+const cents = (c: number) => 2 ** (c / 1200);
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -45,7 +59,7 @@ export function setVolume(kind: keyof Volume, value: number): void {
     if (volume.music > 0) startLoop();
     else stopLoop();
   }
-  if (timer !== null) musicBus?.gain.setTargetAtTime(0.6 * gainOf(volume.music), t, 0.1);
+  if (timer !== null) musicBus?.gain.setTargetAtTime(MUSIC_GAIN * gainOf(volume.music), t, 0.1);
 }
 
 function ac(): AudioContext | null {
@@ -169,11 +183,18 @@ function noise(out: AudioNode, t: number, dur: number, vol: number, type: Biquad
 
 // ───────────────────────── Efectos ─────────────────────────
 
-function fx(play: (a: AudioContext, out: AudioNode, t: number) => void): void {
+function fx(play: (a: AudioContext, out: AudioNode, t: number) => void, pan = 0): void {
   if (volume.sfx <= 0 || document.hidden) return;
   const a = ac();
   if (!a || !sfxBus) return;
-  play(a, sfxBus, a.currentTime + 0.01);
+  let out: AudioNode = sfxBus;
+  if (pan) {
+    const p = a.createStereoPanner();
+    p.pan.value = pan;
+    p.connect(sfxBus);
+    out = p;
+  }
+  play(a, out, a.currentTime + 0.01);
 }
 
 const horn = (out: AudioNode, f: number, t: number, dur: number, vol: number, slide?: number) => {
@@ -185,9 +206,9 @@ const horn = (out: AudioNode, f: number, t: number, dur: number, vol: number, sl
 /** Semitonos → factor de frecuencia. */
 const semi = (n: number) => 2 ** (n / 12);
 /** Desafinación leve (± cents) para lo que se repite: ningún toque sale idéntico al anterior. */
-const drift = (cents = 12) => 2 ** (((Math.random() * 2 - 1) * cents) / 1200);
+const drift = (c = 12) => 2 ** (((azar() * 2 - 1) * c) / 1200);
 /** Entre 1 − a y 1 + a: para variar un poco el volumen o el ataque. */
-const sway = (a = 0.12) => 1 + (Math.random() * 2 - 1) * a;
+const sway = (a = 0.12) => 1 + (azar() * 2 - 1) * a;
 /** Re menor pentatónico: cada carta que se suma a la selección sube un peldaño. */
 const PENTA = [0, 3, 5, 7, 10, 12, 15];
 /** Tres alturas para el paso del foco; se van turnando para no repetir la misma dos veces. */
@@ -251,11 +272,13 @@ export const sfx = logged({
       note(o, f * 2, t, 0.09, { type: 'sine', vol: 0.04 });
     }),
   /** naipe que sale de la mano */
-  flick: () =>
+  flick: () => {
+    const v = vario('flick');
     fx((_, o, t) => {
-      noise(o, t, 0.05, 0.16, 'highpass', 3400);
-      note(o, 900, t, 0.05, { type: 'triangle', vol: 0.03, slide: 420 });
-    }),
+      noise(o, t, 0.05, 0.16, 'highpass', 3400 * cents(v.cents));
+      note(o, 900 * cents(v.cents), t, 0.05, { type: 'triangle', vol: 0.03, slide: 420, attack: v.ataque });
+    }, v.pan);
+  },
   /** tampón de goma contra el papel */
   stamp: () =>
     fx((_, o, t) => {
@@ -284,36 +307,44 @@ export const sfx = logged({
       note(o, 320, t, 0.5, { type: 'sawtooth', vol: 0.02, slide: 90 });
     }),
   /** cascada de monedas: una por cada pieza de oro (hasta 10) */
-  coins: (n: number) =>
+  coins: (n: number) => {
+    const v = vario('coins');
     fx((_, o, t) => {
       for (let i = 0; i < Math.min(10, Math.max(2, n)); i++) {
-        const at = t + i * 0.055 + Math.random() * 0.02;
-        note(o, 1400 + Math.random() * 1500, at, 0.14, { type: 'sine', vol: 0.06 });
+        const at = t + i * 0.055 + azar() * 0.02;
+        // cada moneda que cae: canto agudo y un rebote más grave, en re menor (la, re, fa)
+        const f = [1760, 2349.3, 2793.8, 3520][Math.floor(azar() * 4)] * cents(v.cents);
+        note(o, f, at, 0.14, { type: 'sine', vol: 0.05, attack: v.ataque });
+        note(o, f * 0.749, at + 0.03, 0.08, { type: 'triangle', vol: 0.015, attack: 0.002 });
         noise(o, at, 0.02, 0.05, 'highpass', 5000);
       }
-    }),
+    }, v.pan);
+  },
   /**
    * Golpe exacto: campana de capilla, breve. Parciales de campana de iglesia (zumbido, fundamental,
    * tercera menor, quinta, nominal) y, como firma del acierto, una quinta que sube. Cada vez un pelo
    * desafinada para que una racha de exactos no suene a la misma grabación.
    */
-  bell: () =>
+  bell: (cadena = 1) => {
+    // V8: un semitono más por cada Golpe exacto seguido (tope +7); la cadena la cuenta fx.ts
+    const v = vario('bell');
+    const f = 698.46 * semi(campana(cadena)) * cents(v.cents);
     fx((_, o, t) => {
-      const f = 698.46 * drift(14);
-      [[0.5, 0.9, 0.05], [1, 0.75, 0.12], [1.19, 0.55, 0.06], [1.5, 0.45, 0.045], [2, 0.38, 0.05], [2.66, 0.2, 0.018]].forEach(([m, d, v]) =>
-        note(o, f * m, t, d, { type: 'sine', vol: v * sway(0.1), attack: 0.002 }),
+      [[0.5, 0.9, 0.05], [1, 0.75, 0.12], [1.19, 0.55, 0.06], [1.5, 0.45, 0.045], [2, 0.38, 0.05], [2.66, 0.2, 0.018]].forEach(([m, d, vol]) =>
+        note(o, f * m, t, d, { type: 'sine', vol: vol * sway(0.1), attack: v.ataque }),
       );
       noise(o, t, 0.02, 0.1, 'highpass', 3600);
       note(o, f * 1.5, t + 0.12, 0.38, { type: 'sine', vol: 0.06 });
       note(o, f * 2, t + 0.12, 0.2, { type: 'triangle', vol: 0.015 });
-    }),
+    }, v.pan);
+  },
   /** varios guardias a la vez: el suelo de la sala retumba */
   rumble: (floors: number) =>
     fx((_, o, t) => {
       const dur = 0.9 + 0.35 * Math.min(4, floors);
       noise(o, t, dur, 0.6, 'lowpass', 180);
       note(o, 52, t, dur, { type: 'sine', vol: 0.55, slide: 30 });
-      for (let i = 0; i < 6 + floors * 3; i++) noise(o, t + Math.random() * dur, 0.08, 0.2, 'bandpass', 300 + Math.random() * 900);
+      for (let i = 0; i < 6 + floors * 3; i++) noise(o, t + azar() * dur, 0.08, 0.2, 'bandpass', 300 + azar() * 900);
     }),
   /**
    * cuerda pulsada breve. `n` es cuántas cartas quedan elegidas: cada una sube un peldaño de la escala,
@@ -324,7 +355,7 @@ export const sfx = logged({
     fx((_, o, t) => {
       const f = 587.33 * semi(PENTA[Math.max(0, Math.min(PENTA.length - 1, on ? n - 1 : n))]) * drift(9);
       if (on) {
-        note(o, f, t, 0.13 * sway(), { vol: 0.05 * sway(), attack: 0.003 + Math.random() * 0.006 });
+        note(o, f, t, 0.13 * sway(), { vol: 0.05 * sway(), attack: 0.003 + azar() * 0.006 });
         note(o, f * 2, t, 0.05, { type: 'sine', vol: 0.012 });
       } else note(o, f, t, 0.1, { vol: 0.04 * sway(), attack: 0.004, slide: f * 0.84, cutoff: 1500 });
     }),
@@ -334,9 +365,9 @@ export const sfx = logged({
    */
   focus: (dx = 0, dy = 0) =>
     fx((_, o, t) => {
-      stepTone = (stepTone + 1 + Math.floor(Math.random() * 2)) % STEP_TONES.length;
+      stepTone = (stepTone + 1 + Math.floor(azar() * 2)) % STEP_TONES.length;
       const f = 1046.5 * semi(STEP_TONES[stepTone] + (dx - dy) * 2) * drift(10);
-      note(o, f, t, 0.035, { type: 'triangle', vol: 0.026 * sway(0.2), attack: 0.002 + Math.random() * 0.003 });
+      note(o, f, t, 0.035, { type: 'triangle', vol: 0.026 * sway(0.2), attack: 0.002 + azar() * 0.003 });
       noise(o, t, 0.012, 0.018, 'highpass', 5200);
     }),
   /** el foco no tiene adónde ir por ese lado: un toque apagado, sin nota */
@@ -360,12 +391,66 @@ export const sfx = logged({
   /** pergamino */
   card: () => fx((_, o, t) => noise(o, t, 0.07, 0.12, 'highpass', 2600)),
   /** mazo contra piedra, con el canto del hierro */
-  hit: () =>
+  hit: () => {
+    const v = vario('hit');
+    const k = cents(v.cents);
     fx((_, o, t) => {
-      noise(o, t, 0.2, 0.5, 'lowpass', 700);
-      note(o, 120, t, 0.25, { type: 'sine', vol: 0.4, slide: 46 });
-      [1, 2.76, 5.4].forEach((m, i) => note(o, 330 * m, t, 0.35 - i * 0.08, { type: 'sine', vol: 0.05 / (i + 1) }));
-    }),
+      noise(o, t, 0.2, 0.5, 'lowpass', 700 * k);
+      note(o, 120 * k, t, 0.25, { type: 'sine', vol: 0.4, slide: 46, attack: v.ataque });
+      [1, 2.76, 5.4].forEach((m, i) => note(o, 330 * k * m, t, 0.35 - i * 0.08, { type: 'sine', vol: 0.05 / (i + 1), attack: v.ataque }));
+    }, v.pan);
+  },
+  /** V8 · tajo de hoja (el naipe partido en diagonal): el filo que silba y corta, y el papel que se abre */
+  slash: () => {
+    const v = vario('slash');
+    const k = cents(v.cents);
+    fx((a, o, t) => {
+      const air = a.createBiquadFilter();
+      air.type = 'bandpass';
+      air.Q.value = 1.4;
+      air.frequency.setValueAtTime(6200 * k, t);
+      air.frequency.exponentialRampToValueAtTime(1800 * k, t + 0.13);
+      air.connect(o);
+      noise(air, t, 0.16, 0.42, 'highpass', 900);
+      [1, 2.41, 3.73].forEach((m, i) => note(o, 1318.5 * k * m, t + 0.05, 0.22 - i * 0.05, { type: 'sine', vol: 0.03 / (i + 1), attack: v.ataque }));
+      noise(o, t + 0.07, 0.09, 0.14, 'bandpass', 2600 * k);
+    }, v.pan);
+  },
+  /** V8 · una carta que se desliza a La Manga: roce de papel contra la tela y un toque al quedar guardada */
+  stash: (back = false) => {
+    const v = vario('stash');
+    const k = cents(v.cents);
+    fx((a, o, t) => {
+      const cloth = a.createBiquadFilter();
+      cloth.type = 'bandpass';
+      cloth.Q.value = 0.8;
+      cloth.frequency.setValueAtTime(2400 * k, t);
+      cloth.frequency.exponentialRampToValueAtTime(700 * k, t + 0.2);
+      cloth.connect(o);
+      noise(cloth, t, 0.22, 0.24, 'highpass', 400);
+      note(o, (back ? 392 : 293.66) * k, t + 0.2, 0.09, { type: 'triangle', vol: 0.04, cutoff: 1500, attack: v.ataque });
+      if (back) note(o, 293.66 * k, t + 0.27, 0.1, { type: 'triangle', vol: 0.035, cutoff: 1400 });
+    }, v.pan);
+  },
+  /** V8 · sello de lacre caliente: la prensa que aplasta, el siseo de la cera y el lacre que se asienta */
+  seal: () => {
+    const v = vario('seal');
+    const k = cents(v.cents);
+    fx((_, o, t) => {
+      note(o, 130 * k, t, 0.16, { type: 'sine', vol: 0.42, slide: 58, attack: v.ataque });
+      noise(o, t, 0.06, 0.24, 'lowpass', 800);
+      noise(o, t + 0.04, 0.34, 0.06, 'highpass', 5200 * k); // la cera que sisea
+      noise(o, t + 0.12, 0.1, 0.07, 'bandpass', 620 * k);
+    }, v.pan);
+  },
+  /** V8 · la lámina que brilla al cruzar la carta (un acabado en la cuenta): tres parciales finos que suben */
+  foil: () => {
+    const v = vario('foil');
+    const k = cents(v.cents);
+    fx((_, o, t) => {
+      [2349.3, 2793.8, 3520].forEach((f, i) => note(o, f * k, t + i * 0.045, 0.18, { type: 'sine', vol: 0.014, attack: v.ataque + 0.004 }));
+    }, v.pan);
+  },
   /**
    * Guardia abatido: un estandarte que cae. Tela que azota el aire (ruido que barre de agudo a grave),
    * el asta que golpea la losa y un roce final. Con `clean` = true se recoge pronto para dejar sitio a
@@ -377,7 +462,7 @@ export const sfx = logged({
       if (clean === undefined) {
         noise(o, t, 1.3, 0.7, 'lowpass', 320);
         note(o, 80, t, 1.1, { type: 'sine', vol: 0.5, slide: 28 });
-        for (let i = 0; i < 9; i++) noise(o, t + 0.12 + Math.random() * 0.8, 0.07, 0.25, 'bandpass', 500 + Math.random() * 1800);
+        for (let i = 0; i < 9; i++) noise(o, t + 0.12 + azar() * 0.8, 0.07, 0.25, 'bandpass', 500 + azar() * 1800);
         return;
       }
       // la tela: un paso de banda que baja de 2,6 kHz a 500 Hz mientras dura el azote
@@ -391,7 +476,7 @@ export const sfx = logged({
       noise(cloth, t, 0.46, 0.5 * sway(), 'highpass', 300);
       noise(cloth, t + 0.08, 0.3, 0.3 * sway(), 'highpass', 600);
       // el asta contra la losa: madera, seca
-      const at = t + 0.36 + Math.random() * 0.04;
+      const at = t + 0.36 + azar() * 0.04;
       note(o, 140 * k, at, 0.16, { type: 'sine', vol: 0.42, slide: 70 });
       noise(o, at, 0.05, 0.22, 'bandpass', 900 * k);
       note(o, 420 * k, at, 0.05, { type: 'triangle', vol: 0.05, cutoff: 1400 });
@@ -416,7 +501,7 @@ export const sfx = logged({
       note(o, 70, st, 0.9, { type: 'sine', vol: 0.5, slide: 34 });
       noise(o, st, 0.8, 0.5, 'lowpass', 300);
       noise(o, st + 0.02, 0.12, 0.22, 'bandpass', 1500 * k);
-      for (let i = 0; i < 7; i++) noise(o, st + 0.15 + Math.random() * 0.7, 0.06, 0.16, 'bandpass', 600 + Math.random() * 1600);
+      for (let i = 0; i < 7; i++) noise(o, st + 0.15 + azar() * 0.7, 0.06, 0.16, 'bandpass', 600 + azar() * 1600);
     }),
   /** Motín: redoble de tambor que acelera y remata con un golpe, como quien llama a la revuelta */
   mutiny: () =>
@@ -453,18 +538,20 @@ export const sfx = logged({
    * largo cuanto más Vida quita. Frenado a medias suena a las dos cosas: primero el escudo, luego el golpe.
    */
   sirenLand: (taken: number, blocked = 0): void => (taken > 0 ? sfx.sirenHit(taken, blocked) : sfx.sirenBlocked()),
-  sirenBlocked: () =>
+  sirenBlocked: () => {
+    const v = vario('sirenBlocked');
     fx((_, o, t) => {
-      const k = drift(20);
+      const k = cents(v.cents);
       // acero: parciales inarmónicos cortos, de ataque instantáneo
       [1, 2.32, 3.86, 5.1].forEach((m, i) => note(o, 740 * k * m, t, 0.42 - i * 0.08, { type: 'sine', vol: 0.07 / (i + 1), attack: 0.001 }));
       noise(o, t, 0.04, 0.26, 'highpass', 3800);
       // el escudo: madera que encaja el golpe
       note(o, 180 * k, t, 0.12, { type: 'sine', vol: 0.3, slide: 120 });
       noise(o, t, 0.07, 0.2, 'bandpass', 700);
-      note(o, 392, t + 0.2, 0.16, { type: 'triangle', vol: 0.05, cutoff: 1600 });
-      note(o, 523.25, t + 0.32, 0.3, { type: 'triangle', vol: 0.06, cutoff: 1800 });
-    }),
+      note(o, 392 * k, t + 0.2, 0.16, { type: 'triangle', vol: 0.05, cutoff: 1600, attack: v.ataque });
+      note(o, 523.25 * k, t + 0.32, 0.3, { type: 'triangle', vol: 0.06, cutoff: 1800, attack: v.ataque });
+    }, v.pan);
+  },
   sirenHit: (taken: number, blocked = 0) =>
     fx((_, o, t) => {
       const power = Math.max(0.35, Math.min(1, taken / 7));
@@ -520,12 +607,12 @@ export const sfx = logged({
     fx((a, o, t) => {
       const f = a.createBiquadFilter();
       f.type = 'bandpass';
-      f.frequency.value = 520 + Math.random() * 260;
+      f.frequency.value = 520 + azar() * 260;
       f.Q.value = 3.5;
       f.connect(o);
-      const base = 92 + Math.random() * 34;
-      const n = 2 + Math.floor(Math.random() * 2);
-      for (let i = 0; i < n; i++) note(f, base * (1 + (Math.random() - 0.5) * 0.24), t + i * 0.15, 0.13, { type: 'sawtooth', vol: 0.5, attack: 0.02, slide: base * 0.8 });
+      const base = 92 + azar() * 34;
+      const n = 2 + Math.floor(azar() * 2);
+      for (let i = 0; i < n; i++) note(f, base * (1 + (azar() - 0.5) * 0.24), t + i * 0.15, 0.13, { type: 'sawtooth', vol: 0.5, attack: 0.02, slide: base * 0.8 });
     }),
   /** piedra sobre piedra */
   build: () =>
@@ -560,7 +647,7 @@ export const sfx = logged({
   reveal: (i = 0) =>
     fx((_, o, t) => {
       noise(o, t, 0.05, 0.16 * sway(0.2), 'bandpass', 1900 * drift(60));
-      note(o, 220 * semi(PENTA[Math.min(i, PENTA.length - 1)]) * drift(10), t + 0.01, 0.12, { type: 'triangle', vol: 0.06 * sway(), attack: 0.002 + Math.random() * 0.004, cutoff: 1600 });
+      note(o, 220 * semi(PENTA[Math.min(i, PENTA.length - 1)]) * drift(10), t + 0.01, 0.12, { type: 'triangle', vol: 0.06 * sway(), attack: 0.002 + azar() * 0.004, cutoff: 1600 });
     }),
   /** V7 · paso de la partida guiada cumplido: dos trazos que suben (distinto del error, que baja) */
   learnt: () =>
@@ -586,206 +673,135 @@ if (new URLSearchParams(location.search).has('qa')) Object.assign(window, { __qa
 
 // ───────────────────────── Música ─────────────────────────
 
-const F: Record<string, number> = {
-  D2: 73.42, G2: 98, A2: 110, Bb2: 116.54, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196, A3: 220, Bb3: 233.08,
-  'C#4': 277.18, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440,
-};
-/**
- * Escena musical. La música no es un bucle fijo: cada lugar del juego tiene su tempo, su tono,
- * su ritmo de tambor y sus instrumentos, y cada obra de la campaña suena distinta a la anterior.
- */
+/** La música va por debajo de los efectos (y los ajustes de volumen y silencio siguen mandando). */
+const MUSIC_GAIN = 0.55;
+/** Dónde suena la música: portada, Mapa del castillo, La Taberna o la mesa (con su asalto y su monarca). */
 interface Scene {
-  kind: 'menu' | 'shop' | 'battle';
-  bpm: number;
-  /** Transporte en semitonos sobre re menor. */
-  shift: number;
-  drums: number[];
-  /** Qué línea lleva la melodía principal. */
-  lead: 'a' | 'b';
+  kind: Escena;
+  stage: number;
   boss: boolean;
 }
-const D_MARCH = [1, 0, 0, 1, 0, 0, 1, 0]; // 3 + 3 + 2
-const D_SLOW = [1, 0, 0, 0, 1, 0, 0, 0];
-const D_GALLOP = [1, 0, 1, 1, 0, 1, 1, 0];
-const D_WAR = [1, 1, 0, 1, 1, 0, 1, 1];
-const D_SHOP = [1, 0, 0, 0, 0, 0, 1, 0];
-let scene: Scene = { kind: 'menu', bpm: 66, shift: 0, drums: D_SLOW, lead: 'a', boss: false };
-const stepLen = () => 60 / scene.bpm / 2; // corchea
-const tr = () => 2 ** (scene.shift / 12);
-// Melodía (8 compases de 8 corcheas). '.' = silencio.
-// Re menor armónico: el si bemol y el do sostenido le dan el color sombrío.
-const MELODY = [
-  'D4 . F4 . E4 . D4 .',
-  'Bb3 . . D4 F4 . D4 .',
-  'G4 . F4 . D4 . Bb3 .',
-  'A3 . . . C#4 . E4 .',
-  'F4 . A4 . G4 . F4 .',
-  'D4 . F4 D4 Bb3 . D4 .',
-  'E4 . C#4 . A3 . C#4 .',
-  'D4 . . . . . . .',
-].flatMap((bar) => bar.split(' '));
-const SECOND = [
-  'A3 . . . D4 . . .',
-  'Bb3 . . . F3 . . .',
-  'G3 . Bb3 . D4 . . .',
-  'C#4 . . . A3 . . .',
-  'D4 . . F4 . . A4 .',
-  'Bb3 . D4 . F4 . . .',
-  'E4 . . C#4 . . A3 .',
-  'D3 . . . . . . .',
-].flatMap((bar) => bar.split(' '));
-// i – VI – iv – V | i – VI – V – i
-const CHORDS: [string, string][] = [['D2', 'A2'], ['Bb2', 'F3'], ['G2', 'D3'], ['A2', 'E3'], ['D2', 'A2'], ['Bb2', 'F3'], ['A2', 'E3'], ['D2', 'A2']];
-const DRUM = [1, 0, 0, 1, 0, 0, 1, 0]; // 3 + 3 + 2
-
+let scene: Scene = { kind: 'menu', stage: 1, boss: false };
+/** La escena siguiente entra al acabar el compás que suena: transiciones de una frase, sin cortes. */
+let pending: Scene | null = null;
 let timer: number | null = null;
-let step = 0;
+/** Compás global: no se reinicia nunca en la sesión, así el generador nunca da dos veces el mismo. */
+let bar = 0;
+let sceneStart = 0;
 let nextTime = 0;
 let drone: OscillatorNode[] = [];
-/** Presión de la obra, de 0 (pensando con calma) a 1 (el búnker se cae): decide qué capas suenan. */
+/** Presión de la mesa, de 0 (pensando con calma) a 1 (la Vida se acaba): decide qué capas suenan. */
 let pressure = 0.3;
 let pressureNow = 0.3;
-
-// Escala de re menor armónico, para adornar la melodía con notas de paso.
-const SCALE = ['D3', 'E3', 'F3', 'G3', 'A3', 'Bb3', 'C#4', 'D4', 'E4', 'F4', 'G4', 'A4'];
-/** Azar con semilla: cada vuelta tiene su variación, pero siempre la misma para esa vuelta. */
-function seeded(seed: number): () => number {
-  let x = (seed * 2654435761) >>> 0 || 1;
-  return () => ((x = (Math.imul(x ^ (x >>> 15), x | 1) + 0x6d2b79f5) >>> 0) / 4294967296);
-}
-/** Lo que suena en una vuelta de 8 compases. */
-interface Loop {
-  phrase: string[];
-  /** Compases en los que el laúd calla. */
-  rest: boolean[];
-  /** Compases que el laúd toca una octava abajo. */
-  low: boolean[];
-  /** Vuelta de respiro: solo bordón, bajo y campana. */
-  breath: boolean;
-  /** El eco: la frase vuelve un tiempo después, más floja. */
-  echo: boolean;
-}
-let current: Loop | null = null;
-let currentKey = '';
-
-function makeLoop(index: number): Loop {
-  const rnd = seeded(index * 31 + scene.bpm * 7 + scene.shift * 13 + 5);
-  const base = (index + (scene.lead === 'a' ? 0 : 1)) % 3 === 2 ? SECOND : MELODY;
-  const phrase = [...base];
-  const rest = Array.from({ length: 8 }, () => false);
-  const low = Array.from({ length: 8 }, () => false);
-  for (let bar = 0; bar < 8; bar++) {
-    const r = rnd();
-    const at = bar * 8;
-    if (bar !== 0 && bar !== 7 && r < 0.14) rest[bar] = true; // un compás de silencio
-    else if (r < 0.26) low[bar] = true; // el compás baja una octava
-    else if (r < 0.44) {
-      // nota de paso entre dos notas vecinas de la escala
-      for (let p = 0; p < 6; p++) {
-        const a = SCALE.indexOf(phrase[at + p]);
-        const b = SCALE.indexOf(phrase[at + p + 2]);
-        if (a >= 0 && b >= 0 && phrase[at + p + 1] === '.' && Math.abs(a - b) === 2) phrase[at + p + 1] = SCALE[(a + b) / 2];
-      }
-    } else if (r < 0.54 && bar < 7) {
-      // el compás se toca del revés
-      const notes = phrase.slice(at, at + 8).reverse();
-      const shift = notes.findIndex((n) => n !== '.');
-      for (let p = 0; p < 8; p++) phrase[at + p] = notes[(p + Math.max(0, shift)) % 8];
-    }
+const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
+/** Un panoramizador por voz (el panorama de cada voz lo fija el generador). */
+const voiceBus: Partial<Record<Voz, AudioNode>> = {};
+function voiceOut(v: Voz): AudioNode {
+  let n = voiceBus[v];
+  if (!n) {
+    const p = ctx!.createStereoPanner();
+    p.pan.value = PAN[v];
+    p.connect(musicBus!);
+    n = voiceBus[v] = p;
   }
-  return { phrase, rest, low, breath: index % 5 === 4 && !scene.boss, echo: rnd() < 0.35 };
+  return n;
 }
 
-function schedule(t: number, s: number): void {
-  const out = musicBus!;
-  const sc = scene;
-  const k = tr();
-  const STEP = stepLen();
-  const bar = Math.floor(s / 8) % 8;
-  const pos = s % 8;
-  const index = Math.floor(s / 64);
-  const key = `${sc.kind}:${sc.bpm}:${sc.shift}:${index}`;
-  if (!current || currentKey !== key) {
-    current = makeLoop(index);
-    currentKey = key;
+/** Toca un evento de la partitura. Solo se le añade el drift de afinación sembrado (que qa:audio ignora). */
+function play(e: Evento, t: number, sx: number, kind: Escena): void {
+  const o = voiceOut(e.voz);
+  const f = hz(e.nota) * drift(4);
+  const d = e.dur * sx;
+  const v = e.vel;
+  switch (e.voz) {
+    case 'tambor':
+      note(o, f, t, 0.6, { type: 'sine', vol: 0.6 * v, slide: 30, attack: e.ataque });
+      noise(o, t, 0.14, 0.22 * v, 'lowpass', 170);
+      break;
+    case 'guerra':
+      // tambor de guerra: parche grave y largo, con el chasquido de la baqueta
+      note(o, f, t, 0.5, { type: 'sine', vol: 0.5 * v, slide: f * 0.55, attack: e.ataque });
+      noise(o, t, 0.2, 0.28 * v, 'lowpass', 260);
+      noise(o, t, 0.04, 0.07 * v, 'bandpass', 1900);
+      break;
+    case 'cadenas':
+      noise(o, t, 0.09, 0.09 * v, 'bandpass', f);
+      break;
+    case 'campana':
+      [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(o, f * m, t, 4.5 - i * 0.6, { type: 'sine', vol: (0.16 * v) / (i + 1), attack: e.ataque }));
+      break;
+    case 'cuernos':
+      for (const det of [-7, 7]) note(o, f, t, d * 0.97, { type: 'sawtooth', vol: 0.075 * v, attack: e.ataque, cutoff: 400, detune: det });
+      break;
+    case 'metales':
+      // metales de guerra: dos sierras abiertas y una cuadrada una octava abajo, golpe corto
+      for (const det of [-6, 6]) note(o, f, t, Math.max(0.25, d), { type: 'sawtooth', vol: 0.03 * v, attack: e.ataque, cutoff: 1500, detune: det });
+      note(o, f / 2, t, Math.max(0.25, d), { type: 'square', vol: 0.014 * v, attack: e.ataque + 0.01, cutoff: 700 });
+      break;
+    case 'bajo':
+      note(o, f, t, Math.max(0.4, Math.min(0.9, d)), { type: 'triangle', vol: 0.14 * v, cutoff: 900, attack: e.ataque });
+      break;
+    case 'laud':
+      note(o, f, t, Math.min(1.1, Math.max(0.35, d + 0.4)), { type: 'triangle', vol: 0.15 * v, cutoff: kind === 'shop' ? 2600 : kind === 'map' ? 2200 : 1500, attack: e.ataque });
+      note(o, f / 2, t, Math.min(0.9, Math.max(0.3, d + 0.2)), { type: 'triangle', vol: 0.06 * v, cutoff: 900 });
+      break;
+    case 'eco':
+      note(o, f, t, 0.8, { type: 'triangle', vol: 0.13 * v, cutoff: 1100, attack: e.ataque });
+      break;
+    case 'punteo':
+      note(o, f, t, 0.35, { type: 'triangle', vol: 0.07 * v, cutoff: 2400, attack: e.ataque });
+      break;
+    case 'coro':
+      note(o, f, t, d, { type: 'sawtooth', vol: 0.045 * v, attack: e.ataque, cutoff: 520, vibrato: 2.5, detune: -5 });
+      note(o, f, t, d, { type: 'sine', vol: 0.08 * v, attack: e.ataque, vibrato: 2.5, detune: 5 });
+      break;
   }
-  const loop = current;
-  pressureNow += (pressure - pressureNow) * 0.06; // la música no salta: sube y baja poco a poco
-  const battle = sc.kind === 'battle';
-  const p = battle ? (sc.boss ? Math.max(0.55, pressureNow) : pressureNow) : sc.kind === 'shop' ? 0.2 : 0.35;
-  const breath = loop.breath && p < 0.6;
+}
 
-  // tambores: latido suelto con calma, el ritmo de la obra a media presión, redoble cuando aprieta
-  const beat = p < 0.28 ? pos === 0 : sc.drums[pos] === 1 || (p > 0.7 && pos % 2 === 0) || (battle && bar === 7 && pos >= 5 && p > 0.4);
-  if (beat && !breath) {
-    const soft = (battle ? 0.55 + 0.6 * p : 0.4) * (0.9 + 0.2 * Math.sin(s * 1.7)); // cada golpe, un poco distinto
-    note(out, pos === 0 ? 92 : 74, t, 0.6, { type: 'sine', vol: (pos === 0 ? 0.6 : 0.38) * soft, slide: 30 });
-    noise(out, t, 0.14, 0.22 * soft, 'lowpass', 170);
+/** Programa el compás que empieza en t y devuelve lo que dura. */
+function scheduleBar(t: number): number {
+  if (pending) {
+    scene = pending;
+    pending = null;
+    sceneStart = bar;
   }
-  // cadenas: un roce metálico apagado en los contratiempos, solo cuando hay tensión
-  if (battle && p > 0.45 && pos % 4 === 2) noise(out, t, 0.09, 0.03 + 0.05 * p, 'bandpass', 820);
-  // campana a lo lejos al abrir cada vuelta (con jefe, cada cuatro compases)
-  if (sc.kind !== 'shop' && (s % 64 === 0 || (sc.boss && s % 32 === 0))) [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(out, 73.42 * k * m, t, 4.5 - i * 0.6, { type: 'sine', vol: 0.1 / (i + 1) }));
-  // cuernos graves: fundamental y quinta por compás; crecen con la presión
-  if (pos === 0 && sc.kind !== 'shop' && !breath) {
-    const [root, fifth] = CHORDS[bar];
-    const dur = STEP * 8 * 0.97;
-    const loud = sc.boss ? 1.25 : battle ? 0.45 + 0.8 * p : 0.55;
-    for (const [n, vol] of [[root, 0.075], [fifth, 0.045]] as [string, number][]) {
-      note(out, F[n] * k, t, dur, { type: 'sawtooth', vol: vol * loud, attack: 0.45, cutoff: sc.boss ? 460 : 380, detune: -7 });
-      note(out, F[n] * k, t, dur, { type: 'sawtooth', vol: vol * loud, attack: 0.45, cutoff: sc.boss ? 460 : 380, detune: 7 });
-    }
-  }
-  // bajo de laúd a contratiempo: en la ferretería siempre; en la obra, mientras se piensa con calma
-  if ((sc.kind === 'shop' || breath || (battle && p < 0.45)) && (pos === 0 || pos === 3 || pos === 6)) note(out, F[CHORDS[bar][pos === 0 ? 0 : 1]] * k, t, 0.7, { type: 'triangle', vol: sc.kind === 'shop' ? 0.11 : 0.08, cutoff: 900 });
-  // melodía: el laúd entra en la segunda vuelta, y respira
-  if (index === 0 && !sc.boss && sc.kind === 'battle') return;
-  if (breath || loop.rest[bar]) return;
-  const n = loop.phrase[s % 64];
-  if (n === '.') return;
-  const f = F[n] * k * (loop.low[bar] ? 0.5 : 1);
-  const bright = sc.kind === 'shop' ? 2600 : 1300 + 500 * p;
-  const touch = 0.85 + 0.3 * Math.abs(Math.sin(s * 2.3)); // pulsación humana
-  note(out, f, t, 1.1, { type: 'triangle', vol: 0.115 * touch, cutoff: bright }); // laúd
-  note(out, f / 2, t, 0.9, { type: 'triangle', vol: 0.05, cutoff: 900 });
-  if (loop.echo) note(out, f, t + STEP * 2, 0.8, { type: 'triangle', vol: 0.04, cutoff: 1100 });
-  if (sc.kind === 'shop') note(out, f * 2, t, 0.35, { type: 'sine', vol: 0.03 }); // un punteo agudo, de taberna
-  // coro de monjes: solo cuando la obra aprieta (o hay jefe); la misma línea, una octava abajo
-  if (sc.kind !== 'shop' && (sc.boss || p > 0.55 || (sc.kind === 'menu' && index % 2 === 1))) {
-    const amt = sc.kind === 'menu' ? 0.7 : Math.min(1, 0.5 + p * 0.6);
-    note(out, f / 2, t, STEP * 2.6, { type: 'sawtooth', vol: 0.035 * amt, attack: 0.18, cutoff: 520, vibrato: 2.5, detune: -5 });
-    note(out, f / 2, t, STEP * 2.6, { type: 'sine', vol: 0.06 * amt, attack: 0.18, vibrato: 2.5, detune: 5 });
-  }
+  pressureNow += (pressure - pressureNow) * 0.35; // la música no salta: sube y baja poco a poco
+  const c = compas({ semilla: SEMILLA, escena: scene.kind, asalto: scene.stage, monarca: scene.boss, presion: pressureNow, compas: bar, inicio: sceneStart });
+  const sx = 60 / c.bpm / 4; // semicorchea
+  for (const e of c.eventos) play(e, t + e.t * sx, sx, scene.kind);
+  bar++;
+  return c.segundos;
 }
 
 const DRONE = [36.71, 73.42, 110];
-/** Transportes de las 8 obras: ninguna suena en el mismo tono que la anterior. */
-const STAGE_SHIFT = [0, 2, -2, 3, 5, -3, 7, 0];
-const STAGE_DRUMS = [D_SLOW, D_MARCH, D_MARCH, D_GALLOP, D_MARCH, D_GALLOP, D_WAR, D_WAR];
 
-/** Cambia la escena musical: 'menu' (portada, gremio, sala), 'shop' (campaña entre obras) o 'battle'. */
-export function setScene(kind: Scene['kind'], stage = 3, boss = false): void {
-  const i = Math.max(0, Math.min(7, stage - 1));
-  const next: Scene =
-    kind === 'menu'
-      ? { kind, bpm: 66, shift: 0, drums: D_SLOW, lead: 'a', boss: false }
-      : kind === 'shop'
-        ? { kind, bpm: 86, shift: 5, drums: D_SHOP, lead: 'b', boss: false }
-        : { kind, bpm: 72 + i * 3 + (boss ? 6 : 0), shift: STAGE_SHIFT[i], drums: boss ? D_WAR : STAGE_DRUMS[i], lead: i % 2 ? 'b' : 'a', boss };
-  if (next.kind === scene.kind && next.bpm === scene.bpm && next.shift === scene.shift && next.boss === scene.boss) return;
-  scene = next;
-  step = 0; // la escena nueva entra por su principio
-  if (ctx) drone.forEach((o, n) => o.frequency.setTargetAtTime(DRONE[n] * tr(), ctx!.currentTime, 0.6));
+/**
+ * Cambia la escena musical: 'menu' (portada, la Orden, la sala), 'map' (Mapa del castillo), 'shop'
+ * (La Taberna, el Botín, el sobre) o 'battle' (la mesa, con su asalto y su monarca). Entra al acabar el
+ * compás que suena.
+ */
+export function setScene(kind: Escena, stage = 3, boss = false): void {
+  const next: Scene = { kind, stage: Math.max(1, Math.min(8, stage)), boss: kind === 'battle' && boss };
+  const now = pending ?? scene;
+  if (now.kind === next.kind && now.stage === next.stage && now.boss === next.boss) return;
+  if (timer === null) {
+    // sin música en marcha, la escena cambia ya (y arranca por su principio)
+    scene = next;
+    pending = null;
+    sceneStart = bar;
+  } else pending = next;
 }
+// la prueba de humo mira en qué escena está la música (con ?qa)
+if (QA) Object.assign(window, { __qaMusica: () => ({ ...(pending ?? scene), bar }) });
 
 function startLoop(): void {
   const a = ac();
   if (!a || !musicBus || timer !== null) return;
   musicBus.gain.cancelScheduledValues(a.currentTime);
-  musicBus.gain.setTargetAtTime(0.6 * gainOf(volume.music), a.currentTime, 0.8);
-  // bordón de quinta: re + la
+  musicBus.gain.setTargetAtTime(MUSIC_GAIN * gainOf(volume.music), a.currentTime, 0.8);
+  // bordón de quinta: re + la (siempre en re: la tonalidad no se mueve)
   drone = DRONE.map((base, i) => {
-    const f = base * tr();
+    const f = base;
     const o = a.createOscillator();
     const lp = a.createBiquadFilter();
     const g = a.createGain();
@@ -799,14 +815,10 @@ function startLoop(): void {
     o.start();
     return o;
   });
-  step = 0;
   nextTime = a.currentTime + 0.15;
   // Se programa con 1,6 s de margen: los navegadores frenan los temporizadores en segundo plano.
   const tick = () => {
-    while (nextTime < a.currentTime + 1.6) {
-      schedule(nextTime, step++);
-      nextTime += stepLen();
-    }
+    while (nextTime < a.currentTime + 1.6) nextTime += scheduleBar(nextTime);
   };
   tick();
   timer = window.setInterval(tick, 200);
@@ -827,8 +839,9 @@ export function startMusic(): void {
 }
 
 /**
- * Presión de la obra, de 0 a 1. Con calma suenan el bordón, un latido y el laúd; al subir entran
- * el ritmo de tambor, las cadenas, los cuernos y el coro, y por encima de 0,7 los tambores redoblan.
+ * Presión de la mesa, de 0 a 1. Con calma suenan el bordón, un latido, el bajo y el laúd; al subir entran
+ * el ritmo de tambor, las cadenas, los cuernos y el coro; por encima de 0,6 (o ante un monarca), los
+ * tambores de guerra y los metales; por encima de 0,7 los tambores redoblan.
  */
 export function setPressure(level: number): void {
   pressure = clamp01(level);

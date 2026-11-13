@@ -35,7 +35,7 @@ button {
   font-size: 13px;
   cursor: pointer;
   box-shadow: 4px 4px 0 var(--ink);
-  transition: transform 0.06s, box-shadow 0.06s;
+  transition: transform 0.06s;
 }
 button:hover:not(:disabled) { background: var(--hazard); }
 button:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
@@ -117,7 +117,7 @@ svg.ly.art { width: 100%; height: 100%; transform: translateZ(12px) scale(0.987)
 .card.attack { animation: lunge 0.75s cubic-bezier(0.5, 0, 0.3, 1.3); z-index: 8; }
 .lid { transform-origin: 0 0; animation: blink 4.3s infinite; }
 .iris { transition: transform 0.12s linear; }
-.art .gem { fill: var(--red); stroke: var(--ink); stroke-width: 1.6; animation: gem 2.7s steps(1) infinite; animation-delay: calc(var(--i) * 0.9s); }
+.art .gem { fill: var(--red); stroke: var(--ink); stroke-width: 1.6; }
 .art .burst { transform-origin: 0 0; animation: ring 44s linear infinite; }
 .art .star { fill: var(--red); stroke: var(--ink); stroke-width: 2.6; stroke-linejoin: round; transform-origin: 0 0; animation: ring 7s steps(28) infinite; }
 @keyframes sway { 0%, 100% { transform: rotate(-2.2deg); } 50% { transform: rotate(2.8deg); } }
@@ -125,7 +125,6 @@ svg.ly.art { width: 100%; height: 100%; transform: translateZ(12px) scale(0.987)
 @keyframes swing { 0% { transform: rotate(0); } 30% { transform: rotate(24deg); } 58% { transform: rotate(-52deg) translateY(6px); } 100% { transform: rotate(0); } }
 @keyframes lunge { 30% { transform: translateY(-10px) rotate(-3deg) scale(1.05); } 58% { transform: translateY(14px) rotate(4deg) scale(1.08); } }
 @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } }
-@keyframes gem { 0% { fill: var(--red); } 70% { fill: var(--card-paper); } 82% { fill: var(--red); } }
 @keyframes ring { to { transform: rotate(360deg); } }
 
 /* coreografía de las pintas: cada palo tiene su gesto y recorre la carta en ola */
@@ -158,7 +157,7 @@ svg.ly.art { width: 100%; height: 100%; transform: translateZ(12px) scale(0.987)
 /* ───────────── LINOGRABADO EN LA INTERFAZ ─────────────
    Borde irregular de gubia en rótulos, botones y marcos; grano de imprenta sobre toda la pantalla. */
 .ruin, .preview, .coach .who, .hp { filter: url(#rough-ui); }
-.title, .lobby-code h1, .end h1, .deck-head h1, .bar .brand, .home-right h2, .tower-tag, .modal-box h2, .banner div, .float { filter: url(#rough); }
+.title, .lobby-code h1, .end h1, .deck-head h1, .bar .brand, .home-right h2, .tower-tag, .modal-box h2 { filter: url(#rough); }
 
 body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-events: none; mix-blend-mode: multiply; opacity: 0.3; background-size: 260px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .07 0 0 0 0 .06 0 0 0 18 -13'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23s)'/%3E%3C/svg%3E"); }
 .lino { display: block; }
@@ -249,7 +248,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .floor-slot .card { --w: clamp(90px, min(12.5vw, 23vh), 190px); }
 .ruin { font-family: var(--display); font-size: clamp(18px, 2.4vw, 34px); color: var(--ink); opacity: 0.55; transform: rotate(-8deg); border: 4px dashed var(--ink); padding: 6px 12px; }
 .hp { align-self: stretch; height: 22px; border: 3px solid var(--ink); background: var(--paper); position: relative; }
-.hp-fill { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(90deg, var(--red) 0 8px, #b3040f 8px 10px); transition: width 0.25s steps(5); }
+.hp-fill { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(90deg, var(--red) 0 8px, #b3040f 8px 10px); }
 .hp span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--card-paper); }
 .threat { align-self: stretch; display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; }
 .threat b { color: var(--red); letter-spacing: 2px; }
@@ -262,9 +261,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .preview small { display: block; font-family: var(--mono); font-size: 13px; font-weight: 700; margin-top: 2px; }
 .preview.zero { background: var(--concrete); color: var(--ink); }
 .tower.hit { animation: hit 0.3s steps(6); }
-.tower.strike { animation: strike 0.6s steps(6); }
-@keyframes hit { 20% { transform: translate(-8px, 3px); } 40% { transform: translate(7px, -3px); } 60% { transform: translate(-5px, 2px); background-color: var(--paper); } 80% { transform: translate(3px, 0); } }
-@keyframes strike { 0%, 40%, 80% { background-color: var(--red); } 20%, 60%, 100% { background-color: var(--ink); } }
+@keyframes hit { 20% { transform: translate(-8px, 3px); } 40% { transform: translate(7px, -3px); } 60% { transform: translate(-5px, 2px); } 80% { transform: translate(3px, 0); } }
 .float { position: absolute; z-index: 20; left: 50%; top: 40%; font-family: var(--display); font-size: clamp(34px, 5vw, 72px); color: var(--red); -webkit-text-stroke: 2px var(--ink); pointer-events: none; animation: float 0.9s cubic-bezier(0.1, 0.9, 0.3, 1) forwards; white-space: nowrap; }
 .float.splash { color: var(--paper); font-size: clamp(24px, 3vw, 44px); }
 @keyframes float { from { transform: translate(-50%, 0) scale(2.2) rotate(-8deg); opacity: 0; } 20% { transform: translate(-50%, -10%) scale(1) rotate(-4deg); opacity: 1; } 80% { opacity: 1; } to { transform: translate(-50%, -90%) rotate(-4deg); opacity: 0; } }
@@ -281,7 +278,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .stat { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; margin: 8px 0 4px; }
 .stat b { font-family: var(--display); font-size: 22px; }
 .stat b.pulse { animation: pulse 0.4s steps(4); }
-@keyframes pulse { 50% { background: var(--hazard); transform: scale(1.4); } }
+@keyframes pulse { 50% { transform: scale(1.4); } }
 .piles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
 .pile { text-align: center; font-size: 13px; font-weight: 700; }
 .pile .slot { display: grid; place-items: center; height: 92px; border: 2px dashed var(--ink); margin-bottom: 3px; }
@@ -317,8 +314,7 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .hand .card.hint { animation: hintbob 0.6s ease-in-out infinite alternate; }
 .hand .card.hint .ly.paper { box-shadow: 5px 5px 0 var(--ink), 0 0 0 5px var(--hazard); }
 @keyframes hintbob { to { transform: translateY(-16px); } }
-.tower.hint-target { outline: 7px solid var(--hazard); outline-offset: 3px; animation: hintpulse 0.7s steps(2) infinite; }
-@keyframes hintpulse { 50% { outline-color: var(--ink); } }
+.tower.hint-target { outline: 7px solid var(--hazard); outline-offset: 3px; }
 .fly { position: fixed; z-index: 50; pointer-events: none; margin: 0; }
 
 .banner { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; }
@@ -332,14 +328,14 @@ body::after { content: ''; position: fixed; inset: 0; z-index: 300; pointer-even
 .quake { animation: quake 0.5s steps(8); }
 @keyframes quake { 12% { transform: translate(-10px, 4px); } 25% { transform: translate(9px, -6px); } 37% { transform: translate(-7px, -3px); } 50% { transform: translate(6px, 5px); } 62% { transform: translate(-4px, 2px); } 75% { transform: translate(3px, -2px); } }
 
-.end { position: fixed; inset: 0; z-index: 80; background: var(--ink); color: var(--paper); display: flex; flex-direction: column; justify-content: center; padding: 6vw; gap: 20px; animation: endin 0.5s steps(6); }
+.end { position: fixed; inset: 0; z-index: 80; background: var(--ink); color: var(--paper); display: flex; flex-direction: column; justify-content: center; padding: 6vw; gap: 20px; animation: endin 0.4s ease-out both; }
 .end.won { background: var(--hazard); color: var(--ink); }
 .end h1 { font-family: var(--display); font-size: clamp(60px, 15vw, 240px); line-height: 0.8; letter-spacing: -0.05em; }
 .end.lost h1 { color: var(--red); }
 .end p { font-weight: 700; font-size: 16px; max-width: 60ch; }
 .end .row { flex-wrap: wrap; }
 .end button { color: var(--ink); }
-@keyframes endin { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+@keyframes endin { from { opacity: 0; transform: translateY(-3%); } to { opacity: 1; transform: none; } }
 
 .modal { position: fixed; inset: 0; z-index: 90; background: rgba(10, 10, 10, 0.8); display: grid; place-items: center; padding: 16px; }
 .modal-box { background: var(--paper) var(--noise); border: 6px solid var(--ink); box-shadow: 12px 12px 0 var(--red); max-width: 860px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 22px 26px; text-transform: none; font-size: 14px; line-height: 1.55; }
@@ -534,11 +530,9 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 .blocks.danger i:not(.off) { animation: none; }
 .hand .card { transition: transform 0.16s ease; }
 .hand .card.hint { animation: hintbob 1.1s ease-in-out infinite alternate; }
-.tower.hint-target { animation: hintpulse 1.6s ease-in-out infinite; }
 .tower.hit { animation: hit2 0.32s ease; }
 @keyframes hit2 { 30% { transform: translate(-4px, 2px); } 60% { transform: translate(3px, -1px); } }
 
-@keyframes strike2 { 25% { background-color: var(--red); } }
 .bunker.shake { animation: hit2 0.35s ease; }
 .quake { animation: quake2 0.45s ease; }
 @keyframes quake2 { 20% { transform: translate(-4px, 2px); } 45% { transform: translate(4px, -2px); } 70% { transform: translate(-2px, 1px); } }
@@ -546,7 +540,7 @@ input { font-size: clamp(15px, 1.9vh, 22px); padding: clamp(6px, 1.1vh, 14px) 12
 @keyframes flash2 { 0% { opacity: 0.28; } 100% { opacity: 0; } }
 .banner div { font-size: min(9vw, 17vh); animation: slam2 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 @keyframes slam2 { 0% { transform: translateY(-30px) rotate(-2deg); opacity: 0; } 14% { transform: rotate(-2deg); opacity: 1; } 78% { transform: rotate(-2deg); opacity: 1; } 100% { transform: translateY(20px) rotate(-2deg); opacity: 0; } }
-.ribbon { position: fixed; top: 8vh; left: 50%; z-index: 60; pointer-events: none; font-family: var(--title); font-size: clamp(24px, 5.4vh, 58px); line-height: 1; white-space: nowrap; background: var(--ink); color: var(--card-paper); padding: 0.12em 0.7em 0.22em; border-bottom: 5px solid var(--red); filter: url(#rough); animation: ribbon 1.65s ease both; }
+.ribbon { position: fixed; top: 8vh; left: 50%; z-index: 60; pointer-events: none; font-family: var(--title); font-size: clamp(24px, 5.4vh, 58px); line-height: 1; white-space: nowrap; background: var(--ink); color: var(--card-paper); padding: 0.12em 0.7em 0.22em; border-bottom: 5px solid var(--red); animation: ribbon 1.65s ease both; }
 @keyframes ribbon { 0% { transform: translate(-50%, -24px); opacity: 0; } 14%, 78% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, -12px); opacity: 0; } }
 
 /* ───────────── ESPACIOS COMPACTOS ─────────────
@@ -731,8 +725,6 @@ button:disabled { opacity: 0.5; }
 .tower { --bg: var(--concrete-2); --bw: 4px; --sh: 6px 6px 0 var(--ink); }
 .tower.fallen { --bg: transparent; --bs: dashed; --sh: none; }
 .tower.targetable:hover { --bg: var(--hazard); }
-.tower.strike { animation: strike3 0.7s ease; }
-@keyframes strike3 { 25% { --bg: var(--red); } }
 .panel:not(.log) { --bg: var(--card-paper); --bw: 4px; --sh: 6px 6px 0 var(--ink); }
 .coach { --bg: var(--hazard); --bw: 4px; --sh: 6px 6px 0 var(--ink); }
 .seat:not(.empty) { --bg: var(--card-paper); --bw: 4px; --sh: 6px 6px 0 var(--ink); }

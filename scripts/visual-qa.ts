@@ -30,6 +30,19 @@
 //             lacre cosida a él, el del otro (≥ 13 px, 14 en móvil), con su sello y dentro de la ventana
 //   cabecera  en la crónica (acta, acta-derrota, acta-victoria) el sello, las fichas de la cabecera y los
 //             renglones del título no se pisan entre sí (cajas del DOM)
+//   V8:
+//   anima     ningún @keyframes ni transition de las hojas anima algo que no sea transform u opacity, y
+//             ningún nodo con animación viva lleva filter o mix-blend-mode (los casos de juice.css van en
+//             ANIMA_PENDIENTE_JUICE y salen como aviso)
+//   foco      (A1) en mesa-mando, la carta con data-foco (no elegida) sube ≥ 6 px sobre sus vecinas no
+//             elegidas (≥ 4 en móvil) y no pisa la cuenta
+//   voz       (A2) además: el bocadillo del monarca no pisa ningún trono ni la barra de acciones
+//   pulgar    (A3) además, en 390×844 y en mesa, mesa-peligro, mesa-monarca y mesa-cuenta: cada botón a
+//             ≥ 12 px del borde de abajo y ≥ 8 px de los lados, ≥ 8 px entre botones, Golpear y Descartar
+//             a ≥ 16 px o con otro botón en medio
+//   guardias  (A3) cada fila de guardia de cada trono entra entera en la caja visible de su trono
+//   piezas    los estados de la V8 (mesa-esquirlas, cartas-lamina, taberna-monedas, mesa-lacre) enseñan
+//             sus piezas, sin filter ni mix-blend-mode y sin los cuadrados viejos .coin y .debris
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -42,24 +55,34 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
 const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre'];
 const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
+
+/**
+ * V8 · regla «anima»: lo que se anima solo cambia transform y opacity. Los casos que viven en juice.css no
+ * son de arte-ui: van aquí, uno a uno (`@keyframes <nombre>` o el selector de la regla con su transition),
+ * y salen como aviso, no como fallo. juice-ux los arregla y deja la lista vacía. Un caso que no esté en la
+ * lista es fallo.
+ */
+const ANIMA_PENDIENTE_JUICE: string[] = [];
 
 interface Fail {
   regla: string;
   msg: string;
   /** El fallo cae en la zona de otra celda (cuenta central, finales, acta, susurro, foco). */
   ajeno: boolean;
+  /** Solo aviso: se imprime y va al informe, pero no hace fallar la orden (ANIMA_PENDIENTE_JUICE). */
+  aviso?: boolean;
 }
 
 /** Lo que se comprueba dentro de la página. Devuelve la lista de fallos, cada uno con su regla. */
-async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }): Promise<Fail[]> {
+async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; pendiente: string[] }): Promise<Fail[]> {
   const out: Fail[] = [];
   const seen = new Set<string>();
   const W = innerWidth;
@@ -71,6 +94,67 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
     seen.add(key);
     out.push({ regla, msg, ajeno: !!el?.closest(AJENO) });
   };
+
+  // ───────── anima (V8): solo transform y opacity en @keyframes, transition y animaciones vivas ─────────
+  {
+    const OK = /^(transform|opacity|translate|rotate|scale|offset|animation-timing-function|animation-composition)$/;
+    const pend = new Set(opts.pendiente);
+    const anima = (key: string, msg: string) => {
+      if (pend.has(key)) {
+        const k = `anima|${msg}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          out.push({ regla: 'anima', msg: `${msg} (pendiente de juice-ux)`, ajeno: false, aviso: true });
+        }
+      } else fail('anima', msg);
+    };
+    // las hojas: una vez por ventana, en la mesa
+    if (opts.state === 'mesa') {
+      const walk = (rules: CSSRuleList) => {
+        for (const r of rules) {
+          if (r instanceof CSSKeyframesRule) {
+            const bad = new Set<string>();
+            for (const kf of r.cssRules) {
+              const st = (kf as CSSKeyframeRule).style;
+              for (let i = 0; i < st.length; i++) if (!OK.test(st[i])) bad.add(st[i]);
+            }
+            if (bad.size) anima(`@keyframes ${r.name}`, `@keyframes ${r.name} anima ${[...bad].join(', ')}`);
+          } else if (r instanceof CSSStyleRule) {
+            const tp = r.style.transitionProperty;
+            if (tp && r.style.transitionDuration && !/^0s(,\s*0s)*$/.test(r.style.transitionDuration)) {
+              const bad = tp.split(',').map((s) => s.trim()).filter((p) => p && p !== 'none' && !OK.test(p));
+              if (bad.length) anima(r.selectorText, `la transition de «${r.selectorText}» anima ${bad.join(', ')}`);
+            }
+          }
+          if ('cssRules' in r && !(r instanceof CSSKeyframesRule)) {
+            try {
+              walk((r as CSSGroupingRule).cssRules);
+            } catch {
+              /* hoja ajena */
+            }
+          }
+        }
+      };
+      for (const s of document.styleSheets) {
+        try {
+          walk(s.cssRules);
+        } catch {
+          /* hoja de otro origen (fuentes) */
+        }
+      }
+    }
+    // lo que se está animando ahora mismo (lo infinito; lo finito ya se dio por acabado): sin filter ni mezcla
+    for (const a of document.getAnimations()) {
+      const fx = a.effect as KeyframeEffect | null;
+      const el = fx?.target;
+      if (!el || !el.isConnected) continue;
+      const cs = getComputedStyle(el, fx.pseudoElement ?? undefined);
+      const name = (a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty ?? 'animate()';
+      const who = `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${typeof el.className === 'string' && el.className ? `.${el.className.trim().split(/\s+/).slice(0, 2).join('.')}` : ''}${fx.pseudoElement ?? ''}`;
+      if (cs.filter && cs.filter !== 'none') anima(`vivo:${name}`, `${who} se anima («${name}») con filter: ${cs.filter.slice(0, 40)}`);
+      if (cs.mixBlendMode && cs.mixBlendMode !== 'normal') anima(`vivo:${name}`, `${who} se anima («${name}») con mix-blend-mode: ${cs.mixBlendMode}`);
+    }
+  }
   const name = (el: Element) => `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${typeof el.className === 'string' && el.className ? `.${el.className.trim().split(/\s+/).slice(0, 2).join('.')}` : ''}`;
   const path = (el: Element) => {
     const up = el.parentElement?.closest('[id], .modal-box, .choice, .panel, .tower, .card, .set, .up, .ach, .acta-row, .run-body, .camp-grid');
@@ -472,6 +556,92 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
     if (handBox && handBox.b > barTop + 2) fail('pulgar', `la mano (hasta ${Math.round(handBox.b)}) se mete en la barra del pulgar (desde ${Math.round(barTop)})`);
     if (handBox && towersBox && towersBox.b > handBox.t + 2) fail('pulgar', 'las torres no quedan por encima de la mano');
     if (handBox && bunker && bunker.bottom > handBox.t + 2) fail('pulgar', 'el búnker no queda por encima de la mano');
+    // V8 · A3: la barra respira. ≥ 12 px hasta el borde de abajo, ≥ 8 px entre botones y a los lados, y
+    // Golpear y Descartar separados ≥ 16 px o con otro botón en medio
+    if (['mesa', 'mesa-peligro', 'mesa-monarca', 'mesa-cuenta'].includes(opts.state)) {
+      const bar = [...document.querySelectorAll<HTMLElement>('.actions > button')].filter(visible).map((b) => ({ id: b.id, r: b.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left);
+      for (const b of bar) {
+        if (H - b.r.bottom < 11.5) fail('pulgar', `#${b.id} queda a ${Math.round(H - b.r.bottom)} px del borde de abajo (mínimo 12)`);
+        if (b.r.left < 7.5 || W - b.r.right < 7.5) fail('pulgar', `#${b.id} queda a ${Math.round(Math.min(b.r.left, W - b.r.right))} px del borde lateral (mínimo 8)`);
+      }
+      for (let i = 0; i + 1 < bar.length; i++) {
+        const gap = bar[i + 1].r.left - bar[i].r.right;
+        if (gap < 7.5) fail('pulgar', `#${bar[i].id} y #${bar[i + 1].id} a ${Math.round(gap)} px (mínimo 8)`);
+        const pair = [bar[i].id, bar[i + 1].id].sort().join('+');
+        if (pair === 'btn-discard+btn-strike' && gap < 15.5) fail('pulgar', `Golpear y Descartar juntos a ${Math.round(gap)} px (mínimo 16 o un botón en medio)`);
+      }
+    }
+  }
+
+  // ───────── guardias (V8 · A3): cada fila de guardia entra entera en la caja visible de su trono ─────────
+  if (['mesa', 'mesa-peligro', 'mesa-monarca', 'mesa-cuenta', 'mesa-mando'].includes(opts.state)) {
+    for (const t of document.querySelectorAll<HTMLElement>('.tower')) {
+      if (!visible(t)) continue;
+      const tr = t.getBoundingClientRect();
+      // la caja visible del trono: la suya, recortada por cada antepasado que recorta
+      let top = tr.top;
+      let bottom = tr.bottom;
+      for (let p = t.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+        const cs = getComputedStyle(p);
+        if (/(hidden|clip|auto|scroll)/.test(cs.overflowY)) {
+          const pr = p.getBoundingClientRect();
+          top = Math.max(top, pr.top);
+          bottom = Math.min(bottom, pr.bottom);
+        }
+      }
+      bottom = Math.min(bottom, H);
+      // lo que se pinta encima del trono en la misma columna (la fila de Vida, el monarca) también tapa
+      const covers = [...document.querySelectorAll('.side, .tray')].filter(visible).map((e) => e.getBoundingClientRect()).filter((c) => c.left < tr.right - 2 && c.right > tr.left + 2 && c.top > tr.top + 4);
+      for (const c of covers) bottom = Math.min(bottom, c.top);
+      const rows = [...t.querySelectorAll<HTMLElement>('.storeys > *')].filter((s) => s.getBoundingClientRect().height > 0);
+      rows.forEach((s, i) => {
+        const r = s.getBoundingClientRect();
+        if (r.top < top - 0.5 || r.bottom > bottom + 0.5) fail('guardias', `la fila ${i + 1} de guardias del trono ${t.dataset.suit} no entra entera (${Math.round(r.top)}…${Math.round(r.bottom)}; el trono se ve hasta ${Math.round(bottom)})`, s);
+      });
+    }
+  }
+
+  // ───────── piezas (V8): las piezas de la caída están, se ven y no llevan filtro ni mezcla ─────────
+  {
+    const need: Record<string, [string, number, number][]> = {
+      'mesa-esquirlas': [['.esquirlas .esquirla', 6, 10], ['.pieza.mitad', 2, 2], ['.pieza.astilla', 2, 4]],
+      'cartas-lamina': [['.ly.foil .foil-band', 4, 4]],
+      'taberna-monedas': [['.pieza.moneda', 1, 10]],
+      'mesa-lacre': [['.pieza.lacre.caliente .lacre-caliente', 1, 9], ['.pieza.lacre .lacre-frio', 2, 9]],
+    };
+    for (const [sel, lo, hi] of need[opts.state] ?? []) {
+      const n = [...document.querySelectorAll(sel)].filter(visible).length;
+      if (n < lo || n > hi) fail('piezas', `${sel}: ${n} a la vista (entre ${lo} y ${hi})`);
+    }
+    if (need[opts.state]) {
+      for (const p of document.querySelectorAll('.pieza, .pieza *, .ly.foil, .foil-band, .esquirlas')) {
+        const cs = getComputedStyle(p);
+        if ((cs.filter && cs.filter !== 'none') || (cs.mixBlendMode && cs.mixBlendMode !== 'normal')) fail('piezas', `${p.tagName.toLowerCase()}.${(p.getAttribute('class') ?? '').split(' ')[0]} lleva filter o mix-blend-mode`);
+      }
+      if (document.querySelector('.coin, .debris')) fail('piezas', 'quedan cuadrados .coin o .debris junto a las piezas grabadas');
+      // la banda de lámina va bajo el índice (no aclara las cifras) y queda dentro de su carta
+      for (const f of document.querySelectorAll<HTMLElement>('.ly.foil')) if (getComputedStyle(f).overflow !== 'hidden') fail('piezas', 'la capa .ly.foil no recorta su banda (overflow)');
+    }
+  }
+
+  // ───────── foco (V8 · A1): la carta con el foco del mando se levanta sobre sus vecinas no elegidas ─────────
+  if (opts.state === 'mesa-mando') {
+    const card = document.querySelector<HTMLElement>('#hand .card[data-foco], #reserve .card[data-foco]');
+    if (!card || !visible(card)) fail('foco', 'ninguna carta de la mano lleva data-foco');
+    else if (card.classList.contains('sel')) fail('foco', 'la carta con data-foco está elegida (tiene que ser una no elegida)', card);
+    else {
+      const r = card.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      const peers = [...document.querySelectorAll<HTMLElement>('#hand > .card:not(.sel):not([data-foco])')].filter(visible).map((c) => c.getBoundingClientRect()).filter((c) => Math.abs(c.top + c.height / 2 - mid) < r.height * 0.6);
+      const need = opts.mobile ? 3.95 : 5.95;
+      if (!peers.length) fail('foco', 'la carta enfocada no tiene vecinas no elegidas en su fila para comparar', card);
+      else {
+        const lift = Math.min(...peers.map((p) => p.top)) - r.top;
+        if (lift < need) fail('foco', `la carta enfocada sube ${lift.toFixed(1)} px sobre sus vecinas (mínimo ${Math.round(need)})`, card);
+      }
+      const score = union('#score > *');
+      if (score && Math.min(r.right, score.r) - Math.max(r.left, score.l) > 2 && Math.min(r.bottom, score.b) - Math.max(r.top, score.t) > 2) fail('foco', 'la carta enfocada pisa la cuenta', card);
+    }
   }
 
   // ───────── tinta: las zonas con desplazamiento avisan mientras quede contenido ─────────
@@ -793,6 +963,12 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
         if (over(r, handZone)) fail('voz', 'el bocadillo pisa la mano', bark);
         if (over(r, scoreZone)) fail('voz', 'el bocadillo pisa la cuenta', bark);
         if (!inside(r)) fail('voz', 'el bocadillo se sale de la ventana', bark);
+        // V8 · A2: ni sobre un trono ni sobre la barra de acciones
+        for (const t of document.querySelectorAll<HTMLElement>('.tower')) {
+          const tr = t.getBoundingClientRect();
+          if (visible(t) && over(r, { l: tr.left, t: tr.top, r: tr.right, b: tr.bottom })) fail('voz', `el bocadillo pisa el trono ${t.dataset.suit}`, bark);
+        }
+        if (over(r, union('.actions > button'))) fail('voz', 'el bocadillo pisa la barra de acciones', bark);
       }
     }
     // galería: los siete, cada uno con su retrato en calma y vencido y la placa de su decreto
@@ -961,6 +1137,8 @@ async function main(): Promise<void> {
   let failed = 0;
   let foreign = 0;
   const errors: string[] = [];
+  /** Avisos que no hacen fallar (ANIMA_PENDIENTE_JUICE), sin repetir entre ventanas. */
+  const warns = new Set<string>();
   const report: { cuando: string; ventanas: string[]; estados: string[]; total: number; propios: number; ajenos: number; porRegla: Record<string, number>; fallos: Record<string, Record<string, Fail[]>>; errores: string[] } = {
     cuando: new Date().toISOString(),
     ventanas: VIEWS.map((v) => v.name),
@@ -996,8 +1174,10 @@ async function main(): Promise<void> {
       await page.evaluate(() => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().iterations !== Infinity && a.finish()));
       await page.waitForTimeout(120);
       await page.evaluate(() => document.fonts.ready);
-      const fails = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state) });
+      const all = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state), pendiente: ANIMA_PENDIENTE_JUICE });
       await page.screenshot({ path: join(OUT, view.name, `${state}.png`) });
+      const fails = all.filter((f) => !f.aviso);
+      for (const w of all.filter((f) => f.aviso)) warns.add(`[${w.regla}] ${w.msg}`);
       report.fallos[view.name][state] = fails;
       for (const f of fails) report.porRegla[f.regla] = (report.porRegla[f.regla] ?? 0) + 1;
       const own = fails.filter((f) => !f.ajeno);
@@ -1015,6 +1195,8 @@ async function main(): Promise<void> {
   await browser.close();
   site.close();
   for (const e of [...new Set(errors)]) console.log(`! ${e}`);
+  for (const w of warns) console.log(`! aviso ${w}`);
+  (report as typeof report & { avisos: string[] }).avisos = [...warns];
   report.total = failed + foreign;
   report.propios = failed;
   report.ajenos = foreign;

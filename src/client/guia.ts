@@ -155,9 +155,21 @@ export function showBark(text: string): void {
   placeBark(el);
   void el.offsetWidth;
   el.classList.add('sale');
+  // V8 · A2: si la mesa aún se está colocando (la fila del monarca, la franja de Reliquias), se recoloca
+  // cuando cambie su caja, mientras el bocadillo siga a la vista
+  barkWatch?.disconnect();
+  const bark = el;
+  barkWatch = new ResizeObserver(() => !bark.hidden && placeBark(bark));
+  for (const sel of ['#monarch', '.table-screen .side', '#towers', '.tray .hudrow']) {
+    const n = document.querySelector(sel);
+    if (n) barkWatch.observe(n);
+  }
 }
+let barkWatch: ResizeObserver | null = null;
 
 export function hideBark(): void {
+  barkWatch?.disconnect();
+  barkWatch = null;
   const el = document.getElementById('bark');
   if (!el) return;
   el.classList.remove('sale');
@@ -173,6 +185,35 @@ function placeBark(el: HTMLElement): void {
   el.style.maxWidth = '';
   el.dataset.pico = 'derecha';
   const narrow = W < 641 || W / H < 1;
+  // V8 · A2: con el monarca en la mesa, el bocadillo va pegado a su placa y nunca sobre un trono.
+  // Escritorio: dentro de la columna lateral (debajo de la placa si cabe; si no, encima, sobre los
+  // montones), con el pico hacia el retrato. Móvil: a lo ancho, justo debajo de la fila del monarca,
+  // sobre la franja de Reliquias y poderes.
+  const mon = box(document.getElementById('monarch'));
+  const monPort = box(document.querySelector('#monarch .mon-port'));
+  if (mon && monPort) {
+    const side = narrow ? null : box(document.querySelector('.table-screen .side'));
+    const colL = side ? side.left : 8;
+    const colR = side ? side.right : W - 8;
+    el.style.maxWidth = `${Math.max(200, colR - colL)}px`;
+    const r = el.getBoundingClientRect();
+    const left = Math.max(colL, Math.min(colR - r.width, mon.left));
+    const lo = box(document.querySelector('.table-screen .bar'))?.bottom ?? 8;
+    const hi = narrow ? (score?.top ?? H) : Math.min(side?.bottom ?? H, H - 8);
+    const below = mon.bottom + 12;
+    const above = mon.top - 12 - r.height;
+    const free = (t: number) => {
+      const a = { left, top: t, right: left + r.width, bottom: t + r.height };
+      return !hits(a, score) && !hits(a, hand);
+    };
+    const down = below + r.height <= hi && free(below);
+    const top = down || above < lo ? below : above;
+    el.dataset.pico = down || above < lo ? 'arriba' : 'abajo';
+    el.style.left = `${Math.round(left)}px`;
+    el.style.top = `${Math.round(top)}px`;
+    el.style.setProperty('--pico-x', `${Math.round(Math.max(16, Math.min(r.width - 16, monPort.left + monPort.width / 2 - left)))}px`);
+    return;
+  }
   if (port && !narrow) {
     // a la izquierda del retrato, centrado con él
     const maxW = Math.min(600, port.left - 28);

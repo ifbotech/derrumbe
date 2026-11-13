@@ -14,7 +14,7 @@ import { LIVE_HTML, Preview, closeReceipt, paintScore, previewHtml, stageOver } 
 import { TITLE } from '../shared/brand';
 import { $, $$, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
-import { CRACKS, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, guardFall, hitstop, pop, quake, restart, ribbon, shake, procBadge, stampOn, tear, throneFall, wait } from './fx';
+import { CRACKS, exactChain, sealStep, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, guardFall, hitstop, pop, quake, restart, ribbon, shake, procBadge, stampOn, tear, throneFall, wait } from './fx';
 import { maybeSettle, trackMeta } from './guild';
 import { forget, sendMsg } from './net';
 import { renderPings, sendPing } from './pings';
@@ -982,7 +982,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
         sfx.tick(stepN);
         pop(target);
         chipAt(target, text || note || ev.label, text ? kind : 'note');
-        if (ev.src === 'seal') sfx.stamp();
+        sealStep(ev.src, target); // juice-ux V8: lacre caliente (sello) o pasada de lámina (acabado), con su sonido
       }
       if (inStrike) liveScore('', ev.fuerza, ev.res, null);
       if (ev.src === 'tool' || ev.src === 'chain' || ev.src === 'state' || ev.src === 'special') logLine(`${ev.label}${text ? ` <b>${text}</b>` : ''}`, 'dim');
@@ -1005,7 +1005,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
     }
     case 'stash':
       logLine(`<b>${nameOf(ev.player)}</b> se guarda una carta en la manga${ev.back ? ' y recupera la que había' : ''}.`, 'dim');
-      sfx.flick();
+      sfx.stash(!!ev.back); // juice-ux V8: la carta se desliza a La Manga
       break;
     case 'fatigue':
       v.fatigue = ev.level;
@@ -1066,14 +1066,14 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       await hitstop(1);
       if (doomed) tear(doomed);
       restart($('.facade', el), 'shear'); // la fachada se parte y se viene abajo
-      guardFall(el); // juice-ux: marca .banner-torn para el estandarte rasgado
+      guardFall(el, ev.clean, batch); // juice-ux: .banner-torn y la cuenta de la cadena de Golpes exactos
       if (falls.length > 1 && falls[0] === ev) sfx.rumble(falls.length);
       else sfx.crash(ev.clean);
       platform.vibrate(90, 0.9);
-      quake(Math.min(1, 0.45 + 0.2 * falls.length), x - innerWidth / 2, 60);
+      quake(Math.min(ev.clean ? 0.5 : 1, 0.45 + 0.2 * falls.length), x - innerWidth / 2, 60); // juice-ux V8: en un exacto, contenida
       if (ev.clean) {
         // el golpe maestro del juego: campana y sello de tinta sobre el trono
-        sfx.bell();
+        sfx.bell(exactChain()); // juice-ux V8: sube un semitono por exacto seguido
         stampOn(el, '¡Exacto!', 's-clean');
         setTimeout(() => el.querySelector('.s-clean')?.remove(), 1600);
       }

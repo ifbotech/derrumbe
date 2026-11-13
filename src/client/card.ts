@@ -3,7 +3,7 @@
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
 import { Card, CardSuit, MATERIAL, RANK_LABEL, SEAL, Seal, Suit, TREATMENT, Treatment } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
-import { engravingDefs, plateFrame, shade, suitWeaves } from './engraving';
+import { SEAL_ICON, engravingDefs, plateFrame, shade, suitWeaves } from './engraving';
 import { GLYPH } from './glyphs';
 
 // ───────────────────────── Palos ─────────────────────────
@@ -520,12 +520,6 @@ export const ferreteroEl = () => portraitEl('ferretero', 'El Tratante');
 // derecha más un acabado sobre toda la carta. Las esquinas con el índice quedan siempre libres.
 
 const SEAL_INK: Record<Seal, string> = { dinamita: '#ae2d24', eco: '#1f4e63', jornal: '#a06a10', sindical: '#181614' };
-const SEAL_ICON: Record<Seal, string> = {
-  dinamita: '<path d="M-9,-2 H9 V16 H-9 Z"/><path d="M0,-2 C0,-12 9,-8 10,-17" fill="none" stroke-width="3.4"/><path d="M10,-24 l3,5 l6,-1 l-4,5 l3,5 l-6,-1 l-3,5 l-2,-6 l-6,-1 l5,-4 Z"/>',
-  eco: '<circle r="4.5"/><path d="M-11,-11 C-17,-4 -17,4 -11,11 M11,-11 C17,-4 17,4 11,11 M-19,-17 C-28,-6 -28,6 -19,17 M19,-17 C28,-6 28,6 19,17" fill="none" stroke-width="3.4"/>',
-  jornal: '<circle r="15" fill="none" stroke-width="4"/><path d="M-5,-8 V8 M0,-8 V8 M5,-8 V8 M-9,5 L9,-5" fill="none" stroke-width="3"/>',
-  sindical: '<path d="M-11,16 V-2 C-11,-8 -6,-8 -6,-3 V-12 C-6,-17 -1,-17 -1,-12 V-14 C-1,-19 4,-19 4,-14 V-11 C4,-16 9,-16 9,-11 V4 C9,12 6,16 2,16 Z"/>',
-};
 
 function sealLayer(seal: Seal): string {
   const ink = SEAL_INK[seal];
@@ -558,8 +552,16 @@ function treatLayer(tr: Treatment): string {
     ${TREAT_BODY[tr]}
     <path d="M176,10 H240 V74 Z" fill="${TREAT_FILL[tr]}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
     ${TREAT_ICON[tr]}
-  </g></svg>${tr === 'policromado' || tr === 'templado' ? '<div class="ly sheen"></div>' : ''}`;
+  </g></svg>`;
 }
+
+/**
+ * V8 · brillo de lámina de las cuatro cartas con acabado (Filo de plata, Templado, Lacre policromo y Cristal
+ * maldito): una banda de brillo pintada una vez (degradado quieto; policromo en el Lacre policromo) dentro
+ * de la carta, que recorta su capa. La banda (.foil-band) solo se mueve con transform y opacity (la pasada
+ * es de juice-ux); con «Reducir movimiento», quieta y tenue. Va bajo el índice: no toca las cifras.
+ */
+const foilLayer = (tr: Treatment) => `<div class="ly foil f-${tr}" aria-hidden="true"><i class="foil-band"></i></div>`;
 
 /** Lo que dice el globo de ayuda de una carta: su efecto especial, su sello y su tratamiento. */
 export function cardTip(card: Card): string {
@@ -598,7 +600,7 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
         ${card.sp || card.suit === 'X' ? '' : weaveFrame(card.suit)}
         ${art}
         <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + corner(card.suit, card.rank, 'br')}</div>
-        ${card.tr ? treatLayer(card.tr) : ''}${card.seal ? sealLayer(card.seal) : ''}
+        ${card.tr ? treatLayer(card.tr) + foilLayer(card.tr) : ''}${card.seal ? sealLayer(card.seal) : ''}
         <div class="ly grain"></div>
         <div class="ly glare"></div>
       </div>

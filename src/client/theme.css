@@ -400,8 +400,9 @@ input::placeholder { color: #8a7f6d; }
 .hold-ring { position: fixed; left: 50%; top: 46%; z-index: 450; width: clamp(120px, 20vh, 190px); aspect-ratio: 1; transform: translate(-50%, -50%) rotate(-7deg); display: grid; place-items: center; pointer-events: none; color: var(--card-paper); }
 .hold-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hold-ring .track { fill: rgba(13, 12, 11, 0.9); stroke: var(--table-4); stroke-width: 7; }
-.hold-ring .prog { fill: none; stroke: var(--red-lit); stroke-width: 7; stroke-dasharray: 100; stroke-dashoffset: 100; animation: holdfill 0.7s linear forwards; }
-@keyframes holdfill { to { stroke-dashoffset: 0; } }
+/* V8 · «anima»: el aro rojo crece desde el centro hasta el riel (escala), en vez de recorrerlo con stroke-dashoffset */
+.hold-ring .prog { fill: none; stroke: var(--red-lit); stroke-width: 7; transform-box: fill-box; transform-origin: 50% 50%; animation: holdfill 0.7s linear forwards; }
+@keyframes holdfill { from { transform: scale(0.15); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
 .hold-ring b { position: relative; font-family: var(--num); font-size: clamp(44px, 9vh, 84px); line-height: 1; margin-top: -0.2em; }
 .hold-ring span { position: absolute; bottom: 21%; font-family: var(--cap); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; white-space: nowrap; }
 
@@ -1113,3 +1114,95 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 /* V7: el naipe del Contraataque en su montón lleva su índice en la tinta de su palo (no en la del rótulo del montón) */
 .pile .card .corner b { color: inherit; }
 .blocks.wall { grid-template-columns: repeat(var(--cols, var(--cap, 8)), 1fr); }
+
+/* ───────────── V8 · A1: la carta con el foco del mando se levanta ─────────────
+   nav.ts (juice-ux) pone data-foco en el elemento enfocado. La carta enfocada y no elegida sube la mitad
+   de lo que sube una elegida, solo con transform; elegida y enfocada enseña las dos cosas (sube como
+   elegida y lleva el anillo). Sin color nuevo: «elegida» sigue siendo el marco rojo con su número. */
+.hand .card[data-foco]:not(.sel) { transform: translateY(calc(var(--hand-h) * -0.07)) rotate(0deg); z-index: 2; }
+.reserve .card[data-foco]:not(.sel) { transform: translateY(-4px); z-index: 2; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .hand .card.sel { transform: translateY(-8px); }
+  .hand .card[data-foco]:not(.sel) { transform: translateY(-4px); }
+}
+
+/* ───────────── V8 · A3: la mesa del móvil (390 × 844) ─────────────
+   Las filas de guardias de cada trono se ven enteras y la barra del pulgar respira: ≥ 12 px hasta el borde
+   de abajo (más la zona segura), 8 px entre botones y a los lados. El alto no sale de los tronos ni de la
+   mano: la fila de Reliquias se lleva la rueda de palos y los poderes se llevan el Asedio, así la franja
+   de en medio pasa de tres renglones a dos; el monarca y el aviso de último turno, en un renglón cada uno. */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .table-screen .tray { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding-left: 8px; padding-right: 8px; }
+  .table-screen .actions { gap: 8px; margin: 0; }
+  .table-screen .hudrow { column-gap: 8px; row-gap: 10px; }
+  .table-screen .hudrow > .beltbar { order: 1; }
+  .table-screen .hudrow > .wheel { order: 2; }
+  .table-screen .hudrow > .powers { order: 3; }
+  .table-screen .hudrow > .fatigue { order: 4; }
+  .table-screen .hudrow .belt { gap: 8px; }
+  .table-screen .hudrow .belt-slot { margin: 0; }
+  .table-screen .hudrow .belt-label { display: none; }
+  .table-screen .powers { gap: 6px; flex-wrap: nowrap; }
+  .table-screen .powers .power { padding-left: 5px; padding-right: 5px; }
+}
+
+/* ───────────── V8 · piezas de la caída (engraving.ts), en reposo ─────────────
+   Cada pieza se coloca con su origen (--x, --y, --w, --r) por left/top/width o por las propiedades sueltas
+   translate y rotate, que son estáticas. La coreografía (juice-ux) anima `transform` y `opacity` encima
+   sin pisar el origen. Ninguna pieza lleva filter, mix-blend-mode ni clip-path animado. */
+.pieza { pointer-events: none; }
+/* esquirlas de corona: dentro de su caja .esquirlas (100 × 64), juntas forman la corona */
+.esquirlas { position: absolute; aspect-ratio: 100 / 64; pointer-events: none; z-index: 6; }
+.pieza.esquirla { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: auto; overflow: visible; rotate: var(--r, 0deg); transform-origin: 50% 50%; }
+.esquirla .esq-papel { fill: var(--paper-3); }
+.esquirla[data-suit='S'] .tr { fill: url(#trama-S); }
+.esquirla[data-suit='D'] .tr { fill: url(#trama-D); }
+.esquirla[data-suit='H'] .tr { fill: url(#trama-H); }
+.esquirla[data-suit='C'] .tr { fill: url(#trama-C); }
+/* naipe cortado: dos mitades (recorte fijo, nunca animado) con su filo de tinta, y astillas de papel */
+.pieza.mitad, .pieza.astilla { position: fixed; left: 0; top: 0; z-index: 57; width: var(--w); translate: var(--x) var(--y); rotate: var(--r, 0deg); transform-origin: 50% 50%; }
+.pieza.mitad > .card { margin: 0; }
+.pieza.mitad-a { clip-path: polygon(-10% -10%, 110% -10%, 110% 43.4%, -10% 56.6%); }
+.pieza.mitad-b { clip-path: polygon(-10% 56.6%, 110% 43.4%, 110% 110%, -10% 110%); }
+.pieza.mitad .tajo-filo { position: absolute; inset: 0; z-index: 30; width: 100%; height: 100%; overflow: visible; }
+.pieza.astilla { z-index: 58; }
+.pieza.astilla svg { display: block; width: 100%; height: auto; overflow: visible; }
+/* sello de lacre: la capa caliente encima de la fría; enfriarse es bajar su opacidad */
+.pieza.lacre { display: block; width: var(--w, 64px); height: auto; overflow: visible; }
+.lacre .lacre-caliente { opacity: 0; }
+.lacre.caliente .lacre-caliente { opacity: 1; }
+/* el sello estampado sobre una carta (abajo a la izquierda, donde va su tampón) */
+.card > .pieza.lacre { position: absolute; z-index: 9; left: 1%; bottom: 2%; width: 56%; }
+/* monedas: centradas en su origen */
+.pieza.moneda { position: fixed; left: 0; top: 0; z-index: 75; display: block; width: clamp(24px, 3.4vh, 36px); aspect-ratio: 1; translate: calc(var(--x) - 50%) calc(var(--y) - 50%); rotate: var(--r, 0deg); }
+.pieza.moneda svg { display: block; width: 100%; height: 100%; }
+/* «Reducir movimiento»: las piezas se quedan en su origen, pase lo que pase con su transform */
+.calm .pieza { transform: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .pieza { transform: none !important; }
+}
+
+/* ───────────── V8 · brillo de lámina (.ly.foil) ─────────────
+   Una banda de brillo pintada una vez dentro de la carta, que la recorta. En reposo, quieta y suave en la
+   esquina de arriba; la pasada (juice-ux) mueve solo transform (translateX de la banda, con su rotate de
+   20°) y opacity. Sin filter ni mix-blend-mode. Con «Reducir movimiento», quieta y tenue. */
+.ly.foil { inset: 3px; overflow: hidden; transform: translateZ(23px) scale(0.975); }
+.ly.foil .foil-band { position: absolute; top: -30%; left: 0; width: 44%; height: 160%; transform: translateX(var(--foil-x, -30%)) rotate(20deg); opacity: var(--foil-o, 0.42); background: var(--foil); }
+.f-forjado { --foil: linear-gradient(90deg, rgba(250, 251, 252, 0) 0%, rgba(250, 251, 252, 0.7) 42%, rgba(196, 206, 214, 0.42) 58%, rgba(250, 251, 252, 0) 100%); }
+.f-templado { --foil: linear-gradient(90deg, rgba(170, 214, 238, 0) 0%, rgba(206, 234, 248, 0.72) 44%, rgba(64, 128, 176, 0.32) 62%, rgba(170, 214, 238, 0) 100%); }
+.f-policromado { --foil: linear-gradient(90deg, rgba(240, 180, 21, 0) 0%, rgba(240, 180, 21, 0.6) 18%, rgba(255, 246, 214, 0.75) 36%, rgba(227, 72, 52, 0.5) 54%, rgba(63, 174, 159, 0.55) 72%, rgba(110, 90, 200, 0.4) 86%, rgba(110, 90, 200, 0) 100%); }
+.f-agrietado { --foil: linear-gradient(90deg, rgba(214, 196, 255, 0) 0%, rgba(232, 222, 255, 0.72) 40%, rgba(255, 255, 255, 0.85) 47%, rgba(160, 120, 210, 0.38) 60%, rgba(214, 196, 255, 0) 100%); }
+.calm .ly.foil .foil-band { opacity: 0.2; transform: translateX(-30%) rotate(20deg) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .ly.foil .foil-band { opacity: 0.2; transform: translateX(-30%) rotate(20deg) !important; }
+}
+
+/* ───────────── V8 · estado de QA «cartas-lamina»: las cuatro cartas con acabado ───────────── */
+.qa-laminas { display: flex; flex-wrap: wrap; justify-content: center; align-content: start; gap: 16px; padding: 16px; overflow-y: auto; }
+.qa-laminas figure { margin: 0; display: grid; justify-items: center; gap: 8px; color: var(--card-paper); font-family: var(--mono); font-weight: 700; font-size: 15px; text-transform: none; }
+.qa-laminas .card { --w: clamp(130px, min(20vw, 34vh), 230px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .qa-laminas { gap: 12px 8px; padding: 8px; }
+  .qa-laminas figure { font-size: 14px; }
+  .qa-laminas .card { --w: min(43vw, 26vh); }
+}
