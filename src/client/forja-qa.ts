@@ -8,9 +8,11 @@ import { SPECIAL } from '../rules/specials';
 import { ALL_CARDS, cardEl, ensureDefs, portraitEl, suitSvg } from './card';
 import { glyphSvg } from './glyphs';
 import { MONARCH_IDS, monarchSvg, type MonarchMood } from './art';
+import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
+import type { Seal } from '../rules/engine';
 
 export interface Pieza {
-  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'servicios' | 'jefes' | 'monarcas';
+  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'servicios' | 'jefes' | 'monarcas' | 'piezas';
   id: string;
 }
 
@@ -24,6 +26,46 @@ const carta = (id: string): Card | undefined => ALL_CARDS.find((c) => c.id === i
 const SERVICIOS = ['sello', 'cajones', 'atajo', 'oro', 'jefe', 'abismo', 'diaria', 'cuadrilla', 'engranaje', 'pergamino', 'forja', 'plano', 'reparacion', 'retirar', 'incognita', 'sobre', 'comodin',
   // V6: logros, juramentos, atajos y portada
   'corona_rota', 'coronas', 'naipes_par', 'naipes_color', 'naipes_full', 'naipes_poker', 'naipes_real', 'abanico', 'abanico_corto', 'rayo', 'cometa', 'relicario', 'carambano', 'herradura', 'luna', 'escudo_roto', 'fardo', 'senal', 'toldo'];
+
+const SELLOS: Seal[] = ['dinamita', 'eco', 'jornal', 'sindical'];
+
+/** V8 · una pieza de la caída, suelta y en reposo (el naipe cortado, con sus mitades algo abiertas). */
+function pieza(id: string): HTMLElement {
+  const box = document.createElement('div');
+  box.style.cssText = 'display:inline-block;line-height:0;position:relative;';
+  if (id.startsWith('esquirlas-')) {
+    const host = crownShardsHost(id.slice(-1) as Suit);
+    host.style.cssText = 'position:relative;width:240px;';
+    box.appendChild(host);
+  } else if (id.startsWith('lacre-')) {
+    const s = waxStamp(id.slice(6) as Seal);
+    s.style.cssText = 'width:200px;';
+    box.appendChild(s);
+  } else if (id === 'moneda') {
+    const c = coinPieces(1)[0];
+    c.style.cssText = 'position:relative;display:block;width:200px;translate:none;rotate:-12deg;';
+    box.appendChild(c);
+  } else {
+    // el naipe se mide en el documento y se retira: sus piezas se colocan aquí a mano, abiertas por el tajo
+    const card = cardEl(carta('S10') ?? ALL_CARDS[0], { tilt: false });
+    card.style.setProperty('--w', '200px');
+    document.body.appendChild(card);
+    const parts = slashPieces(card);
+    card.remove();
+    box.style.width = '260px';
+    box.style.height = '330px';
+    const at: [number, number, number][] = [[14, 8, -5], [40, 34, 4], [18, 150, -30], [110, 148, 40], [196, 132, -15]];
+    parts.forEach((p, i) => {
+      p.style.position = 'absolute';
+      p.style.translate = 'none';
+      p.style.left = `${at[i][0]}px`;
+      p.style.top = `${at[i][1]}px`;
+      p.style.rotate = `${at[i][2]}deg`;
+      box.appendChild(p);
+    });
+  }
+  return box;
+}
 
 /** Un retal de la trama de un palo: lo que distingue el material sin mirar el color. */
 const retal = (s: Suit) => `<svg viewBox="0 0 96 96" width="96" height="96" aria-hidden="true"><rect width="96" height="96" fill="url(#pat-${s})"/></svg>`;
@@ -41,6 +83,11 @@ function lista(): Pieza[] {
     ...BOSSES.map((b): Pieza => ({ grupo: 'jefes', id: b.id })),
     // V7: los bustos de la mesa, en calma y vencidos (doble-calma, doble-vencido…)
     ...MONARCH_IDS.flatMap((id) => (['calma', 'vencido'] as const).map((m): Pieza => ({ grupo: 'monarcas', id: `${id}-${m}` }))),
+    // V8: las piezas de la caída (esquirlas de corona por palo, naipe cortado, sellos de lacre y moneda)
+    ...SUITS.map((s): Pieza => ({ grupo: 'piezas', id: `esquirlas-${s}` })),
+    { grupo: 'piezas', id: 'tajo' },
+    ...SELLOS.map((s): Pieza => ({ grupo: 'piezas', id: `lacre-${s}` })),
+    { grupo: 'piezas', id: 'moneda' },
   ];
 }
 
@@ -48,6 +95,7 @@ function lista(): Pieza[] {
 function nodo(p: Pieza): HTMLElement {
   const box = document.createElement('div');
   box.style.cssText = 'display:inline-block;line-height:0;';
+  if (p.grupo === 'piezas') return pieza(p.id);
   if (p.grupo === 'palos') {
     box.innerHTML = suitSvg(p.id as Suit);
     const svg = box.firstElementChild as SVGElement;

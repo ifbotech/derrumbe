@@ -1,6 +1,6 @@
 {
   "name": "sangre-y-palo",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "private": true,
   "description": "SANGRE Y PALO · BLOOD & SUITS — roguelike de conjura con baraja francesa: Daño × Multi = Golpe, seis reliquias, La Manga, ocho Reinados y campaña cooperativa online (1-4 jugadores)",
   "type": "module",
@@ -21,6 +21,8 @@
     "analyze:meta": "tsx scripts/analyze-meta.ts",
     "qa:visual": "tsx scripts/visual-qa.ts",
     "qa:smoke": "tsx scripts/smoke.ts",
+    "qa:fps": "tsx scripts/fps.ts",
+    "qa:audio": "tsx scripts/audio-variedad.ts",
     "forja": "tsx scripts/svg-forge.ts",
     "og": "tsx scripts/og-card.ts"
   },

@@ -17,21 +17,25 @@
 .art .cn { fill: var(--concrete-2); }
 svg.ly.art.treat { transform: translateZ(22px) scale(0.976); }
 svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
-.ly.sheen { transform: translateZ(23px) scale(0.975); mix-blend-mode: multiply; }
 .t-forjado .ly.paper { background-color: #dcd9d1; }
 .t-agrietado .ly.paper { background-color: #efe2d4; }
-.t-templado .ly.sheen { background: linear-gradient(180deg, transparent 42%, rgba(44, 95, 163, 0.3) 100%); }
-/* bronce vivo: una lámina que brilla y sigue al puntero */
-.t-policromado .ly.sheen { background: linear-gradient(115deg, transparent 18%, rgba(240, 180, 21, 0.55) 36%, rgba(255, 246, 214, 0.2) 46%, rgba(227, 6, 19, 0.3) 55%, rgba(63, 174, 159, 0.3) 64%, transparent 80%); background-size: 260% 260%; background-position: var(--gx, 30%) var(--gy, 40%); transition: background-position 0.12s linear; }
-.card:not(.tilting).t-policromado:hover .ly.sheen, .choice.pick:hover .t-policromado .ly.sheen { animation: sheen 2.4s linear infinite; }
-@keyframes sheen { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+/* V8 · lámina: la banda de brillo (.ly.foil > .foil-band, pintada por arte-ui) cruza la carta UNA vez al
+   pasar el ratón o el foco del mando, y en la cuenta cuando suma su acabado (fx.ts sealStep). Solo transform
+   y opacity; nunca en bucle: si nadie hace nada, la carta está quieta. */
+.card:not(.tilting):hover .ly.foil .foil-band, .choice.pick:hover .ly.foil .foil-band { animation: foilpass 0.62s cubic-bezier(0.4, 0, 0.3, 1) 1 both; }
+/* con el mando, al llegar el foco (en pantalla ancha: en la estrecha la primera pasada de cada carta cuesta un
+   parón de la GPU de ~60 ms, medido con qa:fps, y allí no se juega con mando) */
+@media (min-aspect-ratio: 1/1) and (min-width: 641px) { .card[data-foco] .ly.foil .foil-band { animation: foilpass 0.62s cubic-bezier(0.4, 0, 0.3, 1) 1 both; } }
+@keyframes foilpass { from { transform: translateX(-160%) rotate(20deg); opacity: 0; } 25%, 70% { opacity: 0.95; } to { transform: translateX(260%) rotate(20deg); opacity: var(--foil-o, 0.42); } }
+/* V8 · el lacre caliente se enfría: la capa caliente se apaga por opacidad (fx.ts quita .caliente) */
+.pieza.lacre .lacre-caliente { transition: opacity 0.55s ease-out; }
 .card.stamped .seal, .card.stamped .treat { animation: stampin 0.5s var(--spring) 0.4s both; }
 @keyframes stampin { from { opacity: 0; transform: translateZ(25px) scale(2.3) rotate(-16deg); } }
 .card.pop { animation: pop 0.26s ease; z-index: 6; }
-@keyframes pop { 35% { transform: scale(1.12); filter: brightness(1.35) contrast(1.1); } }
+@keyframes pop { 35% { transform: scale(1.12); } }
 
 /* ───────────── MANO EN ABANICO ───────────── */
-.hand .card { transform: translateY(var(--dy, 0px)) rotate(var(--rot, 0deg)); transform-origin: 50% 120%; transition: transform 0.3s var(--spring); }
+.hand .card { transform: translateY(var(--dy, 0px)) rotate(var(--rot, 0deg)); transform-origin: 50% 120%; transition: transform 0.2s var(--spring); }
 .hand .card:hover { transform: translateY(-14px) rotate(0deg); z-index: 3; }
 .hand .card.sel { transform: translateY(-26px) rotate(0deg); z-index: 2; }
 .hand.locked .card:hover { transform: translateY(var(--dy, 0px)) rotate(var(--rot, 0deg)); }
@@ -83,9 +87,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .fx.pop { animation: pop 0.3s ease; }
 .float.clean { color: var(--hazard); }
 .float.small { font-size: clamp(18px, 2.6vw, 34px); top: 62%; }
-.hitstop { filter: contrast(1.3) saturate(1.25); }
 .hitstop * { animation-play-state: paused !important; }
-.coin { position: fixed; z-index: 75; width: clamp(10px, 1.7vh, 16px); aspect-ratio: 1; background: var(--gold); border: 2px solid var(--ink); pointer-events: none; transform: translate(-50%, -50%); }
 #gold-chip b.pulse, .purse b.pulse { animation: pulse 0.4s steps(4); }
 .tower.fallen .tower-fx { visibility: hidden; }
 
@@ -114,7 +116,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .belt-slot.over { outline: 4px dashed var(--red); outline-offset: 1px; }
 .belt-slot.dragging { opacity: 0.4; }
 .belt-slot.pop { animation: beltpop 0.3s ease; z-index: 4; }
-@keyframes beltpop { 35% { transform: scale(1.22) rotate(-4deg); filter: brightness(1.3); } }
+@keyframes beltpop { 35% { transform: scale(1.22) rotate(-4deg); } }
 .carries { display: inline-flex; gap: 4px; flex-wrap: wrap; }
 .carry { font-style: normal; font-family: var(--mono); font-weight: 700; font-size: 13px; text-transform: uppercase; padding: 1px 6px; border: 2px solid var(--ink); background: var(--card-paper); white-space: nowrap; }
 .carry.chain { background: var(--hazard); }
@@ -134,7 +136,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 /* ───────────── SELLOS DE TINTA ───────────── */
 .inkstamp { position: absolute; z-index: 6; right: 5%; top: 8%; transform: rotate(-12deg); font-style: normal; font-family: var(--display); text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(13px, 1.8vh, 20px); line-height: 1; color: var(--red); border: 3px double currentColor; padding: 3px 9px 4px; background: rgba(241, 235, 220, 0.9); pointer-events: none; white-space: nowrap; animation: inkstamp 0.42s var(--spring) both; }
 .inkstamp.s-skip { color: var(--ink); }
-.inkstamp.big { font-size: clamp(22px, 5vh, 54px); right: 4%; top: 6%; border-width: 6px; background: none; mix-blend-mode: multiply; opacity: 0.85; }
+.inkstamp.big { font-size: clamp(22px, 5vh, 54px); right: 4%; top: 6%; border-width: 6px; background: none; opacity: 0.85; }
 @keyframes inkstamp { from { opacity: 0; transform: rotate(-22deg) scale(2.6); } }
 
 /* ───────────── PORTADA ───────────── */
@@ -184,7 +186,8 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .set button { min-width: 110px; }
 
 /* ───────────── REDUCIR MOVIMIENTO ───────────── */
-.calm .hero-ly, .calm .hero-dust i, .calm .weapon, .calm .pip, .calm .lid, .calm .burst, .calm .star, .calm .ly.sheen { animation: none !important; }
+.calm .hero-ly, .calm .hero-dust i, .calm .weapon, .calm .pip, .calm .lid, .calm .burst, .calm .star, .calm .ly.foil .foil-band { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .ly.foil .foil-band { animation: none !important; } }
 .calm .h-beam, .calm .hero-dust { display: none; }
 .calm .card.tilting .card-in { transform: rotateY(var(--flip, 0deg)); }
 .calm .hand .card, .calm .belt-slot, .calm .stamp-btn { transition: none; }
@@ -250,26 +253,19 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
   .belt-slot { width: clamp(26px, 9.2vw, 44px); }
 }
 
-/* ───────────── FOCO DE LATÓN (teclado y mando · contrato C4, de juice-ux) ─────────────
-   Marco de 3 px de latón entre dos filetes de marfil: se lee sobre la crema de las cartas y sobre la
-   tinta de la mesa, y a dos metros. Al llegar a cada elemento da un salto de escala leve. Se mueve
-   solo con transform y opacity (el ancho y el alto cambian de golpe, sin transición). */
-.focus-ring { --brass: #d4a348; --ivory: #f3ead2; position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none; opacity: 0; transition: transform 0.07s ease-out, opacity 0.08s; }
+/* ───────────── FOCO DEL MANDO (teclado y mando · V8 A1, de juice-ux) ─────────────
+   Marco de papel de 4 px con un filete de tinta de 2 px por fuera y otro por dentro (8 px en total): el
+   papel se lee sobre la tinta de la mesa y el filete de tinta sobre el papel de las cartas, y nunca se
+   confunde con el latón de las placas ni con el marco rojo de «elegida». Va 6 px por fuera de lo enfocado,
+   así no tapa la carta. Salta al sitio nuevo en el mismo fotograma (sin deslizarse) y se asienta con un
+   rebote corto de escala. Solo transform y opacity. nav.ts pone data-foco en lo enfocado. */
+.focus-ring { --ring-paper: #f3ead2; --ring-ink: #0d0c0b; position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none; opacity: 0; transition: opacity 0.06s; }
 .focus-ring.on { opacity: 1; }
-.focus-ring i { position: absolute; inset: 0; border: 3px solid var(--brass); border-radius: 4px; box-shadow: 0 0 0 2px var(--ivory), inset 0 0 0 2px var(--ivory), 0 0 0 5px rgba(13, 12, 11, 0.55); }
-/* cantoneras: las esquinas en latón macizo, para que el marco se vea entero aunque el fondo sea latón */
-.focus-ring i::before { content: ''; position: absolute; inset: -6px; --l: 14px; --t: 4px;
-  background:
-    linear-gradient(var(--brass), var(--brass)) left top / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) left top / var(--t) var(--l) no-repeat,
-    linear-gradient(var(--brass), var(--brass)) right top / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) right top / var(--t) var(--l) no-repeat,
-    linear-gradient(var(--brass), var(--brass)) left bottom / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) left bottom / var(--t) var(--l) no-repeat,
-    linear-gradient(var(--brass), var(--brass)) right bottom / var(--l) var(--t) no-repeat, linear-gradient(var(--brass), var(--brass)) right bottom / var(--t) var(--l) no-repeat; }
-.focus-ring.hop i { animation: ringhop 0.18s cubic-bezier(0.3, 1.6, 0.6, 1); }
-@keyframes ringhop { from { transform: scale(1.09); opacity: 0.55; } }
-.calm .focus-ring { transition: opacity 0.08s; }
+.focus-ring i { position: absolute; inset: 0; border: 4px solid var(--ring-paper); border-radius: 6px; box-shadow: 0 0 0 2px var(--ring-ink), inset 0 0 0 2px var(--ring-ink); }
+.focus-ring.hop i { animation: ringhop 0.2s cubic-bezier(0.3, 1.7, 0.5, 1); }
+@keyframes ringhop { 0% { transform: scale(1.08); opacity: 0.7; } 55% { transform: scale(0.985); opacity: 1; } 100% { transform: none; } }
 .calm .focus-ring.hop i { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .focus-ring { transition: opacity 0.08s; }
   .focus-ring.hop i { animation: none; }
 }
 

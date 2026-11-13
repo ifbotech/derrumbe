@@ -22,7 +22,7 @@ import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 /** FORJA_OUT=artifacts/svg-forge-loquesea: dos celdas forjando a la vez no se pisan las hojas. */
 const OUT = resolve(process.env.FORJA_OUT?.trim() || 'artifacts/svg-forge');
 const SIZES = [24, 300] as const;
-const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'servicios', 'jefes', 'monarcas'];
+const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'servicios', 'jefes', 'monarcas', 'piezas'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const groups = wanted.length ? GROUPS.filter((g) => wanted.includes(g)) : GROUPS;
 

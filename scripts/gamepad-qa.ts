@@ -85,7 +85,7 @@ const latency = (page: Page, button: number) =>
     return document.activeElement === from ? -1 : dt;
   }, button);
 
-/** El marco de latón está encendido, mide 3 px y abraza lo enfocado. */
+/** El foco está encendido, es un marco de papel de 4 px con filetes de tinta (≥ 6 px) y abraza lo enfocado. */
 const ringOk = (page: Page) =>
   page.evaluate(() => {
     const ring = document.querySelector<HTMLElement>('.focus-ring.on');
@@ -94,7 +94,8 @@ const ringOk = (page: Page) =>
     const r = ring.getBoundingClientRect();
     const t = a.getBoundingClientRect();
     const frame = getComputedStyle(ring.querySelector('i')!);
-    return frame.borderTopWidth === '3px' && Math.abs(r.left + 6 - t.left) < 3 && Math.abs(r.top + 6 - t.top) < 3 && Math.abs(r.width - 12 - t.width) < 3;
+    const spreads = [...frame.boxShadow.matchAll(/0px 0px 0px (\d+(?:\.\d+)?)px/g)].reduce((n, m) => n + parseFloat(m[1]), 0);
+    return parseFloat(frame.borderTopWidth) >= 4 && parseFloat(frame.borderTopWidth) + spreads >= 6 && Math.abs(r.left + 6 - t.left) < 3 && Math.abs(r.top + 6 - t.top) < 3 && Math.abs(r.width - 12 - t.width) < 3;
   });
 const ms = (n: number) => (n < 0 ? 'no se movió' : `${Math.round(n)} ms`);
 
@@ -253,7 +254,7 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
   check(now[0] === start[1] && now[1] === start[0] && now.slice(2).join() === start.slice(2).join(), 'en combate, RB mueve la reliquia enfocada un hueco a la derecha');
   check(await active(page, slot(1, start[0])), 'y el foco viaja con ella a su hueco nuevo');
   await page.waitForTimeout(150);
-  check(await ringOk(page), 'con el marco de latón abrazándola');
+  check(await ringOk(page), 'con el foco abrazándola');
   check((await count(page, '.lupa')) === 0, 'RB sobre una reliquia no abre la lupa');
   await press(page, BTN.LB);
   await page.waitForTimeout(250);
@@ -564,10 +565,49 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   // ── foco: marco visible y respuesta en menos de 50 ms ──
   check(await focusOn(page, '#hand .card'), 'el foco está en la mano');
   await page.waitForTimeout(200); // el marco se desliza en 70 ms y la carta enfocada se alza: se mide ya quieto
-  check(await ringOk(page), 'el marco de latón (3 px) abraza la carta enfocada');
+  check(await ringOk(page), 'el foco de papel y tinta abraza la carta enfocada');
   const quick = await latency(page, BTN.RIGHT);
   check(quick >= 0 && quick < 50, `el foco responde a la cruceta en menos de 50 ms (${ms(quick)})`);
   check((await page.evaluate(() => (window as unknown as QaWindow).__qaSounds.slice(-3))).includes('focus'), 'mover el foco suena (toque de latón)');
+  {
+    // V8 · A1: tras cada pulsación de la cruceta en la mano, en el fotograma siguiente al cambio de foco el
+    // marco ya rodea la carta nueva y esa carta (y solo esa) lleva data-foco
+    await focusOn(page, '#hand .card');
+    const a1 = await page.evaluate(async (btns) => {
+      const g = (window as unknown as QaWindow).__qaGamepad;
+      const raf = () => new Promise((r) => requestAnimationFrame(r));
+      const frames: number[] = [];
+      const bad: string[] = [];
+      for (const b of btns) {
+        const from = document.activeElement;
+        g.pad.buttons[b] = { pressed: true, touched: true, value: 1 };
+        let f = 0;
+        while (document.activeElement === from && f < 40) {
+          await raf();
+          f++;
+        }
+        await raf(); // el fotograma siguiente al cambio
+        const a = document.activeElement as HTMLElement;
+        const ring = document.querySelector<HTMLElement>('.focus-ring.on');
+        const marked = document.querySelectorAll('[data-foco]');
+        const r = ring?.getBoundingClientRect();
+        const t = a.getBoundingClientRect();
+        const around = !!r && r.left <= t.left + 1 && r.right >= t.right - 1 && Math.abs(r.left + 6 - t.left) < 3 && Math.abs(r.width - 12 - t.width) < 3;
+        if (a === from || !a.matches('#hand .card')) bad.push(`botón ${b}: el foco no pasó a otra carta`);
+        else if (!around) bad.push(`botón ${b}: el marco no rodea la carta nueva`);
+        else if (marked.length !== 1 || marked[0] !== a) bad.push(`botón ${b}: data-foco en ${marked.length} elementos`);
+        frames.push(f);
+        g.pad.buttons[b] = { pressed: false, touched: false, value: 0 };
+        await raf();
+        await raf();
+      }
+      const cs = getComputedStyle(document.querySelector('.focus-ring i')!);
+      const spreads = [...cs.boxShadow.matchAll(/0px 0px 0px (\d+(?:\.\d+)?)px/g)].reduce((n, m) => n + parseFloat(m[1]), 0);
+      return { frames, bad, border: parseFloat(cs.borderTopWidth), total: parseFloat(cs.borderTopWidth) + spreads };
+    }, [BTN.RIGHT, BTN.RIGHT, BTN.LEFT, BTN.RIGHT, BTN.LEFT, BTN.LEFT]);
+    check(!a1.bad.length && Math.max(...a1.frames) <= 2, `A1: en cada pulsación de la cruceta el foco llega a la carta nueva en ${Math.max(...a1.frames)} fotograma(s) como mucho (${a1.frames.join(' ')}), con el marco alrededor y data-foco solo en ella${a1.bad.length ? ` — ${a1.bad[0]}` : ''}`);
+    console.log(`  (A1: marco de ${a1.border} px de papel, ${a1.total} px con los filetes de tinta)`);
+  }
 
   // ── R3: pantalla completa (se comprueba la llamada, no el modo real) ──
   await page.evaluate(() => {
@@ -788,7 +828,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     await page.waitForTimeout(250);
     check((await run(page))!.tools.slice(0, 2).join() === tools.slice(0, 2).join(), 'en La Taberna, RB mueve la reliquia enfocada a la derecha');
     check(await active(page, `.run-belt .belt-slot[data-slot="1"][data-id="${reordered[0]}"]`), 'el foco viaja con la reliquia a su hueco nuevo');
-    check(await ringOk(page), 'y el marco de latón la sigue');
+    check(await ringOk(page), 'y el foco la sigue');
     await press(page, BTN.LB);
     await page.waitForTimeout(250);
     check((await run(page))!.tools.slice(0, 2).join() === reordered.slice(0, 2).join() && (await active(page, '.run-belt .belt-slot[data-slot="0"]')), 'LB la devuelve a la izquierda, con el foco');
@@ -825,7 +865,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     });
     check(rowsOk, 'la cruceta recorre la rejilla de la Mesa de lacre (derecha, abajo, izquierda, arriba) sin salirse');
     check(await focusOn(page, '.pending-modal .card.pickable'), 'y vuelve a una carta elegible');
-    check(await ringOk(page), 'con el marco de latón sobre la carta');
+    check(await ringOk(page), 'con el foco sobre la carta');
     await A();
     // el lacre se estampa tras su animación: se sondea hasta 2 s en vez de una espera fija
     let stamped = false;

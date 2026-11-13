@@ -13,7 +13,7 @@ import { FULL_TITLE } from '../shared/brand';
 import { $, $$, S, app, esc, modal, num, toast } from './core';
 import { causeHtml, causeText, validDeath } from './causa';
 import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
-import { burst, dealIn, restart, revealOptions, stampOn } from './fx';
+import { burst, coins, dealIn, restart, revealOptions, stampOn } from './fx';
 import { glyphSvg } from './glyphs';
 import { lastGain } from './guild';
 import { sendMsg } from './net';
@@ -82,7 +82,7 @@ export function renderRun(): void {
   const run = c.run;
   setDeckBack(run.deckId);
   const over = run.phase === 'won' || run.phase === 'lost';
-  setScene(over ? 'menu' : 'shop');
+  setScene(over ? 'menu' : run.phase === 'map' ? 'map' : 'shop', run.stage); // juice-ux V8: el Mapa tiene su música
   document.querySelectorAll('.pending-modal, .sobre-modal').forEach((m) => m.remove());
   if (run.phase === 'pack') packScreen(run);
   else if (run.phase === 'map') mapScreen(run);
@@ -136,7 +136,7 @@ function confirmSell(run: Run, i: number): void {
   $('#yes', el).onclick = () => {
     el.remove();
     runDo({ t: 'sell', i });
-    sfx.coins(sellValue(t.id));
+    sfx.coins(sellValue(t.id)), coins('#npc', '.purse b', sellValue(t.id)); // juice-ux V8: del Tratante a la bolsa
     ferreteroSays('sell');
   };
 }
@@ -319,7 +319,7 @@ function shopScreen(run: Run): void {
   $('#offers').style.setProperty('--n', String(run.shop.length));
   run.shop.forEach((o, i) => $('#offers').appendChild(offerChoice(run, o, i)));
   if (lastPhase === 'shop' && lastGold >= 0 && run.gold < lastGold) {
-    sfx.coins(lastGold - run.gold);
+    sfx.coins(lastGold - run.gold), coins('.purse b', '#npc', lastGold - run.gold); // juice-ux V8: de la bolsa al Tratante
     ferreteroSays('buy');
   } else if (lastPhase !== 'shop') ferreteroSays(run.freeShop ? 'free' : 'hello');
   else $('#say').textContent = '…';

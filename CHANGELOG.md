@@ -2,6 +2,75 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 8.0.0 — 2026-11-13
+
+Golpes con tajo, esquirlas y lacre a 60 FPS, música por generador y foco del mando de papel y tinta. Sin cambios de reglas: `src/rules/` no se tocó y el laboratorio sigue idéntico al de la 6.1 y la 7.0. Motivo: el paso 3 del encargo (sensación de golpe y tres horas de música sin fatiga) y lo que dejó abierto la 7.0 (foco del mando en Steam Deck, bocadillo del monarca sobre los tronos, barra del pulgar en móvil).
+
+### Coreografía del golpe
+- **Guardia abatido**: el naipe se parte en diagonal en dos mitades grabadas y tres astillas de papel (760 ms a 1×). Sustituye al clon con `clip-path` y a los cuadrados de color. Pausa de impacto de 60–80 ms (antes 45–65), sin filtro. En un Golpe exacto, temblor contenido (0,5).
+- **Trono caído**: la corona se parte en dos y estalla en 10 esquirlas con la trama de su palo. Medido en la prueba de humo: **1.142 ms a 1×, 595 ms a 2× y 311 ms a 4×** (tope 1,2 s a 1×; a 2× y 4×, proporcional ± 15 %).
+- **Reserva de piezas**: tras el primer golpe, diez golpes más crean 0 nodos nuevos y no dejan ninguna pieza suelta.
+- **Cadena de Golpes exactos** contada en el cliente: sube de uno en uno sin el tope 4 del motor y vuelve a 0 con un golpe no exacto.
+
+### Lacre y lámina
+- **Sello de lacre caliente** en la cuenta: cae sobre la carta con rebote corto y se enfría por opacidad. Uno por sello: de pólvora, de eco, de oro real y de la manga.
+- **Lámina** en las cuatro cartas con acabado (Filo de plata, Templado, Lacre policromo y Cristal maldito; antes solo dos tenían brillo): una banda pintada una vez que cruza la carta con `transform`. Sustituye a `.ly.sheen`, que animaba `background-position` con `mix-blend-mode`.
+- **Monedas grabadas** con canto y cara: vuelan en combate y, por primera vez, en La Taberna al comprar y al vender. Sustituyen a los cuadrados `.coin`.
+- Con «Reducir movimiento», nada vuela ni tiembla, la lámina no pasa y el foco no rebota: solo fundidos y sonido (pasada propia dentro de `npm run qa:smoke`).
+
+### Banda sonora
+- Generador puro con semilla (`src/client/audio-frases.ts`): da la partitura compás a compás y el WebAudio solo la toca. Re menor eólico; el do♯ solo en las cadencias.
+- Un juego de motivos por asalto (antes, la misma melodía transportada en los 8). Escena nueva para el **Mapa del castillo** (antes sonaba como la portada); laúd y bajo en el Mapa y en La Taberna; tambores de guerra y metales ante un monarca o con presión > 0,6.
+- Foley nuevo: tajo, carta a La Manga y de vuelta, sello de lacre y lámina. La campana del Golpe exacto **sube un semitono por exacto seguido, hasta +7**.
+- `npm run qa:audio` (nuevo, solo CPU, 0,5 s): guion de unas 3 h × 3 semillas (1, 2 y 3). **Tramo repetido más largo: 3,3 s** (un compás; tope 30 s, comparación invariante al transporte). **Secuencia idéntica de efectos más larga: 1** (tope 8). Todas las notas en re menor. Motivos distintos en cada asalto.
+
+### Rendimiento
+- `npm run qa:fps` (nuevo): Chromium con aceleración real (ANGLE, RTX 3090, D3D11); falla si el renderizador es por software. Refresco en reposo 6,1 ms; umbral p95 ≤ 17,2 ms y ningún fotograma > 50 ms. 52,6 s. Sustituye al umbral de `GPU=1` de la prueba de humo.
+- Media / p95 / máximo en ms (`artifacts/mision/v8/fps.json`). **0 fotogramas > 50 ms** en las 15 medidas que puntúan:
+
+| Escenario | 1920×1080 | 1280×800 | 390×844 |
+|---|---|---|---|
+| Golpe con tajo | 6,73 / 12,1 / 24,3 | 6,62 / 6,2 / 42,5 | 6,58 / 6,2 / 42,6 |
+| Caída de un trono | 6,93 / 12,2 / 12,3 | 7,01 / 12,2 / 18,2 | 6,26 / 6,2 / 12,2 |
+| Sello y lámina en la cuenta | 6,07 / 6,2 / 6,3 | 6,1 / 6,2 / 12,0 | 6,07 / 6,2 / 6,2 |
+| Monedas en La Taberna | 6,07 / 6,2 / 6,3 | 6,07 / 6,2 / 6,3 | 6,07 / 6,1 / 6,2 |
+| Barrido del foco con el mando | 6,1 / 6,2 / 12,1 | 6,07 / 6,2 / 6,3 | 6,07 / 6,2 / 6,3 |
+
+- En frío (primera pasada en un perfil nuevo, no puntúa): un fotograma de 60,8 ms en 1920×1080, sello y lámina, al compilar los sombreadores. `warmUp()` lo reduce; no lo quita.
+- Regla nueva «anima» en la QA visual: ninguna animación toca algo distinto de `transform` u `opacity` y ningún nodo animado lleva `filter` ni `mix-blend-mode`. Se limpiaron `styles.css`, `campaign.css` y `juice.css`; la lista de pendientes quedó vacía.
+
+### Abierto de la V7
+- **A1 · foco del mando.** El marco de latón de 3 px pasa a papel de 4 px con filete de tinta (8 px en total). La carta enfocada se eleva. Prueba de humo: el foco llega en 1 fotograma en cada pulsación de la cruceta y `data-foco` está solo en la carta nueva. Regla «foco» de la QA visual en verde.
+- **A2 · bocadillo del monarca.** En escritorio va en la columna lateral, junto a la placa del monarca; en 390×844, bajo la fila del monarca. Regla «voz»: no pisa ningún trono en `mesa-monarca` ni en sus siete variantes, en las cuatro ventanas.
+- **A3 · 390×844.** Botones a ≥ 12 px del borde inferior y ≥ 8 px entre sí; las filas Q y K de los guardias se ven enteras. Reglas «pulgar» y «guardias» en verde.
+
+### Puertas
+- `typecheck` limpio; **205 pruebas** en verde; `build` y `build:web` compilan.
+- Laboratorio: no se repitió, porque las reglas no cambiaron. `tests/invariantes.test.ts` da la misma huella y el informe sigue idéntico al de la 6.1 (0 avisos, peor P95 de los asaltos 4–8: 18).
+- Forja: 169 piezas × 2 tamaños (grupo nuevo `piezas`), limpia, 9 avisos (1 nuevo: `piezas/tajo` a 24 px, un tamaño al que nunca se ve).
+- QA visual: **148 capturas** (37 estados × 4 ventanas), 0 fallos, 0 recortes. Estados nuevos: `mesa-esquirlas`, `cartas-lamina`, `taberna-monedas` y `mesa-lacre`. Reglas nuevas: «anima», «foco», «pulgar», «guardias» y «piezas»; «voz», ampliada.
+- Prueba de humo: **213 comprobaciones**, «Todo en orden» con ratón, teclado, mando virtual y la pasada con «Reducir movimiento». Partida guiada con los efectos nuevos: 29,1 s con teclado, 29,2 s con ratón y 33,1 s con mando (tope 60 s).
+
+### Panel simulado contra la 7.0
+Corrida `rapido-60-20261113-164104` (commit `c12191c`) contra la base `rapido-60-20261113-141123` (7.0): mismas 60 personas y mismo reparto de escenas. 274 evaluaciones, 0 fallidas.
+- **Límite de la comparación.** El panel no oye ni ve movimiento: juzga capturas quietas. Nada de lo que diga se puede atribuir a la música, al tajo o a las esquirlas. Desde la 8.0 audita además la captura `mesa-mando`, que es donde se ve A1. Así, las personas de Steam Deck reciben una auditoría más que en la 7.0: en ese estrato las dos corridas no se miden con la misma vara.
+- **Aprobación: 25,0 % → 25,0 %** (15 de 60 las dos veces; IC95 15,8–37,2).
+- **Claridad media: 4,93 → 5,20** (IC95 calculado de las 60 reseñas: 4,62–5,25 en la 7.0 y 4,91–5,49 en la 8.0).
+- **Veredicto: sin regresión y sin mejora medible.** La aprobación no se mueve. La claridad sube 0,27 pero se queda dentro del intervalo de la 7.0.
+- Por dispositivo (claridad media con su IC95 · aprobación):
+  - Móvil (n 15): 4,60 → **5,47** (IC95 de la 8.0: 4,78–6,15) · 33,3 → 40,0 %. Es donde se trabajó A3. Con n = 15, la mejora no está probada.
+  - Steam Deck (n 9): 5,00 → **4,44** (IC95 de la 8.0: 3,71–5,18) · **0 de 9 por tercera corrida** (6.1, 7.0 y 8.0). La bajada cae dentro del ruido y tiene el límite de arriba.
+  - PC (n 21): 5,10 → 5,33 · 38,1 → 33,3 %. Portátil (n 15): 5,00 → 5,20 · 13,3 → 13,3 %.
+- Quejas por cubeta: mando / foco 19 → 10 · texto chico 84 → 75 · contraste 67 → 68 · fatiga visual 46 → 53 · reglas confusas 38 → 38 · palo Inmune 33 → 38 · La Manga 17 → 14.
+- Steam Deck, leído reseña a reseña: 8 de 9 siguen diciendo que no se ve el foco. Pero la auditoría de `mesa-mando` a 1280×800 no lo marca. Lo marcan las de `mesa` y La Taberna, que son capturas con ratón y no tienen foco que ver. Lo que sí tiene base en la captura pasa a la V9 (`SPECS/V9.md`, apartado 1.2).
+- Precio justo (mediana): 8,0 → 8,0 USD. En deseados: 55,0 → 58,3 %.
+- Duelos A/B: miran a la V9 y la V10 y no se comparan con la 7.0. Gana la propuesta en los tres: «Mandar la Crónica en un toque» (85 %, IC95 75–95; 30 % de pares con sesgo de posición), «Jugar en inglés» (87,5 %, IC95 77,5–97,5; sesgo 25 %) y «Modo de alto contraste» (100 %; sin sesgo). Sesgo de posición global: 18,3 %.
+
+### Estudio
+- Orden de celdas: director → arte-ui → juice-ux. Bitácoras en `artifacts/mision/v8/`. Arte-UI pintó las piezas (`engraving.ts`) y el reposo; Juice-UX, la coreografía, el sonido y los medidores. Juice-UX solo puso enganches de una línea en los archivos de Arte-UI, todos listados en su bitácora.
+- Lo que no convive: `.ly.sheen` sale y entra `.ly.foil`; `.coin` y `.debris` salen y entran las piezas grabadas; el anillo de latón sale y entra el de papel y tinta.
+- Abierto para la V9 y la V10: la pasada de lámina con el foco solo en pantallas anchas (en 390 px la capa daba un parón de GPU); un `filter: drop-shadow` quieto en `.stage .card`; el fotograma en frío de los sombreadores.
+
 ## 7.0.0 — 2026-11-13
 
 Partida guiada que se juega y Mesa brava. Sin cambios de reglas. Motivo: la queja «reglas confusas / tutorial» y la claridad del casual (3,50 sobre 10 en la línea base de la 6.1), y unos monarcas que solo eran un decreto de una línea.

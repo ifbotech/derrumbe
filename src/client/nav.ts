@@ -1,4 +1,4 @@
-// Navegación sin ratón: flechas, cruceta o palanca mueven un foco de latón al elemento más cercano en
+// Navegación sin ratón: flechas, cruceta o palanca mueven un foco de papel y tinta al elemento más cercano en
 // esa dirección; A / Enter lo pulsa. Sirve igual en todas las pantallas porque no conoce ninguna: solo
 // mira qué se puede pulsar y dónde está.
 //
@@ -10,6 +10,7 @@
 //             · LT Rebobinar · RT velocidad · R3 pantalla completa · Start ajustes · mantener Select reinicia
 //
 // El foco responde en el mismo fotograma de la pulsación (marco, salto de escala y un toque de latón)
+// y marca lo enfocado con data-foco (V8 · A1: la carta enfocada de la mano se levanta, theme.css),
 // y nunca espera a que la mesa acabe de animar. Si la pantalla se redibuja bajo el foco, el foco vuelve
 // al mismo elemento redibujado (o al más cercano): con mando nunca se queda en el aire.
 //
@@ -64,6 +65,16 @@ function ringEl(): HTMLDivElement {
   return ring;
 }
 
+/** Lo que lleva data-foco ahora mismo (una sola cosa a la vez). */
+let marked: Element | null = null;
+/** V8 · A1: data-foco va en lo enfocado con teclado o mando, y se le quita a lo anterior. */
+function mark(el: Element | null): void {
+  if (marked === el) return;
+  marked?.removeAttribute('data-foco');
+  marked = el;
+  el?.setAttribute('data-foco', '');
+}
+
 /** Coloca el marco sobre el elemento. Solo cambia transform, ancho y alto: nada de reflujo en la página. */
 function place(el: Element): void {
   const r = el.getBoundingClientRect();
@@ -81,8 +92,10 @@ function showRing(el: Element | null, hop = false): void {
   if (!el || mode === 'pointer' || el === document.body) {
     box.classList.remove('on');
     ringAt = '';
+    mark(null);
     return;
   }
+  mark(el);
   place(el);
   box.classList.add('on');
   if (hop) {

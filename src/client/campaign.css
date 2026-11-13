@@ -230,12 +230,16 @@
 }
 .routes .choice.boss-route .card { --w: clamp(84px, 16vh, 160px); }
 /* el quemador: la carta se tuesta de abajo arriba y desaparece */
+/* V8 · «anima»: la brasa es una capa quieta pintada una vez (degradado de abajo arriba) que entra con
+   opacity; la carta solo sube, se tuerce y se apaga (transform y opacity), sin filtros ni recortes */
 .card.burning { animation: burn 1.25s ease-in 0.15s forwards; }
+.card.burning .card-front::after { content: ''; position: absolute; inset: 0; z-index: 40; pointer-events: none; background: linear-gradient(to top, #2a1206 0, #7a2c0c 34%, rgba(196, 92, 20, 0.55) 62%, rgba(196, 92, 20, 0) 86%); opacity: 0; animation: burnglow 1.25s ease-in 0.15s forwards; }
 @keyframes burn {
-  0% { filter: none; clip-path: inset(0 0 0 0); }
-  35% { filter: sepia(1) saturate(5) hue-rotate(-18deg) brightness(1.05); clip-path: inset(0 0 0 0); }
-  100% { filter: sepia(1) saturate(2) brightness(0.25); clip-path: inset(0 0 100% 0); transform: translateY(-14px) rotate(3deg); }
+  0%, 35% { transform: none; opacity: 1; }
+  100% { transform: translateY(-14px) rotate(3deg) scale(0.94); opacity: 0; }
 }
+@keyframes burnglow { 0% { opacity: 0; } 35% { opacity: 0.75; } 100% { opacity: 1; } }
+.calm .card.burning .card-front::after { animation: none; opacity: 0.6; }
 .calm .card.burning { animation: calmout 1s linear forwards; }
 @keyframes calmout { to { opacity: 0; } }
 /* nada ensancha una pantalla más allá de la ventana */

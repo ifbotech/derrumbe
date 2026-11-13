@@ -6,7 +6,7 @@
 //  · Tramas de buril. Rayados, contrarrayados y semitonos como patrones SVG, para sombrear a la
 //    manera de una xilografía: la sombra es tinta tallada, no un degradado.
 //  · Piezas. Paños de los guardias de cada trono, marcos de chapa según la rareza y remaches de maestría.
-import type { Suit } from '../rules/engine';
+import type { Seal, Suit } from '../rules/engine';
 
 const INK = '#181614';
 const PAPER = '#eae0ce';
@@ -198,4 +198,206 @@ export function masteryBadge(level: number): string {
   const metal = masteryMetal(level);
   if (!metal) return '';
   return `<span class="mastery m-${metal}" data-tip="<b>Sello de maestría</b>Ganaste una campaña en el Reinado ${level} con esto. Bronce: Reinados 1–3 · hierro: 4–6 · oro: 7–8."><i>${level}</i></span>`;
+}
+
+// ───────────────────────── V8 · Piezas de la caída ─────────────────────────
+// Esquirlas de corona, naipe cortado, sello de lacre y monedas. Se pintan una vez, en linograbado plano
+// (tinta, papel y la trama de su palo, sin filtros ni degradados animados), y se mueven SOLO con transform
+// y opacity: juice-ux las guarda en una reserva y las reutiliza. Cada pieza lleva su origen en variables
+// CSS (--x, --y, --r, y --w para el ancho), que el CSS de reposo (theme.css) aplica con las propiedades
+// sueltas `translate`/`rotate`/`left`/`top`; la coreografía anima `transform` encima, sin pisarlas.
+// Con «Reducir movimiento» las piezas se quedan en su origen (la corona entera, el naipe en su sitio).
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svgEl = (html: string): SVGSVGElement => {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild as SVGSVGElement;
+};
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
+/** El tampón de cada sello (centrado en 0,0, radio ≈ 28): lo comparten la carta (card.ts) y el lacre. */
+export const SEAL_ICON: Record<Seal, string> = {
+  dinamita: '<path d="M-9,-2 H9 V16 H-9 Z"/><path d="M0,-2 C0,-12 9,-8 10,-17" fill="none" stroke-width="3.4"/><path d="M10,-24 l3,5 l6,-1 l-4,5 l3,5 l-6,-1 l-3,5 l-2,-6 l-6,-1 l5,-4 Z"/>',
+  eco: '<circle r="4.5"/><path d="M-11,-11 C-17,-4 -17,4 -11,11 M11,-11 C17,-4 17,4 11,11 M-19,-17 C-28,-6 -28,6 -19,17 M19,-17 C28,-6 28,6 19,17" fill="none" stroke-width="3.4"/>',
+  jornal: '<circle r="15" fill="none" stroke-width="4"/><path d="M-5,-8 V8 M0,-8 V8 M5,-8 V8 M-9,5 L9,-5" fill="none" stroke-width="3"/>',
+  sindical: '<path d="M-11,16 V-2 C-11,-8 -6,-8 -6,-3 V-12 C-6,-17 -1,-17 -1,-12 V-14 C-1,-19 4,-19 4,-14 V-11 C4,-16 9,-16 9,-11 V4 C9,12 6,16 2,16 Z"/>',
+};
+
+/**
+ * La corona de un trono, en una caja de 100 × 64, partida en diez esquirlas que encajan. Cada una es un
+ * polígono; las grietas son sus bordes compartidos.
+ */
+const CROWN = 'M6,60 L4,22 L20,38 L34,8 L50,30 L66,8 L80,38 L96,22 L94,60 Z';
+const SHARDS: number[][] = [
+  [4, 22, 20, 38, 18, 46, 5, 46],
+  [5, 46, 18, 46, 16, 60, 6, 60],
+  [20, 38, 27, 23, 30, 40, 18, 46],
+  [27, 23, 34, 8, 42, 19, 44, 30, 30, 40],
+  [18, 46, 30, 40, 42, 48, 36, 60, 16, 60],
+  [42, 19, 50, 30, 58, 19, 60, 32, 50, 40, 44, 30],
+  [30, 40, 44, 30, 50, 40, 60, 46, 52, 60, 36, 60, 42, 48],
+  [58, 19, 66, 8, 73, 23, 70, 40, 60, 32],
+  [50, 40, 60, 32, 70, 40, 82, 48, 84, 60, 52, 60, 60, 46],
+  [73, 23, 80, 38, 96, 22, 94, 60, 84, 60, 82, 48, 70, 40],
+];
+/** Lo grabado de la corona entera (se recorta a cada esquirla): banda, perlas y la gema del centro. */
+const CROWN_BODY = `<path d="${CROWN}" class="esq-papel"/><path d="${CROWN}" class="tr"/>
+  <path d="M5,46 H95 M5,52 H95" fill="none" stroke="${INK}" stroke-width="2.4"/>
+  <circle cx="20" cy="38" r="3.2" fill="${INK}"/><circle cx="80" cy="38" r="3.2" fill="${INK}"/>
+  <path d="M50,33 L56,40 L50,46 L44,40 Z" fill="${PAPER}" stroke="${INK}" stroke-width="2.4"/>
+  <circle cx="34" cy="8" r="3.4" fill="${PAPER}" stroke="${INK}" stroke-width="2"/><circle cx="66" cy="8" r="3.4" fill="${PAPER}" stroke="${INK}" stroke-width="2"/>`;
+
+/**
+ * Esquirlas de la corona de un trono: de 6 a 10 piezas `svg.pieza.esquirla` (aquí, 10) que juntas forman la
+ * corona, con la trama del palo (`data-suit` → `url(#trama-X)`), papel y contorno de tinta de 3.
+ * Origen en % de su caja `.esquirlas` (100 × 64): --x, --y (esquina) y --w (ancho); --r 0deg. Además, para
+ * la coreografía: --vx y --vy (dirección de salida desde el centro, unitaria) y --giro (giro sugerido).
+ * `reuse`: las de una reserva se repintan con el palo nuevo en vez de crear nodos.
+ */
+export function crownShards(suit: Suit, reuse?: SVGSVGElement[]): SVGSVGElement[] {
+  if (reuse && reuse.length === SHARDS.length) {
+    for (const s of reuse) s.dataset.suit = suit;
+    return reuse;
+  }
+  return SHARDS.map((pts, i) => {
+    const xs = pts.filter((_, k) => k % 2 === 0);
+    const ys = pts.filter((_, k) => k % 2 === 1);
+    const [x0, x1, y0, y1] = [Math.min(...xs) - 2, Math.max(...xs) + 2, Math.min(...ys) - 2, Math.max(...ys) + 2];
+    const cx = xs.reduce((a, b) => a + b, 0) / xs.length;
+    const cy = ys.reduce((a, b) => a + b, 0) / ys.length;
+    const len = Math.hypot(cx - 50, cy - 40) || 1;
+    const poly = pts.join(' ');
+    const s = svgEl(`<svg xmlns="${SVGNS}" class="pieza esquirla" data-suit="${suit}" data-i="${i}" viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" aria-hidden="true">
+      <defs><clipPath id="esq-c${i}"><polygon points="${poly}"/></clipPath></defs>
+      <g clip-path="url(#esq-c${i})">${CROWN_BODY}</g>
+      <polygon points="${poly}" fill="none" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    </svg>`);
+    s.style.cssText = `--x:${r1(x0)}%;--y:${r1((y0 / 64) * 100)}%;--w:${r1(x1 - x0)}%;--r:0deg;--vx:${r1((cx - 50) / len)};--vy:${r1((cy - 40) / len)};--giro:${(i % 2 ? 1 : -1) * (24 + ((i * 17) % 40))}deg`;
+    return s;
+  });
+}
+
+/** La caja de la corona (`.esquirlas`, 100 × 64) con sus esquirlas en reposo dentro: la corona entera. */
+export function crownShardsHost(suit: Suit): HTMLDivElement {
+  const host = document.createElement('div');
+  host.className = 'esquirlas';
+  host.dataset.suit = suit;
+  host.append(...crownShards(suit));
+  return host;
+}
+
+/** Diagonal del tajo, en fracción del alto de la carta: entra por la izquierda al 56,6 % y sale por la derecha al 43,4 %. */
+const CUT: [number, number] = [0.566, 0.434];
+/** Astillas de papel del tajo: [posición a lo largo del corte (0–1), ancho relativo al naipe, polígono en 0 0 30 12]. */
+const SPLINTERS: [number, number, string][] = [
+  [0.18, 0.2, '0,6 9,1 22,3 30,7 18,10 6,11'],
+  [0.52, 0.16, '0,5 12,0 30,4 20,9 8,12'],
+  [0.84, 0.22, '0,7 8,2 20,0 30,5 24,11 10,10'],
+];
+
+/**
+ * El naipe cortado en diagonal: dos mitades (`div.pieza.mitad.mitad-a` arriba y `.mitad-b` abajo, cada una
+ * con un clon del naipe recortado y el filo de tinta del tajo) y tres astillas de papel (`div.pieza.astilla`)
+ * a lo largo del corte. Origen en píxeles de la ventana (van con position: fixed): --x, --y y --w (ancho del
+ * naipe o de la astilla), --r 0deg; además --vx/--vy (hacia dónde caen) y --giro.
+ * `reuse`: las cinco piezas de una reserva se rellenan con el naipe nuevo en vez de crear nodos.
+ */
+export function slashPieces(card: HTMLElement, reuse?: HTMLElement[]): HTMLElement[] {
+  const r = card.getBoundingClientRect();
+  const pieces = reuse && reuse.length === 2 + SPLINTERS.length ? reuse : [
+    ...(['a', 'b'] as const).map((h) => {
+      const d = document.createElement('div');
+      d.className = `pieza mitad mitad-${h}`;
+      return d;
+    }),
+    ...SPLINTERS.map(([, , pts]) => {
+      const d = document.createElement('div');
+      d.className = 'pieza astilla';
+      d.innerHTML = `<svg viewBox="-2 -2 34 16" aria-hidden="true"><polygon points="${pts}" fill="${PAPER}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/><path d="M4,6 L20,4" stroke="${INK}" stroke-width="1.6"/></svg>`;
+      return d;
+    }),
+  ];
+  const filo = `<svg class="tajo-filo" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M-2,${CUT[0] * 100 + 1} L100,${CUT[1] * 100 + 1}" stroke="${INK}" stroke-width="5" vector-effect="non-scaling-stroke"/><path d="M-2,${CUT[0] * 100} L100,${CUT[1] * 100}" stroke="${PAPER}" stroke-width="1.5" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"/></svg>`;
+  (['a', 'b'] as const).forEach((h, i) => {
+    const half = pieces[i];
+    const clone = card.cloneNode(true) as HTMLElement;
+    clone.classList.remove('deal', 'attack', 'sel', 'hint', 'fly', 'pop', 'tilting', 'guia-target');
+    clone.removeAttribute('id');
+    clone.removeAttribute('data-foco');
+    clone.removeAttribute('tabindex');
+    clone.removeAttribute('data-n');
+    clone.removeAttribute('data-key');
+    clone.removeAttribute('data-tip');
+    clone.style.cssText = `--w:${r.width}px;visibility:visible;`;
+    // lo que vuela no lleva filtros ni mezclas: fuera la tinta rugosa (filter) y el reflejo (mix-blend-mode)
+    clone.querySelectorAll('[filter]').forEach((n) => n.removeAttribute('filter'));
+    clone.querySelectorAll('.ly.glare').forEach((n) => n.remove());
+    half.replaceChildren(clone);
+    half.insertAdjacentHTML('beforeend', filo);
+    half.style.cssText = `--x:${r1(r.left)}px;--y:${r1(r.top)}px;--w:${r1(r.width)}px;--r:0deg;--vx:${h === 'a' ? -0.45 : 0.4};--vy:${h === 'a' ? -0.25 : 0.6};--giro:${h === 'a' ? -34 : 28}deg`;
+  });
+  SPLINTERS.forEach(([t, w], k) => {
+    const s = pieces[2 + k];
+    const x = r.left + t * r.width;
+    const y = r.top + (CUT[0] + (CUT[1] - CUT[0]) * t) * r.height;
+    const pw = Math.max(14, w * r.width);
+    s.style.cssText = `--x:${r1(x - pw / 2)}px;--y:${r1(y - pw * 0.2)}px;--w:${r1(pw)}px;--r:${(k - 1) * 14}deg;--vx:${r1(t - 0.5)};--vy:-0.8;--giro:${(k % 2 ? 1 : -1) * 120}deg`;
+  });
+  return pieces;
+}
+
+/** Lacre de cada sello: [frío, caliente, brillo, relieve]. Pólvora, eco, oro real y la manga. */
+const WAX: Record<Seal, [string, string, string, string]> = {
+  dinamita: ['#8a2219', '#cf3b26', '#ffc09a', '#5a140e'],
+  eco: ['#183f51', '#2b7592', '#b5e6f2', '#0c2733'],
+  jornal: ['#8a5a0c', '#d39a24', '#ffe7a3', '#5c3b05'],
+  sindical: ['#24201d', '#5a4434', '#e3b27c', '#0e0c0b'],
+};
+/** Gota de lacre aplastada: borde irregular y tres lágrimas, en 0 0 100 100. */
+const WAX_BLOB = 'M50,8 C62,7 70,14 79,16 C90,19 94,32 92,43 C91,52 96,58 93,67 C89,79 80,84 71,89 C66,92 64,99 58,97 C53,95 49,92 42,92 C30,92 19,88 13,78 C7,69 3,62 6,52 C8,44 3,37 8,28 C13,18 24,15 32,11 C38,8 44,9 50,8 Z';
+
+/**
+ * El sello de lacre caliente que se estampa en la cuenta: `svg.lacre` con dos capas superpuestas del mismo
+ * dibujo, `.lacre-frio` (mate, el reposo) y `.lacre-caliente` (brillo pintado, sin filtro). Enfriarse es
+ * solo bajar la opacidad de la caliente: con la clase `.caliente` en el svg, la capa caliente se ve.
+ */
+export function waxStamp(seal: Seal): SVGSVGElement {
+  const [cold, hot, shine, deep] = WAX[seal];
+  const icon = (fill: string) => `<g transform="translate(50 52) scale(1.05)" fill="${fill}" stroke="${fill}" stroke-linecap="round" stroke-linejoin="round" stroke-width="0">${SEAL_ICON[seal]}</g>`;
+  const face = (body: string, ring: string, top: string) => `<path d="${WAX_BLOB}" fill="${body}" stroke="${INK}" stroke-width="3.2" stroke-linejoin="round"/>
+    <circle cx="50" cy="52" r="31" fill="none" stroke="${ring}" stroke-width="5"/>
+    <circle cx="50" cy="52" r="24" fill="none" stroke="${ring}" stroke-width="1.8" stroke-dasharray="3 3.6"/>
+    <g transform="translate(1.4 1.6)">${icon(ring)}</g>${icon(top)}`;
+  return svgEl(`<svg xmlns="${SVGNS}" class="pieza lacre" data-sello="${seal}" viewBox="0 0 100 100" aria-hidden="true">
+    <g class="lacre-frio">${face(cold, deep, deep)}</g>
+    <g class="lacre-caliente">${face(hot, cold, shine)}
+      <path d="M22,36 C26,24 36,17 48,15" fill="none" stroke="${shine}" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M78,64 C76,72 71,78 64,82" fill="none" stroke="${shine}" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+      <circle cx="28" cy="46" r="2.6" fill="${shine}"/>
+    </g>
+  </svg>`);
+}
+
+/**
+ * Monedas grabadas para el vuelo del oro (combate y La Taberna): `i.pieza.moneda`, cada una con su canto
+ * estriado y su cara con la corona de tres puntas. Origen: --x, --y en px (0 si no se dice) y --r, un
+ * giro distinto por moneda para que no salgan iguales.
+ */
+export function coinPieces(n: number): HTMLElement[] {
+  const face = `<svg viewBox="0 0 40 40" aria-hidden="true">
+    <ellipse cx="20" cy="23.5" rx="16" ry="14.5" fill="#7a5208" stroke="${INK}" stroke-width="2.6"/>
+    <path d="M8,27 V31 M12,30 V34 M16,31.5 V36 M20,32 V36.5 M24,31.5 V36 M28,30 V34 M32,27 V31" stroke="${INK}" stroke-width="1.6"/>
+    <ellipse cx="20" cy="19" rx="16" ry="14.5" fill="#d9a43a" stroke="${INK}" stroke-width="2.6"/>
+    <ellipse cx="20" cy="19" rx="11.5" ry="10.2" fill="none" stroke="${INK}" stroke-width="1.6" stroke-dasharray="2 2.4"/>
+    <path d="M13,24 L12.5,14 L16.5,18 L20,11 L23.5,18 L27.5,14 L27,24 Z" fill="${INK}"/>
+    <path d="M9.5,13 C11.5,9 15,7 19,6.5" fill="none" stroke="#fff1c4" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+  return Array.from({ length: Math.max(1, n) }, (_, i) => {
+    const c = document.createElement('i');
+    c.className = 'pieza moneda';
+    c.innerHTML = face;
+    c.style.cssText = `--x:0px;--y:0px;--r:${((i * 47) % 70) - 35}deg`;
+    return c;
+  });
 }

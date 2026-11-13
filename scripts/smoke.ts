@@ -1,15 +1,18 @@
 // Prueba de humo en el navegador: juega de verdad unos turnos sobre el juego construido
 // (dist/web) y falla si algo lanza un error. Cubre lo que las pruebas del motor no ven: la mesa,
-// La Manga, Rebobinar, la Lupa, el foco de teclado (marco de 3 px, < 50 ms), Mayús + flechas sobre
-// las reliquias, los susurros y su «No mostrar más», las insignias de reliquia, lo que suena, la
+// La Manga, Rebobinar, la Lupa, el foco de teclado (papel y tinta, ≥ 6 px, < 50 ms), Mayús + flechas
+// sobre las reliquias, los susurros y su «No mostrar más», las insignias de reliquia, lo que suena, la
 // tabla de controles de Ajustes, el reinicio con R y una campaña del bot entera.
+// V8: la reserva de piezas no crece, la caída del trono a 1×, 2× y 4×, la cadena de Golpes exactos, la
+// música de cada escena, las monedas de La Taberna y una segunda pasada con «Reducir movimiento».
+// (La fluidez se mide aparte, con aceleración gráfica: npm run qa:fps.)
 //
 //   npm run qa:smoke          (construye antes; NO_BUILD=1 para saltarse la construcción)
-//   NO_PAD=1 se salta la parte del mando virtual · GPU=1 mide la fluidez con aceleración
+//   NO_PAD=1 se salta la parte del mando virtual · GPU=1 lanza Chromium con aceleración
 //   QA_DIR=dist/qa-<celda> construye aparte · QA_OUT=artifacts/visual-qa-<celda> guarda allí las capturas
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { chromium, Page } from 'playwright';
+import { Browser, chromium, Page } from 'playwright';
 import { gamepadSuite, guidedRun, sealCheck } from './gamepad-qa';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
@@ -87,8 +90,7 @@ async function main(): Promise<void> {
   });
   console.log(`  fotogramas durante el golpe: ${perf.n} · media ${perf.avg.toFixed(1)} ms · p95 ${perf.p95.toFixed(1)} ms · máx ${perf.max.toFixed(1)} ms`);
   check(perf.live.length === 0, `nada de lo que se anima lleva filtros de ruido en vivo${perf.live.length ? ` (${perf.live.slice(0, 4).join(', ')})` : ''}`);
-  if (gpu) check(perf.avg < 18 && perf.p95 < 34, 'el golpe se anima a 60 fotogramas por segundo (media < 18 ms, p95 < 34 ms)');
-  else console.log('  (pintado por CPU: para medir la fluidez real, GPU=1 npm run qa:smoke)');
+  console.log('  (solo orientativo: los 60 fps los mide npm run qa:fps, con aceleración gráfica)');
   const hpAfter = await page.locator('.tower[data-suit="H"] .hp span').textContent();
   check(hpBefore !== hpAfter, `el golpe cambia la Vida del guardia (${hpBefore} → ${hpAfter})`);
   check((await count(page, '#hand .card')) >= 5, 'la mano se repone tras el golpe');
@@ -113,8 +115,16 @@ async function main(): Promise<void> {
   // ── foco de teclado y lupa ──
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
-  check((await count(page, '.focus-ring.on')) === 1, 'las flechas encienden el foco de latón');
-  check(await page.evaluate(() => getComputedStyle(document.querySelector('.focus-ring i')!).borderTopWidth === '3px'), 'el marco del foco mide 3 px');
+  check((await count(page, '.focus-ring.on')) === 1, 'las flechas encienden el foco');
+  {
+    const ring = await page.evaluate(() => {
+      const cs = getComputedStyle(document.querySelector('.focus-ring i')!);
+      const spreads = [...cs.boxShadow.matchAll(/0px 0px 0px (\d+(?:\.\d+)?)px/g)].reduce((a, m) => a + parseFloat(m[1]), 0);
+      return { paper: parseFloat(cs.borderTopWidth), total: parseFloat(cs.borderTopWidth) + spreads, color: cs.borderTopColor };
+    });
+    check(ring.paper >= 4 && ring.total >= 6, `el foco es un marco de papel de ${ring.paper} px con filetes de tinta (${ring.total} px en total, ≥ 6)`);
+    check(!/212, 163, 72/.test(ring.color), `y ya no es de latón (${ring.color})`);
+  }
   const keyLag = await page.evaluate(() => {
     const from = document.activeElement;
     const t0 = performance.now();
@@ -239,15 +249,24 @@ async function main(): Promise<void> {
         s.crash(false);
         s.crownBreak(); // trono caído: corona que se parte
         s.mutiny(); // Motín: redoble
+        s.slash(); // V8 · tajo de hoja
+        s.stash(false); // V8 · carta que se desliza a La Manga
+        s.seal(); // V8 · sello de lacre caliente
+        s.foil(); // V8 · lámina que brilla
+        s.bell(8); // V8 · campana con 8 Golpes exactos seguidos (+7 semitonos)
       } catch (e) {
         return [`error: ${(e as Error).message}`];
       }
       await new Promise((r) => setTimeout(r, 300));
       return w.__qaSounds.slice(Math.min(from, w.__qaSounds.length - 12));
     });
-    const want = ['siren', 'sirenBlocked', 'sirenHit', 'bell', 'crash', 'crownBreak', 'mutiny'];
+    const want = ['siren', 'sirenBlocked', 'sirenHit', 'bell', 'crash', 'crownBreak', 'mutiny', 'slash', 'stash', 'seal', 'foil'];
     check(want.every((n) => theme.includes(n)) && problems.length === errs, `los sonidos de la corte se sintetizan sin errores (${want.filter((n) => theme.includes(n)).join(', ')})`);
   }
+
+  // ── V8 · jugo: reserva, caída del trono, cadena, música y monedas ──
+  console.log('Jugo V8');
+  await juiceChecks(page);
 
   // ── dos tintas clásicas y ajustes ──
   await go(page, 'ajustes');
@@ -372,6 +391,10 @@ async function main(): Promise<void> {
     await gamepadSuite(browser, site.url, check, problems, (p, name) => p.screenshot({ path: join(OUT, `${name}.png`) }));
   }
 
+  // ── V8 · una segunda pasada con «Reducir movimiento»: nada vuela ni tiembla ──
+  console.log('Reducir movimiento');
+  await calmPass(browser, site.url);
+
   // ── copia de seguridad, con el guardado de verdad (sin ?qa): exportar, perderlo todo e importar ──
   console.log('Copia de seguridad');
   {
@@ -429,6 +452,216 @@ async function main(): Promise<void> {
   for (const p of [...new Set(problems)]) console.log(`! ${p}`);
   console.log(problems.length ? `\n${new Set(problems).size} problemas` : '\nTodo en orden.');
   process.exit(problems.length ? 1 : 0);
+}
+
+type Fx = Record<string, (...a: unknown[]) => unknown> & { settings: { speed: number; calm: boolean }; made(): number; exactChain(): number };
+type FxWin = { __qaFx: Fx; __qaMusica(): { kind: string; stage: number; boss: boolean }; __qa: { go(s: string): Promise<boolean>; run(): { gold: number } | null } };
+
+/** V8 · lo que vuela sale de una reserva, el trono cae en su tiempo, la cadena se cuenta entera y cada escena suena a lo suyo. */
+async function juiceChecks(page: Page): Promise<void> {
+  // ── la reserva: tras un golpe que la calienta, diez golpes más no crean ni una pieza ──
+  await go(page, 'mesa');
+  const pool = await page.evaluate(async () => {
+    const fx = (window as unknown as FxWin).__qaFx;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    fx.settings.speed = 4;
+    const guard = () => document.querySelector<HTMLElement>('.tower[data-suit="S"] .floor-slot .card')!;
+    const sealed = () => document.querySelector<HTMLElement>('#hand .card.z-dinamita, #hand .card.z-eco, #hand .card.z-jornal, #hand .card.z-sindical') ?? document.querySelector<HTMLElement>('#hand .card')!;
+    const golpe = async () => {
+      const g = guard();
+      g.style.visibility = '';
+      const r = g.getBoundingClientRect();
+      fx.tear(g);
+      fx.burst(r.left + r.width / 2, r.top + r.height / 2, 12);
+      fx.coins(g, '#gold-chip', 8);
+      fx.sealStep('seal', sealed());
+      fx.throneFall(document.querySelector('.tower[data-suit="D"]'));
+      let peak = 0;
+      for (let i = 0; i < 20; i++) {
+        await sleep(30);
+        peak = Math.max(peak, document.querySelectorAll('.pieza').length);
+      }
+      await sleep(350);
+      return peak;
+    };
+    const peak0 = await golpe();
+    const made0 = fx.made();
+    let peak = 0;
+    for (let i = 0; i < 10; i++) peak = Math.max(peak, await golpe());
+    fx.settings.speed = 1;
+    guard().style.visibility = '';
+    return { peak0, peak, made0, made: fx.made(), left: document.querySelectorAll('body > .pieza, body > .esquirlas').length };
+  });
+  check(pool.peak0 > 0, `un golpe lanza piezas grabadas (${pool.peak0} a la vez: naipe cortado, astillas, monedas, lacre y esquirlas)`);
+  check(pool.made === pool.made0 && pool.peak <= pool.peak0, `la reserva no crece: diez golpes más, ${pool.made - pool.made0} piezas nuevas (${pool.made} en total; como mucho ${pool.peak} a la vez)`);
+  check(pool.left === 0, 'al acabar no queda ninguna pieza suelta en la página');
+  check((await count(page, '.coin, .debris')) === 0, 'ya no salen los cuadrados viejos (.coin, .debris)');
+
+  // ── la caída del trono a 1×, 2× y 4×: de .crown-split al final de la última esquirla ──
+  await go(page, 'mesa-esquirlas');
+  const fall = await page.evaluate(async () => {
+    const fx = (window as unknown as FxWin).__qaFx;
+    const raf = () => new Promise((r) => requestAnimationFrame(r));
+    document.querySelectorAll('body > .pieza, body > .esquirlas').forEach((n) => n.remove());
+    const out: Record<number, number> = {};
+    let shards = 0;
+    for (const sp of [1, 2, 4]) {
+      fx.settings.speed = sp;
+      const tower = document.querySelector<HTMLElement>('.tower[data-suit="D"]')!;
+      tower.querySelectorAll<SVGElement>('.crn-l, .crn-r').forEach((h) => (h.style.opacity = ''));
+      await new Promise((r) => setTimeout(r, 150));
+      let t0 = 0;
+      const mo = new MutationObserver(() => {
+        if (!t0 && tower.classList.contains('crown-split')) t0 = performance.now();
+      });
+      mo.observe(tower, { attributes: true, attributeFilter: ['class'] });
+      fx.throneFall(tower);
+      let anims: Animation[] = [];
+      const w0 = performance.now();
+      while (!anims.length && performance.now() - w0 < 3000) {
+        await raf();
+        anims = [...document.querySelectorAll('body > .esquirlas .esquirla')].flatMap((e) => e.getAnimations());
+      }
+      shards = Math.max(shards, document.querySelectorAll('body > .esquirlas .esquirla').length);
+      await Promise.all(anims.map((a) => a.finished.catch(() => undefined)));
+      out[sp] = Math.round(performance.now() - t0);
+      mo.disconnect();
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    fx.settings.speed = 1;
+    return { out, shards };
+  });
+  const d1 = fall.out[1];
+  console.log(`  caída del trono: 1× ${d1} ms · 2× ${fall.out[2]} ms · 4× ${fall.out[4]} ms (${fall.shards} esquirlas)`);
+  check(fall.shards >= 6, `la corona estalla en esquirlas grabadas (${fall.shards})`);
+  check(d1 > 0 && d1 <= 1200, `la caída del trono cabe en 1,2 s a 1× (${d1} ms)`);
+  for (const sp of [2, 4]) {
+    const want = d1 / sp;
+    check(Math.abs(fall.out[sp] - want) <= want * 0.15, `a ${sp}× dura en proporción (${fall.out[sp]} ms; se esperaba ${Math.round(want)} ± 15 %)`);
+  }
+
+  // ── la cadena de Golpes exactos: se cuenta entera (el motor la topa en 4) ──
+  await go(page, 'mesa');
+  const chain = await page.evaluate(() => {
+    const fx = (window as unknown as FxWin).__qaFx;
+    const t = document.querySelector<HTMLElement>('.tower[data-suit="H"]')!;
+    const seq: number[] = [];
+    const down = (clean: boolean) => [{ e: 'floorDown', clean }];
+    for (let i = 0; i < 9; i++) {
+      fx.guardFall(t, true, down(true));
+      seq.push(fx.exactChain());
+    }
+    fx.guardFall(t, false, down(false));
+    seq.push(fx.exactChain());
+    fx.guardFall(t, true, down(true));
+    seq.push(fx.exactChain());
+    const two = [{ e: 'floorDown', clean: true }, { e: 'floorDown', clean: true }];
+    fx.guardFall(t, true, two);
+    fx.guardFall(t, true, two);
+    seq.push(fx.exactChain());
+    return seq.join(' ');
+  });
+  check(chain === '1 2 3 4 5 6 7 8 9 0 1 2', `la cadena de exactos sube de uno en uno más allá de 4, vuelve a 0 con un golpe que no es exacto y un golpe con dos abatidos cuenta una vez (${chain})`);
+
+  // ── la música de cada escena ──
+  const scene = () => page.evaluate(() => (window as unknown as FxWin).__qaMusica());
+  await go(page, 'plano');
+  const map = await scene();
+  await go(page, 'ferreteria');
+  const shop = await scene();
+  await go(page, 'mesa-monarca');
+  const boss = await scene();
+  check(map.kind === 'map' && shop.kind === 'shop' && boss.kind === 'battle' && boss.boss, `cada escena tiene su música: Mapa «${map.kind}», Taberna «${shop.kind}», monarca «${boss.kind}${boss.boss ? ' con monarca' : ''}»`);
+
+  // ── La Taberna: al comprar, las monedas vuelan de la bolsa al Tratante ──
+  await go(page, 'ferreteria');
+  const before = await page.evaluate(() => (window as unknown as FxWin).__qa.run()?.gold ?? 0);
+  // se paga algo que cueste oro sin abrir más ventanas: renovar la mesa (o la cura)
+  const offer = page.locator('#reroll:not(:disabled), #heal:not(:disabled)').first();
+  if (await offer.count()) {
+    await offer.click();
+    const flew = await page.evaluate(async () => {
+      let n = 0;
+      for (let i = 0; i < 20; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        n = Math.max(n, document.querySelectorAll('body > .pieza.moneda').length);
+      }
+      return n;
+    });
+    const after = await page.evaluate(() => (window as unknown as FxWin).__qa.run()?.gold ?? 0);
+    check(after < before && flew > 0, `al comprar en La Taberna vuelan monedas grabadas de la bolsa al Tratante (${flew}; oro ${before} → ${after})`);
+    check((await sounds(page)).includes('coins'), 'y tintinean');
+  } else console.log('  (La Taberna de QA no tiene nada que se pueda comprar)');
+  await page.keyboard.press('Escape');
+}
+
+/** V8 · «Reducir movimiento»: un contexto aparte con reducedMotion 'reduce'. Caída del trono, tajo y monedas sin nada en vuelo. */
+async function calmPass(browser: Browser, url: string): Promise<void> {
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES', reducedMotion: 'reduce' });
+  await ctx.addInitScript({ content: NAME_SHIM });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => problems.push(`[calma] error de página: ${e.message}`));
+  page.on('console', (m) => m.type() === 'error' && !/WebSocket|favicon/.test(m.text()) && problems.push(`[calma] consola: ${m.text()}`));
+  try {
+    await page.goto(`${url}?qa=1`);
+    await page.waitForFunction(() => !!(window as unknown as { __qa?: unknown }).__qa);
+    check(await page.evaluate(() => document.documentElement.classList.contains('calm') && (window as unknown as FxWin).__qaFx.settings.calm), 'con «Reducir movimiento» en el sistema, el juego arranca en calma');
+    await go(page, 'mesa-esquirlas');
+    await page.mouse.click(700, 20);
+    const r = await page.evaluate(async () => {
+      const fx = (window as unknown as FxWin).__qaFx;
+      document.querySelectorAll('body > .pieza, body > .esquirlas').forEach((n) => n.remove());
+      const raf = () => new Promise((res) => requestAnimationFrame(res));
+      const flying = new Set<string>();
+      let shake = 0;
+      let foil = 0;
+      let stop = false;
+      const made0 = fx.made();
+      void (async () => {
+        while (!stop) {
+          await raf();
+          for (const p of document.querySelectorAll('.pieza')) {
+            const t = getComputedStyle(p).transform;
+            if (t && t !== 'none') flying.add(String((p as HTMLElement).className?.toString()));
+          }
+          const ts = document.querySelector('.table-screen');
+          if (ts && getComputedStyle(ts).transform !== 'none') shake++;
+          for (const b of document.querySelectorAll('.ly.foil .foil-band')) if (b.getAnimations().length) foil++;
+        }
+      })();
+      const tower = document.querySelector<HTMLElement>('.tower[data-suit="D"]')!;
+      const guard = document.querySelector<HTMLElement>('.tower[data-suit="S"] .floor-slot .card') ?? document.querySelector<HTMLElement>('#hand .card')!;
+      const r0 = guard.getBoundingClientRect();
+      fx.throneFall(tower);
+      await fx.hitstop(1);
+      fx.tear(guard);
+      fx.burst(r0.left + r0.width / 2, r0.top + r0.height / 2, 12);
+      fx.quake(1, 0, 60);
+      fx.coins('#hand .card', '#gold-chip', 8);
+      const treated = document.querySelector('#hand .card.t-policromado, #hand .card.t-forjado, #hand .card.t-templado, #hand .card.t-agrietado');
+      fx.sealStep('treat', treated);
+      fx.sealStep('seal', document.querySelector('#hand .card'));
+      await new Promise((res) => setTimeout(res, 1500));
+      stop = true;
+      return { flying: [...flying], shake, foil, split: tower.classList.contains('crown-split'), made: fx.made() - made0, treated: !!treated };
+    });
+    check(r.flying.length === 0, `con «Reducir movimiento», durante la caída del trono, el tajo y el vuelo de monedas no hay ninguna pieza en vuelo${r.flying.length ? ` (${r.flying.slice(0, 3).join(', ')})` : ''}`);
+    check(r.shake === 0, `la mesa no tiembla (${r.shake} fotogramas con transform)`);
+    check(r.foil === 0, `la lámina no pasa (${r.foil} fotogramas con la banda animada${r.treated ? '' : '; sin carta con acabado en la mano'})`);
+    check(!r.split && r.made <= 1, `no se marca la corona partida ni se sacan piezas a volar (${r.made} piezas nuevas: a lo sumo el lacre, que solo se funde)`);
+    // el foco salta sin rebote y el bocadillo y la cuenta ya se comprueban en la pasada normal
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    check(await page.evaluate(() => getComputedStyle(document.querySelector('.focus-ring i')!).animationName === 'none'), 'el foco llega sin rebote de escala');
+    const hover = page.locator('#hand .card.t-policromado, #hand .card.t-forjado, #hand .card.t-templado, #hand .card.t-agrietado').first();
+    if (await hover.count()) {
+      await hover.hover();
+      await page.waitForTimeout(120);
+      check(await page.evaluate(() => [...document.querySelectorAll('.ly.foil .foil-band')].every((b) => !b.getAnimations().length)), 'pasar el ratón por una carta con lámina no la anima');
+    }
+  } finally {
+    await ctx.close();
+  }
 }
 
 void main();

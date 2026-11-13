@@ -4,7 +4,7 @@
 import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
-import { Card, GameState, SUITS, Seal, Suit, Treatment, applyAction, fatigueAt, viewFor } from '../rules/engine';
+import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, viewFor } from '../rules/engine';
 import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
 import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../rules/tutorial';
 import { TOOLS } from '../rules/tools';
@@ -22,6 +22,7 @@ import { setScreen } from './router';
 import { renderRun } from './runscreens';
 import { pump, renderInteractive, toggleInspector } from './table';
 import { monarchGallery, showBark, spotlight } from './guia';
+import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import { showRules, showSettings } from './widgets';
 
 const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'pasarela', 'resonador'];
@@ -36,9 +37,18 @@ const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
   ['C', 4, { tr: 'agrietado' }],
 ];
 const find = (cards: Card[], s: Suit, r: number) => cards.find((c) => !c.sp && c.suit === s && c.rank === r);
+/** Todo quieto y en su sitio antes de medir dónde colocar una pieza a mano (las cartas aún entran repartidas). */
+const quieto = () =>
+  document.getAnimations().forEach((a) => {
+    try {
+      if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish();
+    } catch {
+      /* animación sin final */
+    }
+  });
 
 function clean(): void {
-  document.querySelectorAll('.modal, .lupa, .end:not(.in-page), .toast, .ach-stack, .tip, .ribbon, .banner').forEach((n) => n.remove());
+  document.querySelectorAll('.modal, .lupa, .end:not(.in-page), .toast, .ach-stack, .tip, .ribbon, .banner, body > .pieza, body > .esquirlas').forEach((n) => n.remove());
   S.tutorial = null;
   S.session = null;
   S.lobby = null;
@@ -63,10 +73,13 @@ function baseRun(stage = 1): Run {
   run.stats.cleans = 5;
   return run;
 }
-function show(run: Run, state: GameState | null = null): void {
+function show(run: Run, state: GameState | null = null, key = 'qa'): void {
   clean();
-  S.campaign = { run, online: false, state, key: 'qa' };
+  S.campaign = { run, online: false, state, key };
 }
+/** V8: cada mesa con monarca es una campaña nueva para la presentación: su voz de entrada (voces.ts) vuelve a
+ *  sonar y el temporizador de la anterior queda anulado, en vez de esconder el bocadillo de la siguiente. */
+let monarchRuns = 0;
 
 async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null): Promise<void> {
   setMode(input);
@@ -98,7 +111,7 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   const stashed = find(p.hand, 'C', 4);
   if (stashed) state = applyAction(state, RUN_PLAYER, { type: 'stash', card: stashed.id }).state;
   state.stashed = false;
-  show(run, state);
+  show(run, state, boss ? `qa-monarca-${++monarchRuns}` : 'qa');
   S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
   setScreen('table');
   await pump();
@@ -293,9 +306,15 @@ const STATES: Record<string, () => void | Promise<void>> = {
   'mesa-susurro': () => mesa(true, 'keys'),
   // la mesa tal como se ve jugando con mando: cada botón enseña el suyo
   // con mando: insignias de botón en cada acción y el marco de foco sobre la primera carta elegida
+  // V8 · A1: el foco va a una carta NO elegida (la que sigue a las elegidas) y lleva data-foco, como lo pone nav.ts
   'mesa-mando': async () => {
     await mesa(false, 'pad');
-    document.querySelector<HTMLElement>('#hand .card.sel, #hand .card')?.focus({ preventScroll: true });
+    const cards = [...document.querySelectorAll<HTMLElement>('#hand > .card')];
+    const last = cards.map((c) => c.classList.contains('sel')).lastIndexOf(true);
+    const card = cards.slice(last + 1).find((c) => !c.classList.contains('sel')) ?? cards.find((c) => !c.classList.contains('sel'));
+    document.querySelectorAll('[data-foco]').forEach((n) => n.removeAttribute('data-foco'));
+    card?.setAttribute('data-foco', '');
+    card?.focus({ preventScroll: true });
   },
   // un asalto que se alarga: Asedio final de nivel 3, con su Multi y su Ataque de más
   'mesa-fatiga': () => mesa(false, 'pointer', 12),
@@ -400,6 +419,98 @@ const STATES: Record<string, () => void | Promise<void>> = {
   'mesa-monarca': () => mesaMonarca('sequia'),
   // el mismo asalto con cada monarca (mesa-monarca-doble, …-escasez…): la QA los corre a demanda
   ...Object.fromEntries(BOSSES.map((b) => [`mesa-monarca-${b.id}`, () => mesaMonarca(b.id)])),
+  // ── arte-ui V8: las piezas de la caída, congeladas a mano (sin fx.ts) ──
+  // el trono de Diamantes caído con la corona hecha esquirlas, y el guardia de Picas cortado por el tajo
+  'mesa-esquirlas': async () => {
+    await mesa();
+    const state = S.campaign?.state;
+    if (!state) return;
+    state.towers.D.floors = [];
+    const keep = [...S.selected];
+    S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
+    await pump();
+    S.selected.splice(0, S.selected.length, ...keep);
+    renderInteractive();
+    quieto();
+    const rub = document.querySelector<SVGElement>('.tower[data-suit="D"] .rubble');
+    if (rub) {
+      rub.querySelectorAll<SVGElement>('.crn-l, .crn-r').forEach((h) => (h.style.opacity = '0'));
+      const r = rub.getBoundingClientRect();
+      const host = crownShardsHost('D');
+      const w = r.width * 0.58;
+      host.style.cssText = `position:fixed;z-index:56;width:${w}px;left:${r.left + r.width * 0.48 - w / 2}px;top:${r.top + r.height * 0.6 - w * 0.32}px;`;
+      document.body.appendChild(host);
+      // a media caída: cada esquirla, a un tercio de su vuelo hacia fuera y algo caída, con medio giro
+      host.querySelectorAll<SVGElement>('.esquirla').forEach((s, i) => {
+        const vx = parseFloat(s.style.getPropertyValue('--vx'));
+        const vy = parseFloat(s.style.getPropertyValue('--vy'));
+        const k = w * (0.22 + (i % 3) * 0.06);
+        s.style.transform = `translate(${(vx * k).toFixed(1)}px, ${(vy * k + w * 0.12).toFixed(1)}px) rotate(${parseFloat(s.style.getPropertyValue('--giro')) * 0.5}deg)`;
+      });
+    }
+    const guard = document.querySelector<HTMLElement>('.tower[data-suit="S"] .floor-slot .card');
+    if (guard) {
+      const pieces = slashPieces(guard);
+      guard.style.visibility = 'hidden';
+      const W = guard.getBoundingClientRect().width;
+      pieces.forEach((p, i) => {
+        const vx = parseFloat(p.style.getPropertyValue('--vx'));
+        const vy = parseFloat(p.style.getPropertyValue('--vy'));
+        const k = i < 2 ? W * 0.16 : W * 0.3;
+        p.style.transform = `translate(${(vx * k).toFixed(1)}px, ${(vy * k).toFixed(1)}px) rotate(${parseFloat(p.style.getPropertyValue('--giro')) * 0.35}deg)`;
+        document.body.appendChild(p);
+      });
+    }
+  },
+  // las cuatro cartas con acabado, cada una con su banda de brillo a media pasada
+  'cartas-lamina': () => {
+    clean();
+    S.campaign = null;
+    setMode('pointer');
+    app.innerHTML = '<div class="run"><div class="run-head"><h1>Cartas con lámina</h1></div><div class="qa-laminas"></div></div>';
+    const host = app.querySelector('.qa-laminas')!;
+    ([['forjado', 'C', 9, 52], ['templado', 'D', 10, 78], ['policromado', 'H', 7, 104], ['agrietado', 'S', 4, 64]] as [Treatment, Suit, number, number][]).forEach(([tr, suit, rank, at]) => {
+      const fig = document.createElement('figure');
+      const c = cardEl({ id: `lam-${tr}`, suit, rank, tr }, { tilt: false });
+      const band = c.querySelector<HTMLElement>('.foil-band');
+      band?.style.setProperty('--foil-x', `${at}%`);
+      band?.style.setProperty('--foil-o', '0.95');
+      fig.append(c);
+      fig.insertAdjacentHTML('beforeend', `<figcaption>${TREATMENT[tr].name}</figcaption>`);
+      host.appendChild(fig);
+    });
+  },
+  // la Taberna con el oro en vuelo: seis monedas grabadas entre la primera oferta y la bolsa
+  'taberna-monedas': async () => {
+    await STATES.ferreteria();
+    quieto();
+    const from = document.querySelector('.run-body.shop .choice')?.getBoundingClientRect();
+    const to = document.querySelector('.deck-head .purse b, .purse b')?.getBoundingClientRect();
+    if (!from || !to) return;
+    const [ax, ay] = [from.left + from.width / 2, from.top + from.height * 0.3];
+    const [bx, by] = [to.left + to.width / 2, to.top + to.height / 2];
+    coinPieces(6).forEach((c, i) => {
+      const t = 0.2 + i * 0.13;
+      const x = ax + (bx - ax) * t;
+      const y = Math.max(28, ay + (by - ay) * t - Math.sin(Math.PI * t) * Math.min(110, Math.abs(bx - ax) * 0.3));
+      c.style.setProperty('--x', `${x.toFixed(1)}px`);
+      c.style.setProperty('--y', `${y.toFixed(1)}px`);
+      document.body.appendChild(c);
+    });
+  },
+  // un sello de pólvora recién estampado (caliente) sobre la carta que entra en la cuenta, y uno de eco ya frío
+  'mesa-lacre': async () => {
+    await mesa();
+    const put = (sel: string, seal: Seal, hot: boolean) => {
+      const card = document.querySelector<HTMLElement>(sel);
+      if (!card) return;
+      const s = waxStamp(seal);
+      s.classList.toggle('caliente', hot);
+      card.appendChild(s);
+    };
+    put('#hand .card.z-dinamita', 'dinamita', true);
+    put('#hand .card.z-eco', 'eco', false);
+  },
   // los siete retratos, en calma y vencidos, con la placa de su decreto
   monarcas: () => {
     clean();
