@@ -5,7 +5,8 @@ import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
 import { Card, GameState, SUITS, Seal, Suit, Treatment, applyAction, fatigueAt, viewFor } from '../rules/engine';
-import { Run, finishBattle, newRun, runAction, startStage } from '../rules/run';
+import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
+import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../rules/tutorial';
 import { TOOLS } from '../rules/tools';
 import { hero } from './art';
 import { prefs } from './campaign';
@@ -20,6 +21,7 @@ import { platform } from './platform';
 import { setScreen } from './router';
 import { renderRun } from './runscreens';
 import { pump, renderInteractive, toggleInspector } from './table';
+import { monarchGallery, showBark, spotlight } from './guia';
 import { showRules, showSettings } from './widgets';
 
 const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'pasarela', 'resonador'];
@@ -66,11 +68,13 @@ function show(run: Run, state: GameState | null = null): void {
   S.campaign = { run, online: false, state, key: 'qa' };
 }
 
-async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6): Promise<void> {
+async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null): Promise<void> {
   setMode(input);
   // los Susurros solo salen en la primera campaña de un perfil
   meta.runs = firstRun ? 0 : Math.max(1, meta.runs);
-  const run = baseRun(4);
+  // con monarca, el asalto 5 (La Capilla: Sota, Reina y Rey, como el 4) con ese monarca en el trono
+  const run = baseRun(boss ? 5 : 4);
+  if (boss) run.bosses[5] = boss;
   runAction(run, { t: 'route', i: 0 });
   let state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
   // la mano que se quiere ver: trío de sietes, cartas marcadas, un as, una especial y el comodín
@@ -102,6 +106,34 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6): P
   // la previsualización en vivo: el trío de sietes elegido
   S.selected = (['S', 'D', 'H'] as Suit[]).map((s) => find(state.players[0].hand, s, 7)?.id).filter((id): id is string => !!id);
   renderInteractive();
+}
+
+/** V7 · la mesa de un asalto con monarca: retrato, placa del decreto, la maldición marcada y su bocadillo de entrada. */
+async function mesaMonarca(boss: string): Promise<void> {
+  await mesa(false, 'pointer', 6, boss);
+  const id = bossIdentity(boss);
+  if (id) showBark(id.barks.entrada);
+}
+
+/** V7 · la partida guiada en el paso n (0-4), con los pasos anteriores ya jugados y su foco encendido. */
+async function guia(step: number): Promise<void> {
+  clean();
+  setMode('pointer');
+  meta.runs = Math.max(1, meta.runs);
+  let state = createTutorial();
+  for (let i = 0; i < step; i++) {
+    const a = stepAction(TUTORIAL_STEPS[i]);
+    if (a) state = applyAction(state, TUTORIAL_PLAYER, a).state;
+  }
+  S.tutorial = { state, step, intro: 0, mode: 'do' };
+  S.campaign = null;
+  S.queue.push({ view: viewFor(state, TUTORIAL_PLAYER), events: [] });
+  setScreen('table');
+  await pump();
+  document.querySelectorAll('.modal').forEach((m) => m.remove());
+  renderInteractive();
+  const s = TUTORIAL_STEPS[step];
+  spotlight(s.focus, s.line);
 }
 
 /** Da por ganado el asalto en curso y deja la campaña en el Botín. */
@@ -206,6 +238,20 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(run);
     setScreen('run');
   },
+  // V7: los otros cuatro secretos de la cripta (hallazgo-caja, hallazgo-planos…), para la QA a demanda
+  ...Object.fromEntries(
+    EVENTS.filter((e) => e.id !== 'horno').map((e) => [
+      `hallazgo-${e.id}`,
+      () => {
+        const run = baseRun(3);
+        toShop(run);
+        run.events = [e.id, ...run.events.filter((x) => x !== e.id)];
+        runAction(run, { t: 'next' });
+        show(run);
+        setScreen('run');
+      },
+    ]),
+  ),
   gremio: () => {
     clean();
     meta.renown = 37;
@@ -344,6 +390,21 @@ const STATES: Record<string, () => void | Promise<void>> = {
     run.stats.contracts = 5;
     show(run);
     setScreen('run');
+  },
+  // ── arte-ui V7: partida guiada, monarcas y su maldición ──
+  // el foco de los pasos 1 (el poder del palo), 3 (La Manga) y 5 (el Golpe exacto)
+  'guia-palo': () => guia(0),
+  'guia-manga': () => guia(2),
+  'guia-exacto': () => guia(4),
+  // un asalto con La Dama del Cáliz: su retrato, la placa «Tus ♥ no curan», el cáliz tachado en cada ♥ y su bocadillo
+  'mesa-monarca': () => mesaMonarca('sequia'),
+  // el mismo asalto con cada monarca (mesa-monarca-doble, …-escasez…): la QA los corre a demanda
+  ...Object.fromEntries(BOSSES.map((b) => [`mesa-monarca-${b.id}`, () => mesaMonarca(b.id)])),
+  // los siete retratos, en calma y vencidos, con la placa de su decreto
+  monarcas: () => {
+    clean();
+    S.campaign = null;
+    app.innerHTML = `<div class="run monarcas-qa"><div class="run-head"><h1>Los siete monarcas</h1></div>${monarchGallery()}</div>`;
   },
   // tarjeta para compartir (1200 × 630): la fotografía scripts/og-card.ts
   og: () => {

@@ -1,6 +1,16 @@
-// Partida guiada: un asalto pequeño con el mazo preparado para enseñar cada regla en orden.
-// Corre entera en el cliente con el mismo motor; un test la juega de principio a fin.
-import { Action, Card, Config, DEFAULT_CONFIG, GameState, Suit, Treatment, newTowers } from './engine';
+// Partida guiada: un asalto pequeño con la mano y el Mazo preparados para enseñar, jugando, cinco cosas:
+// el poder de un palo, el trono Inmune, La Manga, la cuenta Daño × Multi = Golpe y el Golpe exacto.
+// Corre entera en el cliente con el mismo motor; tests/tutorial.test.ts la juega de principio a fin.
+//
+// El guion, siguiendo el foco (5 acciones; la partida termina ganada con la última):
+//   1 · palo    6♣ a PICAS (×2): 12 de Golpe, cae su guardia y los ♣ dan +2 de Escudo.
+//   2 · inmune  8♥ a TRÉBOLES (×2): 16, cae. Los ♥ no harían nada a CORAZONES (×0).
+//   3 · manga   el 9♦ a La Manga (no gasta el turno).
+//   4 · cuenta  grupo 7♠ 7♣ a DIAMANTES: (2 + 14 + 7) × 1,2 = 28, cae.
+//   5 · exacto  el 9♦ de La Manga a CORAZONES (×2): 18 justos contra 18 de Vida. Golpe exacto y victoria.
+// Los Contraataques que salen (♠, ♣, ♦) son de tronos ya caídos: no hacen nada. Fuera del guion la mesa
+// tampoco aprieta: Ataque 1 o 2 contra 20 de Vida.
+import { Action, Card, Config, DEFAULT_CONFIG, GameEvent, GameState, PlayerView, Suit, multiplier, newTowers, standing } from './engine';
 
 export const TUTORIAL_PLAYER = 'tu';
 
@@ -8,22 +18,17 @@ export const TUTORIAL_CONFIG: Config = {
   ...DEFAULT_CONFIG,
   collapseLoss: 2,
   floorHp: { 11: 10, 12: 14, 13: 18 },
-  floorThreat: { 11: 1, 12: 2, 13: 2 },
-  reserveSize: 0,
+  floorThreat: { 11: 1, 12: 1, 13: 2 },
+  reserveSize: 1,
 };
 
-const TREATED: Record<string, Treatment> = { S10: 'forjado' };
-const card = (id: string): Card => {
-  if (id[0] === 'X') return { id, suit: 'X', rank: 0 };
-  const c: Card = { id, suit: id[0] as Suit, rank: Number(id.slice(1)) };
-  if (TREATED[id]) c.tr = TREATED[id];
-  return c;
-};
+const card = (id: string): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0 } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)) });
 
-const HAND = ['S4', 'H6', 'C6', 'D3', 'D4', 'D5', 'C5'];
-/** Orden del Mazo: Contraataques y robos de cada paso, ya calculados. */
-const DECK = ['H2', 'S5', 'C2', 'C3', 'X1', 'S2', 'S10', 'C7', 'H3', 'D9', 'H8', 'D7', 'H9', 'C4', 'D2', 'S6', 'D8', 'H7', 'C9', 'S3', 'D6', 'H10', 'C10', 'S7', 'D10', 'H5', 'C8', 'S8', 'H4', 'S9', 'D1', 'H1', 'C1', 'S1', 'X2'];
-const FLOORS: Record<Suit, number[]> = { S: [11, 12, 13], D: [11, 12], H: [11], C: [11] };
+const HAND = ['C6', 'H8', 'D9', 'S7', 'C7', 'H2', 'S3'];
+/** Orden del Mazo. Los tres primeros Contraataques del guion (posiciones 0, 2 y 4) salen de tronos ya caídos. */
+const DECK = ['S2', 'H3', 'C2', 'D2', 'D3', 'C3', 'S4', 'H4', 'C4', 'D4', 'S5', 'H5', 'C5', 'D5', 'S6', 'H6', 'D6', 'H7', 'D7', 'S8', 'C8', 'D8', 'S9', 'H9', 'C9', 'S10', 'H10', 'C10', 'D10', 'X1', 'S1', 'H1', 'C1', 'D1', 'X2'];
+/** Un guardia por trono: Sota (10 de Vida) en PICAS y TRÉBOLES, Reina (14) en DIAMANTES, Rey (18) en CORAZONES. */
+const FLOORS: Record<Suit, number[]> = { S: [11], C: [11], D: [12], H: [13] };
 
 export function createTutorial(): GameState {
   const towers = newTowers([], TUTORIAL_CONFIG);
@@ -55,84 +60,81 @@ export function createTutorial(): GameState {
   };
 }
 
-export const TUTORIAL_INTRO: { title: string; text: string }[] = [
-  {
-    title: 'Los cuatro tronos',
-    text: 'Arriba están <b>los cuatro tronos</b>, uno por palo. Cada trono tiene su <b>guardia</b>: Sota, Reina y Rey, cada uno con su <b>Vida</b> (la barra roja) y su <b>Ataque</b>. Tu misión: abatirlos a todos. En este asalto de prácticas ya quedan pocos.',
-  },
-  {
-    title: 'Tu Vida',
-    text: 'A la derecha está <b>tu Vida</b>. Después de cada jugada llega el <b>Contraataque</b>: un trono te ataca. Si tu Vida llega a 0, la conjura se deshace.',
-  },
-  {
-    title: 'Daño × Multi',
-    text: 'Cada golpe se calcula igual: <b>Daño × Multi = Golpe</b>. Las cartas ponen el <b>Daño</b> (su número) y la <b>formación</b> con que las juegas pone el <b>Multi</b>. Antes de golpear verás la cuenta en el marcador. Vamos paso a paso.',
-  },
-];
+/**
+ * @deprecated Desde la 7.0 la partida guiada no tiene ventanas de texto: la enseñanza va en los pasos.
+ * Queda vacía para que el cliente viejo compile; se retira en la V9.
+ */
+export const TUTORIAL_INTRO: { title: string; text: string }[] = [];
+
+/** Qué señala el foco de un paso: las cartas del paso, el trono objetivo o una pieza de la mesa. */
+export type TutorialFocus = 'cards' | 'target' | { ui: 'manga' | 'cuenta' | 'inmune' };
 
 export interface TutorialStep {
+  /** Identificador estable del paso. */
+  id: 'palo' | 'inmune' | 'manga' | 'cuenta' | 'exacto';
+  /** Lo que se le dice al jugador: una línea (≤ 60 caracteres), sin más HTML que un `<b>`. */
+  line: string;
+  focus: TutorialFocus;
+  /** El paso se cumple con la jugada que acaba de pasar. Puro: solo mira la mesa de después y los eventos. */
+  done(view: PlayerView, events: GameEvent[]): boolean;
+  /** Título corto del paso. */
   title: string;
-  /** Qué hacer. */
+  /** @deprecated Igual a `line`. Se retira en la V9. */
   say: string;
-  /** Cartas y torre obligatorias; sin ellas el paso es de juego libre. */
+  /** Jugada que sugiere el foco: cartas y trono. En `manga`, la carta que se guarda. */
   cards?: string[];
   target?: Suit;
-  /** Qué acaba de pasar. */
+  /** @deprecated Sin uso desde la 7.0 (la mesa ya enseña lo que pasó). */
   after?: string;
 }
 
+const played = (events: GameEvent[]) => events.find((e): e is Extract<GameEvent, { e: 'play' }> => e.e === 'play');
+
+/** Se vio el poder de un palo: Escudo o Vida que suben, Salpica a otro trono o Perfora hasta el guardia siguiente. */
+function sawPower(events: GameEvent[]): boolean {
+  if (!played(events)) return false;
+  return events.some(
+    (e) =>
+      (e.e === 'wall' && e.amount > 0) ||
+      (e.e === 'repair' && e.amount > 0) ||
+      (e.e === 'hit' && e.splash) ||
+      (e.e === 'floorDown' && !e.towerDown && e.damage > 0),
+  );
+}
+
+/** Golpe a un trono que sí recibe: ninguna carta de la jugada es Inmune contra él, y el trono de su palo sigue en pie. */
+function dodgedImmune(view: PlayerView, events: GameEvent[]): boolean {
+  const p = played(events);
+  if (!p) return false;
+  const suited = p.cards.filter((c) => c.suit !== 'X');
+  if (!suited.length || suited.some((c) => multiplier(c.suit, p.target, view.config) === 0)) return false;
+  return suited.some((c) => c.suit !== 'X' && standing(view.towers[c.suit as Suit]));
+}
+
+const line = (id: TutorialStep['id'], title: string, text: string, focus: TutorialFocus, done: TutorialStep['done'], cards: string[], target?: Suit): TutorialStep => ({
+  id,
+  line: text,
+  focus,
+  done,
+  title,
+  say: text,
+  cards,
+  ...(target ? { target } : {}),
+});
+
 export const TUTORIAL_STEPS: TutorialStep[] = [
-  {
-    title: 'Golpea con ventaja',
-    say: 'Pulsa el <b>4♠</b> de tu mano y luego el trono de <b>DIAMANTES</b>. Cada trono es débil a un palo: ♠ corta ♦, así que tu 4 suma <b>8 de Daño</b>. Una carta sola lleva Multi ×1: <b>Golpe de 8</b>.',
-    cards: ['S4'],
-    target: 'D',
-    after: 'Tu Golpe fue de 8. Después llegó el <b>Contraataque</b>: salió un ♥, así que el trono de CORAZONES te atacó con su Ataque (1). Al final robaste hasta completar la mano.',
-  },
-  {
-    title: 'Grupos y poderes',
-    say: 'Un <b>grupo</b> son cartas del mismo número: pone 2 de Daño y lleva Multi <b>×1,2</b>. Elige <b>6♥</b> y <b>6♣</b> y golpea a <b>TRÉBOLES</b>. ♥ doblega ♣ (×2), pero un palo no hace nada a su propio trono: es <b>Inmune</b>.',
-    cards: ['H6', 'C6'],
-    target: 'C',
-    after: '2 + 12 = 14 de Daño × 1,2 = <b>17</b>: cayó la Sota y TRÉBOLES es un <b>trono caído</b>. El 6♣ no sumó Daño, pero su poder te dio <b>Escudo</b> (+2), y el ♥ te <b>curó</b>. El Contraataque sacó un ♣, y un trono caído ya no ataca.',
-  },
-  {
-    title: 'Escaleras y Salpica',
-    say: 'Una <b>escalera</b> son 3 o más números seguidos; si además son del mismo palo es <b>escalera de color</b>: 10 de Daño y Multi <b>×2</b>. Juega <b>3♦ 4♦ 5♦</b> contra <b>CORAZONES</b>. ♦ compra ♥ y, además, los diamantes <b>salpican</b> a los otros tronos.',
-    cards: ['D3', 'D4', 'D5'],
-    target: 'H',
-    after: '(10 + 24) × 2 = <b>68</b>: CORAZONES ha caído. La Salpica (un tercio de tus ♦, o sea 4) abatió a la Sota de DIAMANTES e hirió a PICAS. El Contraataque señaló a PICAS, pero tu <b>Escudo</b> lo paró entero.',
-  },
-  {
-    title: 'Perfora',
-    say: 'PICAS es débil a ♣. Juega el grupo <b>5♣ 5♠</b> contra <b>PICAS</b>. El 5♠ no suma Daño contra su trono, pero las picas <b>perforan</b>: lo que sobra pasa al guardia siguiente.',
-    cards: ['C5', 'S5'],
-    target: 'S',
-    after: '(2 + 10) × 1,2 = <b>14</b>: cayó la Sota y los 8 que sobraban perforaron hasta la Reina. Sin una ♠ en la jugada, eso se habría perdido. Tu Escudo volvió a parar el Contraataque.',
-  },
-  {
-    title: 'Golpe exacto',
-    say: 'A la Reina de PICAS le quedan justo <b>6</b> de Vida. Juega el <b>3♣</b> (3 × 2 = 6). Abatir a un guardia con el Golpe justo es un <b>Golpe exacto</b>.',
-    cards: ['C3'],
-    target: 'S',
-    after: '¡EXACTO! <b>No hubo Contraataque</b> y el <b>Impulso</b> le quitó un cuarto de Vida al guardia siguiente. Además empiezas una <b>Racha</b>: tu próximo golpe lleva +0,5 de Multi.',
-  },
-  {
-    title: 'Motín',
-    say: 'El Rey de PICAS es el guardia más peligroso que queda. Elige el <b>Comodín</b> y púlsalo: declaras un <b>Motín</b>.',
-    cards: ['X1'],
-    target: 'S',
-    after: 'El Rey quedó <b>Desarmado</b> (Ataque 0 hasta que caiga) y no hubo Contraataque. El Comodín sale del juego.',
-  },
-  {
-    title: 'Remata el asalto',
-    say: 'Ahora juegas libre. Tu <b>10♠</b> lleva <b>Filo de plata</b> (+6 de Daño): contra DIAMANTES son 26 de Daño × 1,5 de la Racha. Después, el <b>7♣</b> basta para el Rey de PICAS. Recuerda: también puedes <b>descartar</b> cartas que no te sirvan.',
-  },
+  line('palo', 'El poder del palo', 'Juega el <b>6♣</b> contra PICAS: los ♣ te dan Escudo.', 'cards', (_v, ev) => sawPower(ev), ['C6'], 'S'),
+  line('inmune', 'Trono Inmune', 'Tus ♥ no hacen nada a CORAZONES: <b>8♥</b> a TRÉBOLES.', { ui: 'inmune' }, dodgedImmune, ['H8'], 'C'),
+  line('manga', 'La Manga', 'Guarda el <b>9♦</b> en La Manga para después.', { ui: 'manga' }, (_v, ev) => ev.some((e) => e.e === 'stash' && !!e.card), ['D9']),
+  line('cuenta', 'La cuenta', 'Pareja de <b>7</b> a DIAMANTES: Daño × Multi = Golpe.', { ui: 'cuenta' }, (_v, ev) => (played(ev)?.cards.length ?? 0) >= 2 && ev.some((e) => e.e === 'impact'), ['S7', 'C7'], 'D'),
+  line('exacto', 'Golpe exacto', 'El <b>9♦</b> de La Manga a CORAZONES: 18 justos.', 'target', (_v, ev) => ev.some((e) => e.e === 'floorDown' && e.clean), ['D9'], 'H'),
 ];
 
-/** Acción que corresponde a un paso guiado. */
+/** Acción que sugiere un paso guiado (en `manga`, guardar su carta). */
 export function stepAction(step: TutorialStep): Action | null {
-  if (!step.cards || !step.target) return null;
+  if (!step.cards?.length) return null;
+  if (step.id === 'manga') return { type: 'stash', card: step.cards[0] };
+  if (!step.target) return null;
   if (step.cards.length === 1 && step.cards[0][0] === 'X') return { type: 'joker', card: step.cards[0], target: step.target };
   return { type: 'attack', cards: step.cards, target: step.target };
 }

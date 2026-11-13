@@ -194,6 +194,39 @@ const PENTA = [0, 3, 5, 7, 10, 12, 15];
 const STEP_TONES = [0, -2, 3];
 let stepTone = 0;
 
+/**
+ * V7 · motivo de cada monarca: notas [semitonos sobre re3, duración] cada `gap` segundos. Al caer se
+ * toca del revés y más grave. Todos caben en 2 s (con el golpe sordo del final).
+ */
+interface Motif {
+  notes: [number, number][];
+  gap: number;
+  type: OscillatorType;
+  vol: number;
+  attack: number;
+  cutoff?: number;
+  vibrato?: number;
+  octave?: boolean;
+  /** frecuencia de un golpe de ruido con cada nota (monedas, engranaje) */
+  knock?: number;
+}
+const MOTIF: Record<string, Motif> = {
+  // Dos Caras: la misma frase arriba y abajo, como un naipe que se da vuelta
+  doble: { notes: [[12, 0.18], [7, 0.18], [12, 0.18], [0, 0.18], [5, 0.18], [0, 0.3]], gap: 0.17, type: 'triangle', vol: 0.09, attack: 0.004, cutoff: 1800 },
+  // El Usurero: monedas contadas de una en una, cada vez menos
+  escasez: { notes: [[19, 0.1], [17, 0.1], [15, 0.1], [12, 0.3]], gap: 0.24, type: 'sine', vol: 0.07, attack: 0.002, octave: true, knock: 3200 },
+  // La Dama del Cáliz: un brindis lento que se derrama
+  sequia: { notes: [[7, 0.5], [8, 0.4], [3, 0.7]], gap: 0.38, type: 'sine', vol: 0.09, attack: 0.08, vibrato: 3 },
+  // La Reina Helada: carámbanos agudos, de vidrio fino
+  intemperie: { notes: [[24, 0.25], [27, 0.25], [22, 0.25], [31, 0.45]], gap: 0.2, type: 'sine', vol: 0.05, attack: 0.002, octave: true },
+  // El Inquisidor: un órgano de capilla, tres acordes de quinta
+  blindaje: { notes: [[0, 0.45], [7, 0.45], [1, 0.6]], gap: 0.36, type: 'square', vol: 0.045, attack: 0.05, cutoff: 900 },
+  // El Verdugo: tambor y cuerno, dos golpes y el hachazo
+  furia: { notes: [[-5, 0.16], [-5, 0.16], [0, 0.5]], gap: 0.26, type: 'sawtooth', vol: 0.06, attack: 0.01, cutoff: 700, knock: 180 },
+  // El Relojero: tic, tac, cada vez más rápido... y la campanada
+  inestable: { notes: [[12, 0.05], [7, 0.05], [12, 0.05], [7, 0.05], [12, 0.05], [19, 0.4]], gap: 0.15, type: 'triangle', vol: 0.06, attack: 0.001, cutoff: 2400, knock: 2400 },
+};
+
 /** Lo último que ha sonado (nombres de efecto). Solo lo lee la prueba de humo, con ?qa. */
 const heard: string[] = [];
 function logged<T extends object>(raw: T): T {
@@ -499,6 +532,41 @@ export const sfx = logged({
     fx((_, o, t) => {
       note(o, 190, t, 0.12, { type: 'sine', vol: 0.3, slide: 110 });
       noise(o, t, 0.06, 0.25, 'bandpass', 1200);
+    }),
+  /**
+   * V7 · firma de un monarca (≤ 2 s, por el bus de efectos): su motivo al entrar y, al caer, el mismo
+   * motivo vuelto del revés, más grave y que se deshace. Cada uno con su timbre; nada de archivos.
+   */
+  monarch: (id: string, mood: 'entrada' | 'caida' = 'entrada') => {
+    heard.push(`monarch:${id}:${mood}`);
+    fx((_, o, t) => {
+      const fall = mood === 'caida';
+      const m = MOTIF[id] ?? MOTIF.doble;
+      const k = (fall ? 0.84 : 1) * drift(8);
+      const notes = fall ? [...m.notes].reverse() : m.notes;
+      notes.forEach(([n, d], i) => {
+        const f = 146.83 * semi(n) * k;
+        const at = t + i * m.gap;
+        const len = d * (fall ? 1.25 : 1);
+        note(o, f, at, len, { type: m.type, vol: m.vol * sway(0.08), attack: m.attack, cutoff: m.cutoff, slide: fall && i === notes.length - 1 ? f * 0.7 : undefined, vibrato: m.vibrato });
+        if (m.octave) note(o, f * 2, at, len * 0.6, { type: 'sine', vol: m.vol * 0.25, attack: m.attack });
+      });
+      if (m.knock) notes.forEach((_, i) => noise(o, t + i * m.gap, 0.04, 0.12, 'bandpass', m.knock! * k));
+      // el golpe sordo del final: al entrar, un paso firme; al caer, el cuerpo contra el suelo
+      note(o, fall ? 62 : 82, t + notes.length * m.gap * (fall ? 1 : 0.2), fall ? 0.6 : 0.3, { type: 'sine', vol: fall ? 0.4 : 0.25, slide: fall ? 34 : 50 });
+    });
+  },
+  /** V7 · un naipe que se da vuelta: cada opción de un Secreto de la cripta al revelarse (sube un peldaño cada una) */
+  reveal: (i = 0) =>
+    fx((_, o, t) => {
+      noise(o, t, 0.05, 0.16 * sway(0.2), 'bandpass', 1900 * drift(60));
+      note(o, 220 * semi(PENTA[Math.min(i, PENTA.length - 1)]) * drift(10), t + 0.01, 0.12, { type: 'triangle', vol: 0.06 * sway(), attack: 0.002 + Math.random() * 0.004, cutoff: 1600 });
+    }),
+  /** V7 · paso de la partida guiada cumplido: dos trazos que suben (distinto del error, que baja) */
+  learnt: () =>
+    fx((_, o, t) => {
+      note(o, 587.33 * drift(), t, 0.12, { type: 'triangle', vol: 0.07, cutoff: 2000 });
+      note(o, 880 * drift(), t + 0.09, 0.2, { type: 'triangle', vol: 0.07, cutoff: 2200 });
     }),
   win: () =>
     fx((_, o, t) => {

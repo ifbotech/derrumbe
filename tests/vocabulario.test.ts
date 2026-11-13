@@ -270,6 +270,16 @@ describe('vocabulario del juego: nada de jerga vieja en lo que se lee', () => {
     expect(malas).toEqual([]);
   });
 
+  it('la voz de los monarcas, sus placas y la lectura rápida de los secretos (V7)', () => {
+    const textos = [
+      ...run.BOSSES.flatMap((b) => [b.barks.entrada, b.barks.contraataque, b.barks.caida, b.curse.badge]),
+      ...run.EVENTS.flatMap((e) => e.options.flatMap((o) => [o.read.gain, o.read.cost])),
+      ...tutorial.TUTORIAL_STEPS.flatMap((p) => [p.line, p.title]),
+    ].filter(Boolean);
+    expect(textos.length).toBeGreaterThan(40);
+    expect(informe('src/rules/run.ts', textos)).toEqual([]);
+  });
+
   it('los literales con aspecto de frase de src/**/*.ts', () => {
     const malas = archivosTs(join(ROOT, 'src')).flatMap((p) => {
       const f = relative(ROOT, p).replace(/\\/g, '/');

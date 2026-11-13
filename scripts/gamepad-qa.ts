@@ -297,6 +297,170 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
   await press(page, BTN.B);
 }
 
+// ───────────────────────── V7 · partida guiada, sello F1 y voces ─────────────────────────
+
+type How = 'pad' | 'keys' | 'mouse';
+/** Lo que tarda en decidir cada jugada alguien que juega por primera vez. */
+export const THINK_MS = 1500;
+/** Límite de la partida guiada a 1×: desde que aparece la mesa hasta que acaba de animarse el Golpe exacto. */
+export const GUIDED_MAX_S = 60;
+
+/**
+ * Lleva el foco con las flechas del teclado, a lo voraz y como haría una persona (el mismo criterio que
+ * `walk` con la cruceta). Devuelve si llegó.
+ */
+export async function walkKeys(page: Page, selector: string, limit = 40): Promise<boolean> {
+  let stuck = 0;
+  for (let i = 0; i <= limit; i++) {
+    const r = await page.evaluate(
+      ([sel, st]) => {
+        const target = document.querySelector(sel);
+        if (!target) return { dir: 'x', sig: '' };
+        const a = document.activeElement as HTMLElement | null;
+        if (a === target) return { dir: 'ok', sig: '' };
+        if (!a || a === document.body) return { dir: 'D', sig: '∅' };
+        const A = a.getBoundingClientRect();
+        const T = target.getBoundingClientRect();
+        const dx = T.left + T.width / 2 - (A.left + A.width / 2);
+        const dy = T.top + T.height / 2 - (A.top + A.height / 2);
+        const sameRow = Math.abs(dy) < Math.max(A.height, T.height) * 0.5;
+        let dir = sameRow ? (dx > 0 ? 'R' : 'L') : dy > 0 ? 'D' : 'U';
+        if (st % 2 === 1) dir = dir === 'U' || dir === 'D' ? (dx > 0 ? 'R' : 'L') : dy > 0 ? 'D' : 'U';
+        return { dir, sig: `${a.id}|${a.dataset.id ?? ''}|${a.dataset.suit ?? ''}|${a.className}|${Math.round(A.left)},${Math.round(A.top)}` };
+      },
+      [selector, stuck] as const,
+    );
+    if (r.dir === 'ok') return true;
+    if (r.dir === 'x' || i === limit) return false;
+    await page.keyboard.press({ U: 'ArrowUp', D: 'ArrowDown', L: 'ArrowLeft', R: 'ArrowRight' }[r.dir]!);
+    const now = await page.evaluate(() => {
+      const a = document.activeElement as HTMLElement | null;
+      return a ? `${a.id}|${a.dataset.id ?? ''}|${a.dataset.suit ?? ''}|${a.className}|${Math.round(a.getBoundingClientRect().left)},${Math.round(a.getBoundingClientRect().top)}` : '∅';
+    });
+    stuck = now === r.sig ? stuck + 1 : 0;
+    if (stuck > 6) return false;
+  }
+  return false;
+}
+
+/** Lleva el foco con el dispositivo que toca (mando o teclado) y pulsa A / Enter. */
+async function reachAndChoose(page: Page, how: 'pad' | 'keys', sel: string): Promise<boolean> {
+  const ok = how === 'pad' ? await focusOn(page, sel) : await walkKeys(page, sel);
+  if (!ok) return false;
+  if (how === 'pad') await press(page, BTN.A);
+  else await page.keyboard.press('Enter');
+  return true;
+}
+
+/**
+ * La partida guiada entera, desde la portada, con el ratón, el teclado o el mando: espera 1,5 s antes de
+ * cada jugada y hace la que pide el foco. Comprueba que no hay ninguna ventana de texto, que cada paso
+ * enciende su foco con su línea (y con la indicación del botón, con teclado o mando), que el foco se retira
+ * al cumplirse el paso y que todo cabe en ≤ 60 s a 1×. Devuelve los segundos medidos.
+ */
+export async function guidedRun(page: Page, how: How, check: Check, shot?: (page: Page, name: string) => Promise<unknown>): Promise<number> {
+  const { TUTORIAL_STEPS, stepAction } = await import('../src/rules/tutorial');
+  const name = { pad: 'mando', keys: 'teclado', mouse: 'ratón' }[how];
+  await page.evaluate(() => (window as unknown as QaWindow).__qa.go('portada'));
+  await page.waitForSelector('#m-tuto');
+  if (how === 'mouse') await page.locator('#m-tuto').click();
+  else check(await reachAndChoose(page, how, '#m-tuto'), `[${name}] el foco llega a «Partida guiada» en la portada y la abre`);
+  await page.waitForSelector('.table-screen');
+  // se mide a 1× (otra parte de la prueba pudo dejar la mesa a 4×); el clic va por programa para no cambiar de dispositivo
+  for (let i = 0; i < 3 && (await page.evaluate(() => document.documentElement.dataset.speed)) !== '1'; i++) await page.evaluate(() => document.getElementById('btn-speed')?.click());
+  const t0 = Date.now();
+  const problems: string[] = [];
+  let lit = 0;
+  let retreated = 0;
+  let hinted = 0;
+  for (const [i, step] of TUTORIAL_STEPS.entries()) {
+    const on = await page
+      .waitForFunction(() => document.documentElement.dataset.guia === '1' && !document.querySelector('.handrow.locked') && !!document.querySelector('#guia:not([hidden]) .guia-placa'), null, { timeout: 20_000 })
+      .then(() => true, () => false);
+    if (!on) {
+      problems.push(`paso ${i + 1}: el foco no se enciende`);
+      break;
+    }
+    const seen = await page.evaluate(() => ({
+      placa: document.querySelector('#guia .guia-placa')?.textContent ?? '',
+      kh: [...document.querySelectorAll('#guia .guia-placa .kh')].some((k) => getComputedStyle(k).display !== 'none'),
+      windows: document.querySelectorAll('.modal, #coach:not([hidden])').length,
+    }));
+    const want = step.line.replace(/<[^>]+>/g, '');
+    if (seen.placa.includes(want)) lit++;
+    else problems.push(`paso ${i + 1}: la placa dice «${seen.placa}»`);
+    if (seen.windows) problems.push(`paso ${i + 1}: hay una ventana de texto`);
+    if (seen.kh) hinted++;
+    await page.waitForTimeout(THINK_MS);
+    // (la captura va después de pensar: si acaso, alarga la medida)
+    if ((i === 0 || i === 2) && shot) await shot(page, `guiada-${how}-${step.id}`);
+    const a = stepAction(step)!;
+    const cards = a.type === 'stash' || a.type === 'joker' ? [a.card] : a.type === 'attack' ? a.cards : [];
+    const card = (id: string) => `.handrow .card[data-id="${id}"]`;
+    let done = true;
+    if (how === 'mouse') {
+      for (const id of cards) await page.locator(card(id)).click();
+      if (a.type === 'stash') await page.locator('#btn-stash').click();
+      else if ('target' in a) await page.locator(`.tower[data-suit="${a.target}"]`).click();
+    } else if (a.type === 'stash') {
+      // La Manga: Y sobre la carta enfocada, sin elegirla antes
+      done = how === 'pad' ? await focusOn(page, card(a.card)) : await walkKeys(page, card(a.card));
+      if (done) await (how === 'pad' ? press(page, BTN.Y) : page.keyboard.press('y'));
+    } else {
+      for (const id of cards) done &&= await reachAndChoose(page, how, card(id));
+      if (done) await (how === 'pad' ? press(page, BTN.X) : page.keyboard.press('Space'));
+    }
+    if (!done) {
+      problems.push(`paso ${i + 1}: el ${name} no llegó a las cartas del paso`);
+      break;
+    }
+    // al cumplirse el paso, el foco se retira enseguida (vuelve sobre el siguiente cuando la mesa deja jugar)
+    const gone = await page.waitForFunction(() => !document.documentElement.dataset.guia, null, { timeout: 1500 }).then(() => true, () => false);
+    if (gone) retreated++;
+    else problems.push(`paso ${i + 1}: el foco no se retira al cumplirse`);
+  }
+  const ended = await page.waitForSelector('.end.won', { timeout: 30_000 }).then(() => true, () => false);
+  const secs = (Date.now() - t0) / 1000;
+  for (const p of problems) console.log(`  · [${name}] ${p}`);
+  const n = TUTORIAL_STEPS.length;
+  check(lit === n, `[${name}] cada paso enciende su foco con su línea (${lit}/${n}) y sin ninguna ventana de texto`);
+  if (how !== 'mouse') check(hinted === n, `[${name}] la línea de cada paso enseña el botón del ${name} (${hinted}/${n})`);
+  check(retreated === n, `[${name}] el foco se retira al cumplir cada paso (${retreated}/${n})`);
+  check(ended, `[${name}] la partida guiada se completa entera y se gana`);
+  check(ended && secs <= GUIDED_MAX_S, `[${name}] la partida guiada dura ≤ ${GUIDED_MAX_S} s a 1× pensando 1,5 s cada jugada (${secs.toFixed(1)} s)`);
+  console.log(`  partida guiada con ${name}: ${secs.toFixed(1)} s`);
+  return secs;
+}
+
+/**
+ * F1 con teclado o mando: al apuntar un trono (con el foco encima), las cartas de su palo en la mano
+ * enseñan el sello de hierro «×0» y ninguna otra; al pasar al trono de al lado, el sello se va con él.
+ */
+export async function sealCheck(page: Page, how: 'pad' | 'keys', check: Check): Promise<void> {
+  const name = how === 'pad' ? 'mando' : 'teclado';
+  await page.evaluate(() => (window as unknown as QaWindow).__qa.go('guia-palo'));
+  await page.waitForSelector('.table-screen #hand .card');
+  if (how === 'pad') await press(page, BTN.DOWN);
+  else await page.keyboard.press('ArrowDown');
+  const seals = () =>
+    page.evaluate(() => {
+      const t = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.tower')?.dataset.suit ?? null;
+      const cards = [...document.querySelectorAll<HTMLElement>('#hand .card')];
+      const iron = cards.filter((c) => c.querySelector('.plate.factor.iron')).map((c) => c.dataset.id!);
+      const ok = !!t && cards.every((c) => {
+        const own = c.classList.contains(`s-${t}`) && !c.classList.contains('k-special');
+        const plate = c.querySelector('.plate.factor.iron');
+        return own ? plate?.textContent?.includes('×0') : !plate;
+      });
+      return { t, iron, ok };
+    });
+  const go = (sel: string) => (how === 'pad' ? focusOn(page, sel) : walkKeys(page, sel));
+  const first = (await go('.tower[data-suit="H"]')) ? await seals() : null;
+  check(first?.t === 'H' && first.ok && first.iron.length > 0, `[${name}] al apuntar CORAZONES, sus ♥ de la mano llevan el sello de hierro «×0» (${first?.iron.join(' ') || 'ninguna'})`);
+  const next = (await go('.tower[data-suit="C"]')) ? await seals() : null;
+  check(next?.t === 'C' && next.ok && next.iron.length > 0 && next.iron.join() !== first?.iron.join(), `[${name}] al pasar a TRÉBOLES, el sello se va a sus ♣ (${next?.iron.join(' ') || 'ninguna'})`);
+}
+
 export async function gamepadSuite(browser: Browser, url: string, check: Check, problems: string[], shot: (page: Page, name: string) => Promise<unknown>): Promise<void> {
   // La marca sale de navigator.language: se fija el español para ver siempre «SANGRE Y PALO».
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES' });
@@ -680,6 +844,13 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   // ── un Secreto de la cripta: se elige con el mando y la campaña sigue ──
   await page.evaluate(() => (window as unknown as QaWindow).__qa.go('hallazgo'));
   await page.waitForSelector('.run.event');
+  check(await active(page, '#opts .opt'), 'al entrar en un Secreto de la cripta con mando, el foco cae primero en sus opciones');
+  await page.waitForTimeout(450);
+  {
+    const heard = await page.evaluate(() => (window as unknown as QaWindow).__qaSounds.slice(-30));
+    const opts = await count(page, '#opts .opt');
+    check(heard.filter((s) => s === 'reveal').length >= opts, `cada opción del secreto suena al revelarse (${heard.filter((s) => s === 'reveal').length} de ${opts})`);
+  }
   check(await focusOn(page, '#opts .opt:nth-child(2)'), 'en un Secreto de la cripta, el foco llega a sus opciones');
   await press(page, BTN.UP);
   await press(page, BTN.DOWN);
@@ -703,5 +874,9 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   check((await inputMode(page)) === 'pointer', 'y al mover el ratón desaparecen');
   await press(page, BTN.DOWN);
   check((await inputMode(page)) === 'pad', 'un toque del mando las devuelve');
+
+  // ── V7 · F1 con el mando y la partida guiada entera, a 1× ──
+  await sealCheck(page, 'pad', check);
+  await guidedRun(page, 'pad', check, shot);
   await context.close();
 }

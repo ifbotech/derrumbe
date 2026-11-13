@@ -7,9 +7,10 @@ import { TOOLS } from '../rules/tools';
 import { SPECIAL } from '../rules/specials';
 import { ALL_CARDS, cardEl, ensureDefs, portraitEl, suitSvg } from './card';
 import { glyphSvg } from './glyphs';
+import { MONARCH_IDS, monarchSvg, type MonarchMood } from './art';
 
 export interface Pieza {
-  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'servicios' | 'jefes';
+  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'servicios' | 'jefes' | 'monarcas';
   id: string;
 }
 
@@ -38,6 +39,8 @@ function lista(): Pieza[] {
     ...Object.keys(SPECIAL).filter((id) => !id.startsWith('j-') && id !== 'ferretero').map((id): Pieza => ({ grupo: 'especiales', id })),
     ...SERVICIOS.map((id): Pieza => ({ grupo: 'servicios', id })),
     ...BOSSES.map((b): Pieza => ({ grupo: 'jefes', id: b.id })),
+    // V7: los bustos de la mesa, en calma y vencidos (doble-calma, doble-vencido…)
+    ...MONARCH_IDS.flatMap((id) => (['calma', 'vencido'] as const).map((m): Pieza => ({ grupo: 'monarcas', id: `${id}-${m}` }))),
   ];
 }
 
@@ -51,7 +54,13 @@ function nodo(p: Pieza): HTMLElement {
     svg.style.width = '220px';
     svg.style.height = '230px';
   } else if (p.grupo === 'tramas') box.innerHTML = retal(p.id as Suit);
-  else if (p.grupo === 'herramientas' || p.grupo === 'especiales' || p.grupo === 'servicios') {
+  else if (p.grupo === 'monarcas') {
+    const [id, mood] = p.id.split('-') as [string, MonarchMood];
+    box.innerHTML = monarchSvg(id, mood);
+    const svg = box.firstElementChild as SVGElement;
+    svg.style.width = '200px';
+    svg.style.height = '200px';
+  } else if (p.grupo === 'herramientas' || p.grupo === 'especiales' || p.grupo === 'servicios') {
     box.innerHTML = glyphSvg(p.id);
     const svg = box.firstElementChild as SVGElement;
     svg.style.width = '200px';

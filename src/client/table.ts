@@ -1,6 +1,6 @@
 // La mesa de combate: los cuatro tronos, tu Vida, las Reliquias, poderes de palo, marcador
 // Daño × Multi = Golpe, la Manga, mano y la cola de eventos que anima cada jugada paso a paso.
-import { BEATS, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, previewStrike, threatOf } from '../rules/engine';
+import { BEATS, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, multiplier, previewStrike, threatOf } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
 import { BOSS, CONTRACT, LAST_STAGE, stageDef } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
@@ -21,7 +21,9 @@ import { renderPings, sendPing } from './pings';
 import { platform } from './platform';
 import { hint } from './prompts';
 import { setScreen } from './router';
-import { guidedStep, renderCoach, showTutorialEnd, skipTutorial, tutorialAct } from './tutorial-ui';
+import { paintMonarch } from './guia';
+import { guidedStep, leaveTutorial, renderCoach, showTutorialEnd, tutorialAct } from './tutorial-ui';
+import { voiceOn } from './voces';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
 import { tableWhispers, whisper } from './whispers';
 
@@ -89,6 +91,7 @@ export function buildTable(): void {
             <div class="pile"><div class="slot" id="disc-slot"><span class="count" id="disc-n"></span></div>Descarte</div>
           </div>
         </div>
+        <div class="monarch" id="monarch" hidden></div>
         <div class="panel log" id="log"></div>
       </aside>
     </div>
@@ -162,10 +165,10 @@ export function buildTable(): void {
   $('#deck-slot').onclick = toggleInspector;
   $('#disc-slot').onclick = toggleInspector;
   const leave = $('#btn-leave');
-  if (t?.then) leave.textContent = 'Saltar tutorial';
+  if (t) leave.innerHTML = `Saltar${hint('back')}`; // juice-ux: la partida guiada se salta siempre de un toque (Esc / B)
   leave.onclick = () => {
     if (c && !c.online) return setScreen('home'); // la campaña queda guardada
-    if (t?.then) return skipTutorial();
+    if (t) return leaveTutorial();
     if (leave.dataset.sure) return t ? forget() : sendMsg({ t: 'leave' });
     leave.dataset.sure = '1';
     leave.textContent = '¿Seguro?';
@@ -225,7 +228,8 @@ function stash(id?: string): void {
   const v = S.shown;
   if (!canAct() || !v) return;
   if (!v.reserveSize) return;
-  if (guidedStep()) return toast('Ahora no: sigue el paso del tutorial');
+  const step = guidedStep(); // juice-ux: en el paso «manga» se guarda su carta; en los demás, La Manga espera
+  if (step && (step.id !== 'manga' || !step.cards?.includes(id ?? S.selected[0] ?? ''))) return toast(step.id === 'manga' ? 'Guarda la carta marcada' : 'Ahora no: sigue el paso del tutorial');
   if (v.stashed) return toast('Ya usaste la Manga este turno');
   const pick = id ?? (S.selected.length === 1 ? S.selected[0] : undefined);
   const card = v.hand.find((c) => c.id === pick);
@@ -423,6 +427,8 @@ function renderBunker(): void {
   $('.bunker-art')?.setAttribute('data-level', String(Math.min(3, Math.floor((1 - int / cfg.maxIntegrity) * 4))));
   const wall = $('#wall-blocks');
   wall.style.setProperty('--cap', String(cfg.wallCap));
+  // la fila del Escudo mide siempre 8 casillas: con un tope menor (Escarcha, Sin escudo) se acorta, no engorda
+  wall.style.setProperty('--cols', String(Math.max(8, cfg.wallCap)));
   wall.innerHTML = Array.from({ length: cfg.wallCap }, (_, i) => `<i class="${i < v.wall ? '' : 'off'}"></i>`).join('');
   setNum('#int-num', `${int}/${cfg.maxIntegrity}`);
   setNum('#wall-num', `${v.wall}/${cfg.wallCap}`);
@@ -546,6 +552,31 @@ function bestTarget(pv: Partial<Record<Suit, StrikeResult>>): Suit | null {
 }
 const standingTargets = () => SUITS.filter((s) => S.shown!.towers[s].floors.length > 0);
 
+/**
+ * F1 · sello de factor: con un trono apuntado, cada carta de la mano y de La Manga lleva la misma placa
+ * que el trono: hierro «×0» si es Inmune, latón «×2»/«×3» si tiene ventaja; nada si es ×1, un comodín
+ * o una especial (`multiplier('X', …)` da 0 y no debe salir «×0»). Va en el centro de la carta, fuera
+ * de las esquinas, y solo se repinta si cambia el factor.
+ */
+function renderFactorSeals(target: Suit | null): void {
+  const v = S.shown;
+  if (!v) return;
+  const all = held();
+  for (const [id, el] of cardEls) {
+    const c = all.find((x) => x.id === id);
+    const m = c && target && !c.sp && c.suit !== 'X' ? multiplier(c.suit, target, v.config) : 1;
+    const key = m === 1 ? '' : `${target}:${m}`;
+    if ((el.dataset.factor ?? '') === key) continue;
+    el.querySelector(':scope > .factor')?.remove();
+    if (!key || !c || c.suit === 'X') {
+      delete el.dataset.factor;
+      continue;
+    }
+    el.dataset.factor = key;
+    el.insertAdjacentHTML('beforeend', `<i class="plate factor ${m === 0 ? 'iron' : 'brass'}" aria-hidden="true">${suitSvg(c.suit)}<b>×${num(m)}</b></i>`);
+  }
+}
+
 /** Los cuatro poderes de palo, siempre a la vista; se encienden con lo que aporta la jugada elegida. */
 function renderPowers(cards: Card[], r: StrikeResult | null, target: Suit | null): void {
   const el = $('#powers');
@@ -617,6 +648,8 @@ function renderScore(): void {
     }
   }
   paintScore(el, tag + body, preview, v);
+  // F1: con un trono apuntado (el puntero o el foco encima, o el que elige la cuenta), cada carta lleva su factor
+  renderFactorSeals(aim && v.towers[aim].floors.length ? aim : shownTarget);
   renderPowers(cards, shown, shownTarget);
   renderWheel(cards, shownTarget);
   if (shown?.clean) whisper('limpio');
@@ -687,7 +720,12 @@ export function renderInteractive(): void {
   for (const [id, el] of cardEls) el.classList.toggle('hint', !!guide && guide.cards!.includes(id) && !S.selected.includes(id));
   const ready = !!guide && cards.length === guide.cards!.length;
   for (const s of SUITS) towerEls[s].classList.toggle('hint-target', ready && guide!.target === s);
+  // el trono del paso, aunque aún no estén elegidas sus cartas: lo que alumbra el foco de la guía (guia.ts)
+  for (const s of SUITS) towerEls[s].classList.toggle('guia-target', !!guide && guide.target === s);
   tableWhispers(); // susurros que dependen del estado de la mesa: jefe, fatiga, cantera baja
+  // V7: el monarca del asalto, su placa y la parte de la mesa que castiga su maldición (guia.ts)
+  paintMonarch(S.campaign?.run.boss ?? null, v);
+  renderCoach(); // juice-ux: el foco de la partida guiada se repinta con la mesa
 }
 
 export function renderAll(): void {
@@ -809,7 +847,7 @@ export function onTableKey(key: string, target: HTMLElement | null): boolean {
   }
   if (key === 'Escape') {
     if (closeReceipt()) return true; // el recibo de la cuenta se repliega antes de soltar la selección
-    if (!S.selected.length) return false;
+    if (!S.selected.length) return S.tutorial ? (leaveTutorial(), true) : false; // juice-ux: Esc / B salta la partida guiada
     clearSelection();
     return true;
   }
@@ -833,8 +871,8 @@ export function onTableKey(key: string, target: HTMLElement | null): boolean {
       return true;
     }
     const focusTower = target?.closest<HTMLElement>('.tower')?.dataset.suit as Suit | undefined;
-    const want = focusTower ?? aim;
-    const best = want && v.towers[want].floors.length ? want : isJoker(cards) ? (guidedStep()?.target ?? standingTargets()[0]) : classify(cards) ? bestTarget(previews(cards)) : null;
+    const want = focusTower ?? guidedStep()?.target ?? aim; // juice-ux: en la partida guiada, sin trono enfocado, el del paso
+    const best = want && v.towers[want].floors.length ? want : guidedStep()?.target ?? (isJoker(cards) ? (guidedStep()?.target ?? standingTargets()[0]) : classify(cards) ? bestTarget(previews(cards)) : null);
     if (best) onTower(best);
     return true;
   }
@@ -1202,6 +1240,7 @@ export async function pump(): Promise<void> {
       lastEvents = batch.events;
       for (const ev of batch.events) {
         try {
+          voiceOn(ev); // juice-ux: la voz del monarca (Contraataque, caída)
           await animate(ev, batch.events);
         } catch (err) {
           console.error(err);

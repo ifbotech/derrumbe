@@ -73,7 +73,9 @@ export function previewHtml(p: Preview, tail = ''): string {
     adv ? `<em class="m adv" data-tip="<b>Ventaja de palo</b>Alguna de tus cartas vence al palo de este trono: suma ×${num(adv)} de Daño.">Ventaja ×${num(adv)}</em>` : '',
     immune ? `<em class="m inm" data-tip="<b>Inmune</b>Las cartas del mismo palo que el trono no le suman Daño (sus poderes sí cuentan). Prueba contra otro trono.">Inmune ×0</em>` : '',
     r.hurt ? `<em class="m red">Vida −${r.hurt}</em>` : '',
-    r.clean || r.noSiren ? '<em class="m good">Sin Contraataque</em>' : `<em class="m dim" data-tip="<b>Contraataque</b>Se voltea una carta del Mazo y ataca el trono de ese palo: como mucho ⚔ ${worst}. Primero gasta tu Escudo, luego tu Vida.">Habrá Contraataque ⚔ ${worst}</em>`,
+    r.clean || r.noSiren ? '<em class="m good">Sin Contraataque</em>' : (v.config.sirenCount ?? 1) > 1
+        ? `<em class="m dim curse" data-tip="<b>Contraataque doble</b>Este turno se voltean 2 cartas del Mazo y ataca el trono de cada palo: como mucho ⚔ ${worst} cada una. Primero gasta tu Escudo, luego tu Vida.">Habrá 2 Contraataques ⚔ ${worst}</em>`
+        : `<em class="m dim" data-tip="<b>Contraataque</b>Se voltea una carta del Mazo y ataca el trono de ese palo: como mucho ⚔ ${worst}. Primero gasta tu Escudo, luego tu Vida.">Habrá Contraataque ⚔ ${worst}</em>`,
     wallGain > 0 ? `<em class="m">Escudo +${wallGain}</em>` : '',
     repair > 0 ? `<em class="m">Cura +${repair}</em>` : '',
     r.gold ? `<em class="m gold">Oro +${r.gold}</em>` : '',
@@ -85,7 +87,7 @@ export function previewHtml(p: Preview, tail = ''): string {
       <b class="t">${r.total}</b>
       <span class="calc-txt">
         <span class="vs"><span class="forma">${FORMATION_NAME[p.formation]}</span><span>contra</span><strong>${MATERIAL[target]}</strong>${hint('strike')}</span>
-        <span class="fr"><span class="fr-f"><i class="lg">Daño</i><i class="sh">D</i><b>${r.fuerza}</b></span><span class="fr-r"><i class="lg">Multi</i><i class="sh">M</i><b>×${res1(r.res)}</b></span><em class="abre">Cuenta${CHEVRON}</em></span>
+        <span class="fr"><span class="fr-f"><i class="lg">Daño</i><i class="sh">D</i><b>${r.fuerza}</b></span><i class="por" aria-hidden="true">×</i><span class="fr-r"><i class="lg">Multi</i><i class="sh">M</i><b>×${res1(r.res)}</b></span><em class="abre">Cuenta${CHEVRON}</em></span>
       </span>
     </div>
     <span class="marks">${marks}</span>`;

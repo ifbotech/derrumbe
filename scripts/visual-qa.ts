@@ -42,11 +42,14 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
-const STATES = wanted.length ? ALL.filter((s) => wanted.includes(s)) : ALL;
+/** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
+const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
+const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca'];
+const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
 
 interface Fail {
   regla: string;
@@ -345,7 +348,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
     const bg = bgOf(el);
     if (fg && bg) {
       const k = ratio(mix(fg, bg, fg.a * alpha(el)), bg);
-      const need = el.closest(PLACA) && !opts.state.startsWith('x') ? (el.closest('.corner b') ? 7 : 4.5) : 4.5;
+      // V7 · F3: la Vida del trono se lee de un vistazo, como el índice de la carta: 7:1 contra su placa
+      const need = el.closest(PLACA) && !opts.state.startsWith('x') ? (el.closest('.corner b, .hp span') ? 7 : 4.5) : 4.5;
       if (k < need - 0.05 && !contrasts.has(id)) {
         contrasts.set(id, '');
         fail('contraste', `contraste ${k.toFixed(1)}:1 (mínimo ${need}:1): ${id} «${node.textContent.trim().slice(0, 18)}»`, el);
@@ -650,6 +654,177 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean }
     }
   }
 
+  // ── arte-ui V7 · fricciones F1 (sello), F2 (cuenta) y F3 (vida) ──
+  {
+    const tier = opts.mobile ? 'movil' : W >= 1900 ? 'grande' : 'portatil';
+    const pxOf = (el: Element) => parseFloat(getComputedStyle(el).fontSize) * scaleOf(el);
+    const over = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+    // F1 · sello: en mesa-peligro (trono apuntado: CORAZONES) cada ♥ de la mano lleva hierro «×0», cada ♦ latón
+    // con su factor, ninguna otra carta lleva sello; cifra ≥ 13 px (14 en móvil) con placa, sin pisar las esquinas
+    if (opts.state === 'mesa-peligro') {
+      const aimed = document.querySelector('.tower.aimed')?.getAttribute('data-suit');
+      if (aimed !== 'H') fail('sello', `en mesa-peligro el trono apuntado debía ser CORAZONES y es ${aimed ?? 'ninguno'}`);
+      const cards = [...document.querySelectorAll<HTMLElement>('#hand .card, #reserve .card')].filter(visible);
+      for (const c of cards) {
+        const suit = [...c.classList].find((k) => /^s-[SDHCX]$/.test(k))?.slice(2) ?? 'X';
+        const special = c.matches('.k-special, .k-joker') || suit === 'X';
+        const seal = c.querySelector<HTMLElement>(':scope > .plate.factor');
+        const label = `${c.querySelector('.corner.tl b')?.textContent ?? '?'}${suit}`;
+        const want = special ? null : suit === 'H' ? 'iron' : suit === 'D' ? 'brass' : null;
+        if (!want) {
+          if (seal && visible(seal)) fail('sello', `la carta ${special ? 'especial' : label} lleva sello de factor y no debía (${seal.textContent?.trim()})`, c);
+          continue;
+        }
+        if (!seal || !visible(seal) || !seal.classList.contains(want)) {
+          fail('sello', `la carta ${label} no lleva el sello .plate.${want}`, c);
+          continue;
+        }
+        const b = seal.querySelector('b');
+        const txt = b?.textContent?.trim() ?? '';
+        if (want === 'iron' && txt !== '×0') fail('sello', `el sello de ${label} dice «${txt}» y debía decir «×0»`, c);
+        if (want === 'brass' && !/^×[23]$/.test(txt)) fail('sello', `el sello de ${label} dice «${txt}» y debía decir «×2» o «×3»`, c);
+        if (b) {
+          const px = pxOf(b);
+          if (px < (opts.mobile ? 13.95 : 12.95)) fail('sello', `la cifra del sello de ${label} mide ${px.toFixed(1)} px`, c);
+          if ((rgb(getComputedStyle(seal).backgroundColor)?.a ?? 0) < 0.9) fail('sello', `el sello de ${label} no tiene placa opaca`, c);
+        }
+        const sr = seal.getBoundingClientRect();
+        for (const k of c.querySelectorAll('.corner')) if (visible(k) && over(sr, k.getBoundingClientRect())) fail('sello', `el sello de ${label} pisa la esquina de la carta`, c);
+      }
+    }
+    // F2 · cuenta: Daño y Multi en su renglón, cifras ≥ 18 / 16 / 15 px y palabras ≥ 14 px
+    if (opts.state === 'mesa' || opts.state === 'mesa-cuenta' || opts.state === 'mesa-peligro') {
+      const calc = document.querySelector('#score .calc[tabindex]');
+      const need = { grande: 18, portatil: 16, movil: 15 }[tier];
+      const nums = calc ? [...calc.querySelectorAll('.fr b')].filter(visible) : [];
+      if (nums.length !== 2) fail('cuenta', `la cuenta enseña ${nums.length} cifras de Daño y Multi (deben ser 2)`, calc);
+      for (const b of nums) {
+        const px = pxOf(b);
+        if (px < need - 0.05) fail('cuenta', `la cifra «${b.textContent?.trim()}» de la cuenta mide ${px.toFixed(1)} px (mínimo ${need})`, b);
+      }
+      const words = calc ? [...calc.querySelectorAll('.fr i.lg, .fr i.sh')].filter(visible) : [];
+      if (words.length !== 2) fail('cuenta', `la cuenta enseña ${words.length} rótulos de Daño y Multi (deben ser 2)`, calc);
+      for (const w of words) {
+        const px = pxOf(w);
+        if (px < 13.95) fail('cuenta', `el rótulo «${w.textContent?.trim()}» de la cuenta mide ${px.toFixed(1)} px (mínimo 14)`, w);
+        if (!opts.mobile && w.matches('.sh')) fail('cuenta', `la cuenta abrevia «${w.textContent?.trim()}» fuera del móvil`, w);
+      }
+      // dos renglones: el Golpe y «contra» arriba, Daño y Multi debajo
+      const vs = calc?.querySelector('.vs');
+      const fr = calc?.querySelector('.fr');
+      if (vs && fr && visible(vs) && visible(fr) && fr.getBoundingClientRect().top < vs.getBoundingClientRect().bottom - 2) fail('cuenta', 'Daño y Multi no van en el renglón de debajo de «contra»', calc);
+    }
+    // F3 · vida: la cifra de la Vida de cada trono en su placa, ≥ 16 / 15 / 14 px, y la barra con su borde de tinta
+    if (opts.state.startsWith('mesa')) {
+      const need = { grande: 16, portatil: 15, movil: 14 }[tier];
+      for (const s of document.querySelectorAll<HTMLElement>('.tower .hp span')) {
+        if (!visible(s) || !s.textContent?.trim()) continue;
+        const suit = s.closest('.tower')?.getAttribute('data-suit');
+        const px = pxOf(s);
+        if (px < need - 0.05) fail('vida', `la Vida del trono ${suit} mide ${px.toFixed(1)} px (mínimo ${need})`, s);
+        if ((rgb(getComputedStyle(s).backgroundColor)?.a ?? 0) < 0.9) fail('vida', `la Vida del trono ${suit} no tiene placa propia`, s);
+        const bar = s.closest('.hp')!;
+        if (parseFloat(getComputedStyle(bar).borderTopWidth) < 1.95) fail('vida', `la barra de Vida del trono ${suit} no lleva borde de tinta de 2 px`, s);
+        const sr = s.getBoundingClientRect();
+        const br = bar.getBoundingClientRect();
+        if (Math.abs(sr.left + sr.width / 2 - (br.left + br.width / 2)) > 3) fail('vida', `la placa de la Vida del trono ${suit} no va centrada sobre la barra`, s);
+      }
+    }
+  }
+
+  // ── arte-ui V7 · guía, monarcas y secretos de la cripta (reglas «guia», «voz» y «secreto») ──
+  {
+    const pxOf = (el: Element) => parseFloat(getComputedStyle(el).fontSize) * scaleOf(el);
+    type Box = { l: number; t: number; r: number; b: number };
+    const over = (a: DOMRect, b: Box | null) => !!b && Math.min(a.right, b.r) - Math.max(a.left, b.l) > 2 && Math.min(a.bottom, b.b) - Math.max(a.top, b.t) > 2;
+    const handZone = union('#hand .card, #reserve .card, #reserve .reserve-slot');
+    const scoreZone = union('#score > *');
+    const inside = (r: DOMRect) => r.left >= -1 && r.top >= -1 && r.right <= W + 1 && r.bottom <= H + 1;
+    // guía: placa de una línea ≥ 14 px (15 en móvil) que no pisa la mano ni la cuenta; velo y aro a la vista
+    if (opts.state.startsWith('guia-')) {
+      const placa = document.querySelector<HTMLElement>('#guia .guia-placa');
+      if (!placa || !visible(placa) || !placa.textContent?.trim()) fail('guia', 'no se ve la placa de la guía');
+      else {
+        const r = placa.getBoundingClientRect();
+        const px = pxOf(placa);
+        if (px < (opts.mobile ? 14.95 : 13.95)) fail('guia', `la placa de la guía mide ${px.toFixed(1)} px`, placa);
+        if (!opts.mobile && r.height > px * 1.25 * 1.6 + 26) fail('guia', `la placa de la guía no cabe en una línea (${Math.round(r.height)} px de alto)`, placa);
+        if (over(r, handZone)) fail('guia', 'la placa de la guía pisa la mano', placa);
+        if (over(r, scoreZone)) fail('guia', 'la placa de la guía pisa la cuenta', placa);
+        if (!inside(r)) fail('guia', 'la placa de la guía se sale de la ventana', placa);
+        if (/[<>]/.test(placa.textContent)) fail('guia', 'la placa de la guía enseña etiquetas HTML en crudo', placa);
+      }
+      const hueco = document.querySelector<HTMLElement>('#guia .guia-hueco');
+      const aro = document.querySelector<HTMLElement>('#guia .guia-aro');
+      if (!hueco || alpha(hueco) < 0.5) fail('guia', 'la mesa no se vela alrededor del foco');
+      if (!aro || !visible(aro)) fail('guia', 'no hay aro de foco a la vista');
+      else if (!inside(aro.getBoundingClientRect())) fail('guia', 'el aro de foco se sale de la ventana', aro);
+      // lo que señala cada paso: la carta del paso, el hueco de La Manga y el trono del Golpe exacto
+      const want: Record<string, string> = { 'guia-palo': '#hand .card[data-id="C6"]', 'guia-manga': '#reserve', 'guia-exacto': '.tower[data-suit="H"]' };
+      const t = want[opts.state] ? document.querySelector(want[opts.state]) : null;
+      if (want[opts.state] && !t) fail('guia', `no está en la mesa lo que señala el paso (${want[opts.state]})`);
+      if (t && aro) {
+        const a = aro.getBoundingClientRect();
+        const b = t.getBoundingClientRect();
+        if (!(b.left >= a.left - 2 && b.right <= a.right + 2 && b.top >= a.top - 2 && b.bottom <= a.bottom + 2)) fail('guia', `el aro no rodea ${want[opts.state]}`, aro);
+      }
+    }
+    // monarca en la mesa: retrato, nombre y placa del decreto; la maldición marcada; bocadillo ≥ 14 px sin pisar mano ni cuenta
+    if (opts.state === 'mesa-monarca' || opts.state.startsWith('mesa-monarca-')) {
+      const mon = document.getElementById('monarch');
+      if (!mon || !visible(mon)) fail('voz', 'no se ve el monarca en la mesa');
+      else {
+        if (!mon.querySelector('.mon-port svg.monarca.calma')) fail('voz', 'falta el retrato del monarca en calma', mon);
+        const plate = mon.querySelector('.curse-plate');
+        if (!plate || !visible(plate) || !plate.textContent?.trim()) fail('voz', 'falta la placa del decreto junto al retrato', mon);
+        else if (!plate.querySelector('svg.curse-ico')) fail('voz', 'la placa del decreto no lleva su icono', mon);
+        if (!inside(mon.getBoundingClientRect())) fail('voz', 'el monarca se sale de la ventana', mon);
+      }
+      const mark = document.querySelector<HTMLElement>('.table-screen')?.dataset.curse;
+      const marked: Record<string, string> = { contraataque: '.pile .curse-tag', mano: '#hand > .curse-ghost', corazones: '#hand .card.s-H > .curse-chalice', escudo: '.stat .curse-tag', guardias: '.tower .fx-apuntalado', ataque: '.tower .threat .curse-tag', asedio: '#fatigue .curse-tag' };
+      if (!mark || !marked[mark]) fail('voz', `la mesa no lleva la marca de la maldición (data-curse=${mark ?? 'nada'})`);
+      else if (![...document.querySelectorAll(marked[mark])].some(visible)) fail('voz', `no se ve la marca de la maldición «${mark}» (${marked[mark]})`);
+      const bark = document.getElementById('bark');
+      if (!bark || !visible(bark) || !bark.textContent?.trim()) fail('voz', 'no se ve el bocadillo del monarca');
+      else {
+        const r = bark.getBoundingClientRect();
+        const px = pxOf(bark.querySelector('p') ?? bark);
+        if (px < 13.95) fail('voz', `el bocadillo mide ${px.toFixed(1)} px`, bark);
+        if (over(r, handZone)) fail('voz', 'el bocadillo pisa la mano', bark);
+        if (over(r, scoreZone)) fail('voz', 'el bocadillo pisa la cuenta', bark);
+        if (!inside(r)) fail('voz', 'el bocadillo se sale de la ventana', bark);
+      }
+    }
+    // galería: los siete, cada uno con su retrato en calma y vencido y la placa de su decreto
+    if (opts.state === 'monarcas') {
+      const fichas = [...document.querySelectorAll('.mon-ficha')];
+      if (fichas.length !== 7) fail('voz', `la galería tiene ${fichas.length} monarcas (deben ser 7)`);
+      for (const f of fichas) {
+        const id = f.getAttribute('data-boss');
+        if (!f.querySelector('svg.monarca.calma') || !f.querySelector('svg.monarca.vencido')) fail('voz', `a ${id} le falta una de sus dos caras`, f);
+        if (!f.querySelector('.curse-plate b')?.textContent?.trim()) fail('voz', `a ${id} le falta la placa del decreto`, f);
+      }
+    }
+    // secretos: lo que da y lo que cuesta cada opción, a la vista sin desplazar y a 15 px o más
+    if (opts.state === 'hallazgo' || opts.state.startsWith('hallazgo-')) {
+      const cards = [...document.querySelectorAll('#opts .secreto')];
+      if (!cards.length) fail('secreto', 'las opciones del secreto no van como cartas (.secreto)');
+      for (const o of cards) {
+        const label = o.querySelector('b')?.textContent ?? '?';
+        for (const sel of ['.sec-da', '.sec-cuesta', '.sec-ico']) {
+          const e = o.querySelector(sel);
+          if (!e || !visible(e)) {
+            fail('secreto', `a la opción «${label}» le falta ${sel}`, o);
+            continue;
+          }
+          const r = e.getBoundingClientRect();
+          if (r.bottom > H + 1 || r.top < -1) fail('secreto', `${sel} de «${label}» no se ve sin desplazar (${Math.round(r.top)}…${Math.round(r.bottom)} de ${H})`, o);
+          if (sel !== '.sec-ico' && pxOf(e) < 14.95) fail('secreto', `${sel} de «${label}» mide ${pxOf(e).toFixed(1)} px (mínimo 15)`, o);
+        }
+      }
+    }
+  }
+
   // ── cabecera de la crónica (V6) ──
   // en acta, acta-derrota y acta-victoria ningún sello (Corte vencida / Deshecha), ficha de la cabecera
   // (CRÓNICA, baraja · Reinado) ni renglón del título se pisa con otro. Cajas del DOM: el sello girado
@@ -821,7 +996,7 @@ async function main(): Promise<void> {
       await page.evaluate(() => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().iterations !== Infinity && a.finish()));
       await page.waitForTimeout(120);
       await page.evaluate(() => document.fonts.ready);
-      const fails = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: NO_SCROLL.includes(state) });
+      const fails = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state) });
       await page.screenshot({ path: join(OUT, view.name, `${state}.png`) });
       report.fallos[view.name][state] = fails;
       for (const f of fails) report.porRegla[f.regla] = (report.porRegla[f.regla] ?? 0) + 1;

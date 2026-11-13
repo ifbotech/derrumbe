@@ -137,6 +137,7 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 | Rebobinar (deshacer) | Z | LT |
 | Descartar lo elegido | Supr | L3 (pulsar la palanca izquierda) |
 | Atrás / soltar la selección | Esc | B |
+| Saltar la partida guiada (sin nada elegido) | Esc | B |
 | Ver el Mazo y el Descarte | Tab | LB |
 | Lupa | L · clic derecho · pulsación larga | RB |
 | Reordenar las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |

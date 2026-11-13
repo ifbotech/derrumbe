@@ -50,6 +50,7 @@ export const CONTROL_ROWS: [string, string, string][] = [
   ['Rebobinar (deshacer)', key('undo'), pad('undo')],
   ['Descartar lo elegido', key('discard'), `${pad('discard')} (pulsar la palanca izquierda)`],
   ['Atrás / soltar la selección', key('back'), pad('back')],
+  ['Saltar la partida guiada (sin nada elegido)', key('back'), pad('back')],
   ['Ver el Mazo y el Descarte', key('deck'), pad('deck')],
   ['Lupa', `${key('lupa')} · clic derecho · pulsación larga`, pad('lupa')],
   ['Reordenar las reliquias', 'Arrastrar · Mayús + flechas', `${pad('beltLeft')} / ${pad('beltRight')} con el foco en la reliquia`],

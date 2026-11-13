@@ -3,6 +3,7 @@
 import type { GameEvent } from '../rules/engine';
 import { sfx } from './audio';
 import { $, S, settings } from './core';
+import { inputMode } from './nav';
 
 /** Factor de tiempo: más rápido si hay jugadas en cola o el jugador eligió 2× / 4×. */
 export const speed = () => (S.queue.length > 0 ? 0.3 : 1) / settings.speed;
@@ -279,3 +280,21 @@ export function procBadge(ev: GameEvent): void {
 }
 // la prueba de humo dispara insignias a mano (con ?qa): no depende de que el azar traiga la reliquia
 if (new URLSearchParams(location.search).has('qa')) Object.assign(window, { __qaProc: procBadge });
+
+/**
+ * V7 · Secreto de la cripta: las opciones se dan vuelta de una en una (solo transform y opacity, con su
+ * golpe de naipe cada una) y, jugando con teclado o mando, el foco cae en la primera que se puede elegir.
+ * Enganche de una línea al final de eventScreen (runscreens.ts).
+ */
+export function revealOptions(root: HTMLElement | null): void {
+  if (!root) return;
+  const opts = [...root.querySelectorAll<HTMLButtonElement>('.opt')];
+  const step = 110 / settings.speed;
+  opts.forEach((el, i) => {
+    el.style.setProperty('--rv', `${Math.round(i * step)}ms`);
+    el.classList.add('revela');
+    window.setTimeout(() => sfx.reveal(i), i * step);
+  });
+  const first = opts.find((o) => !o.disabled);
+  if (first && inputMode() !== 'pointer') first.focus({ preventScroll: true });
+}

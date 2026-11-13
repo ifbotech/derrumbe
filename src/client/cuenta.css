@@ -21,7 +21,11 @@
 .calc .fr { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 .calc .fr .sh { display: none; }
 #score .calc .fr i { font-family: var(--cap); font-weight: 700; }
-#score .calc .fr b { font-family: var(--cap); font-weight: 700; font-size: 14px; line-height: 1.25; padding: 0 5px; margin-left: 2px; }
+/* V7 · F2: la cuenta en dos renglones. Arriba, el Golpe y «contra TRONO»; abajo, «Daño [n] × Multi [×n]»
+   con las cifras a 18 px en 1920×1080 (16 en portátil, 15 en móvil) y las palabras enteras a 14 px o más */
+#score .calc .fr i { font-size: clamp(14px, 1.5vh, 16px); letter-spacing: 0.04em; }
+#score .calc .fr i.por { font-family: var(--num); font-size: clamp(16px, 1.75vh, 20px); color: var(--card-paper); letter-spacing: 0; }
+#score .calc .fr b { font-family: var(--num); font-weight: 400; font-size: clamp(16px, 1.75vh, 20px); line-height: 1.2; padding: 0 6px; margin-left: 4px; letter-spacing: 0; }
 #score .calc .fr-f b { background: var(--red); color: var(--card-paper); }
 #score .calc .fr-r b { background: var(--blue); color: var(--card-paper); }
 .calc .abre { display: inline-flex; align-items: center; gap: 4px; font-style: normal; padding: 0 5px 0 6px; line-height: 1.25; border: 1.5px dashed var(--dim); color: var(--card-paper); }
@@ -112,9 +116,10 @@ button.recibo-x:hover:not(:disabled) { --bg: var(--red); color: var(--card-paper
   #score .calc .vs strong { font-size: 15px; }
   #score .calc .vs .forma { display: inline; }
   .calc-txt { font-size: 14px; }
-  .calc .fr { gap: 6px; }
-  .calc .fr .lg { display: none; }
-  .calc .fr .sh { display: inline; }
+  .calc .fr { gap: 5px; }
+  #score .calc .fr i { font-size: 14px; letter-spacing: 0.02em; }
+  #score .calc .fr i.por, #score .calc .fr b { font-size: 15px; }
+  #score .calc .fr b { padding: 0 4px; margin-left: 3px; }
   #score .marks .m { font-size: 14px; }
   #score.live .calc small { display: none; }
 

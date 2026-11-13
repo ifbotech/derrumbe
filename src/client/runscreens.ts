@@ -13,7 +13,7 @@ import { FULL_TITLE } from '../shared/brand';
 import { $, $$, S, app, esc, modal, num, toast } from './core';
 import { causeHtml, causeText, validDeath } from './causa';
 import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
-import { burst, dealIn, restart, stampOn } from './fx';
+import { burst, dealIn, restart, revealOptions, stampOn } from './fx';
 import { glyphSvg } from './glyphs';
 import { lastGain } from './guild';
 import { sendMsg } from './net';
@@ -421,12 +421,16 @@ function eventScreen(run: Run): void {
   ev.options.forEach((o, i) => {
     const ok = host() && (!o.can || o.can(run));
     const b = document.createElement('button');
-    b.className = 'stamp-btn opt';
+    // V7: cada opción es una carta grabada: su emblema, lo que da (verdín) y lo que cuesta (carmesí) en
+    // letra grande, y la descripción larga en segundo plano
+    b.className = 'stamp-btn opt secreto';
     b.disabled = !ok;
-    b.innerHTML = `<span><b>${o.label}</b><small>${o.desc}</small></span>`;
+    b.setAttribute('aria-label', `${o.label}. Da: ${o.read.gain}. ${o.read.cost ? `Cuesta: ${o.read.cost}` : 'Sin coste'}.`);
+    b.innerHTML = `<span class="sec-art">${glyphSvg(o.read.glyph, 'sec-ico')}</span><span class="sec-txt"><b>${o.label}</b><span class="sec-da"><i>Da</i>${o.read.gain}</span><span class="sec-cuesta${o.read.cost ? '' : ' gratis'}"><i>Cuesta</i>${o.read.cost || 'Nada'}</span><small>${o.desc}</small></span>`;
     b.onclick = () => (sfx.stamp(), runDo({ t: 'event', i }));
     $('#opts').appendChild(b);
   });
+  revealOptions($('#opts')); // juice-ux: se dan vuelta de una en una y el foco cae en la primera
 }
 
 // ───────────────────────── Crónica ─────────────────────────

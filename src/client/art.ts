@@ -201,3 +201,139 @@ export function bunkerArt(): string {
 
 /** Franja con la trama del palo de un trono. */
 export const strip = (s: Suit) => `<svg class="strip" width="100%" height="12" aria-hidden="true"><rect width="100%" height="12" fill="url(#pat-${s})"/></svg>`;
+
+// ───────────────────────── V7 · los siete monarcas, en busto ─────────────────────────
+// Retratos de grabado para la mesa, la placa del decreto y la galería: cada uno se reconoce a 24 px por
+// su silueta, su tocado y su objeto (biblia de nombres), nunca por rasgos de la cara. Dos caras:
+// `calma` (erguido, el objeto en la mano) y `vencido` (el busto se ladea, los ojos se cierran en aspa
+// y el objeto cae o se parte). Lienzo de 100 × 100 y sin filtros: se puede mover con transform sin coste.
+// Los trazos van con clases de guia.css (.o contorno de tinta, .o-pp contorno de papel, .o-thin, .m-x…).
+
+export type MonarchMood = 'calma' | 'vencido';
+export const MONARCH_IDS = ['doble', 'escasez', 'sequia', 'intemperie', 'blindaje', 'furia', 'inestable'] as const;
+
+/** Ojos: almendra de tinta en calma, aspa en la derrota. */
+const eyes = (pts: [number, number][], down: boolean) =>
+  pts
+    .map(([x, y]) => (down ? `<path class="m-x" d="M${x - 3},${y - 3} L${x + 3},${y + 3} M${x + 3},${y - 3} L${x - 3},${y + 3}"/>` : `<path class="ink" d="M${x - 3.6},${y} Q${x},${y - 3.2} ${x + 3.6},${y} Q${x},${y + 2.6} ${x - 3.6},${y} Z"/>`))
+    .join('');
+
+/** Hombros con manto: la base común de los bustos. */
+const mantle = (fill: string, d = 'M12,100 C14,82 30,72 50,72 C70,72 86,82 88,100 Z') => `<path class="${fill} o" d="${d}"/>`;
+
+interface Bust {
+  /** El fondo del medallón. */
+  bg: string;
+  /** Lo que se ladea con la derrota (cabeza, tocado y manto). */
+  body: (down: boolean) => string;
+  /** El objeto, en la mano o caído. */
+  item: (down: boolean) => string;
+}
+
+const BUSTS: Record<string, Bust> = {
+  // El Rey de Dos Caras: rey de naipe partido en diagonal, una cara arriba mirando a un lado y otra
+  // abajo mirando al otro, con su corona en cada punta. La silueta es la de la carta alta.
+  doble: {
+    bg: 'm-bg-rd',
+    body: (down) => {
+      const half = (flip: boolean) => `<g${flip ? ' transform="rotate(180 50 50)"' : ''}>
+        <path class="gd o" d="M33,27 L34,11 L41,19 L46,8 L51,19 L58,11 L59,27 Z"/>
+        <path class="pp o" d="M34,27 H58 V36 C58,44 52,47 46,47 C40,47 34,44 34,36 Z"/>
+        <path class="ink" d="M57,31 L64,35 L57,38 Z"/>
+        ${eyes([[51, 33]], down)}
+      </g>`;
+      return `<path class="pp o" d="M24,4 H76 V96 H24 Z"/><path class="o-thin" d="M24,96 L76,4"/>${half(false)}${half(true)}`;
+    },
+    item: (down) => (down ? '<path class="m-crack" d="M30,8 L44,40 L36,58 L52,92"/>' : ''),
+  },
+  // El Usurero: flaco, gorro de terciopelo caído hacia un lado, cuello de armiño y balanza de mano con monedas
+  escasez: {
+    bg: 'm-bg-pp',
+    body: (down) => `${mantle('ink', 'M24,100 C26,84 36,76 48,76 C60,76 70,84 72,100 Z')}
+      <path class="pp o" d="M30,80 C36,72 60,72 66,80 C60,86 36,86 30,80 Z"/>
+      <path class="ink" d="M38,78 h3 v3 h-3 Z M47,77 h3 v3 h-3 Z M56,78 h3 v3 h-3 Z"/>
+      <path class="pp o" d="M40,40 C40,30 56,30 56,40 V58 C56,68 52,74 48,74 C44,74 40,68 40,58 Z"/>
+      <path class="rd o" d="M36,41 C33,26 44,13 58,15 C71,17 77,26 75,37 L66,35 C64,29 60,27 56,29 L57,41 Z"/>
+      ${eyes([[44.5, 50], [52, 50]], down)}`,
+    item: (down) =>
+      down
+        ? '<g transform="translate(70 92) rotate(64)"><path class="o-thin" d="M-14,0 H14"/></g><circle class="gd o" cx="86" cy="88" r="5"/><circle class="gd o" cx="66" cy="91" r="5"/>'
+        : // La balanza va en la mano, a la altura del hombro y fuera de la cara: nada sobresale del rostro.
+          `<g transform="translate(76 71) scale(0.86)"><path class="o-thin" d="M0,-18 V-2 M-17,-2 H17"/><path class="ink" d="M-3,-21 h6 v4 h-6 Z"/>
+          <path class="gd o" d="M-21,-2 H-11 L-12,9 C-14,13 -18,13 -20,9 Z"/><path class="pp o" d="M11,-2 H21 L21,5 C19,9 13,9 11,5 Z"/></g>`,
+  },
+  // La Dama del Cáliz: velo largo en triángulo desde lo alto de la cabeza y un cáliz ofrecido del que sube humo verde
+  sequia: {
+    bg: 'm-bg-vd',
+    body: (down) => `<path class="ink o-pp" d="M50,10 C30,24 18,60 12,100 H88 C82,60 70,24 50,10 Z"/>
+      <path class="pp o" d="M41,40 C41,30 59,30 59,40 V54 C59,64 55,68 50,68 C45,68 41,64 41,54 Z"/>
+      ${eyes([[45.5, 48], [54.5, 48]], down)}`,
+    item: (down) =>
+      down
+        ? '<g transform="translate(72 90) rotate(100)"><path class="gd o" d="M-10,-12 H10 C10,-2 6,4 0,4 C-6,4 -10,-2 -10,-12 Z"/><path class="gd o" d="M-2,4 H2 V12 H-2 Z M-7,12 H7 V15 H-7 Z"/></g><path class="m-veneno o" d="M54,95 C62,90 74,92 84,96 C74,99 62,99 54,95 Z"/>'
+        : `<path class="m-humo" d="M45,74 C41,68 49,64 45,58 M55,74 C59,68 51,64 55,58"/>
+          <g transform="translate(50 86)"><path class="gd o" d="M-12,-12 H12 C12,-2 6,4 0,4 C-6,4 -12,-2 -12,-12 Z"/><path class="gd o" d="M-2,4 H2 V8 H-2 Z M-8,8 H8 V11 H-8 Z"/></g>`,
+  },
+  // La Reina Helada: corona de carámbanos altos y desiguales, capa ancha de armiño
+  intemperie: {
+    bg: 'm-bg-gl',
+    body: (down) => `${mantle('pp', 'M4,100 C6,80 28,70 50,70 C72,70 94,80 96,100 Z')}
+      <path class="ink" d="M20,86 h3 v4 h-3 Z M34,80 h3 v4 h-3 Z M62,80 h3 v4 h-3 Z M76,86 h3 v4 h-3 Z M48,92 h3 v4 h-3 Z"/>
+      <path class="pp o" d="M40,42 C40,32 60,32 60,42 V56 C60,66 55,70 50,70 C45,70 40,66 40,56 Z"/>
+      <path class="gl o" d="M35,41 L28,6 L40,30 L44,2 L50,28 L56,0 L60,30 L72,6 L65,41 Z"/>
+      ${eyes([[45.5, 50], [54.5, 50]], down)}`,
+    item: (down) => (down ? '<path class="gl o" d="M14,97 L19,84 L24,97 Z M76,97 L82,86 L87,97 Z"/>' : ''),
+  },
+  // El Inquisidor: capucha puntiaguda muy alta, ojos en sombra y una gran llave al cuello
+  blindaje: {
+    bg: 'm-bg-pp',
+    body: (down) => `${mantle('ink', 'M14,100 C16,82 30,74 50,74 C70,74 84,82 86,100 Z')}
+      <path class="rd o" d="M50,2 L72,70 C72,78 62,82 50,82 C38,82 28,78 28,70 Z"/>
+      <path class="ink" d="M39,45 h10 v8 h-10 Z M51,45 h10 v8 h-10 Z"/>
+      ${down ? '<path class="m-x" d="M41,46 L47,52 M47,46 L41,52 M53,46 L59,52 M59,46 L53,52"/>' : '<path class="pp" d="M42,48 h4 v2.5 h-4 Z M54,48 h4 v2.5 h-4 Z"/>'}`,
+    item: (down) =>
+      down
+        ? '<g transform="translate(74 88) rotate(-80)"><circle class="gd o" cx="0" cy="-8" r="6"/><path class="gd o" d="M-2,-2 H2 V16 H-2 Z M2,8 H8 V12 H2 Z"/></g>'
+        : '<path class="o-thin m-paper" d="M36,78 Q50,90 64,78"/><circle class="gd o" cx="50" cy="86" r="8"/><circle class="ink" cx="50" cy="86" r="3"/><path class="gd o" d="M47.5,93 H52.5 V100 H47.5 Z M52.5,96 H58 V99 H52.5 Z"/>',
+  },
+  // El Verdugo: capucha redonda con dos rendijas y el hacha al hombro, con la hoja ancha a la vista
+  furia: {
+    bg: 'm-bg-gd',
+    body: (down) => `${mantle('ink', 'M8,100 C10,80 28,72 50,72 C72,72 90,80 92,100 Z')}
+      <path class="ink o-pp" d="M30,76 C26,46 32,18 50,16 C68,18 74,46 70,76 Z"/>
+      ${down ? '<path class="m-x" d="M39,40 L45,46 M45,40 L39,46 M55,40 L61,46 M61,40 L55,46"/>' : '<path class="rd" d="M36,42 C39,37 45,37 47,43 C43,45 40,45 36,42 Z M53,43 C55,37 61,37 64,42 C60,45 57,45 53,43 Z"/>'}`,
+    item: (down) =>
+      down
+        ? '<g transform="translate(80 96) rotate(-90)"><path class="ink o-pp" d="M-2,-30 H2 V10 H-2 Z"/><path class="pp o" d="M2,-28 C12,-30 18,-36 20,-42 C26,-32 26,-18 20,-8 C16,-14 10,-16 2,-16 Z"/></g>'
+        : '<g transform="translate(66 56) rotate(16)"><path class="ink o-pp" d="M-2.5,-38 H2.5 V44 H-2.5 Z"/><path class="pp o" d="M2,-36 C12,-38 20,-44 22,-50 C30,-38 30,-20 22,-8 C18,-14 10,-18 2,-18 Z"/></g>',
+  },
+  // El Relojero: anciano con lupa al ojo y un reloj de arena con engranaje alzado en la mano
+  inestable: {
+    bg: 'm-bg-vd',
+    body: (down) => `${mantle('ink')}
+      <path class="pp o" d="M38,40 C38,28 62,28 62,40 V56 C62,68 56,74 50,74 C44,74 38,68 38,56 Z"/>
+      <path class="ink o" d="M36,40 C35,22 65,22 64,40 L60,35 C56,31 44,31 40,35 Z"/>
+      <path class="pp o" d="M42,60 C42,74 46,84 50,86 C54,84 58,74 58,60 C54,64 46,64 42,60 Z"/>
+      ${eyes([[45, 47]], down)}
+      ${down ? '<circle class="o-thin" cx="56" cy="47" r="6"/><path class="m-crack" d="M51,42 L61,52"/>' : '<circle class="gl o" cx="55" cy="47" r="6"/>'}`,
+    item: (down) =>
+      down
+        ? '<g transform="translate(78 84) rotate(90)"><path class="gd o" d="M-10,-14 H10 V-11 H-10 Z M-10,11 H10 V14 H-10 Z"/><path class="pp o" d="M-8,-11 H8 C8,-4 2,-2 2,0 C2,2 8,4 8,11 H-8 C-8,4 -2,2 -2,0 C-2,-2 -8,-4 -8,-11 Z"/></g>'
+        : `<g transform="translate(79 56)"><circle class="gd o" cx="-6" cy="-21" r="5"/><path class="o-thin" d="M-6,-28 V-14 M-13,-21 H1"/>
+          <path class="gd o" d="M-11,-15 H11 V-11 H-11 Z M-11,11 H11 V15 H-11 Z"/><path class="pp o" d="M-8,-11 H8 C8,-3 2,-2 2,0 C2,2 8,3 8,11 H-8 C-8,3 -2,2 -2,0 C-2,-2 -8,-3 -8,-11 Z"/><path class="gd" d="M-6,10 C-4,5 4,5 6,10 Z"/></g>`,
+  },
+};
+
+/** El busto de un monarca (`id` de BOSSES) en calma o vencido. Clases: .monarca, .m-<id>, .calma / .vencido. */
+export function monarchSvg(id: string, mood: MonarchMood = 'calma', cls = ''): string {
+  const b = BUSTS[id];
+  if (!b) return '';
+  const down = mood === 'vencido';
+  return `<svg class="art monarca m-${id} ${mood}${cls ? ` ${cls}` : ''}" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <rect class="${b.bg}" x="1.5" y="1.5" width="97" height="97" rx="3"/>
+    <g class="m-bust"${down ? ' transform="rotate(-12 50 100) translate(0 5)"' : ''}>${b.body(down)}</g>
+    ${b.item(down)}
+    ${down ? '<path class="m-tacha" d="M8,92 L92,8"/>' : ''}
+    <rect class="m-frame" x="1.5" y="1.5" width="97" height="97" rx="3"/>
+  </svg>`;
+}
