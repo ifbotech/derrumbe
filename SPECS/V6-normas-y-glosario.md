@@ -70,6 +70,21 @@ Rueda de palos (antes «ciclo de materiales»): **♠ corta ♦ · ♦ compra �
 
 **Las seis palabras clave** (ni una más): **Daño, Multi, Golpe exacto, Brecha, En guardia, Desarmado**. «Daño» y «Multi» van con mayúscula cuando son la palabra clave; «daño» en minúscula es la palabra corriente (evítala: di «Golpe» o «puntos»).
 
+#### Anexo V11 (manda sobre lo anterior desde la 11.0; detalle en `SPECS/V11.md`, apartados 1.2 a 1.5 y 1.13)
+
+| 10.0 | V11 |
+|---|---|
+| Rueda de palos (♠ corta ♦…), «ventaja», «débil a» | **se retira**. Queda: un trono es **Inmune** a su propio palo; los demás palos hacen su número |
+| Brecha (`fractura`) | **Expuesto** (EN *Exposed*): el próximo golpe hace el doble de Daño |
+| Desarmado / Desarmado ×1 (`desarmada`, `sobrecarga`) | **Aturdido** (EN *Stunned*): se salta su próximo Contraataque |
+| En guardia (`apuntalado`) | **se retira** |
+| Motín: desarma a ese guardia y no hay Contraataque | **Motín**: ese trono queda Aturdido y este turno no hay Contraataque |
+| Multi con decimales («×1,5», «+0,15») | **Multi entero** siempre («×2», «+1») |
+| Tintas: hierro, oro bruñido, carmesí, verdín | **Baraja de cuatro colores** por defecto: ♠ `#161514`, ♥ `#C8232C`, ♦ `#1B5E9E` (azul), ♣ `#1B6B46`; la clásica (ocre) y las dos tintas, en Ajustes |
+| ocho asaltos | **cinco asaltos**; el último, **Salón del Trono** con el **Rey Tirano** (o **Reina Tirana**) |
+
+**Las cinco palabras clave** desde la 11.0: **Daño, Multi, Golpe exacto, Expuesto, Aturdido**.
+
 ### Campaña y progreso
 | Antes | Ahora |
 |---|---|

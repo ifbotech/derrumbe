@@ -4,6 +4,8 @@ Escrita por el Director. Primera versión el 2026-11-12 sobre DERRUMBE 4.0.0; re
 
 El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este documento. Las normas de trabajo de cada celda, en `artifacts/mision/NORMAS.md`.
 
+**La V11 sigue en `ROADMAP_V11.md`** (abierta el 2026-11-14: se descongelan las reglas; especificación en `SPECS/V11.md`).
+
 ## Cómo leer los números
 
 - Las cifras del panel salen de una **simulación** con modelos locales (`..\panelAgentesGaming`, en la RTX 3090, sala `QA-3090`). Ordena prioridades. No sustituye a jugadores.
