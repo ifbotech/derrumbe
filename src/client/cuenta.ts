@@ -34,8 +34,6 @@ const CROSS = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5,3.5 L12
 const GUARD_NAME = (r: number): string | undefined => (r === 11 ? L('ui.cuenta.sota') : r === 12 ? L('ui.cuenta.reina') : r === 13 ? L('ui.cuenta.rey') : undefined);
 const WARN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,2.5 L22.5,21 H1.5 Z" fill="currentColor"/><path d="M12,9 V15 M12,17.6 V18.4" fill="none" stroke="var(--hazard)" stroke-width="2.6" stroke-linecap="square"/></svg>';
 
-/** Multi con un decimal como mucho: la línea por defecto no arrastra céntimos (el valor exacto va en el recibo). */
-const res1 = (r: number) => numL(Math.round(r * 10) / 10);
 const signed = (n: number, text = String(n)) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${text.replace('-', '')}`;
 
 /** Con qué multiplicador pega la jugada contra ese trono: la mayor ventaja y si alguna carta se queda en ×0. */
@@ -89,7 +87,7 @@ export function previewHtml(p: Preview, tail = ''): string {
       <b class="t">${r.total}</b>
       <span class="calc-txt">
         <span class="vs"><span class="forma">${formN(p.formation)}</span><span>${L('ui.cuenta.contra.vs')}</span><strong>${palo(target)}</strong>${hint('strike')}</span>
-        <span class="fr"><span class="fr-f"><i class="lg">${L('ui.cuenta.dano')}</i><i class="sh">${L('ui.cuenta.dano.corto')}</i><b>${r.fuerza}</b></span><i class="por" aria-hidden="true">×</i><span class="fr-r"><i class="lg">${L('ui.cuenta.multi')}</i><i class="sh">${L('ui.cuenta.multi.corto')}</i><b>×${res1(r.res)}</b></span><em class="abre">${L('ui.cuenta.abre')}${CHEVRON}</em></span>
+        <span class="fr"><span class="fr-f"><i class="lg">${L('ui.cuenta.dano')}</i><i class="sh">${L('ui.cuenta.dano.corto')}</i><b>${r.fuerza}</b></span><i class="por" aria-hidden="true">×</i><span class="fr-r"><i class="lg">${L('ui.cuenta.multi')}</i><i class="sh">${L('ui.cuenta.multi.corto')}</i><b>×${numL(r.res)}</b></span><em class="abre">${L('ui.cuenta.abre')}${CHEVRON}</em></span>
       </span>
     </div>
     <span class="marks">${marks}</span>`;

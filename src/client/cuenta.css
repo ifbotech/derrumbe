@@ -109,14 +109,17 @@ button.recibo-x:hover:not(:disabled) { --bg: var(--red); color: var(--card-paper
 
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   #score { min-height: 48px; column-gap: 8px; row-gap: 5px; }
-  #score .calc { font-size: 32px; gap: 8px; }
+  #score .calc { font-size: 32px; gap: 6px; }
   /* en estrecho la formación va dentro de la cuenta y su etiqueta suelta se retira: una línea menos */
   #score:has(.calc[tabindex]) > .tag { display: none; }
   #score .calc .vs { display: inline-flex; font-size: 14px; }
   #score .calc .vs strong { font-size: 15px; }
   #score .calc .vs .forma { display: inline; }
   .calc-txt { font-size: 14px; }
-  .calc .fr { gap: 5px; }
+  .calc .fr { gap: 4px; }
+  /* V10 P0-4: el Multi con dos decimales («×3,65») cabe sin acercar la cuenta al canto (regla «aire») */
+  #score:not(.live) .calc { padding-right: 6px; }
+  .calc .abre { padding: 0 4px; }
   #score .calc .fr i { font-size: 14px; letter-spacing: 0.02em; }
   #score .calc .fr i.por, #score .calc .fr b { font-size: 15px; }
   #score .calc .fr b { padding: 0 4px; margin-left: 3px; }

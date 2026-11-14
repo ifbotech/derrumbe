@@ -67,6 +67,17 @@
 //             todo el texto de la mesa da ≥ 7:1
 //   idioma    en portada-idioma: el interruptor ES | EN se ve junto al candado, con las dos etiquetas, la
 //             activa marcada (aria-pressed), dianas ≥ 44 px separadas ≥ 8 px y el foco de teclado visible
+//   V10 · arreglos del censo:
+//   cuenta    (P0-4) además, en todo estado con la cuenta plegada a la vista (#score .calc[role=button]) y en
+//             las cuatro ventanas: |Daño × Multi − Golpe| ≤ 0,5 + 0,005 × Daño, leyendo el Multi con coma o
+//             punto, y el Multi entero en su caja (.fr-r sin recorte)
+//   esquina   (P0-1) en mesa, mesa-mando, mesa-2tintas y mesa-contraste: el svg del palo de cada .corner de
+//             la mano y de La Manga mide min(ancho, alto) ≥ 14 px (≥ 10 en 390×844); la insignia de orden
+//             (::after de [data-n]) ≥ 16 px (≥ 14 en 390×844); y la carta de la mano mide lo mismo que en la
+//             candidata, ± 1 px: 129×179 (1920), 84×116 (1366), 75×104 (1280) y 44×62 (390)
+//   acta-pie  (P0-5) en acta, acta-derrota, acta-victoria y acta-feedback, en 1920, 1366 y 1280: con la hoja
+//             sin desplazar, cada botón de .acta-acciones se ve entero dentro de la ventana, fuera de la
+//             franja de tinta desvanecida, y en su centro document.elementFromPoint da el botón o un hijo
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -529,6 +540,17 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       top = Math.max(top, pr.top);
       right = Math.min(right, pr.right);
       bottom = Math.min(bottom, pr.bottom);
+      // V10 P0-5: un pie (o una cabecera) pegado con sticky dentro de esa caja tapa lo que se desplaza por
+      // debajo: esa parte tampoco se ve ni se pulsa (el pie de la Crónica)
+      for (const c of p.children) {
+        if (c.contains(el)) continue;
+        const ccs = getComputedStyle(c);
+        if (ccs.position !== 'sticky') continue;
+        const cr = c.getBoundingClientRect();
+        if (Math.min(right, cr.right) - Math.max(left, cr.left) <= 0) continue;
+        if (ccs.bottom !== 'auto' && cr.top < bottom && cr.bottom >= top) bottom = Math.max(top, Math.min(bottom, cr.top));
+        else if (ccs.top !== 'auto' && cr.bottom > top && cr.top <= bottom) top = Math.min(bottom, Math.max(top, cr.bottom));
+      }
     }
     return new DOMRect(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
   };
@@ -781,7 +803,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const down = s.scrollTop + s.clientHeight < s.scrollHeight - 2;
     const up = s.scrollTop > 2;
     const cs = getComputedStyle(s);
-    const drawn = (cs.maskImage && cs.maskImage !== 'none') || (cs.webkitMaskImage && cs.webkitMaskImage !== 'none') || getComputedStyle(s, '::after').content !== 'none' || getComputedStyle(s, '::before').content !== 'none';
+    const drawn = (cs.maskImage && cs.maskImage !== 'none') || (cs.webkitMaskImage && cs.webkitMaskImage !== 'none') || getComputedStyle(s, '::after').content !== 'none' || getComputedStyle(s, '::before').content !== 'none'
+      // V10 P0-5: o un pie pegado (sticky) que pinta la tinta encima de sí con su ::before (la Crónica)
+      || [...s.children].some((c) => getComputedStyle(c).position === 'sticky' && getComputedStyle(c, '::before').content !== 'none');
     if (opts.noScroll && down && !s.matches('.log, .lupa-sheet, .lupa-box')) fail('maqueta', `esta pantalla no se desplaza, pero ${name(s)} esconde contenido (${s.scrollHeight} > ${s.clientHeight})`, s);
     if (down && !/abajo/.test(more)) fail('tinta', `${name(s)} esconde contenido abajo y no lo avisa (data-mas="${more}")`, s);
     if (up && !/arriba/.test(more)) fail('tinta', `${name(s)} esconde contenido arriba y no lo avisa (data-mas="${more}")`, s);
@@ -1015,6 +1039,50 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       const fr = calc?.querySelector('.fr');
       if (vs && fr && visible(vs) && visible(fr) && fr.getBoundingClientRect().top < vs.getBoundingClientRect().bottom - 2) fail('cuenta', 'Daño y Multi no van en el renglón de debajo de «contra»', calc);
     }
+    // V10 P0-4 · cuenta: la línea plegada cuadra. En todo estado con la cuenta plegada a la vista,
+    // |Daño × Multi − Golpe| ≤ 0,5 + 0,005 × Daño (Multi con coma o punto), y el Multi entero en su caja
+    {
+      const calc = document.querySelector<HTMLElement>('#score .calc[role="button"]');
+      if (calc && visible(calc)) {
+        const cifra = (s: string | null | undefined) => parseFloat((s ?? '').replace(/[^\d.,-]/g, '').replace(',', '.'));
+        const d = cifra(calc.querySelector('.fr-f b')?.textContent);
+        const m = cifra(calc.querySelector('.fr-r b')?.textContent);
+        const t = cifra(calc.querySelector('b.t')?.textContent);
+        if (![d, m, t].every(Number.isFinite)) fail('cuenta', `no se leen Daño, Multi y Golpe en la cuenta plegada (${d} × ${m} = ${t})`, calc);
+        else if (Math.abs(d * m - t) > 0.5 + 0.005 * d) fail('cuenta', `la cuenta plegada no cuadra: ${d} × ${m} = ${(d * m).toFixed(2)} contra ${t} en pantalla`, calc);
+        const rr = calc.querySelector('.fr-r');
+        const rb = rr?.querySelector('b');
+        if (rr && rb && visible(rb)) {
+          const a = rb.getBoundingClientRect();
+          const box = shown(rb);
+          if (box.width < a.width - 1 || box.height < a.height - 1 || a.right > W + 1 || rb.scrollWidth > rb.clientWidth + 1 && getComputedStyle(rb).overflow !== 'visible') fail('cuenta', `el Multi «${rb.textContent?.trim()}» de la cuenta plegada sale recortado`, rb);
+        }
+      }
+    }
+    // V10 P0-1 · esquina: el palo de la esquina de las cartas de la mano y de La Manga ≥ 14 px (≥ 10 en el
+    // móvil), la insignia de orden (::after de [data-n]) ≥ 16 px (≥ 14 en el móvil) y la carta del mismo
+    // tamaño que en la 10.0 candidata (± 1 px)
+    if (['mesa', 'mesa-mando', 'mesa-2tintas', 'mesa-contraste'].includes(opts.state)) {
+      const needPalo = opts.mobile ? 10 : 14;
+      const needN = opts.mobile ? 14 : 16;
+      for (const g of document.querySelectorAll('#hand .card .corner svg, .reserve .card .corner svg')) {
+        if (!visible(g)) continue;
+        const r = g.getBoundingClientRect();
+        const lado = Math.min(r.width, r.height);
+        if (lado < needPalo - 0.05) fail('esquina', `el palo de la esquina mide ${r.width.toFixed(1)}×${r.height.toFixed(1)} px (mínimo ${needPalo})`, g);
+      }
+      for (const c of document.querySelectorAll<HTMLElement>('#hand .card[data-n], .reserve .card[data-n]')) {
+        if (!visible(c) || !c.dataset.n) continue;
+        const px = parseFloat(getComputedStyle(c, '::after').fontSize);
+        if (px < needN - 0.05) fail('esquina', `la insignia de orden «${c.dataset.n}» mide ${px.toFixed(1)} px (mínimo ${needN})`, c);
+      }
+      const caja = ({ 1920: [129, 179], 1366: [84, 116], 1280: [75, 104], 390: [44, 62] } as Record<number, [number, number]>)[W];
+      const c0 = [...document.querySelectorAll('#hand .card')].find(visible);
+      if (caja && c0) {
+        const r = c0.getBoundingClientRect();
+        if (Math.abs(r.width - caja[0]) > 1.5 || Math.abs(r.height - caja[1]) > 1.5) fail('esquina', `la carta de la mano mide ${Math.round(r.width)}×${Math.round(r.height)} px (debe seguir en ${caja[0]}×${caja[1]} ± 1)`, c0);
+      }
+    }
     // F3 · vida: la cifra de la Vida de cada trono en su placa, ≥ 16 / 15 / 14 px, y la barra con su borde de tinta
     if (opts.state.startsWith('mesa')) {
       const need = { grande: 16, portatil: 15, movil: 14 }[tier];
@@ -1169,6 +1237,38 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
         if (w > 4 && h > 4) fail('cabecera', `en la crónica se pisan ${piezas[i].n} y ${piezas[j].n} (${Math.round(w)}×${Math.round(h)} px)`, sheet);
       }
+  }
+
+  // ── V10 P0-5 · acta-pie: la salida de la Crónica a la vista al llegar ──
+  // En acta, acta-derrota, acta-victoria y acta-feedback, fuera del móvil: con la hoja sin desplazar, cada
+  // botón de .acta-acciones se ve entero (ni el desplazamiento ni la ventana lo cortan), fuera de la franja
+  // de tinta desvanecida (mask-image de [data-mas~=abajo]) y lo que hay en su centro es el botón.
+  if (!opts.mobile && ['acta', 'acta-derrota', 'acta-victoria', 'acta-feedback'].includes(opts.state)) {
+    const sheet = document.querySelector<HTMLElement>('.acta-sheet');
+    const prev = sheet?.scrollTop ?? 0;
+    if (sheet) sheet.scrollTop = 0;
+    const btns = [...document.querySelectorAll<HTMLElement>('.acta-acciones button')].filter(visible);
+    if (!btns.length) fail('acta-pie', 'la Crónica no enseña sus botones de salida', sheet);
+    for (const b of btns) {
+      const r = b.getBoundingClientRect();
+      const v = shown(b);
+      const txt = b.textContent?.trim();
+      if (v.height < r.height - 1 || v.width < r.width - 1) fail('acta-pie', `«${txt}» se ve ${Math.round(v.height)} de ${Math.round(r.height)} px con la hoja sin desplazar`, b);
+      else if (r.top < -1 || r.left < -1 || r.bottom > H + 1 || r.right > W + 1) fail('acta-pie', `«${txt}» se sale de la ventana`, b);
+      else {
+        for (let p = b.parentElement; p; p = p.parentElement) {
+          if (!/abajo/.test(p.dataset.mas ?? '')) continue;
+          const cs = getComputedStyle(p);
+          if ((cs.maskImage || cs.webkitMaskImage || 'none') === 'none') continue;
+          const pr = p.getBoundingClientRect();
+          const banda = Math.min(38, pr.height * 0.22);
+          if (r.bottom > pr.bottom - banda + 1) fail('acta-pie', `«${txt}» cae ${Math.round(r.bottom - (pr.bottom - banda))} px dentro de la tinta desvanecida`, b);
+        }
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        if (!hit || !(hit === b || b.contains(hit))) fail('acta-pie', `en el centro de «${txt}» hay otra cosa (${hit ? hit.tagName.toLowerCase() + (hit.className ? '.' + String(hit.className).split(' ')[0] : '') : 'nada'})`, b);
+      }
+    }
+    if (sheet) sheet.scrollTop = prev;
   }
 
   // ── notas de maquetación de la 5.0 ──
