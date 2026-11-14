@@ -1,7 +1,8 @@
 // Copia de seguridad del progreso: todo lo que el juego guarda (la Orden, colección, crónicas, campaña
 // en curso y ajustes) cabe en un archivo .json. Sirve para no perderlo al limpiar el navegador y
 // para llevárselo a otro equipo o a la versión de escritorio.
-import { TITLE, fileName } from '../shared/brand';
+import { brandFor, fileName } from '../shared/brand';
+import { getLang, t } from '../shared/i18n';
 import { platform } from './platform';
 
 const PREFIX = 'derrumbe:';
@@ -38,17 +39,17 @@ export function readBackup(text: string): Backup | string {
   try {
     raw = JSON.parse(text);
   } catch {
-    return 'Ese archivo no es un JSON válido.';
+    return t('ui.copia.json');
   }
   const b = raw as Partial<Backup> | null;
-  if (!b || b.app !== 'derrumbe' || typeof b.data !== 'object' || b.data === null) return `Ese archivo no es una copia de progreso de ${TITLE}.`;
+  if (!b || b.app !== 'derrumbe' || typeof b.data !== 'object' || b.data === null) return t('ui.copia.ajena', { titulo: brandFor(getLang()).title });
   const data: Record<string, string> = {};
   for (const [key, value] of Object.entries(b.data)) {
     if (!key.startsWith(PREFIX) || typeof value !== 'string' || LOCAL_ONLY.includes(key)) continue;
-    if (value.length > 2_000_000) return 'La copia es demasiado grande para ser de este juego.';
+    if (value.length > 2_000_000) return t('ui.copia.grande');
     data[key] = value;
   }
-  if (!data['derrumbe:meta']) return 'La copia no trae la Orden: no hay progreso que importar.';
+  if (!data['derrumbe:meta']) return t('ui.copia.sin.orden');
   // la Orden (clave meta) tiene que ser el JSON que el juego guardó: una copia retocada a mano no debe romper el arranque
   // (otras claves, como el nombre o la baraja elegida, son texto llano y no se comprueban así)
   try {
@@ -56,7 +57,7 @@ export function readBackup(text: string): Backup | string {
     if (!meta || typeof meta !== 'object' || Array.isArray(meta)) throw new Error('gremio');
     if (data['derrumbe:actas'] && !Array.isArray(JSON.parse(data['derrumbe:actas']))) throw new Error('actas');
   } catch {
-    return 'La copia está dañada: la Orden o las crónicas no se pueden leer.';
+    return t('ui.copia.danada');
   }
   return { app: 'derrumbe', format: 1, exported: typeof b.exported === 'string' ? b.exported : '', data };
 }
@@ -74,7 +75,7 @@ export function describeBackup(b: Backup): string {
   } catch {
     /* se enseña lo que se pueda */
   }
-  return `${renown} ✦ Coronas · ${runs} campañas · ${actas} crónicas${b.exported ? ` · guardada el ${b.exported.slice(0, 10)}` : ''}`;
+  return `${t('ui.copia.resumen', { r: renown, c: runs, a: actas })}${b.exported ? t('ui.copia.fecha', { f: b.exported.slice(0, 10) }) : ''}`;
 }
 
 /** Sustituye el progreso guardado por el de la copia. Hay que recargar después. */

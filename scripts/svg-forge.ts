@@ -22,6 +22,11 @@ import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 /** FORJA_OUT=artifacts/svg-forge-loquesea: dos celdas forjando a la vez no se pisan las hojas. */
 const OUT = resolve(process.env.FORJA_OUT?.trim() || 'artifacts/svg-forge');
 const SIZES = [24, 300] as const;
+/**
+ * V10 · V8-8: piezas que el juego nunca pinta a 24 px. El tajo cruza un naipe entero de la mano (≥ 60 px de
+ * ancho): a 24 px no se le mide la silueta, solo la tinta.
+ */
+const SOLO_GRANDE = ['piezas/tajo'];
 const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'servicios', 'jefes', 'monarcas', 'piezas'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const groups = wanted.length ? GROUPS.filter((g) => wanted.includes(g)) : GROUPS;
@@ -306,7 +311,7 @@ async function main(): Promise<void> {
       else if (icon && (row.ink300 < LIMITS.inkWarn[0] || row.ink300 > LIMITS.inkWarn[1])) row.warns.push(`densidad de tinta ${(row.ink300 * 100).toFixed(1)} % (cómodo entre ${LIMITS.inkWarn[0] * 100} y ${LIMITS.inkWarn[1] * 100} %)`);
       if (row.ink24 === 0) row.fails.push('a 24 px no queda tinta');
       else if (relic && row.body24 < LIMITS.relicBody) row.fails.push(`a 24 px la silueta se deshace (mayor cuerpo: ${(row.body24 * 100).toFixed(0)} % de la pieza; mínimo ${Math.round(LIMITS.relicBody * 100)} %)`);
-      else if (row.body24 < LIMITS.bodyWarn) row.warns.push(`a 24 px la silueta se deshace (mayor cuerpo: ${(row.body24 * 100).toFixed(0)} % de la pieza)`);
+      else if (row.body24 < LIMITS.bodyWarn && !SOLO_GRANDE.includes(`${p.grupo}/${p.id}`)) row.warns.push(`a 24 px la silueta se deshace (mayor cuerpo: ${(row.body24 * 100).toFixed(0)} % de la pieza)`);
       if (row.drift > LIMITS.driftWarn) row.warns.push(`la tinta cambia ${(row.drift * 100).toFixed(0)} puntos entre 300 y 24 px (trazos demasiado finos)`);
     }
     if (p.grupo === 'palos') {

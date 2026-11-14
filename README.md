@@ -3,7 +3,7 @@
 *La conjura de los naipes.* Roguelike de construcción de mazo con baraja francesa clásica y estética de grabado brutalista. Diseño original:
 sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doce guardias que abatir y tu Vida en juego en cada Contraataque. Para 1 a 4 jugadores.
 
-**Dos nombres, un juego.** En un navegador en español se llama **SANGRE Y PALO** y lleva, en una cinta de lacre, el sello **BLOOD & SUITS**. En cualquier otro idioma es al revés: **BLOOD & SUITS**, con el sello de origen **SANGRE Y PALO**. Así toda captura enseña los dos nombres. El resto de la interfaz sigue en español hasta la 10.0. Hasta la 6.0 se llamó `CORONA ROTA` y, antes, `DERRUMBE`.
+**Dos nombres, un juego.** En un navegador en español se llama **SANGRE Y PALO** y lleva, en una cinta de lacre, el sello **BLOOD & SUITS**. En cualquier otro idioma es al revés: **BLOOD & SUITS**, con el sello de origen **SANGRE Y PALO**. Así toda captura enseña los dos nombres. Desde la 10.0 el juego entero se juega en español o en inglés (ver [Idiomas](#idiomas)), y el nombre sigue al idioma que elijas. Hasta la 6.0 se llamó `CORONA ROTA` y, antes, `DERRUMBE`.
 
 **Jugar en el navegador:** https://ifbotech.github.io/derrumbe/ (se publica sola en cada cambio; ver [Publicar](#publicar)). La dirección y el repositorio (`ifbotech/derrumbe`) conservan el nombre de antes.
 
@@ -21,6 +21,8 @@ sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doc
 - **Cooperativo online** con salas por código, servidor autoritativo y **señas** para proponer sin hablar.
 - **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar las reliquias y pantalla completa también con mando), con un marco de foco de papel y tinta que se ve a distancia (la carta enfocada se levanta) y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
 - **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en letra de título y cada palo con su **trama de grabado** (rayado diagonal de lanzas, punteado de gemas, hiladas de cáliz, rayado cruzado heráldico), para distinguirlos sin el color.
+- **Español e inglés**, con el conmutador **ES | EN** en la Portada y en Ajustes: cambia al instante, sin recargar, y se recuerda.
+- **«Alto contraste»** en Ajustes: tinta negra sobre papel claro, bordes y tramas más gruesos y la mesa sin textura, sin mover nada de sitio. Se enciende solo si el sistema pide más contraste.
 - **Golpes que se sienten**: el naipe del guardia se parte de un tajo, la corona del trono estalla en esquirlas, el sello de lacre cae caliente sobre la carta y las monedas vuelan al contador, también en La Taberna. Todo a 60 fotogramas por segundo y con **«Reducir movimiento»**, que lo deja en fundidos.
 - **Siete monarcas tiranos**, cada uno con su retrato de grabado, su maldición marcada sobre la mesa y su voz de mesa brava al entrar, al contraatacar y al caer.
 - **«Enviar Crónica / Feedback de Prueba»**: un botón en la Crónica y en Ajustes para mandar tu última campaña a quien te pasó el juego. Nada sale del equipo si no lo pulsas (ver [Datos de prueba y privacidad](#datos-de-prueba-y-privacidad)).
@@ -64,17 +66,19 @@ El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, i
 
 | Comando | Qué hace |
 |---|---|
-| `npm test` | Pruebas del motor, la campaña, el Asedio final, la partida guiada, las palabras clave, la imprenta, el vocabulario y la marca (Vitest), con 500 partidas de fuzz con semilla |
+| `npm test` | Pruebas del motor, la campaña, el Asedio final, la partida guiada, las palabras clave, la imprenta, el vocabulario, la marca, la paridad de los dos idiomas y el puente de escritorio (Vitest), con 500 partidas de fuzz con semilla. Va en dos pasadas: todo menos cooperativo y, después, cooperativo aparte (ver [Pruebas en Windows](#pruebas-en-windows)) |
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
 | `npm run analyze:meta` | Laboratorio de balance: ~55.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
 | `npm run balance:tune` | Afinador: busca, campo a campo y dentro de ±15 %, cambios de los números de `src/rules/balance-config.json` que acerquen el laboratorio a sus objetivos. **Solo propone** (`artifacts/balance-tune/propuesta.json` y `.md`); con `-- --aplicar` escribe en el JSON lo ya confirmado con 1.500 campañas. `-- --minutos=30` fija el presupuesto (por defecto 45); `-- --probar=ruta=valor` mide una hipótesis sin aplicarla |
 | `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas del Asalto único y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 40 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo, jerga vieja y animaciones que solo mueven `transform` y `opacity` → `artifacts/visual-qa/` y su `report.json` |
-| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Taberna, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias), una segunda pasada con «Reducir movimiento» y los datos de prueba con la red cortada: cuenta las peticiones al pulsar «Enviar Crónica / Feedback de Prueba» en una compilación normal y en otra con `VITE_TELEMETRY_URL` |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 43 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste (y 7:1 con «Alto contraste»), tramas de palo, jerga vieja y animaciones que solo mueven `transform` y `opacity` → `artifacts/visual-qa/` y su `report.json` |
+| `npm run qa:visual -- --lang=en` | Lo mismo con el juego en inglés → `artifacts/visual-qa-en/`. Añade la regla «fuga»: ningún resto de español a la vista |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Taberna, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias), el conmutador ES \| EN y «Alto contraste» con teclado y con mando, una segunda pasada con «Reducir movimiento» y los datos de prueba con la red cortada: cuenta las peticiones al pulsar «Enviar Crónica / Feedback de Prueba» en una compilación normal y en otra con `VITE_TELEMETRY_URL` |
+| `npm run qa:smoke -- --lang=en` | La misma prueba de humo con el navegador en inglés |
 | `npm run qa:fps` | Mide los fotogramas de cinco efectos (tajo, caída de un trono, lacre, monedas y barrido del foco) en 3 tamaños, con aceleración gráfica real: falla si el renderizador es por software, si el p95 pasa del refresco de la pantalla o si un fotograma pasa de 50 ms → `artifacts/mision/v8/fps.json` |
 | `npm run qa:audio` | Escucha sin altavoces: genera unas 3 h de música y efectos con 3 semillas y falla si un tramo de más de 30 s se repite, si un efecto suena igual más de 8 veces seguidas o si una nota sale de re menor |
 | `npm run forja` | Banco de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, reliquias, especiales, servicios, monarcas) a 24 y 300 px, mide su tinta y su silueta, y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
-| `npm run og` | Regenera la tarjeta para compartir (`public/og-card.png`, 1200 × 630) |
+| `npm run og` | Regenera las tarjetas para compartir (1200 × 630): `public/og-card-es.png`, `public/og-card-en.png` y `public/og-card.png`, que es la española |
 | `npm run docs` | Regenera `REGLAS.md` y las tablas de balance y controles de este archivo |
 
 La primera vez, las órdenes que abren un navegador necesitan el de Playwright:
@@ -83,11 +87,31 @@ La primera vez, las órdenes que abren un navegador necesitan el de Playwright:
 npx playwright install chromium
 ```
 
+### Pruebas en Windows
+
+`npm test` es `node scripts/test.mjs`: corre todo menos `tests/coop-estres.test.ts` y después esa prueba aparte. Con Node 24 en Windows, el proceso que abre las conexiones WebSocket de cliente de esa prueba se cae a veces de forma nativa (código `0xC0000409`, sin mensaje). No es el servidor del juego: con el servidor en su propio proceso no se cayó nunca, y el servidor real no abre conexiones salientes. Si la pasada de cooperativo muere con esa firma exacta, se repite, hasta tres veces. Una aserción fallida o un tiempo agotado no se repiten. En Linux no está comprobado.
+
+Para pasar un archivo suelto, los argumentos van a Vitest tal cual: `npm test -- tests/engine.test.ts`.
+
+### Idiomas
+
+El juego entero está en español y en inglés: reglas, cartas, reliquias, monarcas, partida guiada, avisos, Susurros y pantallas. El conmutador **ES | EN** está en la Portada, junto al candado, y en Ajustes («Idioma · Language»). Cambia al instante y se guarda en este equipo. La primera vez manda el idioma del navegador: español si empieza por «es», inglés en los demás.
+
+Qué nombre ve quién: en español, **SANGRE Y PALO** con la cinta **BLOOD & SUITS**; en inglés, **BLOOD & SUITS** con la cinta **SANGRE Y PALO**. Una prueba de paridad (`tests/i18n.test.ts`) exige las mismas claves, las mismas variables y las mismas cifras en los dos idiomas. En inglés la coma decimal pasa a punto.
+
+Lo que sigue solo en español: este archivo, [REGLAS.md](REGLAS.md), `index.html` y el manifest. El inglés no lo ha revisado todavía ningún hablante nativo.
+
+### Escritorio y Steam
+
+La carpeta `tauri/` trae la configuración de una envoltura de escritorio con Tauri v2, que empaqueta `dist/web`. El juego trae un puente (`src/client/platform.ts`) con seis comandos de Steam (logros, idioma, capa, presencia y guardado en la nube) que solo se activan dentro de esa envoltura; en la web no hacen nada.
+
+Lo que **no** está hecho: la envoltura no se ha compilado nunca, el lado Rust de los comandos no está escrito y no hay cuenta de Steamworks (ni AppID, ni logros dados de alta, ni depósitos). Cómo construirla, qué falta y los pasos para publicar, en [STEAM_BUILD.md](STEAM_BUILD.md).
+
 ### Publicar
 
 El flujo [`.github/workflows/ci-deploy.yml`](.github/workflows/ci-deploy.yml) comprueba tipos y pruebas en cada cambio y, en `main`, publica `dist/web` en GitHub Pages. Solo hay que activarlo una vez en el repositorio: **Settings → Pages → Source: GitHub Actions**. La página queda en https://ifbotech.github.io/derrumbe/.
 
-Al compartir el enlace sale la tarjeta de `public/og-card.png`. Si publicas el juego en otra dirección, cambia las tres direcciones completas de las etiquetas `og:` de [index.html](index.html).
+Al compartir el enlace sale la tarjeta de `public/og-card.png` (la española; la inglesa, `public/og-card-en.png`, queda lista para quien la quiera). Si publicas el juego en otra dirección, cambia las tres direcciones completas de las etiquetas `og:` de [index.html](index.html).
 
 Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativo), `VITE_COMMUNITY_URL` (a dónde lleva «Comunidad y comentarios» en Ajustes; por defecto, los avisos de este repositorio; si apunta a los avisos de un repositorio de GitHub, aparece también «Abrir aviso») y `VITE_TELEMETRY_URL` (recolector de los datos de prueba; ver la sección siguiente).
 
@@ -107,7 +131,7 @@ Ganes o pierdas, cada campaña deja **Coronas**. En La Orden no se compra poder 
 
 El **Archivo de crónicas** guarda las 25 últimas campañas: resultado, asalto y monarca, turnos, mayor Golpe, reliquias y semilla, con un botón para **rejugar la semilla** y otro para copiar la Crónica.
 
-En solitario, la campaña y La Orden se guardan en el dispositivo; las claves del guardado siguen siendo `derrumbe:*`, así que el progreso de antes se conserva. Desde **Ajustes** se puede **exportar el progreso** a un archivo .json e **importarlo** en otro navegador, otro equipo o la versión de escritorio. Todo lo que el juego le pide a la máquina (guardar, archivos, pantalla completa, vibración, logros del sistema, enlaces, dirección del servidor) pasa por `PlatformBridge` (`src/client/platform.ts`): una envoltura de escritorio solo tiene que llamar a `setPlatform()` con la suya.
+En solitario, la campaña y La Orden se guardan en el dispositivo; las claves del guardado siguen siendo `derrumbe:*`, así que el progreso de antes se conserva. Desde **Ajustes** se puede **exportar el progreso** a un archivo .json e **importarlo** en otro navegador u otro equipo. Todo lo que el juego le pide a la máquina (guardar, archivos, pantalla completa, vibración, logros del sistema, enlaces, dirección del servidor) pasa por `PlatformBridge` (`src/client/platform.ts`). Dentro de la envoltura de escritorio, el juego cambia solo al puente de Tauri (ver [Escritorio y Steam](#escritorio-y-steam)).
 
 ### Jugar con amigos
 
@@ -263,7 +287,7 @@ Desde la 5.0 el juego se hace con un pequeño estudio de agentes de Claude Code,
 
 | Subagente (`.claude/agents/`) | Qué es suyo |
 |---|---|
-| `director` | `ROADMAP_V5_V10.md`, `SPECS/`, `CHANGELOG.md`, la prosa de este archivo y la decisión de publicar o apartar una versión |
+| `director` | `ROADMAP_V5_V10.md`, `SPECS/`, `CHANGELOG.md`, `STEAM_BUILD.md`, la prosa de este archivo y la decisión de publicar o apartar una versión |
 | `reglas-balance` | `src/rules/`, la marca (`src/shared/brand.ts`), el laboratorio (`scripts/analyze-meta.ts`), el reglamento y `tests/`; vigila la constitución anticomplejidad |
 | `arte-ui` | estilos, maquetación, grabado SVG (tronos, reliquias, monarcas, naipes), textos de pantalla, la QA visual y el banco de grabado |
 | `juice-ux` | mando y teclado, Susurros, la partida guiada, la voz de los monarcas, efectos, sonido, la red del cooperativo y la prueba de humo |
@@ -272,7 +296,7 @@ Cinco habilidades (`.claude/skills/`) recogen el oficio que se repite: `brutalis
 
 **Constitución anticomplejidad**, comprobada por `npm test`: como mucho 6 palabras clave y 56 reliquias, ninguna descripción de más de 115 caracteres y ningún asalto del 4 al 8 con un percentil 95 por encima de 19 turnos.
 
-La hoja de ruta de la 6.1 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). Desde la 6.1 cada versión se hace por celdas, de una en una y en el orden que fija su especificación, sobre la rama `release/v{n}`; cada celda deja su señal de fin en `artifacts/mision/v{n}/`. El panel simulado audita con 60 personas la 6.1, la 7.0, la 8.0 y la 9.0, y con las 240 la V10. El guion por lotes de la 5.0 sigue disponible; para ver su plan sin tocar nada:
+La hoja de ruta de la 6.1 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). Desde la 6.1 cada versión se hace por celdas, de una en una y en el orden que fija su especificación, sobre la rama `release/v{n}`; cada celda deja su señal de fin en `artifacts/mision/v{n}/`. El panel simulado audita con 60 personas la 6.1, la 7.0, la 8.0 y la 9.0, y con las 240 la V10. Qué cambió de la 4.0 a la 10.0, con las cifras del panel y del laboratorio y una guía para probar el juego con amigos y familia: [EVOLUCION_V4_V10.md](EVOLUCION_V4_V10.md). El guion por lotes de la 5.0 sigue disponible; para ver su plan sin tocar nada:
 
 ```powershell
 .\scripts\estudio-autonomo.ps1 -Ensayo
@@ -302,6 +326,7 @@ src/
     tutorial.ts   los cinco pasos y la mesa preparada de la partida guiada
   shared/
     brand.ts      la marca dual: el único sitio donde se escriben los dos títulos
+    i18n.ts · i18n/   idioma (getLang, setLang, t, numFor) y los diccionarios de español e inglés
     protocol.ts   protocolo de mensajes cliente ⇄ servidor
   server/       Node + ws: salas, turnos, reconexión, señas, estáticos
   client/       Vite + TypeScript + CSS/SVG
@@ -322,6 +347,7 @@ src/
     qa.ts · forja-qa.ts                          estados fijos para las capturas y banco de grabado (solo con ?qa)
 tests/          Vitest: motor, campaña, Asedio final y Escudo, autopsia, partida guiada, palabras clave, invariantes anticomplejidad, imprenta, vocabulario, marca, balance-config, afinador, datos de prueba y cooperativo con WebSocket de verdad
 scripts/        Laboratorio de balance y afinador, control de calidad (capturas, humo, mando virtual), banco de grabado, tarjeta social y reglamento
+tauri/          Envoltura de escritorio (Tauri v2): configuración, sin compilar (ver STEAM_BUILD.md)
 ```
 
 - **Motor determinista.** Semilla + lista de acciones reproducen cualquier partida y cualquier campaña, decisión a decisión. Las pruebas lo comprueban con 500 partidas de fuzz.

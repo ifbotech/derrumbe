@@ -1,19 +1,20 @@
 // Portada y preparación de campaña.
 import { ACHIEVEMENTS, deckUnlocked, unlockedPool } from '../rules/achievements';
-import { SEAL, TREATMENT } from '../rules/engine';
-import { ASCENSIONS, BOSSES, DECK, DECKS, LAST_STAGE, STAGES, newRun } from '../rules/run';
+import { ASCENSIONS, BOSSES, DECKS, LAST_STAGE, STAGES, newRun } from '../rules/run';
 import { hero, waxSeal } from './art';
 import { backEl } from './card';
 import { masteryBadge } from './engraving';
-import { BRAND, LOCALE, Locale } from '../shared/brand';
+import { Locale } from '../shared/brand';
 import { $, $$, S, app, cap, esc, modal } from './core';
 import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, savedCampaign, today } from './campaign';
 import { glyphSvg } from './glyphs';
 import { meta, openGuild } from './guild';
+import { L, Ln, acabN, asaltoN, barD, barN, getLang, logN, reinD, reinN, selloN } from './lengua';
+import { brandFor } from '../shared/brand';
 import { hasServer, sendMsg, updateConn } from './net';
 import { setScreen } from './router';
 import { startTutorial, tutorialDone } from './tutorial-ui';
-import { showRules, showSettings } from './widgets';
+import { bindLangSwitch, langSwitch, showRules, showSettings } from './widgets';
 import { platform } from './platform';
 
 const stamp = (id: string, glyph: string, title: string, sub: string, cls = '') =>
@@ -22,11 +23,11 @@ const stamp = (id: string, glyph: string, title: string, sub: string, cls = '') 
 /**
  * Candado de la marca: el título del idioma en grande (primera palabra en un renglón, el resto en
  * lacre debajo) y, cosida a él, la cinta grabada con su sello de lacre que lleva el nombre del otro
- * idioma; debajo, el lema. Así cualquier captura enseña los dos nombres. `face` fuerza una cara (la
- * QA monta la inglesa en `portada-en`); por defecto, la del navegador.
+ * idioma; debajo, el lema. Así cualquier captura enseña los dos nombres. `face` fuerza una cara; por
+ * defecto, la del idioma elegido (`getLang()`).
  */
-export function brandLockup(face: Locale = LOCALE): string {
-  const b = BRAND[face];
+export function brandLockup(face: Locale = getLang()): string {
+  const b = brandFor(face);
   const other: Locale = face === 'es' ? 'en' : 'es';
   const [head, ...rest] = b.title.split(' ');
   const word = (w: string) => esc(w.length > 1 ? cap(w) : w);
@@ -43,8 +44,8 @@ export function confirmAbandon(then: () => void): void {
   const saved = savedCampaign();
   if (!saved || saved.run.phase === 'won') return then();
   const el = modal(
-    `<div class="modal-box confirm"><h2>¿Abandonar la campaña?</h2><p>Tienes una campaña a medias en el asalto ${saved.run.stage}. Si empiezas otra se da por terminada y cobras las Coronas de lo ya superado.</p>
-     <div class="row"><button class="x">Seguir con la mía</button><button class="primary" id="yes">Abandonarla y empezar</button></div></div>`,
+    `<div class="modal-box confirm"><h2>${L('ui.home.abandonar.titulo')}</h2><p>${L('ui.home.abandonar.texto', { n: saved.run.stage })}</p>
+     <div class="row"><button class="x">${L('ui.home.abandonar.no')}</button><button class="primary" id="yes">${L('ui.home.abandonar.si')}</button></div></div>`,
   );
   $('#yes', el).onclick = () => {
     el.remove();
@@ -52,33 +53,34 @@ export function confirmAbandon(then: () => void): void {
   };
 }
 
-export function renderHome(face: Locale = LOCALE): void {
+export function renderHome(face: Locale = getLang()): void {
   const saved = savedCampaign();
   const date = today();
   const dailyDone = meta.daily.date === date;
   const dailyOn = saved?.run.daily === date;
   const done = ACHIEVEMENTS.filter((a) => meta.ach[a.id]).length;
   const [, month, day] = date.split('-');
-  const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const MONTHS = L('ui.meses').split(',');
   const wonRun = saved?.run.phase === 'won';
-  const resumeSub = saved ? (wonRun ? 'El último trono cayó: aún puedes seguir al Trono infinito' : `${saved.run.daily ? 'Asalto diario · ' : ''}asalto ${saved.run.stage} · ${saved.run.gold} de oro · ${DECK[saved.run.deckId].name}`) : '';
+  const resumeSub = saved ? (wonRun ? L('ui.home.resume.ganada') : `${saved.run.daily ? L('ui.home.resume.diaria') : ''}${L('ui.home.resume.sub', { n: saved.run.stage, oro: saved.run.gold, baraja: barN(saved.run.deckId) })}`) : '';
   app.innerHTML = `
   <div class="home">
     <section class="home-left">
       ${hero()}
       ${brandLockup(face)}
+      ${langSwitch('home-lang')}
     </section>
     <section class="home-right">
-      ${saved ? `<button class="resume" id="resume"><small>${wonRun ? 'Campaña ganada' : 'Seguir donde lo dejaste'}</small><b>${wonRun ? 'Ver la crónica' : 'Continuar campaña'}</b><span>${resumeSub}</span></button>` : ''}
+      ${saved ? `<button class="resume" id="resume"><small>${wonRun ? L('ui.home.resume.small.ganada') : L('ui.home.resume.small')}</small><b>${wonRun ? L('ui.home.resume.b.ganada') : L('ui.home.resume.b')}</b><span>${resumeSub}</span></button>` : ''}
       <nav class="menu">
-        ${stamp('m-camp', 'estandarte', 'Campaña', 'roguelike · ocho asaltos y el Trono infinito', 'primary')}
-        ${stamp('m-daily', 'diaria', 'Asalto diario', `${Number(day)} ${MONTHS[Number(month) - 1]} · ${dailyOn ? 'en curso' : dailyDone ? (meta.daily.won ? 'ganada hoy' : `hoy: ${meta.daily.cleared} asaltos`) : 'la misma semilla para todos'}`)}
-        ${stamp('m-coop', 'cuadrilla', 'Cooperativo online', 'de 1 a 4 · asalto único o campaña')}
-        ${stamp('m-tuto', 'senal', 'Partida guiada', 'un asalto de prácticas, paso a paso')}
-        ${stamp('m-guild', 'engranaje', 'La Orden y colección', `${meta.renown} ✦ Coronas · logros ${done}/${ACHIEVEMENTS.length}`)}
-        ${stamp('m-rules', 'pergamino', 'Reglas', 'Daño × Multi = Golpe, sellos y Reliquias')}
+        ${stamp('m-camp', 'estandarte', L('ui.home.camp'), L('ui.home.camp.sub'), 'primary')}
+        ${stamp('m-daily', 'diaria', L('ui.home.diaria'), `${L('ui.home.fecha', { dia: Number(day), mes: MONTHS[Number(month) - 1] })} · ${dailyOn ? L('ui.home.diaria.curso') : dailyDone ? (meta.daily.won ? L('ui.home.diaria.ganada') : L('ui.home.diaria.hoy', { n: meta.daily.cleared })) : L('ui.home.diaria.semilla')}`)}
+        ${stamp('m-coop', 'cuadrilla', L('ui.home.coop'), L('ui.home.coop.sub'))}
+        ${stamp('m-tuto', 'senal', L('ui.home.tuto'), L('ui.home.tuto.sub'))}
+        ${stamp('m-guild', 'engranaje', L('ui.home.orden'), L('ui.home.orden.sub', { coronas: meta.renown, hechos: done, total: ACHIEVEMENTS.length }))}
+        ${stamp('m-rules', 'pergamino', L('ui.reglas'), L('ui.home.reglas.sub'))}
       </nav>
-      <div class="row foot"><button class="ghost" id="m-set">Ajustes</button><p class="conn"></p></div>
+      <div class="row foot"><button class="ghost" id="m-set">${L('ui.ajustes')}</button><p class="conn"></p></div>
     </section>
   </div>`;
   const resume = $('#resume');
@@ -93,6 +95,7 @@ export function renderHome(face: Locale = LOCALE): void {
   $('#m-guild').onclick = () => openGuild('ups');
   $('#m-rules').onclick = showRules;
   $('#m-set').onclick = () => showSettings();
+  bindLangSwitch(app);
   updateConn();
   const code = new URLSearchParams(location.search).get('sala');
   if (code && !S.session) coopModal(code);
@@ -101,14 +104,14 @@ export function renderHome(face: Locale = LOCALE): void {
 function coopModal(code = ''): void {
   const savedName = platform.load('derrumbe:name') ?? '';
   const el = modal(
-    `<div class="modal-box coop"><h2>Conjura en línea <button class="x">CERRAR</button></h2>
-      <p>Crea una sala y comparte el código, o entra en la de tu conjura. De 1 a 4 jugadores; quien crea la sala elige entre un asalto único y una campaña entera.</p>
-      <label>Tu nombre</label>
-      <input id="name" maxlength="12" autocomplete="off" placeholder="NOMBRE" value="${esc(savedName)}" />
-      <button class="primary" id="create">Crear sala</button>
-      <div class="or">o únete a una</div>
-      <div class="row"><input id="code" maxlength="4" autocomplete="off" placeholder="CÓDIGO" value="${esc(code.replace(/[^A-Za-z]/g, '').slice(0, 4))}" /><button id="join">Unirse</button></div>
-      ${hasServer() ? '' : '<p class="note">Esta instalación no tiene servidor de salas: escribe su dirección en Ajustes para jugar en línea. La campaña en solitario no lo necesita.</p>'}
+    `<div class="modal-box coop"><h2>${L('ui.coop.titulo')} <button class="x">${L('ui.cerrar')}</button></h2>
+      <p>${L('ui.coop.texto')}</p>
+      <label>${L('ui.coop.nombre')}</label>
+      <input id="name" maxlength="12" autocomplete="off" placeholder="${L('ui.coop.nombre.ph')}" value="${esc(savedName)}" />
+      <button class="primary" id="create">${L('ui.coop.crear')}</button>
+      <div class="or">${L('ui.coop.o')}</div>
+      <div class="row"><input id="code" maxlength="4" autocomplete="off" placeholder="${L('ui.coop.codigo')}" value="${esc(code.replace(/[^A-Za-z]/g, '').slice(0, 4))}" /><button id="join">${L('ui.coop.unirse')}</button></div>
+      ${hasServer() ? '' : `<p class="note">${L('ui.coop.sinserver')}</p>`}
       <p class="conn"></p></div>`,
     { onClose: () => history.replaceState(null, '', location.pathname) },
   );
@@ -133,47 +136,48 @@ export function renderCamp(): void {
   if (!deckUnlocked(meta, prefs.deck)) pickDeck('obra');
   const decks = DECKS.map((d) => {
     const open = deckUnlocked(meta, d.id);
-    const need = d.unlock ? ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name : '';
-    return `<button class="deck-opt ${d.id === prefs.deck ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><span class="deck-back" data-back="${d.id}"></span><span class="deck-txt"><b>${d.name}</b><span>${open ? d.desc : `Bloqueada. Logro: ${need}.`}</span></span>${masteryBadge(meta.mastery.decks[d.id] ?? 0)}</button>`;
+    const need = d.unlock && ACHIEVEMENTS.some((a) => a.id === d.unlock) ? logN(d.unlock) : '';
+    return `<button class="deck-opt ${d.id === prefs.deck ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><span class="deck-back" data-back="${d.id}"></span><span class="deck-txt"><b>${barN(d.id)}</b><span>${open ? barD(d.id) : L('ui.camp.bloqueada', { logro: need })}</span></span>${masteryBadge(meta.mastery.decks[d.id] ?? 0)}</button>`;
   }).join('');
   // Reinados: cada uno suma un giro a todos los anteriores
   const level = prefs.ascension;
-  const asc = `<h3 class="sec">Reinado</h3>
-        <div class="levels">${ASCENSIONS.map((a, i) => `<button class="level ${i === level ? 'on' : i < level ? 'in' : ''}" data-asc="${i}" ${i > meta.ascMax ? 'disabled' : ''} data-tip="<b>Reinado ${i + 1} · ${a.name}</b>${a.desc}${i > meta.ascMax ? '<hr>Gana una campaña en el Reinado anterior para abrirlo.' : ''}"><b>${i + 1}</b><span>${a.name}</span></button>`).join('')}</div>
-        <ul class="level-twists">${level === 0 ? `<li>${ASCENSIONS[0].name}: las reglas de siempre. Ganar un Reinado abre el siguiente, con un giro más y un 25 % más de Coronas.</li>` : ASCENSIONS.slice(1, level + 1).map((a, i) => `<li><b>${i + 2}</b>${a.desc}</li>`).join('')}</ul>`;
+  const asc = `<h3 class="sec">${L('ui.camp.reinado')}</h3>
+        <div class="levels">${ASCENSIONS.map((_, i) => `<button class="level ${i === level ? 'on' : i < level ? 'in' : ''}" data-asc="${i}" ${i > meta.ascMax ? 'disabled' : ''} data-tip="<b>${L('ui.camp.reinado.n', { n: i + 1, nombre: reinN(i) })}</b>${reinD(i)}${i > meta.ascMax ? `<hr>${L('ui.camp.reinado.cerrado')}` : ''}"><b>${i + 1}</b><span>${reinN(i)}</span></button>`).join('')}</div>
+        <ul class="level-twists">${level === 0 ? `<li>${L('ui.camp.reinado.base', { nombre: reinN(0) })}</li>` : ASCENSIONS.slice(1, level + 1).map((_, i) => `<li><b>${i + 2}</b>${reinD(i + 1)}</li>`).join('')}</ul>`;
   // lo que la Orden aporta a esta campaña, calculado con el mismo reductor
   const probe = newRun(runOpts(), 1);
   const legends = unlockedPool(meta).length;
+  const sello = (s: string) => (getLang() === 'es' ? selloN(s).replace('Sello de lacre ', '').replace('Sello ', '') : selloN(s).replace(/ (wax )?seal$/i, ''));
   app.innerHTML = `
   <div class="camp">
-    <header class="deck-head"><div><h1>Campaña</h1><p class="sub">Ocho asaltos, cuatro monarcas y, si aguantas, el Trono infinito.</p></div><div class="purse"><b>${meta.renown} ✦</b><span>Coronas · mejor: asalto ${meta.best}/${LAST_STAGE}</span></div></header>
+    <header class="deck-head"><div><h1>${L('ui.camp.titulo')}</h1><p class="sub">${L('ui.camp.sub')}</p></div><div class="purse"><b>${meta.renown} ✦</b><span>${L('ui.camp.bolsa', { n: meta.best, total: LAST_STAGE })}</span></div></header>
     <div class="camp-grid">
       <section class="panel camp-run"><div class="scroll">
-        <div class="route">${STAGES.map((s, i) => `<div class="stop ${i < meta.best ? 'done' : ''} ${s.boss ? 'boss' : ''}" data-tip="<b>${s.name}</b>${s.floors.length} guardia${s.floors.length > 1 ? 's' : ''} por trono${s.boss ? ' · con monarca' : ' · rutas con Juramento o Atajo'}"><b>${i + 1}</b><span>${s.name}</span></div>`).join('')}</div>
-        <h3 class="sec">Baraja inicial</h3>
+        <div class="route">${STAGES.map((s, i) => `<div class="stop ${i < meta.best ? 'done' : ''} ${s.boss ? 'boss' : ''}" data-tip="<b>${asaltoN(i + 1)}</b>${Ln(s.floors.length, 'ui.camp.parada.1', 'ui.camp.parada.n')}${s.boss ? L('ui.camp.parada.monarca') : L('ui.camp.parada.rutas')}"><b>${i + 1}</b><span>${asaltoN(i + 1)}</span></div>`).join('')}</div>
+        <h3 class="sec">${L('ui.camp.baraja')}</h3>
         <div class="deck-opts">${decks}</div>
         ${asc}
         </div>
-        <div class="seed-row seed-foot"><label for="seed">Semilla</label><input id="seed" maxlength="24" autocomplete="off" placeholder="AL AZAR" aria-describedby="seed-note" value="${esc(prefs.seed)}" /><p class="note" id="seed-note">Una palabra repite exactamente la misma campaña, o reta a alguien con ella. Vacía: al azar.</p></div>
+        <div class="seed-row seed-foot"><label for="seed">${L('ui.camp.semilla')}</label><input id="seed" maxlength="24" autocomplete="off" placeholder="${L('ui.camp.semilla.ph')}" aria-describedby="seed-note" value="${esc(prefs.seed)}" /><p class="note" id="seed-note">${L('ui.camp.semilla.nota')}</p></div>
         <div class="row">
-          <button id="back">Volver</button>
-          ${saved ? `<button class="primary big" id="resume">Continuar<small>asalto ${saved.run.stage} · ${saved.run.gold} de oro</small></button>` : ''}
-          <button class="${saved ? '' : 'primary'} big" id="new">Nueva campaña<small>${saved ? 'abandona la actual' : DECK[prefs.deck].name}</small></button>
+          <button id="back">${L('ui.volver')}</button>
+          ${saved ? `<button class="primary big" id="resume">${L('ui.camp.continuar')}<small>${L('ui.camp.continuar.sub', { n: saved.run.stage, oro: saved.run.gold })}</small></button>` : ''}
+          <button class="${saved ? '' : 'primary'} big" id="new">${L('ui.camp.nueva')}<small>${saved ? L('ui.camp.nueva.abandona') : barN(prefs.deck)}</small></button>
         </div>
       </section>
       <section class="panel camp-ups"><div class="scroll">
-        <h3 class="sec">Tu surtido</h3>
-        <p class="note">Lo que has abierto en la Orden no te hace más fuerte: te da más con qué conspirar.</p>
+        <h3 class="sec">${L('ui.camp.surtido')}</h3>
+        <p class="note">${L('ui.camp.surtido.nota')}</p>
         <ul class="kit">
-          <li>${glyphSvg('relicario', 'ico')}<div><b>${probe.toolPool.length} reliquias</b><span>pueden salir en la Taberna y en los botines. Llevas 6, y su orden importa.</span></div></li>
-          <li>${glyphSvg('sello', 'ico')}<div><b>Sellos de lacre</b><span>${probe.seals.map((s) => SEAL[s].name.replace('Sello de lacre ', '').replace('Sello ', '')).join(', ')}.</span></div></li>
-          <li>${glyphSvg('forja', 'ico')}<div><b>Acabados</b><span>${probe.treats.map((t) => TREATMENT[t].name).join(', ')}.</span></div></li>
-          <li>${glyphSvg('incognita', 'ico')}<div><b>${probe.pool.length} cartas especiales</b><span>${legends ? `${legends} de ellas legendarias, raras de ver.` : 'Las legendarias se ganan derrotando monarcas.'}</span></div></li>
-          <li>${glyphSvg('jefe', 'ico')}<div><b>Monarcas</b><span>${BOSSES.length} posibles; el mapa te dice desde el principio cuáles te tocan.</span></div></li>
-          <li>${glyphSvg('oro', 'ico')}<div><b>${probe.gold} de oro</b><span>para empezar${probe.up.vale ? ` · ${probe.up.vale} «Renovar mesa» gratis en cada Taberna` : ''}${probe.up.tienda ? ' · una reliquia más en oferta' : ''}${probe.up.rutas ? ' · tres rutas por asalto' : ''}.</span></div></li>
+          <li>${glyphSvg('relicario', 'ico')}<div><b>${L('ui.camp.kit.reliquias', { n: probe.toolPool.length })}</b><span>${L('ui.camp.kit.reliquias.sub')}</span></div></li>
+          <li>${glyphSvg('sello', 'ico')}<div><b>${L('ui.camp.kit.sellos')}</b><span>${probe.seals.map(sello).join(', ')}.</span></div></li>
+          <li>${glyphSvg('forja', 'ico')}<div><b>${L('ui.camp.kit.acabados')}</b><span>${probe.treats.map((t) => acabN(t)).join(', ')}.</span></div></li>
+          <li>${glyphSvg('incognita', 'ico')}<div><b>${L('ui.camp.kit.especiales', { n: probe.pool.length })}</b><span>${legends ? L('ui.camp.kit.legendarias', { n: legends }) : L('ui.camp.kit.legendarias.no')}</span></div></li>
+          <li>${glyphSvg('jefe', 'ico')}<div><b>${L('ui.camp.kit.monarcas')}</b><span>${L('ui.camp.kit.monarcas.sub', { n: BOSSES.length })}</span></div></li>
+          <li>${glyphSvg('oro', 'ico')}<div><b>${L('ui.oro.n', { n: probe.gold })}</b><span>${L('ui.camp.kit.oro')}${probe.up.vale ? L('ui.camp.kit.vale', { n: probe.up.vale }) : ''}${probe.up.tienda ? L('ui.camp.kit.tienda') : ''}${probe.up.rutas ? L('ui.camp.kit.rutas') : ''}.</span></div></li>
         </ul>
         </div>
-        <div class="row"><button id="guild">Abrir la Orden</button></div>
+        <div class="row"><button id="guild">${L('ui.camp.orden')}</button></div>
       </section>
     </div>
   </div>`;
@@ -206,3 +210,4 @@ export function renderCamp(): void {
       }),
     );
 }
+

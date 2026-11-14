@@ -12,9 +12,46 @@
 // cada cosa enfocable se llega a cada trono, y de cada trono a la mano, en seis pulsaciones como mucho)
 // y cierra un susurro con «No mostrar más». Al final, en una mesa con seis reliquias, LB / RB las
 // reordenan en pleno combate y la cuenta del golpe sigue el orden nuevo.
+//
+// V10: `--lang=en` (o QA_LANG=en) juega todo en inglés: contexto con locale en-US y el idioma elegido en el
+// interruptor. En las dos pasadas se cambia ES → EN → ES con el mando en la Portada y en Ajustes (sin
+// recargar y sin perder el foco), se enciende «Alto contraste» y, en La Taberna, lo enfocado lleva Ⓐ y su verbo (SD5).
 import type { Browser, Page } from 'playwright';
 import { BRAND } from '../src/shared/brand';
+import { tFor, type Lang } from '../src/shared/i18n';
 import { NAME_SHIM } from './web';
+
+/** V10: idioma de la pasada (`--lang=en` o QA_LANG=en) y el locale del navegador que le corresponde. */
+export const LANG: Lang = process.argv.includes('--lang=en') || process.env.QA_LANG?.trim() === 'en' ? 'en' : 'es';
+export const LOCALE = LANG === 'en' ? 'en-US' : 'es-ES';
+/** El otro idioma (el que se prueba a cambiar con el interruptor). */
+export const OTHER: Lang = LANG === 'en' ? 'es' : 'en';
+/** Un texto del juego en el idioma de la pasada, sin etiquetas. */
+export const T = (clave: string, valores?: Record<string, string | number>, lang: Lang = LANG) => tFor(lang, clave, valores).replace(/<[^>]+>/g, '');
+
+/** Lo que se lee tras pulsar un idioma del interruptor (`where`: #home-lang o #set-lang). */
+export const langState = (page: Page, where: string, to: Lang) =>
+  page.evaluate(
+    ([w, l]) => {
+      const btn = document.querySelector<HTMLElement>(`${w} [data-lang="${l}"]`);
+      return {
+        lang: document.documentElement.lang,
+        // con ?qa el guardado es de quita y pon: se lee a través del puente
+        stored: (window as unknown as { __qaPlatform?: () => { load(k: string): string | null } }).__qaPlatform?.().load('derrumbe:idioma') ?? localStorage.getItem('derrumbe:idioma'),
+        focus: !!btn && document.activeElement === btn,
+        pressed: btn?.getAttribute('aria-pressed') === 'true',
+        ring: !!document.querySelector('.focus-ring.on'),
+        same: (window as unknown as { __sinRecarga?: number }).__sinRecarga === 1,
+        title: document.querySelector('.home h1.title')?.getAttribute('aria-label') ?? null,
+        tuto: document.querySelector('#m-tuto')?.textContent ?? '',
+        settings: document.querySelector('.settings-modal h2')?.textContent ?? '',
+        modals: document.querySelectorAll('.settings-modal').length,
+      };
+    },
+    [where, to] as const,
+  );
+/** Marca la página: si recarga o navega, la marca se pierde. */
+export const markPage = (page: Page) => page.evaluate(() => void ((window as unknown as { __sinRecarga?: number }).__sinRecarga = 1));
 
 export const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, SELECT: 8, START: 9, L3: 10, R3: 11, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
 
@@ -310,8 +347,11 @@ export const GUIDED_MAX_S = 60;
  * Lleva el foco con las flechas del teclado, a lo voraz y como haría una persona (el mismo criterio que
  * `walk` con la cruceta). Devuelve si llegó.
  */
-export async function walkKeys(page: Page, selector: string, limit = 40): Promise<boolean> {
+export async function walkKeys(page: Page, selector: string, limit = 40, trace?: string[]): Promise<boolean> {
   let stuck = 0;
+  // V10: si vuelve a un sitio ya pisado dos veces (va y viene entre dos botones), prueba por el otro eje
+  const visits = new Map<string, number>();
+  let flip = false;
   for (let i = 0; i <= limit; i++) {
     const r = await page.evaluate(
       ([sel, st]) => {
@@ -329,16 +369,19 @@ export async function walkKeys(page: Page, selector: string, limit = 40): Promis
         if (st % 2 === 1) dir = dir === 'U' || dir === 'D' ? (dx > 0 ? 'R' : 'L') : dy > 0 ? 'D' : 'U';
         return { dir, sig: `${a.id}|${a.dataset.id ?? ''}|${a.dataset.suit ?? ''}|${a.className}|${Math.round(A.left)},${Math.round(A.top)}` };
       },
-      [selector, stuck] as const,
+      [selector, flip ? 1 : stuck] as const,
     );
     if (r.dir === 'ok') return true;
     if (r.dir === 'x' || i === limit) return false;
     await page.keyboard.press({ U: 'ArrowUp', D: 'ArrowDown', L: 'ArrowLeft', R: 'ArrowRight' }[r.dir]!);
+    trace?.push(`${r.dir}:${r.sig.split('|').slice(0, 1).join('')}${r.sig.split('|')[3]?.slice(0, 12) ?? ''}`);
     const now = await page.evaluate(() => {
       const a = document.activeElement as HTMLElement | null;
       return a ? `${a.id}|${a.dataset.id ?? ''}|${a.dataset.suit ?? ''}|${a.className}|${Math.round(a.getBoundingClientRect().left)},${Math.round(a.getBoundingClientRect().top)}` : '∅';
     });
     stuck = now === r.sig ? stuck + 1 : 0;
+    visits.set(now, (visits.get(now) ?? 0) + 1);
+    flip = stuck % 2 === 0 && (visits.get(now) ?? 0) >= 2;
     if (stuck > 6) return false;
   }
   return false;
@@ -387,7 +430,7 @@ export async function guidedRun(page: Page, how: How, check: Check, shot?: (page
       kh: [...document.querySelectorAll('#guia .guia-placa .kh')].some((k) => getComputedStyle(k).display !== 'none'),
       windows: document.querySelectorAll('.modal, #coach:not([hidden])').length,
     }));
-    const want = step.line.replace(/<[^>]+>/g, '');
+    const want = T(`guia.${step.id}.linea`);
     if (seen.placa.includes(want)) lit++;
     else problems.push(`paso ${i + 1}: la placa dice «${seen.placa}»`);
     if (seen.windows) problems.push(`paso ${i + 1}: hay una ventana de texto`);
@@ -434,6 +477,70 @@ export async function guidedRun(page: Page, how: How, check: Check, shot?: (page
 }
 
 /**
+ * V10 · el interruptor ES | EN y «Alto contraste», solo con el mando o solo con el teclado: en la Portada
+ * y en Ajustes se cambia al otro idioma y se vuelve, al instante y sin recargar (la página no navega), con el
+ * candado y los textos cambiados, la elección guardada y el foco en el botón pulsado. En Ajustes, además,
+ * «Alto contraste» se enciende y se apaga, y B / Esc cierra la ventana. Empieza y acaba en la Portada.
+ */
+export async function langSwitchSuite(page: Page, how: 'pad' | 'keys', check: Check): Promise<void> {
+  const name = how === 'pad' ? 'mando' : 'teclado';
+  const reach = (sel: string) => (how === 'pad' ? focusOn(page, sel) : walkKeys(page, sel));
+  const ok = () => (how === 'pad' ? press(page, BTN.A) : page.keyboard.press('Enter'));
+  const back = () => (how === 'pad' ? press(page, BTN.B) : page.keyboard.press('Escape'));
+  await page.evaluate(() => (window as unknown as QaWindow).__qa.go('portada'));
+  await page.waitForSelector('#home-lang');
+  await markPage(page);
+  if (how === 'pad') await press(page, BTN.DOWN);
+  else await page.keyboard.press('ArrowDown');
+  const flip = async (where: string, to: Lang) => {
+    const reached = await reach(`${where} [data-lang="${to}"]`);
+    if (reached) await ok();
+    await page.waitForTimeout(120);
+    return { reached, ...(await langState(page, where, to)) };
+  };
+  // ── en la Portada ──
+  for (const to of [OTHER, LANG]) {
+    const s = await flip('#home-lang', to);
+    check(
+      s.reached && s.lang === to && s.stored === to && s.pressed && s.same && s.title === BRAND[to].title && s.tuto.includes(T('ui.home.tuto', undefined, to)),
+      `[${name}] en la Portada, el interruptor pasa a ${to.toUpperCase()} al instante y sin recargar: candado «${s.title}», «${s.tuto.trim().slice(0, 24)}» y la elección guardada`,
+    );
+    check(s.focus && s.ring, `[${name}] tras cambiar a ${to.toUpperCase()} el foco sigue en el botón pulsado, con su marco`);
+  }
+  // ── en Ajustes ──
+  if (how === 'pad') await press(page, BTN.START);
+  else if (await walkKeys(page, '#m-set')) await page.keyboard.press('Enter');
+  await page.waitForSelector('.settings-modal');
+  for (const to of [OTHER, LANG]) {
+    const s = await flip('#set-lang', to);
+    check(
+      s.reached && s.lang === to && s.stored === to && s.pressed && s.same && s.modals === 1 && s.settings.includes(T('ui.ajustes', undefined, to)),
+      `[${name}] en Ajustes, la fila «Idioma · Language» pasa a ${to.toUpperCase()} sin recargar ni cerrar la ventana («${s.settings.trim().slice(0, 20)}»)`,
+    );
+    check(s.focus && s.ring, `[${name}] y el foco se queda en el botón ${to.toUpperCase()} de Ajustes`);
+  }
+  const contrast = async () => {
+    const trace: string[] = [];
+    // con el teclado, las flechas izquierda y derecha dentro de un campo (dirección del servidor, deslizadores) son
+    // del campo: como haría una persona, se baja por la columna del idioma hasta pasar a la de los interruptores
+    if (how === 'keys')
+      for (let i = 0; i < 14 && !(await page.evaluate(() => !!document.activeElement?.closest('.set-col-b'))); i++) await page.keyboard.press('ArrowDown');
+    const reached = how === 'pad' ? await focusOn(page, '.set-contraste button') : await walkKeys(page, '.set-contraste button', 40, trace);
+    if (!reached) console.log(`  · camino a Alto contraste: ${trace.join(' ')}`);
+    if (reached) await ok();
+    await page.waitForTimeout(80);
+    return page.evaluate((r) => ({ reached: r, at: (document.activeElement as HTMLElement | null)?.outerHTML.slice(0, 60) ?? '', on: document.documentElement.classList.contains('contraste'), focus: !!document.activeElement?.matches('.set-contraste button'), saved: (JSON.parse((window as unknown as { __qaPlatform: () => { load(k: string): string | null } }).__qaPlatform().load('derrumbe:settings') ?? '{}') as { contrast?: boolean }).contrast === true }), reached);
+  };
+  const on = await contrast();
+  check(on.on && on.saved && on.focus, `[${name}] «Alto contraste» se alcanza y se enciende (clase contraste y guardado), con el foco en su botón${on.on && on.saved && on.focus ? '' : ` — ${JSON.stringify(on)}`}`);
+  const off = await contrast();
+  check(!off.on && !off.saved && off.focus, `[${name}] y se apaga igual`);
+  await back();
+  await page.waitForTimeout(150);
+  check((await count(page, '.settings-modal')) === 0 && (await page.evaluate(() => (window as unknown as { __sinRecarga?: number }).__sinRecarga === 1)), `[${name}] ${how === 'pad' ? 'B' : 'Esc'} cierra Ajustes y la página nunca se recargó`);
+}
+
+/**
  * F1 con teclado o mando: al apuntar un trono (con el foco encima), las cartas de su palo en la mano
  * enseñan el sello de hierro «×0» y ninguna otra; al pasar al trono de al lado, el sello se va con él.
  */
@@ -464,7 +571,7 @@ export async function sealCheck(page: Page, how: 'pad' | 'keys', check: Check): 
 
 export async function gamepadSuite(browser: Browser, url: string, check: Check, problems: string[], shot: (page: Page, name: string) => Promise<unknown>): Promise<void> {
   // La marca sale de navigator.language: se fija el español para ver siempre «SANGRE Y PALO».
-  const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES' });
+  const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
   await context.addInitScript({ content: NAME_SHIM });
   await context.addInitScript({ content: VIRTUAL_GAMEPAD });
   const page = await context.newPage();
@@ -485,10 +592,12 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     // el título se compone en versalitas por CSS: se lee su nombre accesible, y el sello tal cual
     const title = await page.locator('.home h1.title').getAttribute('aria-label');
     const seal = (await page.locator('.home .brand-seal .seal-ribbon').textContent())?.trim();
-    check(title === BRAND.es.title && seal === BRAND.es.seal,`la portada enseña la marca dual: «${BRAND.es.title}» con el sello «${BRAND.es.seal}»`);
+    check(title === BRAND[LANG].title && seal === BRAND[LANG].seal,`la portada enseña la marca dual: «${BRAND[LANG].title}» con el sello «${BRAND[LANG].seal}»`);
   }
   await press(page, BTN.DOWN);
   check((await inputMode(page)) === 'pad', 'el primer toque del mando cambia las indicaciones a botones');
+  // ── V10 · el interruptor ES | EN y «Alto contraste» con el mando ──
+  await langSwitchSuite(page, 'pad', check);
   check(await focusOn(page, '#m-camp'), 'la cruceta lleva el foco a «Campaña» en la portada');
   await A();
   check((await count(page, '.camp')) === 1, 'A abre la preparación de campaña');
@@ -838,9 +947,49 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     // la Mesa de lacre estrena su susurro: se fuerza (en QA solo susurra la mesa de primera campaña)
     await page.evaluate(() => (window as unknown as QaWindow).__whispers.force(true));
     const marks = (await run(page))!.marks;
+    // ── SD5 (V10): con el mando, lo enfocado en La Taberna lleva la insignia Ⓐ y su verbo, y se mueve con el foco ──
+    const hintAt = () =>
+      page.evaluate(() => {
+        const h = document.querySelector<HTMLElement>('.focus-ring.on .pad-hint:not([hidden])');
+        const f = document.querySelector<HTMLElement>('[data-foco]');
+        if (!h || !f) return null;
+        const r = h.getBoundingClientRect();
+        const b = f.getBoundingClientRect();
+        const a = [...h.querySelectorAll<HTMLElement>('.kh.pd')].find((k) => k.textContent === 'A');
+        return {
+          text: h.textContent ?? '',
+          a: !!a && getComputedStyle(a).display !== 'none' && a.getBoundingClientRect().width > 0,
+          x: r.left + r.width / 2,
+          // pegada al elemento enfocado: a menos de 12 px por arriba o por abajo, y en su franja
+          stuck: (Math.abs(r.top - b.bottom) <= 14 || Math.abs(b.top - r.bottom) <= 14) && r.right > b.left - 4 && r.left < b.right + 4,
+          inside: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight,
+        };
+      });
+    check(await focusOn(page, '#offers .choice.pick'), '[SD5] el foco llega a la primera oferta de La Taberna');
+    const h1 = await hintAt();
+    check(h1?.a && h1.text.includes(T('ui.pad.comprar')) && h1.stuck && h1.inside, `[SD5] la oferta enfocada lleva la insignia Ⓐ «${T('ui.pad.comprar')}», pegada a ella y dentro de la pantalla (${h1?.text ?? 'sin insignia'})`);
+    await press(page, BTN.RIGHT);
+    await page.waitForTimeout(60);
+    const h2 = await hintAt();
+    check(h2?.a && h2.stuck && Math.abs((h2?.x ?? 0) - (h1?.x ?? 0)) > 20, `[SD5] al mover el foco, la insignia se mueve con él (${Math.round(h1?.x ?? 0)} → ${Math.round(h2?.x ?? 0)} px)`);
+    const verbs: [string, string][] = [['.run-belt .belt-slot[data-slot="0"]', 'ui.pad.elegir'], ['#reroll', 'ui.pad.renovar'], ['#go', 'ui.pad.seguir'], ['#deck-view', 'ui.pad.ver']];
+    const seen: string[] = [];
+    let belt: Awaited<ReturnType<typeof hintAt>> = null;
+    for (const [sel, key] of verbs) {
+      const reached = await focusOn(page, sel);
+      const h = reached ? await hintAt() : null;
+      if (key === 'ui.pad.elegir') belt = h;
+      if (h?.a && h.text.includes(T(key)) && h.stuck && h.inside) seen.push(T(key));
+      else console.log(`  · [SD5] ${sel}: ${reached ? 'enfocado' : 'no llega'} · ${JSON.stringify(h)} · foco en ${await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 90))}`);
+    }
+    check(seen.length === verbs.length && /LB/.test(belt?.text ?? '') && /RB/.test(belt?.text ?? '') && (belt?.text ?? '').includes(T('ui.pad.mover')), `[SD5] cada botón de La Taberna enseña su insignia (${seen.join(' · ')}) y la reliquia, también LB / RB ${T('ui.pad.mover')}`);
     check(await focusOn(page, '#offers .choice.pick:has(.card[data-id^="forja-"])'), 'el foco llega a la oferta de la Mesa de lacre');
+    const gold0 = (await run(page))!.gold;
+    const h3 = await hintAt();
+    check(h3?.a && h3.text.includes(T('ui.pad.comprar')), `[SD5] la Mesa de lacre enfocada dice «${T('ui.pad.comprar')}»`);
     await A();
     await page.waitForSelector('.pending-modal');
+    check(!(await hintAt()), '[SD5] Ⓐ abre la compra y, con la ventana abierta, la insignia de La Taberna se retira');
     check((await count(page, '.pending-modal .whisper')) === 1, 'la Mesa de lacre trae su susurro, dentro de la ventana');
     check(await focusOn(page, '.pending-modal .whisper-off'), 'el foco llega a «No mostrar más»');
     await A();
@@ -874,6 +1023,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       stamped = (await run(page))!.marks === marks + 1;
     }
     check(stamped, 'A estampa el lacre en la carta elegida');
+    check((await run(page))!.gold < gold0, `[SD5] y la compra se cobra (oro ${gold0} → ${(await run(page))!.gold})`);
     await shot(page, 'mando-lacre');
     await B();
     await page.waitForTimeout(200);

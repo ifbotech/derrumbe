@@ -3,8 +3,9 @@
 //
 // Desde la 6.1 la marca es dual y conectada: en español se titula SANGRE Y PALO y lleva,
 // de sello de lacre, BLOOD & SUITS; en inglés, al revés. Cada cara lleva siempre la otra
-// para que cualquier captura enseñe los dos nombres. El resto de la interfaz sigue en
-// español (el interruptor ES/EN completo llega en la V10).
+// para que cualquier captura enseñe los dos nombres. Desde la V10 el idioma se cambia al vuelo
+// (src/shared/i18n.ts): `LOCALE` y sus derivados son el idioma del navegador al cargar; para pintar
+// según el idioma elegido, `brandFor(getLang())`.
 
 export type Locale = 'es' | 'en';
 
@@ -37,6 +38,12 @@ const navegador =
 
 /** El idioma de marca de esta sesión (navigator.language al cargar; 'es' fuera del navegador). */
 export const LOCALE: Locale = brandLocale(navegador);
+
+/** La cara de la marca de un idioma (V10): título, sello, lema y frase. Para pintar al cambiar de idioma sin recargar. */
+export function brandFor(lang: Locale): { title: string; seal: string; subtitle: string; tagline: string; titleProse: string; fullTitle: string } {
+  const cara = BRAND[lang];
+  return { ...cara, titleProse: prosa(cara.title), fullTitle: `${cara.title} · ${prosa(cara.seal)}` };
+}
 
 /** Título del juego en el idioma de la sesión: «SANGRE Y PALO» o «BLOOD & SUITS». */
 export const TITLE = BRAND[LOCALE].title;

@@ -11,15 +11,20 @@
 //   npm run qa:smoke          (construye antes; NO_BUILD=1 para saltarse la construcción)
 //   NO_PAD=1 se salta la parte del mando virtual · GPU=1 lanza Chromium con aceleración
 //   QA_DIR=dist/qa-<celda> construye aparte · QA_OUT=artifacts/visual-qa-<celda> guarda allí las capturas
+//   --lang=en (o QA_LANG=en): la pasada en inglés (locale en-US); las capturas van a artifacts/visual-qa-en/smoke
+// V10: en las dos pasadas, el interruptor ES | EN con teclado y con mando (Portada y Ajustes, sin recargar),
+// «Alto contraste», que el idioma se recuerda al recargar y la insignia Ⓐ de La Taberna con mando (SD5).
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
-import { gamepadSuite, guidedRun, sealCheck } from './gamepad-qa';
+import { LANG, LOCALE, OTHER, T, gamepadSuite, guidedRun, langSwitchSuite, sealCheck } from './gamepad-qa';
+import { controlRows } from '../src/client/prompts';
+import { BRAND } from '../src/shared/brand';
 import { telemetrySuite } from './telemetry-qa';
 import { feedbackButtonsSuite } from './feedback-qa';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
-const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : 'artifacts/visual-qa/smoke');
+const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : LANG === 'en' ? 'artifacts/visual-qa-en/smoke' : 'artifacts/visual-qa/smoke');
 
 const problems: string[] = [];
 const check = (ok: unknown, what: string) => {
@@ -43,8 +48,9 @@ async function main(): Promise<void> {
   // navegador sin ventana lo pinta todo por CPU y los tiempos de fotograma solo son orientativos.
   const gpu = !!process.env.GPU;
   const browser = await chromium.launch(gpu ? { channel: 'chromium', args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-zero-copy'] } : {});
-  // La marca sale de navigator.language: se fija el español para ver siempre «SANGRE Y PALO».
-  const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES' });
+  // La marca y el idioma salen de navigator.language: es-ES en la pasada española, en-US en la inglesa.
+  console.log(`Pasada en ${LANG === 'en' ? 'inglés' : 'español'} (${LOCALE})`);
+  const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
   await context.addInitScript({ content: NAME_SHIM });
   const page = await context.newPage();
   page.on('pageerror', (e) => problems.push(`error de página: ${e.message}`));
@@ -52,6 +58,7 @@ async function main(): Promise<void> {
   mkdirSync(OUT, { recursive: true });
   await page.goto(`${site.url}?qa=1`);
   await page.waitForFunction(() => !!(window as unknown as { __qa?: unknown }).__qa);
+  check((await page.evaluate(() => document.documentElement.lang)) === LANG, `sin nada guardado, el idioma sale del navegador (${LOCALE} → <html lang="${LANG}">)`);
 
   // ── un golpe de verdad: el trío de sietes contra el trono apuntado ──
   await go(page, 'mesa');
@@ -185,7 +192,7 @@ async function main(): Promise<void> {
   await page.waitForTimeout(950);
   await page.keyboard.up('r');
   await page.waitForTimeout(300);
-  check((await count(page, '.run')) === 1 && /sobre/i.test((await page.locator('.deck-head h1').textContent()) ?? ''), 'mantener R 0,7 s reinicia la campaña (vuelve al sobre)');
+  check((await count(page, '.run')) === 1 && ((await page.locator('.deck-head h1').textContent()) ?? '').includes(T('ui.run.sobre.titulo')), 'mantener R 0,7 s reinicia la campaña (vuelve al sobre)');
 
   // ── susurro: una línea, sin tapar mano ni cuenta, con «No mostrar más» ──
   await go(page, 'mesa-susurro');
@@ -214,10 +221,10 @@ async function main(): Promise<void> {
   await go(page, 'mesa');
   const badges = await page.evaluate(() => {
     const fire = (window as unknown as { __qaProc: (ev: unknown) => void }).__qaProc;
-    const step = (label: string, proc: unknown) => ({ e: 'step', src: 'tool', id: 'x', label, fuerza: 0, res: 0, proc });
-    fire(step('Ariete: +12 de Daño', { what: 'fuerza', n: 12 }));
-    fire(step('Rodela de púas: devuelve 12', { what: 'dano', n: 12, tower: 'S' }));
-    fire(step('Copa rebosante: cura 2', { what: 'repara', n: 2 }));
+    const step = (id: string, label: string, proc: unknown) => ({ e: 'step', src: 'tool', id, label, fuerza: 0, res: 0, proc });
+    fire(step('ariete', 'Ariete: +12 de Daño', { what: 'fuerza', n: 12 }));
+    fire(step('contragolpe', 'Rodela de púas: devuelve 12', { what: 'dano', n: 12, tower: 'S' }));
+    fire(step('rebosadero', 'Copa rebosante: cura 2', { what: 'repara', n: 2 }));
     const read = (cls: string) => {
       const el = document.querySelector<HTMLElement>(`.proc-badge.${cls}`);
       if (!el) return null;
@@ -229,9 +236,10 @@ async function main(): Promise<void> {
     const bunker = document.querySelector('#bunker')!.getBoundingClientRect();
     return { f: read('fuerza'), d: read('dano'), r: read('repara'), tower: [tower.left, tower.right], bunker: [bunker.left, bunker.right] };
   });
-  check(badges.f?.text.includes('+12') && badges.f.text.includes('Daño') && badges.f.text.includes('Ariete'), 'Ariete enseña «+12 Daño · Ariete»');
-  check(badges.d?.text.includes('−12') && badges.d.text.includes('Rodela de púas') && badges.d.x >= badges.tower[0] && badges.d.x <= badges.tower[1], 'la Rodela de púas enseña «−12 · Rodela de púas» sobre su trono');
-  check(badges.r?.text.includes('+2 Vida') && badges.r.x >= badges.bunker[0] - 60 && badges.r.x <= badges.bunker[1] + 60, 'la Copa rebosante enseña «+2 Vida» sobre tu Vida');
+  const [ariete, rodela, dano, vida] = [T('reliquia.ariete.nombre'), T('reliquia.contragolpe.nombre'), T('ui.proc.dano'), T('ui.proc.vida')];
+  check(badges.f?.text.includes('+12') && badges.f.text.includes(dano) && badges.f.text.includes(ariete), `${ariete} enseña «+12 ${dano} · ${ariete}» (${badges.f?.text})`);
+  check(badges.d?.text.includes('−12') && badges.d.text.includes(rodela) && badges.d.x >= badges.tower[0] && badges.d.x <= badges.tower[1], `${rodela} enseña «−12 · ${rodela}» sobre su trono`);
+  check(badges.r?.text.includes(`+2 ${vida}`) && badges.r.x >= badges.bunker[0] - 60 && badges.r.x <= badges.bunker[1] + 60, `la reliquia que cura enseña «+2 ${vida}» sobre tu Vida`);
   check([badges.f, badges.d, badges.r].every((b) => b && b.size >= 14 && !/Unifraktur|Grenze/i.test(b.font)), 'la cifra de las insignias va en sans de peso alto (≥ 14 px, nunca gótica)');
   check(badges.f?.dur === '1.2s', 'cada insignia dura 1,2 s a velocidad normal');
   check((await sounds(page)).filter((x) => x === 'proc').length >= 3, 'cada insignia trae su sonido');
@@ -277,17 +285,22 @@ async function main(): Promise<void> {
   check(await page.evaluate(() => document.documentElement.classList.contains('inks2')), 'el ajuste cambia a 2 tintas clásicas');
   await page.locator('#set-toggles button').nth(2).click();
   check(await page.evaluate(() => !document.documentElement.classList.contains('inks2')), '…y vuelve a 4 tintas de taller');
-  const whisperRow = page.locator('#set-toggles .set', { hasText: 'Susurros' }).locator('button');
-  check((await whisperRow.textContent()) === 'Sí', 'Ajustes tiene la fila «Susurros» (encendidos)');
+  const whisperRow = page.locator('#set-toggles .set-susurros').locator('button');
+  const [si, no] = [T('ui.si'), T('ui.no')];
+  check((await page.locator('#set-toggles .set-susurros b').textContent()) === T('ui.w.ajuste') && (await whisperRow.textContent()) === si, `Ajustes tiene la fila «${T('ui.w.ajuste')}» (encendidos)`);
   await whisperRow.click();
-  check((await whisperRow.textContent()) === 'No' && (await whispers(page, (x) => x.off())), 'se apagan desde Ajustes');
+  check((await whisperRow.textContent()) === no && (await whispers(page, (x) => x.off())), 'se apagan desde Ajustes');
   await whisperRow.click();
-  check((await whisperRow.textContent()) === 'Sí' && !(await whispers(page, (x) => x.off())), 'y se vuelven a encender');
+  check((await whisperRow.textContent()) === si && !(await whispers(page, (x) => x.off())), 'y se vuelven a encender');
   const pads = await page.locator('.keys tr td:nth-child(3)').allTextContents();
   check(pads.length >= 12 && !pads.some((t) => t.trim() === '—' || t.trim() === ''), 'en la tabla de controles ninguna acción se queda sin mando');
   check(pads.some((t) => t.includes('L3')) && pads.some((t) => t.includes('R3')) && pads.some((t) => t.includes('LB / RB')), 'la tabla enseña L3 (descartar), R3 (pantalla completa) y LB / RB (reliquias)');
   const rows = await page.locator('.keys tr td:nth-child(1)').allTextContents();
-  check(['Guardar en La Manga', 'Rebobinar (deshacer)', 'Reordenar las reliquias', 'Golpear el trono apuntado'].every((r) => rows.includes(r)), 'la tabla de controles habla de La Manga, Rebobinar, reliquias y tronos');
+  const want = controlRows(LANG).map((r) => r.map((c) => c.replace(/<[^>]+>/g, '')));
+  check(['ui.ctl.manga', 'ui.ctl.rebobinar', 'ui.ctl.reliquias', 'ui.ctl.golpear'].every((k) => rows.includes(T(k))), 'la tabla de controles habla de La Manga, Rebobinar, reliquias y tronos');
+  const shown = await page.locator('.keys tr').evaluateAll((trs) => trs.slice(1).map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent ?? '')));
+  check(JSON.stringify(shown) === JSON.stringify(want), `la tabla de Ajustes es la de prompts.ts en el idioma de la mesa (${shown.length} filas)`);
+  check(await page.evaluate(() => [...document.querySelectorAll('.keys td kbd')].every((k) => k.classList.contains('kt')) && document.querySelectorAll('.keys td kbd').length >= 15), 'cada tecla y botón de la tabla va en su <kbd>');
   await page.keyboard.press('Escape');
 
   // ── colección: la Lupa abre también barajas y monarcas, con su sello de maestría ──
@@ -299,6 +312,36 @@ async function main(): Promise<void> {
   check((await count(page, '.lupa .lupa-epi')) === 1, 'la Lupa de un monarca trae su epígrafe');
   await page.screenshot({ path: join(OUT, 'lupa-jefe.png') });
   await page.keyboard.press('Escape');
+
+  // ── V10 · el interruptor ES | EN y «Alto contraste» con el teclado; el idioma se recuerda al recargar ──
+  console.log('Idioma');
+  await langSwitchSuite(page, 'keys', check);
+  {
+    // con el guardado de verdad (sin ?qa, que lo vuelve de quita y pon), en un perfil limpio de Playwright
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
+    await ctx.addInitScript({ content: NAME_SHIM });
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => problems.push(`[idioma] error de página: ${e.message}`));
+    await p.goto(site.url);
+    await p.waitForSelector('#home-lang');
+    const pick = async (to: string) => {
+      await p.locator(`#home-lang [data-lang="${to}"]`).focus();
+      await p.keyboard.press('Enter');
+      await p.waitForTimeout(100);
+    };
+    const reloaded = async () => {
+      await p.reload();
+      await p.waitForSelector('#home-lang');
+      return p.evaluate(() => ({ lang: document.documentElement.lang, stored: localStorage.getItem('derrumbe:idioma'), title: document.querySelector('.home h1.title')?.getAttribute('aria-label') ?? '' }));
+    };
+    await pick(OTHER);
+    const a = await reloaded();
+    check(a.lang === OTHER && a.stored === OTHER && a.title === BRAND[OTHER].title, `al recargar, el juego sigue en ${OTHER.toUpperCase()} aunque el navegador diga ${LOCALE} («${a.title}»)`);
+    await pick(LANG);
+    const b = await reloaded();
+    check(b.lang === LANG && b.stored === LANG && b.title === BRAND[LANG].title, `y vuelve a ${LANG.toUpperCase()} con el interruptor, también tras recargar («${b.title}»)`);
+    await ctx.close();
+  }
 
   // ── V7 · la partida guiada se juega entera: con el teclado (medida) y con el ratón ──
   console.log('Partida guiada');
@@ -416,7 +459,7 @@ async function main(): Promise<void> {
   // ── copia de seguridad, con el guardado de verdad (sin ?qa): exportar, perderlo todo e importar ──
   console.log('Copia de seguridad');
   {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES', acceptDownloads: true });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE, acceptDownloads: true });
     await ctx.addInitScript({ content: NAME_SHIM });
     const p = await ctx.newPage();
     p.on('pageerror', (e) => problems.push(`[copia] error de página: ${e.message}`));
@@ -450,14 +493,14 @@ async function main(): Promise<void> {
     // …un archivo cualquiera no cuela…
     await p.locator('#set-file').setInputFiles({ name: 'otra-cosa.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"otro","data":{}}') });
     await p.waitForTimeout(300);
-    check((await p.locator('.modal-box.confirm').count()) === 0 && (await p.locator('.toast').last().textContent())?.includes('no es una copia'), 'Importar rechaza un archivo que no es una copia del juego');
+    check((await p.locator('.modal-box.confirm').count()) === 0 && (await p.locator('.toast').last().textContent())?.includes(T('ui.copia.ajena', { titulo: '' }).split(' ').slice(0, 4).join(' ')), 'Importar rechaza un archivo que no es una copia del juego');
     await p.locator('#set-file').setInputFiles({ name: 'rota.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ app: 'derrumbe', data: { 'derrumbe:meta': '{rota' } })) });
     await p.waitForTimeout(300);
     check((await p.locator('.modal-box.confirm').count()) === 0, 'y una copia dañada, sin tocar lo guardado');
     // …y la copia buena lo devuelve todo, previa confirmación
     await p.locator('#set-file').setInputFiles(saved);
     await p.waitForSelector('.modal-box.confirm');
-    check((await p.locator('.modal-box.confirm').textContent())?.includes('77 ✦ Coronas'), 'antes de importar se enseña qué trae la copia');
+    check(/77 ✦ (Coronas|Crowns)/.test((await p.locator('.modal-box.confirm').textContent()) ?? ''), 'antes de importar se enseña qué trae la copia');
     await Promise.all([p.waitForEvent('load'), p.locator('#yes').click()]);
     await p.waitForSelector('#m-guild');
     check((await guild())?.includes('77 ✦'), 'Importar progreso recupera la Orden tras recargar');
@@ -615,7 +658,7 @@ async function juiceChecks(page: Page): Promise<void> {
 
 /** V8 · «Reducir movimiento»: un contexto aparte con reducedMotion 'reduce'. Caída del trono, tajo y monedas sin nada en vuelo. */
 async function calmPass(browser: Browser, url: string): Promise<void> {
-  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'es-ES', reducedMotion: 'reduce' });
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE, reducedMotion: 'reduce' });
   await ctx.addInitScript({ content: NAME_SHIM });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => problems.push(`[calma] error de página: ${e.message}`));

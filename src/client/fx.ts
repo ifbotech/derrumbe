@@ -10,6 +10,9 @@ import { cardEl } from './card';
 import { $, S, settings } from './core';
 import { coinPieces, crownShards, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import { inputMode } from './nav';
+import { L, getLang } from './lengua';
+import { hasKey, tFor } from '../shared/i18n';
+import { pasoFor } from '../rules/textos';
 
 /** Factor de tiempo: más rápido si hay jugadas en cola o el jugador eligió 2× / 4×. */
 export const speed = () => (S.queue.length > 0 ? 0.3 : 1) / settings.speed;
@@ -102,6 +105,8 @@ function warmUp(): void {
     return c;
   });
   for (const el of [...all, ...waxes, ...[card, ...foils].map((c) => c.querySelector('.foil-band'))]) el?.animate(move, { duration: 140 });
+  // V8-7: el lacre que se enfría (transición de opacidad) mientras pasa una lámina pagaba ~55 ms en frío
+  window.setTimeout(() => waxes.forEach((w) => w.classList.remove('caliente')), 40);
   window.setTimeout(() => {
     box.remove();
     for (const el of [...all, ...waxes]) {
@@ -528,11 +533,14 @@ export const exactChain = () => chain;
 export function procBadge(ev: GameEvent): void {
   if (ev.e !== 'step' || !ev.proc) return;
   const { what, n, tower } = ev.proc;
-  const who = ev.label.includes(': ') ? ev.label.slice(0, ev.label.indexOf(': ')) : ev.label;
+  // V10: en inglés, el nombre de la reliquia por su clave (el motor lo deja escrito en español)
+  const lang = getLang();
+  const label = lang === 'es' ? ev.label : ev.src === 'tool' && ev.id && hasKey(lang, `reliquia.${ev.id}.nombre`) ? tFor(lang, `reliquia.${ev.id}.nombre`) : pasoFor(lang, ev);
+  const who = label.includes(': ') ? label.slice(0, label.indexOf(': ')) : label;
   const [num, word, at] =
-    what === 'fuerza' ? [`+${n}`, 'Daño', $('#score .calc') ?? $('#score')]
-    : what === 'carga' ? [`+${n}`, 'Daño guardado', $('#score .calc') ?? $('#score')]
-    : what === 'repara' ? [`+${n}`, 'Vida', $('#bunker')]
+    what === 'fuerza' ? [`+${n}`, L('ui.proc.dano'), $('#score .calc') ?? $('#score')]
+    : what === 'carga' ? [`+${n}`, L('ui.proc.carga'), $('#score .calc') ?? $('#score')]
+    : what === 'repara' ? [`+${n}`, L('ui.proc.vida'), $('#bunker')]
     : [`−${n}`, '', (tower && $(`.tower[data-suit="${tower}"] .floor-slot`)) || $('#score')];
   if (!at) return;
   const r = at.getBoundingClientRect();
@@ -549,8 +557,28 @@ export function procBadge(ev: GameEvent): void {
   setTimeout(() => el.remove(), 1250);
 }
 // la prueba de humo dispara insignias a mano (con ?qa): no depende de que el azar traiga la reliquia
+/**
+ * V8-7: el primer temblor de la mesa (`quake`) sube `.table-screen` entera a su propia capa, y la primera
+ * vez la GPU tarda en prepararla (hasta 230 ms en 390 px). La primera vez que aparece una mesa, en cuanto
+ * el navegador está libre, la mesa hace un temblor de una centésima de píxel (nada se ve) y el golpe de verdad ya no lo paga.
+ */
+function warmTable(): void {
+  if (!document.body) return;
+  const watch = new MutationObserver(() => {
+    const el = document.querySelector('.table-screen');
+    if (!el) return;
+    watch.disconnect();
+    const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 200));
+    idle(() => {
+      if (settings.calm || !el.isConnected) return;
+      // una centésima de píxel: con 0 px el navegador se salta la animación y no prepara la capa
+      el.animate([{ transform: 'translate(0px, 0.01px)' }, { transform: 'none' }], { duration: 60 });
+    });
+  });
+  watch.observe(document.body, { childList: true, subtree: true });
+}
 // la reserva se calienta en cuanto la página pinta su primer fotograma
-requestAnimationFrame(() => requestAnimationFrame(warmUp));
+requestAnimationFrame(() => requestAnimationFrame(() => (warmUp(), warmTable())));
 if (new URLSearchParams(location.search).has('qa'))
   Object.assign(window, {
     __qaProc: procBadge,

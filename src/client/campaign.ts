@@ -1,10 +1,10 @@
 // Campaña (roguelike). En solitario corre en local con el mismo reductor que usa el servidor
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
-import { Action, Card, RuleError, applyAction, cardLabel, viewFor } from '../rules/engine';
+import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { BOSS, CONTRACT, RUN_VERSION, Run, RunAction, RunOpts, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
-import { SPECIAL } from '../rules/specials';
-import { TOOL } from '../rules/tools';
+import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
+import { errorFor } from '../rules/textos';
+import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
 import { sfx } from './audio';
 import { cardEl, portraitEl } from './card';
 import { $, Campaign, RUN_PLAYER, S, loadJson, modal, toast } from './core';
@@ -55,7 +55,7 @@ export function retireOldSave(): void {
   const gain = Math.max(1, Math.min(8, Math.floor(Number(old.run.stage) || 1) - 1));
   meta.renown += gain;
   saveMeta();
-  setTimeout(() => toast(`Tu campaña anterior era de otra versión: se cerró y cobras ${gain} ✦`), 600);
+  setTimeout(() => toast(L('ui.camp.vieja', { n: gain })), 600);
 }
 export const isRunHost = () => !!S.campaign && (!S.campaign.online || S.lobby?.host === S.session?.playerId);
 export const runOpts = (): RunOpts => ({ up: meta.up, ascension: Math.min(prefs.ascension, meta.ascMax), deck: deckUnlocked(meta, prefs.deck) ? prefs.deck : 'obra', pool: unlockedPool(meta), seedText: prefs.seed.trim() || undefined });
@@ -98,7 +98,7 @@ export function restartCampaign(): void {
   const { run } = c;
   document.querySelectorAll('.modal, .end:not(.in-page)').forEach((m) => m.remove());
   begin(run.daily ? { daily: run.daily } : { ...runOpts(), ascension: run.ascension, deck: run.deckId, seedText: undefined });
-  toast('Campaña reiniciada: misma baraja, mismo Reinado');
+  toast(L('ui.camp.reiniciada'));
 }
 
 export function resumeCampaign(): void {
@@ -113,13 +113,13 @@ export function resumeCampaign(): void {
 export function runDo(a: RunAction): void {
   const c = S.campaign;
   if (!c) return;
-  if (!isRunHost()) return toast('En campaña decide el anfitrión.');
+  if (!isRunHost()) return toast(L('ui.camp.anfitrion'));
   if (c.online) return sendMsg({ t: 'run', action: a });
   const prev = structuredClone(c.run);
   const err = a.t === 'reorder' ? reorderBelt(c.run, c.state, a.order) : runAction(c.run, a);
   if (err) {
     if (err.includes('oro')) ferreteroSays('poor');
-    return toast(err);
+    return toast(errorFor(getLang(), err));
   }
   saveCampaign();
   if (a.t === 'reorder' && S.screen === 'table') {
@@ -173,28 +173,28 @@ function afterRunChange(prev: Run | null): void {
     return old ? old.seal !== c.seal || old.tr !== c.tr : surprise ? !!(c.seal || c.tr || c.sp) || prev.pending?.kind === 'dup' : !!c.sp;
   });
   const tools = surprise ? run.tools.filter((t) => !prev.tools.some((o) => o.id === t.id)).map((t) => t.id) : [];
-  if (cards.length || tools.length) reveal(cards, tools, blind ? 'Del Sobre a ciegas' : 'Ha llegado');
+  if (cards.length || tools.length) reveal(cards, tools, blind ? L('ui.camp.ciegas') : L('ui.camp.llegado'));
   const gold = run.gold - prev.gold;
   if (surprise && prev.phase !== 'battle' && gold > 0) {
     sfx.coins(gold);
-    toast(`+${gold} de oro`);
+    toast(L('ui.camp.oro', { n: gold }));
   }
 }
 
 /** Enseña cartas y herramientas recién llegadas. */
 export function reveal(cards: Card[], tools: string[], title: string): void {
   document.querySelector('.reveal')?.remove();
-  const el = modal(`<div class="reveal-box"><small>${title}</small><div class="choices"></div><button class="primary x">Entendido</button></div>`, { cls: 'reveal' });
+  const el = modal(`<div class="reveal-box"><small>${title}</small><div class="choices"></div><button class="primary x">${L('ui.camp.entendido')}</button></div>`, { cls: 'reveal' });
   const box = $('.choices', el);
   cards.slice(0, 6).forEach((c, i) => {
     const ce = cardEl(c);
     dealIn(ce, 150 + i * 220);
-    box.appendChild(choice(ce, c.sp ? SPECIAL[c.sp].name : cardLabel(c), ce.dataset.tip?.replace(/<[^>]+>/g, ' ') ?? '', null, null));
+    box.appendChild(choice(ce, cartaN(c), ce.dataset.tip?.replace(/<[^>]+>/g, ' ') ?? '', null, null));
   });
   tools.forEach((id, i) => {
     const te = toolTile(id);
     dealIn(te, 150 + (cards.length + i) * 220);
-    box.appendChild(choice(te, TOOL[id].name, TOOL[id].desc, null, null));
+    box.appendChild(choice(te, relN(id), relD(id), null, null));
   });
   sfx.stamp();
 }
@@ -243,7 +243,7 @@ export function campaignAct(action: Action): void {
     S.queue.push({ view: viewFor(res.state, RUN_PLAYER), events: res.events });
     void pump();
   } catch (err) {
-    toast(err instanceof RuleError ? err.message : 'Jugada inválida');
+    toast(err instanceof RuleError ? errorFor(getLang(), err.message) : L('ui.camp.invalida'));
   }
 }
 
@@ -261,17 +261,16 @@ export function stageIntro(): void {
   const mark = `${c.key}:${run.stage}`;
   if (introFor === mark) return;
   introFor = mark;
-  const st = stageDef(run.stage);
-  ribbon(`Asalto ${run.stage} · ${st.name}`);
-  if (run.contract) logLine(`<b>Contrato: ${CONTRACT[run.contract].name}.</b> ${CONTRACT[run.contract].desc} Premio: ${CONTRACT[run.contract].reward}.`, 'yel');
+  ribbon(L('ui.camp.cinta', { n: run.stage, nombre: asaltoN(run.stage) }));
+  if (run.contract) logLine(L('ui.camp.contrato', { nombre: juraN(run.contract), desc: juraD(run.contract), premio: juraP(run.contract) }), 'yel');
   if (!run.boss) return;
   const boss = BOSS[run.boss];
-  const el = modal(`<div class="boss-box"><div class="boss-card"></div><div><small>Monarca</small><h2>${boss.who}</h2><h3>Decreto: ${boss.name}</h3><p>${boss.desc}</p><button class="primary x">Al asalto</button></div></div>`, { cls: 'boss-intro' });
-  const card = portraitEl(`j-${boss.id}`, boss.who);
+  const el = modal(`<div class="boss-box"><div class="boss-card"></div><div><small>${L('ui.run.monarca')}</small><h2>${monN(boss.id)}</h2><h3>${L('ui.camp.decreto', { x: monDec(boss.id) })}</h3><p>${monD(boss.id)}</p><button class="primary x">${L('ui.run.al.asalto')}</button></div></div>`, { cls: 'boss-intro' });
+  const card = portraitEl(`j-${boss.id}`, monN(boss.id));
   dealIn(card, 0);
   $('.boss-card', el).appendChild(card);
   el.addEventListener('click', () => el.remove());
   sfx.siren();
-  logLine(`<b>Monarca: ${boss.who}.</b> ${boss.desc}`, 'red');
+  logLine(L('ui.camp.monarca.log', { quien: monN(boss.id), desc: monD(boss.id) }), 'red');
   voiceEnter(run.boss); // juice-ux: su frase de entrada, al cerrarse la presentación
 }

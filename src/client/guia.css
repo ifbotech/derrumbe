@@ -14,6 +14,7 @@
 .monarca .o { stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; }
 .monarca .o-pp { stroke: var(--card-paper); stroke-width: 2; stroke-linejoin: round; }
 .monarca .o-thin { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
+.monarca .o-recio { stroke-width: 4; } /* V10 · V7-8: contorno que no se empasta al bajar a 24 px */
 .monarca .o-thin.m-paper { stroke: var(--card-paper); }
 .monarca .m-x { fill: none; stroke: var(--red-lit); stroke-width: 2.6; stroke-linecap: round; }
 .monarca .m-crack { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linejoin: bevel; }

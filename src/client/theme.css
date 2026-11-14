@@ -380,7 +380,7 @@ input::placeholder { color: #8a7f6d; }
 .hand.locked .card, .handrow.locked .reserve .card { filter: none; opacity: 0.82; cursor: default; }
 .hand .card.sel .ly.paper, .reserve .card.sel .ly.paper { box-shadow: 0 0 0 4px var(--red-lit), 0 8px 0 #0a0908; }
 .hand .card.hint .ly.paper { box-shadow: 0 0 0 4px var(--hazard), 0 6px 0 #0a0908; }
-.hand .card[data-n]::after, .reserve .card[data-n]::after { content: attr(data-n); position: absolute; z-index: 8; right: -6px; top: -8px; min-width: 1.5em; text-align: center; font-family: var(--display); font-size: clamp(13px, 1.6vh, 16px); line-height: 1.5; background: var(--red); color: var(--card-paper); border: 2px solid var(--pit); }
+.hand .card[data-n]::after, .reserve .card[data-n]::after { content: attr(data-n); position: absolute; z-index: 8; right: -6px; top: -8px; min-width: 1.5em; text-align: center; font-family: var(--display); font-size: max(16px, 1.6vh); line-height: 1.5; background: var(--red); color: var(--card-paper); border: 2px solid var(--pit); }
 .hand .card[data-key]:not([data-key=''])::before { background: var(--pit); border: 1px solid var(--line); top: auto; bottom: -1.7em; }
 .actions { flex: none; display: grid; gap: clamp(4px, 0.7vh, 8px); align-content: end; min-width: clamp(120px, 11vw, 170px); }
 .actions button[hidden] { display: none; }
@@ -752,6 +752,8 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 .star-mini { font-size: max(13px, 0.7em); }
 .corner .glyph { stroke: var(--ink); stroke-width: 1.3; paint-order: stroke; overflow: visible; }
 .corner .glyph.s-S { stroke: var(--card-paper); stroke-width: 0.9; paint-order: normal; }
+/* V10 P0-1: el palo de la esquina de la mano y de La Manga no baja de 14 px (10 en el móvil); la carta no cambia */
+.hand .card .corner .glyph, .reserve .card .corner .glyph { width: max(14px, calc(var(--w) * 0.15)); height: max(14px, calc(var(--w) * 0.155)); }
 svg.ly.weave { width: 100%; height: 100%; opacity: 0.62; }
 /* el texto del grabado (nombres en la banda, «SOTA · ACERO» al canto) se retira en las cartas pequeñas:
    tamaño en pantalla = cuerpo × ancho de la carta / 250 × 0,987; por debajo de 13 px vale 0 */
@@ -790,7 +792,7 @@ svg.ly.weave { width: 100%; height: 100%; opacity: 0.62; }
 .inkstamp { font-size: max(13px, 1.8vh); }
 
 /* ── índices de la mano: placa de tinta con número en papel, legibles sobre corazones ── */
-.hand .card[data-n]::after, .reserve .card[data-n]::after { font-size: max(13px, 1.6vh); background: var(--pit); color: var(--card-paper); border: 2px solid var(--card-paper); }
+.hand .card[data-n]::after, .reserve .card[data-n]::after { font-size: max(16px, 1.6vh); background: var(--pit); color: var(--card-paper); border: 2px solid var(--card-paper); }
 .hand .card.sel[data-n]::after, .reserve .card.sel[data-n]::after { background: var(--red); border-color: var(--pit); }
 .hand .card[data-key]:not([data-key=''])::before { font-size: 13px; }
 
@@ -1095,7 +1097,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   /* en la carta de 44 px del móvil (un 10 llena casi todo el alto con sus esquinas) el sello va sin palo,
      con filete fino y asomando por el canto izquierdo, justo debajo del índice de arriba */
-  .card > .plate.factor { left: -5px; top: 42%; translate: none; padding: 0 3px; gap: 0; border-width: 1.5px; box-shadow: 0 1px 0 var(--pit); }
+  .card > .plate.factor { left: -5px; top: 47%; translate: none; padding: 0 3px; gap: 0; border-width: 1.5px; box-shadow: 0 1px 0 var(--pit); }
   .card > .plate.factor b { font-size: 14px; line-height: 1; letter-spacing: -0.03em; }
   .card > .plate.factor .glyph, .card > .plate.factor.iron::after { display: none; }
 }
@@ -1249,3 +1251,186 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
    barra: no tapan la mano ni la cuenta. Solo transform en su entrada y salida. */
 body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padding: 5px 12px; font-size: clamp(14px, 1.8vh, 17px); max-width: calc(100vw - 32px); animation-name: toast-arriba; }
 @keyframes toast-arriba { 0% { transform: translate(-50%, -90px); } 6%, 90% { transform: translate(-50%, 0); } 100% { transform: translate(-50%, -120px); } }
+
+/* ───────────── V10 · Interruptor ES | EN (portada, junto al candado, y fila «Idioma · Language» de Ajustes) ─────────────
+   Dos dianas de 44 px con 8 px de aire y la barra de imprenta en medio. La activa va entintada (y con
+   aria-pressed); la otra, en hueco. Cifras no hay: las etiquetas van en la mono de peso alto. */
+.lang-switch { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; margin: 0; padding: 4px; background: var(--pit); border: 2px solid var(--paper-3); }
+.lang-switch .lang-opt { min-width: 52px; min-height: 44px; margin: 0; padding: 0 10px; font-family: var(--mono); font-weight: 800; font-size: 16px; letter-spacing: 0.08em; line-height: 1; color: var(--card-paper); --bg: var(--pit); background: var(--pit); border: 2px solid var(--paper-3); box-shadow: none; text-transform: uppercase; cursor: pointer; }
+.lang-switch .lang-opt[aria-pressed='true'] { --bg: var(--card-paper); background: var(--card-paper); color: var(--ink); border-color: var(--card-paper); box-shadow: inset 0 -4px 0 var(--red); }
+.lang-switch .lang-opt[aria-pressed='false']:hover { --bg: var(--table-3); background: var(--table-3); }
+.lang-switch .lang-opt:focus-visible { outline: 3px solid var(--hazard); outline-offset: 2px; box-shadow: 0 0 0 5px var(--card-paper); transform: scale(1.04); }
+.lang-switch .lang-sep { color: var(--paper-3); font-family: var(--mono); font-weight: 800; font-size: 16px; user-select: none; }
+/* en Ajustes, sobre papel: la misma pieza en tinta */
+.set .lang-switch { align-self: center; background: var(--ink); border-color: var(--ink); }
+.home-left .lang-switch { margin-top: clamp(2px, 0.8vh, 10px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .lang-switch .lang-opt { min-height: 48px; font-size: 16px; }
+}
+
+/* ───────────── V10 · SD2 · Ajustes en dos columnas desde 1200 px ─────────────
+   Izquierda: feedback, datos de prueba, idioma, servidor, progreso y comunidad. Derecha: volumen y
+   los conmutadores. Debajo, a todo lo ancho, los controles. Por debajo de 1200 px, una sola columna. */
+.set-cols { display: block; }
+@media (min-width: 1200px) {
+  .settings:has(.set-cols) { max-width: min(1140px, calc(100vw - 48px)); }
+  .set-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 32px; align-items: start; }
+  /* la columna del aviso de prueba, el idioma y el progreso va a la derecha, bajo «Cerrar»: con flechas o
+     cruceta se baja de «Cerrar» a ella sin cruzar los deslizadores (que se quedan las flechas para su valor) */
+  .set-col-a { order: 2; }
+}
+
+/* ───────────── V10 · Alto contraste (Ajustes; de serie con prefers-contrast: more) ─────────────
+   Solo cambian colores, grosores de contorno que no ocupan sitio (outline y box-shadow) y la textura de la
+   mesa: las cajas no se mueven ni un píxel (regla «contraste-alto» de la QA, contra las de «mesa»). Tinta
+   negra sobre papel claro; sobre la mesa, papel claro; los acentos se oscurecen (sobre papel) o se aclaran
+   (sobre tinta) hasta ≥ 7:1 en todo texto de juego. */
+:root.contraste {
+  --ink: #000;
+  --pit: #000;
+  --table: #0b0a09;
+  --table-2: #121110;
+  --table-3: #1a1816;
+  --table-4: #2a2620;
+  --card-paper: #f6efe1;
+  --paper: #f6efe1;
+  --paper-2: #efe6d3;
+  --paper-3: #e6dac2;
+  --red: #861a12;
+  --red-lit: #ffb2a4;
+  --ochre: #7a4608;
+  --hazard: #f0b25a;
+  --gold: #f0b85a;
+  --verd: #0f3a32;
+  --verd-lit: #9bdccb;
+  --blue: #102f42;
+  --glass: #cfe2d8;
+  --manila: #ecd29f;
+  --dim: #e2d9c6;
+  --line: rgba(246, 239, 225, 0.42);
+  --noise: none;
+  --grain-paper: none;
+}
+/* la mesa sin textura de grano ni de ladrillo: un liso apenas veteado */
+:root.contraste body, :root.contraste .table-screen, :root.contraste .home-left { background-image: none; }
+:root.contraste .plate.iron { background: #2b2925; color: #f6efe1; }
+:root.contraste .plate.iron .glyph { fill: #f6efe1; }
+:root.contraste .wn.immune circle { fill: #2b2925; }
+/* contornos más gruesos sin ocupar sitio: el filete de los botones sobre la mesa, en papel (box-shadow no mueve la caja) */
+:root.contraste .bar button, :root.contraste .actions button { box-shadow: 0 0 0 2px var(--card-paper); }
+:root.contraste .card .glyph, :root.contraste .suit-glyph { stroke: #000; stroke-width: 1.5px; paint-order: stroke; }
+:root.contraste :focus-visible { outline: 3px solid var(--hazard) !important; outline-offset: 2px; box-shadow: 0 0 0 5px var(--card-paper); }
+/* las tramas de palo, más gruesas: el palo se distingue sin color también de lejos */
+:root.contraste :is(#pat-S, #trama-S) path { stroke-width: 4.6px; }
+:root.contraste :is(#pat-H, #trama-H) path { stroke-width: 2.8px; }
+:root.contraste :is(#pat-C, #trama-C) path { stroke-width: 2.6px; }
+:root.contraste pattern[id^='pat-'] circle, :root.contraste pattern[id^='trama-'] circle { r: 2.6px; }
+
+/* V10 · en inglés «SETTINGS» es más largo que «AJUSTES»: en la barra del móvil se lleva el sitio que le sobra a «1×» */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :root[lang='en'] .bar #btn-set { flex-grow: 1.45; }
+  :root[lang='en'] .bar #btn-speed { flex-grow: 0.7; }
+}
+
+/* V10 · SD2 · en dos columnas, la hoja entera cabe sin desplazar en 1366×768 y 1280×800: cabecera más baja,
+   filas más prietas, controles más estrechos y Progreso con sus dos botones uno encima del otro. Los
+   controles del teclado y del mando quedan debajo, a todo lo ancho (se llega desplazando). */
+@media (min-width: 1200px) {
+  .modal-box.settings { padding-top: 12px; padding-bottom: 14px; max-height: 96vh; line-height: 1.4; }
+  .modal-box.settings > h2 { font-size: 34px; margin-bottom: 8px; padding-bottom: 4px; }
+  .settings .set { padding: 4px 0; gap: 10px; }
+  .settings .set > div > span { line-height: 1.32; }
+  .settings .fb { margin: 0 0 6px; padding: 8px 10px; }
+  .settings .slider { grid-template-columns: minmax(110px, 150px) 3ch; }
+  .settings .server-edit input { width: 170px; }
+  .settings .set-progreso .server-edit { flex-direction: column; gap: 8px; }
+}
+
+/* ───────────── V10 · SD3 · tres pesos en los botones de acción de la mesa (escritorio y Steam Deck) ─────────────
+   Golpear, la primaria (como siempre, la mayor). Descartar, secundaria con tinta propia (azul de taller).
+   Soltar, terciaria: sin relleno, filete discontinuo. 48 px de alto y 12 px de aire entre botones. */
+@media not all and (max-aspect-ratio: 1/1) {
+  @media (min-width: 641px) {
+    .actions { gap: 12px; }
+    #app .actions button { min-height: 48px; }
+    #app #btn-strike, #app #btn-pass { min-height: 56px; }
+    #btn-discard { --bg: var(--blue); --bd: var(--pit); color: var(--card-paper); }
+    #btn-discard:hover:not(:disabled) { --bg: var(--hazard); color: var(--ink); }
+    #btn-clear { --bg: transparent; --bd: var(--paper-3); --sh: none; color: var(--card-paper); border-style: dashed; }
+    #btn-clear:hover:not(:disabled) { --bg: var(--table-3); color: var(--hazard); }
+    .table-screen #btn-discard:disabled { --bg: #23394a; color: var(--dim); }
+    .table-screen #btn-clear:disabled { --bg: transparent; color: var(--dim); }
+  }
+}
+/* 1366 × 768: la bandeja no tiene 24 px de más sin montarse en el lateral. Golpear se queda en 48 y los
+   demás en 44 (lo que permite SD3 en esta ventana, anotado en la bitácora); los 12 px de aire se mantienen */
+@media (min-width: 1300px) and (max-width: 1400px) and (max-height: 780px) {
+  #app .actions button { min-height: 44px; }
+  #app #btn-strike, #app #btn-pass { min-height: 48px; }
+  .table-screen .tray { padding-top: 2px; }
+}
+
+/* ───────────── V10 · SD4 · marcas de ventaja y cifras de la cuenta, legibles a 40 cm ─────────────
+   Placas opacas con la cifra ≥ 16 px; la de «×0» (inmune) en tinta sobre papel, tachada en rojo. Daño y Multi
+   de la cuenta ≥ 20 px con aire alrededor del ×. V7-1: el total deja el amarillo y va en papel con tinta. */
+.plate.brass { background: #d4a94c; }
+.plate.iron { background: var(--card-paper); color: var(--ink); }
+.plate.iron .glyph { fill: var(--ink); }
+.plate.iron::after { background: var(--red); }
+:root.contraste .plate.iron { background: var(--card-paper); color: var(--ink); }
+:root.contraste .plate.iron .glyph { fill: var(--ink); }
+@media not all and (max-aspect-ratio: 1/1) {
+  @media (min-width: 641px) {
+    .plate b { font-size: clamp(16px, 2.1vh, 19px); }
+    .card > .plate.factor b { font-size: clamp(16px, 2.2vh, 20px); }
+  }
+}
+
+/* V10 · V7-2: «Asedio en 2 turnos» lleva su unidad; la fila de poderes cede el aire que necesita para
+   seguir en un renglón en 1280 y 1366 */
+@media not all and (max-aspect-ratio: 1/1) {
+  @media (min-width: 641px) {
+    .hudrow { gap: clamp(8px, 1vw, 32px); }
+    .power { padding-left: 6px; padding-right: 6px; }
+  }
+}
+/* en la mesa del móvil la fila de poderes no tiene sitio para la unidad: «Asedio en 2», y el aviso emergente lo explica */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .power.fatigue em + b { display: none; }
+}
+/* V10 · V7-5: las insignias de estado del trono van en un renglón, también en la torre estrecha del móvil */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .tower .fx { white-space: nowrap; overflow-wrap: normal; hyphens: manual; font-size: 13px; letter-spacing: -0.03em; padding-left: 2px; padding-right: 2px; }
+}
+/* V10 · V7-3 y V7-4: índices de la mano ≥ 15 px en el móvil; cifras de la barra de arriba ≥ 16 px fuera de él */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .hand .card .corner b { font-size: max(15px, 1em); }
+  .hand .card .corner .glyph, .reserve .card .corner .glyph { width: max(10px, calc(var(--w) * 0.15)); height: max(10px, calc(var(--w) * 0.155)); }
+}
+@media not all and (max-aspect-ratio: 1/1) {
+  @media (min-width: 641px) {
+    .bar .chip b { font-size: max(16px, 1.05em); }
+  }
+}
+/* en la torre estrecha del móvil, «Desarmado ×1» se queda en «Desarmado»: el ×1 lo cuenta el aviso emergente */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .tower .fx .fx-n { display: none; }
+}
+/* V10 · V7-2: en la torre estrecha del móvil la placa del golpe va en dos renglones (cifra y unidad) para
+   que «−95 FALLS» o «−12 DE VIDA» no se salgan del trono */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .floor-slot > .preview { left: auto; max-width: calc(100% + 3px); line-height: 1.05; text-align: center; }
+  .floor-slot > .preview small { display: block; margin: 0; line-height: 1.1; white-space: nowrap; }
+}
+/* V10 · V8-5 (la capa): en el móvil la lámina no sube a su propio plano 3D (translateZ daba un parón de GPU de
+   ~60 ms al pasar el foco); se queda en el plano del papel, bajo el grabado y los índices. La pasada la enciende juice-ux */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .ly.foil { transform: scale(0.975); will-change: auto; }
+}
+/* V10 · V8-9: en el móvil el alto que sobra en el campo (~40 px) no se queda todo entre «Tu Vida» y la fila de
+   poderes: «Tu Vida» se centra en él, mitad arriba y mitad abajo. Los tronos no bajan (el recibo de la cuenta
+   se coloca bajo su pie y necesita ese alto) */
+@media (max-width: 640px) {
+  .table-screen .field { grid-template-rows: auto 1fr; align-content: stretch; }
+  .table-screen .field > .side { align-self: center; }
+}

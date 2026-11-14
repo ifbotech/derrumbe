@@ -98,3 +98,25 @@
   .semilla-aviso { font-size: 14px; }
   .acta-causa .ac-rot, .acta-causa b, .acta-causa small { font-size: 14px; }
 }
+
+/* V10 · en inglés «CHRONICLE» y «COURT DEFEATED» son más anchos: en el móvil el sello aprieta la letra para no pisar la ficha */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :root[lang='en'] .end.acta .acta-sheet > .inkstamp.big { font-size: 16px; letter-spacing: 0; padding: 3px 6px 4px; }
+}
+
+/* V10 P0-5 · la salida de la Crónica a la vista al llegar (ventanas anchas). La fila de botones va pegada
+   al pie de la hoja (sticky) con papel opaco y filete de tinta arriba; la tinta desvanecida se pinta encima
+   de la fila, sobre lo que se desplaza, y nunca sobre los botones. La hoja pasa de rejilla a flex en filas
+   para que el pie pueda pegarse a toda la hoja (en una rejilla se quedaría en su fila); el orden y las cajas
+   de la cabecera no cambian. En el móvil sigue como estaba: se desplaza, con su aviso. */
+@media (min-aspect-ratio: 1/1) and (min-width: 641px) {
+  .end.acta .acta-sheet { --pie: clamp(12px, 2.8vh, 30px); --lado: clamp(14px, 2.4vw, 32px); display: flex; flex-wrap: wrap; align-content: flex-start; }
+  .end.acta .acta-sheet > * { flex: 1 1 100%; order: 2; min-width: 0; }
+  .end.acta .acta-sheet > .meta { flex: 1 1 0; order: 0; }
+  .end.acta .acta-sheet > .inkstamp.big { flex: none; order: 1; }
+  .end.acta .acta-sheet > .acta-acciones { order: 3; position: sticky; bottom: calc(-1 * var(--pie)); z-index: 3; margin: 4px calc(-1 * var(--lado)) calc(-1 * var(--pie)); padding: 10px var(--lado) var(--pie); background: var(--card-paper) var(--noise); border-top: 3px solid var(--ink); }
+  .end.acta .acta-sheet[data-mas~='abajo'] > .acta-acciones::before { content: ''; position: absolute; left: 0; right: 0; bottom: calc(100% + 3px); height: 30px; pointer-events: none; background: linear-gradient(to bottom, rgba(234, 224, 206, 0), var(--card-paper) 85%); }
+  .end.acta .acta-sheet::after { content: none; }
+  .end.acta .acta-sheet[data-mas] { -webkit-mask-image: none; mask-image: none; }
+  .end.acta .acta-sheet[data-mas~='arriba'] { -webkit-mask-image: linear-gradient(to top, #000 calc(100% - min(38px, 22%)), transparent); mask-image: linear-gradient(to top, #000 calc(100% - min(38px, 22%)), transparent); }
+}

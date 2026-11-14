@@ -1,0 +1,15 @@
+# Envoltura de escritorio (Tauri v2). No se compila en el repositorio: hace falta Rust y, para Steam,
+# el SDK de Steamworks (ver tauri/README.md).
+[package]
+name = "sangre-y-palo"
+version = "10.0.0"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

@@ -18,12 +18,13 @@
 // <html data-input="…">: las indicaciones de cada botón (prompts.ts) cambian solas con eso.
 import { sfx } from './audio';
 import { platform } from './platform';
+import { t } from '../shared/i18n';
 
 const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), select, [tabindex="0"]';
 /** Lo que tiene desplazamiento propio: solo ahí dentro se mueve la vista para enseñar lo enfocado. */
 const SCROLLERS = '.scroll, .run-body, .modal-box, .lupa-sheet, .lupa-box, .home-right, .lobby-side, .camp-grid, .acta-sheet, .deck-rows';
 /** Atributos que identifican un elemento aunque se vuelva a pintar (para devolverle el foco). */
-const KEYS = ['id', 'data-id', 'data-slot', 'data-suit', 'data-tab', 'data-set', 'data-vol', 'data-i', 'data-opt'];
+const KEYS = ['id', 'data-id', 'data-slot', 'data-suit', 'data-tab', 'data-set', 'data-vol', 'data-i', 'data-opt', 'data-lang'];
 
 export type InputMode = 'pointer' | 'keys' | 'pad';
 let mode: InputMode = 'pointer';
@@ -59,7 +60,7 @@ function ringEl(): HTMLDivElement {
     ring = document.createElement('div');
     ring.className = 'focus-ring';
     ring.setAttribute('aria-hidden', 'true');
-    ring.innerHTML = '<i></i>';
+    ring.innerHTML = '<i></i><span class="pad-hint" hidden></span>';
     document.body.appendChild(ring);
   }
   return ring;
@@ -85,6 +86,41 @@ function place(el: Element): void {
   box.style.transform = `translate(${r.left - 6}px, ${r.top - 6}px)`;
   box.style.width = `${r.width + 12}px`;
   box.style.height = `${r.height + 12}px`;
+  // la insignia del mando (SD5) va debajo del marco; arriba si no cabe, y pegada al lado si el marco toca el borde
+  box.classList.toggle('hint-up', r.bottom + 56 > innerHeight);
+  box.classList.toggle('hint-l', r.left + r.width / 2 < 130);
+  box.classList.toggle('hint-r', r.left + r.width / 2 > innerWidth - 130);
+}
+
+// ── SD5 (V10): en La Taberna, con el mando, lo enfocado lleva Ⓐ y su verbo ──
+/** [selector, verbo]: lo que se enfoca en La Taberna y qué hace A sobre ello. Ninguna acción nueva. */
+const SHOP_VERBS: [string, string][] = [
+  ['#offers .choice', 'ui.pad.comprar'],
+  ['.belt-slot.tool', 'ui.pad.elegir'],
+  ['#heal', 'ui.pad.curar'],
+  ['#burn', 'ui.pad.quemar'],
+  ['#reroll', 'ui.pad.renovar'],
+  ['#go', 'ui.pad.seguir'],
+  ['#deck-view', 'ui.pad.ver'],
+];
+const padKey = (b: string) => `<kbd class="kh pd b-${b.toLowerCase()}">${b}</kbd>`;
+/** La insignia de lo enfocado: vacía sin mando, fuera de La Taberna o con una ventana encima. */
+export function padPrompt(el: Element | null): string {
+  if (mode !== 'pad' || !el || !el.closest('.run-body.shop') || el.closest('.modal')) return '';
+  const hit = SHOP_VERBS.find(([sel]) => el.matches(sel));
+  if (!hit) return '';
+  const a = `<b>${padKey('A')}${t(hit[1])}</b>`;
+  // sobre una reliquia, LB / RB la mueven (beltLeft / beltRight de prompts.ts)
+  return el.matches('.belt-slot.tool') && el.closest('.belt.can-order') ? `${a}<b>${padKey('LB')}${padKey('RB')}${t('ui.pad.mover')}</b>` : a;
+}
+let hintNow = '';
+function paintPrompt(el: Element | null): void {
+  const html = padPrompt(el);
+  if (html === hintNow) return;
+  hintNow = html;
+  const span = ringEl().querySelector<HTMLElement>('.pad-hint')!;
+  span.innerHTML = html;
+  span.hidden = !html;
 }
 
 function showRing(el: Element | null, hop = false): void {
@@ -93,10 +129,12 @@ function showRing(el: Element | null, hop = false): void {
     box.classList.remove('on');
     ringAt = '';
     mark(null);
+    paintPrompt(null);
     return;
   }
   mark(el);
   place(el);
+  paintPrompt(el);
   box.classList.add('on');
   if (hop) {
     // salto de escala leve al llegar: se reinicia la animación aunque el anterior no hubiera acabado

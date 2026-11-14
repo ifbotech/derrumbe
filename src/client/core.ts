@@ -2,10 +2,11 @@
 // y las piezas de interfaz que usa todo el mundo (avisos, ventanas, globos de ayuda).
 import type { Card, GameEvent, GameState, PlayerView } from '../rules/engine';
 import type { Run } from '../rules/run';
-import { KEYWORDS, keywordsIn, markKeywords } from '../rules/keywords';
+import { KEYWORDS, keywordsInFor, markKeywordsFor } from '../rules/keywords';
 import type { LobbyInfo } from '../shared/protocol';
 import { sfx } from './audio';
 import { loadJson, platform } from './platform';
+import { getLang, numL, palabraD, palabraN } from './lengua';
 
 export { loadJson };
 
@@ -66,8 +67,8 @@ export const RUN_PLAYER = 'tu';
 /** 'PICAS' → 'Picas': la gótica solo se lee bien en caja baja. */
 export const cap = (s: string) => s[0] + s.slice(1).toLowerCase();
 export const nameOf = (id: string) => (S.shown?.players.find((p) => p.id === id) ?? S.lobby?.players.find((p) => p.id === id))?.name ?? '???';
-/** 1,5 en vez de 1.5. */
-export const num = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
+/** 1,5 en vez de 1.5 (en inglés, 1.5). */
+export const num = (n: number) => numL(n);
 export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 // ───────────────────────── Ajustes ─────────────────────────
@@ -79,16 +80,21 @@ export interface Settings {
   calm: boolean;
   /** Tintas de la baraja: 4 de taller (una por palo) o las 2 clásicas (rojo y negro). */
   inks: 4 | 2;
+  /** V10 · Alto contraste: tinta negra sobre papel claro, contornos más gruesos y la mesa sin textura. */
+  contrast: boolean;
 }
 const SETTINGS_KEY = 'derrumbe:settings';
-export const settings: Settings = { speed: 1, inks: 4, calm: matchMedia('(prefers-reduced-motion: reduce)').matches, ...loadJson<Partial<Settings>>(SETTINGS_KEY) };
+// sin nada guardado, «Reducir movimiento» y «Alto contraste» siguen a lo que pida el sistema
+export const settings: Settings = { speed: 1, inks: 4, calm: matchMedia('(prefers-reduced-motion: reduce)').matches, contrast: matchMedia('(prefers-contrast: more)').matches, ...loadJson<Partial<Settings>>(SETTINGS_KEY) };
 if (![1, 2, 4].includes(settings.speed)) settings.speed = 1;
 if (settings.inks !== 2) settings.inks = 4;
+settings.contrast = settings.contrast === true;
 
 export function applySettings(): void {
   platform.save(SETTINGS_KEY, JSON.stringify(settings));
   document.documentElement.classList.toggle('calm', settings.calm);
   document.documentElement.classList.toggle('inks2', settings.inks === 2);
+  document.documentElement.classList.toggle('contraste', settings.contrast);
   document.documentElement.dataset.speed = String(settings.speed);
 }
 /** 1× → 2× → 4× (Turbo) → 1×. */
@@ -147,21 +153,21 @@ let tipEl: HTMLDivElement | null = null;
 let tipFor: HTMLElement | null = null;
 let tipTimer = 0;
 
-/** Resalta las palabras clave de un texto (negrita de tinta, con su propio globo). */
-export const kw = markKeywords;
+/** Resalta las palabras clave de un texto (negrita de tinta, con su propio globo), en el idioma actual. */
+export const kw = (html: string) => markKeywordsFor(getLang(), html);
 
 /** Lo que dice el globo: el texto del elemento y, encadenada debajo, la definición de cada palabra clave que menciona. */
 function tipHtml(target: HTMLElement): string {
   if (target.matches('.kw')) {
     const k = KEYWORDS.find((x) => x.id === target.dataset.kw);
-    return k ? `<b>${k.name}</b>${k.desc}` : '';
+    return k ? `<b>${palabraN(k.id)}</b>${palabraD(k.id)}` : '';
   }
   const raw = target.dataset.tip ?? '';
   if (!raw) return '';
-  const chained = keywordsIn(raw)
-    .map((k) => `<div class="kwdef"><b>${k.name}</b>${k.desc}</div>`)
+  const chained = keywordsInFor(getLang(), raw)
+    .map((k) => `<div class="kwdef"><b>${palabraN(k.id)}</b>${palabraD(k.id)}</div>`)
     .join('');
-  return markKeywords(raw) + (chained ? `<div class="chain">${chained}</div>` : '');
+  return kw(raw) + (chained ? `<div class="chain">${chained}</div>` : '');
 }
 
 function showTip(target: HTMLElement): void {

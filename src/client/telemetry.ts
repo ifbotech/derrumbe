@@ -3,7 +3,8 @@
 // sale algo del equipo si la versión se construyó con VITE_TELEMETRY_URL y el jugador pulsa el botón
 // (shareFeedback): sin temporizadores, sin envíos al cerrar. Sin la variable, el botón comparte, copia
 // o descarga. Enganches de una línea: campaign.ts (noteRun), table.ts (noteTurn, noteAction).
-import { fileName, TITLE } from '../shared/brand';
+import { brandFor, fileName } from '../shared/brand';
+import { getLang, tFor, type Lang } from '../shared/i18n';
 import { version } from '../../package.json';
 import { DECK, type Run } from '../rules/run';
 import type { Action, PlayerView } from '../rules/engine';
@@ -35,6 +36,8 @@ export interface TelemetryDeps {
   save?: (name: string, body: string) => void;
   base?: string;
   community?: string;
+  /** V10: el idioma del resumen (por defecto, español). */
+  lang?: () => Lang;
 }
 
 export const KEY = 'derrumbe:telemetria';
@@ -67,11 +70,17 @@ export function createTelemetry(d: TelemetryDeps) {
   };
   const last = () => rev().find((r) => r.modo !== 'guia') ?? read().at(-1) ?? null;
 
+  /** El resumen, en el idioma de la mesa (V10). Las claves y valores del registro no cambian: son datos. */
   function summary(r: TelemetryRun | null): string {
-    if (!r) return `${TITLE} · ${version}: sin campañas guardadas`;
-    const lines = [`${TITLE} · ${version} · Feedback de prueba`, `${r.resultado[0].toUpperCase() + r.resultado.slice(1)} · Asalto ${r.asalto} · ${r.turnos} turnos · Reinado ${r.reinado} · ${DECK[r.baraja]?.name ?? 'Partida guiada'}`];
-    if (r.causa) lines.push(`Causa: ${r.causa.texto}`);
-    lines.push(`Dudas: ${r.dudas.length} · La Manga: ${r.manga} · Rebobinar: ${r.rebobinar}`);
+    const lang = d.lang?.() ?? 'es';
+    const T = (k: string, v?: Record<string, string | number>) => tFor(lang, k, v);
+    const titulo = brandFor(lang).title;
+    if (!r) return T('ui.tel.vacio', { titulo, v: version });
+    const res = { 'en curso': 'ui.tel.curso', victoria: 'ui.tel.victoria', derrota: 'ui.tel.derrota', saltada: 'ui.tel.saltada' }[r.resultado];
+    const baraja = DECK[r.baraja] ? T(`baraja.${r.baraja}.nombre`) : T('ui.tel.guiada');
+    const lines = [T('ui.tel.cabeza', { titulo, v: version }), T('ui.tel.linea', { resultado: res ? T(res) : r.resultado, asalto: String(r.asalto), turnos: String(r.turnos), reinado: String(r.reinado), baraja })];
+    if (r.causa) lines.push(T('ui.tel.causa', { texto: r.causa.texto }));
+    lines.push(T('ui.tel.dudas', { dudas: String(r.dudas.length), manga: String(r.manga), rebobinar: String(r.rebobinar) }));
     if (r.semilla && d.base) lines.push(`${d.base}?${new URLSearchParams({ seed: r.semilla, baraja: r.baraja, nivel: String(r.reinado) })}`);
     return lines.join('\n');
   }
@@ -164,7 +173,7 @@ export function createTelemetry(d: TelemetryDeps) {
       const m = /^(https:\/\/github\.com\/[^/?#]+\/[^/?#]+\/issues)\/?$/.exec(d.community ?? '');
       const r = last();
       if (!m || !r) return null;
-      return `${m[1]}/new?${new URLSearchParams({ title: 'Feedback de prueba', body: summary(r) })}`;
+      return `${m[1]}/new?${new URLSearchParams({ title: tFor(d.lang?.() ?? 'es', 'ui.tel.titulo'), body: summary(r) })}`;
     },
   };
 }
@@ -177,6 +186,7 @@ export const telemetry = createTelemetry({
   now: () => Date.now(),
   base: web ? location.href.split(/[?#]/)[0] : undefined,
   community: COMMUNITY_URL,
+  lang: getLang,
   env: () => {
     const mode = INPUT[(document.documentElement.dataset.input ?? 'pointer') as keyof typeof INPUT] ?? 'raton';
     return { entrada: mode === 'raton' && matchMedia('(pointer: coarse)').matches ? 'tactil' : mode, ventana: `${innerWidth - (innerWidth % 10)}x${innerHeight - (innerHeight % 10)}` };
@@ -184,7 +194,7 @@ export const telemetry = createTelemetry({
   async share(text, name, body) {
     const file = new File([body], name, { type: 'application/json' });
     if (!matchMedia('(pointer: coarse)').matches || !navigator.canShare?.({ files: [file] })) return false;
-    await navigator.share({ files: [file], text, title: TITLE });
+    await navigator.share({ files: [file], text, title: brandFor(getLang()).title });
     return true;
   },
   async copy(text) {

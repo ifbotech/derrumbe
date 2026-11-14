@@ -340,6 +340,8 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
       await finish(players);
       sameTable(players);
       for (const c of [...players, victim]) expect(c.badHash).toBe(0);
+      // cada partida cierra sus conexiones: sin esto se acumulaban unas 200 abiertas en el mismo proceso
+      for (const c of players) await c.close();
     }
     expect(cuts).toBeGreaterThanOrEqual(20);
     console.log(`(d) ${GAMES} partidas, ${cuts} cortes, ${rejoined} reconexiones`);

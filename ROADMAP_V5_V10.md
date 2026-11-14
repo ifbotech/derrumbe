@@ -25,31 +25,31 @@ El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este 
 | 6.1 | Marca dual SANGRE Y PALO · BLOOD & SUITS y La Taberna | reglas-balance → arte-ui → juice-ux → director → panel | `rapido-60`: línea base | Hecha (`71ae962`) |
 | V7 | Partida guiada de 60 segundos y Mesa brava: monarcas con cara, maldición a la vista y voz | director → reglas-balance → arte-ui → juice-ux | `rapido-60` contra la 6.1: sin regresión | Hecha (`1c33ef6`, `v7.0.0`) |
 | V8 | Jugo visceral, lacre con brillo y banda sonora de corte de 3 horas | director → arte-ui → juice-ux | `rapido-60` contra la 7.0: sin regresión | Hecha (`f3c4a67`, `v8.0.0`) |
-| V9 | Cooperativo a prueba de cortes, `balance-config.json` con autoajuste y telemetría de prueba | director → reglas-balance → juice-ux → arte-ui | `rapido-60` contra la 8.0: sin regresión | Puertas pasadas; candidata `76f628c` |
-| V10 | Candidata de lanzamiento con funciones congeladas: ES / EN, accesibilidad y Steam | director → reglas-balance → arte-ui → juice-ux | censo de 240 contra la 9.0 | Lista para ejecutarse (`SPECS/V10.md`) |
+| V9 | Cooperativo a prueba de cortes, `balance-config.json` con autoajuste y telemetría de prueba | director → reglas-balance → juice-ux → arte-ui | `rapido-60` contra la 8.0: sin regresión | Hecha (`v9.0.0`; candidata `76f628c`) |
+| V10 | Candidata de lanzamiento con funciones congeladas: ES / EN, accesibilidad y Steam | director → reglas-balance → arte-ui → juice-ux → triaje → arreglos | censo de 240: pasa (29,2 % ≥ 17,1; 5,01 ≥ 4,93) | Hecha (candidata `20dbf5f`, arreglos `edbbf4c`; la etiqueta `v10.0.0` la pone el orquestador) |
 
 ## Resultados por versión
 
-Una fila por versión medida en esta misión. Panel: corridas `rapido-60` (n = 60; ruido de la aprobación de unos ±12 puntos), cada una sobre su commit candidato. Quejas: el recuento de cada corrida con su propio clasificador (los informes de comparación reclasifican la base y pueden dar una cifra algo distinta). Fuentes: `agregados.json` de cada corrida, `artifacts/mision/v{n}/puertas.md` y `CHANGELOG.md`.
+Una fila por versión medida en esta misión. Panel: corridas `rapido-60` (n = 60; ruido de la aprobación de unos ±12 puntos) de la 6.1 a la 9.0, cada una sobre su commit candidato. **La columna 10.0 es otra muestra: el censo de 240** (ruido de unos ±6 puntos); entre paréntesis va el subconjunto de las mismas 60 personas, que es lo único comparable con las columnas anteriores. Quejas: el recuento de cada corrida con su propio clasificador (los informes de comparación reclasifican la base y pueden dar una cifra algo distinta); con 240 reseñas salen unas cuatro veces más menciones. Fuentes: `agregados.json` de cada corrida, `artifacts/mision/v{n}/puertas.md` y `CHANGELOG.md`.
 
-| | 6.1 | 7.0 | 8.0 | 9.0 |
-|---|---|---|---|---|
-| Commit | `71ae962` (`v6.1.0`) | `1c33ef6` (`v7.0.0`) | `f3c4a67` (`v8.0.0`; candidata `c12191c`) | candidata `76f628c` |
-| Corrida del panel | `rapido-60-20261113-112234` | `rapido-60-20261113-141123` | `rapido-60-20261113-164104` | `rapido-60-20261113-222433` |
-| Aprobación por persona (IC95) | 23,3 % (14,4–35,4) | 25,0 % (15,8–37,2) | 25,0 % (15,8–37,2) | 26,7 % (17,1–39,0) |
-| Claridad media (IC95 de las reseñas) | 4,93 (4,63–5,24) | 4,93 (4,62–5,25) | 5,20 (4,91–5,49) | 5,30 (4,93–5,67) |
-| Veredicto contra la anterior | línea base | sin regresión | sin regresión | sin regresión |
-| Claridad PC · portátil · móvil | 4,81 · 5,07 · 4,93 | 5,10 · 5,00 · 4,60 | 5,33 · 5,20 · 5,47 | 5,48 · 5,07 · 5,27 |
-| Steam Deck: aprobación · claridad (n 9) | 0 de 9 · 5,00 | 0 de 9 · 5,00 | 0 de 9 · 4,44 | 0 de 9 · 5,33 (escena distinta: no comparable) |
-| Quejas: texto chico · contraste · fatiga visual | 82 · 61 · 50 | 84 · 67 · 46 | 75 · 68 · 53 | 87 · 59 · 46 |
-| Precio justo (mediana) · óptimo de Van Westendorp | 8,0 · 6,25 USD | 8,0 · 8,0 USD | 8,0 · 6,0 USD | 8,0 · 6,25 USD |
-| En deseados | 61,7 % | 55,0 % | 58,3 % | 61,7 % |
-| Laboratorio | idéntico a la 6.0; 0 avisos; peor P95 tardío 18 | idéntico a la 6.1 | idéntico a la 6.1 (no se repitió: reglas sin tocar) | idéntico a la 8.0 tras sacar los números a `balance-config.json`; 0 avisos; peor P95 tardío 18 |
-| Pruebas (Vitest) | 188 | 205 | 205 | 254 |
-| QA visual (capturas, 0 fallos) | 112 | 132 | 148 | 160 |
-| Prueba de humo (comprobaciones) | 164 | 193 | 213 | 272 |
+| | 6.1 | 7.0 | 8.0 | 9.0 | 10.0 (censo, n = 240) |
+|---|---|---|---|---|---|
+| Commit | `71ae962` (`v6.1.0`) | `1c33ef6` (`v7.0.0`) | `f3c4a67` (`v8.0.0`; candidata `c12191c`) | `v9.0.0` (candidata `76f628c`) | candidata `20dbf5f`; arreglos `edbbf4c` |
+| Corrida del panel | `rapido-60-20261113-112234` | `rapido-60-20261113-141123` | `rapido-60-20261113-164104` | `rapido-60-20261113-222433` | `v6-completo-20261114-041529` |
+| Aprobación por persona (IC95) | 23,3 % (14,4–35,4) | 25,0 % (15,8–37,2) | 25,0 % (15,8–37,2) | 26,7 % (17,1–39,0) | 29,2 % (23,8–35,2) · (mismas 60: 30,0 %, 19,9–42,5) |
+| Claridad media (IC95 de las reseñas) | 4,93 (4,63–5,24) | 4,93 (4,62–5,25) | 5,20 (4,91–5,49) | 5,30 (4,93–5,67) | 5,01 (4,85–5,17) · (mismas 60: 5,10) |
+| Veredicto contra la anterior | línea base | sin regresión | sin regresión | sin regresión | pasa los límites fijos (≥ 17,1 % y ≥ 4,93); mismas 60, dentro del ruido |
+| Claridad PC · portátil · móvil | 4,81 · 5,07 · 4,93 | 5,10 · 5,00 · 4,60 | 5,33 · 5,20 · 5,47 | 5,48 · 5,07 · 5,27 | 5,27 · 4,88 · 4,78 · (mismas 60: 5,10 · 5,00 · 5,00) |
+| Steam Deck: aprobación · claridad | 0 de 9 · 5,00 | 0 de 9 · 5,00 | 0 de 9 · 4,44 | 0 de 9 · 5,33 (escena distinta: no comparable) | 4 de 36 · 4,97 · (mismas 9: 0 de 9 · 5,44) |
+| Quejas: texto chico · contraste · fatiga visual | 82 · 61 · 50 | 84 · 67 · 46 | 75 · 68 · 53 | 87 · 59 · 46 | 247 · 290 · 183 (V4, n = 240: 355 · 205 · 205) |
+| Precio justo (mediana) · óptimo de Van Westendorp | 8,0 · 6,25 USD | 8,0 · 8,0 USD | 8,0 · 6,0 USD | 8,0 · 6,25 USD | 8,0 · 8,19 USD |
+| En deseados | 61,7 % | 55,0 % | 58,3 % | 61,7 % | 62,5 % |
+| Laboratorio | idéntico a la 6.0; 0 avisos; peor P95 tardío 18 | idéntico a la 6.1 | idéntico a la 6.1 (no se repitió: reglas sin tocar) | idéntico a la 8.0 tras sacar los números a `balance-config.json`; 0 avisos; peor P95 tardío 18 | idéntico a la 9.0; 0 avisos; peor P95 tardío 18; huella `aed6a8feb2f230d1` |
+| Pruebas (Vitest) | 188 | 205 | 205 | 254 | 309 |
+| QA visual (capturas, 0 fallos) | 112 | 132 | 148 | 160 | 172 en español + 172 en inglés |
+| Prueba de humo (comprobaciones) | 164 | 193 | 213 | 272 | 306 en español + 306 en inglés |
 
-Lo que no se ha movido en cuatro corridas: **Steam Deck no aprueba (0 de 9)** y la queja de **texto chico** sigue la primera (82 → 87). Es lo que la V10 ataca con arreglos concretos (`SPECS/V10.md`, apartado 1.2, filas SD).
+Lo que no se movió en toda la misión: **Steam Deck** (0 de 9 en las cinco corridas con las mismas nueve personas; 4 de 36 en el censo, igual que en la V4) y la aprobación global (28,8 % en el censo de la V4, 29,2 % en el de la V10). Lo que sí: la claridad, censo contra censo, de 4,62 a 5,01, con intervalos que no se tocan.
 
 Regla común: **ninguna versión añade un sistema nuevo sin retirar o simplificar otro**, y todas respetan la constitución anticomplejidad: ≤ 6 palabras clave, ≤ 56 reliquias (hoy 52), toda descripción de reliquia, carta especial, monarca y Reinado ≤ 115 caracteres, P95 ≤ 19 turnos en los asaltos 4 a 8 con las seis barajas. El vocabulario es el del glosario (`SPECS/V6-normas-y-glosario.md`, con La Taberna desde la 6.1).
 
@@ -154,7 +154,7 @@ Lo que tiene base en las capturas de Steam Deck pasa a la V9 (`SPECS/V9.md`, apa
 
 **Puertas.** CPU completas + `rapido-60` contra la 8.0 (`rapido-60-20261113-164104`). Regresión: aprobación por debajo del 15,8 % o claridad media por debajo de 4,91, los límites inferiores del IC95 de la 8.0. Detalle en `SPECS/V9.md`.
 
-**Resultado** (2026-11-13, candidata `76f628c`). Todas las puertas de CPU pasan (`artifacts/mision/v9/puertas.md`).
+**Hecha** (2026-11-13, `v9.0.0`). **Resultado** (candidata `76f628c`). Todas las puertas de CPU pasan (`artifacts/mision/v9/puertas.md`).
 - `balance-config.json` con 244 números. Laboratorio completo idéntico al de la 8.0 (55.640 campañas, 0 avisos, peor P95 tardío 18).
 - `balance:tune`: propuesta vacía; todos los objetivos se cumplen. No se aplicó nada. La hipótesis del panel (`STAGES[0].hp` 3 y `FATIGUE.start` 10) saca 5 objetivos de rango: descartada.
 - Telemetría: un registro de campaña mide 657 bytes. 0 peticiones sin pulsar el botón; 1 por pulsación solo con `VITE_TELEMETRY_URL`.
@@ -180,3 +180,71 @@ Leídas las 9 reseñas de Steam Deck y las 15 de portátil y miradas las captura
 5. `EVOLUCION_V4_V10.md` (lo escribe el orquestador, a partir de la tabla «Resultados por versión» de este archivo).
 
 **Puertas.** `typecheck`, `test`, `analyze:meta` sin avisos, `docs`, `og`, `qa:visual` (ES y EN), `qa:smoke` (ES y EN), `qa:fps`, `qa:audio`, `build`, `build:web` + censo de 240. Tras la etiqueta, `git ls-remote` confirma `origin/main`. Detalle en `SPECS/V10.md`.
+
+**Hecha** (2026-11-14). **Resultado** (candidata `20dbf5f`, arreglos del censo `edbbf4c`; `artifacts/mision/v10/puertas.md`). Ninguna mecánica nueva y ningún número cambiado.
+- 1.479 claves por idioma (618 de reglas, 768 de pantalla, 93 de avisos y voces). El español, letra por letra el de la 9.0.
+- Conmutador ES | EN en la Portada y en Ajustes, al instante y guardado. «Alto contraste» sin mover la maquetación.
+- SD1–SD5 hechos, cada uno con su regla de QA. Pulido V7-1 a V9-1 hecho; de V8-7 queda un fotograma de ~55 ms en frío.
+- `tauri/` y el puente de Steam con 15 pruebas; sin compilar. `STEAM_BUILD.md` con lo que falta.
+- Censo de 240: aprobación 29,2 % (IC95 23,8–35,2), claridad 5,01. **Pasa.** Contra el censo de la V4 (28,8 % y 4,62), la aprobación no se mueve y la claridad sube. Mismas 60: 26,7 → 30,0 % y 5,30 → 5,10, dentro del ruido. Steam Deck: 4 de 36, igual que en la V4.
+- Triaje: 3 P0 de la síntesis y 107 de las auditorías. Con base, tres, los tres de `arte-ui`: la cuenta plegada no cuadraba («54 × 3,7 = 197»), el palo de la esquina medía de 7 a 13 px y el pie de la Crónica quedaba tapado en 1366 y 1280. Arreglados con sus reglas («cuenta», «esquina», «acta-pie») y certificados otra vez. El panel no se repitió.
+- Incidencia: Node 24 se cae de forma nativa en Windows en las pruebas de cooperativo (`0xC0000409`, nunca el servidor). `npm test` va en dos pasadas y repite solo esa caída.
+
+### Lista de salida de la 10.0
+
+| Puerta | Resultado |
+|---|---|
+| `npm run typecheck` | 0 errores |
+| `npm test` | 309 de 309 (20 archivos: 301 + 8 de cooperativo aparte); 14 pasadas seguidas en verde con `scripts/test.mjs` |
+| `npm run analyze:meta` | 55.640 campañas, 0 avisos, peor P95 tardío 18 (tope 19); **IDÉNTICO** a la 9.0; huella `aed6a8feb2f230d1` |
+| `npm run docs` | sin cambios de contenido |
+| `npm run og` | `og-card-es.png`, `og-card-en.png` y `og-card.png`, 1200 × 630 |
+| `npm run qa:visual` (ES) | 172 capturas, 0 fallos, 0 avisos |
+| `npm run qa:visual -- --lang=en` | 172 capturas, 0 fallos, 0 avisos; regla «fuga» sin excepciones |
+| `npm run qa:smoke` (ES) | 306 comprobaciones, «Todo en orden»; guía 29,0 · 29,2 · 32,3 s |
+| `npm run qa:smoke -- --lang=en` | 306 comprobaciones, «Todo en orden»; guía 29,1 · 29,1 · 32,8 s |
+| `npm run qa:fps` | «60 fps: todo en orden», tres pasadas seguidas |
+| `npm run qa:audio` | «La música no cansa: todo en orden» |
+| `npm run build` · `build:web` | compilan |
+| Constitución | 52 reliquias (tope 56), 6 palabras clave, descripciones ≤ 115 en ES y EN (la inglesa más larga, 104) |
+| Paridad (`tests/i18n.test.ts`) | 24 pruebas en verde: mismas claves, variables y cifras; nombres ingleses ≤ 24; 0 restos de español |
+| Congelación (`tests/congelacion.test.ts`) | 0 identificadores añadidos o quitados |
+| Huella del laboratorio | `git diff v9.0.0` vacío en los seis archivos |
+| Censo de 240 | 29,2 % ≥ 17,1 % y 5,01 ≥ 4,93: pasa; 0 P0 con base abiertos tras los arreglos |
+
+---
+
+## Después de la 10.0
+
+Lo que la misión deja abierto, en orden:
+
+1. **Steam Deck.** 4 de 36 en el censo, igual que en la V4; las mismas nueve personas, 0 de 9 en cinco corridas. Nadie lo ha probado en el aparato. Lo primero: una Steam Deck física (`STEAM_BUILD.md`, paso 11) y personas reales con una.
+2. **Contraste percibido.** La queja «contraste y color de palos» sube de 205 a 290 menciones con todas las medidas en verde (7,9:1 a 13,8:1). O el panel repite la queja, o la estética cansa de una forma que la regla de contraste no mide. Solo jugadores reales lo dirán.
+3. **El casual.** 16,7 % de aprobación y claridad 4,29, pese a la partida guiada.
+4. **Revisión del inglés por un hablante nativo.** Ningún angloparlante lo ha leído y el panel no lo mide. Lista de dudas abajo.
+5. **Compilar y probar la envoltura.** Ni un binario compilado; el lado Rust de los seis comandos, sin escribir; sin cuenta de Steamworks.
+6. **Tres hipótesis de lanzamiento** que votó el panel (V11), todas a favor de la propuesta: una demo con la partida guiada y los tres primeros asaltos, **81,2 %**; el Asalto diario con una tabla entre amigos, **70,0 %**; una campaña corta de cuatro asaltos, **63,1 %**. Sesgo de posición del 38,8 % de los pares: son pistas, no mandatos. Cualquiera de las tres es un sistema nuevo: entra solo si retira o simplifica otro.
+7. Menores: el fotograma de ~55 ms del primer sello caliente en 1920×1080; la caída de Node en Windows, rodeada y sin comprobar en Linux; el bloque de feedback a medias bajo el pie de la Crónica en 1366×768; el aviso largo de `mesa-peligro` (redacción).
+
+### Para revisar con un hablante nativo
+
+Nombres propios de `src/shared/i18n/en.ts` que pueden confundir o sonar mal. **No se cambiaron**: la 10.0 estaba congelada y certificada. Que los lea un nativo antes de tocarlos.
+
+| Clave | Inglés | Duda |
+|---|---|---|
+| `reliquia.cinta.nombre` | Grand Staircase | Da Mult con escaleras de póker. En inglés la jugada es *straight*: «staircase» no la evoca |
+| `reliquia.puntales.nombre` | Spare Deck | «Deck» ya es el Mazo y el nombre de las seis barajas iniciales: se confunde con ellos |
+| `reliquia.catalizador.nombre` | Philosopher's Stone | Término alquímico corriente, pero también es el título británico de un libro y una película muy conocidos |
+| `acabado.policromado.nombre` | Polychrome Wax | Calco de «Lacre policromo». «Polychrome» es también el nombre de una edición de carta en otro juego de cartas comercial muy conocido: valorar el parecido |
+| `guia.cuenta.titulo` | The Count | En una corte, «The Count» se lee como «el Conde». Mejor algo como «The Tally» o «Damage × Mult» |
+| `logro.full.nombre` | House Full | Juego de palabras con *full house*; invertido suena a error |
+| `logro.limpio50.nombre` | Thief's Touch | Premia 50 Golpes exactos; «touch» no dice precisión |
+| `mejora.caja_limite.nombre` | Chest of the Edge | Calco de «filo»: suena raro. ¿«Chest of Blades»? |
+| `mejora.bronce.nombre` | Royal Glazier | «Glazier» (vidriero) es una palabra rara para el jugador |
+| `mejora.tienda.nombre` | Big Stall | Plano, sin el tono de corte del resto |
+| `juramento.sincolapso.nombre` · `juramento.limpios.nombre` | Measured Deck · Steady Pulse | No dicen qué piden; comprobar que se entienden sin la descripción |
+| `reinado.6.desc` · `reinado.5.desc` · `monarca.escasez.badge` | «You have 1 point of Health less» · «The Attack of Kings rises by…» · «1 card fewer in hand» | Gramática y orden poco naturales («one less point of Health», «Kings' Attack rises by…») |
+| `especial.ferretero.nombre` | The Dealer | Coincide con el Tratante de La Taberna. Es a propósito en español; confirmar que en inglés no confunde |
+| Marca (`brand.ts`) | «A conspiracy roguelike with a French deck» | «French deck» se entiende como baraja francesa, pero en inglés se dice *standard 52-card deck*: comprobar si se entiende |
+
+Sin gore en ningún nombre. Las voces de los monarcas (apuestas de mesa inglesa: *bet, call, raise*) también conviene que las lea un nativo.
