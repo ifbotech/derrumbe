@@ -6,7 +6,7 @@ Escrito el 14 de noviembre de 2026, al cerrar la 10.0. Las cifras de jugadores s
 
 ## 1. En una página
 
-- **La aprobación simulada no se movió: 28,8 % en la V4 y 29,2 % en la V10** (240 personas las dos veces; la diferencia cabe de sobra en el ruido). Seis versiones de trabajo no convencieron al panel de recomendar más el juego.
+- **La aprobación simulada no se movió: 28,8 % en la V4 y 29,2 % en la V10** (240 personas las dos veces; la diferencia cabe de sobra en el ruido). Siete versiones de trabajo no convencieron al panel de recomendar más el juego.
 - **La claridad sí subió: de 4,62 a 5,01 sobre 10** (intervalos del 95 %: 4,47–4,76 y 4,85–5,17, que no se tocan). Donde más, en PC (4,54 → 5,27) y entre los jugadores casuales (3,58 → 4,29).
 - **Steam Deck sigue siendo el punto rojo: 4 aprobaciones de 36, igual que en la V4.** Portátil (23,3 %) y móvil (28,3 %) tampoco mejoran.
 - **El balance no cambió desde la 6.0 y cumple todos sus objetivos.** El laboratorio de 55.640 campañas sale idéntico, número a número, en la 6.1, la 7.0, la 8.0, la 9.0 y la 10.0.
@@ -22,7 +22,7 @@ Escrito el 14 de noviembre de 2026, al cerrar la 10.0. Las cifras de jugadores s
 | 5.0 | Claridad | Texto mínimo de 13 px, palos con trama para daltonismo, mando sin huecos, causa de la derrota explicada |
 | 6.0 | Tema nuevo | De la obra en demolición a la conjura contra una corte de naipes; vocabulario universal (Picas, Diamantes, Corazones, Tréboles, Vida, Escudo, Daño × Multi) |
 | 6.1 | Marca dual | SANGRE Y PALO en español con el sello BLOOD & SUITS, y al revés en inglés; la tienda pasa a ser La Taberna |
-| 7.0 | Aprender jugando | Partida guiada de cinco jugadas (29 s con teclado, 33 s con mando), siete monarcas con retrato, maldición a la vista y voz propia, sello ×0 / ×2 / ×3 en cada carta de la mano |
+| 7.0 | Aprender jugando | Partida guiada de cinco jugadas (29 s con teclado, 32,5 s con mando), siete monarcas con retrato, maldición a la vista y voz propia, sello ×0 / ×2 / ×3 en cada carta de la mano |
 | 8.0 | Sensación y sonido | Tajo de naipe, corona en esquirlas, lacre caliente y monedas a 60 FPS; música generativa en re menor que no repite más de 3,3 s en tres horas; foco del mando rediseñado |
 | 9.0 | Infraestructura | Los 244 números de balance en un archivo de configuración con afinador automático; telemetría solo local con botón de feedback; cooperativo probado con cortes y reconexiones |
 | 10.0 | Para todo el mundo | Español e inglés, alto contraste, arreglos de Steam Deck y portátil, envoltura de escritorio preparada (Tauri) y puente para Steam |
@@ -195,7 +195,7 @@ Constitución, sin cambios: 6 palabras clave, 52 reliquias (tope 56), toda descr
 | Jugabilidad | La partida guiada dura lo mismo en los dos idiomas (29 s con teclado, 33 s con mando); 306 comprobaciones de la prueba de humo en cada idioma, con ratón, teclado y mando |
 | El español | Letra por letra el de la 9.0 (hay una prueba que lo compara) |
 
-Lo que **no** está hecho: ningún hablante nativo de inglés ha leído los textos (los escribió el estudio de agentes: nombres de reliquias, frases de los monarcas y chistes de mesa incluidos); el panel simulado lee el juego en español, así que **no hay ninguna medida de la versión inglesa**; el reglamento (`REGLAS.md`) y el `README.md` siguen solo en español.
+Lo que **no** está hecho: ningún hablante nativo de inglés ha leído los textos (los escribió el estudio de agentes: nombres de reliquias, frases de los monarcas y chistes de mesa incluidos; el Director dejó 14 nombres y frases dudosos en la hoja de ruta, apartado «Para revisar con un hablante nativo»); el panel simulado lee el juego en español, así que **no hay ninguna medida de la versión inglesa**; el reglamento (`REGLAS.md`) y el `README.md` siguen solo en español.
 
 ## 8. Escritorio y Steam: qué está listo
 

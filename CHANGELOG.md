@@ -2,6 +2,114 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 10.0.0 — 2026-11-14
+
+Candidata de lanzamiento con funciones congeladas: el juego entero en español y en inglés, alto contraste, arreglos de Steam Deck y portátil, y la envoltura de escritorio preparada para Steam. **Ninguna mecánica nueva y ningún número cambiado**: los seis archivos de la huella del laboratorio no se tocaron (`git diff v9.0.0` vacío) y el laboratorio sale idéntico al de la 9.0. Motivo: el paso 5 del encargo; los duelos de la 9.0 («Jugar en inglés», 86,7 %; «Modo de alto contraste», 100 %); y Steam Deck, 0 de 9 en cuatro corridas seguidas. Candidata `20dbf5f`, arreglos del censo en `edbbf4c`; puertas en `artifacts/mision/v10/puertas.md`.
+
+### Español e inglés
+- **`src/shared/i18n.ts`** con tipos: `getLang`, `setLang`, `onLangChange`, `t`, `numFor`. El idioma se decide en un solo sitio, no en la constante `LOCALE` fijada al cargar.
+- **1.479 claves por idioma**: 618 de reglas (reliquias, especiales, monarcas, palabras clave, partida guiada, causas, errores), 768 de pantalla y 93 de avisos, guía y voces.
+- **El español es letra por letra el de la 9.0** (`tests/textos-es.json`). El inglés se escribió a mano con el glosario de `SPECS/V10.md` (1.3): Spades / Diamonds / Hearts / Clubs, Health, Shield, Counterattack, Damage × Mult, Exact Hit, Up the Sleeve. En inglés la coma decimal pasa a punto (×3.65).
+- Las descripciones inglesas con cifras son plantillas que se rellenan con los mismos números de `BALANCE`: texto y motor no se pueden separar.
+- **Paridad** (`tests/i18n.test.ts`, 24 pruebas): mismas claves, ninguna vacía, mismas variables, mismas cifras, descripciones inglesas ≤ 115 caracteres (la más larga, 104), nombres ingleses ≤ 24, cero restos de español.
+- **Conmutador ES | EN** en la Portada y en Ajustes («Idioma · Language»). Cambia al instante, sin recargar, y se recuerda (`derrumbe:idioma`). Por defecto, el idioma del navegador; en pruebas, español. El candado sigue al idioma: en inglés, BLOOD & SUITS con la cinta SANGRE Y PALO.
+- Tarjetas para compartir en los dos idiomas: `public/og-card-es.png` y `public/og-card-en.png` (1200 × 630). `og-card.png` sigue siendo la española.
+- Sin traducir, a propósito: `REGLAS.md`, `README.md`, `index.html`, el manifest y el nombre por defecto CONJURADO.
+- **Del inglés no hay ninguna medida de jugadores, ni simulados**: el panel lee el juego en español. Ningún hablante nativo ha revisado los textos.
+
+### Accesibilidad
+- **«Alto contraste»** (ajuste nuevo, `settings.contrast`, clase `contraste` en `<html>`): tinta negra sobre papel claro, bordes y tramas más gruesos, mesa sin textura. Arranca encendido con `prefers-contrast: more`. No mueve la maquetación: los bloques principales quedan a ± 1 px de `mesa`. Texto de juego ≥ 7:1 (regla «contraste-alto» en `mesa-contraste`).
+- Comprobados y en verde: 4 tintas y 2 clásicas con tramas (`mesa-2tintas`), «Reducir movimiento», contraste AA en todo texto y ≥ 7:1 en cifras y palos, nombre y rol en cada control, orden de tabulación igual al de lectura.
+- Conmutador de idioma y «Alto contraste», alcanzables y pulsables con teclado y con mando.
+
+### Steam Deck y portátil
+- **SD1 · Mesa de lacre entera**: las 40 cartas sin desplazar en 1920, 1366 y 1280 (regla «forja-entera»).
+- **SD2 · Ajustes en dos columnas** desde 1200 px: todas las filas a la vista sin desplazar, también las dos nuevas (regla «ajustes-entero»).
+- **SD3 · Tres pesos** para Golpear, Descartar y Soltar, a 12 px entre sí. Golpear 48 px de alto; en 1366×768 las demás, 44 px (con 48 la bandeja pisaba «Tu Vida»). Regla «acciones».
+- **SD4 · Placas de ventaja** «×3» / «×0» opacas, con cifra ≥ 16 px y ≥ 7:1; Daño y Multi de la cuenta ≥ 20 px (reglas «ventaja» y «cuenta»).
+- **SD5 · Insignias del mando en La Taberna**: lo enfocado lleva Ⓐ y su verbo (Comprar, Elegir…) y la insignia se mueve con el foco.
+
+### Escritorio y Steam
+- **`tauri/`**: configuración de Tauri v2 (`tauri.conf.json`, `Cargo.toml`, `build.rs`, `src/main.rs` sin Steam, permisos e iconos). Empaqueta `dist/web`. **No se compiló**: no se instaló Rust.
+- **Puente de escritorio** en `src/client/platform.ts`: `tauriPlatform()` llama a seis comandos `steam_*` (logros, idioma, capa, presencia, subir y bajar la nube) solo si existe `window.__TAURI__`. Si un comando falta o falla, hace lo de la web. El título de la ventana sigue al idioma.
+- 15 pruebas: `tests/tauri.test.ts` (6) y `tests/platform.test.ts` (9, con un `invoke` falso).
+- Falta todo lo que pide una cuenta de Steamworks: AppID, SDK, logros dados de alta, depósitos, compilación y firma. Detalle y pasos en [`STEAM_BUILD.md`](STEAM_BUILD.md).
+
+### Pulido
+- V7-1: el total de la cuenta deja el amarillo y pasa a papel con tinta y filete rojo (≥ 7:1).
+- V7-2: rótulos con unidad («−12 DE VIDA», «ASEDIO EN 2 TURNOS»).
+- V7-3 a V7-5: índices de la mano ≥ 15 px en móvil, cifras del HUD ≥ 16 px, ninguna insignia del trono partida con guion.
+- V7-7: con «Alto contraste», la mesa va sin textura. V7-8 y V8-8: la forja, sin esos avisos.
+- V8-5: la pasada de lámina con el foco, también en móvil (p95 6,2 ms en 390×844). V8-6: sombra pintada en vez de `drop-shadow`. V8-9: el hueco de la mesa en 390 se reparte.
+- V8-7: el primer temblor de la mesa en frío baja de 230 ms a 30–42 ms (`warmTable()`). Queda un fotograma de unos 55 ms la primera vez que cae un sello caliente en 1920×1080 (una vez por sesión; no puntúa).
+
+### Arreglos del censo (`edbbf4c`)
+Triaje del Director sobre los 3 P0 de la síntesis y los 107 de las auditorías, medidos en las capturas y en el DOM (`artifacts/mision/v10/triaje-medidas.json`):
+- **La cuenta no cuadraba.** La línea plegada decía «54 × 3,7» con un Golpe de 197; el Multi real era 3,65. Ahora, con dos decimales: «54 × 3,65 = 197». Lo citaban 24 de 36 personas de Steam Deck, 24 de 48 casuales y 37 de 60 de portátil.
+- **Palos de la esquina chicos.** El contraste cumplía (7,9:1 a 13,8:1), pero el palo medía de 7 a 13 px y la insignia de orden, 13 px. Ahora, ≥ 14 px (10 en móvil) y ≥ 16 px (14 en móvil), sin cambiar la carta.
+- **Pie de la Crónica tapado** en 1366 y 1280: se veían de 11 a 39 px de los 44 de cada botón. Ahora la fila queda pegada al pie de la hoja.
+- Sin base, medidos: barras de la causa (14 px, 13,8:1) y dianas en móvil (48 px, a 12 px del borde).
+- Reglas nuevas de QA: «cuenta» ampliada, «esquina» y «acta-pie». Contra el código de antes dan 20, 64 y 24 fallos.
+
+### Puertas
+- `typecheck` limpio. **309 pruebas** en 20 archivos (antes 254 en 16).
+- `forja`: 169 piezas × 2 tamaños, limpia (6 avisos de densidad ya conocidos). `docs`: sin cambios. `og`, `build` y `build:web` compilan.
+- `analyze:meta`, corrido entero: 55.640 campañas en 1.441 s, 0 avisos, peor P95 de los asaltos 4–8 por baraja 18 (tope 19). **Idéntico número a número al de la 9.0**; huella `aed6a8feb2f230d1`, sin cambios.
+- Constitución, en los dos idiomas: 6 palabras clave, 52 reliquias, toda descripción ≤ 115 caracteres. `tests/congelacion.test.ts`: cero identificadores añadidos o quitados.
+- QA visual: **172 capturas** (43 estados × 4 ventanas) en español y otras 172 en inglés (`artifacts/visual-qa-en/`), 0 fallos, 0 recortes, 0 avisos; regla «fuga» sin excepciones. Estados nuevos: `portada-idioma`, `mesa-contraste` y `mesa-2tintas`.
+- Prueba de humo: **306 comprobaciones** en español y 306 en inglés, «Todo en orden». Partida guiada (tras los arreglos): 29,0 s con teclado, 29,2 s con ratón y 32,3 s con mando en español; 29,1 · 29,1 · 32,8 s en inglés (tope 60 s).
+- `qa:fps`: «60 fps: todo en orden» en tres pasadas seguidas. `qa:audio`: «La música no cansa: todo en orden».
+- Segunda certificación tras los arreglos: todas las anteriores salvo `analyze:meta`, `docs`, `og` y `qa:audio` (no se tocó nada de lo que miden), en verde.
+
+### Incidencia: Node se cae en las pruebas de cooperativo (Windows)
+- Síntoma: `npm test` daba a veces 307 de 309. El proceso de `tests/coop-estres.test.ts` moría con el código `0xC0000409`, sin mensaje (5 de 24 pasadas sueltas).
+- Diagnóstico: se reproduce fuera de Vitest (2 de 30). Muere siempre al abrir una conexión WebSocket de cliente. Con el servidor de salas en su propio proceso, en 22 pasadas murió 4 veces el de los clientes y ninguna el servidor; 3.000 conexiones contra el servidor del juego, sin caída. Es Node 24.15.0 en Windows al abrir conexiones salientes, que el servidor real no hace.
+- Arreglo: `npm test` es ahora `node scripts/test.mjs`. Corre todo menos cooperativo y después cooperativo aparte; si esa pasada muere con esa firma exacta, la repite (hasta 3 veces). Una aserción fallida o un tiempo agotado no se repiten. 14 pasadas seguidas en verde, 2 tras un reintento. Margen de 30 s por prueba. **No comprobado en Linux.**
+
+### Panel simulado: censo de 240
+Corrida `v6-completo-20261114-041529` sobre `20dbf5f`: 1.014 evaluaciones, 0 fallidas, 103,5 min (cortada en la 64 por un reinicio de la máquina y retomada con `--resume`). El panel se adaptó a la 10.0 antes de correr (conmutador, alto contraste, tres hipótesis de lanzamiento). Las personas leen el juego en español.
+- **Aprobación: 29,2 %** (70 de 240; IC95 23,8–35,2). Puerta ≥ 17,1 %: **pasa**.
+- **Claridad media: 5,01** (IC95 de las reseñas 4,85–5,17). Puerta ≥ 4,93: **pasa**, por poco.
+- **Contra el censo de la V4** (las mismas 240 personas, otro juego y otro instrumento): aprobación 28,8 → 29,2 %, **no se mueve**; claridad 4,62 → 5,01, **sube** (IC95 4,47–4,76 contra 4,85–5,17: no se tocan).
+- **Las mismas 60 de las auditorías rápidas**, dentro del censo: aprobación 26,7 → **30,0 %** (18 de 60; IC95 19,9–42,5); claridad 5,30 → **5,10**, dentro del ruido de n = 60. 46 de las 60 vieron la misma escena que en la 9.0.
+
+| Dispositivo | Aprobación | IC95 | n | Claridad |
+|---|---:|---|---:|---:|
+| PC 1080p con ratón | 41,7 % | 31,7–52,3 | 84 | 5,27 |
+| Portátil 1366×768 | 23,3 % | 14,4–35,4 | 60 | 4,88 |
+| Móvil 390×844 | 28,3 % | 18,5–40,8 | 60 | 4,78 |
+| Steam Deck 1280×800 | 11,1 % (4 de 36) | 4,4–25,3 | 36 | 4,97 |
+
+| Arquetipo | Aprobación | IC95 | n | Claridad |
+|---|---:|---|---:|---:|
+| Streamer / creador | 47,4 % | 32,5–62,7 | 38 | 5,16 |
+| Veterano de mazos | 34,9 % | 22,4–49,8 | 43 | 5,26 |
+| Especialista de interfaz | 32,4 % | 19,1–49,2 | 34 | 5,29 |
+| Adicto al combo | 30,2 % | 18,6–45,1 | 43 | 5,30 |
+| Casual de navegador | 16,7 % | 8,7–29,6 | 48 | 4,29 |
+| Purista de mesa | 14,7 % | 6,4–30,1 | 34 | 4,88 |
+
+- **Steam Deck: 4 de 36, igual que en la V4.** Con las nueve de las auditorías rápidas, 0 de 9 por quinta corrida seguida.
+- Quejas (menciones en 240 reseñas): contraste y color de palos 290 · texto chico 247 · fatiga visual 183 · palo Inmune 165 · reglas confusas 153 · objetivos táctiles 65. En la V4: contraste 205 · texto chico 355 · fatiga 205 · reglas confusas 187 · táctiles 86. El contraste sube aunque las medidas cumplen.
+- Precio justo (mediana): 8,0 USD. Van Westendorp: óptimo 8,19, indiferencia 8,13, piso 4,25, techo 14,82 USD. En deseados: 62,5 %.
+- Hipótesis de lanzamiento (V11), a favor de la propuesta: demo con los tres primeros asaltos **81,2 %**, Asalto diario entre amigos **70,0 %**, campaña corta de cuatro asaltos **63,1 %**. Sesgo de posición alto, 38,8 % de los pares: son pistas.
+- El panel no se repitió tras los arreglos: son de presentación, con su regla de DOM, y una auditoría de 60 (±12 puntos) no los distinguiría.
+
+### Estudio
+- Orden de celdas: director → reglas-balance → arte-ui → juice-ux; después, puertas, censo, triaje, arreglos de `arte-ui` (a `juice-ux` no le tocó ninguno) y segunda certificación. Bitácoras en `artifacts/mision/v10/`.
+- Regla nueva para quien toque `src/rules/`: ningún archivo que importe el motor y que el motor importe puede importar `src/shared/i18n` (ciclo de importación; ver la bitácora de `reglas-balance`).
+- Documento de evolución de la misión: [`EVOLUCION_V4_V10.md`](EVOLUCION_V4_V10.md).
+
+### Abierto
+- **Steam Deck**: 4 de 36 en el censo; nadie lo ha probado en el aparato.
+- **Contraste percibido**: la queja sube (205 → 290) con las medidas en verde.
+- **El casual**: 16,7 % de aprobación.
+- **El inglés**: sin revisión de un hablante nativo y sin ninguna medida de jugadores.
+- **La envoltura de escritorio**: sin compilar ni probar; sin cuenta de Steamworks.
+- El fotograma de ~55 ms del primer sello caliente en 1920×1080.
+- La caída de Node en Windows: rodeada, no resuelta; sin comprobar en Linux.
+- En la Crónica de 1366×768, el bloque de feedback queda a medias bajo el pie pegado (se alcanza desplazando la hoja).
+
 ## 9.0.0 — 2026-11-13
 
 El balance vive en un archivo, una herramienta propone ajustes acotados, amigos y familia mandan su partida en un toque y la conjura de cuatro aguanta un corte de red. Ningún número de juego cambió: el laboratorio sale idéntico al de la 8.0. Motivo: el paso 4 del encargo y lo que la 8.0 dejó abierto en las capturas de Steam Deck. Candidata `76f628c`; puertas en `artifacts/mision/v9/puertas.md`.
