@@ -24,7 +24,7 @@ import { pump, renderInteractive, toggleInspector } from './table';
 import { monarchGallery, showBark, spotlight } from './guia';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import { feedbackShow, showRules, showSettings } from './widgets';
-import { clearTelemetry, noteRun } from './telemetry';
+import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
 
 const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'pasarela', 'resonador'];
 const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
@@ -160,10 +160,12 @@ function winStage(run: Run): void {
   run.battle.cleans = 2;
   finishBattle(run, state);
 }
-/** V9: los datos de prueba de la QA solo llevan esta campaña (como al llegar a la Crónica de verdad). */
+/**
+ * V9: la campaña de la Crónica queda en los datos de prueba (como al llegar a la Crónica de verdad). No borra
+ * lo que ya hubiera: la prueba de humo juega de verdad antes de abrir Ajustes y lee luego lo apuntado.
+ */
 function logged(run: Run): void {
   setMode('pointer');
-  clearTelemetry();
   noteRun(run);
 }
 
@@ -317,10 +319,10 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(run);
     setScreen('run');
   },
-  // V9: con la campaña de acta-derrota en los datos de prueba (como quien ya ha jugado una)
+  // V9: con al menos una campaña en los datos de prueba (la de acta-derrota si aún no hay ninguna)
   ajustes: () => {
     setMode('pointer');
-    logged(derrota());
+    if (!telemetryLog().some((r) => r.modo !== 'guia')) noteRun(derrota());
     clean();
     S.campaign = null;
     setScreen('home');
@@ -547,6 +549,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(run);
     setScreen('run');
     feedbackShow(app, 'copiado');
+    // en el móvil el bloque queda bajo la tabla: la hoja se desplaza hasta él, como tras pulsarlo
+    app.querySelector('.fb')?.scrollIntoView({ block: 'center' });
   },
   // Ajustes con la fila «Datos de prueba» y dos campañas guardadas (una derrota y una victoria)
   'ajustes-prueba': () => {

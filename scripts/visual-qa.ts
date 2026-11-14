@@ -733,9 +733,10 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (box?.dataset.hecho !== 'copiado' || !/^Copiado: pega el resumen donde quieras/.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pega el resumen donde quieras»');
     }
     if (opts.state.startsWith('ajustes')) {
-      const n = opts.state === 'ajustes-prueba' ? 2 : 1;
+      // ajustes-prueba lleva exactamente dos; ajustes, las que haya dejado la pasada (al menos una)
+      const n = opts.state === 'ajustes-prueba' ? '2' : '[1-9]\\d*';
       const count = scope.querySelector<HTMLElement>('#fb-cuenta')?.textContent?.trim() ?? '';
-      if (!new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`).test(count)) fail('feedback', `la fila «Datos de prueba» dice «${count}» (se esperaban ${n})`);
+      if (!new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`).test(count)) fail('feedback', `la fila «Datos de prueba» dice «${count}» (se esperaban ${opts.state === 'ajustes-prueba' ? '2' : 'una o más'})`);
       for (const id of ['fb-ver', 'fb-borrar']) {
         const b = scope.querySelector<HTMLButtonElement>(`#${id}`);
         if (!b || !visible(b) || b.disabled) fail('feedback', `falta «${id === 'fb-ver' ? 'Ver' : 'Borrar'}» en la fila «Datos de prueba»`);

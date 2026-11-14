@@ -16,6 +16,7 @@ import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
 import { gamepadSuite, guidedRun, sealCheck } from './gamepad-qa';
 import { telemetrySuite } from './telemetry-qa';
+import { feedbackButtonsSuite } from './feedback-qa';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
 const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : 'artifacts/visual-qa/smoke');
@@ -404,6 +405,9 @@ async function main(): Promise<void> {
   // ── V9 · datos de prueba con la red bloqueada: cero peticiones sin pulsar, una al pulsar ──
   console.log('Datos de prueba');
   await telemetrySuite(browser, site.url, check, problems);
+  // arte-ui · el botón «Enviar Crónica / Feedback de Prueba» pulsado de verdad (ratón, teclado y mando)
+  console.log('Botón de feedback');
+  await feedbackButtonsSuite(browser, site.url, check, problems);
 
   // ── V8 · una segunda pasada con «Reducir movimiento»: nada vuela ni tiembla ──
   console.log('Reducir movimiento');
