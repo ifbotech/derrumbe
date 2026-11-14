@@ -130,7 +130,12 @@ export const RESTOS_ES = /[áéíóúüñÁÉÍÓÚÜÑ¿¡]|(?<![\p{L}\p{N}])(?
  * Nombres propios españoles que pueden ir en un texto inglés sin ser una fuga: la marca de origen (el sello
  * de lacre de la cara inglesa). arte-ui y juice-ux pueden AÑADIR entradas (con el motivo en su bitácora).
  */
-export const PERMITIDOS_EN: string[] = [BRAND.es.title];
+export const PERMITIDOS_EN: string[] = [
+  BRAND.es.title,
+  // arte-ui V10: la tecla y el botón Y del mando (no es la «y» española)
+  'the Y key',
+  'the Y button',
+];
 
 /** Los restos de español de un texto inglés (vacío si está limpio). Quita antes las etiquetas HTML, los `{campo}` y lo permitido. */
 export function restosEs(texto: string): string[] {

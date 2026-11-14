@@ -14,6 +14,7 @@ import type { PlayerView } from '../rules/engine';
 import { BOSSES, bossIdentity, type CurseMark } from '../rules/run';
 import type { TutorialFocus } from '../rules/tutorial';
 import { MonarchMood, monarchSvg } from './art';
+import { monBadge, monD, monDec, monN } from './lengua';
 
 // ───────────────────────── iconos de la maldición ─────────────────────────
 // Pequeños, de trazo grueso y en currentColor: van en la placa del decreto y en las marcas de la mesa.
@@ -41,7 +42,7 @@ export const curseIcon = (mark: CurseMark, cls = '') => `<svg class="curse-ico $
 export function cursePlate(id: string): string {
   const b = bossIdentity(id);
   if (!b) return '';
-  return `<span class="curse-plate" data-mark="${b.curse.mark}">${curseIcon(b.curse.mark)}<b>${b.curse.badge}</b></span>`;
+  return `<span class="curse-plate" data-mark="${b.curse.mark}">${curseIcon(b.curse.mark)}<b>${monBadge(id)}</b></span>`;
 }
 
 // ───────────────────────── el monarca en la mesa ─────────────────────────
@@ -70,8 +71,8 @@ export function paintMonarch(bossId: string | null, v: PlayerView | null): void 
     shownBoss = bossId;
     host.hidden = false;
     host.dataset.boss = bossId;
-    host.innerHTML = `<div class="mon-port" data-lupa="boss:${bossId}" data-tip="<b>${b.who} · ${b.name}</b>${b.desc}">${monarchSvg(bossId, 'calma')}</div>
-      <div class="mon-txt"><span class="mon-who">${b.who}</span>${cursePlate(bossId)}</div>`;
+    host.innerHTML = `<div class="mon-port" data-lupa="boss:${bossId}" data-tip="<b>${monN(bossId)} · ${monDec(bossId)}</b>${monD(bossId)}">${monarchSvg(bossId, 'calma')}</div>
+      <div class="mon-txt"><span class="mon-who">${monN(bossId)}</span>${cursePlate(bossId)}</div>`;
   }
   screen.dataset.curse = b.curse.mark;
   markTable(b.curse.mark, v);
@@ -119,7 +120,7 @@ export function monarchGallery(): string {
   return `<div class="monarcas-galeria">${BOSSES.map(
     (b) => `<figure class="mon-ficha" data-boss="${b.id}">
       <div class="mon-pareja">${monarchSvg(b.id, 'calma')}${monarchSvg(b.id, 'vencido', 'mini')}</div>
-      <figcaption><span class="mon-who">${b.who}</span>${cursePlate(b.id)}</figcaption>
+      <figcaption><span class="mon-who">${monN(b.id)}</span>${cursePlate(b.id)}</figcaption>
     </figure>`,
   ).join('')}</div>`;
 }

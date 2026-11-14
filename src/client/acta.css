@@ -98,3 +98,8 @@
   .semilla-aviso { font-size: 14px; }
   .acta-causa .ac-rot, .acta-causa b, .acta-causa small { font-size: 14px; }
 }
+
+/* V10 · en inglés «CHRONICLE» y «COURT DEFEATED» son más anchos: en el móvil el sello aprieta la letra para no pisar la ficha */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :root[lang='en'] .end.acta .acta-sheet > .inkstamp.big { font-size: 16px; letter-spacing: 0; padding: 3px 6px 4px; }
+}

@@ -6,6 +6,8 @@
 //   npm run qa:visual -- mesa lupa       solo esos estados
 //   VIEW=1366x768 npm run qa:visual      solo esa ventana
 //   QA_OUT=dist/capturas npm run …       capturas e informe en otra carpeta (bucle corto de una celda)
+//   npm run qa:visual -- --lang=en       la pasada en inglés (o QA_LANG=en): capturas e informe en
+//                                        artifacts/visual-qa-en/, nunca encima de las españolas
 //
 // Reglas de imprenta que se comprueban (y que hacen fallar la orden):
 //   texto     ningún texto por debajo de 13 px efectivos (CSS × escala), tampoco los <text> de SVG ni
@@ -56,25 +58,37 @@
 //             línea role="status" que dice lo que va a pasar según la compilación; ninguna casilla; en
 //             acta-feedback la confirmación a la vista; en ajustes-prueba la fila «Datos de prueba» con
 //             «2 campañas · X kB, guardadas en este equipo», «Ver» y «Borrar»
+//   V10:
+//   fuga      (solo en la pasada inglesa) ningún resto de español (RESTOS_ES con PERMITIDOS_EN, los mismos de
+//             src/shared/i18n.ts) en el texto visible, data-tip, aria-label, title, placeholder ni alt; no
+//             cuenta lo que va dentro de un lang="es" (el sello SANGRE Y PALO, el botón ES) ni el interruptor.
+//             Lo que cae en zonas de juice-ux aún sin traducir (FUGA_PENDIENTE) sale como aviso
+//   contraste-alto  en mesa-contraste: las cajas de la mesa son las mismas que sin Alto contraste (±1 px) y
+//             todo el texto de la mesa da ≥ 7:1
+//   idioma    en portada-idioma: el interruptor ES | EN se ve junto al candado, con las dos etiquetas, la
+//             activa marcada (aria-pressed), dianas ≥ 44 px separadas ≥ 8 px y el foco de teclado visible
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
+import { PERMITIDOS_EN, RESTOS_ES } from '../src/shared/i18n';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
-const OUT = resolve(process.env.QA_OUT?.trim() || 'artifacts/visual-qa');
+/** V10: idioma de la pasada. El inglés escribe en su propia carpeta. */
+const LANG = process.argv.includes('--lang=en') || process.env.QA_LANG?.trim() === 'en' ? 'en' : 'es';
+const OUT = resolve(process.env.QA_OUT?.trim() || (LANG === 'en' ? 'artifacts/visual-qa-en' : 'artifacts/visual-qa'));
 const VIEWS = [
   { name: '1920x1080', width: 1920, height: 1080 },
   { name: '1366x768', width: 1366, height: 768 },
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
 const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas'];
 const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
 
 /**
@@ -84,6 +98,14 @@ const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-mona
  * lista es fallo.
  */
 const ANIMA_PENDIENTE_JUICE: string[] = [];
+
+/**
+ * V10 · regla «fuga»: zonas de juice-ux cuyos textos aún no tienen traducción (Susurros, voces, partida
+ * guiada, avisos del mando, la tabla de controles, los avisos de la red y la fila de Susurros de Ajustes).
+ * Un resto de español dentro de una de ellas sale como aviso, no como fallo. juice-ux las traduce y deja
+ * la lista vacía.
+ */
+const FUGA_PENDIENTE: string[] = ['.conn', '.whisper', '.set-susurros', '.keys', '.coach', '.tutorial', '.guia', '.bark', '.voz', '.pad-hint', '.net-toast', '.toast.net'];
 
 interface Fail {
   regla: string;
@@ -95,7 +117,7 @@ interface Fail {
 }
 
 /** Lo que se comprueba dentro de la página. Devuelve la lista de fallos, cada uno con su regla. */
-async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; pendiente: string[] }): Promise<Fail[]> {
+async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; pendiente: string[]; fuga: { re: string; permitidos: string[]; pendiente: string[] } | null }): Promise<Fail[]> {
   const out: Fail[] = [];
   const seen = new Set<string>();
   const W = innerWidth;
@@ -446,10 +468,11 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     if (fg && bg) {
       const k = ratio(mix(fg, bg, fg.a * alpha(el)), bg);
       // V7 · F3: la Vida del trono se lee de un vistazo, como el índice de la carta: 7:1 contra su placa
-      const need = el.closest(PLACA) && !opts.state.startsWith('x') ? (el.closest('.corner b, .hp span') ? 7 : 4.5) : 4.5;
+      const alto = opts.state === 'mesa-contraste';
+      const need = alto ? 7 : el.closest(PLACA) && !opts.state.startsWith('x') ? (el.closest('.corner b, .hp span') ? 7 : 4.5) : 4.5;
       if (k < need - 0.05 && !contrasts.has(id)) {
         contrasts.set(id, '');
-        fail('contraste', `contraste ${k.toFixed(1)}:1 (mínimo ${need}:1): ${id} «${node.textContent.trim().slice(0, 18)}»`, el);
+        fail(alto ? 'contraste-alto' : 'contraste', `contraste ${k.toFixed(1)}:1 (mínimo ${need}:1): ${id} «${node.textContent.trim().slice(0, 18)}»${alto ? ` [${cs.color} sobre rgb(${bg.r}, ${bg.g}, ${bg.b})]` : ''}`, el);
       }
     }
   }
@@ -716,33 +739,38 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
 
   // ───────── feedback (V9): «Enviar Crónica / Feedback de Prueba» en la Crónica y en Ajustes ─────────
   if (['acta', 'acta-derrota', 'acta-victoria', 'acta-feedback', 'ajustes', 'ajustes-prueba'].includes(opts.state)) {
+    // V10: los mismos textos en la cara inglesa (ui.fb.*, ui.set.feedback.*, ui.set.llana.*)
+    const en = document.documentElement.lang === 'en';
+    const FB = en
+      ? { boton: 'Send Chronicle / Playtest Feedback', aviso: 'Open report', linea: /Nothing leaves this device|sends your last campaign|^(Copied|Downloaded|Shared|Sent)/, copiado: /^Copied: paste the summary wherever you like/, cuenta: (n: string) => new RegExp(`^${n} campaigns? · \\d+\\.\\d kB, saved on this device$`), llana: /^(Nothing leaves this device: the button copies or downloads\.|Pressing Send sends your last campaign, and nothing else\.)$/ }
+      : { boton: 'Enviar Crónica / Feedback de Prueba', aviso: 'Abrir aviso', linea: /Nada sale de este equipo|se manda tu última campaña|^(Copiado|Descargado|Compartido|Enviado)/, copiado: /^Copiado: pega el resumen donde quieras/, cuenta: (n: string) => new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`), llana: /^(Nada sale de este equipo: el botón copia o descarga\.|Al pulsar Enviar se manda tu última campaña, y nada más\.)$/ };
     const send = scope.querySelector<HTMLButtonElement>('#fb-send');
     const out = scope.querySelector<HTMLElement>('.fb .fb-estado');
     if (!send || !visible(send)) fail('feedback', 'falta el botón «Enviar Crónica / Feedback de Prueba»');
     else {
-      if (send.textContent?.trim() !== 'Enviar Crónica / Feedback de Prueba') fail('feedback', `el botón dice «${send.textContent?.trim()}»`, send);
+      if (send.textContent?.trim() !== FB.boton) fail('feedback', `el botón dice «${send.textContent?.trim()}»`, send);
       if (send.disabled) fail('feedback', 'el botón está desactivado con una campaña guardada', send);
     }
     if (!out || out.getAttribute('role') !== 'status' || !out.textContent?.trim()) fail('feedback', 'la línea de lo que va a pasar no está o no lleva role="status"');
-    else if (!/Nada sale de este equipo|se manda tu última campaña|^(Copiado|Descargado|Compartido|Enviado)/.test(out.textContent.trim())) fail('feedback', `la línea no dice qué va a pasar: «${out.textContent.trim()}»`, out);
+    else if (!FB.linea.test(out.textContent.trim())) fail('feedback', `la línea no dice qué va a pasar: «${out.textContent.trim()}»`, out);
     if (scope.querySelector('.fb input[type="checkbox"], .fb-datos input[type="checkbox"]')) fail('feedback', 'hay una casilla junto al botón de feedback');
     const issue = scope.querySelector<HTMLElement>('#fb-issue');
-    if (issue && issue.textContent?.trim() !== 'Abrir aviso') fail('feedback', `el botón del aviso dice «${issue.textContent?.trim()}»`, issue);
+    if (issue && issue.textContent?.trim() !== FB.aviso) fail('feedback', `el botón del aviso dice «${issue.textContent?.trim()}»`, issue);
     if (opts.state === 'acta-feedback') {
       const box = scope.querySelector<HTMLElement>('.fb');
-      if (box?.dataset.hecho !== 'copiado' || !/^Copiado: pega el resumen donde quieras/.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pega el resumen donde quieras»');
+      if (box?.dataset.hecho !== 'copiado' || !FB.copiado.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pega el resumen donde quieras»');
     }
     if (opts.state.startsWith('ajustes')) {
       // ajustes-prueba lleva exactamente dos; ajustes, las que haya dejado la pasada (al menos una)
       const n = opts.state === 'ajustes-prueba' ? '2' : '[1-9]\\d*';
       const count = scope.querySelector<HTMLElement>('#fb-cuenta')?.textContent?.trim() ?? '';
-      if (!new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`).test(count)) fail('feedback', `la fila «Datos de prueba» dice «${count}» (se esperaban ${opts.state === 'ajustes-prueba' ? '2' : 'una o más'})`);
+      if (!FB.cuenta(n).test(count)) fail('feedback', `la fila «Datos de prueba» dice «${count}» (se esperaban ${opts.state === 'ajustes-prueba' ? '2' : 'una o más'})`);
       for (const id of ['fb-ver', 'fb-borrar']) {
         const b = scope.querySelector<HTMLButtonElement>(`#${id}`);
         if (!b || !visible(b) || b.disabled) fail('feedback', `falta «${id === 'fb-ver' ? 'Ver' : 'Borrar'}» en la fila «Datos de prueba»`);
       }
       const plain = scope.querySelector<HTMLElement>('.fb-llana')?.textContent?.trim() ?? '';
-      if (!/^(Nada sale de este equipo: el botón copia o descarga\.|Al pulsar Enviar se manda tu última campaña, y nada más\.)$/.test(plain)) fail('feedback', `la línea llana de «Datos de prueba» dice «${plain}»`);
+      if (!FB.llana.test(plain)) fail('feedback', `la línea llana de «Datos de prueba» dice «${plain}»`);
     }
   }
 
@@ -838,7 +866,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
   // título del idioma y, en su cinta de lacre, el otro: visibles, dentro de la ventana, sin pisarse,
   // la cinta ≥ 13 px (14 en móvil) y en romana, y sin tapar las rodelas de los cuatro estandartes
   if (opts.state === 'portada' || opts.state === 'portada-en') {
-    const want = opts.state === 'portada-en' ? ['BLOOD & SUITS', 'SANGRE Y PALO'] : ['SANGRE Y PALO', 'BLOOD & SUITS'];
+    // V10: en la pasada inglesa la portada ya es la cara inglesa
+    const want = opts.state === 'portada-en' || document.documentElement.lang === 'en' ? ['BLOOD & SUITS', 'SANGRE Y PALO'] : ['SANGRE Y PALO', 'BLOOD & SUITS'];
     const norm = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
     const title = document.querySelector('.home-left .title');
     const ribbon = document.querySelector('.home-left .brand-seal .seal-ribbon');
@@ -1229,6 +1258,229 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     }
   }
 
+  // ── fuga (V10, pasada inglesa): ningún resto de español en lo que lee una persona ──
+  if (opts.fuga) {
+    const fz = opts.fuga;
+    const re = new RegExp(fz.re, 'giu');
+    // lo de dentro de un lang="es", el interruptor y las teclas (<kbd>: «Y» es un botón, no la conjunción)
+    const exento = (el: Element | null) => !!el && (el.closest('[lang]')?.getAttribute('lang') === 'es' || !!el.closest('.lang-switch, kbd'));
+    const pendiente = (el: Element | null) => !!el && fz.pendiente.some((s) => el.closest(s));
+    const avisos = new Set<string>();
+    const fuga = (where: string, text: string | null | undefined, el: Element | null) => {
+      if (!text || exento(el)) return;
+      let limpio = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+      for (const p of fz.permitidos) limpio = limpio.split(p).join(' ');
+      const restos = [...limpio.matchAll(re)].map((m) => m[0]);
+      if (!restos.length) return;
+      const msg = `«${restos.slice(0, 3).join('», «')}» en ${where}: «${limpio.trim().slice(0, 60)}»`;
+      if (pendiente(el)) {
+        if (!avisos.has(msg)) {
+          avisos.add(msg);
+          out.push({ regla: 'fuga', msg: `${msg} (pendiente de juice-ux)`, ajeno: false, aviso: true });
+        }
+      } else fail('fuga', msg, el);
+    };
+    fuga('el título de la página', document.title, null);
+    const fw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = fw.nextNode(); node; node = fw.nextNode()) {
+      const el = node.parentElement;
+      if (!el || !node.textContent?.trim() || el.closest('script, style, template') || !visible(el)) continue;
+      fuga(`el texto de ${path(el)}`, node.textContent, el);
+    }
+    for (const el of document.querySelectorAll('[data-tip], [aria-label], [title], [placeholder], [alt]')) {
+      for (const attr of ['data-tip', 'aria-label', 'title', 'placeholder', 'alt']) if (el.hasAttribute(attr)) fuga(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
+    }
+    for (const el of document.body.querySelectorAll('*')) {
+      if (!visible(el)) continue;
+      for (const pseudo of ['::before', '::after']) {
+        const c = getComputedStyle(el, pseudo).content;
+        if (c && c !== 'none' && c !== 'normal' && /^["'].*\p{L}/u.test(c)) fuga(`el ${pseudo} de ${path(el)}`, c.slice(1, -1), el);
+      }
+    }
+  }
+
+  // ── contraste-alto (V10): Alto contraste no mueve la maqueta: las cajas de la mesa, ±1 px ──
+  if (opts.state === 'mesa-contraste') {
+    const html = document.documentElement;
+    if (!html.classList.contains('contraste')) fail('contraste-alto', 'la mesa no lleva la clase contraste');
+    const BLOQUES = ['#table', '#towers', '.tower', '#hand', '#hand > .card', '#score', '.actions', '.actions button', '.hud', '.belt', '.belt-slot', '.pile', '.log'];
+    const cajas = () => BLOQUES.flatMap((s) => [...document.querySelectorAll(s)].filter(visible).map((el, i) => ({ k: `${s}#${i}`, r: el.getBoundingClientRect() })));
+    const con = cajas();
+    html.classList.remove('contraste');
+    const sin = new Map(cajas().map((b) => [b.k, b.r]));
+    html.classList.add('contraste');
+    if (!con.length) fail('contraste-alto', 'no hay bloques de la mesa que medir');
+    for (const b of con) {
+      const r = sin.get(b.k);
+      if (!r) {
+        fail('contraste-alto', `${b.k} solo existe con Alto contraste`);
+        continue;
+      }
+      const d = Math.max(Math.abs(b.r.left - r.left), Math.abs(b.r.top - r.top), Math.abs(b.r.width - r.width), Math.abs(b.r.height - r.height));
+      if (d > 1) fail('contraste-alto', `${b.k} se mueve ${d.toFixed(1)} px con Alto contraste`);
+    }
+  }
+
+  // ── idioma (V10): el interruptor ES | EN de la portada ──
+  if (opts.state === 'portada-idioma') {
+    const sw = document.querySelector('#home-lang');
+    const lock = document.querySelector('.home-left .tagline') ?? document.querySelector('.home-left .title');
+    if (!sw || !visible(sw)) fail('idioma', 'no se ve el interruptor ES | EN en la portada');
+    else {
+      const opts2 = [...sw.querySelectorAll<HTMLElement>('[data-lang]')];
+      const labels = opts2.map((b) => b.textContent?.trim());
+      if (labels.join('|') !== 'ES|EN') fail('idioma', `el interruptor enseña «${labels.join(' | ')}» en vez de «ES | EN»`, sw);
+      if (opts2.filter((b) => b.getAttribute('aria-pressed') === 'true').length !== 1) fail('idioma', 'el idioma activo no va marcado (aria-pressed) o hay dos', sw);
+      for (const b of opts2) {
+        const r = b.getBoundingClientRect();
+        if (r.width < 43.5 || r.height < 43.5) fail('idioma', `la diana ${b.textContent?.trim()} mide ${Math.round(r.width)}×${Math.round(r.height)} px`, b);
+      }
+      if (opts2.length === 2) {
+        const [a, b] = opts2.map((o) => o.getBoundingClientRect());
+        const gap = Math.max(b.left - a.right, a.left - b.right, b.top - a.bottom, a.top - b.bottom);
+        if (gap < 7.5) fail('idioma', `solo ${Math.round(gap)} px entre ES y EN`, sw);
+      }
+      if (lock) {
+        const a = lock.getBoundingClientRect();
+        const b = sw.getBoundingClientRect();
+        const dist = Math.max(b.top - a.bottom, a.top - b.bottom, b.left - a.right, a.left - b.right, 0);
+        if (dist > 48) fail('idioma', `el interruptor queda a ${Math.round(dist)} px del candado`, sw);
+      }
+      const f = document.activeElement as HTMLElement | null;
+      if (!f || !sw.contains(f)) fail('idioma', 'el foco de teclado no está en el interruptor', sw);
+      else {
+        const cs = getComputedStyle(f);
+        const ring = (parseFloat(cs.outlineWidth) || 0) + (cs.boxShadow !== 'none' ? 3 : 0);
+        if (ring < 3) fail('idioma', 'el foco del interruptor no se ve (marco < 3 px)', f);
+      }
+    }
+  }
+
+  // ── V10 · Steam Deck y portátil (SD1–SD4) ──
+  const portatil = !opts.mobile && (W === 1366 || W === 1280);
+  const pxDe = (el: Element) => parseFloat(getComputedStyle(el).fontSize) * scaleOf(el);
+  const dentro = (r: DOMRect, c: { left: number; top: number; right: number; bottom: number }) => r.left >= c.left - 1 && r.top >= c.top - 1 && r.right <= c.right + 1 && r.bottom <= c.bottom + 1;
+  const VENTANA = { left: 0, top: 0, right: W, bottom: H };
+
+  // acciones (SD3): Golpear la mayor; Descartar con tinta propia; Soltar sin relleno; 48 px de alto y 12 de aire
+  if (portatil && ['mesa', 'mesa-mando', 'mesa-cuenta', 'mesa-peligro', 'mesa-monarca'].includes(opts.state)) {
+    const bs = [...document.querySelectorAll<HTMLElement>('.actions button')].filter(visible);
+    const main = bs.find((b) => b.id === 'btn-strike' || b.id === 'btn-pass');
+    const dis = document.getElementById('btn-discard');
+    const clr = document.getElementById('btn-clear');
+    if (!main || !dis || !clr || !visible(dis) || !visible(clr)) fail('acciones', 'faltan Golpear, Descartar o Soltar en la mesa', document.querySelector('.actions'));
+    else {
+      const area = (b: Element) => b.getBoundingClientRect().width * b.getBoundingClientRect().height;
+      for (const b of bs) if (b !== main && area(b) >= area(main)) fail('acciones', `#${b.id} es tan grande como Golpear`, b);
+      for (const b of bs) {
+        // en 1366 × 768 SD3 admite 44 px en las secundarias (Golpear siempre 48)
+        const h = b.getBoundingClientRect().height;
+        const min = W === 1366 && b !== main ? 44 : 48;
+        if (h < min - 0.5) fail('acciones', `#${b.id} mide ${Math.round(h)} px de alto (mínimo ${min})`, b);
+      }
+      const rs = bs.map((b) => ({ id: b.id, r: b.getBoundingClientRect() }));
+      for (let i = 0; i < rs.length; i++)
+        for (let j = i + 1; j < rs.length; j++) {
+          const a = rs[i].r;
+          const b = rs[j].r;
+          const g = Math.max(a.left - b.right, b.left - a.right, a.top - b.bottom, b.top - a.bottom);
+          if (g < 11.5) fail('acciones', `#${rs[i].id} y #${rs[j].id} a ${Math.round(g)} px (mínimo 12)`, document.querySelector('.actions'));
+        }
+      // el marco único pinta el relleno con --bg
+      const fondo = (b: Element) => {
+        const cs = getComputedStyle(b);
+        let c = rgb(cs.backgroundColor);
+        if (!c || c.a < 0.1) {
+          const v = cs.getPropertyValue('--bg').trim();
+          const h = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)?.[1];
+          const hx = h && (h.length === 3 ? [...h].map((d) => d + d).join('') : h);
+          c = hx ? { r: parseInt(hx.slice(0, 2), 16), g: parseInt(hx.slice(2, 4), 16), b: parseInt(hx.slice(4, 6), 16), a: 1 } : rgb(v);
+        }
+        return c && c.a >= 0.1 ? c : null;
+      };
+      const fd = fondo(dis);
+      const fc = fondo(clr);
+      if (fd && fc && ratio(fd, fc) < 3) fail('acciones', `Descartar y Soltar tienen rellenos parecidos (${ratio(fd, fc).toFixed(1)}:1, mínimo 3:1)`, clr);
+      if (!fd) fail('acciones', 'Descartar no tiene tinta propia (relleno transparente)', dis);
+    }
+  }
+
+  // ventaja (SD4): las placas de ventaja de la mano y de los tronos, ≥ 16 px, opacas y a 7:1; «×0» en tinta sobre papel
+  if (portatil && ['mesa', 'mesa-mando', 'mesa-peligro'].includes(opts.state)) {
+    const bs = [...document.querySelectorAll<HTMLElement>('#hand .card > .plate.factor b, .plates b')].filter(visible);
+    if (!bs.length) fail('ventaja', 'no hay placas de ventaja que medir');
+    for (const b of bs) {
+      const plate = b.closest('.plate') ?? b.parentElement!;
+      const px = pxDe(b);
+      if (px < 15.95) fail('ventaja', `la cifra «${b.textContent?.trim()}» mide ${px.toFixed(1)} px (mínimo 16)`, b);
+      const bg = rgb(getComputedStyle(plate).backgroundColor);
+      if (!bg || bg.a < 0.95) {
+        fail('ventaja', `la placa «${b.textContent?.trim()}» no es opaca`, plate);
+        continue;
+      }
+      const fg = rgb(getComputedStyle(b).color);
+      const k = fg ? ratio(fg, bg) : 0;
+      if (k < 7) fail('ventaja', `la placa «${b.textContent?.trim()}» va a ${k.toFixed(1)}:1 (mínimo 7:1)`, plate);
+      if (plate.matches('.iron') && fg && lum(bg) < lum(fg)) fail('ventaja', 'la placa «×0» no va en tinta sobre papel', plate);
+    }
+  }
+
+  // cuenta (SD4 y V7-1): Daño y Multi ≥ 20 px fuera del móvil; el total a 7:1 sobre su placa
+  if (!opts.mobile && ['mesa', 'mesa-cuenta', 'mesa-peligro'].includes(opts.state)) {
+    for (const b of [...document.querySelectorAll('#score .calc .fr b')].filter(visible)) {
+      const px = pxDe(b);
+      if (px < 19.95) fail('cuenta', `la cifra «${b.textContent?.trim()}» de Daño o Multi mide ${px.toFixed(1)} px (mínimo 20)`, b);
+    }
+    const t = document.querySelector('#score .calc b.t');
+    if (t && visible(t)) {
+      const bg = rgb(getComputedStyle(t).backgroundColor);
+      const fg = rgb(getComputedStyle(t).color);
+      if (bg && fg && bg.a >= 0.95 && ratio(fg, bg) < 7) fail('cuenta', `el total va a ${ratio(fg, bg).toFixed(1)}:1 (mínimo 7:1)`, t);
+    }
+  }
+
+  // insignia (V7-5): ninguna insignia de estado del trono se parte en dos renglones
+  if (opts.state.startsWith('mesa')) {
+    for (const fx of [...document.querySelectorAll<HTMLElement>('.tower .fx')].filter(visible)) {
+      const cs = getComputedStyle(fx);
+      const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
+      const inner = fx.getBoundingClientRect().height - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - (parseFloat(cs.borderTopWidth) || 0) - (parseFloat(cs.borderBottomWidth) || 0);
+      if (inner > lh * 1.5 * scaleOf(fx)) fail('texto pisado', `la insignia «${fx.textContent?.trim()}» del trono se parte en dos renglones`, fx);
+    }
+  }
+
+  // forja-entera (SD1): las 40 cartas a la vista, dentro de la ventana y de su caja, sin desplazar
+  if (opts.state === 'forja' && !opts.mobile && [1920, 1366, 1280].includes(W)) {
+    const box = document.querySelector<HTMLElement>('.deck-box');
+    const cs = [...document.querySelectorAll('.deck-box .deck-mini .card')];
+    if (!box) fail('forja-entera', 'no se ve la caja de la forja');
+    else {
+      if (cs.length < 40) fail('forja-entera', `la forja enseña ${cs.length} cartas (se esperaban 40)`, box);
+      const cr = box.getBoundingClientRect();
+      const fuera = cs.filter((c) => !dentro(c.getBoundingClientRect(), VENTANA) || !dentro(c.getBoundingClientRect(), cr));
+      if (fuera.length) fail('forja-entera', `${fuera.length} cartas quedan fuera de la ventana o de su caja`, fuera[0]);
+      for (let p: HTMLElement | null = box; p; p = p.parentElement) if (p.scrollTop > 0) fail('forja-entera', `${path(p)} está desplazado ${p.scrollTop} px`, p);
+      if (box.scrollHeight > box.clientHeight + 1) fail('forja-entera', `la caja necesita desplazarse (${box.scrollHeight - box.clientHeight} px)`, box);
+    }
+  }
+
+  // ajustes-entero (SD2): cada fila de Ajustes y su control, dentro de la ventana y sin desplazar
+  if ((opts.state === 'ajustes' || opts.state === 'ajustes-prueba') && !opts.mobile && [1920, 1366, 1280].includes(W)) {
+    const sets = [...document.querySelectorAll<HTMLElement>('.set')].filter(visible);
+    if (!sets.length) fail('ajustes-entero', 'no hay filas de Ajustes');
+    for (const s of sets) {
+      const els = [s, ...s.querySelectorAll('button, input, select, a, [role=switch]')].filter(visible);
+      for (const el of els) if (!dentro(el.getBoundingClientRect(), VENTANA)) fail('ajustes-entero', `${path(el)} queda fuera de la ventana`, el);
+    }
+    // la tabla de Controles, debajo, puede quedar para desplazar; las filas no: se leen con scrollTop 0
+    const root = sets[0]?.closest<HTMLElement>('.modal-box, .settings, .modal') ?? null;
+    for (let p: HTMLElement | null = root; p; p = p.parentElement) if (p.scrollTop > 0) fail('ajustes-entero', `${path(p)} está desplazado ${p.scrollTop} px`, p);
+    if (root) {
+      const cr = root.getBoundingClientRect();
+      for (const s of sets) if (!dentro(s.getBoundingClientRect(), cr)) fail('ajustes-entero', `la fila ${path(s)} se sale de la caja de Ajustes`, s);
+    }
+  }
+
   return out;
 }
 
@@ -1241,7 +1493,9 @@ async function main(): Promise<void> {
   const errors: string[] = [];
   /** Avisos que no hacen fallar (ANIMA_PENDIENTE_JUICE), sin repetir entre ventanas. */
   const warns = new Set<string>();
-  const report: { cuando: string; ventanas: string[]; estados: string[]; total: number; propios: number; ajenos: number; porRegla: Record<string, number>; fallos: Record<string, Record<string, Fail[]>>; errores: string[] } = {
+  console.log(`Pasada en ${LANG === 'en' ? 'inglés' : 'español'} · ${OUT}`);
+  const report: { idioma?: string; cuando: string; ventanas: string[]; estados: string[]; total: number; propios: number; ajenos: number; porRegla: Record<string, number>; fallos: Record<string, Record<string, Fail[]>>; errores: string[] } = {
+    idioma: LANG,
     cuando: new Date().toISOString(),
     ventanas: VIEWS.map((v) => v.name),
     estados: STATES,
@@ -1253,7 +1507,7 @@ async function main(): Promise<void> {
     errores: [],
   };
   for (const view of VIEWS) {
-    const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, locale: 'es-ES', hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
+    const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, locale: LANG === 'en' ? 'en-US' : 'es-ES', hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
     // tsx envuelve las funciones con un ayudante que la página no conoce
     await context.addInitScript({ content: NAME_SHIM });
     const page = await context.newPage();
@@ -1261,6 +1515,7 @@ async function main(): Promise<void> {
     page.on('console', (m) => m.type() === 'error' && !/WebSocket|favicon/.test(m.text()) && errors.push(`[${view.name}] consola: ${m.text()}`));
     await page.goto(`${site.url}?qa=1`);
     await page.waitForFunction(() => !!(window as unknown as { __qa?: unknown }).__qa);
+    await page.evaluate((l) => (window as unknown as { __qa: { lang: (l: string) => string } }).__qa.lang(l), LANG);
     await page.evaluate(() => document.fonts.ready);
     mkdirSync(join(OUT, view.name), { recursive: true });
     report.fallos[view.name] = {};
@@ -1276,7 +1531,7 @@ async function main(): Promise<void> {
       await page.evaluate(() => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().iterations !== Infinity && a.finish()));
       await page.waitForTimeout(120);
       await page.evaluate(() => document.fonts.ready);
-      const all = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state), pendiente: ANIMA_PENDIENTE_JUICE });
+      const all = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state), pendiente: ANIMA_PENDIENTE_JUICE, fuga: LANG === 'en' ? { re: RESTOS_ES.source, permitidos: PERMITIDOS_EN, pendiente: FUGA_PENDIENTE } : null });
       await page.screenshot({ path: join(OUT, view.name, `${state}.png`) });
       const fails = all.filter((f) => !f.aviso);
       for (const w of all.filter((f) => f.aviso)) warns.add(`[${w.regla}] ${w.msg}`);

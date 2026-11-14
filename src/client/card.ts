@@ -1,8 +1,9 @@
 // Baraja del juego — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
 // líneas talladas en color papel, tintas planas por palo y textura de imprenta.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
-import { Card, CardSuit, MATERIAL, RANK_LABEL, SEAL, Seal, Suit, TREATMENT, Treatment } from '../rules/engine';
+import { Card, CardSuit, RANK_LABEL, Seal, Suit, Treatment } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
+import { L, acabD, acabN, espD, espN, palo, selloD, selloN } from './lengua';
 import { SEAL_ICON, engravingDefs, plateFrame, shade, suitWeaves } from './engraving';
 import { GLYPH } from './glyphs';
 
@@ -172,14 +173,16 @@ function jack(s: Suit): [string, string] {
   return [still, live];
 }
 
-const TITLE: Record<number, string> = { 11: 'SOTA', 12: 'REINA', 13: 'REY' };
+// V10: el rótulo de la figura y el palo, en el idioma de la mesa
+const TITLE = { 11: 'ui.carta.sota', 12: 'ui.carta.reina', 13: 'ui.carta.rey' } as const;
+const MATERIAL = (s: Suit) => palo(s);
 
 function figure(suit: Suit, rank: number): string {
   const [still, live] = rank === 13 ? king(suit) : rank === 12 ? queen(suit) : jack(suit);
   const zoom = 'translate(125 40) scale(1.13) translate(-125 -40)';
   const mirror = rank === 12 ? ` transform="translate(250 0) scale(-1 1) ${zoom}"` : ` transform="${zoom}"`;
   const sx = rank === 12 ? -1 : 1;
-  const cap = `<text class="cap" transform="translate(23 188) rotate(-90)">${TITLE[rank]} · ${MATERIAL[suit]}</text>`;
+  const cap = `<text class="cap" transform="translate(23 188) rotate(-90)">${L(TITLE[rank as 11 | 12 | 13])} · ${MATERIAL(suit)}</text>`;
   // capas de estampación: el sangrado de la tinta detrás del busto y la sombra tallada sobre el ropaje
   const bleed = '<circle cx="128" cy="104" r="96" fill="url(#tone-ink)" opacity="0.32"/><path d="M10,10 H96 L10,118 Z" fill="url(#hatch-fine)" opacity="0.5"/>';
   const carve = shade('M150,146 C170,138 184,136 192,138 L214,236 H150 Z', 'hatch-paper', 0.55) + shade('M40,236 L48,200 H98 L96,236 Z', 'hatch-cross', 0.5);
@@ -227,7 +230,7 @@ function aceArt(suit: Suit): string {
       <g transform="translate(125 168)"><g class="burst ink">${rays}</g><circle class="ring" r="56"/><circle class="ring thin2" r="104"/></g>
       <path class="ink" d="M60,291 L190,284 L187,311 L57,318 Z"/>
     </g>
-    <text class="banner-txt" x="123" y="307" text-anchor="middle" transform="rotate(-3.1 123 301)"${MATERIAL[suit].length > 6 ? ' textLength="118" lengthAdjust="spacingAndGlyphs"' : ''}>${MATERIAL[suit]}</text>
+    <text class="banner-txt" x="123" y="307" text-anchor="middle" transform="rotate(-3.1 123 301)"${MATERIAL(suit).length > 6 ? ' textLength="118" lengthAdjust="spacingAndGlyphs"' : ''}>${MATERIAL(suit)}</text>
     <g transform="translate(125 168)"><g class="stamp" style="--i:1"><g class="pip ace-pip" style="--i:0"><g class="${FILL[suit]}" transform="scale(4.6)">${pipInk(suit)}</g></g></g></g>
   </svg>`;
 }
@@ -247,7 +250,7 @@ function jokerArt(): string {
       <g filter="url(#rough)"><g clip-path="url(#inframe)">${half}<g transform="rotate(180 125 175)">${half}</g></g>
         <path class="belt" d="M-6,199.1 L256,150.9"/><path class="stitch" d="M-6,199.1 L256,150.9"/>
       </g>
-      <text class="cap" transform="translate(23 188) rotate(-90)">MOTÍN</text><g transform="rotate(180 125 175)"><text class="cap" transform="translate(23 188) rotate(-90)">MOTÍN</text></g>
+      <text class="cap" transform="translate(23 188) rotate(-90)">${L('ui.carta.motin')}</text><g transform="rotate(180 125 175)"><text class="cap" transform="translate(23 188) rotate(-90)">${L('ui.carta.motin')}</text></g>
     </svg>
     <svg class="ly art live" viewBox="0 0 250 350" aria-hidden="true">
       <g transform="translate(206 60)"><path class="star" d="M0,-20 L5.5,-6.5 L20,-6.5 L8.5,2.5 L12.5,17 L0,8.5 L-12.5,17 L-8.5,2.5 L-20,-6.5 L-5.5,-6.5 Z"/></g>
@@ -317,8 +320,8 @@ function specialArt(card: Card): string {
     </g>
     ${PORTRAIT[s.id] ? `<svg x="50" y="28" width="150" height="200" viewBox="10 10 230 302" preserveAspectRatio="xMidYMid slice">${portraitBody(s.id)}</svg>` : ''}
     <g filter="url(#rough)"><path class="${s.locked ? 'rd' : 'gd'}" d="M24,246 L226,236 L223,273 L21,283 Z"/></g>
-    ${nameText(s.name, s.locked ? 'on-red' : 'on-gold')}
-  </svg><div class="ly sp-desc">${s.desc}</div>`;
+    ${nameText(espN(card.sp!), s.locked ? 'on-red' : 'on-gold')}
+  </svg><div class="ly sp-desc">${espD(card.sp!)}</div>`;
 }
 
 /** Ficha con forma de carta: las herramientas van en chapa estampada (el metal dice la rareza); los servicios, en cartón de obra. */
@@ -513,7 +516,7 @@ export function portraitEl(id: string, name: string): HTMLDivElement {
   attachTilt(el);
   return el;
 }
-export const ferreteroEl = () => portraitEl('ferretero', 'El Tratante');
+export const ferreteroEl = () => portraitEl('ferretero', L('ui.tratante'));
 
 // ───────────────────────── Sellos y tratamientos ─────────────────────────
 // El sello es un tampón de goma abajo a la izquierda; el tratamiento, un cartabón de tinta arriba a la
@@ -566,9 +569,9 @@ const foilLayer = (tr: Treatment) => `<div class="ly foil f-${tr}" aria-hidden="
 /** Lo que dice el globo de ayuda de una carta: su efecto especial, su sello y su tratamiento. */
 export function cardTip(card: Card): string {
   const parts: string[] = [];
-  if (card.sp) parts.push(`<b>${SPECIAL[card.sp].name}</b>${SPECIAL[card.sp].desc}`);
-  if (card.tr) parts.push(`<b>${TREATMENT[card.tr].name}</b>${TREATMENT[card.tr].desc}`);
-  if (card.seal) parts.push(`<b>${SEAL[card.seal].name}</b>${SEAL[card.seal].desc}`);
+  if (card.sp) parts.push(`<b>${espN(card.sp)}</b>${espD(card.sp)}`);
+  if (card.tr) parts.push(`<b>${acabN(card.tr)}</b>${acabD(card.tr)}`);
+  if (card.seal) parts.push(`<b>${selloN(card.seal)}</b>${selloD(card.seal)}`);
   return parts.join('<hr>');
 }
 

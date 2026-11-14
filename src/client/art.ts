@@ -208,6 +208,8 @@ export const strip = (s: Suit) => `<svg class="strip" width="100%" height="12" a
 // `calma` (erguido, el objeto en la mano) y `vencido` (el busto se ladea, los ojos se cierran en aspa
 // y el objeto cae o se parte). Lienzo de 100 × 100 y sin filtros: se puede mover con transform sin coste.
 // Los trazos van con clases de guia.css (.o contorno de tinta, .o-pp contorno de papel, .o-thin, .m-x…).
+// V10 · V7-8: el Rey de Dos Caras y la Reina Helada llevan el contorno grueso (.o-recio): a 300 px pesan casi lo
+// mismo que a 24 y el trazo no se empasta al bajar de tamaño.
 
 export type MonarchMood = 'calma' | 'vencido';
 export const MONARCH_IDS = ['doble', 'escasez', 'sequia', 'intemperie', 'blindaje', 'furia', 'inestable'] as const;
@@ -242,7 +244,7 @@ const BUSTS: Record<string, Bust> = {
         <path class="ink" d="M57,31 L64,35 L57,38 Z"/>
         ${eyes([[51, 33]], down)}
       </g>`;
-      return `<path class="pp o" d="M24,4 H76 V96 H24 Z"/><path class="o-thin" d="M24,96 L76,4"/>${half(false)}${half(true)}`;
+      return `<path class="pp o o-recio" d="M24,4 H76 V96 H24 Z"/><path class="o-thin o-recio" d="M24,96 L76,4"/>${half(false)}${half(true)}`;
     },
     item: (down) => (down ? '<path class="m-crack" d="M30,8 L44,40 L36,58 L52,92"/>' : ''),
   },
@@ -277,10 +279,10 @@ const BUSTS: Record<string, Bust> = {
   // La Reina Helada: corona de carámbanos altos y desiguales, capa ancha de armiño
   intemperie: {
     bg: 'm-bg-gl',
-    body: (down) => `${mantle('pp', 'M4,100 C6,80 28,70 50,70 C72,70 94,80 96,100 Z')}
+    body: (down) => `${mantle('pp o-recio', 'M4,100 C6,80 28,70 50,70 C72,70 94,80 96,100 Z')}
       <path class="ink" d="M20,86 h3 v4 h-3 Z M34,80 h3 v4 h-3 Z M62,80 h3 v4 h-3 Z M76,86 h3 v4 h-3 Z M48,92 h3 v4 h-3 Z"/>
       <path class="pp o" d="M40,42 C40,32 60,32 60,42 V56 C60,66 55,70 50,70 C45,70 40,66 40,56 Z"/>
-      <path class="gl o" d="M35,41 L28,6 L40,30 L44,2 L50,28 L56,0 L60,30 L72,6 L65,41 Z"/>
+      <path class="gl o o-recio" d="M35,41 L28,6 L40,30 L44,2 L50,28 L56,0 L60,30 L72,6 L65,41 Z"/>
       ${eyes([[45.5, 50], [54.5, 50]], down)}`,
     item: (down) => (down ? '<path class="gl o" d="M14,97 L19,84 L24,97 Z M76,97 L82,86 L87,97 Z"/>' : ''),
   },

@@ -7,6 +7,7 @@
 //    manera de una xilografía: la sombra es tinta tallada, no un degradado.
 //  · Piezas. Paños de los guardias de cada trono, marcos de chapa según la rareza y remaches de maestría.
 import type { Seal, Suit } from '../rules/engine';
+import { L } from './lengua';
 
 const INK = '#181614';
 const PAPER = '#eae0ce';
@@ -197,7 +198,7 @@ export const masteryMetal = (level: number) => (level >= 7 ? 'oro' : level >= 4 
 export function masteryBadge(level: number): string {
   const metal = masteryMetal(level);
   if (!metal) return '';
-  return `<span class="mastery m-${metal}" data-tip="<b>Sello de maestría</b>Ganaste una campaña en el Reinado ${level} con esto. Bronce: Reinados 1–3 · hierro: 4–6 · oro: 7–8."><i>${level}</i></span>`;
+  return `<span class="mastery m-${metal}" data-tip="${L('ui.maestria.tip', { n: level })}"><i>${level}</i></span>`;
 }
 
 // ───────────────────────── V8 · Piezas de la caída ─────────────────────────

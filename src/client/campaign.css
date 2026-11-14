@@ -316,3 +316,19 @@ h3.sec, .camp-run h3.sec, .col-sec h3.sec { line-height: 1.22; }
 @media (min-width: 641px) and (max-width: 1420px) {
   .run-body.shop .choice.hang h4 { font-family: var(--cap); font-weight: 800; font-size: 13px; line-height: 1.15; letter-spacing: 0; text-transform: uppercase; hyphens: manual; overflow-wrap: normal; }
 }
+
+/* V10 · la cartela del mapa en inglés */
+:root[lang='en'] .bp-title::after { content: 'SCALE 1:200 · ARCHIVE OF THE ORDER'; }
+
+/* V10 · SD1 · la Mesa de lacre (y la hoguera, el molde y el caldero) caben enteras desde 1200 px de ancho:
+   el título en una línea y las cartas del tamaño que deje la altura, para que las cuatro filas de palo
+   (40 cartas) se vean sin desplazar en 1366×768 y 1280×800. */
+@media (min-width: 1200px) {
+  .modal-box.deck-box { max-height: 96vh; padding-top: 12px; padding-bottom: 12px; }
+  .modal-box.deck-box > h2 { font-size: clamp(26px, 4.2vh, 34px); white-space: nowrap; margin-bottom: 6px; padding-bottom: 4px; }
+  .deck-box .deck-note { margin: 0 0 2px; }
+  .deck-box .deck-row h4 { margin: 4px 0; }
+  .deck-box .deck-mini { gap: 8px; }
+  /* cinco hileras (cuatro palos y comodines): cada una se lleva el alto de su carta más ~35 px de rótulo y aire */
+  .deck-box .deck-mini .card { --w: clamp(46px, min(5.6vw, calc((100vh - 290px) / 7.8)), 84px); }
+}

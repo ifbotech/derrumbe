@@ -15,11 +15,12 @@ import { SPECIALS } from '../../rules/specials';
 import { ARCH, RARITY, TOOLS } from '../../rules/tools';
 import { TUTORIAL_STEPS, createTutorial } from '../../rules/tutorial';
 import { ES_PLANTILLAS } from '../../rules/plantillas';
+import { columna } from './ui-arte';
 
 export { ES_PLANTILLAS };
 
 /** Textos de pantalla. Los añaden arte-ui y juice-ux (clave `ui.<pantalla>.<qué>`); la paridad los recorre. */
-export const ES_UI = {} as const satisfies Record<string, string>;
+export const ES_UI = { ...columna(0) } as const satisfies Record<string, string>;
 export type ClaveUi = keyof typeof ES_UI;
 
 

@@ -1,16 +1,15 @@
 // Pantallas de campaña: el sobre lacrado, el Mapa del castillo, el Botín con su selección, la Taberna
 // clandestino, los Secretos de la cripta y la Crónica final.
 import { whisper } from './whispers';
-import { Card, FORM, FORMATION_NAME, SEAL, TREATMENT, cardLabel } from '../rules/engine';
-import { BOSS, CONTRACT, DECK, DraftOpt, EVENT, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
-import { SPECIAL } from '../rules/specials';
+import { Card, FORM } from '../rules/engine';
+import { BOSS, CONTRACT, DraftOpt, EVENT, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
 import { BALANCE } from '../rules/balance-config';
-import { RARITY, TOOL, TOOL_SLOTS } from '../rules/tools';
+import { TOOL, TOOL_SLOTS } from '../rules/tools';
+import { cobroFor } from '../rules/textos';
 import { rubble, skyline } from './art';
 import { setScene, sfx } from './audio';
 import { isRunHost, runDo } from './campaign';
 import { cardEl, ferreteroEl, portraitEl, setDeckBack, tileEl } from './card';
-import { FULL_TITLE } from '../shared/brand';
 import { $, $$, S, app, esc, modal, num, toast } from './core';
 import { causeHtml, causeText, validDeath } from './causa';
 import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
@@ -20,6 +19,7 @@ import { lastGain } from './guild';
 import { sendMsg } from './net';
 import { setScreen } from './router';
 import { renderPings } from './pings';
+import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, monD, monDec, monN, numL, rarN, relD, relN, secN, secO, secT, selloD, selloN } from './lengua';
 import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
@@ -53,20 +53,21 @@ const EVENT_GLYPH: Record<string, string> = {
 
 // ───────────────────────── El Tratante ─────────────────────────
 
-const SAY: Record<string, string[]> = {
-  hello: ['¿Qué va a ser?', 'Tengo género nuevo.', 'Mira sin tocar. Bueno, toca.', 'Otra vez tú. Bien.'],
-  buy: ['Buena elección.', 'Eso no falla.', 'Con eso cae un rey.', 'Hmm. Vendido.', 'Me dolía venderla.'],
-  poor: ['Con eso no te llega.', 'Aquí no se fía.', 'Vuelve con más oro.'],
-  reroll: ['A ver qué queda en la trastienda…', 'Te saco lo otro.', 'Revuelvo, revuelvo…'],
-  burn: ['Menos lastre, mejor conjura.', 'A la hoguera con ella.'],
-  forge: ['Eso ya no se borra.', 'Lacre bueno. No se despega.', 'Queda marcada para siempre.'],
-  sell: ['Te la recompro. A mi precio.', 'Hmm. Algo le sacaré.'],
-  free: ['Hoy invita la conjura.', 'Con ese vale, llévate lo que quieras.'],
-};
+// V10: las frases van en ui-arte.ts, separadas por «|», en el idioma de la mesa
+const SAY = {
+  hello: 'ui.tratante.hello',
+  buy: 'ui.tratante.buy',
+  poor: 'ui.tratante.poor',
+  reroll: 'ui.tratante.reroll',
+  burn: 'ui.tratante.burn',
+  forge: 'ui.tratante.forge',
+  sell: 'ui.tratante.sell',
+  free: 'ui.tratante.free',
+} as const;
 export function ferreteroSays(kind: keyof typeof SAY): void {
   const el = $('#say');
   if (!el) return;
-  const lines = SAY[kind];
+  const lines = L(SAY[kind]).split('|');
   el.textContent = lines[Math.floor(Math.random() * lines.length)];
   sfx.grunt();
   restart($('.k-npc'), 'talk');
@@ -95,7 +96,7 @@ export function renderRun(): void {
   lastGold = run.gold;
   lastPhase = run.phase;
   const dv = $('#deck-view');
-  if (dv) dv.onclick = () => deckModal(`Tu mazo · ${run.deck.length} cartas`, [{ label: 'Mazo', cards: run.deck }]);
+  if (dv) dv.onclick = () => deckModal(L('ui.run.tu.mazo', { n: run.deck.length }), [{ label: L('ui.mesa.mazo'), cards: run.deck }]);
   // lo que la conjura puede señalar con señas en sala
   const tag = (sel: string, name: string) => $$(sel).forEach((el, i) => (el.dataset.ping = el.classList.contains('skip') ? 'skip:0' : `${name}:${i}`));
   tag('#routes > .choice', 'route');
@@ -111,15 +112,15 @@ export function renderRun(): void {
 }
 
 const host = () => isRunHost();
-const waitNote = () => (host() ? '' : '<p class="wait">El anfitrión decide por la conjura.</p>');
+const waitNote = () => (host() ? '' : `<p class="wait">${L('ui.run.espera')}</p>`);
 function head(run: Run, h1: string, sub: string): string {
-  return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${run.daily ? `Asalto diario ${run.daily}` : DECK[run.deckId].name} · Vida ♥ ${run.integrity}/${run.maxIntegrity} · Mazo ${run.deck.length}</p></div><div class="purse"><b id="purse-n">${run.gold}</b><span>de oro</span></div></header>`;
+  return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${run.daily ? L('ui.run.diaria', { d: run.daily }) : barN(run.deckId)} · ${L('ui.run.cabeza', { v: run.integrity, max: run.maxIntegrity, n: run.deck.length })}</p></div><div class="purse"><b id="purse-n">${run.gold}</b><span>${L('ui.run.de.oro')}</span></div></header>`;
 }
 /** Las Reliquias en las pantallas de campaña: aquí se reordenan con calma (y en la Taberna se venden). */
 function beltStrip(run: Run, sell = false): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'run-belt';
-  wrap.innerHTML = `<span class="belt-label">Reliquias <small>${run.tools.length}/${TOOL_SLOTS} · de izquierda a derecha</small></span>`;
+  wrap.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')} <small>${L('ui.run.reliquias.orden', { n: run.tools.length, total: TOOL_SLOTS })}</small></span>`;
   wrap.appendChild(
     beltEl(run.tools, {
       onReorder: host() && run.tools.length > 1 ? (order) => runDo({ t: 'reorder', order }) : undefined,
@@ -127,13 +128,13 @@ function beltStrip(run: Run, sell = false): HTMLElement {
       sellValue,
     }),
   );
-  wrap.insertAdjacentHTML('beforeend', `<button id="deck-view">Ver mazo (${run.deck.length})</button>`);
+  wrap.insertAdjacentHTML('beforeend', `<button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button>`);
   return wrap;
 }
 function confirmSell(run: Run, i: number): void {
   const t = run.tools[i];
   if (!t) return;
-  const el = modal(`<div class="modal-box confirm"><h2>¿Vender ${TOOL[t.id].name}?</h2><p>El Tratante te da ${sellValue(t.id)} de oro. ${TOOL[t.id].desc}</p><div class="row"><button class="x">No</button><button class="primary" id="yes">Vender</button></div></div>`);
+  const el = modal(`<div class="modal-box confirm"><h2>${L('ui.run.vender.titulo', { x: relN(t.id) })}</h2><p>${L('ui.run.vender.texto', { n: sellValue(t.id) })} ${relD(t.id)}</p><div class="row"><button class="x">${L('ui.no')}</button><button class="primary" id="yes">${L('ui.run.vender')}</button></div></div>`);
   $('#yes', el).onclick = () => {
     el.remove();
     runDo({ t: 'sell', i });
@@ -145,14 +146,14 @@ function confirmSell(run: Run, i: number): void {
 // ───────────────────────── Sobre lacrado inicial ─────────────────────────
 
 function packScreen(run: Run): void {
-  app.innerHTML = `<div class="run">${head(run, 'El sobre lacrado', `Campaña nueva · Reinado ${run.ascension + 1}${run.seedText && !run.daily ? ` · semilla ${run.seedText}` : ''}`)}
-    <div class="run-body"><p class="lead">Tu conjura llega con estas cartas especiales. No tienen palo ni número: acompañan a cualquier Golpe (hasta dos por Golpe) o se juegan solas, y hacen su efecto.</p>
+  app.innerHTML = `<div class="run">${head(run, L('ui.run.sobre.titulo'), `${L('ui.run.sobre.sub', { n: run.ascension + 1 })}${run.seedText && !run.daily ? L('ui.run.sobre.semilla', { s: run.seedText }) : ''}`)}
+    <div class="run-body"><p class="lead">${L('ui.run.sobre.texto')}</p>
     <div class="choices" id="picks"></div>${waitNote()}
-    <div class="row end-row"><button id="deck-view">Ver mazo (${run.deck.length})</button><button class="primary big" id="go" ${host() ? '' : 'disabled'}>Al mapa<small>${stageDef(1).name}</small></button></div></div></div>`;
+    <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button><button class="primary big" id="go" ${host() ? '' : 'disabled'}>${L('ui.run.al.mapa')}<small>${asaltoN(1)}</small></button></div></div></div>`;
   run.pack.forEach((id, i) => {
     const el = cardEl(spCard(id));
     dealIn(el, 200 + i * 220);
-    $('#picks').appendChild(choice(el, SPECIAL[id].name, SPECIAL[id].desc, null, null));
+    $('#picks').appendChild(choice(el, espN(id), espD(id), null, null));
   });
   $('#go').onclick = () => runDo({ t: 'begin' });
 }
@@ -167,42 +168,43 @@ function mapScreen(run: Run): void {
   for (let n = first; n <= last; n++) {
     const def = stageDef(n);
     const boss = run.bosses[n] ? BOSS[run.bosses[n]] : null;
+    const nombre = asaltoN(n);
     const state = n < run.stage ? (run.skipped.includes(n) ? 'skip' : 'done') : n === run.stage ? 'now' : 'next';
-    const mark = state === 'done' ? '<i class="inkstamp s-done">Tomado</i>' : state === 'skip' ? '<i class="inkstamp s-skip">Esquivado</i>' : def.boss ? '<i class="inkstamp s-boss">Monarca</i>' : '';
-    const tip = `<b>${def.name}</b>${def.floors.length} guardia${def.floors.length > 1 ? 's' : ''} por trono · Vida ×${num(def.hp)}${boss ? `<hr><b>${boss.who} · ${boss.name}</b>${boss.desc}` : def.boss ? '<hr>Con monarca: se sabrá al llegar.' : '<hr>Dos rutas con Juramento, o un Atajo de conspirador.'}`;
+    const mark = state === 'done' ? `<i class="inkstamp s-done">${L('ui.run.tomado')}</i>` : state === 'skip' ? `<i class="inkstamp s-skip">${L('ui.run.esquivado')}</i>` : def.boss ? `<i class="inkstamp s-boss">${L('ui.run.monarca')}</i>` : '';
+    const tip = `<b>${nombre}</b>${Ln(def.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(def.hp) })}${boss ? `<hr><b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}` : def.boss ? L('ui.run.monarca.llegar') : L('ui.run.dos.rutas')}`;
     nodes.push(`<div class="bp-node ${state} ${def.boss ? 'boss' : ''}" data-tip="${tip.replace(/"/g, '&quot;')}">
-      <span class="bp-n">${n}</span><b>${def.name}</b>
-      ${boss ? `<span class="bp-boss" data-boss="${boss.id}"></span><em>${boss.who}<small>${boss.name}</small></em>` : def.boss ? '<em>¿?<small>monarca por conocer</small></em>' : '<em class="plain">rutas</em>'}
+      <span class="bp-n">${n}</span><b>${nombre}</b>
+      ${boss ? `<span class="bp-boss" data-boss="${boss.id}"></span><em>${monN(boss.id)}<small>${monDec(boss.id)}</small></em>` : def.boss ? `<em>¿?<small>${L('ui.run.por.conocer')}</small></em>` : `<em class="plain">${L('ui.run.rutas')}</em>`}
       ${mark}</div>`);
   }
   const boss = st.boss ? BOSS[run.bosses[run.stage]] : null;
-  app.innerHTML = `<div class="run map">${head(run, 'El mapa', `Asalto ${run.stage}${run.stage <= LAST_STAGE ? ` de ${LAST_STAGE}` : ''} · ${st.name}`)}
+  app.innerHTML = `<div class="run map">${head(run, L('ui.run.mapa.titulo'), `${L('ui.run.mapa.sub', { n: run.stage })}${run.stage <= LAST_STAGE ? L('ui.run.mapa.de', { n: LAST_STAGE }) : ''} · ${asaltoN(run.stage)}`)}
     <div class="run-body">
-      <div class="desk"><div class="blueprint"><div class="bp-title">Mapa del castillo${run.endless ? ' · Trono infinito' : ''}</div><div class="bp-path">${nodes.join('<span class="bp-link"></span>')}</div></div></div>
-      <h3 class="sec">${boss ? 'El monarca te espera' : 'Elige por dónde entrar'}</h3>
+      <div class="desk"><div class="blueprint"><div class="bp-title">${L('ui.run.mapa.castillo')}${run.endless ? L('ui.run.mapa.infinito') : ''}</div><div class="bp-path">${nodes.join('<span class="bp-link"></span>')}</div></div></div>
+      <h3 class="sec">${boss ? L('ui.run.monarca.espera') : L('ui.run.elige.entrar')}</h3>
       <div class="choices routes" id="routes"></div>${waitNote()}
       <div id="belt-host"></div>
     </div></div>`;
-  $$('[data-boss]').forEach((slot) => slot.appendChild(portraitEl(`j-${slot.dataset.boss}`, BOSS[slot.dataset.boss!].who)));
+  $$('[data-boss]').forEach((slot) => slot.appendChild(portraitEl(`j-${slot.dataset.boss}`, monN(slot.dataset.boss!))));
   $('#belt-host').appendChild(beltStrip(run));
   const routes = $('#routes');
   const can = host();
   if (boss) {
-    routes.appendChild(choice(portraitEl(`j-${boss.id}`, boss.who), boss.who, `<b>${boss.name}.</b> ${boss.desc}`, 'Al asalto', can ? () => runDo({ t: 'route', i: 0 }) : null, 'wide boss-route'));
-    routes.insertAdjacentHTML('beforeend', `<div class="route-note"><p class="lead">${st.name}: ${st.floors.length} guardias por trono, Vida ×${num(st.hp)}. Los asaltos con monarca no tienen Atajo, y al caer dejan botín: una de dos reliquias Raras o mejores.</p></div>`);
+    routes.appendChild(choice(portraitEl(`j-${boss.id}`, monN(boss.id)), monN(boss.id), `<b>${monDec(boss.id)}.</b> ${monD(boss.id)}`, L('ui.run.al.asalto'), can ? () => runDo({ t: 'route', i: 0 }) : null, 'wide boss-route'));
+    routes.insertAdjacentHTML('beforeend', `<div class="route-note"><p class="lead">${L('ui.run.ruta.monarca', { nombre: asaltoN(run.stage), n: st.floors.length, hp: num(st.hp) })}</p></div>`);
   } else {
     run.node.routes.forEach((id, i) => {
       const k = CONTRACT[id];
       routes.appendChild(
-        choice(tileEl(CONTRACT_GLYPH[id] ?? 'pergamino', k.risk ? 'Riesgo' : 'Juramento', 'relic', k.risk ? 'capataz' : 'oficio'), k.name, `${k.desc} <b>Premio: ${k.reward}.</b>`, k.risk ? 'Aceptar el riesgo' : 'Tomar la ruta', can ? () => runDo({ t: 'route', i }) : null, k.risk ? 'risk' : ''),
+        choice(tileEl(CONTRACT_GLYPH[id] ?? 'pergamino', k.risk ? L('ui.run.riesgo') : L('ui.run.juramento'), 'relic', k.risk ? 'capataz' : 'oficio'), juraN(id), `${juraD(id)} <b>${L('ui.run.premio', { x: juraP(id) })}</b>`, k.risk ? L('ui.run.aceptar.riesgo') : L('ui.run.tomar.ruta'), can ? () => runDo({ t: 'route', i }) : null, k.risk ? 'risk' : ''),
       );
     });
     const tag = run.node.tag ? TAG[run.node.tag] : null;
     if (tag) {
       routes.appendChild(
-        choice(tileEl(TAG_GLYPH[tag.id] ?? 'atajo', 'Atajo', 'service'), `Saltar el asalto`, `Sin Botín, sin selección y sin Taberna. A cambio, Atajo de conspirador: <b>${tag.name}.</b> ${tag.desc}`, 'Saltar', can ? () => (sfx.stamp(), runDo({ t: 'skip' })) : null, 'skip'),
+        choice(tileEl(TAG_GLYPH[tag.id] ?? 'atajo', L('ui.run.atajo'), 'service'), L('ui.run.saltar.asalto'), L('ui.run.saltar.texto', { nombre: atajoN(tag.id), desc: atajoD(tag.id) }), L('ui.run.saltar'), can ? () => (sfx.stamp(), runDo({ t: 'skip' })) : null, 'skip'),
       );
-      whisper('atajo', { tag: tag.name });
+      whisper('atajo', { tag: atajoN(tag.id) });
     }
   }
 }
@@ -211,31 +213,31 @@ function mapScreen(run: Run): void {
 
 function draftChoice(run: Run, o: DraftOpt, i: number): HTMLElement {
   const click = host() ? () => runDo({ t: 'draft', i }) : null;
-  if (o.kind === 'special') return choice(cardEl(spCard(o.id)), SPECIAL[o.id].name, SPECIAL[o.id].desc, 'Llevar', click);
+  if (o.kind === 'special') return choice(cardEl(spCard(o.id)), espN(o.id), espD(o.id), L('ui.run.llevar'), click);
   const c = o.card;
-  const what = [c.tr ? `<b>${TREATMENT[c.tr].name}.</b> ${TREATMENT[c.tr].desc}` : '', c.seal ? `<b>${SEAL[c.seal].name}.</b> ${SEAL[c.seal].desc}` : ''].filter(Boolean).join(' ');
-  return choice(cardEl(c), cardLabel(c), what, 'Llevar', click);
+  const what = [c.tr ? `<b>${acabN(c.tr)}.</b> ${acabD(c.tr)}` : '', c.seal ? `<b>${selloN(c.seal)}.</b> ${selloD(c.seal)}` : ''].filter(Boolean).join(' ');
+  return choice(cardEl(c), cartaN(c), what, L('ui.run.llevar'), click);
 }
 
 function rewardScreen(run: Run): void {
   const total = run.pay.reduce((a, [, n]) => a + n, 0);
   const contract = run.contract ? CONTRACT[run.contract] : null;
   const boss = run.boss ? BOSS[run.boss] : null;
-  app.innerHTML = `<div class="run">${head(run, 'El botín', run.endless && run.stage === LAST_STAGE ? 'El último trono cayó: seguís hacia el Trono infinito' : `Asalto ${run.stage} ganado · ${stageDef(run.stage).name}`)}
+  app.innerHTML = `<div class="run">${head(run, L('ui.run.botin.titulo'), run.endless && run.stage === LAST_STAGE ? L('ui.run.botin.infinito') : L('ui.run.botin.sub', { n: run.stage, nombre: asaltoN(run.stage) }))}
     <div class="run-body two">
-      <section class="panel paybox"><h3><span>Botín</span><span>+${total}</span></h3>
-        <table class="pay">${run.pay.map(([l, n]) => `<tr><td>${l}</td><td>+${n}</td></tr>`).join('')}<tr class="sum"><td>Total</td><td>+${total} de oro</td></tr></table>
-        ${contract ? `<div class="contract-res ${run.contractDone ? 'ok' : 'ko'}" id="contract-res"><b>Juramento · ${contract.name}</b><span>${run.contractDone ? `Premio: ${contract.reward}.` : 'Sin premio esta vez.'}</span></div>` : ''}
+      <section class="panel paybox"><h3><span>${L('ui.run.botin')}</span><span>+${total}</span></h3>
+        <table class="pay">${run.pay.map(([l, n]) => `<tr><td>${cobroFor(getLang(), l)}</td><td>+${n}</td></tr>`).join('')}<tr class="sum"><td>${L('ui.run.total')}</td><td>${L('ui.run.total.oro', { n: total })}</td></tr></table>
+        ${contract ? `<div class="contract-res ${run.contractDone ? 'ok' : 'ko'}" id="contract-res"><b>${L('ui.run.juramento')} · ${juraN(contract.id)}</b><span>${run.contractDone ? L('ui.run.premio', { x: juraP(contract.id) }) : L('ui.run.sin.premio')}</span></div>` : ''}
       </section>
       <section>
-        <h3 class="sec">${run.drafted ? 'Selección hecha' : 'Elige una para tu mazo'}</h3>
+        <h3 class="sec">${run.drafted ? L('ui.run.seleccion.hecha') : L('ui.run.elige.una')}</h3>
         <div class="choices" id="picks"></div>
-        ${run.loot.length ? `<h3 class="sec">${run.looted ? 'Botín repartido' : `Botín de ${boss?.who ?? 'el monarca'}: elige una reliquia`}</h3><div class="choices" id="loot"></div>` : ''}
+        ${run.loot.length ? `<h3 class="sec">${run.looted ? L('ui.run.botin.repartido') : L('ui.run.botin.de', { quien: boss ? monN(boss.id) : L('ui.run.el.monarca') })}</h3><div class="choices" id="loot"></div>` : ''}
         ${waitNote()}
         <div id="belt-host"></div>
       </section>
     </div></div>`;
-  if (contract) stampOn($('#contract-res'), run.contractDone ? 'Cumplido' : 'Incumplido', run.contractDone ? 's-done' : 's-skip');
+  if (contract) stampOn($('#contract-res'), run.contractDone ? L('ui.run.cumplido') : L('ui.run.incumplido'), run.contractDone ? 's-done' : 's-skip');
   if (lastPhase !== 'reward') sfx.coins(total);
   $('#belt-host').appendChild(beltStrip(run));
   if (!run.drafted) {
@@ -244,17 +246,20 @@ function rewardScreen(run: Run): void {
       dealIn($('.card', el), 120 + i * 160);
       $('#picks').appendChild(el);
     });
-    $('#picks').appendChild(choice(tileEl('oro', 'Pasar', 'service'), 'Ninguna', 'No siempre conviene engordar el mazo. A cambio, +3 de oro.', 'Pasar', host() ? () => runDo({ t: 'draft', i: null }) : null));
+    $('#picks').appendChild(choice(tileEl('oro', L('ui.run.pasar'), 'service'), L('ui.run.ninguna'), L('ui.run.ninguna.texto'), L('ui.run.pasar'), host() ? () => runDo({ t: 'draft', i: null }) : null));
   }
   const loot = $('#loot');
   if (loot && !run.looted) {
     const full = run.tools.length >= TOOL_SLOTS;
-    run.loot.forEach((id) => loot.appendChild(choice(toolTile(id), TOOL[id].name, TOOL[id].desc, full ? 'Reliquias llenas' : 'Llevar', host() && !full ? () => runDo({ t: 'loot', id }) : null)));
-    loot.appendChild(choice(tileEl('retirar', 'Ninguna', 'service'), 'Pasar', full ? `Caben ${TOOL_SLOTS} reliquias: vende una en la Taberna la próxima vez.` : `Caben ${TOOL_SLOTS} reliquias; llevas ${run.tools.length}.`, 'Pasar', host() ? () => runDo({ t: 'loot', id: null }) : null));
+    run.loot.forEach((id) => loot.appendChild(choice(toolTile(id), relN(id), relD(id), full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null)));
+    loot.appendChild(choice(tileEl('retirar', L('ui.run.ninguna'), 'service'), L('ui.run.pasar'), full ? L('ui.run.caben.llenas', { n: TOOL_SLOTS }) : L('ui.run.caben', { n: TOOL_SLOTS, m: run.tools.length }), L('ui.run.pasar'), host() ? () => runDo({ t: 'loot', id: null }) : null));
   }
 }
 
 // ───────────────────────── La Taberna ─────────────────────────
+
+/** El sello sin su «Sello de…» delante: «Lacre: rojo» / «Wax: Red». */
+const selloCorto = (id: string) => (getLang() === 'es' ? selloN(id).replace('Sello de lacre ', '').replace('Sello de ', '').replace('Sello ', '') : selloN(id).replace(/ (wax )?seal$/i, ''));
 
 function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   const cost = offerCost(run, o);
@@ -265,30 +270,30 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   let desc: string;
   if (o.kind === 'tool') {
     el = toolTile(o.id!);
-    title = TOOL[o.id!].name;
-    desc = `${TOOL[o.id!].desc} <small>${RARITY[TOOL[o.id!].rarity].name}</small>`;
+    title = relN(o.id!);
+    desc = `${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>`;
   } else if (o.kind === 'sobre') {
-    el = tileEl('sobre', 'Sobre lacrado', 'service');
-    title = 'Sobre lacrado';
-    desc = 'Se abre aquí mismo: tres cartas especiales a la vista y te quedas con una.';
+    el = tileEl('sobre', L('ui.run.sobre'), 'service');
+    title = L('ui.run.sobre');
+    desc = L('ui.run.sobre.desc');
   } else if (o.kind === 'clandestino') {
-    el = tileEl('incognita', 'Incógnita', 'service');
-    title = 'Sobre a ciegas';
-    desc = 'Una carta especial a ciegas, de saldo. No sabrás cuál hasta pagarla.';
+    el = tileEl('incognita', L('ui.run.incognita'), 'service');
+    title = L('ui.run.ciegas');
+    desc = L('ui.run.ciegas.desc');
   } else if (o.kind === 'forja') {
     el = cardEl({ id: `forja-${i}`, suit: o.seal ? 'H' : 'S', rank: 7, seal: o.seal, tr: o.tr });
-    title = o.seal ? `Lacre: ${SEAL[o.seal].name.replace('Sello de lacre ', '').replace('Sello de ', '').replace('Sello ', '')}` : `Acabado: ${TREATMENT[o.tr!].name}`;
-    desc = `Eliges una carta de tu mazo y queda marcada para siempre. ${o.seal ? SEAL[o.seal].desc : TREATMENT[o.tr!].desc}`;
+    title = o.seal ? L('ui.run.lacre', { x: selloCorto(o.seal) }) : L('ui.run.acabado', { x: acabN(o.tr!) });
+    desc = L('ui.run.marca.desc', { x: o.seal ? selloD(o.seal) : acabD(o.tr!) });
   } else {
     const f = o.form!;
     const now = formBase(run, f);
-    el = tileEl('pergamino', 'Pergamino', 'service');
-    title = `Pergamino: ${FORMATION_NAME[f]}`;
-    desc = `Sube de nivel: base ${now.f} de Daño y ×${num(now.r)} de Multi → ${now.f + FORM[f].lf} y ×${num(now.r + FORM[f].lr)}.`;
+    el = tileEl('pergamino', L('ui.run.pergamino'), 'service');
+    title = L('ui.run.pergamino.de', { x: formN(f) });
+    desc = L('ui.run.pergamino.desc', { f: now.f, r: num(now.r), f2: now.f + FORM[f].lf, r2: num(now.r + FORM[f].lr) });
   }
   const box = choice(el, title, desc, null, buy, o.sold ? 'sold hang' : 'hang');
-  box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? 'Vendido' : cost === 0 ? 'Gratis' : `${cost} de oro`}</span>`);
-  if (o.sold) stampOn(box, 'Vendido', 's-skip');
+  box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `${cost} ${L('ui.run.de.oro')}`}</span>`);
+  if (o.sold) stampOn(box, L('ui.run.vendido'), 's-skip');
   return box;
 }
 
@@ -297,26 +302,26 @@ function shopScreen(run: Run): void {
   const next = stageDef(nextN);
   const boss = run.bosses[nextN] ? BOSS[run.bosses[nextN]] : null;
   const can = host();
-  app.innerHTML = `<div class="run">${head(run, 'La Taberna', `Asalto ${run.stage} superado${run.freeShop ? ' · vale de conspirador: hoy todo es gratis' : ''}`)}
+  app.innerHTML = `<div class="run">${head(run, L('ui.run.taberna'), `${L('ui.run.taberna.sub', { n: run.stage })}${run.freeShop ? L('ui.run.taberna.vale') : ''}`)}
     <div class="run-body shop">
       <aside class="keeper"><div id="npc"></div><p class="say" id="say">…</p></aside>
       <section class="stock"><div class="rail"></div><div class="choices hangers" id="offers"></div>${waitNote()}<div id="belt-host"></div></section>
       <aside class="shop-side">
-        <div class="panel next"><h3><span>Siguiente asalto</span><span>${nextN}${nextN <= LAST_STAGE ? `/${LAST_STAGE}` : ''}</span></h3>
+        <div class="panel next"><h3><span>${L('ui.run.siguiente')}</span><span>${nextN}${nextN <= LAST_STAGE ? `/${LAST_STAGE}` : ''}</span></h3>
           <div class="next-row"><div id="next-boss"></div><div>
-          <p><b>${next.name}</b> · ${next.floors.length} guardia${next.floors.length > 1 ? 's' : ''} por trono · Vida ×${num(next.hp)}</p>
-          ${boss ? `<p class="boss"><b>${boss.who} · ${boss.name}</b>${boss.desc}</p>` : next.boss ? '<p class="boss"><b>Monarca</b>Se sabrá al llegar.</p>' : '<p>Sin monarca: rutas con Juramento o Atajo.</p>'}</div></div></div>
+          <p><b>${asaltoN(nextN)}</b> · ${Ln(next.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(next.hp) })}</p>
+          ${boss ? `<p class="boss"><b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}</p>` : next.boss ? L('ui.run.monarca.sabra') : L('ui.run.sin.monarca')}</div></div></div>
         <div class="grid2">
-          <button id="heal" data-tip="<b>Curar</b>+${BALANCE.taberna.curar.vida} de Vida. Tienes ${run.integrity}/${run.maxIntegrity}. Cada vez cuesta ${BALANCE.taberna.curar.paso} más." ${can && run.gold >= healCost(run) && run.integrity < run.maxIntegrity ? '' : 'disabled'}>Curar · ${healCost(run)}</button>
-          <button id="burn" data-tip="<b>La hoguera</b>Quema una carta de tu mazo para siempre (cuenta como carta destruida). Cada vez cuesta ${BALANCE.taberna.hoguera.paso} más." ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>Hoguera · ${removeCost(run)}</button>
-          <button id="reroll" data-tip="<b>Renovar mesa</b>Cambia todo lo que hay a la venta. Cada vez cuesta ${BALANCE.taberna.renovar.paso} más${run.vouchers ? `; te quedan ${run.vouchers} vales de la Orden` : ''}." ${can && run.gold >= rerollCost(run) ? '' : 'disabled'}>Renovar mesa · ${rerollCost(run) || 'vale'}</button>
-          <button class="primary" id="go" ${can ? '' : 'disabled'}>${!run.endless && [3, 5, 7].includes(run.stage) && run.events.length ? 'Bajar a la cripta' : 'Al mapa'}</button>
+          <button id="heal" data-tip="${L('ui.run.curar.tip', { v: BALANCE.taberna.curar.vida, i: run.integrity, max: run.maxIntegrity, p: BALANCE.taberna.curar.paso })}" ${can && run.gold >= healCost(run) && run.integrity < run.maxIntegrity ? '' : 'disabled'}>${L('ui.run.curar', { n: healCost(run) })}</button>
+          <button id="burn" data-tip="${L('ui.run.hoguera.tip', { p: BALANCE.taberna.hoguera.paso })}" ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>${L('ui.run.hoguera', { n: removeCost(run) })}</button>
+          <button id="reroll" data-tip="${L('ui.run.renovar.tip', { p: BALANCE.taberna.renovar.paso })}${run.vouchers ? L('ui.run.renovar.vales', { n: run.vouchers }) : ''}." ${can && run.gold >= rerollCost(run) ? '' : 'disabled'}>${L('ui.run.renovar', { x: rerollCost(run) || L('ui.run.vale') })}</button>
+          <button class="primary" id="go" ${can ? '' : 'disabled'}>${!run.endless && [3, 5, 7].includes(run.stage) && run.events.length ? L('ui.run.cripta.bajar') : L('ui.run.al.mapa')}</button>
         </div>
       </aside>
     </div></div>`;
   $('#npc').appendChild(ferreteroEl());
   $('#belt-host').appendChild(beltStrip(run, true));
-  if (boss) $('#next-boss').appendChild(portraitEl(`j-${boss.id}`, boss.who));
+  if (boss) $('#next-boss').appendChild(portraitEl(`j-${boss.id}`, monN(boss.id)));
   $('#offers').style.setProperty('--n', String(run.shop.length));
   run.shop.forEach((o, i) => $('#offers').appendChild(offerChoice(run, o, i)));
   if (lastPhase === 'shop' && lastGold >= 0 && run.gold < lastGold) {
@@ -326,7 +331,7 @@ function shopScreen(run: Run): void {
   else $('#say').textContent = '…';
   $('#heal').onclick = () => (sfx.build(), runDo({ t: 'heal' }));
   $('#burn').onclick = () =>
-    deckModal(`La hoguera · ${removeCost(run)} de oro`, [{ label: 'Mazo', cards: run.deck, note: 'Elige la carta que va a la hoguera. No vuelve.' }], {
+    deckModal(L('ui.run.hoguera.titulo', { n: removeCost(run) }), [{ label: L('ui.mesa.mazo'), cards: run.deck, note: L('ui.run.hoguera.nota') }], {
       pick: 1,
       onPick: ([card]) => {
         runDo({ t: 'burn', card: card.id });
@@ -342,11 +347,11 @@ function shopScreen(run: Run): void {
 
 /** Sobre lacrado recién abierto: tres cartas a la vista, te quedas con una. */
 function openSobre(run: Run): void {
-  const el = modal(`<div class="reveal-box"><small>Sobre lacrado · elige una</small><div class="choices"></div></div>`, { cls: 'reveal sobre-modal', sticky: true });
+  const el = modal(`<div class="reveal-box"><small>${L('ui.run.sobre.elige')}</small><div class="choices"></div></div>`, { cls: 'reveal sobre-modal', sticky: true });
   run.sobre!.forEach((id, i) => {
     const ce = cardEl(spCard(id));
     dealIn(ce, 150 + i * 220);
-    $('.choices', el).appendChild(choice(ce, SPECIAL[id].name, SPECIAL[id].desc, 'Quedármela', () => (el.remove(), sfx.stamp(), runDo({ t: 'open', i }))));
+    $('.choices', el).appendChild(choice(ce, espN(id), espD(id), L('ui.run.quedarmela'), () => (el.remove(), sfx.stamp(), runDo({ t: 'open', i }))));
   });
   sfx.flick();
 }
@@ -357,8 +362,8 @@ function openPending(run: Run): void {
   const cancel = () => runDo({ t: 'cancel' });
   if (p.kind === 'forge') {
     const o = run.shop[p.i];
-    const mark = o.seal ? SEAL[o.seal].name : TREATMENT[o.tr!].name;
-    const el = deckModal(`Mesa de lacre · ${mark}`, [{ label: 'Mazo', cards: run.deck, note: `Elige la carta que recibe ${o.seal ? 'el sello' : 'el acabado'}. Si ya tenía ${o.seal ? 'uno' : 'otro'}, se sustituye.` }], {
+    const mark = o.seal ? selloN(o.seal) : acabN(o.tr!);
+    const el = deckModal(L('ui.run.mesa.lacre', { x: mark }), [{ label: L('ui.mesa.mazo'), cards: run.deck, note: o.seal ? L('ui.run.mesa.lacre.sello') : L('ui.run.mesa.lacre.acabado') }], {
       pick: 1,
       sticky: true,
       can: isPlain,
@@ -371,13 +376,13 @@ function openPending(run: Run): void {
     el.classList.add('pending-modal');
     whisper('forja');
   } else if (p.kind === 'dup') {
-    deckModal('Molde de cera · duplica una carta', [{ label: 'Mazo', cards: run.deck, note: 'Elige la carta que quieres tener dos veces.' }], { pick: 1, sticky: true, onCancel: cancel, onPick: ([card]) => runDo({ t: 'target', cards: [card.id] }) }).classList.add('pending-modal');
+    deckModal(L('ui.run.molde'), [{ label: L('ui.mesa.mazo'), cards: run.deck, note: L('ui.run.molde.nota') }], { pick: 1, sticky: true, onCancel: cancel, onPick: ([card]) => runDo({ t: 'target', cards: [card.id] }) }).classList.add('pending-modal');
   } else {
-    deckModal('El caldero del alquimista · funde dos cartas', [{ label: 'Mazo', cards: run.deck, note: 'Elige dos cartas de baraja. Arden y nace una con el número más alto de las dos, el palo de la primera, en Lacre policromo y con el sello que llevaran.' }], {
+    deckModal(L('ui.run.caldero'), [{ label: L('ui.mesa.mazo'), cards: run.deck, note: L('ui.run.caldero.nota') }], {
       pick: 2,
       sticky: true,
       can: isPlain,
-      confirm: 'Fundir',
+      confirm: L('ui.run.fundir'),
       onCancel: cancel,
       onPick: (cards) => (sfx.forge(), runDo({ t: 'target', cards: cards.map((c) => c.id) })),
     }).classList.add('pending-modal');
@@ -386,10 +391,10 @@ function openPending(run: Run): void {
 
 /** La carta sale de la Mesa de lacre con su marca recién estampada. */
 function showForged(card: Card, mark: string): void {
-  const el = modal(`<div class="reveal-box"><small>Mesa de lacre</small><div class="choices"></div><button class="primary x">Al mazo</button></div>`, { cls: 'reveal forged' });
+  const el = modal(`<div class="reveal-box"><small>${L('ui.run.mesa.lacre.solo')}</small><div class="choices"></div><button class="primary x">${L('ui.run.al.mazo')}</button></div>`, { cls: 'reveal forged' });
   const ce = cardEl(card);
   ce.classList.add('stamped');
-  $('.choices', el).appendChild(choice(ce, cardLabel(card), mark, null, null));
+  $('.choices', el).appendChild(choice(ce, cartaN(card), mark, null, null));
   sfx.forge();
   setTimeout(() => sfx.stamp(), 380);
   ferreteroSays('forge');
@@ -397,10 +402,10 @@ function showForged(card: Card, mark: string): void {
 
 /** La carta arde en la hoguera y se va. */
 function showBurned(card: Card): void {
-  const el = modal(`<div class="reveal-box"><small>A la hoguera</small><div class="choices"></div></div>`, { cls: 'reveal burned' });
+  const el = modal(`<div class="reveal-box"><small>${L('ui.run.a.hoguera')}</small><div class="choices"></div></div>`, { cls: 'reveal burned' });
   const ce = cardEl(card, { tilt: false });
   ce.classList.add('burning');
-  $('.choices', el).appendChild(choice(ce, cardLabel(card), 'Sale del mazo para siempre.', null, null));
+  $('.choices', el).appendChild(choice(ce, cartaN(card), L('ui.run.para.siempre'), null, null));
   sfx.hiss();
   ferreteroSays('burn');
   const r = ce.getBoundingClientRect();
@@ -412,22 +417,25 @@ function showBurned(card: Card): void {
 
 function eventScreen(run: Run): void {
   const ev = EVENT[run.event!];
-  app.innerHTML = `<div class="run event">${head(run, 'Secreto de la cripta', `Bajo el asalto ${run.stage} · en la cripta`)}
+  app.innerHTML = `<div class="run event">${head(run, L('ui.run.secreto'), L('ui.run.secreto.sub', { n: run.stage }))}
     <div class="run-body"><div class="event-box">
       <div class="event-art">${glyphSvg(EVENT_GLYPH[ev.id] ?? 'incognita', 'event-ico')}</div>
-      <div class="event-txt"><h3 class="sec">${ev.name}</h3><p class="lead">${ev.text}</p>
+      <div class="event-txt"><h3 class="sec">${secN(ev.id)}</h3><p class="lead">${secT(ev.id)}</p>
         <div class="event-opts" id="opts"></div>${waitNote()}</div>
     </div><div id="belt-host"></div></div></div>`;
   $('#belt-host').appendChild(beltStrip(run));
   ev.options.forEach((o, i) => {
     const ok = host() && (!o.can || o.can(run));
     const b = document.createElement('button');
+    const et = secO(ev.id, i, 'etiqueta');
+    const gana = secO(ev.id, i, 'gana');
+    const cuesta = o.read.cost ? secO(ev.id, i, 'cuesta') : '';
     // V7: cada opción es una carta grabada: su emblema, lo que da (verdín) y lo que cuesta (carmesí) en
     // letra grande, y la descripción larga en segundo plano
     b.className = 'stamp-btn opt secreto';
     b.disabled = !ok;
-    b.setAttribute('aria-label', `${o.label}. Da: ${o.read.gain}. ${o.read.cost ? `Cuesta: ${o.read.cost}` : 'Sin coste'}.`);
-    b.innerHTML = `<span class="sec-art">${glyphSvg(o.read.glyph, 'sec-ico')}</span><span class="sec-txt"><b>${o.label}</b><span class="sec-da"><i>Da</i>${o.read.gain}</span><span class="sec-cuesta${o.read.cost ? '' : ' gratis'}"><i>Cuesta</i>${o.read.cost || 'Nada'}</span><small>${o.desc}</small></span>`;
+    b.setAttribute('aria-label', `${L('ui.run.secreto.aria', { x: et, gana })}${cuesta ? L('ui.run.secreto.cuesta', { x: cuesta }) : L('ui.run.secreto.gratis')}`);
+    b.innerHTML = `<span class="sec-art">${glyphSvg(o.read.glyph, 'sec-ico')}</span><span class="sec-txt"><b>${et}</b><span class="sec-da"><i>${L('ui.run.da')}</i>${gana}</span><span class="sec-cuesta${cuesta ? '' : ' gratis'}"><i>${L('ui.run.cuesta')}</i>${cuesta || L('ui.run.nada')}</span><small>${secO(ev.id, i, 'desc')}</small></span>`;
     b.onclick = () => (sfx.stamp(), runDo({ t: 'event', i }));
     $('#opts').appendChild(b);
   });
@@ -449,15 +457,15 @@ export function actaText(run: Run, online = false): string {
   const mvp = mvpTool(run);
   const depth = depthOf(run);
   return [
-    `👑 ${FULL_TITLE} · Crónica${run.daily ? ` · Asalto diario ${run.daily}` : ''}`,
-    `${row} ${run.conquered ? '👑 Corte vencida' : `Asalto ${Math.min(cleared, LAST_STAGE)}/${LAST_STAGE}`}${depth ? ` · 🕳️ Trono infinito ${depth}` : ''}`,
-    `💥 Mayor Golpe: ${run.stats.maxHit}`,
-    `🗡️ Guardias: ${run.stats.floors} · 🎯 Golpes exactos: ${run.stats.cleans}`,
-    mvp ? `💍 Reliquia más activa: ${TOOL[mvp]?.name ?? mvp} (${run.stats.toolUse[mvp]})` : '💍 Sin reliquias',
-    `📜 Juramentos: ${run.stats.contracts} · 🔥 Cartas destruidas: ${run.stats.burned} · ⏱️ Turnos: ${run.stats.turns}`,
-    `🃏 ${DECK[run.deckId].name}${run.ascension ? ` · Reinado ${run.ascension + 1}` : ''}${run.seedText ? ` · 🌱 ${run.seedText}` : ''}`,
+    `${L('ui.acta.texto.cab', { marca: marca().fullTitle })}${run.daily ? L('ui.acta.texto.diaria', { d: run.daily }) : ''}`,
+    `${row} ${run.conquered ? L('ui.acta.texto.corte') : L('ui.acta.texto.asalto', { n: Math.min(cleared, LAST_STAGE), total: LAST_STAGE })}${depth ? L('ui.acta.texto.infinito', { n: depth }) : ''}`,
+    L('ui.acta.texto.mayor', { n: run.stats.maxHit }),
+    L('ui.acta.texto.guardias', { g: run.stats.floors, e: run.stats.cleans }),
+    mvp ? L('ui.acta.texto.mvp', { x: TOOL[mvp] ? relN(mvp) : mvp, n: run.stats.toolUse[mvp] }) : L('ui.acta.texto.sin'),
+    L('ui.acta.texto.jur', { j: run.stats.contracts, q: run.stats.burned, t: run.stats.turns }),
+    `🃏 ${barN(run.deckId)}${run.ascension ? L('ui.acta.texto.reinado', { n: run.ascension + 1 }) : ''}${run.seedText ? ` · 🌱 ${run.seedText}` : ''}`,
     ...(run.phase === 'lost' && validDeath(run.death) ? [causeText(run.death)] : []),
-    ...(link ? [`🔗 Juega la misma: ${link}`] : []),
+    ...(link ? [L('ui.acta.texto.link', { x: link })] : []),
   ].join('\n');
 }
 
@@ -482,63 +490,63 @@ function actaScreen(run: Run): void {
   const cleared = stagesCleared(run);
   const depth = depthOf(run);
   const stats: [string, string][] = [
-    ['Asaltos superados', `${Math.min(cleared, LAST_STAGE)} de ${LAST_STAGE}${depth ? ` + ${depth} del Trono infinito` : ''}`],
-    ['Mayor Golpe', String(run.stats.maxHit)],
-    ['Guardias abatidos', String(run.stats.floors)],
-    ['Golpes exactos', String(run.stats.cleans)],
-    ['Reliquia más activa', mvp ? `${TOOL[mvp]?.name ?? mvp} · ${run.stats.toolUse[mvp]}` : '—'],
-    ['Juramentos cumplidos', String(run.stats.contracts)],
-    ['Asaltos saltados', String(run.stats.skips)],
-    ['Sellos y acabados', String(run.stats.forged)],
-    ['Cartas destruidas', String(run.stats.burned)],
-    ['Turnos', String(run.stats.turns)],
-    ['Oro ganado', String(run.stats.gold)],
+    [L('ui.acta.superados'), `${L('ui.acta.superados.v', { n: Math.min(cleared, LAST_STAGE), total: LAST_STAGE })}${depth ? L('ui.acta.superados.inf', { n: depth }) : ''}`],
+    [L('ui.acta.mayor'), String(run.stats.maxHit)],
+    [L('ui.acta.guardias'), String(run.stats.floors)],
+    [L('ui.acta.exactos'), String(run.stats.cleans)],
+    [L('ui.acta.mvp'), mvp ? `${TOOL[mvp] ? relN(mvp) : mvp} · ${run.stats.toolUse[mvp]}` : '—'],
+    [L('ui.acta.juramentos'), String(run.stats.contracts)],
+    [L('ui.acta.saltados'), String(run.stats.skips)],
+    [L('ui.acta.sellos'), String(run.stats.forged)],
+    [L('ui.acta.destruidas'), String(run.stats.burned)],
+    [L('ui.acta.turnos'), String(run.stats.turns)],
+    [L('ui.acta.oro'), String(run.stats.gold)],
   ];
   // la causa de la derrota (si la campaña cayó en la mesa) y el enlace para jugar la misma
   const death = !won && validDeath(run.death) ? run.death : null;
   const link = seedLink(run, c.online);
-  const seed = run.daily ? `diaria ${run.daily}` : run.seedText || (c.online ? 'la del servidor' : '—');
+  const seed = run.daily ? L('ui.acta.diaria', { d: run.daily }) : run.seedText || (c.online ? L('ui.acta.servidor') : '—');
   app.innerHTML = `<div class="end ${won ? 'won' : 'lost'} in-page acta">
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
     <div class="acta-sheet">
-      <div class="meta"><span class="hot">CRÓNICA</span><span>${run.daily ? `ASALTO DIARIO ${run.daily}` : `${DECK[run.deckId].name}${run.ascension ? ` · REINADO ${run.ascension + 1}` : ''}`}</span></div>
-      <h1>${won ? 'Corte vencida' : 'Conjura deshecha'}</h1>
+      <div class="meta"><span class="hot">${L('ui.acta.cronica')}</span><span>${run.daily ? L('ui.acta.diaria.cab', { d: run.daily }) : `${barN(run.deckId)}${run.ascension ? L('ui.acta.reinado.cab', { n: run.ascension + 1 }) : ''}`}</span></div>
+      <h1>${won ? L('ui.fin.corte') : L('ui.fin.conjura')}</h1>
       <div class="acta-cols">
         <div class="acta-izq">
-          <p>${won ? 'Cayó el último trono. Más abajo espera el Trono infinito, si os quedan ganas.' : depth ? `El Trono infinito ${depth + 1} os venció.` : `Te quedaste sin Vida en el asalto ${run.stage}: ${stageDef(run.stage).name}.`}</p>
+          <p>${won ? L('ui.acta.ganada') : depth ? L('ui.acta.infinito', { n: depth + 1 }) : L('ui.acta.perdida', { n: run.stage, nombre: asaltoN(run.stage) })}</p>
           ${death ? causeHtml(death) : ''}
-          <p class="acta-semilla"><span>Semilla</span><b>${esc(seed)}</b>${link ? '<small>«Copiar crónica» lleva el enlace para jugar la misma campaña.</small>' : ''}</p>
-          <p class="gain">+${lastGain} ✦ Coronas${won && !run.endless && run.ascension < 7 ? ` · Reinado ${run.ascension + 2} desbloqueado` : ''}</p>
+          <p class="acta-semilla"><span>${L('ui.acta.semilla')}</span><b>${esc(seed)}</b>${link ? `<small>${L('ui.acta.semilla.nota')}</small>` : ''}</p>
+          <p class="gain">${L('ui.acta.coronas', { n: lastGain })}${won && !run.endless && run.ascension < 7 ? L('ui.acta.desbloqueado', { n: run.ascension + 2 }) : ''}</p>
         </div>
         <table class="acta-stats">${stats.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
       </div>
       ${feedbackHtml('acta')}
       <div class="row acta-acciones">
-        <button class="tinta" id="lamina-dl">Descargar lámina</button>
-        <button class="tinta" id="lamina-copy">Copiar lámina</button>
-        <button class="tinta" id="copy">Copiar crónica</button>
-        ${won && canBack ? '<button id="deeper">Trono infinito<small>seguir sin final</small></button>' : ''}
-        ${c.online ? (canBack ? '<button class="primary" id="c-room">Volver a la sala</button>' : '<button disabled>Esperando al anfitrión…</button>') : '<button class="primary" id="c-hub">Volver a la portada</button>'}
+        <button class="tinta" id="lamina-dl">${L('ui.acta.descargar')}</button>
+        <button class="tinta" id="lamina-copy">${L('ui.acta.copiar.lamina')}</button>
+        <button class="tinta" id="copy">${L('ui.acta.copiar')}</button>
+        ${won && canBack ? `<button id="deeper">${L('ui.acta.infinito.btn')}<small>${L('ui.acta.infinito.sub')}</small></button>` : ''}
+        ${c.online ? (canBack ? `<button class="primary" id="c-room">${L('ui.acta.sala')}</button>` : `<button disabled>${L('ui.fin.esperando')}</button>`) : `<button class="primary" id="c-hub">${L('ui.acta.portada')}</button>`}
       </div>
     </div>
   </div>`;
   const sheet = $('.acta-sheet');
-  stampOn(sheet, won ? 'Corte vencida' : 'Deshecha', won ? 's-done big' : 's-skip big');
+  stampOn(sheet, won ? L('ui.fin.corte') : L('ui.acta.deshecha'), won ? 's-done big' : 's-skip big');
   inkFade(sheet);
   const copyText = (text: string, ok: string) => {
     const done = () => toast(ok);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
     else fallbackCopy(text, done);
   };
-  $('#copy').onclick = () => copyText(actaText(run, c.online), 'Crónica copiada');
+  $('#copy').onclick = () => copyText(actaText(run, c.online), L('ui.acta.copiada'));
   bindFeedback(sheet);
   const lamina = laminaOf(run, c.online);
   $('#lamina-dl').onclick = () => void downloadLamina(lamina);
   $('#lamina-copy').onclick = () =>
     void copyLamina(lamina, actaText(run, c.online)).then((what) => {
-      if (what === 'png') toast('Lámina copiada: pégala donde quieras');
-      else if (what === 'text') toast('Este navegador no copia imágenes: va la crónica en texto con su enlace');
-      else copyText(actaText(run, c.online), 'Crónica copiada en texto');
+      if (what === 'png') toast(L('ui.acta.lamina.copiada'));
+      else if (what === 'text') toast(L('ui.acta.lamina.texto'));
+      else copyText(actaText(run, c.online), L('ui.acta.copiada.texto'));
     });
   const deeper = $('#deeper');
   if (deeper) deeper.onclick = () => runDo({ t: 'endless' });
@@ -560,7 +568,7 @@ function fallbackCopy(text: string, done: () => void): void {
     document.execCommand('copy');
     done();
   } catch {
-    toast('No se pudo copiar');
+    toast(L('ui.acta.no.copiar'));
   }
   ta.remove();
 }

@@ -12,7 +12,9 @@ import { hero } from './art';
 import { prefs } from './campaign';
 import { cardEl } from './card';
 import { FULL_TITLE } from '../shared/brand';
-import { RUN_PLAYER, S, app } from './core';
+import { RUN_PLAYER, S, app, applySettings, settings } from './core';
+import { getLang, isLang, setLang } from '../shared/i18n';
+import { L, acabN } from './lengua';
 import { brandLockup, renderHome } from './home';
 import { archive, meta, openGuild } from './guild';
 import { openLupa } from './lupa';
@@ -57,6 +59,12 @@ function clean(): void {
   S.queue.length = 0;
   S.selected.length = 0;
   S.screen = null;
+  // V10: cada estado parte de las tintas y el contraste de serie (mesa-contraste y mesa-2tintas los cambian)
+  if (settings.contrast || settings.inks !== 4) {
+    settings.contrast = false;
+    settings.inks = 4;
+    applySettings();
+  }
 }
 
 /** Una campaña a medio camino: Reliquias llenas, oro y unas cuantas cartas con sello o acabado. */
@@ -200,6 +208,26 @@ const STATES: Record<string, () => void | Promise<void>> = {
     S.campaign = null;
     setScreen('home');
     renderHome('en');
+  },
+  // V10: el interruptor ES | EN junto al candado, con el foco de teclado en el idioma que no está puesto
+  'portada-idioma': () => {
+    clean();
+    S.campaign = null;
+    setScreen('home');
+    setMode('keys');
+    document.querySelector<HTMLElement>(`#home-lang [data-lang="${getLang() === 'es' ? 'en' : 'es'}"]`)?.focus();
+  },
+  // V10: Alto contraste puesto, para comparar sus cajas con las de mesa (regla «contraste-alto»)
+  'mesa-contraste': async () => {
+    await mesa();
+    settings.contrast = true;
+    applySettings();
+  },
+  // V10: las 2 tintas clásicas (rojo y negro): las tramas siguen distinguiendo el palo
+  'mesa-2tintas': async () => {
+    await mesa();
+    settings.inks = 2;
+    applySettings();
   },
   preparacion: () => {
     clean();
@@ -489,7 +517,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     clean();
     S.campaign = null;
     setMode('pointer');
-    app.innerHTML = '<div class="run"><div class="run-head"><h1>Cartas con lámina</h1></div><div class="qa-laminas"></div></div>';
+    app.innerHTML = `<div class="run"><div class="run-head"><h1>${L('ui.qa.laminas')}</h1></div><div class="qa-laminas"></div></div>`;
     const host = app.querySelector('.qa-laminas')!;
     ([['forjado', 'C', 9, 52], ['templado', 'D', 10, 78], ['policromado', 'H', 7, 104], ['agrietado', 'S', 4, 64]] as [Treatment, Suit, number, number][]).forEach(([tr, suit, rank, at]) => {
       const fig = document.createElement('figure');
@@ -498,7 +526,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
       band?.style.setProperty('--foil-x', `${at}%`);
       band?.style.setProperty('--foil-o', '0.95');
       fig.append(c);
-      fig.insertAdjacentHTML('beforeend', `<figcaption>${TREATMENT[tr].name}</figcaption>`);
+      fig.insertAdjacentHTML('beforeend', `<figcaption>${acabN(tr)}</figcaption>`);
       host.appendChild(fig);
     });
   },
@@ -537,7 +565,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
   monarcas: () => {
     clean();
     S.campaign = null;
-    app.innerHTML = `<div class="run monarcas-qa"><div class="run-head"><h1>Los siete monarcas</h1></div>${monarchGallery()}</div>`;
+    app.innerHTML = `<div class="run monarcas-qa"><div class="run-head"><h1>${L('ui.qa.monarcas')}</h1></div>${monarchGallery()}</div>`;
   },
   // ── arte-ui V9: Feedback de prueba y foco del mando en La Taberna ──
   // la Crónica de una derrota con el botón «Enviar Crónica / Feedback de Prueba» ya pulsado y su confirmación
@@ -585,8 +613,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
   og: () => {
     clean();
     S.campaign = null;
-    // siempre la cara española: es la que enseña el enlace (index.html va en español)
-    app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt">${brandLockup('es')}<small>Cuatro tronos · doce guardias · tu Vida · de 1 a 4 jugadores</small></div><div class="og-cards"></div></div>`;
+    // V10: en el idioma de la mesa (scripts/og-card.ts hace una por idioma; og-card.png es la española)
+    app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt">${brandLockup(getLang())}<small>${L('ui.og.sub')}</small></div><div class="og-cards"></div></div>`;
     const fan = app.querySelector('.og-cards')!;
     ([['S', 13], ['D', 12], ['H', 11], ['C', 13]] as [Suit, number][]).forEach(([suit, rank], i) => {
       const c = cardEl({ id: `og-${suit}`, suit, rank }, { tilt: false });
@@ -622,6 +650,11 @@ export function installQa(): void {
         return name in STATES;
       },
       settle,
+      /** V10: el idioma de la pasada (visual-qa --lang=en); no toca el guardado real (platform es de quita y pon). */
+      lang: (l: string) => {
+        if (isLang(l)) setLang(l);
+        return getLang();
+      },
       /** Semilla de la próxima campaña (el mando no escribe). */
       seed: (text: string) => void (prefs.seed = text),
       /** Lo que el bot de referencia haría ahora en el asalto en curso (la prueba lo ejecuta con el mando). */
