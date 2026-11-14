@@ -32,12 +32,12 @@ export function ensureBuilt(): void {
   if (!existsSync(join(WEB_ROOT, 'index.html'))) throw new Error(`Falta ${QA_DIR || 'dist/web'}: ejecuta antes npm run build:web`);
 }
 
-/** Sirve dist/web en 127.0.0.1 y devuelve su dirección. */
-export function serveWeb(): Promise<{ url: string; close: () => void }> {
+/** Sirve dist/web (u otra construcción, `root`) en 127.0.0.1 y devuelve su dirección. */
+export function serveWeb(root = WEB_ROOT): Promise<{ url: string; close: () => void }> {
   const server = createServer((req, res) => {
     const path = normalize(decodeURIComponent((req.url ?? '/').split('?')[0])).replace(/^([/\\])+/, '');
-    let file = join(WEB_ROOT, path || 'index.html');
-    if (!file.startsWith(WEB_ROOT) || !existsSync(file) || statSync(file).isDirectory()) file = join(WEB_ROOT, 'index.html');
+    let file = join(root, path || 'index.html');
+    if (!file.startsWith(root) || !existsSync(file) || statSync(file).isDirectory()) file = join(root, 'index.html');
     res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
     createReadStream(file).pipe(res);
   });

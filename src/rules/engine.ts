@@ -8,6 +8,7 @@
 // La formación pone la base; cada carta suma su Daño; acabados, sellos de lacre, cartas especiales
 // y reliquias suman Daño, suman Multi o lo multiplican, en ese orden.
 // Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
+import { BALANCE, fill } from './balance-config';
 import { MAX_SPECIALS, SPECIAL } from './specials';
 import { TOOL } from './tools';
 import type { ToolInst } from './tools';
@@ -43,15 +44,15 @@ export const SEALS: Seal[] = ['dinamita', 'eco', 'jornal', 'sindical'];
 export const SEAL: Record<Seal, { name: string; desc: string }> = {
   dinamita: { name: 'Sello de pólvora', desc: 'Al golpear, los tronos vecinos (orden ♠ ♦ ♥ ♣) reciben el valor de esta carta.' },
   eco: { name: 'Sello de eco', desc: 'Su Daño y el poder de su palo cuentan 2 veces.' },
-  jornal: { name: 'Sello de oro real', desc: '+2 de oro si el golpe abate a un guardia.' },
+  jornal: { name: 'Sello de oro real', desc: fill('+{oro} de oro si el golpe abate a un guardia.', { oro: BALANCE.sellos.jornal }) },
   sindical: { name: 'Sello de la manga', desc: 'Robas 1 carta extra al jugarla o descartarla.' },
 };
 export const TREATMENTS: Treatment[] = ['forjado', 'templado', 'policromado', 'agrietado'];
 export const TREATMENT: Record<Treatment, { name: string; desc: string }> = {
-  forjado: { name: 'Filo de plata', desc: '+6 de Daño.' },
-  templado: { name: 'Templado', desc: '+0,3 de Multi.' },
-  policromado: { name: 'Lacre policromo', desc: '×1,5 de Multi.' },
-  agrietado: { name: 'Cristal maldito', desc: '×2,5 de Multi, pero 1 de cada 4 veces la carta se hace añicos.' },
+  forjado: { name: 'Filo de plata', desc: fill('+{n} de Daño.', { n: BALANCE.acabados.forjado }) },
+  templado: { name: 'Templado', desc: fill('+{n} de Multi.', { n: BALANCE.acabados.templado }) },
+  policromado: { name: 'Lacre policromo', desc: fill('×{n} de Multi.', { n: BALANCE.acabados.policromado }) },
+  agrietado: { name: 'Cristal maldito', desc: fill('×{n} de Multi, pero 1 de cada {cada} veces la carta se hace añicos.', { n: BALANCE.acabados.agrietado, cada: 1 / BALANCE.acabados.agrietadoRompe }) },
 };
 
 /** Valor de una carta para el Daño y los poderes. El As es la carta fuerte: vale 11. */
@@ -78,18 +79,8 @@ export const FORMATION_NAME: Record<Formation, string> = {
   poker: 'Póker',
   escaleracolor: 'Escalera de color',
 };
-/** Base de cada formación (f Fuerza, r Resonancia) y lo que gana por nivel de plano (lf, lr). */
-export const FORM: Record<Formation, { f: number; r: number; lf: number; lr: number }> = {
-  solo: { f: 0, r: 1, lf: 4, lr: 0.15 },
-  compania: { f: 0, r: 1.1, lf: 3, lr: 0.15 },
-  grupo: { f: 2, r: 1.2, lf: 3, lr: 0.2 },
-  escalera: { f: 4, r: 1.3, lf: 3, lr: 0.2 },
-  doblepar: { f: 6, r: 1.5, lf: 3, lr: 0.2 },
-  color: { f: 8, r: 1.8, lf: 3, lr: 0.2 },
-  full: { f: 10, r: 2, lf: 3, lr: 0.2 },
-  escaleracolor: { f: 10, r: 2, lf: 3, lr: 0.2 },
-  poker: { f: 14, r: 2.5, lf: 3, lr: 0.2 },
-};
+/** Base de cada formación (f Fuerza, r Resonancia) y lo que gana por nivel de plano (lf, lr): `formaciones` de balance-config.json. */
+export const FORM: Record<Formation, { f: number; r: number; lf: number; lr: number }> = BALANCE.formaciones as Record<Formation, { f: number; r: number; lf: number; lr: number }>;
 
 /**
  * Devuelve el tipo de formación o null si las cartas no forman una jugada legal de ataque.
@@ -184,24 +175,15 @@ export function fatigueAt(cfg: Config, turnCount: number): number {
   return 1 + Math.floor((turnCount - cfg.fatigueStart) / Math.max(1, cfg.fatigueEvery ?? 2));
 }
 
-export const DEFAULT_CONFIG: Config = {
-  maxIntegrity: 20,
-  wallCap: 8,
-  collapseLoss: 5,
-  wallDiv: 3,
-  repairDiv: 3,
-  shardDiv: 3,
-  floorHp: { 11: 20, 12: 30, 13: 40 },
-  floorThreat: { 11: 3, 12: 4, 13: 6 },
-  handSize: { 1: 7, 2: 6, 3: 6, 4: 6 },
-};
+/** La mesa por defecto: `mesa` de balance-config.json (copiada: quien la toque no cambia el archivo). */
+export const DEFAULT_CONFIG: Config = structuredClone(BALANCE.mesa);
 
 export type Difficulty = 'obra' | 'brutal';
 /** Partida clásica (una obra). Balanceado por simulación (npm run simulate): el bot gana ~60 % en OBRA y ~40 % en BRUTAL. */
-const OBRA: Config = { ...DEFAULT_CONFIG, floorHp: { 11: 124, 12: 177, 13: 231 }, floorThreat: { 11: 3, 12: 5, 13: 7 }, handSize: { 1: 6, 2: 6, 3: 6, 4: 6 }, fatigueStart: 32, fatigueEvery: 3, fatigueRes: 0.25, collapseRelief: [0, -1, 0, 1] };
+const OBRA: Config = { ...DEFAULT_CONFIG, ...structuredClone(BALANCE.clasica.obra) };
 export const DIFFICULTY: Record<Difficulty, Config> = {
   obra: OBRA,
-  brutal: { ...OBRA, maxIntegrity: 16, collapseLoss: 6 },
+  brutal: { ...OBRA, ...BALANCE.clasica.brutal },
 };
 
 /** Estados estructurales de una torre (los provoca la mezcla de materiales del golpe, o un jefe). */
@@ -214,9 +196,9 @@ export interface TowerFx {
   apuntalado?: boolean;
 }
 export const TOWER_FX: Record<keyof TowerFx, { name: string; desc: string }> = {
-  fractura: { name: 'Brecha', desc: 'El próximo golpe contra este trono hace ×1,5 de Multi.' },
+  fractura: { name: 'Brecha', desc: fill('El próximo golpe contra este trono hace ×{n} de Multi.', { n: BALANCE.golpe.brecha }) },
   sobrecarga: { name: 'Desarmado ×1', desc: 'Este trono se salta su próximo Contraataque.' },
-  apuntalado: { name: 'En guardia', desc: '×0,5 de Multi en el primer golpe contra este guardia.' },
+  apuntalado: { name: 'En guardia', desc: fill('×{n} de Multi en el primer golpe contra este guardia.', { n: BALANCE.golpe.enGuardia }) },
 };
 
 export interface Tower {
@@ -603,7 +585,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   // 2 · lo que arrastra la mesa: racha de golpes limpios, carga acumulada y estado de la torre
   if (env.chain > 0) {
     cur = { src: 'chain', id: 'onda', label: 'Racha' };
-    x.R(0.5 * env.chain);
+    x.R(BALANCE.golpe.racha * env.chain);
   }
   if (env.charge > 0) {
     cur = { src: 'state', id: 'carga', label: 'Carga' };
@@ -616,13 +598,13 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   }
   if (standing(tower) && tower.fx.fractura) {
     cur = { src: 'state', id: 'fractura', label: TOWER_FX.fractura.name };
-    x.X(cfg.fracturaMult ?? 1.5);
+    x.X(cfg.fracturaMult ?? BALANCE.golpe.brecha);
     tower.fx.fractura = false;
     tally.events.push({ e: 'state', tower: target, fx: 'fractura', on: false });
   }
   if (standing(tower) && tower.fx.apuntalado && cards.length) {
     cur = { src: 'state', id: 'apuntalado', label: TOWER_FX.apuntalado.name };
-    x.X(0.5);
+    x.X(BALANCE.golpe.enGuardia);
     tower.fx.apuntalado = false;
     tally.events.push({ e: 'state', tower: target, fx: 'apuntalado', on: false });
   }
@@ -648,11 +630,11 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     power[suit] += v;
     if (c.tr) {
       cur = { src: 'treat', id: c.id, label: `${cardLabel(c)} · ${TREATMENT[c.tr].name}` };
-      if (c.tr === 'forjado') x.F(6);
-      else if (c.tr === 'templado') x.R(0.3);
-      else if (c.tr === 'policromado') x.X(1.5);
+      if (c.tr === 'forjado') x.F(BALANCE.acabados.forjado);
+      else if (c.tr === 'templado') x.R(BALANCE.acabados.templado);
+      else if (c.tr === 'policromado') x.X(BALANCE.acabados.policromado);
       else {
-        x.X(2.5);
+        x.X(BALANCE.acabados.agrietado);
         cracked.push(c);
       }
     }
@@ -668,7 +650,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
           x.note(`${v} a los tronos vecinos`);
         } else if (c.seal === 'jornal') {
           jornal++;
-          x.note('+2 de oro si cae un guardia');
+          x.note(`+${BALANCE.sellos.jornal} de oro si cae un guardia`);
         } else {
           x.draw++;
           x.note('robas 1');
@@ -731,10 +713,10 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   if (tally.fell.some((f) => f.clean)) x.draw += 1;
   for (const f of [...tally.fell]) {
     if (!f.clean) continue;
-    x.gold += 1;
+    x.gold += BALANCE.golpe.oroExacto;
     const t = env.towers[f.tower];
     if (!standing(t)) continue;
-    const amount = Math.ceil(floorHp(t, cfg) * 0.25);
+    const amount = Math.ceil(floorHp(t, cfg) * BALANCE.golpe.onda);
     tally.events.push({ e: 'onda', tower: f.tower, amount });
     applyDamage(t, amount, false, true, cfg, tally);
   }
@@ -752,7 +734,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     const t = env.towers[e.tower];
     if (standing(t)) applyDamage(t, Math.ceil(floorHp(t, cfg) * e.pct), false, true, cfg, tally);
   }
-  if (tally.fell.length > 0) x.gold += goldOnKill + 2 * jornal;
+  if (tally.fell.length > 0) x.gold += goldOnKill + BALANCE.sellos.jornal * jornal;
   // suelo inestable: cada piso que cae sin golpe limpio se lleva algo del búnker
   const rough = tally.fell.filter((f) => !f.clean).length;
   if (cfg.crumbleHurt && rough) {
@@ -774,7 +756,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   }
 
   // 10 · las cartas agrietadas pueden hacerse añicos
-  if (rng) for (const c of cracked) if (nextRandom(rng) < 0.25) out.shattered.push(c);
+  if (rng) for (const c of cracked) if (nextRandom(rng) < BALANCE.acabados.agrietadoRompe) out.shattered.push(c);
 
   return {
     ...out,

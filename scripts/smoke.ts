@@ -3,6 +3,7 @@
 // La Manga, Rebobinar, la Lupa, el foco de teclado (papel y tinta, ≥ 6 px, < 50 ms), Mayús + flechas
 // sobre las reliquias, los susurros y su «No mostrar más», las insignias de reliquia, lo que suena, la
 // tabla de controles de Ajustes, el reinicio con R y una campaña del bot entera.
+// V9: los datos de prueba (telemetry-qa.ts) con la red bloqueada: cero peticiones sin pulsar, una al pulsar.
 // V8: la reserva de piezas no crece, la caída del trono a 1×, 2× y 4×, la cadena de Golpes exactos, la
 // música de cada escena, las monedas de La Taberna y una segunda pasada con «Reducir movimiento».
 // (La fluidez se mide aparte, con aceleración gráfica: npm run qa:fps.)
@@ -14,6 +15,8 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
 import { gamepadSuite, guidedRun, sealCheck } from './gamepad-qa';
+import { telemetrySuite } from './telemetry-qa';
+import { feedbackButtonsSuite } from './feedback-qa';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
 const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : 'artifacts/visual-qa/smoke');
@@ -383,6 +386,14 @@ async function main(): Promise<void> {
   await page.waitForTimeout(1500);
   check(turns > 3 && turns < 60, `un asalto entero a teclado termina (${turns} turnos)`);
   check((await count(page, '.run, .end')) > 0, 'al terminar el asalto se pasa al Botín o a la crónica');
+  {
+    // V9 · lo jugado con teclado queda en los datos de prueba de este equipo (enganches de la mesa)
+    const log = await page.evaluate(() => (window as unknown as { __qaTelemetry: { telemetryLog(): { modo: string; manga: number; rebobinar: number; turnos: number; guia: string | null }[] } }).__qaTelemetry.telemetryLog());
+    const camp = log.filter((r) => r.modo === 'campana');
+    check(camp.some((r) => r.manga >= 1) && camp.some((r) => r.rebobinar >= 1), `los datos de prueba cuentan La Manga y Rebobinar de lo jugado (${camp.map((r) => `${r.manga}/${r.rebobinar}`).join(' · ')})`);
+    check(camp.some((r) => r.turnos > 0), 'y los turnos del asalto jugado a teclado');
+    check(log.some((r) => r.modo === 'guia' && r.guia === 'victoria') && log.some((r) => r.modo === 'guia' && r.guia === 'saltada'), 'la partida guiada queda apuntada: terminada y saltada');
+  }
   await page.screenshot({ path: join(OUT, 'fin-de-asalto.png') });
 
   // ── la campaña jugada solo con un mando (virtual): menú, asalto entero, Botín y La Taberna ──
@@ -390,6 +401,13 @@ async function main(): Promise<void> {
     console.log('Mando virtual');
     await gamepadSuite(browser, site.url, check, problems, (p, name) => p.screenshot({ path: join(OUT, `${name}.png`) }));
   }
+
+  // ── V9 · datos de prueba con la red bloqueada: cero peticiones sin pulsar, una al pulsar ──
+  console.log('Datos de prueba');
+  await telemetrySuite(browser, site.url, check, problems);
+  // arte-ui · el botón «Enviar Crónica / Feedback de Prueba» pulsado de verdad (ratón, teclado y mando)
+  console.log('Botón de feedback');
+  await feedbackButtonsSuite(browser, site.url, check, problems);
 
   // ── V8 · una segunda pasada con «Reducir movimiento»: nada vuela ni tiembla ──
   console.log('Reducir movimiento');

@@ -74,7 +74,7 @@ export function renderHome(face: Locale = LOCALE): void {
         ${stamp('m-camp', 'estandarte', 'Campaña', 'roguelike · ocho asaltos y el Trono infinito', 'primary')}
         ${stamp('m-daily', 'diaria', 'Asalto diario', `${Number(day)} ${MONTHS[Number(month) - 1]} · ${dailyOn ? 'en curso' : dailyDone ? (meta.daily.won ? 'ganada hoy' : `hoy: ${meta.daily.cleared} asaltos`) : 'la misma semilla para todos'}`)}
         ${stamp('m-coop', 'cuadrilla', 'Cooperativo online', 'de 1 a 4 · asalto único o campaña')}
-        ${stamp('m-tuto', 'senal', 'Partida guiada', 'un asalto de prácticas con la Maestra')}
+        ${stamp('m-tuto', 'senal', 'Partida guiada', 'un asalto de prácticas, paso a paso')}
         ${stamp('m-guild', 'engranaje', 'La Orden y colección', `${meta.renown} ✦ Coronas · logros ${done}/${ACHIEVEMENTS.length}`)}
         ${stamp('m-rules', 'pergamino', 'Reglas', 'Daño × Multi = Golpe, sellos y Reliquias')}
       </nav>

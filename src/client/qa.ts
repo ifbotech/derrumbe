@@ -23,7 +23,8 @@ import { renderRun } from './runscreens';
 import { pump, renderInteractive, toggleInspector } from './table';
 import { monarchGallery, showBark, spotlight } from './guia';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
-import { showRules, showSettings } from './widgets';
+import { feedbackShow, showRules, showSettings } from './widgets';
+import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
 
 const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'pasarela', 'resonador'];
 const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
@@ -138,7 +139,7 @@ async function guia(step: number): Promise<void> {
     const a = stepAction(TUTORIAL_STEPS[i]);
     if (a) state = applyAction(state, TUTORIAL_PLAYER, a).state;
   }
-  S.tutorial = { state, step, intro: 0, mode: 'do' };
+  S.tutorial = { state, step, mode: 'do' };
   S.campaign = null;
   S.queue.push({ view: viewFor(state, TUTORIAL_PLAYER), events: [] });
   setScreen('table');
@@ -159,6 +160,27 @@ function winStage(run: Run): void {
   run.battle.cleans = 2;
   finishBattle(run, state);
 }
+/**
+ * V9: la campaña de la Crónica queda en los datos de prueba (como al llegar a la Crónica de verdad). No borra
+ * lo que ya hubiera: la prueba de humo juega de verdad antes de abrir Ajustes y lee luego lo apuntado.
+ */
+function logged(run: Run): void {
+  setMode('pointer');
+  noteRun(run);
+}
+
+/** La campaña perdida de acta-derrota (y de acta-feedback): causa de la derrota y semilla con enlace. */
+function derrota(): Run {
+  const run = baseRun(6);
+  run.phase = 'lost';
+  run.integrity = 0;
+  run.stats.turns = 71;
+  run.stats.gold = 143;
+  run.stats.contracts = 3;
+  run.death = { kind: 'sirena', title: 'Contraataque de PICAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Un ♣ más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+  return run;
+}
+
 function toShop(run: Run): void {
   winStage(run);
   runAction(run, { t: 'draft', i: null });
@@ -293,10 +315,14 @@ const STATES: Record<string, () => void | Promise<void>> = {
     run.stats.turns = 71;
     run.stats.gold = 143;
     run.stats.contracts = 3;
+    logged(run);
     show(run);
     setScreen('run');
   },
+  // V9: con al menos una campaña en los datos de prueba (la de acta-derrota si aún no hay ninguna)
   ajustes: () => {
+    setMode('pointer');
+    if (!telemetryLog().some((r) => r.modo !== 'guia')) noteRun(derrota());
     clean();
     S.campaign = null;
     setScreen('home');
@@ -389,13 +415,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
   },
   // la crónica de una campaña que cayó en la mesa: causa de la derrota, semilla con enlace y botones de lámina
   'acta-derrota': () => {
-    const run = baseRun(6);
-    run.phase = 'lost';
-    run.integrity = 0;
-    run.stats.turns = 71;
-    run.stats.gold = 143;
-    run.stats.contracts = 3;
-    run.death = { kind: 'sirena', title: 'Contraataque de PICAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Un ♣ más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+    const run = derrota();
+    logged(run);
     show(run);
     setScreen('run');
   },
@@ -407,6 +428,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     run.stats.turns = 96;
     run.stats.gold = 188;
     run.stats.contracts = 5;
+    logged(run);
     show(run);
     setScreen('run');
   },
@@ -516,6 +538,48 @@ const STATES: Record<string, () => void | Promise<void>> = {
     clean();
     S.campaign = null;
     app.innerHTML = `<div class="run monarcas-qa"><div class="run-head"><h1>Los siete monarcas</h1></div>${monarchGallery()}</div>`;
+  },
+  // ── arte-ui V9: Feedback de prueba y foco del mando en La Taberna ──
+  // la Crónica de una derrota con el botón «Enviar Crónica / Feedback de Prueba» ya pulsado y su confirmación
+  // (se pinta la respuesta «copiado» sin llamar a shareFeedback: la QA visual no comparte ni descarga nada)
+  'acta-feedback': () => {
+    setMode('pointer');
+    const run = derrota();
+    logged(run);
+    show(run);
+    setScreen('run');
+    feedbackShow(app, 'copiado');
+    // en el móvil el bloque queda bajo la tabla: la hoja se desplaza hasta él, como tras pulsarlo
+    app.querySelector('.fb')?.scrollIntoView({ block: 'center' });
+  },
+  // Ajustes con la fila «Datos de prueba» y dos campañas guardadas (una derrota y una victoria)
+  'ajustes-prueba': () => {
+    setMode('pointer');
+    clearTelemetry();
+    const lost = derrota();
+    lost.id = 9101;
+    noteRun(lost);
+    const won = baseRun(8);
+    won.id = 9102;
+    won.seedText = 'QA-VICTORIA';
+    won.phase = 'won';
+    won.conquered = true;
+    won.stats.turns = 96;
+    noteRun(won);
+    clean();
+    S.campaign = null;
+    setScreen('home');
+    showSettings();
+  },
+  // V8-3 · La Taberna jugando con mando: el marco de foco (.focus-ring) y data-foco sobre la primera oferta
+  'ferreteria-mando': async () => {
+    await STATES.ferreteria();
+    setMode('pad');
+    quieto();
+    const offer = document.querySelector<HTMLElement>('.run-body.shop .choice.pick');
+    document.querySelectorAll('[data-foco]').forEach((n) => n.removeAttribute('data-foco'));
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    offer?.focus({ preventScroll: true });
   },
   // tarjeta para compartir (1200 × 630): la fotografía scripts/og-card.ts
   og: () => {

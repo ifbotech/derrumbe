@@ -22,8 +22,7 @@ export interface Session {
 export interface Tutorial {
   state: GameState;
   step: number;
-  intro: number;
-  mode: 'intro' | 'do' | 'explain' | 'free';
+  mode: 'do' | 'free';
   /** Qué hacer al terminar (o saltar) el tutorial; por ejemplo, empezar la primera campaña. */
   then?: () => void;
 }
@@ -106,6 +105,9 @@ export function toast(text: string): void {
   document.querySelectorAll('.toast').forEach((t) => t.remove());
   const el = document.createElement('div');
   el.className = 'toast';
+  // V9: los avisos (también «Mesa puesta al día con el servidor», de net.ts) se anuncian sin robar el foco
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
   el.textContent = text;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);

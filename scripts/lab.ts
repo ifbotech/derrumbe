@@ -1,5 +1,7 @@
 // Banco de pruebas compartido por los simuladores: juega una campaña entera con el bot de
 // referencia y deja anotado todo lo que el laboratorio de balance necesita medir.
+// El parche del afinador (BALANCE_PATCH) va lo primero: tiene que tocar los números antes de que se carguen las reglas.
+import './balance-patch';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { applyAction, currentPlayer } from '../src/rules/engine';
@@ -90,11 +92,14 @@ const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec
 
 /** Archivos cuyas reglas decide el laboratorio: si cambian, el informe publicado deja de valer. */
 const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot'];
+/** Y los números con que juegan: balance-config.json (sin espacios: solo cuentan sus valores). */
+const RULE_DATA = 'balance-config.json';
 /**
  * Huella de las reglas: el código de `src/rules` que juega las campañas, sin comentarios, sin espacios y sin
  * los textos (desc, name, who), que no cambian ninguna partida. La guarda `meta-report.json` y la comprueba
  * `tests/invariantes.test.ts`: así se sabe que el informe publicado es de estas reglas. Las palancas de
- * entorno de arriba (TIMBRE, CLAUSURA…) no entran: la huella dice qué hay en disco.
+ * entorno de arriba (TIMBRE, CLAUSURA…) y el parche del afinador (BALANCE_PATCH) no entran: la huella dice
+ * qué hay en disco. Desde la 9.0 entran también los números de balance-config.json.
  */
 export function fingerprint(): string {
   const hash = createHash('sha256');
@@ -106,6 +111,8 @@ export function fingerprint(): string {
       .replace(/\s+/g, '');
     hash.update(`${f}\n${src}\n`);
   }
+  const data = JSON.stringify(JSON.parse(readFileSync(new URL(`../src/rules/${RULE_DATA}`, import.meta.url), 'utf8')));
+  hash.update(`${RULE_DATA}\n${data}\n`);
   return hash.digest('hex').slice(0, 16);
 }
 

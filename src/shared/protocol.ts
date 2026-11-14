@@ -18,6 +18,8 @@ export type ClientMsg =
   /** Seña: cualquiera de la conjura señala una ruta, una oferta, una carta o un trono. */
   | { t: 'ping'; target: string }
   | { t: 'lobby' } // el anfitrión devuelve la sala al vestíbulo tras terminar
+  /** V9: el resumen del estado no cuadró en el cliente; el servidor reenvía el estado entero (y la campaña). */
+  | { t: 'resync' }
   | { t: 'leave' };
 
 export interface LobbyInfo {
@@ -32,7 +34,8 @@ export interface LobbyInfo {
 export type ServerMsg =
   | { t: 'joined'; room: string; playerId: string; token: string }
   | { t: 'lobby'; lobby: LobbyInfo }
-  | { t: 'state'; view: PlayerView; events: GameEvent[] }
+  /** `hash`: stateHash(view) (src/rules/state-hash.ts), para que el cliente compruebe que lo que tiene es lo que se envió. */
+  | { t: 'state'; view: PlayerView; events: GameEvent[]; hash: string }
   /** La campaña, sin el estado del azar ni la semilla (ver publicRun). */
   | { t: 'run'; run: Run }
   /** La seña de un jugador (una a la vez por jugador; target vacío la borra). */

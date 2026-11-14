@@ -59,7 +59,7 @@ interface QaWindow {
   __fs: number;
 }
 
-const press = (page: Page, i: number, ms?: number) => page.evaluate(([b, t]) => (window as unknown as QaWindow).__qaGamepad.press(b as number, t), [i, ms] as const);
+export const press = (page: Page, i: number, ms?: number) => page.evaluate(([b, t]) => (window as unknown as QaWindow).__qaGamepad.press(b as number, t), [i, ms] as const);
 const hold = (page: Page, i: number, ms: number) => page.evaluate(([b, t]) => (window as unknown as QaWindow).__qaGamepad.hold(b, t), [i, ms] as const);
 const count = (page: Page, sel: string) => page.locator(sel).count();
 const run = (page: Page) => page.evaluate(() => (window as unknown as QaWindow).__qa.run());
@@ -151,7 +151,7 @@ function walk(page: Page, selector: string, stick = false, limit = 60, ms = 0): 
     [selector, stick, limit, ms] as const,
   );
 }
-const focusOn = async (page: Page, selector: string, stick = false) => (await walk(page, selector, stick)).steps >= 0;
+export const focusOn = async (page: Page, selector: string, stick = false) => (await walk(page, selector, stick)).steps >= 0;
 
 /**
  * Lo enfocable de la mesa, cada cosa con un selector que sobrevive a los redibujados (la cuenta y las

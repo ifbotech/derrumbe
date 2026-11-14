@@ -23,6 +23,7 @@ sois una conjura contra una corte de naipes, con cuatro tronos que derribar, doc
 - **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en letra de título y cada palo con su **trama de grabado** (rayado diagonal de lanzas, punteado de gemas, hiladas de cáliz, rayado cruzado heráldico), para distinguirlos sin el color.
 - **Golpes que se sienten**: el naipe del guardia se parte de un tajo, la corona del trono estalla en esquirlas, el sello de lacre cae caliente sobre la carta y las monedas vuelan al contador, también en La Taberna. Todo a 60 fotogramas por segundo y con **«Reducir movimiento»**, que lo deja en fundidos.
 - **Siete monarcas tiranos**, cada uno con su retrato de grabado, su maldición marcada sobre la mesa y su voz de mesa brava al entrar, al contraatacar y al caer.
+- **«Enviar Crónica / Feedback de Prueba»**: un botón en la Crónica y en Ajustes para mandar tu última campaña a quien te pasó el juego. Nada sale del equipo si no lo pulsas (ver [Datos de prueba y privacidad](#datos-de-prueba-y-privacidad)).
 - **Asalto diario** con la misma semilla para todo el mundo, **semilla personalizada** y **partida guiada** que se aprende jugando: cinco pasos de una línea, en menos de un minuto y sin ventanas de texto. Ocho **Susurros** saltan la primera vez que te encuentras cada cosa (trono Inmune, La Manga, Golpe exacto, Mesa de lacre, Atajo, monarca, Asedio final, Mazo bajo), con «No mostrar más» a un clic.
 
 Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo seis palabras tienen significado propio —Daño, Multi, Golpe exacto, Brecha, En guardia y Desarmado—; todo lo demás se dice con palabras de baraja: Vida, Escudo, Mazo, Descarte, Contraataque.
@@ -66,9 +67,10 @@ El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, i
 | `npm test` | Pruebas del motor, la campaña, el Asedio final, la partida guiada, las palabras clave, la imprenta, el vocabulario y la marca (Vitest), con 500 partidas de fuzz con semilla |
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
 | `npm run analyze:meta` | Laboratorio de balance: ~55.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
+| `npm run balance:tune` | Afinador: busca, campo a campo y dentro de ±15 %, cambios de los números de `src/rules/balance-config.json` que acerquen el laboratorio a sus objetivos. **Solo propone** (`artifacts/balance-tune/propuesta.json` y `.md`); con `-- --aplicar` escribe en el JSON lo ya confirmado con 1.500 campañas. `-- --minutos=30` fija el presupuesto (por defecto 45); `-- --probar=ruta=valor` mide una hipótesis sin aplicarla |
 | `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas del Asalto único y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 37 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo, jerga vieja y animaciones que solo mueven `transform` y `opacity` → `artifacts/visual-qa/` y su `report.json` |
-| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Taberna, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias), y una segunda pasada con «Reducir movimiento» |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 40 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste, tramas de palo, jerga vieja y animaciones que solo mueven `transform` y `opacity` → `artifacts/visual-qa/` y su `report.json` |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Taberna, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar las reliquias con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias), una segunda pasada con «Reducir movimiento» y los datos de prueba con la red cortada: cuenta las peticiones al pulsar «Enviar Crónica / Feedback de Prueba» en una compilación normal y en otra con `VITE_TELEMETRY_URL` |
 | `npm run qa:fps` | Mide los fotogramas de cinco efectos (tajo, caída de un trono, lacre, monedas y barrido del foco) en 3 tamaños, con aceleración gráfica real: falla si el renderizador es por software, si el p95 pasa del refresco de la pantalla o si un fotograma pasa de 50 ms → `artifacts/mision/v8/fps.json` |
 | `npm run qa:audio` | Escucha sin altavoces: genera unas 3 h de música y efectos con 3 semillas y falla si un tramo de más de 30 s se repite, si un efecto suena igual más de 8 veces seguidas o si una nota sale de re menor |
 | `npm run forja` | Banco de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, reliquias, especiales, servicios, monarcas) a 24 y 300 px, mide su tinta y su silueta, y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
@@ -87,7 +89,7 @@ El flujo [`.github/workflows/ci-deploy.yml`](.github/workflows/ci-deploy.yml) co
 
 Al compartir el enlace sale la tarjeta de `public/og-card.png`. Si publicas el juego en otra dirección, cambia las tres direcciones completas de las etiquetas `og:` de [index.html](index.html).
 
-Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativo) y `VITE_COMMUNITY_URL` (a dónde lleva «Comunidad y comentarios» en Ajustes; por defecto, los avisos de este repositorio).
+Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativo), `VITE_COMMUNITY_URL` (a dónde lleva «Comunidad y comentarios» en Ajustes; por defecto, los avisos de este repositorio; si apunta a los avisos de un repositorio de GitHub, aparece también «Abrir aviso») y `VITE_TELEMETRY_URL` (recolector de los datos de prueba; ver la sección siguiente).
 
 ## Cómo se juega una campaña
 
@@ -150,6 +152,47 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 | Reiniciar la campaña | Mantener R | Mantener Select |
 | Ajustes | botón de la barra | Start |
 <!-- controles:fin -->
+
+## Datos de prueba y privacidad
+
+Para quien prueba el juego con amigos y familia. Lo hace `src/client/telemetry.ts`; lo comprueban `tests/telemetria.test.ts` y la prueba de humo con la red cortada.
+
+**Qué se guarda.** Al jugar, el juego apunta un registro pequeño por campaña (unos 0,7 kB) y otro por cada partida guiada. Se guarda **solo en este equipo**, en la clave `derrumbe:telemetria` del navegador (o de la envoltura de escritorio), y solo las **10 últimas** entradas. Cada registro tiene una lista cerrada de campos, y nada más:
+
+- versión del juego y **día** (`AAAA-MM-DD`, sin hora);
+- modo (campaña, sala o partida guiada) y cuántos jugadores había en la mesa;
+- baraja, Reinado, semilla, resultado, asalto alcanzado y turnos;
+- cómo acabó la partida guiada y cuántos segundos duró;
+- **picos de duda**: en qué asalto la primera jugada de un turno tardó más de 8 s y más del doble de tu mediana;
+- reliquias ofrecidas, elegidas y saltadas (por su `id`);
+- veces que usaste La Manga y Rebobinar;
+- la causa de la derrota (la misma que enseña la Crónica);
+- con qué jugaste (ratón, táctil, teclado o mando) y el tamaño de la ventana, redondeado a 10 px.
+
+**Qué no se guarda nunca**: tu nombre ni el de nadie, el código de la sala, texto escrito por ti, la hora, ni ningún identificador que te reconozca de una partida a otra.
+
+**Cómo verlo y borrarlo.** En **Ajustes → Datos de prueba** se lee cuántas campañas hay y cuánto ocupan. «Ver» enseña el JSON tal cual, sin retocar. «Borrar» elimina la clave entera. Borrar los datos del sitio en el navegador también lo borra.
+
+**Qué sale del equipo.** Nada, salvo que se cumplan **las dos** cosas: la versión se construyó con `VITE_TELEMETRY_URL` **y** pulsas «Enviar Crónica / Feedback de Prueba». No hay envío en segundo plano, ni al cerrar, ni con temporizadores. La línea de Ajustes dice qué hace tu versión:
+
+- **Sin `VITE_TELEMETRY_URL`** (la versión publicada): «Nada sale de este equipo: el botón copia o descarga». Al pulsar, copia al portapapeles un resumen de 6 líneas como mucho (marca y versión, resultado, asalto, causa, La Manga y Rebobinar, y un enlace con la semilla) y descarga `sangre-y-palo-feedback-AAAA-MM-DD.json` con el registro de tu última campaña. En un móvil que lo permita, abre la hoja de compartir y eliges tú a quién. Lo mandas tú, por donde quieras.
+- **Con `VITE_TELEMETRY_URL`**: cada pulsación hace **una** petición POST a esa dirección con el registro de tu última campaña, y nada más. Si falla, el botón hace lo mismo que sin la variable. Como en cualquier petición web, el recolector ve la dirección IP de quien la manda: el juego no la añade ni la guarda.
+- **«Abrir aviso»** (si `VITE_COMMUNITY_URL` apunta a los avisos de un repositorio de GitHub) abre la página de aviso nuevo con el resumen ya escrito. No se manda nada hasta que lo publicas tú allí.
+
+**Para quien despliega un recolector.** Construye con la variable:
+
+```bash
+VITE_TELEMETRY_URL=https://tu-recolector.example/recoger npm run build:web
+```
+
+En PowerShell: `$env:VITE_TELEMETRY_URL="https://tu-recolector.example/recoger"; npm run build:web`.
+
+El recolector recibe un POST cuyo cuerpo es el JSON del registro, enviado **como texto** (sin cabecera `Content-Type: application/json`; el navegador pone `text/plain`), así que no hay petición previa de CORS. Tiene que:
+
+- aceptar `POST` y leer el cuerpo como texto (menos de 5 kB);
+- responder con un código 2xx y la cabecera `Access-Control-Allow-Origin` con el origen del juego (o `*`). Sin esa cabecera el navegador no deja leer la respuesta: el registro puede llegar, pero el juego cree que falló y además copia y descarga.
+
+Es para pruebas con gente de confianza: no hay cuentas, ni clasificaciones, ni forma de unir dos registros de la misma persona.
 
 ## Balance
 
@@ -229,7 +272,7 @@ Cinco habilidades (`.claude/skills/`) recogen el oficio que se repite: `brutalis
 
 **Constitución anticomplejidad**, comprobada por `npm test`: como mucho 6 palabras clave y 56 reliquias, ninguna descripción de más de 115 caracteres y ningún asalto del 4 al 8 con un percentil 95 por encima de 19 turnos.
 
-La hoja de ruta de la 6.1 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). Desde la 6.1 cada versión se hace por celdas, de una en una y en el orden que fija su especificación, sobre la rama `release/v{n}`; cada celda deja su señal de fin en `artifacts/mision/v{n}/`. El panel simulado audita con 60 personas la 6.1, la V7 y la V9, y con las 240 la V10. El guion por lotes de la 5.0 sigue disponible; para ver su plan sin tocar nada:
+La hoja de ruta de la 6.1 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md), con una especificación por versión en [SPECS/](SPECS/). Desde la 6.1 cada versión se hace por celdas, de una en una y en el orden que fija su especificación, sobre la rama `release/v{n}`; cada celda deja su señal de fin en `artifacts/mision/v{n}/`. El panel simulado audita con 60 personas la 6.1, la 7.0, la 8.0 y la 9.0, y con las 240 la V10. El guion por lotes de la 5.0 sigue disponible; para ver su plan sin tocar nada:
 
 ```powershell
 .\scripts\estudio-autonomo.ps1 -Ensayo
@@ -246,7 +289,9 @@ Por cada versión abre una rama, lanza una sesión por celda de la especificaci�
 ```
 src/
   rules/        Motor de reglas puro, determinista y sin dependencias
+    balance-config.json · balance-config.ts   los 244 números que se afinan (asaltos, Reinados, monarcas, precios, reliquias…), con tipos
     engine.ts     estado, acciones, golpe (Daño × Multi), Asedio final, La Manga, Rebobinar, eventos, vista por jugador
+    state-hash.ts resumen determinista de una vista, para que el cooperativo detecte una mesa desincronizada
     tools.ts      las 52 reliquias
     specials.ts   cartas especiales y legendarias
     keywords.ts   las seis palabras clave y cómo se marcan en los textos
@@ -273,13 +318,15 @@ src/
     card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: naipes, tronos, retratos, iconos, tramas de palo y grano
     tinta.ts                                     aviso de tinta desvanecida en las cajas con desplazamiento
     audio.ts · audio-frases.ts                   efectos y música sintetizados, con mezcla y máster; el generador de frases con semilla
+    telemetry.ts                                 datos de prueba locales y el botón «Enviar Crónica / Feedback de Prueba»
     qa.ts · forja-qa.ts                          estados fijos para las capturas y banco de grabado (solo con ?qa)
-tests/          Vitest: motor, campaña, Asedio final y Escudo, autopsia, partida guiada, palabras clave, invariantes anticomplejidad, imprenta, vocabulario y marca
-scripts/        Laboratorio de balance, control de calidad (capturas, humo, mando virtual), banco de grabado, tarjeta social y reglamento
+tests/          Vitest: motor, campaña, Asedio final y Escudo, autopsia, partida guiada, palabras clave, invariantes anticomplejidad, imprenta, vocabulario, marca, balance-config, afinador, datos de prueba y cooperativo con WebSocket de verdad
+scripts/        Laboratorio de balance y afinador, control de calidad (capturas, humo, mando virtual), banco de grabado, tarjeta social y reglamento
 ```
 
 - **Motor determinista.** Semilla + lista de acciones reproducen cualquier partida y cualquier campaña, decisión a decisión. Las pruebas lo comprueban con 500 partidas de fuzz.
-- **Servidor autoritativo.** El cliente solo envía intenciones; el servidor valida con el motor y difunde el resultado. Las señas son solo señales: no deciden nada.
+- **Servidor autoritativo.** El cliente solo envía intenciones; el servidor valida con el motor y difunde el resultado, con un resumen de cada estado: si el del cliente no cuadra, pide la mesa entera. Las señas son solo señales: no deciden nada. Si alguien se corta, un bot juega su turno y, al volver, recupera su mano y su Manga (`tests/coop-estres.test.ts`: 50 partidas con un corte, 0 desincronizaciones).
+- **Balance en un archivo.** Los números que se afinan viven en `src/rules/balance-config.json`; las descripciones con cifras se rellenan desde ellos. Sacarlos del código no cambió ni una partida: el laboratorio salió idéntico.
 - **Información oculta.** Cada jugador recibe únicamente su mano y su Manga (`viewFor`) y sus propias cartas robadas o guardadas (`eventsFor`). La campaña de una sala viaja sin el estado del azar ni la semilla (`publicRun`).
 - **Animación por eventos.** Cada golpe produce una lista de eventos que el cliente encola y anima; las reglas no saben nada de lo visual.
 - **Marca en un solo sitio.** Las dos caras de la marca (título, sello y lema de cada idioma) salen de `src/shared/brand.ts`, que elige la cara por el idioma del navegador; `index.html` y el manifest, que son estáticos, lo llevan escrito, y `tests/marca.test.ts` falla si no casan. Los identificadores internos (`id` de datos, clases CSS, protocolo, claves `derrumbe:*`) no cambiaron con el tema.

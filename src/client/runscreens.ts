@@ -4,6 +4,7 @@ import { whisper } from './whispers';
 import { Card, FORM, FORMATION_NAME, SEAL, TREATMENT, cardLabel } from '../rules/engine';
 import { BOSS, CONTRACT, DECK, DraftOpt, EVENT, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
+import { BALANCE } from '../rules/balance-config';
 import { RARITY, TOOL, TOOL_SLOTS } from '../rules/tools';
 import { rubble, skyline } from './art';
 import { setScene, sfx } from './audio';
@@ -19,7 +20,7 @@ import { lastGain } from './guild';
 import { sendMsg } from './net';
 import { setScreen } from './router';
 import { renderPings } from './pings';
-import { beltEl, choice, deckModal, spCard, toolTile } from './widgets';
+import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
 // Iconos de juramentos, atajos y secretos: el emblema de GLYPH que mejor dice la imagen de la biblia de
@@ -306,9 +307,9 @@ function shopScreen(run: Run): void {
           <p><b>${next.name}</b> · ${next.floors.length} guardia${next.floors.length > 1 ? 's' : ''} por trono · Vida ×${num(next.hp)}</p>
           ${boss ? `<p class="boss"><b>${boss.who} · ${boss.name}</b>${boss.desc}</p>` : next.boss ? '<p class="boss"><b>Monarca</b>Se sabrá al llegar.</p>' : '<p>Sin monarca: rutas con Juramento o Atajo.</p>'}</div></div></div>
         <div class="grid2">
-          <button id="heal" data-tip="<b>Curar</b>+6 de Vida. Tienes ${run.integrity}/${run.maxIntegrity}. Cada vez cuesta 1 más." ${can && run.gold >= healCost(run) && run.integrity < run.maxIntegrity ? '' : 'disabled'}>Curar · ${healCost(run)}</button>
-          <button id="burn" data-tip="<b>La hoguera</b>Quema una carta de tu mazo para siempre (cuenta como carta destruida). Cada vez cuesta 2 más." ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>Hoguera · ${removeCost(run)}</button>
-          <button id="reroll" data-tip="<b>Renovar mesa</b>Cambia todo lo que hay a la venta. Cada vez cuesta 1 más${run.vouchers ? `; te quedan ${run.vouchers} vales de la Orden` : ''}." ${can && run.gold >= rerollCost(run) ? '' : 'disabled'}>Renovar mesa · ${rerollCost(run) || 'vale'}</button>
+          <button id="heal" data-tip="<b>Curar</b>+${BALANCE.taberna.curar.vida} de Vida. Tienes ${run.integrity}/${run.maxIntegrity}. Cada vez cuesta ${BALANCE.taberna.curar.paso} más." ${can && run.gold >= healCost(run) && run.integrity < run.maxIntegrity ? '' : 'disabled'}>Curar · ${healCost(run)}</button>
+          <button id="burn" data-tip="<b>La hoguera</b>Quema una carta de tu mazo para siempre (cuenta como carta destruida). Cada vez cuesta ${BALANCE.taberna.hoguera.paso} más." ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>Hoguera · ${removeCost(run)}</button>
+          <button id="reroll" data-tip="<b>Renovar mesa</b>Cambia todo lo que hay a la venta. Cada vez cuesta ${BALANCE.taberna.renovar.paso} más${run.vouchers ? `; te quedan ${run.vouchers} vales de la Orden` : ''}." ${can && run.gold >= rerollCost(run) ? '' : 'disabled'}>Renovar mesa · ${rerollCost(run) || 'vale'}</button>
           <button class="primary" id="go" ${can ? '' : 'disabled'}>${!run.endless && [3, 5, 7].includes(run.stage) && run.events.length ? 'Bajar a la cripta' : 'Al mapa'}</button>
         </div>
       </aside>
@@ -511,6 +512,7 @@ function actaScreen(run: Run): void {
         </div>
         <table class="acta-stats">${stats.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
       </div>
+      ${feedbackHtml('acta')}
       <div class="row acta-acciones">
         <button class="tinta" id="lamina-dl">Descargar lámina</button>
         <button class="tinta" id="lamina-copy">Copiar lámina</button>
@@ -529,6 +531,7 @@ function actaScreen(run: Run): void {
     else fallbackCopy(text, done);
   };
   $('#copy').onclick = () => copyText(actaText(run, c.online), 'Crónica copiada');
+  bindFeedback(sheet);
   const lamina = laminaOf(run, c.online);
   $('#lamina-dl').onclick = () => void downloadLamina(lamina);
   $('#lamina-copy').onclick = () =>

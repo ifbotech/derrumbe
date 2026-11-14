@@ -17,6 +17,11 @@
 //   · letalidad de cada monarca y duración de cada asalto (mediana y percentil 95 de turnos)
 // Las piezas que salen mal paradas de regalo pasan una segunda vuelta con más campañas y semillas
 // nuevas antes de dar aviso: con tantas piezas, alguna cae siempre por azar.
+//
+// Los objetivos (rangos de victorias, ritmo, letalidad, regalos) son datos de scripts/objetivos.ts: los
+// mismos que lee el afinador (npm run balance:tune). Con BALANCE_PATCH en el entorno, el laboratorio juega
+// con esos números cambiados (ver scripts/balance-patch.ts) sin tocar balance-config.json.
+import './balance-patch';
 import { spawn } from 'node:child_process';
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
@@ -29,6 +34,7 @@ import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
 import { TITLE } from '../src/shared/brand';
 import { Log, Spec, fingerprint, playCampaign } from './lab';
+import { OBJETIVOS, avisos, noise, revisarClasica } from './objetivos';
 
 const args = process.argv.slice(2);
 const arg = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
@@ -46,20 +52,11 @@ const GIFT_N = 160;
  */
 const CONFIRM_N = 800;
 /** Una herramienta dada de salida que gana menos que esto es una trampa; más que GIFT_MAX, una victoria regalada. */
-const TRAP = 35;
-const GIFT_MAX = 68;
+const TRAP = OBJETIVOS.regalo.trampa;
+const GIFT_MAX = OBJETIVOS.regalo.maximo;
 /** --piezas=clavos,ariete: en el modo «regalos», las herramientas o especiales que se miden (con --n campañas cada una). */
 const onlyPieces = arg('piezas')?.split(',') ?? [];
-/**
- * Cuánto tiene que empeorar una pieza para avisar: tres desviaciones típicas de la diferencia entre dos
- * proporciones, la de la pieza (n campañas) y la de referencia (nRef campañas sin regalo). Son unas 77
- * comparaciones por informe: con dos desviaciones saldrían casi dos avisos falsos cada vez; con tres,
- * uno de cada diez informes.
- */
-const noise = (n: number, nRef: number, refPct: number) => {
-  const p = Math.min(0.9, Math.max(0.1, refPct / 100));
-  return Math.round(3 * Math.sqrt(p * (1 - p) * (1 / Math.max(1, n) + 1 / Math.max(1, nRef))) * 1000) / 10;
-};
+// El umbral de ruido de cada pieza (`noise`) vive con los objetivos, en scripts/objetivos.ts.
 
 // ───────────────────────── Plan de campañas ─────────────────────────
 
@@ -230,72 +227,18 @@ function report(logs: Log[], confirm: Log[] = []) {
   const fresh = group('obra', 0, false);
   const deaths = Array.from({ length: LAST_STAGE }, (_, i) => pct(fresh.filter((l) => l.diedAt === i + 1).length, fresh.length));
 
-  // ── avisos: los objetivos de balance, uno por uno ──
-  const flags: string[] = [];
-  const has = (c: { n: number }) => c.n > 0;
-  const l1 = winrate.levels[0];
-  const l8 = winrate.levels[7];
-  if (has(l1) && (l1.vacio < 24 || l1.vacio > 30)) flags.push(`Reinado 1 con la Orden vacía: ${l1.vacio} % (objetivo 24–30)`);
-  if (has(l1) && (l1.lleno < 40 || l1.lleno > 48)) flags.push(`Reinado 1 con la Orden llena: ${l1.lleno} % (objetivo 40–48)`);
-  if (has(l8) && (l8.vacio < 6 || l8.vacio > 9)) flags.push(`Reinado 8 con la Orden vacía: ${l8.vacio} % (objetivo 6–9)`);
-  if (has(l8) && (l8.lleno < 12 || l8.lleno > 17)) flags.push(`Reinado 8 con la Orden llena: ${l8.lleno} % (objetivo 12–17)`);
-  // cada nivel tiene que ser más difícil que el anterior, con el gremio vacío y con el lleno
-  for (let i = 1; i < winrate.levels.length; i++) {
-    const a = winrate.levels[i - 1];
-    const b = winrate.levels[i];
-    if (!has(a) || !has(b)) continue;
-    if (b.vacio >= a.vacio) flags.push(`Reinados ${a.level} → ${b.level} con la Orden vacía: ${a.vacio} % → ${b.vacio} % (no baja)`);
-    if (b.lleno >= a.lleno) flags.push(`Reinados ${a.level} → ${b.level} con la Orden llena: ${a.lleno} % → ${b.lleno} % (no baja)`);
-  }
-  for (const d of winrate.decks) {
-    if (!has(d) || d.deck === 'obra') continue;
-    if (d.lleno < 38 || d.lleno > 48) flags.push(`${d.name}: ${d.lleno} % con la Orden llena (objetivo 40–45, margen 38–48)`);
-    if (d.vacio < 22 || d.vacio > 32) flags.push(`${d.name}: ${d.vacio} % con la Orden vacía (objetivo 24–31)`);
-    if (d.lleno - d.vacio < 6) flags.push(`${d.name}: la Orden llena solo le suma ${Math.round((d.lleno - d.vacio) * 10) / 10} puntos`);
-  }
+  // ── avisos: los objetivos de balance (scripts/objetivos.ts), uno por uno; se calculan al final ──
   /**
    * Piezas que la primera vuelta deja por debajo del ruido, o fuera de 35–68 % de victorias dadas de salida
    * (trampa o victoria regalada): todas pasan la segunda vuelta antes de avisar.
    */
   const suspect = (x: { givenN: number; given: number | null; delta: number | null }) =>
     x.givenN > 0 && ((x.delta ?? 0) <= -noise(x.givenN, noGift.length, giftRef) || (x.given ?? 50) < TRAP || (x.given ?? 50) > GIFT_MAX);
-  /** Lo que ganó la pieza dada de salida: manda la segunda vuelta si la hubo. */
-  const final = (x: { givenN: number; given: number | null; confirmN: number; confirm: number | null }) => (x.confirmN ? [x.confirm, x.confirmN] : [x.given, x.givenN]) as [number | null, number];
-  const worse = (kind: string, x: { name: string; givenN: number; delta: number | null; confirmN: number; confirmDelta: number | null }) => {
-    if (!x.givenN || (x.delta ?? 0) > -noise(x.givenN, noGift.length, giftRef)) return;
-    const [delta, n] = x.confirmN ? [x.confirmDelta ?? 0, x.confirmN] : [x.delta ?? 0, x.givenN];
-    // con segunda vuelta, manda ella: muestra grande y semillas que no eligieron a la sospechosa
-    if (delta <= -noise(n, noGift.length, giftRef)) flags.push(`${kind} ${x.name}: llevarla de salida empeora el resultado (${delta} puntos en ${n} campañas; ruido ±${noise(n, noGift.length, giftRef)})`);
-  };
-  for (const t of tools) {
-    const [won, n] = final(t);
-    if (won !== null && won > GIFT_MAX) flags.push(`Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${GIFT_MAX}: victoria regalada)`);
-    if (won !== null && won < TRAP) flags.push(`Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${TRAP}: trampa)`);
-    if (t.pick < 5 && t.offered >= 40 && (t.delta ?? 0) <= 0) flags.push(`Reliquia ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`);
-    worse('Reliquia', t);
-  }
-  for (const sp of specials) {
-    const [won, n] = final(sp);
-    if (won !== null && won > GIFT_MAX) flags.push(`Especial ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${GIFT_MAX})`);
-    worse('Especial', sp);
-  }
-  // jefes: todos entre 0,8× y 1,3× de la letalidad media
-  for (const b of bosses) {
-    const ratio = avgLethality ? b.lethality / avgLethality : 1;
-    if (b.faced >= 150 && (ratio < 0.8 || ratio > 1.3)) flags.push(`Monarca ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo 0,8×–1,3×)`);
-  }
-  // ritmo: obra 1 de 5 a 7 turnos (P95 ≤ 10), obras 2 y 3 de 8 a 10 (P95 ≤ 15), obras 4 a 8 de 9 a 13 (P95 ≤ 19)
-  for (const p of pacing) {
-    if (!p.n) continue;
-    const [lo, hi, top] = p.stage === 1 ? [5, 7, 10] : p.stage <= 3 ? [8, 10, 15] : [9, 13, 19];
-    if (p.p50 < lo || p.p50 > hi || p.p95 > top) flags.push(`Asalto ${p.stage} (${p.name}): mediana ${p.p50} y percentil 95 ${p.p95} (objetivo ${lo}–${hi} y ≤ ${top})`);
-  }
-  for (const d of pacingByDeck) if (d.worstP95 > 19) flags.push(`${d.name}: percentil 95 de ${d.worstP95} turnos en algún asalto del 4 al 8 (objetivo ≤ 19)`);
-
   const pieces = [...tools, ...specials];
   const suspects = pieces.filter(suspect).map((x) => x.id);
   const confirmations = pieces.filter((x) => x.confirmN).map((x) => ({ id: x.id, name: x.name, first: x.delta, n: x.confirmN, winrate: x.confirm, delta: x.confirmDelta }));
-  return { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, marks, bosses, avgLethality, pacing, pacingByDeck, flags };
+  const body = { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, marks, bosses, avgLethality, pacing, pacingByDeck };
+  return { ...body, flags: avisos(body) };
 }
 
 function print(r: ReturnType<typeof report>): void {
@@ -351,7 +294,7 @@ const logs = mode === 'clasica' ? [] : await running;
 const suspects = mode === 'todo' ? report(logs).suspects : [];
 const confirmLogs = suspects.length ? await runAll(['regalos', `--piezas=${suspects.join(',')}`, `--n=${CONFIRM_N}`, '--sal=37']) : [];
 const result = { ...report(logs, confirmLogs), classic: classicRows };
-for (const c of classicRows) if (c.winrate < 58 || c.winrate > 65) result.flags.push(`Asalto único con ${c.players} jugador${c.players > 1 ? 'es' : ''}: ${c.winrate} % (objetivo 58–65)`);
+for (const c of revisarClasica(classicRows)) if (!c.ok) result.flags.push(c.texto);
 print(result);
 if (classicRows.length) console.log(`\nAsalto único (victorias del bot): ${classicRows.map((c) => `${c.players}J ${c.winrate} %`).join(' · ')}`);
 const out = quick ? join(tmpdir(), `derrumbe-meta-${mode}.json`) : fileURLToPath(new URL('./meta-report.json', import.meta.url));
