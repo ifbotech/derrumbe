@@ -9,6 +9,17 @@ import { applyPing } from './pings';
 import { platform } from './platform';
 import { setScreen } from './router';
 import { pump, renderAll, renderInteractive } from './table';
+import { L, getLang } from './lengua';
+import { tFor } from '../shared/i18n';
+import { UI_JUICE, type ClaveJuice } from '../shared/i18n/ui-juice';
+import { errorFor } from '../rules/textos';
+
+/** V10: un aviso del servidor (en español: el protocolo no cambia) en el idioma de la mesa. */
+const SRV = (Object.keys(UI_JUICE) as ClaveJuice[]).filter((k) => k.startsWith('ui.red.srv.'));
+export function serverText(msg: string): string {
+  const k = SRV.find((c) => tFor('es', c) === msg);
+  return k ? L(k) : errorFor(getLang(), msg);
+}
 
 let ws: WebSocket | null = null;
 let retry = 0;
@@ -18,7 +29,7 @@ export const hasServer = () => !!platform.serverUrl();
 
 export function sendMsg(msg: ClientMsg): void {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
-  else if (msg.t !== 'ping') toast(hasServer() ? 'Sin conexión con el servidor' : 'Esta instalación no tiene servidor de salas: escribe uno en Ajustes');
+  else if (msg.t !== 'ping') toast(L(hasServer() ? 'ui.red.sin' : 'ui.red.sin.servidor'));
 }
 
 export function connect(): void {
@@ -48,7 +59,7 @@ export function connect(): void {
     updateConn();
     if (ev.code === 4000) {
       forget();
-      toast('Sesión abierta en otra pestaña');
+      toast(L('ui.red.otra'));
     }
     retryTimer = window.setTimeout(connect, Math.min(8000, 400 * 2 ** retry++));
   };
@@ -110,7 +121,7 @@ function onMsg(msg: ServerMsg): void {
       // V9: si lo que llegó no es lo que el servidor resumió, se pide el estado entero y este se descarta
       if (msg.hash && stateHash(msg.view) !== msg.hash) {
         sendMsg({ t: 'resync' });
-        toast('Mesa puesta al día con el servidor');
+        toast(L('ui.red.resync'));
         break;
       }
       S.queue.push({ view: msg.view, events: msg.events });
@@ -125,7 +136,7 @@ function onMsg(msg: ServerMsg): void {
       break;
     case 'error':
       S.waiting = false;
-      toast(msg.message);
+      toast(serverText(msg.message));
       if (S.screen === 'table' && S.shown) renderInteractive();
       break;
   }
@@ -134,6 +145,6 @@ function onMsg(msg: ServerMsg): void {
 export function updateConn(): void {
   const el = $('.conn');
   if (!el) return;
-  el.textContent = !hasServer() ? '○ sin servidor de salas: campaña en local' : S.connected ? '● servidor en línea' : '○ conectando con el servidor…';
+  el.textContent = L(!hasServer() ? 'ui.red.local' : S.connected ? 'ui.red.online' : 'ui.red.conectando');
   el.classList.toggle('bad', hasServer() && !S.connected);
 }

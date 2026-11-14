@@ -13,6 +13,7 @@ import { bossIdentity } from '../rules/run';
 import { sfx } from './audio';
 import { S, settings } from './core';
 import { hideBark, setMonarchMood, showBark } from './guia';
+import { t } from '../shared/i18n';
 
 type Kind = 'entrada' | 'contraataque' | 'caida';
 
@@ -43,7 +44,7 @@ function speak(bossId: string, kind: Kind, sound = false): void {
     }
     heard.push(`${bossId}:${kind}`);
     if (heard.length > 60) heard.shift();
-    showBark(b.barks[kind]);
+    showBark(t(`monarca.${bossId}.bark.${kind}`)); // V10: la voz en el idioma de la mesa
     if (sound) sfx.monarch(bossId, kind === 'caida' ? 'caida' : 'entrada');
     const until = performance.now() + barkMs();
     const watch = () => {

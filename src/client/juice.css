@@ -23,9 +23,9 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
    pasar el ratón o el foco del mando, y en la cuenta cuando suma su acabado (fx.ts sealStep). Solo transform
    y opacity; nunca en bucle: si nadie hace nada, la carta está quieta. */
 .card:not(.tilting):hover .ly.foil .foil-band, .choice.pick:hover .ly.foil .foil-band { animation: foilpass 0.62s cubic-bezier(0.4, 0, 0.3, 1) 1 both; }
-/* con el mando, al llegar el foco (en pantalla ancha: en la estrecha la primera pasada de cada carta cuesta un
-   parón de la GPU de ~60 ms, medido con qa:fps, y allí no se juega con mando) */
-@media (min-aspect-ratio: 1/1) and (min-width: 641px) { .card[data-foco] .ly.foil .foil-band { animation: foilpass 0.62s cubic-bezier(0.4, 0, 0.3, 1) 1 both; } }
+/* con el mando o el teclado, al llegar el foco. V8-5 (V10): también en la pantalla estrecha, ahora que arte-ui
+   dejó la capa .ly.foil en el plano del papel (sin translateZ): ya no hay parón de GPU (qa:fps en 390×844) */
+.card[data-foco] .ly.foil .foil-band { animation: foilpass 0.62s cubic-bezier(0.4, 0, 0.3, 1) 1 both; }
 @keyframes foilpass { from { transform: translateX(-160%) rotate(20deg); opacity: 0; } 25%, 70% { opacity: 0.95; } to { transform: translateX(260%) rotate(20deg); opacity: var(--foil-o, 0.42); } }
 /* V8 · el lacre caliente se enfría: la capa caliente se apaga por opacidad (fx.ts quita .caliente) */
 .pieza.lacre .lacre-caliente { transition: opacity 0.55s ease-out; }
@@ -47,7 +47,7 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 /* ───────────── TARIMA: las cartas jugadas mientras se resuelve el golpe ───────────── */
 .tray { position: relative; }
 .stage { position: absolute; z-index: 30; left: 0; right: 0; bottom: 100%; display: flex; justify-content: center; gap: clamp(4px, 0.8vw, 12px); padding-bottom: clamp(6px, 1.2vh, 14px); pointer-events: none; }
-.stage .card { --w: clamp(50px, 9.5vh, 112px); filter: drop-shadow(0 6px 0 rgba(10, 10, 10, 0.35)); }
+.stage .card { --w: clamp(50px, 9.5vh, 112px); box-shadow: 0 6px 0 rgba(10, 10, 10, 0.35); } /* V8-6: sombra pintada, sin filtro */
 .stepchip { position: fixed; z-index: 70; transform: translate(-50%, -110%); font-family: var(--display); font-size: clamp(14px, 2.4vh, 26px); line-height: 1; padding: 3px 8px 4px; border: 3px solid var(--ink); background: var(--ink); color: var(--card-paper); white-space: nowrap; pointer-events: none; animation: chip 0.85s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
 .stepchip.f { background: var(--red); }
 .stepchip.r { background: var(--blue); }
@@ -311,3 +311,18 @@ button.whisper-off:hover:not(:disabled), button.whisper-off:focus-visible { --bg
 @keyframes revela { from { opacity: 0; transform: perspective(600px) rotateY(-70deg) translateY(6px); } to { opacity: 1; transform: none; } }
 .calm .opt.secreto.revela { animation-name: calmin; animation-duration: 0.12s; }
 @media (prefers-reduced-motion: reduce) { .opt.secreto.revela { animation-name: calmin; animation-duration: 0.12s; } }
+/* V10 · la tabla de controles de Ajustes: cada tecla y botón va en un <kbd class="kt"> (en inglés, «Y» es un
+   botón y no la conjunción española). Se lee como el resto de la tabla. */
+.keys kbd.kt { font: inherit; letter-spacing: inherit; }
+
+/* SD5 (V10) · En La Taberna, con el mando, el marco del foco lleva debajo la insignia Ⓐ y su verbo (Comprar,
+   Elegir, Curar…), y sobre una reliquia también LB / RB Mover. Va dentro del marco (nav.ts), así que se mueve
+   con él en el mismo fotograma. Arriba si abajo no cabe; pegada al lado si el marco toca un borde. */
+.focus-ring .pad-hint { position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); display: flex; gap: 6px; white-space: nowrap; pointer-events: none; }
+.focus-ring .pad-hint[hidden] { display: none; }
+.focus-ring.hint-up .pad-hint { top: auto; bottom: calc(100% + 6px); }
+.focus-ring.hint-l .pad-hint { left: 0; transform: none; }
+.focus-ring.hint-r .pad-hint { left: auto; right: 0; transform: none; }
+.focus-ring .pad-hint b { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; min-height: 30px; font-family: 'Archivo', Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: none; color: var(--ring-paper); background: var(--ring-ink); border: 2px solid var(--ring-paper); border-radius: 999px; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45); }
+.focus-ring .pad-hint .kh { margin: 0; background: var(--ring-paper); color: var(--ring-ink); box-shadow: none; border-color: var(--ring-paper); }
+.focus-ring .pad-hint .kh + .kh { margin-left: -2px; }

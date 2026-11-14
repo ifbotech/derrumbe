@@ -16,6 +16,9 @@ import { pump } from './table';
 import { showRules } from './widgets';
 import { platform } from './platform';
 import { noteGuide } from './telemetry';
+import { L, getLang } from './lengua';
+import { t } from '../shared/i18n';
+import { errorFor } from '../rules/textos';
 
 const TUTO_KEY = 'derrumbe:tutorial';
 /** Pausa entre el foco de un paso cumplido y el del siguiente (ms). */
@@ -83,7 +86,7 @@ export function tutorialAct(action: Action): void {
     S.queue.push({ view, events: res.events });
     void pump();
   } catch (err) {
-    toast(err instanceof RuleError ? err.message : 'Jugada inválida');
+    toast(err instanceof RuleError ? errorFor(getLang(), err.message) : L('ui.tuto.invalida'));
   }
 }
 
@@ -92,7 +95,7 @@ function stepLine(step: TutorialStep): string {
   const want = step.cards ?? [];
   const ready = want.length > 0 && S.selected.length === want.length && want.every((id) => S.selected.includes(id));
   const act: Act = step.id === 'manga' ? 'stash' : ready ? 'strike' : 'choose';
-  return `${step.line}<span class="guia-kh">${hint(act)}</span>`;
+  return `${t(`guia.${step.id}.linea`)}<span class="guia-kh">${hint(act)}</span>`;
 }
 
 /**
@@ -145,11 +148,11 @@ export function showTutorialEnd(): void {
   const el = document.createElement('div');
   el.className = `end ${won ? 'won' : 'lost'}`;
   el.innerHTML = `
-    <div class="meta"><span class="hot">PARTIDA GUIADA ${won ? 'COMPLETADA' : 'FALLIDA'}</span></div>
+    <div class="meta"><span class="hot">${L(won ? 'ui.tuto.ganada' : 'ui.tuto.fallida')}</span></div>
     ${won ? rubble('D', 'end-art') : skyline('end-art')}
-    <h1>${won ? 'Lista la<br>conjura' : 'Conjura deshecha'}</h1>
-    <p>${won ? 'Ya sabes el poder de cada palo, el trono Inmune, La Manga, Daño × Multi = Golpe y el Golpe exacto. En campaña se suman las Reliquias y Rebobinar.' : 'Pasa hasta en las mejores conjuras. Repítela con calma.'}</p>
-    <div class="row"><button class="primary" id="t-home">${then ? 'A la campaña' : 'Jugar de verdad'}</button><button id="t-again">Repetir</button><button id="t-rules">Reglas</button></div>`;
+    <h1>${L(won ? 'ui.tuto.lista' : 'ui.tuto.deshecha')}</h1>
+    <p>${L(won ? 'ui.tuto.lista.texto' : 'ui.tuto.deshecha.texto')}</p>
+    <div class="row"><button class="primary" id="t-home">${L(then ? 'ui.tuto.campana' : 'ui.tuto.jugar')}</button><button id="t-again">${L('ui.tuto.repetir')}</button><button id="t-rules">${L('ui.reglas')}</button></div>`;
   document.body.appendChild(el);
   if (won) platform.save(TUTO_KEY, '1');
   $('#t-home', el).onclick = () => {

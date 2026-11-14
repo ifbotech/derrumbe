@@ -12,7 +12,7 @@ import { reconnect } from './net';
 import { applyBackup, describeBackup, exportProgress, readBackup } from './backup';
 import { COMMUNITY_URL, customServer, platform, setCustomServer } from './platform';
 import { rulesHtml } from './rules-text';
-import { CONTROL_ROWS } from './prompts';
+import { controlRows } from './prompts';
 import { whisperSetting } from './whispers';
 import { type ShareResult, clearTelemetry, feedbackIssueUrl, shareFeedback, telemetryBytes, telemetryLog, telemetryRemote } from './telemetry';
 
@@ -97,7 +97,7 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
       continue;
     }
     const def = TOOL[t.id];
-    const count = def.count?.(t) ?? '';
+    const count = String(def.count?.(t) ?? '').replace(/(\d),(\d)/, getLang() === 'en' ? '$1.$2' : '$1,$2'); // juice-ux V10: la cifra de la pastilla con el punto inglés
     slot.className = `belt-slot tool r-${def.rarity} k-${def.kind}`;
     slot.dataset.slot = String(i);
     slot.dataset.id = t.id;
@@ -377,7 +377,7 @@ export function showSettings(onChange?: () => void): void {
       </div>
       </div>
       <h3 class="sec">${L('ui.set.controles')}</h3>
-      <table class="keys"><tr><th></th><th>${L('ui.set.teclado')}</th><th>${L('ui.set.mando')}</th></tr>${CONTROL_ROWS.map(([what, key, pad]) => `<tr><td>${what}</td><td>${key}</td><td>${pad}</td></tr>`).join('')}</table>
+      <table class="keys"><tr><th></th><th>${L('ui.set.teclado')}</th><th>${L('ui.set.mando')}</th></tr>${controlRows(getLang(), true).map(([what, key, pad]) => `<tr><td>${what}</td><td>${key}</td><td>${pad}</td></tr>`).join('')}</table>
     </div>`,
     { cls: 'settings-modal' },
   );

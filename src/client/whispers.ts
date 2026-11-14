@@ -15,19 +15,21 @@ import { S, topModal } from './core';
 import { meta } from './guild';
 import { loadJson, saveJson } from './platform';
 import { hint } from './prompts';
+import { L, monN } from './lengua';
+import type { ClaveUi } from '../shared/i18n/es';
 
 export type WhisperId = 'inmune' | 'andamio' | 'limpio' | 'forja' | 'atajo' | 'jefe' | 'fatiga' | 'cantera';
 
-/** El catálogo: una línea cada uno. `{x}` se rellena con `vars`. */
-const TEXT: Record<WhisperId, string> = {
-  inmune: '<b>Inmune:</b> tus {glyph} no le hacen nada al trono de su mismo palo. Prueba contra otro.',
-  andamio: `<b>Viene un Contraataque fuerte:</b> guarda en La Manga${hint('stash')} la carta que no quieras gastar; al reponer robas una más.`,
-  limpio: '<b>Golpe exacto:</b> si golpeas ahora no hay Contraataque, cobras 1 de oro y robas una carta más.',
-  forja: '<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.',
-  atajo: '<b>Atajo:</b> te saltas el asalto sin Botín ni Taberna, pero te llevas «{tag}».',
-  jefe: '<b>Monarca:</b> {who} impone un decreto en este asalto. Su ficha de la barra te lo recuerda.',
-  fatiga: '<b>Asedio final:</b> desde ahora tus golpes llevan más Multi, pero los Contraataques pegan más fuerte.',
-  cantera: '<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte y pierdes {loss} de Vida. El Escudo no lo frena.',
+/** El catálogo: una línea cada uno, por su clave (src/shared/i18n/ui-juice.ts). `{x}` se rellena con `vars`. */
+const TEXT: Record<WhisperId, ClaveUi> = {
+  inmune: 'ui.w.inmune',
+  andamio: 'ui.w.andamio',
+  limpio: 'ui.w.limpio',
+  forja: 'ui.w.forja',
+  atajo: 'ui.w.atajo',
+  jefe: 'ui.w.jefe',
+  fatiga: 'ui.w.fatiga',
+  cantera: 'ui.w.cantera',
 };
 /** Lo que se aprende en la primera campaña; el resto sale la primera vez que se ve, en cualquiera. */
 const BASIC = new Set<WhisperId>(['inmune', 'andamio', 'limpio']);
@@ -87,7 +89,7 @@ export function whisper(id: WhisperId, vars: Record<string, string> = {}): void 
   el.className = 'whisper';
   el.dataset.w = id;
   el.setAttribute('role', 'status');
-  el.innerHTML = `<p>${fill(TEXT[id], vars)}</p><button type="button" class="whisper-off">No mostrar más</button>`;
+  el.innerHTML = `<p>${fill(L(TEXT[id]), { kh: hint('stash'), ...vars })}</p><button type="button" class="whisper-off">${L('ui.w.off')}</button>`;
   if (!place(id, el)) return;
   seenSet().add(id);
   saveJson(SEEN_KEY, [...seenSet()]);
@@ -128,7 +130,7 @@ export function tableWhispers(): void {
   const v = S.shown;
   if (!v || v.phase !== 'playing' || S.screen !== 'table') return;
   const boss = S.campaign?.run.boss ? BOSS[S.campaign.run.boss] : null;
-  if (boss) whisper('jefe', { who: boss.who });
+  if (boss) whisper('jefe', { who: monN(boss.id) });
   if ((v.fatigue ?? 0) > 0) whisper('fatiga');
   if (v.deckCount <= 3 && v.turnPlayer === v.you) whisper('cantera', { n: String(v.deckCount), loss: String(nextCollapse(v, v.players.length)) });
 }
@@ -136,8 +138,8 @@ export function tableWhispers(): void {
 /** La fila de Ajustes: [nombre, explicación, valor, cambiar]. Encenderlos de nuevo no repite los ya leídos. */
 export function whisperSetting(): [string, string, string, () => void] {
   return [
-    'Susurros',
-    'Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Asedio final…).',
+    L('ui.w.ajuste'),
+    L('ui.w.ajuste.texto'),
     isOff() ? 'No' : 'Sí',
     () => saveJson(OFF_KEY, !isOff()),
   ];

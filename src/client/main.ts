@@ -25,11 +25,16 @@ import { activate, beltSlot, bindNav, focused, keysInUse, moveFocus, shiftBelt }
 import { connect } from './net';
 import { openSeedLink } from './lamina';
 import { bindPings } from './pings';
-import { platform } from './platform';
+import { platform, startDesktop, tauriInvoke } from './platform';
+import { CLAVE_IDIOMA, getLang, initLang, onLangChange, setLang } from '../shared/i18n';
+import { brandFor } from '../shared/brand';
 import { setScreen } from './router';
 import { onTableKey, refreshSpeed } from './table';
 import { showSettings } from './widgets';
+import { L } from './lengua';
 
+// V10 · escritorio (Tauri + Steamworks): solo si la envoltura deja window.__TAURI__; en la web no hace nada
+if (tauriInvoke()) void startDesktop({ initLang, getLang, setLang, onLangChange, titleFor: (l) => brandFor(l).fullTitle, key: CLAVE_IDIOMA });
 bakeGrain();
 ensureDefs();
 bindEyes();
@@ -51,7 +56,7 @@ function startHold(): void {
   if (holdTimer || !canRestart() || topModal() || lupaOpen()) return;
   holdRing = document.createElement('div');
   holdRing.className = 'hold-ring';
-  holdRing.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="42"/><circle class="prog" cx="50" cy="50" r="42" pathLength="100" transform="rotate(-90 50 50)"/></svg><b>R</b><span>Reiniciar campaña</span>`;
+  holdRing.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="42"/><circle class="prog" cx="50" cy="50" r="42" pathLength="100" transform="rotate(-90 50 50)"/></svg><b>R</b><span>${L('ui.main.reiniciar')}</span>`;
   document.body.appendChild(holdRing);
   holdTimer = window.setTimeout(() => {
     endHold();
@@ -127,7 +132,7 @@ function onKey(key: string, e?: KeyboardEvent): boolean {
     // gatillo derecho: 1× → 2× → 4×
     cycleSpeed();
     refreshSpeed();
-    toast(`Velocidad ${speedLabel()}`);
+    toast(L('ui.main.velocidad', { v: speedLabel() }));
     return true;
   }
   if (key === 'Start') {

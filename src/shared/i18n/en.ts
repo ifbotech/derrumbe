@@ -18,9 +18,10 @@ import { TOOL_SLOTS, TOOLS } from '../../rules/tools';
 import type { Arch, Rarity } from '../../rules/tools';
 import { ES_UI, type ClaveUi } from './es';
 import { columna } from './ui-arte';
+import { columnaJuice } from './ui-juice';
 
 /** Screen texts. Same keys as `ES_UI`. */
-export const EN_UI: Record<ClaveUi, string> = { ...columna(1) } satisfies Record<keyof typeof ES_UI, string>;
+export const EN_UI: Record<ClaveUi, string> = { ...columna(1), ...columnaJuice(1) } satisfies Record<keyof typeof ES_UI, string>;
 
 const f = (tpl: string, v: Record<string, number | string> = {}) => fillFor('en', tpl, v);
 

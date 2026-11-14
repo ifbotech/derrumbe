@@ -105,7 +105,7 @@ const ANIMA_PENDIENTE_JUICE: string[] = [];
  * Un resto de español dentro de una de ellas sale como aviso, no como fallo. juice-ux las traduce y deja
  * la lista vacía.
  */
-const FUGA_PENDIENTE: string[] = ['.conn', '.whisper', '.set-susurros', '.keys', '.coach', '.tutorial', '.guia', '.bark', '.voz', '.pad-hint', '.net-toast', '.toast.net'];
+const FUGA_PENDIENTE: string[] = []; // juice-ux V10: vacía, sus textos ya van en los dos idiomas
 
 interface Fail {
   regla: string;

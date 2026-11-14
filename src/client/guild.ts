@@ -120,6 +120,7 @@ export function trackMeta(): void {
   if (S.campaign) noteRun(meta, S.campaign.run);
   const fresh = claim(meta);
   saveMeta();
+  fresh.forEach((a) => platform.unlockAchievement(a.id, logN(a.id))); // juice-ux V10: el logro, también a la plataforma (Steam en escritorio)
   fresh.forEach((a, i) => setTimeout(() => achToast(logN(a.id), a.renown, unlocksOf(a.id) ? logDes(a.id) : null), i * 900));
 }
 
