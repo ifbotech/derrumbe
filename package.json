@@ -13,7 +13,7 @@
     "build:web": "vite build --mode web",
     "preview:web": "vite preview --mode web --outDir dist/web",
     "start": "node dist/server/index.js",
-    "test": "vitest run",
+    "test": "node scripts/test.mjs",
     "typecheck": "tsc --noEmit",
     "simulate": "tsx scripts/simulate.ts",
     "simulate:run": "tsx scripts/simulate-run.ts",
