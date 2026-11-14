@@ -2,6 +2,68 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 9.0.0 — 2026-11-13
+
+El balance vive en un archivo, una herramienta propone ajustes acotados, amigos y familia mandan su partida en un toque y la conjura de cuatro aguanta un corte de red. Ningún número de juego cambió: el laboratorio sale idéntico al de la 8.0. Motivo: el paso 4 del encargo y lo que la 8.0 dejó abierto en las capturas de Steam Deck. Candidata `76f628c`; puertas en `artifacts/mision/v9/puertas.md`.
+
+### Balance en un archivo
+- **`src/rules/balance-config.json`: 244 números**, tipados en `src/rules/balance-config.ts` (`BalanceConfig`, `BALANCE`). Salen de `STAGES`, `ASCENSIONS`, `FATIGUE`, `CLAUSURA`, `TIMBRE`, los decretos de los siete monarcas, los precios de La Taberna, las mejoras de La Orden, las barajas, las formaciones, la mesa, el golpe, los acabados, el Asalto único, 39 reliquias (44 cifras) y 25 especiales (23 cifras).
+- Las descripciones con cifras son plantillas `{campo}` que se rellenan con esos mismos números: texto y valor no se pueden separar.
+- `tests/balance-config.test.ts` (17 pruebas): tipos y rangos de cada sección, constitución con los textos ya rellenos y, con todos los números +1, que el motor y los textos leen los nuevos.
+- **Laboratorio idéntico al de la 8.0**, número a número: 55.640 campañas en 1.565 s, 0 avisos, peor P95 de los asaltos 4–8 por baraja 18 · 18 · 18 · 17 · 16 · 17 (tope 19). Solo cambia la huella de las reglas (`e04abd9ae124f715` → `aed6a8feb2f230d1`), porque desde la 9.0 también suma los valores del JSON.
+
+### Autoajuste
+- **`npm run balance:tune`** (`scripts/auto-balance.ts`): un campo cada vez, de 23 afinables, dentro de ±15 %; sondeos con n = 200 y confirmación con n = 1.500. Lee los objetivos de la misma lista que los avisos del laboratorio (`scripts/objetivos.ts`). Por defecto **solo propone** (`artifacts/balance-tune/propuesta.json` y `.md`) y comprueba que la suma SHA-256 de `balance-config.json` no cambia; escribe solo con `--aplicar`.
+- **Ejecución real (`--minutos=30`): 1 s, propuesta vacía.** Todos los objetivos se cumplen en el punto de partida (n = 1.500). Márgenes más justos: Reinado 1 con la Orden vacía 29,7 % (0,3 hasta 30), Reinado 8 vacía 6,8 % (0,8), ritmo del asalto 2 en el borde (mediana 8), Asalto único con 2 y 3 jugadores a 0,5 puntos. **No se aplicó nada.**
+- Coste medido: una confirmación con n = 1.500, 17,6 min; un sondeo, unos 2,5 min.
+- **Hipótesis del panel descartada** (`STAGES[0].hp` 3,93 → 3,0 y `FATIGUE.start` 8 → 10, fuera de ±15 %, medida con `--probar` y n = 1.500): saca 5 objetivos de su rango (Reinado 1 vacía 34,5 %, mediana del asalto 1 de 6 a 4 turnos, baraja negra 33,1 y 48,4 %, baraja corta 33,5 %) y no arregla ninguno.
+- `tests/auto-balance.test.ts` (10 pruebas, sin laboratorio): nunca pasa de ±15 %, sin `--aplicar` no escribe y con `--aplicar` solo escribe lo confirmado.
+
+### Telemetría de prueba
+- **`src/client/telemetry.ts`**: un registro por campaña, guardado **solo en este equipo** (`derrumbe:telemetria`, las 10 últimas). Lista cerrada de 21 campos: versión, día (sin hora), modo, jugadores, baraja, Reinado, semilla, resultado, asalto, turnos, partida guiada y sus segundos, picos de duda por asalto, reliquias ofrecidas, elegidas y saltadas, La Manga, Rebobinar, causa de la derrota, tipo de entrada y tamaño de ventana (redondeado a 10 px). Ni nombres, ni código de sala, ni identificadores, ni texto libre.
+- Medido: un registro de una campaña entera, **657 bytes** (tope 5 KB); el módulo minificado, 4.988 bytes.
+- **Botón «Enviar Crónica / Feedback de Prueba»** en la Crónica (victoria y derrota) y en Ajustes, con ratón, teclado y mando. Fila **«Datos de prueba»** en Ajustes: cuántas campañas y cuántos kB, «Ver» (el JSON tal cual, de solo lectura) y «Borrar». Sin interruptor de envío: el único envío es el botón.
+- **Red**: 0 peticiones sin pulsar, en cualquier compilación. Con la compilación normal, 0 también al pulsar: copia un resumen de ≤ 6 líneas y descarga `sangre-y-palo-feedback-AAAA-MM-DD.json` (en móvil, la hoja de compartir). Con `VITE_TELEMETRY_URL`, exactamente 1 POST por pulsación, con el registro y nada más. Lo comprueban `tests/telemetria.test.ts` (9 pruebas) y la prueba de humo con la red cortada, pulsando los botones de verdad.
+
+### Cooperativo
+- `startServer({ port, botDelayMs, seed })`: importar el servidor ya no abre ningún puerto; `npm start` y `npm run dev:server` siguen igual.
+- Cada estado viaja con su resumen (`stateHash`, `src/rules/state-hash.ts`). Si el del cliente no cuadra, pide el estado entero (`resync`) y avisa «Mesa puesta al día con el servidor».
+- **`tests/coop-estres.test.ts`, 8 pruebas con WebSocket de verdad, 6,6 s**: partidas de 2, 3 y 4 hasta el final; señas en el Mapa y en La Taberna para todos los asientos; corte a mitad de turno → bot → vuelta con su mano y su Manga; **50 partidas con un corte sembrado: 50 reconexiones, 0 desincronizaciones**; misma semilla, misma partida. Verde dos veces seguidas.
+- Quien entra sin nombre se llama **CONJURADO** (antes «OBRERO», del tema viejo).
+
+### Abierto de la 8.0
+- La placa «−n CAE» ya no pisa la placa de ventaja de los tronos (regla «placas»).
+- En «Tu Vida», cada rótulo va encima de su barra (regla «bunker»).
+- Estado nuevo `ferreteria-mando`: La Taberna con el foco del mando. Regla «foco» ampliada a él. Existe en las cuatro ventanas.
+- Retirado lo que quedaba de la partida guiada vieja: `TUTORIAL_INTRO`, `say`, `after`, el modo `'intro'` y «la Maestra».
+- Las cifras de La Taberna que la interfaz escribía a mano («+6 de Vida», «cada vez cuesta 1 más») salen de `BALANCE`.
+
+### Puertas
+- `typecheck` limpio. **254 pruebas** en 16 archivos, 22 s (antes 205 en 11). `build` y `build:web` compilan, con el JSON empaquetado.
+- Forja: 169 piezas × 2 tamaños, limpia, 9 avisos ya conocidos. `npm run docs`: sin cambios.
+- QA visual: **160 capturas** (40 estados × 4 ventanas), 0 fallos, 0 recortes. Estados nuevos: `acta-feedback`, `ajustes-prueba` y `ferreteria-mando`. Reglas nuevas: «placas», «bunker» y «feedback».
+- Prueba de humo: **272 comprobaciones**, «Todo en orden» (ratón, teclado, mando virtual, «Reducir movimiento» y telemetría con la red cortada). Partida guiada: 29,1 s con teclado y ratón, 33,0 s con mando.
+- `qa:fps`: «60 fps: todo en orden». `qa:audio`: «La música no cansa: todo en orden».
+
+### Panel simulado contra la 8.0
+Corrida `rapido-60-20261113-222433` (commit `76f628c`) contra `rapido-60-20261113-164104` (8.0): mismas 60 personas y mismo reparto de escenas. 286 evaluaciones, 0 fallidas, 31,9 min.
+- **Cambios del instrumento.** El lector del juego se rehízo: la 9.0 sacó los números a `balance-config.json` y el panel ahora le pide al juego sus datos ya resueltos (comprobado clave por clave contra la 8.0: 0 defectos). Audita 3 pantallas nuevas (`acta-feedback`, `ajustes-prueba`, `ferreteria-mando`). El duelo de enviar la Crónica ya no se vota, porque el juego lo trae.
+- **Aprobación: 25,0 % → 26,7 %** (15 → 16 de 60; IC95 17,1–39,0; el de la 8.0, 15,8–37,2).
+- **Claridad media: 5,20 → 5,30** (IC95 calculado de las 60 reseñas: 4,91–5,49 en la 8.0 y 4,93–5,67 en la 9.0).
+- **Veredicto: sin regresión.** Las dos suben dentro del ruido de n = 60: no es una mejora probada. La 9.0 es de infraestructura y no prometía mover estas cifras.
+- Por dispositivo (claridad · aprobación): PC (n 21) 5,33 → 5,48 · 33,3 → 28,6 %. Portátil (n 15) 5,20 → 5,07 · 13,3 → 13,3 %. Móvil (n 15) 5,47 → 5,27 · 40,0 → 53,3 %. Con n ≤ 21, nada de esto es una diferencia probada.
+- **Steam Deck, aparte (n 9): 0 de 9 por cuarta corrida seguida.** Su claridad pasa de 4,44 a 5,33 (IC95 4,07–6,60), pero **no es comparable**: desde la 9.0 su escena enseña solo capturas con mando (`mesa-mando`, `ferreteria-mando`, `ajustes`), y en la 8.0 enseñaba `mesa` y La Taberna con ratón. La subida no se atribuye al juego.
+- Quejas por cubeta: **texto chico 75 → 87** · contraste 68 → 59 · fatiga visual 53 → 46 · reglas confusas 38 → 43 · palo Inmune 38 → 40 · La Manga 14 → 23 · mando / foco 10 → 17 · objetivos táctiles 18 → 16 · Reliquias 9 → 13. La de texto chico es la que más sube y sigue siendo la primera.
+- Precio justo (mediana): 8,0 → 8,0 USD. Van Westendorp: óptimo 6,0 → 6,25 USD; indiferencia 8,22 → 8,82 USD. En deseados: 58,3 → 61,7 %.
+- Duelos A/B (los dos miran a la V10): «Jugar en inglés», 86,7 % por la propuesta (IC95 78,3–93,3); «Modo de alto contraste», 100 %. Sesgo de posición: 13,3 % de los pares.
+- La propuesta de balance del panel (Ariete 4 → 3, peso de las Comunes 50 → 40) pasa de ±15 % y no arregla ningún objetivo roto: descartada.
+
+### Estudio
+- Orden de celdas: director → reglas-balance → juice-ux → arte-ui. Bitácoras en `artifacts/mision/v9/`. La prueba de humo de `juice-ux` llamaba a la telemetría por un enganche de QA, y `arte-ui` añadió después la pasada que pulsa los botones de verdad.
+- La primera sesión de `arte-ui` se cortó por un fallo de autenticación. Se retomó desde el árbol guardado y terminó con todas sus puertas en verde.
+- Corrección del Director: en el cierre de la 8.0 se dio por «sin base» la «fila de Tréboles cortada». Las capturas `forja` de 1366×768 y 1280×800 la enseñan: la Mesa de lacre no cabe sin desplazar. Pasa a la V10 (`SPECS/V10.md`, SD1).
+- Pendiente para la V10 (`SPECS/V10.md`, apartado 1.2): Steam Deck no aprueba y la queja de texto chico sube. Arreglos concretos, con su captura y su regla de QA.
+
 ## 8.0.0 — 2026-11-13
 
 Golpes con tajo, esquirlas y lacre a 60 FPS, música por generador y foco del mando de papel y tinta. Sin cambios de reglas: `src/rules/` no se tocó y el laboratorio sigue idéntico al de la 6.1 y la 7.0. Motivo: el paso 3 del encargo (sensación de golpe y tres horas de música sin fatiga) y lo que dejó abierto la 7.0 (foco del mando en Steam Deck, bocadillo del monarca sobre los tronos, barra del pulgar en móvil).

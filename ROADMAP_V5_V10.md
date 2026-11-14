@@ -11,8 +11,8 @@ El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este 
   - **`rapido-60`**: 60 personas, estratificada y con semilla fija. Línea base de la 6.1, y puertas de la V7, la V8 y la V9. Ruido de la aprobación: unos **±12 puntos** (IC95 con n = 60).
   - **Censo de 240**: solo en la V10. Ruido: unos **±6 puntos**. La última corrida de 240 es la de la V4 (`panelAgentesGaming\salidas\v4-completo-20261112-084346\`), sobre el juego viejo.
 - Solo se comparan corridas del mismo preset: `rapido-60` contra `rapido-60` (con `--comparar-con <run_id>`), censo contra censo.
-- Corridas `rapido-60` hechas: la 6.1 (`rapido-60-20261113-112234`, línea base), la 7.0 (`rapido-60-20261113-141123`, contra la 6.1) y la 8.0 (`rapido-60-20261113-164104`, contra la 7.0). La V9 se compara contra la de la 8.0. Las cifras de la V4 hablan del juego viejo: orientan, no son línea base.
-- El panel no publica el IC95 de la claridad media. Para la puerta se calcula a partir de las 60 reseñas (`resenas[].claridad` de `agregados.json`, aproximación normal). En la 6.1 sale 4,63–5,24; en la 7.0, 4,62–5,25; en la 8.0, 4,91–5,49.
+- Corridas `rapido-60` hechas: la 6.1 (`rapido-60-20261113-112234`, línea base), la 7.0 (`rapido-60-20261113-141123`, contra la 6.1), la 8.0 (`rapido-60-20261113-164104`, contra la 7.0) y la 9.0 (`rapido-60-20261113-222433`, contra la 8.0). El censo de la V10 se compara contra la de la 9.0 (`--comparar-con` acepta un censo contra un `rapido-60`; la consola avisa de que la muestra no es la misma). Las cifras de la V4 hablan del juego viejo: orientan, no son línea base.
+- El panel no publica el IC95 de la claridad media. Para la puerta se calcula a partir de las reseñas (`resenas[].claridad` de `agregados.json`, aproximación normal). En la 6.1 sale 4,63–5,24; en la 7.0, 4,62–5,25; en la 8.0, 4,91–5,49; en la 9.0, 4,93–5,67.
 - Los números de balance (victorias, ritmo, letalidad) no vienen del panel: vienen del laboratorio (`npm run analyze:meta`). Si chocan, manda el laboratorio.
 - Laboratorio de referencia: el de la 6.1, idéntico al de la 6.0 (`artifacts/mision/v6.1/meta-report-6.0.json`; 55.640 campañas; sin avisos; peor P95 de los asaltos 4–8: 18).
 
@@ -24,9 +24,32 @@ El encargo del usuario está en `artifacts/mision/MISION.md` y manda sobre este 
 | V6 | Cambio de tema 360° y vocabulario universal (CORONA ROTA) | a mano, en paralelo | sin correr | Hecha (`2308e18`) |
 | 6.1 | Marca dual SANGRE Y PALO · BLOOD & SUITS y La Taberna | reglas-balance → arte-ui → juice-ux → director → panel | `rapido-60`: línea base | Hecha (`71ae962`) |
 | V7 | Partida guiada de 60 segundos y Mesa brava: monarcas con cara, maldición a la vista y voz | director → reglas-balance → arte-ui → juice-ux | `rapido-60` contra la 6.1: sin regresión | Hecha (`1c33ef6`, `v7.0.0`) |
-| V8 | Jugo visceral, lacre con brillo y banda sonora de corte de 3 horas | director → arte-ui → juice-ux | `rapido-60` contra la 7.0: sin regresión | Puertas pasadas; candidata `c12191c` |
-| V9 | Cooperativo a prueba de cortes, `balance-config.json` con autoajuste y telemetría de prueba | director → reglas-balance → juice-ux → arte-ui | `rapido-60` contra la V8 | Planificada (`SPECS/V9.md`) |
-| V10 | Candidata de lanzamiento con funciones congeladas: ES / EN, accesibilidad y Steam | director → reglas-balance → arte-ui → juice-ux | censo de 240 | Planificada (`SPECS/V10.md`) |
+| V8 | Jugo visceral, lacre con brillo y banda sonora de corte de 3 horas | director → arte-ui → juice-ux | `rapido-60` contra la 7.0: sin regresión | Hecha (`f3c4a67`, `v8.0.0`) |
+| V9 | Cooperativo a prueba de cortes, `balance-config.json` con autoajuste y telemetría de prueba | director → reglas-balance → juice-ux → arte-ui | `rapido-60` contra la 8.0: sin regresión | Puertas pasadas; candidata `76f628c` |
+| V10 | Candidata de lanzamiento con funciones congeladas: ES / EN, accesibilidad y Steam | director → reglas-balance → arte-ui → juice-ux | censo de 240 contra la 9.0 | Lista para ejecutarse (`SPECS/V10.md`) |
+
+## Resultados por versión
+
+Una fila por versión medida en esta misión. Panel: corridas `rapido-60` (n = 60; ruido de la aprobación de unos ±12 puntos), cada una sobre su commit candidato. Quejas: el recuento de cada corrida con su propio clasificador (los informes de comparación reclasifican la base y pueden dar una cifra algo distinta). Fuentes: `agregados.json` de cada corrida, `artifacts/mision/v{n}/puertas.md` y `CHANGELOG.md`.
+
+| | 6.1 | 7.0 | 8.0 | 9.0 |
+|---|---|---|---|---|
+| Commit | `71ae962` (`v6.1.0`) | `1c33ef6` (`v7.0.0`) | `f3c4a67` (`v8.0.0`; candidata `c12191c`) | candidata `76f628c` |
+| Corrida del panel | `rapido-60-20261113-112234` | `rapido-60-20261113-141123` | `rapido-60-20261113-164104` | `rapido-60-20261113-222433` |
+| Aprobación por persona (IC95) | 23,3 % (14,4–35,4) | 25,0 % (15,8–37,2) | 25,0 % (15,8–37,2) | 26,7 % (17,1–39,0) |
+| Claridad media (IC95 de las reseñas) | 4,93 (4,63–5,24) | 4,93 (4,62–5,25) | 5,20 (4,91–5,49) | 5,30 (4,93–5,67) |
+| Veredicto contra la anterior | línea base | sin regresión | sin regresión | sin regresión |
+| Claridad PC · portátil · móvil | 4,81 · 5,07 · 4,93 | 5,10 · 5,00 · 4,60 | 5,33 · 5,20 · 5,47 | 5,48 · 5,07 · 5,27 |
+| Steam Deck: aprobación · claridad (n 9) | 0 de 9 · 5,00 | 0 de 9 · 5,00 | 0 de 9 · 4,44 | 0 de 9 · 5,33 (escena distinta: no comparable) |
+| Quejas: texto chico · contraste · fatiga visual | 82 · 61 · 50 | 84 · 67 · 46 | 75 · 68 · 53 | 87 · 59 · 46 |
+| Precio justo (mediana) · óptimo de Van Westendorp | 8,0 · 6,25 USD | 8,0 · 8,0 USD | 8,0 · 6,0 USD | 8,0 · 6,25 USD |
+| En deseados | 61,7 % | 55,0 % | 58,3 % | 61,7 % |
+| Laboratorio | idéntico a la 6.0; 0 avisos; peor P95 tardío 18 | idéntico a la 6.1 | idéntico a la 6.1 (no se repitió: reglas sin tocar) | idéntico a la 8.0 tras sacar los números a `balance-config.json`; 0 avisos; peor P95 tardío 18 |
+| Pruebas (Vitest) | 188 | 205 | 205 | 254 |
+| QA visual (capturas, 0 fallos) | 112 | 132 | 148 | 160 |
+| Prueba de humo (comprobaciones) | 164 | 193 | 213 | 272 |
+
+Lo que no se ha movido en cuatro corridas: **Steam Deck no aprueba (0 de 9)** y la queja de **texto chico** sigue la primera (82 → 87). Es lo que la V10 ataca con arreglos concretos (`SPECS/V10.md`, apartado 1.2, filas SD).
 
 Regla común: **ninguna versión añade un sistema nuevo sin retirar o simplificar otro**, y todas respetan la constitución anticomplejidad: ≤ 6 palabras clave, ≤ 56 reliquias (hoy 52), toda descripción de reliquia, carta especial, monarca y Reinado ≤ 115 caracteres, P95 ≤ 19 turnos en los asaltos 4 a 8 con las seis barajas. El vocabulario es el del glosario (`SPECS/V6-normas-y-glosario.md`, con La Taberna desde la 6.1).
 
@@ -131,15 +154,29 @@ Lo que tiene base en las capturas de Steam Deck pasa a la V9 (`SPECS/V9.md`, apa
 
 **Puertas.** CPU completas + `rapido-60` contra la 8.0 (`rapido-60-20261113-164104`). Regresión: aprobación por debajo del 15,8 % o claridad media por debajo de 4,91, los límites inferiores del IC95 de la 8.0. Detalle en `SPECS/V9.md`.
 
+**Resultado** (2026-11-13, candidata `76f628c`). Todas las puertas de CPU pasan (`artifacts/mision/v9/puertas.md`).
+- `balance-config.json` con 244 números. Laboratorio completo idéntico al de la 8.0 (55.640 campañas, 0 avisos, peor P95 tardío 18).
+- `balance:tune`: propuesta vacía; todos los objetivos se cumplen. No se aplicó nada. La hipótesis del panel (`STAGES[0].hp` 3 y `FATIGUE.start` 10) saca 5 objetivos de rango: descartada.
+- Telemetría: un registro de campaña mide 657 bytes. 0 peticiones sin pulsar el botón; 1 por pulsación solo con `VITE_TELEMETRY_URL`.
+- Cooperativo: 8 pruebas con WebSocket de verdad en 6,6 s; 50 cortes, 50 reconexiones, 0 desincronizaciones.
+- V8-1 a V8-4, B1 y B2 hechos. 254 pruebas, 160 capturas sin fallos, 272 comprobaciones de humo.
+- Panel: aprobación 25,0 % → 26,7 %, claridad media 5,20 → 5,30. **Sin regresión** (las dos, dentro del ruido: no es una mejora probada).
+
+No se movió:
+- Steam Deck: **0 de 9 por cuarta corrida**. Su claridad (4,44 → 5,33) no se compara: el panel cambió las capturas que enseña a ese estrato (desde la 9.0, solo con mando).
+- La queja de texto chico sube de 75 a 87.
+
+Leídas las 9 reseñas de Steam Deck y las 15 de portátil y miradas las capturas de 1280×800 y 1366×768: lo que tiene base en una captura pasa a la V10 con su regla de QA (`SPECS/V10.md`, filas SD1–SD5). Detalle en `CHANGELOG.md`.
+
 ## V10 · Candidata de lanzamiento con funciones congeladas
 
 **Tema.** Cero mecánicas nuevas: el juego entero en español y en inglés, accesible y listo para Steam.
 
 **Entregables.**
-1. `src/shared/i18n.ts`: diccionario con tipos, `es` por defecto (pruebas y navegadores en español), interruptor **ES | EN** en la Portada y en Ajustes que se guarda. Interfaz, palabras clave, reliquias, especiales, monarcas y partida guiada, sin claves sin traducir: prueba de paridad en Vitest y QA visual en `EN` sin recortes.
-2. Pulido de lo que dejaron V7–V9; accesibilidad completa (4 tintas y tramas, Alto contraste, Reducir movimiento, teclado y Steam Deck).
-3. `tauri/` con `tauri.conf.json` y enganches de Steamworks en `PlatformBridge`; `STEAM_BUILD.md` con los nombres localizados (`spanish`/`latam` = SANGRE Y PALO; `english` y por defecto = BLOOD & SUITS); `og-card-es.png` y `og-card-en.png`.
-4. Censo de 240 personas en la 3090; todo P0 que marque se arregla y se vuelve a verificar.
-5. `EVOLUCION_V4_V10.md`: el viaje entero con sus números.
+1. `src/shared/i18n.ts`: diccionario con tipos, `es` por defecto (pruebas y navegadores en español), interruptor **ES | EN** en la Portada y en Ajustes que cambia al instante y se guarda. Interfaz, palabras clave, reliquias, especiales, monarcas y partida guiada, sin claves sin traducir: prueba de paridad en Vitest y QA visual en `EN` sin recortes. **Sin tocar los archivos de la huella del laboratorio** (`engine`, `run`, `tools`, `specials`, `bot` y `balance-config.json`): el laboratorio tiene que salir idéntico.
+2. Pulido de lo que dejaron V7–V9 y arreglos concretos para Steam Deck y portátil (SD1–SD5); accesibilidad completa (4 tintas y tramas, Alto contraste, Reducir movimiento, teclado y Steam Deck).
+3. `tauri/` con `tauri.conf.json` y enganches de Steamworks en `PlatformBridge` (configuración, sin compilar binario); `STEAM_BUILD.md` con los nombres localizados (`spanish`/`latam` = SANGRE Y PALO; `english` y por defecto = BLOOD & SUITS); `og-card-es.png` y `og-card-en.png`.
+4. Censo de 240 personas en la 3090 contra la 9.0; todo P0 con base en una captura se arregla y se vuelve a verificar.
+5. `EVOLUCION_V4_V10.md` (lo escribe el orquestador, a partir de la tabla «Resultados por versión» de este archivo).
 
-**Puertas.** `typecheck`, `test`, `analyze:meta` sin avisos, `docs`, `og`, `qa:visual` (ES y EN), `qa:smoke`, `build`, `build:web` + censo de 240. Tras la etiqueta, `git ls-remote` confirma `origin/main`. Detalle en `SPECS/V10.md`.
+**Puertas.** `typecheck`, `test`, `analyze:meta` sin avisos, `docs`, `og`, `qa:visual` (ES y EN), `qa:smoke` (ES y EN), `qa:fps`, `qa:audio`, `build`, `build:web` + censo de 240. Tras la etiqueta, `git ls-remote` confirma `origin/main`. Detalle en `SPECS/V10.md`.
