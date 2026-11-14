@@ -125,6 +125,27 @@ export function fill(template: string, values: Record<string, number | string>):
   });
 }
 
+/** Idioma de un texto (el mismo `Lang` de src/shared/i18n.ts; aquí sin importarlo, para que las reglas no dependan de shared). */
+export type Lengua = 'es' | 'en';
+
+/**
+ * Un número como lo lee el jugador en ese idioma: en español coma decimal («1,5»), en inglés punto
+ * («1.5»); como mucho dos decimales en los dos. En español sale igual que `num`.
+ */
+export function numFor(lang: Lengua, n: number): string {
+  const s = String(Math.round(n * 100) / 100);
+  return lang === 'es' ? s.replace('.', ',') : s;
+}
+
+/** `fill` en un idioma: las cifras con `numFor(lang, …)`. En español sale idéntico a `fill`. Falla si falta una clave. */
+export function fillFor(lang: Lengua, template: string, values: Record<string, number | string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k: string) => {
+    const v = values[k];
+    if (v === undefined) throw new Error(`plantilla «${template}»: falta el valor «${k}»`);
+    return typeof v === 'number' ? numFor(lang, v) : v;
+  });
+}
+
 /** Un campo que el afinador puede mover, por su ruta en el JSON (`asaltos.0.hp`). */
 export interface Afinable {
   ruta: string;
