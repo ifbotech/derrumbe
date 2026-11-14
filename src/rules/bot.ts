@@ -62,7 +62,10 @@ export function formations(hand: Card[]): Card[][] {
 }
 
 const remaining = (towers: Record<Suit, Tower>, cfg: Config) => SUITS.reduce((a, s) => a + towers[s].floors.reduce((b, r) => b + cfg.floorHp[r], 0) - (standing(towers[s]) ? towers[s].damage : 0), 0);
-/** Daño medio que hará la próxima sirena. */
+/**
+ * Daño medio que hará el próximo Contraataque. Se divide entre 4 aunque haya menos tronos en el asalto: el
+ * Mazo sigue teniendo los cuatro palos, y el de un trono ausente o caído sale y no hace nada (V11).
+ */
 const danger = (env: { config: Config; fatigue?: number }, towers: Record<Suit, Tower>) => SUITS.reduce((a, s) => a + (standing(towers[s]) && !towers[s].fx.sobrecarga ? threatOf(env, towers[s]) : 0), 0) / 4;
 /** Herramientas que solo rinden con cartas de un palo. */
 const SUIT_TOOL: Record<string, Suit> = { piqueta: 'S', cortavidrios: 'D', metralla: 'D', paleta: 'H', botiquin: 'H', maza: 'C', sacos: 'C' };

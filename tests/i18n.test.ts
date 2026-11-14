@@ -211,7 +211,8 @@ describe('el español no cambia', () => {
   });
 
   it('las plantillas españolas son las cadenas del código de las reglas', () => {
-    const fuente = ['engine', 'run', 'tools', 'achievements'].map((f) => readFileSync(new URL(`../src/rules/${f}.ts`, import.meta.url), 'utf8')).join('\n');
+    // V11: el error de versión lo escribe el servidor de salas
+    const fuente = [...['engine', 'run', 'tools', 'achievements'].map((f) => `../src/rules/${f}.ts`), '../src/server/index.ts'].map((f) => readFileSync(new URL(f, import.meta.url), 'utf8')).join('\n');
     const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const comoCodigo = (p: string) => new RegExp(p.split(/\{\w+\}/).map(esc).join('\\$\\{[^`]+?\\}'));
     const vistas = Object.entries(ES_PLANTILLAS).filter(([k]) => /^(?:error\.|paso\.|asalto\.infinito|logro\.desbloquea)/.test(k) && k !== 'paso.golpea.por');

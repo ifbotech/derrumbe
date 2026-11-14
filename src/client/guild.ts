@@ -2,6 +2,7 @@
 // Vive en el navegador de cada uno, así que cuenta igual en solitario y en sala online.
 import { Card, FORMATIONS, SEALS, TREATMENTS } from '../rules/engine';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteRun, unlocksOf } from '../rules/achievements';
+import { dondeActa } from '../rules/migracion'; // V11-B
 import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, UPGRADES, buyUpgrade, depthOf, loadMeta, settle, stagesCleared } from '../rules/run';
 import { SPECIALS } from '../rules/specials';
 import { ARCH, Arch, TOOLS } from '../rules/tools';
@@ -42,6 +43,8 @@ export interface Acta {
   /** Obras superadas y obra en la que terminó. */
   cleared: number;
   stage: number;
+  /** V11-B: asaltos de la campaña de este acta (5). Un acta sin `de` es de la 10.0, de ocho asaltos. */
+  de?: number;
   boss: string | null;
   depth: number;
   turns: number;
@@ -68,6 +71,7 @@ function fileActa(c: Campaign, gain: number): void {
     won: run.conquered,
     cleared: stagesCleared(run),
     stage: run.stage,
+    de: LAST_STAGE, // V11-B
     boss: run.boss ? (BOSS[run.boss]?.who ?? null) : null,
     depth: depthOf(run),
     turns: run.stats.turns,
@@ -243,6 +247,12 @@ export function renderGuild(): void {
 }
 
 /** Archivo de crónicas: cómo acabó cada una de las últimas campañas, con su semilla para volver a jugarla. */
+/** V11-B: provisional, lo rehace arte-ui. «asalto n/total · sala»; un acta de la 10.0 dice «de 8» y sin sala (sus salas ya no existen). */
+function donde(a: Acta): string {
+  const d = dondeActa(a, LAST_STAGE);
+  return d.sala ? L('ui.orden.donde', { n: d.n, total: d.total, nombre: asaltoN(a.stage) }) : L('ui.orden.donde', { n: d.n, total: d.total, nombre: '' }).replace(/\s*·\s*$/, '');
+}
+
 function archiveTab(list: HTMLElement): void {
   if (!archive.length) {
     list.innerHTML = `<p class="col-note">${L('ui.orden.archivo.vacio', { n: ARCHIVE_SIZE })}</p>`;
@@ -256,7 +266,7 @@ function archiveTab(list: HTMLElement): void {
   list.innerHTML = `<p class="col-note">${L('ui.orden.archivo.cab', { n: archive.length, g: wins, m: Math.max(...archive.map((a) => a.maxHit)), r: wins ? L('ui.orden.turnos', { n: Math.min(...archive.filter((a) => a.won).map((a) => a.turns)) }) : '—' })}</p>
   <div class="actas">${archive
     .map((a, i) => {
-      const where = a.won ? (a.depth ? L('ui.orden.vencida.inf', { n: a.depth }) : L('ui.fin.corte')) : `${L('ui.orden.donde', { n: Math.min(a.stage, LAST_STAGE), total: LAST_STAGE, nombre: asaltoN(a.stage) })}${a.boss ? L('ui.orden.ante', { x: monarcaGuardado(a.boss) }) : ''}`;
+      const where = a.won ? (a.depth ? L('ui.orden.vencida.inf', { n: a.depth }) : L('ui.fin.corte')) : `${donde(a)}${a.boss ? L('ui.orden.ante', { x: monarcaGuardado(a.boss) }) : ''}`;
       const replay = !!a.seed && !a.daily && !a.online;
       // la causa de la derrota, con la voz de la crónica: rótulo rojo, título en mono gruesa y detalle debajo
       const death = !a.won && validDeath(a.death) ? deathIn(a.death) : null;

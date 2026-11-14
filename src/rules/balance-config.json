@@ -1,20 +1,17 @@
 {
   "inicio": { "vida": 20, "oro": 4, "interesTope": 3, "sobre": 3 },
   "asaltos": [
-    { "hp": 3.93, "threat": 2 },
-    { "hp": 2.8, "threat": 3 },
-    { "hp": 3.35, "threat": 4 },
-    { "hp": 4.05, "threat": 5 },
-    { "hp": 4.5, "threat": 5 },
-    { "hp": 5, "threat": 6 },
-    { "hp": 5.3, "threat": 5 },
-    { "hp": 6.25, "threat": 6 }
+    { "hp": 3.1, "threat": 2 },
+    { "hp": 2.7, "threat": 4 },
+    { "hp": 3, "threat": 4 },
+    { "hp": 3.6, "threat": 5 },
+    { "hp": 5, "threat": 6 }
   ],
   "tronoInfinito": { "hpCrece": 1.45 },
   "cuadrilla": [1, 1.3, 1.4, 1.48],
-  "reinados": { "corazas": 1.05, "impuesto": 2, "reyesAcorazados": 1.25, "reyColerico": 1, "heridasViejas": 1, "guardiaNoche": 1 },
+  "reinados": { "corazas": 1.1, "impuesto": 2, "reyesAcorazados": 1.25, "reyColerico": 1, "heridasViejas": 1, "guardiaNoche": 1 },
   "asedio": { "start": 8, "every": 2, "dano": 4 },
-  "clausura": { "stages": [8], "threat": 1 },
+  "clausura": { "stages": [5], "threat": 1 },
   "timbre": { "stamps": 1 },
   "monarcas": {
     "doble": { "contraataques": 2, "ataque": 0.6 },
@@ -31,7 +28,7 @@
       "capataz": { "cost": 11, "weight": 15 },
       "reliquia": { "cost": 15, "weight": 5 }
     },
-    "reliquias": 2,
+    "reliquias": 3,
     "sobre": 6,
     "sobreCiego": 3,
     "mesaLacre": 5,
@@ -40,7 +37,7 @@
     "curar": { "base": 5, "paso": 1, "vida": 6 },
     "renovar": { "base": 2, "paso": 1 }
   },
-  "cobro": { "asalto": 4, "exactosTope": 5, "vidaCada": 5, "interesCada": 5, "curaTrasAsalto": 4, "sinSeleccion": 3 },
+  "cobro": { "asalto": 6, "exactosTope": 5, "vidaCada": 5, "interesCada": 5, "curaTrasAsalto": 4, "sinSeleccion": 3 },
   "orden": {
     "costes": {
       "caja_precision": [4],
@@ -83,7 +80,7 @@
     "escudoPorCarta": 2,
     "curaPorCarta": 2,
     "salpicaPorCarta": 2,
-    "floorHp": { "11": 20, "12": 30, "13": 40 },
+    "floorHp": { "11": 25, "12": 35, "13": 45 },
     "floorThreat": { "11": 3, "12": 4, "13": 6 },
     "handSize": { "1": 7, "2": 6, "3": 6, "4": 6 }
   },

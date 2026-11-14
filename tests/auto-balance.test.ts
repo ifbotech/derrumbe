@@ -114,7 +114,10 @@ describe('propone, no aplica', () => {
     const escritos = (await ejecutar({ args: ['--aplicar'], configPath: cfg, outDir: out, log: () => {} })) as string[];
     const despues = JSON.parse(readFileSync(cfg, 'utf8'));
     expect(escritos).toEqual(['asaltos.0.hp']);
-    expect(despues.asaltos[0].hp).toBe(3.64);
+    // el valor escrito es el de la propuesta (V11: sin cifra fija, para que no dependa del punto de partida)
+    const propuesta = JSON.parse(readFileSync(join(out, 'propuesta.json'), 'utf8')) as Propuesta;
+    expect(despues.asaltos[0].hp).toBe(propuesta.cambios.find((c) => c.campo === 'asaltos.0.hp')!.despues);
+    expect(despues.asaltos[0].hp).not.toBe(antes.asaltos[0].hp);
     // todo lo demás, igual
     despues.asaltos[0].hp = antes.asaltos[0].hp;
     expect(despues).toEqual(antes);
@@ -122,10 +125,13 @@ describe('propone, no aplica', () => {
 
   it('aplicar rechaza lo que pasa de ±15 %, lo confirmado con poca muestra y lo del modo corto', () => {
     const cfg = copia('rechazos');
-    const cambio = { campo: 'asaltos.0.hp', antes: 3.93, despues: 3.0, variacion: -23.7, arregla: [], toca: [], n: { sondeo: 200, confirma: 1500 } };
+    // V11: las cifras parten del valor del archivo, sea el que sea
+    const base = JSON.parse(readFileSync(cfg, 'utf8')).asaltos[0].hp as number;
+    const dentro15 = Math.round(base * 0.925 * 100) / 100;
+    const cambio = { campo: 'asaltos.0.hp', antes: base, despues: Math.round(base * 0.76 * 100) / 100, variacion: -24, arregla: [], toca: [], n: { sondeo: 200, confirma: 1500 } };
     expect(() => aplicar(cfg, { cambios: [cambio], corto: false })).toThrow(/15 %/);
-    expect(() => aplicar(cfg, { cambios: [{ ...cambio, despues: 3.63, n: { sondeo: 20, confirma: 20 } }], corto: false })).toThrow(/n=20/);
-    expect(() => aplicar(cfg, { cambios: [{ ...cambio, despues: 3.63 }], corto: true })).toThrow(/corto/);
+    expect(() => aplicar(cfg, { cambios: [{ ...cambio, despues: dentro15, n: { sondeo: 20, confirma: 20 } }], corto: false })).toThrow(/n=20/);
+    expect(() => aplicar(cfg, { cambios: [{ ...cambio, despues: dentro15 }], corto: true })).toThrow(/corto/);
     expect(() => aplicar(cfg, { cambios: [{ ...cambio, antes: 9, despues: 9.5 }], corto: false })).toThrow(/parte de 9/);
     expect(sha256(cfg)).toBe(sha256(copia('referencia')));
   });

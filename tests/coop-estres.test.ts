@@ -10,7 +10,7 @@ import type { Action, GameState, PlayerView } from '../src/rules/engine';
 import type { Run } from '../src/rules/run';
 import { stateHash, tableHash } from '../src/rules/state-hash';
 import { DEFAULT_NAME, RunningServer, startServer } from '../src/server/index';
-import type { ClientMsg, LobbyInfo, ServerMsg } from '../src/shared/protocol';
+import { PROTOCOL_VERSION, type ClientMsg, type LobbyInfo, type ServerMsg } from '../src/shared/protocol';
 
 const SEED = 9_090;
 const WAIT_MS = 4000;
@@ -163,12 +163,12 @@ async function connect(seed: number, wild?: number): Promise<Client> {
 /** Una sala de n: el primero la crea; el segundo entra sin nombre (V8-4: recibe el de la conjura). */
 async function room(n: number, seed: number, mode: 'clasica' | 'campana' = 'clasica', wild?: number): Promise<Client[]> {
   const host = await connect(seed, wild);
-  host.send({ t: 'create', name: 'Ana' });
+  host.send({ t: 'create', name: 'Ana', v: PROTOCOL_VERSION });
   await host.next((m) => m.t === 'joined', 'sala creada');
   const all = [host];
   for (let i = 1; i < n; i++) {
     const c = await connect(seed * 31 + i, wild);
-    c.send({ t: 'join', room: host.room, name: i === 1 ? '' : `Jugador ${i}` });
+    c.send({ t: 'join', room: host.room, name: i === 1 ? '' : `Jugador ${i}`, v: PROTOCOL_VERSION });
     await c.next((m) => m.t === 'joined', 'entrar en la sala');
     all.push(c);
   }
@@ -198,6 +198,34 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
     expect(typeof mod.startServer).toBe('function');
     expect(listen).not.toHaveBeenCalled();
     listen.mockRestore();
+  });
+
+  it('(f) V11: un cliente de otra versión (o de la 10.0, sin `v`) no crea ni entra en una sala', async () => {
+    const host = await connect(SEED + 900);
+    host.send({ t: 'create', name: 'Ana', v: PROTOCOL_VERSION });
+    await host.next((m) => m.t === 'joined', 'sala creada con la versión buena');
+    const rechazo = 'Esta sala es de otra versión del juego.';
+    // un cliente de la 10.0 no manda `v`; uno de otra versión manda otra
+    const viejos: { [k: string]: unknown }[] = [
+      { t: 'join', room: host.room, name: 'Viejo' },
+      { t: 'join', room: host.room, name: 'Otro', v: PROTOCOL_VERSION - 1 },
+      { t: 'create', name: 'Viejo' },
+      { t: 'rejoin', room: host.room, playerId: host.id, token: host.token },
+    ];
+    for (const [i, msg] of viejos.entries()) {
+      const c = await connect(SEED + 901 + i);
+      c.ws.send(JSON.stringify(msg));
+      expect(await c.next((m) => m.t === 'error' || m.t === 'joined', `respuesta a ${msg.t}`)).toEqual({ t: 'error', message: rechazo });
+      await c.close();
+    }
+    expect(host.lobby?.players).toHaveLength(1);
+    // con la versión buena sí entra
+    const nuevo = await connect(SEED + 950);
+    nuevo.send({ t: 'join', room: host.room, name: 'Nuevo', v: PROTOCOL_VERSION });
+    await nuevo.next((m) => m.t === 'joined', 'entrar con la versión buena');
+    await host.next((m) => m.t === 'lobby' && m.lobby.players.length === 2, 'vestíbulo con 2');
+    await nuevo.close();
+    await host.close();
   });
 
   it.each([2, 3, 4])('(a) %i jugadores juegan un Asalto único entero hasta ganar o perder', async (n) => {
@@ -280,7 +308,7 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
     // vuelve con su token
     const back = await connect(SEED + 71);
     back.auto = true; // antes de volver: el estado llega pegado al «joined»
-    back.send({ t: 'rejoin', room: victim.room, playerId: victim.id, token: victim.token });
+    back.send({ t: 'rejoin', room: victim.room, playerId: victim.id, token: victim.token, v: PROTOCOL_VERSION });
     const joined = (await back.next((m) => m.t === 'joined', 'rejoin')) as Extract<ServerMsg, { t: 'joined' }>;
     expect(joined.playerId).toBe(victim.id);
     const full = (await back.next((m) => m.t === 'state', 'estado completo')) as Extract<ServerMsg, { t: 'state' }>;
@@ -332,7 +360,7 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
         await stayed[0].next((m) => m.t === 'lobby' && m.lobby.players.some((p) => p.id === victim.id && !p.connected), 'el cortado sale');
         const back = await connect(SEED + 2000 + g);
         back.auto = true;
-        back.send({ t: 'rejoin', room: victim.room, playerId: victim.id, token: victim.token });
+        back.send({ t: 'rejoin', room: victim.room, playerId: victim.id, token: victim.token, v: PROTOCOL_VERSION });
         const joined = await back.next((m) => m.t === 'joined' || m.t === 'left', 'rejoin');
         if (joined.t === 'joined') rejoined++;
         players.push(back);

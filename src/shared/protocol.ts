@@ -4,10 +4,16 @@ import type { Run, RunAction, RunOpts } from '../rules/run';
 
 export type Mode = 'clasica' | 'campana';
 
+/**
+ * Versión del protocolo (V11: campaña de cinco asaltos y reglas nuevas). `create`, `join` y `rejoin` la
+ * llevan en `v`; el servidor no deja entrar a un cliente de otra versión (ni a uno sin `v`, como la 10.0).
+ */
+export const PROTOCOL_VERSION = 11;
+
 export type ClientMsg =
-  | { t: 'create'; name: string }
-  | { t: 'join'; room: string; name: string }
-  | { t: 'rejoin'; room: string; playerId: string; token: string }
+  | { t: 'create'; name: string; v: number }
+  | { t: 'join'; room: string; name: string; v: number }
+  | { t: 'rejoin'; room: string; playerId: string; token: string; v: number }
   | { t: 'difficulty'; value: Difficulty }
   | { t: 'mode'; value: Mode }
   /** En campaña, el anfitrión aporta sus mejoras de la Orden, el Reinado, la baraja, sus cartas legendarias y, si quiere, una semilla. */
@@ -21,6 +27,9 @@ export type ClientMsg =
   /** V9: el resumen del estado no cuadró en el cliente; el servidor reenvía el estado entero (y la campaña). */
   | { t: 'resync' }
   | { t: 'leave' };
+
+/** Un mensaje tal como lo escribe el cliente: `sendMsg` le pone la versión a los que la llevan. */
+export type ClientMsgSinVersion = ClientMsg extends infer M ? (M extends { v: number } ? Omit<M, 'v'> : M) : never;
 
 export interface LobbyInfo {
   room: string;

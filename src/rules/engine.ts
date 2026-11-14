@@ -200,6 +200,8 @@ export interface Tower {
   floors: number[];
   damage: number;
   fx: TowerFx;
+  /** No está en este asalto (los asaltos 1 y 2 tienen 2 y 3 tronos): sin guardias, no cuenta para ganar y su Contraataque no hace nada. */
+  away?: true;
 }
 
 export interface Player {
@@ -333,8 +335,11 @@ export function standardDeck(): Card[] {
   return deck;
 }
 
-export function newTowers(floors: number[], _cfg?: Config): Record<Suit, Tower> {
-  return Object.fromEntries(SUITS.map((s) => [s, { suit: s, floors: [...floors], damage: 0, fx: {} }])) as Record<Suit, Tower>;
+/** Los cuatro tronos con sus guardias. Con `palos`, solo esos están en el asalto: los demás salen sin guardias y con `away`. */
+export function newTowers(floors: number[], _cfg?: Config, palos?: Suit[]): Record<Suit, Tower> {
+  return Object.fromEntries(
+    SUITS.map((s) => [s, palos && !palos.includes(s) ? { suit: s, floors: [], damage: 0, fx: {}, away: true } : { suit: s, floors: [...floors], damage: 0, fx: {} }]),
+  ) as Record<Suit, Tower>;
 }
 
 export function createGame(players: { id: string; name: string }[], seed: number, config: Config = DEFAULT_CONFIG): GameState {

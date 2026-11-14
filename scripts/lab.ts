@@ -54,11 +54,11 @@ export interface Log {
 //   THR=2,2,3,…    amenaza de cada obra · FAT=8,2,0.25  fatiga: turno de inicio, cada cuántos turnos, Resonancia por nivel
 //   BARAJA=corta:1:-3  prueba una baraja con más o menos búnker y oro inicial de los que tiene
 //   TIMBRE=2  cartas que sella el Timbre del gremio al empezar cada obra · VENTISCA=4:1  tope de muro de La Ventisca (y amenaza que suma)
-//   CLAUSURA=8:1  obras en las que el nivel 8 sube la amenaza, y cuánto (3,5,7,8:1 es «en las obras con jefe»)
+//   CLAUSURA=5:1  asaltos en los que el Reinado 8 sube el Ataque, y cuánto (2,4,5:1 es «en los asaltos con monarca»)
 const env = process.env;
 if (env.HPS) env.HPS.split(',').forEach((v, i) => STAGES[i] && (STAGES[i].hp = Number(v)));
 if (env.THR) env.THR.split(',').forEach((v, i) => STAGES[i] && (STAGES[i].threat = Number(v)));
-if (env.HPX || env.LATE) STAGES.forEach((st, i) => (st.hp = Math.round(st.hp * Number(env.HPX ?? 1) * (1 + Number(env.LATE ?? 0) * (i / 7)) * 100) / 100));
+if (env.HPX || env.LATE) STAGES.forEach((st, i) => (st.hp = Math.round(st.hp * Number(env.HPX ?? 1) * (1 + Number(env.LATE ?? 0) * (i / Math.max(1, STAGES.length - 1))) * 100) / 100));
 if (env.BARAJA) {
   const [id, bunker, gold] = env.BARAJA.split(':');
   const deck = DECKS.find((d) => d.id === id);
@@ -134,7 +134,8 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
     if (run.phase === 'won' || run.phase === 'lost') break;
     if (run.phase === 'battle') {
       if (run.boss) log.faced.push(run.boss);
-      if (!log.mid && run.stage >= 5)
+      // a mitad de campaña (el asalto 3 de 5): lo que se lleva para medir «con» y «sin» cada pieza
+      if (!log.mid && run.stage >= Math.ceil((LAST_STAGE + 1) / 2))
         log.mid = {
           tools: run.tools.map((t) => t.id),
           specials: [...new Set(run.deck.filter((c) => c.sp).map((c) => c.sp!))],

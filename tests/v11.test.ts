@@ -1,11 +1,13 @@
-// V11 · la cuenta nueva (SPECS/V11.md, 1.11): Multi siempre entero, cinco palabras clave y ni rastro
-// de las palabras retiradas (ventaja de palo, Brecha, En guardia, Desarmado) en los textos de reglas.
+// V11 (SPECS/V11.md, 1.11): Multi siempre entero, cinco palabras clave, ni rastro de las palabras retiradas
+// (ventaja de palo, Brecha, En guardia, Desarmado) en los textos de reglas, la campaña de cinco asaltos y
+// los 36 logros de la 10.0.
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../src/rules/balance-config';
-import { GameEvent, SEALS, TREATMENTS, applyAction, currentPlayer } from '../src/rules/engine';
-import { chooseAction } from '../src/rules/bot';
+import { GameEvent, SEALS, SUITS, TREATMENTS, applyAction, currentPlayer } from '../src/rules/engine';
+import { chooseAction, chooseRunAction } from '../src/rules/bot';
+import { ACHIEVEMENTS } from '../src/rules/achievements';
 import { KEYWORDS } from '../src/rules/keywords';
-import { addSpecial, newRun, startStage } from '../src/rules/run';
+import { BOSSES, EVENT_AFTER, LAST_STAGE, Run, STAGES, UPGRADES, addSpecial, finishBattle, newMeta, newRun, runAction, stageConfig, stageDef, startStage, tiranoKey, trackEvents } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 import { ES } from '../src/shared/i18n/es';
@@ -104,5 +106,131 @@ describe('V11 · sin restos de la cuenta vieja', () => {
   it('ningún texto de reglas da un Multi con decimales', () => {
     const malas = [...reglas(ES).map(([k, v]) => [`es ${k}`, v]), ...reglas(EN).map(([k, v]) => [`en ${k}`, v])].filter(([, v]) => multiDecimal.test(v));
     expect(malas).toEqual([]);
+  });
+});
+
+// (3) la campaña de cinco asaltos (SPECS/V11.md, 1.6) y (4) los 36 logros de siempre (Steam los usa)
+describe('V11 · la campaña de cinco asaltos', () => {
+  it('cinco asaltos: tronos 2 / 3 / 4 / 4 / 4, monarca en 2, 4 y 5, Rey Tirano solo en el 5, Secretos tras 2 y 4, Atajo solo en el 3', () => {
+    expect(STAGES.length).toBe(5);
+    expect(LAST_STAGE).toBe(5);
+    expect(STAGES.map((s) => s.thrones)).toEqual([2, 3, 4, 4, 4]);
+    expect(STAGES.flatMap((s, i) => (s.boss ? [i + 1] : []))).toEqual([2, 4, 5]);
+    expect(STAGES.flatMap((s, i) => (s.tirano ? [i + 1] : []))).toEqual([5]);
+    expect(EVENT_AFTER).toEqual([2, 4]);
+    expect(STAGES.flatMap((s, i) => (s.atajo ? [i + 1] : []))).toEqual([3]);
+    expect(STAGES.map((s) => s.floors.length)).toEqual([1, 2, 2, 3, 3]);
+    // salas con nombre en los dos idiomas, y el título de Tirano con su género
+    STAGES.forEach((s, i) => {
+      expect(ES[`asalto.${i + 1}.nombre`]).toBe(s.name);
+      expect(EN[`asalto.${i + 1}.nombre`]).toBeTruthy();
+    });
+    expect([ES['asalto.tirano.m'], ES['asalto.tirano.f'], EN['asalto.tirano.m'], EN['asalto.tirano.f']]).toEqual(['Rey Tirano', 'Reina Tirana', 'Tyrant King', 'Tyrant Queen']);
+    expect(BOSSES.filter((b) => b.fem).map((b) => b.id)).toEqual(['sequia', 'intemperie']);
+    expect(tiranoKey('intemperie')).toBe('asalto.tirano.f');
+    expect(tiranoKey('furia')).toBe('asalto.tirano.m');
+    // el Trono infinito empieza tras el asalto 5, sobre él: cuatro tronos y siempre con monarca
+    expect(stageDef(6)).toMatchObject({ thrones: 4, boss: true, atajo: false, floors: [11, 12, 13] });
+  });
+
+  it('los tronos que faltan se crean sin guardias y con away; la Vida de cada guardia es múltiplo de 5', () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const run = newRun({}, seed);
+      for (const n of [1, 2]) {
+        expect(run.palos[n]).toHaveLength(STAGES[n - 1].thrones);
+        const state = startStage(Object.assign(structuredClone(run), { stage: n, phase: 'battle' as const }), [{ id: 'a', name: 'A' }]);
+        const present = Object.values(state.towers).filter((t) => !t.away);
+        expect(present.map((t) => t.suit)).toEqual(run.palos[n]);
+        for (const t of present) expect(t.floors).toEqual(STAGES[n - 1].floors);
+        for (const t of Object.values(state.towers).filter((x) => x.away)) expect(t.floors).toEqual([]);
+      }
+      // en los cinco asaltos y en el Trono infinito, con 1 a 4 jugadores
+      for (let n = 1; n <= 7; n++)
+        for (const players of [1, 2, 3, 4])
+          for (const r of [11, 12, 13]) {
+            const hp = stageConfig(Object.assign(structuredClone(run), { stage: n }), players).floorHp[r];
+            expect(hp % 5, `asalto ${n}, ${players} jugadores, rango ${r}`).toBe(0);
+            expect(hp).toBeGreaterThanOrEqual(5);
+          }
+    }
+  });
+
+  it('el Contraataque del palo de un trono ausente no hace nada', () => {
+    const run = newRun({}, 3);
+    const state = startStage(Object.assign(run, { phase: 'battle' as const }), [{ id: 'a', name: 'A' }]);
+    const away = SUITS.find((s) => state.towers[s].away)!;
+    const target = SUITS.find((s) => !state.towers[s].away)!;
+    // una carta que no mata al guardia (sin Golpe exacto) y un Contraataque del palo ausente encima del Mazo
+    state.players[0].hand = [{ id: 'mano-1', suit: SUITS.find((s) => s !== target)!, rank: 1 }, ...state.players[0].hand.slice(1)];
+    state.deck.unshift({ id: 'contra-1', suit: away, rank: 10 });
+    const res = applyAction(state, 'a', { type: 'attack', cards: ['mano-1'], target });
+    const siren = res.events.find((e): e is Extract<GameEvent, { e: 'siren' }> => e.e === 'siren')!;
+    expect(siren).toMatchObject({ tower: away, reason: 'ruin', taken: 0 });
+    expect(res.state.integrity).toBe(state.integrity);
+  });
+
+  it('el asalto 2 se gana derribando los tres tronos que hay', () => {
+    let state = startStage(Object.assign(newRun({}, 9), { stage: 2, phase: 'battle' as const }), [{ id: 'a', name: 'A' }]);
+    expect(Object.values(state.towers).filter((t) => t.away)).toHaveLength(1);
+    for (const s of SUITS) if (!state.towers[s].away) state.towers[s].floors = state.towers[s].floors.slice(0, 1);
+    for (let i = 0; i < 400 && state.phase === 'playing'; i++) state = applyAction(state, currentPlayer(state).id, chooseAction(state)).state;
+    if (state.phase === 'won') expect(Object.values(state.towers).filter((t) => t.floors.length)).toEqual([]);
+  });
+
+  it('una campaña del bot de principio a fin, con tres monarcas distintos', { timeout: 120_000 }, () => {
+    let won: Run | null = null;
+    for (let seed = 1; seed <= 60 && !won; seed++) {
+      const run = newRun({ up: Object.fromEntries(UPGRADES.map((u) => [u.id, u.costs.length])) }, seed * 7919);
+      expect(new Set(Object.values(run.bosses)).size).toBe(3);
+      expect(Object.keys(run.bosses).map(Number)).toEqual([2, 4, 5]);
+      const faced: string[] = [];
+      for (let guard = 0; guard < 5000 && run.phase !== 'won' && run.phase !== 'lost'; guard++) {
+        if (run.phase === 'battle') {
+          if (run.boss) faced.push(run.boss);
+          let state = startStage(run, [{ id: 'a', name: 'A' }]);
+          while (state.phase === 'playing') {
+            const r = applyAction(state, currentPlayer(state).id, chooseAction(state));
+            trackEvents(run, r.events);
+            state = r.state;
+          }
+          finishBattle(run, state);
+        } else expect(runAction(run, chooseRunAction(run)!)).toBeNull();
+      }
+      if (run.phase === 'won') {
+        won = run;
+        expect(new Set(faced).size).toBe(3);
+        expect(run.stats.stageTurns).toHaveLength(5);
+      }
+    }
+    expect(won).not.toBeNull();
+  });
+});
+
+describe('V11 · los 36 logros de la 10.0, con los mismos id', () => {
+  /** La lista de la 10.0 (src/rules/achievements.ts en v10.0.0), escrita a mano: Steam los usa. */
+  const IDS_10 = [
+    'primera', 'capataz', 'media', 'madre', 'asc3', 'abismo', 'abismo3', 'diaria', 'doblepar', 'color', 'full', 'poker', 'real', 'golpe100', 'golpe500', 'golpe2000', 'limpio10', 'limpio50',
+    'pisos100', 'pisos500', 'intacto', 'rico', 'cinturon', 'forja', 'contratos', 'atajo', 'coleccion', 'ferretero',
+    'j-doble', 'j-escasez', 'j-sequia', 'j-intemperie', 'j-blindaje', 'j-furia', 'j-inestable', 'jefes',
+  ];
+
+  it('siguen siendo 36 y con los mismos id', () => {
+    expect(IDS_10).toHaveLength(36);
+    expect(ACHIEVEMENTS.map((a) => a.id).sort()).toEqual([...IDS_10].sort());
+  });
+
+  it('«Adiós, carcelero» pide el asalto 2 y «Medio castillo» el asalto 3, en los dos idiomas', () => {
+    const meta = newMeta();
+    const of = (id: string) => ACHIEVEMENTS.find((a) => a.id === id)!;
+    const done = (a: (typeof ACHIEVEMENTS)[number], m: typeof meta) => a.progress(m)[0] >= a.progress(m)[1];
+    meta.stats.reach = 1;
+    expect(done(of('capataz'), meta)).toBe(false);
+    meta.stats.reach = 2;
+    expect(done(of('capataz'), meta)).toBe(true);
+    expect(done(of('media'), meta)).toBe(false);
+    meta.stats.reach = 3;
+    expect(done(of('media'), meta)).toBe(true);
+    expect([ES['logro.capataz.desc'], ES['logro.media.desc']]).toEqual(['Supera el asalto 2.', 'Supera el asalto 3.']);
+    expect([EN['logro.capataz.desc'], EN['logro.media.desc']]).toEqual(['Clear assault 2.', 'Clear assault 3.']);
   });
 });

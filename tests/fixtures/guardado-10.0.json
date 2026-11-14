@@ -1,0 +1,662 @@
+{
+ "version": "10.0.0",
+ "RUN_VERSION": 3,
+ "META_VERSION": 2,
+ "LAST_STAGE": 8,
+ "meta": {
+  "v": 2,
+  "renown": 79,
+  "up": {
+   "caja": 1,
+   "rutas": 1,
+   "vale": 1,
+   "caja_precision": 1,
+   "tampones": 1
+  },
+  "runs": 2,
+  "wins": 1,
+  "best": 8,
+  "ascMax": 1,
+  "ach": {
+   "primera": true,
+   "capataz": true,
+   "doblepar": true,
+   "full": true,
+   "golpe100": true,
+   "intacto": true,
+   "cinturon": true,
+   "j-blindaje": true,
+   "media": true,
+   "madre": true,
+   "color": true,
+   "golpe500": true,
+   "limpio10": true,
+   "pisos100": true,
+   "forja": true,
+   "j-sequia": true,
+   "j-intemperie": true,
+   "j-furia": true,
+   "j-inestable": true
+  },
+  "stats": {
+   "floors": 166,
+   "cleans": 19,
+   "maxHit": 762,
+   "maxGold": 29,
+   "reach": 8,
+   "winAsc": 0,
+   "intact": 5,
+   "depth": 0,
+   "forged": 13,
+   "contracts": 3,
+   "skips": 0,
+   "maxTools": 6,
+   "dailies": 0
+  },
+  "seen": {
+   "tools": [
+    "vibrador",
+    "megafono",
+    "paleta",
+    "mosaico",
+    "montacargas",
+    "cinta",
+    "estandarte",
+    "calibre",
+    "diapason",
+    "resonador",
+    "catalizador",
+    "prensa"
+   ],
+   "specials": [
+    "nitro",
+    "bola",
+    "mordaza",
+    "saboteador",
+    "cemento",
+    "embestida",
+    "gemelo",
+    "palanca",
+    "hormigonera"
+   ],
+   "bosses": [
+    "blindaje",
+    "sequia",
+    "intemperie",
+    "inestable",
+    "furia"
+   ],
+   "forms": [
+    "doblepar",
+    "compania",
+    "escalera",
+    "grupo",
+    "full",
+    "escaleracolor",
+    "solo",
+    "color"
+   ]
+  },
+  "last": {
+   "id": 15838,
+   "forged": 8,
+   "contracts": 2,
+   "skips": 0
+  },
+  "mastery": {
+   "tools": {
+    "estandarte": 1,
+    "calibre": 1,
+    "diapason": 1,
+    "resonador": 1,
+    "catalizador": 1,
+    "prensa": 1
+   },
+   "decks": {
+    "obra": 1
+   }
+  },
+  "daily": {
+   "date": "2026-11-10",
+   "cleared": 7,
+   "won": false
+  }
+ },
+ "campaign": {
+  "run": {
+   "v": 3,
+   "id": -1691732994,
+   "seedText": "GUARDADO10-2",
+   "daily": null,
+   "rng": -1977802982,
+   "ascension": 0,
+   "deckId": "obra",
+   "up": {
+    "caja_precision": 1,
+    "caja_sismo": 0,
+    "caja_alquimia": 0,
+    "caja_limite": 0,
+    "caja_trituradora": 0,
+    "caja_aguante": 0,
+    "tampones": 1,
+    "bronce": 0,
+    "vale": 1,
+    "tienda": 0,
+    "caja": 1,
+    "rutas": 1
+   },
+   "pool": [
+    "barreno",
+    "martillo",
+    "saboteador",
+    "palanca",
+    "grua",
+    "mordaza",
+    "clavos",
+    "chatarrero",
+    "pico",
+    "botica",
+    "gemelo",
+    "nitro",
+    "bola",
+    "hormigonera",
+    "cemento",
+    "embestida",
+    "sierra"
+   ],
+   "toolPool": [
+    "piqueta",
+    "cortavidrios",
+    "paleta",
+    "maza",
+    "cincel",
+    "gemelos",
+    "cinta",
+    "sacos",
+    "botiquin",
+    "encofrado",
+    "casco",
+    "puntales",
+    "hucha",
+    "taladro",
+    "estandarte",
+    "dados",
+    "acido",
+    "pasarela",
+    "contrapeso",
+    "plano_maestro",
+    "plomada",
+    "nivel",
+    "tiralineas",
+    "calibre",
+    "cizalla",
+    "metralla",
+    "percutor",
+    "resonador",
+    "prisma",
+    "sismografo",
+    "trituradora",
+    "montacargas"
+   ],
+   "seals": [
+    "dinamita",
+    "eco",
+    "jornal",
+    "sindical"
+   ],
+   "treats": [
+    "forjado",
+    "templado"
+   ],
+   "stage": 4,
+   "phase": "map",
+   "gold": 19,
+   "integrity": 20,
+   "maxIntegrity": 20,
+   "tools": [
+    {
+     "id": "taladro",
+     "n": 0
+    },
+    {
+     "id": "encofrado",
+     "n": 0
+    },
+    {
+     "id": "nivel",
+     "n": 0
+    },
+    {
+     "id": "cincel",
+     "n": 0
+    },
+    {
+     "id": "gemelos",
+     "n": 0
+    },
+    {
+     "id": "resonador",
+     "n": 0
+    }
+   ],
+   "deck": [
+    {
+     "id": "S1",
+     "suit": "S",
+     "rank": 1
+    },
+    {
+     "id": "S2",
+     "suit": "S",
+     "rank": 2
+    },
+    {
+     "id": "S3",
+     "suit": "S",
+     "rank": 3
+    },
+    {
+     "id": "S4",
+     "suit": "S",
+     "rank": 4
+    },
+    {
+     "id": "S5",
+     "suit": "S",
+     "rank": 5
+    },
+    {
+     "id": "S6",
+     "suit": "S",
+     "rank": 6
+    },
+    {
+     "id": "S7",
+     "suit": "S",
+     "rank": 7
+    },
+    {
+     "id": "S8",
+     "suit": "S",
+     "rank": 8
+    },
+    {
+     "id": "S9",
+     "suit": "S",
+     "rank": 9
+    },
+    {
+     "id": "S10",
+     "suit": "S",
+     "rank": 10
+    },
+    {
+     "id": "D1",
+     "suit": "D",
+     "rank": 1
+    },
+    {
+     "id": "D2",
+     "suit": "D",
+     "rank": 2
+    },
+    {
+     "id": "D3",
+     "suit": "D",
+     "rank": 3
+    },
+    {
+     "id": "D4",
+     "suit": "D",
+     "rank": 4
+    },
+    {
+     "id": "D5",
+     "suit": "D",
+     "rank": 5
+    },
+    {
+     "id": "D6",
+     "suit": "D",
+     "rank": 6
+    },
+    {
+     "id": "D7",
+     "suit": "D",
+     "rank": 7
+    },
+    {
+     "id": "D8",
+     "suit": "D",
+     "rank": 8
+    },
+    {
+     "id": "D9",
+     "suit": "D",
+     "rank": 9
+    },
+    {
+     "id": "D10",
+     "suit": "D",
+     "rank": 10
+    },
+    {
+     "id": "H1",
+     "suit": "H",
+     "rank": 1
+    },
+    {
+     "id": "H2",
+     "suit": "H",
+     "rank": 2
+    },
+    {
+     "id": "H3",
+     "suit": "H",
+     "rank": 3
+    },
+    {
+     "id": "H4",
+     "suit": "H",
+     "rank": 4
+    },
+    {
+     "id": "H5",
+     "suit": "H",
+     "rank": 5
+    },
+    {
+     "id": "H6",
+     "suit": "H",
+     "rank": 6
+    },
+    {
+     "id": "H7",
+     "suit": "H",
+     "rank": 7
+    },
+    {
+     "id": "H8",
+     "suit": "H",
+     "rank": 8
+    },
+    {
+     "id": "H9",
+     "suit": "H",
+     "rank": 9
+    },
+    {
+     "id": "H10",
+     "suit": "H",
+     "rank": 10
+    },
+    {
+     "id": "C1",
+     "suit": "C",
+     "rank": 1
+    },
+    {
+     "id": "C2",
+     "suit": "C",
+     "rank": 2
+    },
+    {
+     "id": "C3",
+     "suit": "C",
+     "rank": 3
+    },
+    {
+     "id": "C4",
+     "suit": "C",
+     "rank": 4
+    },
+    {
+     "id": "C5",
+     "suit": "C",
+     "rank": 5
+    },
+    {
+     "id": "C6",
+     "suit": "C",
+     "rank": 6
+    },
+    {
+     "id": "C7",
+     "suit": "C",
+     "rank": 7
+    },
+    {
+     "id": "C8",
+     "suit": "C",
+     "rank": 8
+    },
+    {
+     "id": "C9",
+     "suit": "C",
+     "rank": 9
+    },
+    {
+     "id": "C10",
+     "suit": "C",
+     "rank": 10
+    },
+    {
+     "id": "X1",
+     "suit": "X",
+     "rank": 0
+    },
+    {
+     "id": "X2",
+     "suit": "X",
+     "rank": 0
+    },
+    {
+     "id": "sp-palanca-3",
+     "suit": "X",
+     "rank": 0,
+     "sp": "palanca"
+    },
+    {
+     "id": "sp-nitro-4",
+     "suit": "X",
+     "rank": 0,
+     "sp": "nitro"
+    },
+    {
+     "id": "sp-martillo-5",
+     "suit": "X",
+     "rank": 0,
+     "sp": "martillo"
+    },
+    {
+     "id": "c-6",
+     "suit": "D",
+     "rank": 9,
+     "tr": "forjado",
+     "seal": "sindical"
+    },
+    {
+     "id": "c-7",
+     "suit": "C",
+     "rank": 8,
+     "seal": "dinamita"
+    },
+    {
+     "id": "c-8",
+     "suit": "D",
+     "rank": 1,
+     "seal": "eco"
+    },
+    {
+     "id": "sp-botica-9",
+     "suit": "X",
+     "rank": 0,
+     "sp": "botica"
+    },
+    {
+     "id": "sp-martillo-10",
+     "suit": "X",
+     "rank": 0,
+     "sp": "martillo"
+    }
+   ],
+   "levels": {
+    "solo": 0,
+    "compania": 0,
+    "grupo": 0,
+    "escalera": 0,
+    "doblepar": 0,
+    "color": 0,
+    "full": 0,
+    "escaleracolor": 0,
+    "poker": 0
+   },
+   "handBonus": 0,
+   "interestCap": 3,
+   "scrap": 0,
+   "bosses": {
+    "3": "blindaje",
+    "5": "escasez",
+    "7": "sequia",
+    "8": "furia"
+   },
+   "boss": null,
+   "node": {
+    "routes": [
+     "sincolapso",
+     "sinred",
+     "intacto"
+    ],
+    "tag": "timbrado"
+   },
+   "contract": null,
+   "contractDone": null,
+   "curse": false,
+   "freeShop": false,
+   "pack": [
+    "palanca",
+    "nitro",
+    "martillo"
+   ],
+   "pay": [
+    [
+     "Asalto ganado",
+     7
+    ],
+    [
+     "Golpes exactos",
+     5
+    ],
+    [
+     "Vida que te queda (1 por cada 5)",
+     4
+    ],
+    [
+     "Interés (1 por cada 5 de oro)",
+     2
+    ]
+   ],
+   "draft": [
+    {
+     "kind": "special",
+     "id": "bola"
+    },
+    {
+     "kind": "special",
+     "id": "clavos"
+    },
+    {
+     "kind": "card",
+     "card": {
+      "id": "c-8",
+      "suit": "D",
+      "rank": 1,
+      "seal": "eco"
+     }
+    }
+   ],
+   "drafted": true,
+   "loot": [
+    "resonador",
+    "montacargas"
+   ],
+   "looted": true,
+   "shop": [],
+   "sobre": null,
+   "pending": null,
+   "event": null,
+   "events": [
+    "horno",
+    "clandestino"
+   ],
+   "rerolls": 0,
+   "vouchers": 1,
+   "removals": 0,
+   "heals": 0,
+   "serial": 10,
+   "battle": {
+    "taken": 10,
+    "cleans": 5,
+    "jokers": 2,
+    "forms": [
+     "doblepar",
+     "escalera",
+     "compania",
+     "solo",
+     "full"
+    ]
+   },
+   "endless": false,
+   "conquered": false,
+   "skipped": [],
+   "beaten": [
+    "blindaje"
+   ],
+   "intact": 2,
+   "stats": {
+    "floors": 20,
+    "cleans": 7,
+    "turns": 35,
+    "gold": 47,
+    "maxHit": 116,
+    "burned": 0,
+    "forged": 1,
+    "contracts": 0,
+    "skips": 0,
+    "toolUse": {
+     "encofrado": 16,
+     "cincel": 5
+    },
+    "stageTurns": [
+     9,
+     10,
+     16
+    ]
+   },
+   "stamped": [],
+   "death": null
+  },
+  "online": false,
+  "state": null,
+  "key": "local:1763000000000"
+ },
+ "acta": {
+  "key": "local:1762000000000",
+  "when": "2026-11-10T20:00:00.000Z",
+  "won": false,
+  "cleared": 6,
+  "stage": 7,
+  "boss": null,
+  "depth": 0,
+  "turns": 80,
+  "maxHit": 120,
+  "tools": [],
+  "seed": "#ABC",
+  "deck": "obra",
+  "level": 1,
+  "daily": null,
+  "online": false,
+  "gain": 6,
+  "text": ""
+ }
+}

@@ -217,10 +217,10 @@ function report(logs: Log[], confirm: Log[] = []) {
     const turns = plain.filter((l) => l.spec.ascension === 0).flatMap((l) => (l.stageTurns[i] !== undefined ? [l.stageTurns[i]] : []));
     return { stage: i + 1, name: st.name, p50: quantile(turns, 0.5), p95: quantile(turns, 0.95), n: turns.length };
   });
-  // lo peor de cada baraja: el percentil 95 más alto de sus obras 4 a 8
+  // lo peor de cada baraja: el percentil 95 más alto de sus asaltos (los cinco)
   const pacingByDeck = DECKS.map((d) => {
     const mine = plain.filter((l) => l.spec.ascension === 0 && l.spec.deck === d.id);
-    const p95 = [3, 4, 5, 6, 7].map((i) => quantile(mine.flatMap((l) => (l.stageTurns[i] !== undefined ? [l.stageTurns[i]] : [])), 0.95));
+    const p95 = STAGES.map((_, i) => i).map((i) => quantile(mine.flatMap((l) => (l.stageTurns[i] !== undefined ? [l.stageTurns[i]] : [])), 0.95));
     return { deck: d.id, name: d.name, worstP95: Math.max(0, ...p95), n: mine.length };
   }).filter((d) => d.n > 0);
   // dónde se pierden las campañas (gremio vacío, nivel 1, baraja de obra)
@@ -266,7 +266,7 @@ function print(r: ReturnType<typeof report>): void {
   for (const b of r.bosses) if (b.faced) console.log(`  ${pad(b.who, 14)} ${num(b.lethality)} %  (${b.deaths}/${b.faced})  ×${(b.lethality / (r.avgLethality || 1)).toFixed(2)}`);
   if (r.pacing.some((p) => p.n)) console.log('\nTurnos por asalto (mediana · percentil 95)');
   for (const p of r.pacing) if (p.n) console.log(`  ${p.stage} ${pad(p.name, 20)} ${num(p.p50, 3)} · ${num(p.p95, 3)}`);
-  if (r.pacingByDeck.length) console.log(`  peor percentil 95 en los asaltos 4–8, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}`);
+  if (r.pacingByDeck.length) console.log(`  peor percentil 95 en los asaltos 1–${LAST_STAGE}, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}`);
   console.log(r.flags.length ? `\nAVISOS (${r.flags.length})\n${r.flags.map((f) => `  ! ${f}`).join('\n')}` : '\nSin avisos: todo dentro de objetivo.');
 }
 

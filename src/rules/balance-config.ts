@@ -42,9 +42,9 @@ export interface FxConfig {
 export interface BalanceConfig {
   /** Campaña nueva: Vida máxima, oro, tope de interés y cartas del Sobre lacrado inicial. */
   inicio: { vida: number; oro: number; interesTope: number; sobre: number };
-  /** Los ocho asaltos: multiplicador de la Vida de los guardias y Ataque que se suma al base. */
+  /** Los cinco asaltos: multiplicador de la Vida de los guardias (redondeada a 5) y Ataque que se suma al base. */
   asaltos: { hp: number; threat: number }[];
-  /** Trono infinito: la Vida crece ×hpCrece por cada asalto más allá del octavo. */
+  /** Trono infinito: la Vida crece ×hpCrece por cada asalto más allá del quinto. */
   tronoInfinito: { hpCrece: number };
   /** Vida de los guardias según el tamaño de la conjura (1 a 4 jugadores); también retrasa el Asedio final. */
   cuadrilla: number[];
@@ -52,7 +52,7 @@ export interface BalanceConfig {
   reinados: { corazas: number; impuesto: number; reyesAcorazados: number; reyColerico: number; heridasViejas: number; guardiaNoche: number };
   /** Asedio final: turno en que empieza (en solitario), cada cuántos sube y Daño que da cada nivel. */
   asedio: { start: number; every: number; dano: number };
-  /** Reinado 8 «Puertas selladas»: asaltos en los que sube el Ataque de los cuatro tronos, y cuánto. */
+  /** Reinado 8 «Puertas selladas»: asaltos en los que sube el Ataque de todos los tronos, y cuánto. */
   clausura: { stages: number[]; threat: number };
   /** Anillo de sello: cartas que sella al empezar cada asalto. */
   timbre: { stamps: number };

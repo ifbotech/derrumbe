@@ -5,11 +5,11 @@
 //   npm run simulate:run [campañas] [gremio: vacio | lleno | ambos] [jugadores] [baraja | todas]
 //
 // Variables: SKIP=envio,molde (etiquetas por las que salta obra) · RISK=1 (acepta contratos de riesgo)
-//            ASC=n (nivel de obra, de 1 a 8) · VERBOSE=1 (herramientas más llevadas y oro medio)
+//            ASC=n (Reinado, de 1 a 8) · VERBOSE=1 (herramientas más llevadas y oro medio)
 //            HPX=1.2 LATE=0.3 HPS=1.5,1.8,… THR=-1,-1,0,… (mandos de ajuste de las obras)
 //            UPS=caja_sismo,vale,legendarias (con gremio lleno, solo estas mejoras)
 //            GIVE=prisma (herramienta de regalo al empezar, para medir lo que vale)
-import { DECKS, LAST_STAGE, STAGES } from '../src/rules/run';
+import { DECKS, LAST_STAGE } from '../src/rules/run';
 import { playCampaign } from './lab';
 
 const runs = Number(process.argv[2] ?? 400);
@@ -27,9 +27,11 @@ function report(deck: string, full: boolean): void {
   let tools = 0;
   let hit = 0;
   const turns: number[][] = Array.from({ length: LAST_STAGE }, () => []);
+  const died = new Array(LAST_STAGE).fill(0);
   for (let i = 0; i < runs; i++) {
     const { log } = playCampaign({ seed: i * 7919 + 13, deck, ascension, full, players, policy, only: process.env.UPS?.split(','), giveTool: process.env.GIVE });
     reached[log.cleared]++;
+    if (log.diedAt !== null && log.diedAt <= LAST_STAGE) died[log.diedAt - 1]++;
     log.stageTurns.slice(0, LAST_STAGE).forEach((t, k) => turns[k].push(t));
     gold += log.gold;
     tools += log.toolsEnd.length;
@@ -41,6 +43,8 @@ function report(deck: string, full: boolean): void {
   console.log(`  ${deck.padEnd(12)} gana ${((reached[LAST_STAGE] / runs) * 100).toFixed(1).padStart(5)}% · media ${mean.toFixed(2)} asaltos · cae tras [${dist}]`);
   const q = (xs: number[], p: number) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(p * xs.length))] : 0);
   console.log(`      turnos por asalto (mediana/p95): ${turns.map((t) => `${q(t, 0.5)}/${q(t, 0.95)}`).join(' · ')}`);
+  // muertes: de cada 100 campañas, cuántas caen en cada asalto (las que llegan a él y no lo superan)
+  console.log(`      muertes por asalto (% de campañas): ${died.map((n, k) => `${k + 1}: ${((n / runs) * 100).toFixed(1)}`).join(' · ')}`);
   if (verbose) {
     const top = Object.entries(use).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id, n]) => `${id} ${n}`).join(', ');
     console.log(`      oro medio ${(gold / runs).toFixed(0)} · reliquias al final ${(tools / runs).toFixed(1)} · mayor golpe ${hit} · más llevadas: ${top}`);

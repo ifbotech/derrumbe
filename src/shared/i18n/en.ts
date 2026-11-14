@@ -183,7 +183,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
   furia: {
     nombre: 'The Executioner',
     decreto: 'Fury',
-    desc: 'The Attack of all four thrones rises by {ataque}.',
+    desc: 'The Attack of every throne rises by {ataque}.',
     badge: '+{ataque} Attack on every throne',
     entrada: 'I sharpened my axe all night. All in, and no mercy!',
     contraataque: 'I raise! And this time my hand does not shake.',
@@ -200,7 +200,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
   },
 };
 
-const ASALTOS = ['The Drawbridge', 'The Training Yard', 'The Armory', 'The Kitchens', 'The Chapel', 'The Library', 'The Hall of Mirrors', 'The Throne Room'];
+const ASALTOS = ['The Drawbridge', 'The Training Yard', 'The Crypt', 'The Royal Gallery', 'The Throne Room'];
 
 const REINADOS: [string, string][] = [
   ['Reign of Peace', 'The usual rules.'],
@@ -230,7 +230,7 @@ const JURAMENTOS: Record<string, [string, string, string]> = {
   sincolapso: ['Measured Deck', 'Finish without the Deck running out.', '+5 gold'],
   austero: ['No Mutinies', 'Do not play any Joker.', 'A random finish'],
   maestra: ['Master Play', 'Play a flush, a full house, four of a kind or a straight flush.', 'A random Scroll'],
-  horas: ['Long Night', 'The Attack of all four thrones rises by 1.', '+10 gold'],
+  horas: ['Long Night', 'The Attack of every throne rises by 1.', '+10 gold'],
   sinred: ['No Shield', 'Shield cannot go above 2.', 'A Rare relic or better'],
   corta: ['Short Conspiracy', 'You all play with 1 card fewer in hand.', '+12 gold'],
 };
@@ -314,8 +314,8 @@ const MEJORAS: Record<string, [string, string?]> = {
 /** Achievements: [name, description]. The monarch trophies (`j-<id>`) are built from the monarchs. */
 const LOGROS: Record<string, [string, string]> = {
   primera: ['First Step', 'Win your first campaign assault.'],
-  capataz: ['Farewell, Jailer', 'Clear assault 3.'],
-  media: ['Half the Castle', 'Clear assault 5.'],
+  capataz: ['Farewell, Jailer', 'Clear assault 2.'],
+  media: ['Half the Castle', 'Clear assault 3.'],
   madre: ['End of the Reign', 'Win a campaign.'],
   asc3: ['Grand Conspirator', 'Win a campaign on Reign 4 or higher.'],
   abismo: ['Beyond the Throne', 'Clear an Endless Throne.'],
@@ -393,9 +393,9 @@ const PALOS: Record<Suit, [string, string]> = { S: ['SPADES', 'Spades'], D: ['DI
 
 const GUIA: Record<string, [string, string]> = {
   palo: ['The Power of a Suit', 'Play the <b>6♣</b> against SPADES: ♣ give you Shield.'],
-  inmune: ['Immune Throne', 'Your ♥ do nothing to HEARTS: <b>8♥</b> to CLUBS.'],
+  inmune: ['Immune Throne', 'Your ♥ do nothing to HEARTS: <b>8♥</b> to SPADES.'],
   manga: ['Up the Sleeve', 'Keep the <b>9♦</b> Up the Sleeve for later.'],
-  cuenta: ['The Count', 'A pair of <b>7</b>s to DIAMONDS: Damage × Mult = Hit.'],
+  cuenta: ['The Count', 'A pair of <b>7</b>s to HEARTS: Damage × Mult = Hit.'],
   exacto: ['Exact Hit', 'The <b>9♦</b> from Up the Sleeve to HEARTS: exactly 9.'],
 };
 
@@ -506,6 +506,7 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.elige_baraja': 'Choose a deck card.',
   'error.elige_una': 'Choose a card.',
   'error.elige_dos': 'Choose two deck cards.',
+  'error.version': 'This room is from another version of the game.',
 };
 
 /** «The Usurer» → «Usurer»: the trophy names fit in 24 characters. */
@@ -544,6 +545,8 @@ export function reglasEn(): Record<string, string> {
     o[`monarca.${b.id}.bark.caida`] = m.caida;
   }
   STAGES.forEach((_, i) => ASALTOS[i] && (o[`asalto.${i + 1}.nombre`] = ASALTOS[i]));
+  o['asalto.tirano.m'] = 'Tyrant King';
+  o['asalto.tirano.f'] = 'Tyrant Queen';
   const nr = cifrasReinado();
   ASCENSIONS.forEach((_, i) => {
     const r = REINADOS[i];

@@ -7,16 +7,19 @@ const card = (id: string, extra: Partial<Card> = {}): Card => (id[0] === 'X' ? {
 const cards = (...ids: string[]) => ids.map((id) => card(id));
 const special = (sp: string): Card => ({ id: `sp-${sp}`, suit: 'X', rank: 0, sp });
 
+/** Mesa de prueba con Vidas fijas (J 20 · Q 30 · K 40), aparte de las de la campaña: aquí se mide la mecánica. */
+const MESA: Partial<Config> = { floorHp: { 11: 20, 12: 30, 13: 40 } };
+
 /** Mesa suelta para probar golpes: pisos J 20 · Q 30 · K 40. */
 function env(tools: string[] = [], cfg: Partial<Config> = {}): StrikeEnv {
-  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...cfg };
+  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA, ...cfg };
   for (const id of tools) TOOL[id].cfg?.(config);
   return { config, towers: newTowers([11, 12, 13], config), tools: tools.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
 }
 
 /** Partida de un jugador con la mano y la cima de la cantera que se pidan. */
 function game(hand: Card[], top: Card[] = [], tools: string[] = [], cfg: Partial<Config> = {}): GameState {
-  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...cfg };
+  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA, ...cfg };
   for (const id of tools) TOOL[id].cfg?.(config);
   const s = createGame([{ id: 'a', name: 'A' }], 1, config);
   const taken = new Set([...hand, ...top].map((c) => c.id));

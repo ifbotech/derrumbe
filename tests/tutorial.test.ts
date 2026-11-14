@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Action, GameEvent, GameState, RuleError, applyAction, viewFor } from '../src/rules/engine';
 import { chooseAction } from '../src/rules/bot';
 import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../src/rules/tutorial';
+import { tFor } from '../src/shared/i18n';
 
 const impact = (events: GameEvent[]) => events.find((e): e is Extract<GameEvent, { e: 'impact' }> => e.e === 'impact')!;
 const visible = (s: string) => s.replace(/<\/?b>/g, '');
@@ -35,6 +36,15 @@ describe('partida guiada de cinco pasos', () => {
     expect(TUTORIAL_STEPS.map((p) => p.focus)).toEqual(['cards', { ui: 'inmune' }, { ui: 'manga' }, { ui: 'cuenta' }, 'target']);
   });
 
+  it('dos tronos, como el asalto 1: PICAS y CORAZONES; DIAMANTES y TRÉBOLES no están', () => {
+    const s = createTutorial();
+    expect(s.towers.S).toMatchObject({ floors: [11] });
+    expect(s.towers.H).toMatchObject({ floors: [13, 12] });
+    expect(s.config.floorHp).toMatchObject({ 11: 13, 12: 9, 13: 20 });
+    for (const x of ['D', 'C'] as const) expect(s.towers[x]).toMatchObject({ floors: [], away: true });
+    expect(s.players[0].hand.map((c) => c.id)).toEqual(['C6', 'H8', 'D9', 'D7', 'C7', 'H2', 'S3']);
+  });
+
   it('el Mazo y la mano son una baraja entera sin repetidas', () => {
     const s = createTutorial();
     const ids = [...s.deck, ...s.players[0].hand].map((c) => c.id);
@@ -49,18 +59,23 @@ describe('partida guiada de cinco pasos', () => {
     expect(s.phase).toBe('won');
     expect(s.integrity).toBe(20);
 
-    // 1 · 6♣ a PICAS: 6 de Daño, cae la Sota y el ♣ da Escudo
+    // 1 · 6♣ a PICAS (Sota, Vida 13): 6 × 1 = 6, queda en 7; el ♣ da +2 de Escudo
     expect(impact(log[0])).toMatchObject({ tower: 'S', fuerza: 6, res: 1, total: 6 });
     expect(log[0].find((e) => e.e === 'wall')).toMatchObject({ amount: 2 });
-    // 2 · 8♥ a TRÉBOLES: 8
-    expect(impact(log[1])).toMatchObject({ tower: 'C', total: 8 });
+    expect(log[0].some((e) => e.e === 'floorDown')).toBe(false);
+    // 2 · 8♥ a PICAS: 8 × 1 = 8 contra 7, cae la Sota y con ella PICAS (sin Golpe exacto)
+    expect(impact(log[1])).toMatchObject({ tower: 'S', fuerza: 8, res: 1, total: 8 });
+    expect(log[1].find((e) => e.e === 'floorDown')).toMatchObject({ tower: 'S', rank: 11, clean: false, towerDown: true });
     // 3 · el 9♦ a La Manga
     expect(log[2]).toEqual([expect.objectContaining({ e: 'stash', card: expect.objectContaining({ id: 'D9' }), back: null })]);
-    // 4 · grupo 7♠ 7♣ a DIAMANTES: 16 de Daño × 2 de Multi = 32
-    expect(impact(log[3])).toMatchObject({ tower: 'D', fuerza: 16, res: 2, total: 32 });
-    // 5 · el 9♦ de La Manga, 9 justos contra el Rey de CORAZONES
-    expect(impact(log[4])).toMatchObject({ tower: 'H', total: 9 });
-    expect(log[4].find((e) => e.e === 'floorDown')).toMatchObject({ tower: 'H', rank: 13, clean: true, towerDown: true });
+    // 4 · pareja 7♦ 7♣ a CORAZONES (Rey, Vida 20): (2 + 14) × 2 = 32, cae el Rey; +2 de Escudo; no salpica a nadie
+    expect(impact(log[3])).toMatchObject({ tower: 'H', fuerza: 16, res: 2, total: 32 });
+    expect(log[3].find((e) => e.e === 'floorDown')).toMatchObject({ tower: 'H', rank: 13, clean: false, towerDown: false, damage: 0 });
+    expect(log[3].find((e) => e.e === 'wall')).toMatchObject({ amount: 2 });
+    expect(log[3].some((e) => e.e === 'hit' && e.splash)).toBe(false);
+    // 5 · el 9♦ de La Manga a CORAZONES (Reina, Vida 9): 9 × 1 = 9 justos, Golpe exacto y victoria
+    expect(impact(log[4])).toMatchObject({ tower: 'H', fuerza: 9, res: 1, total: 9 });
+    expect(log[4].find((e) => e.e === 'floorDown')).toMatchObject({ tower: 'H', rank: 12, clean: true, towerDown: true });
     // los Contraataques del guion salen de tronos caídos
     for (const ev of [log[0], log[1], log[3]]) expect(ev.find((e) => e.e === 'siren')).toMatchObject({ reason: 'ruin', taken: 0 });
   });
@@ -75,9 +90,9 @@ describe('partida guiada de cinco pasos', () => {
     // un 3♠ contra PICAS no hace nada: ni poder a la vista ni trono esquivado
     expect(tryStep(palo, { type: 'attack', cards: ['S3'], target: 'S' })).toBe(false);
     expect(tryStep(inmune, { type: 'attack', cards: ['H8'], target: 'H' })).toBe(false);
-    expect(tryStep(inmune, { type: 'attack', cards: ['H8'], target: 'C' })).toBe(true);
+    expect(tryStep(inmune, { type: 'attack', cards: ['H8'], target: 'S' })).toBe(true);
     expect(tryStep(manga, { type: 'attack', cards: ['D9'], target: 'H' })).toBe(false);
-    expect(tryStep(cuenta, { type: 'attack', cards: ['S3'], target: 'D' })).toBe(false);
+    expect(tryStep(cuenta, { type: 'attack', cards: ['S3'], target: 'H' })).toBe(false);
     expect(tryStep(exacto, { type: 'attack', cards: ['C6'], target: 'S' })).toBe(false);
     // los done son puros: misma mesa y mismos eventos, misma respuesta
     const res = applyAction(s, TUTORIAL_PLAYER, { type: 'attack', cards: ['C6'], target: 'S' });
@@ -122,6 +137,14 @@ describe('partida guiada de cinco pasos', () => {
       maxTurns = Math.max(maxTurns, t.turnCount);
     }
     expect(lost).toBe(0);
+  });
+
+  it('las líneas en inglés también caben en 60 caracteres y nombran las mismas cartas', () => {
+    for (const p of TUTORIAL_STEPS) {
+      const en = tFor('en', `guia.${p.id}.linea`);
+      expect(en.length, p.id).toBeLessThanOrEqual(60);
+      expect(en.match(/<b>[^<]*<\/b>/)?.[0], p.id).toBe(p.line.match(/<b>[^<]*<\/b>/)?.[0]);
+    }
   });
 
   it('las líneas nombran las cartas que sugiere el foco', () => {

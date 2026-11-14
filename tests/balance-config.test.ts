@@ -28,8 +28,8 @@ describe('balance-config.json: esquema y rangos', () => {
     expect(leaves(RAW).length).toBeGreaterThan(200);
   });
 
-  it('asaltos: ocho, con Vida > 0 y Ataque ≥ 1; Trono infinito crece', () => {
-    expect(RAW.asaltos).toHaveLength(8);
+  it('asaltos: cinco, con Vida > 0 y Ataque ≥ 1; Trono infinito crece', () => {
+    expect(RAW.asaltos).toHaveLength(5);
     for (const [i, s] of RAW.asaltos.entries()) {
       expect(s.hp, `asalto ${i + 1}`).toBeGreaterThan(0);
       expect(ent(s.threat) && s.threat >= 1, `asalto ${i + 1}`).toBe(true);
@@ -200,13 +200,15 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(run.healCost(r)).toBe(B.taberna.curar.base + 2 * B.taberna.curar.paso);
     expect(run.rerollCost(r)).toBe(B.taberna.renovar.base + 2 * B.taberna.renovar.paso);
     const c = run.stageConfig(r, 1);
-    expect(c.floorHp[11]).toBe(Math.round(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[0])));
+    // V11: la Vida final se redondea al múltiplo de 5 más cercano (mínimo 5)
+    const r5 = (x: number) => Math.max(5, Math.round(x / 5) * 5);
+    expect(c.floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[0])));
     expect(c.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.asaltos[0].threat);
     expect(c.fatigueStart).toBe(Math.round(B.asedio.start * B.cuadrilla[0]));
-    expect(run.stageConfig(r, 2).floorHp[11]).toBe(Math.round(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[1])));
+    expect(run.stageConfig(r, 2).floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[1])));
     const a = run.newRun({ ascension: 6 }, 5);
     const ca = run.stageConfig(a, 1);
-    expect(ca.floorHp[11]).toBe(Math.round(B.mesa.floorHp[11] * (B.asaltos[0].hp * B.reinados.corazas * B.cuadrilla[0])));
+    expect(ca.floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * B.reinados.corazas * B.cuadrilla[0])));
     expect(ca.floorThreat[13]).toBe(B.mesa.floorThreat[13] + B.asaltos[0].threat + B.reinados.reyColerico);
     expect(ca.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.asaltos[0].threat + B.reinados.guardiaNoche);
   });

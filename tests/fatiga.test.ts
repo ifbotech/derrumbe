@@ -52,7 +52,7 @@ describe('fatiga de cimientos', () => {
 
   it('ninguna obra de la campaña alarga los pisos: la dureza va por la amenaza', () => {
     expect(Math.max(...STAGES.map((s) => s.hp))).toBeLessThan(7);
-    expect(STAGES[7].threat).toBeGreaterThan(STAGES[0].threat + 3);
+    expect(STAGES[STAGES.length - 1].threat).toBeGreaterThan(STAGES[0].threat + 3);
   });
 });
 

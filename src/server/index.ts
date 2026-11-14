@@ -14,7 +14,7 @@ import { chooseAction } from '../rules/bot';
 import { Run, finishBattle, newRun, publicRun, runAction, startStage, trackEvents } from '../rules/run';
 import { stateHash } from '../rules/state-hash';
 import { TITLE } from '../shared/brand';
-import type { ClientMsg, LobbyInfo, Mode, ServerMsg } from '../shared/protocol';
+import { PROTOCOL_VERSION, type ClientMsg, type LobbyInfo, type Mode, type ServerMsg } from '../shared/protocol';
 
 /** Espera, por defecto, antes de que el bot juegue por un desconectado. */
 export const BOT_DELAY_MS = 6000;
@@ -219,6 +219,8 @@ export function startServer(opts: ServerOptions): Promise<RunningServer> {
 
   function handle(ws: WebSocket, msg: ClientMsg): void {
     const ctx = sockets.get(ws);
+    // V11-B: un cliente de otra versión (o de la 10.0, que no manda `v`) no entra ni crea sala
+    if ((msg.t === 'create' || msg.t === 'join' || msg.t === 'rejoin') && (msg as { v?: unknown }).v !== PROTOCOL_VERSION) return send(ws, { t: 'error', message: 'Esta sala es de otra versión del juego.' });
 
     if (msg.t === 'create') {
       if (ctx) detach(ws, true);

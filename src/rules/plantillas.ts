@@ -117,4 +117,6 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'error.elige_baraja': 'Elige una carta de baraja.',
   'error.elige_una': 'Elige una carta.',
   'error.elige_dos': 'Elige dos cartas de baraja.',
+  // el servidor de salas (src/server/index.ts): un cliente de otra versión del juego
+  'error.version': 'Esta sala es de otra versión del juego.',
 };
