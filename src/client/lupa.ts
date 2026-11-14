@@ -1,7 +1,7 @@
 // Lupa: clic derecho, pulsación larga o la tecla L sobre cualquier carta, reliquia o monarca
 // abre la pieza a tamaño de lámina, con su epígrafe, su texto de reglas, la cuenta exacta de
 // lo que aporta ahora mismo y, si lo tiene, su sello de maestría.
-import { BEATS, Card, RANK_LABEL, SUITS, SUIT_GLYPH, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, threatOf } from '../rules/engine';
+import { Card, RANK_LABEL, SUITS, SUIT_GLYPH, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, threatOf } from '../rules/engine';
 import { keywordsInFor } from '../rules/keywords';
 import { BOSS, DECK, sellValue } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
@@ -17,7 +17,7 @@ import { kindName, toolTile } from './widgets';
 
 const INSPECTABLE = '.card, .belt-slot.tool, [data-lupa]';
 const POWER = { S: 'ui.poder.S', D: 'ui.poder.D', H: 'ui.poder.H', C: 'ui.poder.C' } as const;
-const WEAK_TO = Object.fromEntries(SUITS.map((s) => [BEATS[s], s])) as Record<Suit, Suit>;
+const WEAK_TO = Object.fromEntries(SUITS.map((s) => [s, s])) as Record<Suit, Suit>; // V11-A: provisional, lo rehace arte-ui
 
 interface Sheet {
   art: HTMLElement;
@@ -49,16 +49,16 @@ function cardSheet(c: Card, host: HTMLElement): Sheet {
   const s = c.suit;
   const val = cardValue(c);
   const own = v?.config.ownMult ?? 0;
-  const adv = v?.config.advMult ?? 2;
+  const adv = 1; // V11-A: provisional, lo rehace arte-ui
   const tower = host.closest<HTMLElement>('.tower');
   if (tower && v) {
     // un piso de torre: lo que aguanta y lo que amenaza
     const t = v.towers[s];
     const hp = v.config.floorHp[c.rank] ?? 0;
     rows.push(row(L('ui.lupa.vida'), L('ui.lupa.vida.de', { n: Math.max(0, hp - t.damage), total: hp })));
-    rows.push(row(L('ui.lupa.ataque'), t.disarmed ? L('ui.lupa.ataque.0') : `${L('ui.lupa.ataque.texto', { n: threatOf(v, t), palo: SUIT_GLYPH[s] })}${v.fatigue ? L('ui.lupa.ataque.asedio', { n: v.fatigue }) : ''}`));
+    rows.push(row(L('ui.lupa.ataque'), t.fx.sobrecarga ? L('ui.lupa.ataque.0') : `${L('ui.lupa.ataque.texto', { n: threatOf(v, t), palo: SUIT_GLYPH[s] })}${v.fatigue ? L('ui.lupa.ataque.asedio', { n: v.fatigue }) : ''}`)); // V11-A: provisional, lo rehace arte-ui
     rows.push(row(L('ui.lupa.inmune'), own === 0 ? L('ui.lupa.inmune.texto', { palo: glyph(s) }) : L('ui.lupa.inmune.anulada', { palo: glyph(s), n: own })));
-    rows.push(row(L('ui.lupa.debil'), L('ui.lupa.debil.texto', { palo: glyph(WEAK_TO[s]), n: adv })));
+    // V11-A: provisional, lo rehace arte-ui (sin «débil a»: rows.push(row(L('ui.lupa.debil'), …)))
     const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => t.fx?.[k]);
     if (fx.length) rows.push(row(L('ui.lupa.estado'), fx.map((k) => `${fxN(k)}: ${fxD(k)}`).join(' ')));
     if (t.floors.length > 1) rows.push(row(L('ui.lupa.detras'), t.floors.slice(1).map((r) => `${RANK_LABEL[r]} (${v.config.floorHp[r]})`).join(' · ')));
@@ -71,18 +71,18 @@ function cardSheet(c: Card, host: HTMLElement): Sheet {
       L('ui.lupa.suma'),
       standing
         .map((x) => {
-          const m = x === s ? own : BEATS[s] === x ? adv : 1;
+          const m = x === s ? own : adv; // V11-A: provisional, lo rehace arte-ui
           return `<span class="vs-t ${m === 0 ? 'zero' : m > 1 ? 'adv' : ''}">${suitSvg(x)} <b>${val * m}</b><small>×${m}</small></span>`;
         })
         .join(''),
     ),
   );
-  rows.push(row(L('ui.lupa.poder', { palo: SUIT_GLYPH[s] }), L(POWER[s]) + (v ? L('ui.lupa.ahora', { x: s === 'S' ? L('ui.lupa.ahora.S') : s === 'D' ? `1/${v.config.shardDiv}` : s === 'H' ? (v.config.repairDiv > 99 ? L('ui.lupa.ahora.anulado') : `1/${v.config.repairDiv}`) : `1/${v.config.wallDiv}` }) : '')));
+  rows.push(row(L('ui.lupa.poder', { palo: SUIT_GLYPH[s] }), L(POWER[s]) + (v ? L('ui.lupa.ahora', { x: s === 'S' ? L('ui.lupa.ahora.S') : s === 'D' ? `${v.config.salpicaPorCarta}` : s === 'H' ? (v.config.curaPorCarta === 0 ? L('ui.lupa.ahora.anulado') : `${v.config.curaPorCarta}`) : `${v.config.escudoPorCarta}` }) : ''))); // V11-A: provisional, lo rehace arte-ui
   if (c.rank === 1) rows.push(row(L('ui.lupa.as'), L('ui.lupa.as.texto')));
   if (c.tr) rows.push(row(acabN(c.tr), acabD(c.tr)));
   if (c.seal) rows.push(row(selloN(c.seal), selloD(c.seal)));
   const kind = c.rank > 10 ? L('ui.lupa.figura') : c.rank === 1 ? L('ui.lupa.asn') : L('ui.lupa.numero');
-  return { art, kicker: `${kind} · ${paloN(s)}`, name: cardLabel(c), epi: cardFlavor(c), rules: L('ui.lupa.carta.texto', { palo: paloN(s).toLowerCase(), gana: paloN(BEATS[s]).toLowerCase() }), rows };
+  return { art, kicker: `${kind} · ${paloN(s)}`, name: cardLabel(c), epi: cardFlavor(c), rules: L('ui.lupa.carta.texto', { palo: paloN(s).toLowerCase(), gana: '—' }), rows }; // V11-A: provisional, lo rehace arte-ui
 }
 
 function toolSheet(id: string): Sheet | null {

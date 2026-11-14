@@ -11,7 +11,7 @@ import { SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOLS } from '../src/rules/tools';
 
 const RAW = JSON.parse(readFileSync(new URL('../src/rules/balance-config.json', import.meta.url), 'utf8')) as BalanceConfig;
-const FX_KEYS = ['flat', 'flatPerCard', 'wallForce', 'highDouble', 'allHigh', 'allAdv', 'strikeMult', 'pierce', 'wall', 'wallPerCard', 'heal', 'hurt', 'splash', 'noSiren', 'draw', 'disarm', 'gold', 'goldOnKill'];
+const FX_KEYS = ['flat', 'flatPerCard', 'wallForce', 'highDouble', 'allHigh', 'noImmune', 'strikeMult', 'multi', 'pierce', 'wall', 'wallPerCard', 'heal', 'hurt', 'splash', 'noSiren', 'draw', 'disarm', 'gold', 'goldOnKill'];
 
 /** Todas las hojas numéricas del archivo, con su ruta. */
 function leaves(o: unknown, path = ''): [string, number][] {
@@ -37,7 +37,7 @@ describe('balance-config.json: esquema y rangos', () => {
     expect(RAW.tronoInfinito.hpCrece).toBeGreaterThan(1);
   });
 
-  it('mesa: Vida y Ataque de los guardias positivos, divisores ≥ 1, manos ≥ 3', () => {
+  it('mesa: Vida y Ataque de los guardias positivos, poderes por carta enteros ≥ 1, manos ≥ 3', () => {
     for (const m of [RAW.mesa, { ...RAW.mesa, ...RAW.clasica.obra }]) {
       for (const r of ['11', '12', '13']) {
         expect(m.floorHp[r]).toBeGreaterThan(0);
@@ -45,7 +45,8 @@ describe('balance-config.json: esquema y rangos', () => {
       }
       for (const p of ['1', '2', '3', '4']) expect(m.handSize[p]).toBeGreaterThanOrEqual(3);
     }
-    for (const k of ['maxIntegrity', 'wallCap', 'collapseLoss', 'wallDiv', 'repairDiv', 'shardDiv'] as const) expect(RAW.mesa[k], k).toBeGreaterThanOrEqual(1);
+    for (const k of ['maxIntegrity', 'wallCap', 'collapseLoss', 'escudoPorCarta', 'curaPorCarta', 'salpicaPorCarta'] as const) expect(RAW.mesa[k], k).toBeGreaterThanOrEqual(1);
+    for (const k of ['escudoPorCarta', 'curaPorCarta', 'salpicaPorCarta'] as const) expect(ent(RAW.mesa[k]), k).toBe(true);
     expect(RAW.clasica.brutal.maxIntegrity).toBeGreaterThan(0);
     expect(RAW.clasica.obra.collapseRelief).toHaveLength(4);
   });
@@ -58,7 +59,9 @@ describe('balance-config.json: esquema y rangos', () => {
     for (const k of ['impuesto', 'reyColerico', 'heridasViejas', 'guardiaNoche'] as const) expect(ent(RAW.reinados[k]) && RAW.reinados[k] >= 0, k).toBe(true);
     expect(ent(RAW.asedio.start) && RAW.asedio.start >= 1).toBe(true);
     expect(ent(RAW.asedio.every) && RAW.asedio.every >= 1).toBe(true);
-    expect(RAW.asedio.res).toBeGreaterThan(0);
+    expect(ent(RAW.asedio.dano) && RAW.asedio.dano >= 1).toBe(true);
+    expect(ent(RAW.clasica.obra.fatigueDano) && RAW.clasica.obra.fatigueDano >= 1).toBe(true);
+    expect(RAW.reinados.reyesAcorazados).toBeGreaterThan(1);
     for (const s of RAW.clausura.stages) expect(ent(s) && s >= 1 && s <= 8).toBe(true);
     expect(RAW.clausura.threat).toBeGreaterThanOrEqual(1);
     expect(ent(RAW.timbre.stamps) && RAW.timbre.stamps >= 1).toBe(true);
@@ -94,9 +97,9 @@ describe('balance-config.json: esquema y rangos', () => {
     expect(Object.keys(RAW.formaciones).sort()).toEqual([...FORMATIONS].sort());
     for (const f of Object.values(RAW.formaciones)) {
       expect(f.f).toBeGreaterThanOrEqual(0);
-      expect(f.r).toBeGreaterThanOrEqual(1);
+      expect(ent(f.r) && f.r >= 1).toBe(true);
       expect(f.lf).toBeGreaterThanOrEqual(0);
-      expect(f.lr).toBeGreaterThanOrEqual(0);
+      expect(Object.keys(f).sort()).toEqual(['f', 'lf', 'r']);
     }
     for (const v of Object.values(RAW.acabados)) expect(v).toBeGreaterThan(0);
     expect(RAW.acabados.agrietadoRompe).toBeLessThan(1);
@@ -126,15 +129,15 @@ describe('balance-config.json: esquema y rangos', () => {
 describe('constitución con los textos generados', () => {
   const descs = [...TOOLS.map((t) => t.desc), ...SPECIALS.map((s) => s.desc), ...BOSSES.flatMap((b) => [b.desc, b.curse.badge]), ...ASCENSIONS.map((a) => a.desc), ...DECKS.map((d) => d.desc), ...UPGRADES.map((u) => u.desc), ...SEALS.map((s) => SEAL[s].desc), ...TREATMENTS.map((t) => TREATMENT[t].desc), ...Object.values(TOWER_FX).map((f) => f.desc)];
 
-  it('≤ 6 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 y sin plantillas sin rellenar', () => {
-    expect(KEYWORDS.length).toBeLessThanOrEqual(6);
+  it('≤ 5 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 y sin plantillas sin rellenar', () => {
+    expect(KEYWORDS.length).toBeLessThanOrEqual(5);
     expect(TOOLS.length).toBeLessThanOrEqual(56);
     for (const d of [...TOOLS.map((t) => t.desc), ...SPECIALS.map((s) => s.desc), ...BOSSES.map((b) => b.desc), ...ASCENSIONS.map((a) => a.desc)]) expect(d.length, d).toBeLessThanOrEqual(115);
     for (const d of descs) expect(d, d).not.toMatch(/[{}]/);
   });
 
   it('cada cifra de una reliquia se ve en su texto', () => {
-    for (const t of TOOLS) for (const v of Object.values(BALANCE.reliquias[t.id] ?? {})) expect(t.desc, t.id).toContain(num(t.id === 'prensa' ? 1 + v : v));
+    for (const t of TOOLS) for (const v of Object.values(BALANCE.reliquias[t.id] ?? {})) expect(t.desc, t.id).toContain(num(v));
   });
 
   it('fill y num: coma decimal, dos decimales como mucho, y falla si falta una cifra', () => {
@@ -170,7 +173,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     for (const u of run.UPGRADES) expect(u.costs, u.id).toEqual(B.orden.costes[u.id]);
     for (const s of specials.SPECIALS) expect(s.fx, s.id).toEqual(B.especiales[s.id]);
     // y lo que se enseña sale de los mismos números
-    for (const t of tools.TOOLS) for (const v of Object.values(B.reliquias[t.id] ?? {})) expect(t.desc, t.id).toContain(num(t.id === 'prensa' ? 1 + v : v)); // el Cetro enseña ×(1 + cifra)
+    for (const t of tools.TOOLS) for (const v of Object.values(B.reliquias[t.id] ?? {})) expect(t.desc, t.id).toContain(num(v));
     expect(engine.TREATMENT.forjado.desc).toContain(num(B.acabados.forjado));
     expect(engine.SEAL.jornal.desc).toContain(num(B.sellos.jornal));
     expect(run.BOSS.furia.curse.badge).toContain(num(B.monarcas.furia.ataque));
@@ -226,7 +229,8 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(usurero.handSize[2]).toBe(B.mesa.handSize[2] - B.monarcas.escasez.cartas);
     const inq = base();
     run.BOSS.blindaje.apply(inq);
-    expect(inq.bracedThreat).toBe(B.monarcas.blindaje.ataque);
+    expect(inq.noFx).toBe(true);
+    expect(inq.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.monarcas.blindaje.ataque);
     const rel = { ...base(), fatigueStart: 20 };
     run.BOSS.inestable.apply(rel);
     expect(rel.fatigueStart).toBe(20 - B.monarcas.inestable.antes);
@@ -244,8 +248,8 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     };
     const hit = (ids: string[], cs: Card[], over = {}) => engine.strike(env(ids, over), cs, 'D');
     const df = (id: string, cs: Card[], over = {}) => hit([id], cs, over).fuerza - hit([], cs, over).fuerza;
-    const dr = (id: string, cs: Card[], over = {}) => Math.round((hit([id], cs, over).res - hit([], cs, over).res) * 1000) / 1000;
-    const rx = (id: string, cs: Card[], over = {}) => Math.round((hit([id], cs, over).res / hit([], cs, over).res) * 1000) / 1000;
+    const dr = (id: string, cs: Card[], over = {}) => hit([id], cs, over).res - hit([], cs, over).res;
+    const rx = (id: string, cs: Card[], over = {}) => hit([id], cs, over).res / hit([], cs, over).res;
     const V = B.reliquias;
     expect(df('piqueta', [card('S7')])).toBe(V.piqueta.dano);
     expect(df('cincel', [card('S7')])).toBe(V.cincel.dano);
@@ -254,7 +258,8 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(df('mosaico', [card('S2'), card('H3'), card('C4')])).toBe(V.mosaico.dano);
     expect(dr('gemelos', [card('S7'), card('H7')])).toBe(V.gemelos.multi);
     expect(dr('dados', [card('S4'), card('H4'), card('C9'), card('H9')])).toBe(V.dados.multi);
-    expect(dr('sismografo', [card('S7')], { integrity: 10 })).toBeCloseTo(V.sismografo.multi * (B.mesa.maxIntegrity - 10), 6);
+    expect(df('sismografo', [card('S7')], { integrity: 10 })).toBe(V.sismografo.dano * (B.mesa.maxIntegrity - 10));
+    expect(dr('bastion', [card('S7')], { wall: B.mesa.wallCap })).toBe(V.bastion.multi);
     expect(rx('plano_maestro', [card('S7')])).toBe(V.plano_maestro.multi);
     expect(rx('resonador', [card('S2'), card('S3'), card('S4'), card('S5'), card('S6')])).toBe(V.resonador.multi); // V.resonador.cartas (+1) = 5
     expect(rx('ultimo', [card('S7')], { integrity: 5 })).toBe(V.ultimo.multi);

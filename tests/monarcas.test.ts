@@ -1,13 +1,13 @@
 // V7 · Mesa brava y lectura rápida: la voz de los siete monarcas, su maldición a la vista, los Secretos
 // de la cripta en dos segundos y el factor de palo que pinta el sello de las cartas (fricción F1).
 import { describe, expect, it } from 'vitest';
-import { BEATS, CardSuit, Config, DEFAULT_CONFIG, SUITS, Suit, multiplier } from '../src/rules/engine';
+import { CardSuit, Config, DEFAULT_CONFIG, SUITS, Suit, multiplier } from '../src/rules/engine';
 import { BOSS, BOSSES, EVENTS, bossIdentity } from '../src/rules/run';
 import { TOOL } from '../src/rules/tools';
 import { GLYPH } from '../src/client/glyphs';
 
 /** Palabras del glosario de mecánicas: un bark no se puede leer como una regla. Sobre minúsculas sin tildes. */
-const MECANICAS = /\b(dano|danos|multi|golpes?|golpe exacto|brechas?|en guardia|desarmad[oa]s?|vida|vidas|escudos?|contraataques?|mazos?|descartes?|descartar|reliquias?)\b/;
+const MECANICAS = /\b(dano|danos|multi|golpes?|golpe exacto|brechas?|en guardia|desarmad[oa]s?|expuest[oa]s?|aturdid[oa]s?|vida|vidas|escudos?|contraataques?|mazos?|descartes?|descartar|reliquias?)\b/;
 const llano = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 describe('mesa brava: la voz de los monarcas', () => {
@@ -66,7 +66,8 @@ describe('la maldición a la vista', () => {
     expect(cfg('doble').sirenCount).toBe(Number(BOSS.doble.curse.badge.match(/\d+/)![0]));
     expect(DEFAULT_CONFIG.handSize[1] - cfg('escasez').handSize[1]).toBe(Number(BOSS.escasez.curse.badge.match(/\d+/)![0]));
     expect(cfg('intemperie').wallCap).toBe(Number(BOSS.intemperie.curse.badge.match(/\d+/)![0]));
-    expect(cfg('blindaje').bracedThreat).toBe(Number(BOSS.blindaje.curse.badge.match(/\d+/)![0]));
+    expect(cfg('blindaje').noFx).toBe(true);
+    expect(BOSS.blindaje.curse.badge).toBe('Sin Expuesto ni Aturdido');
     expect(cfg('furia').floorThreat[11] - DEFAULT_CONFIG.floorThreat[11]).toBe(Number(BOSS.furia.curse.badge.match(/\d+/)![0]));
     const c = { ...DEFAULT_CONFIG, fatigueStart: 8 };
     BOSS.inestable.apply(c);
@@ -113,26 +114,23 @@ describe('F1 · el factor de palo que lleva el sello de cada carta', () => {
     return c;
   };
 
-  it('con la configuración por defecto: 0 contra su propio trono, 2 con ventaja y 1 en el resto (16 pares)', () => {
+  it('con la configuración por defecto: 0 contra su propio trono y 1 en el resto (16 pares)', () => {
     expect(pairs).toHaveLength(16);
-    for (const [c, t] of pairs) expect(multiplier(c, t, DEFAULT_CONFIG), `${c}→${t}`).toBe(c === t ? 0 : BEATS[c] === t ? 2 : 1);
-    // sin configuración, la misma rueda
+    for (const [c, t] of pairs) expect(multiplier(c, t, DEFAULT_CONFIG), `${c}→${t}`).toBe(c === t ? 0 : 1);
+    // sin configuración, lo mismo
     for (const [c, t] of pairs) expect(multiplier(c, t)).toBe(multiplier(c, t, DEFAULT_CONFIG));
-    // la rueda: cada palo tiene ventaja contra uno solo y ese no la tiene contra él
-    for (const s of SUITS) expect(pairs.filter(([c, t]) => c === s && multiplier(c, t) === 2)).toHaveLength(1);
+    // ya no hay rueda: ningún palo dobla a otro
+    expect(pairs.filter(([c, t]) => multiplier(c, t) > 1)).toHaveLength(0);
   });
 
   it('con la Gota de veneno (acido) nadie es Inmune: ×1 contra el propio trono', () => {
     const cfg = withTool('acido');
-    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(c === t ? 1 : BEATS[c] === t ? 2 : 1);
+    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(1);
   });
 
-  it('con la Máscara de traidor (contrapeso) el propio palo pega con ventaja, y sigue a la ventaja vigente', () => {
+  it('con la Máscara de traidor (contrapeso) el propio palo hace el doble contra su trono', () => {
     const cfg = withTool('contrapeso');
-    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(c === t ? 2 : BEATS[c] === t ? 2 : 1);
-    // con el Barril de pólvora delante la ventaja es ×3, y la Máscara la copia
-    const fuerte = withTool('contrapeso', withTool('dinamita'));
-    for (const [c, t] of pairs) expect(multiplier(c, t, fuerte), `${c}→${t}`).toBe(c === t ? 3 : BEATS[c] === t ? 3 : 1);
+    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(c === t ? 2 : 1);
   });
 
   it('un comodín (o una carta especial, palo X) no lleva factor: 0 contra cualquier trono', () => {

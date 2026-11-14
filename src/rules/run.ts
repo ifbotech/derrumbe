@@ -31,7 +31,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
   { name: 'Corazas finas', desc: 'Todos los guardias tienen un {pct} % más de Vida.' },
   { name: 'Impuesto real', desc: 'Todo en la Taberna cuesta {impuesto} de oro más.' },
-  { name: 'Reyes en guardia', desc: 'En los asaltos con monarca, los Reyes llegan En guardia.' },
+  { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tienes {heridas} punto menos de Vida.' },
   { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y las Reinas sube {noche}.' },
@@ -133,7 +133,8 @@ export const BOSSES: Boss[] = [
     desc: 'Tus ♥ no curan.',
     barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
     curse: { mark: 'corazones', badge: 'Tus ♥ no curan' },
-    apply: (c) => void (c.repairDiv = 9999),
+    // se aplica después de las reliquias: con el Bálsamo, tampoco curan
+    apply: (c) => void (c.curaPorCarta = 0),
   },
   {
     id: 'intemperie',
@@ -148,10 +149,10 @@ export const BOSSES: Boss[] = [
     id: 'blindaje',
     who: 'El Inquisidor',
     name: 'Guardia de hierro',
-    desc: 'Todos los guardias llegan En guardia y, mientras lo estén, su Ataque sube {ataque}.',
+    desc: 'Ningún trono queda Expuesto ni Aturdido, y el Ataque de todos sube {ataque}.',
     barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
-    curse: { mark: 'guardias', badge: 'En guardia: +{ataque} de Ataque' },
-    apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = MON.blindaje.ataque)),
+    curse: { mark: 'guardias', badge: 'Sin Expuesto ni Aturdido' },
+    apply: (c) => void ((c.noFx = true), eachThreat(c, MON.blindaje.ataque)),
   },
   {
     id: 'furia',
@@ -800,14 +801,14 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
 
 /** Cuánto más aguantan las obras según el tamaño de la cuadrilla (1 a 4 jugadores). */
 const COOP_HP = BALANCE.cuadrilla;
-/** Fatiga de cimientos en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánta Resonancia da cada nivel. */
-export const FATIGUE: { start: number; every: number; res: number } = BALANCE.asedio;
+/** Asedio final en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánto Daño da cada nivel. */
+export const FATIGUE: { start: number; every: number; dano: number } = BALANCE.asedio;
 
 /** Timbre del gremio: cartas del mazo que sella al empezar cada obra (además de activar dos veces todos los sellos). */
 export const TIMBRE: { stamps: number } = BALANCE.timbre;
 /** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
 export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
-ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), impuesto: REIN.impuesto, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
+ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), impuesto: REIN.impuesto, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
@@ -822,11 +823,12 @@ export function stageConfig(run: Run, players = 1): Config {
     cfg.floorHp[r] = Math.round(DEFAULT_CONFIG.floorHp[r] * scale);
     cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? REIN.reyColerico : 0) + (a >= 6 && r !== 13 ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
   }
-  if (a >= 3 && st.boss) cfg.apuntalado = [13];
+  // Reinado 4 «Reyes acorazados»: en los asaltos con monarca, los Reyes tienen más Vida
+  if (a >= 3 && st.boss) cfg.floorHp[13] = Math.round(cfg.floorHp[13] * REIN.reyesAcorazados);
   // fatiga de cimientos: en cuadrilla las obras duran más turnos y empieza en proporción
   cfg.fatigueStart = Math.round(FATIGUE.start * COOP_HP[Math.min(players, 4) - 1]);
   cfg.fatigueEvery = FATIGUE.every;
-  cfg.fatigueRes = FATIGUE.res;
+  cfg.fatigueDano = FATIGUE.dano;
   cfg.formLevel = { ...run.levels };
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
   if (run.boss) BOSS[run.boss]?.apply(cfg);
@@ -1281,4 +1283,5 @@ export function mvpTool(run: Run): string | null {
 }
 
 /** Base de Fuerza y Resonancia de una formación con los planos de la campaña. */
-export const formBase = (run: Run, f: Formation) => ({ f: FORM[f].f + run.levels[f] * FORM[f].lf, r: Math.round((FORM[f].r + run.levels[f] * FORM[f].lr) * 100) / 100 });
+/** Daño y Multi de una formación con su nivel de Pergamino: el Pergamino solo sube el Daño; el Multi es el de la formación. */
+export const formBase = (run: Run, f: Formation) => ({ f: FORM[f].f + run.levels[f] * FORM[f].lf, r: FORM[f].r });

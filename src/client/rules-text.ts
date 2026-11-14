@@ -96,13 +96,13 @@ function rulesEs(cfg: Config): string {
   <table>
     <tr><td><b>${TOWER_FX.fractura.name}</b></td><td>La deja una jugada de un solo palo (2 cartas o más). ${TOWER_FX.fractura.desc}</td></tr>
     <tr><td><b>${TOWER_FX.sobrecarga.name}</b></td><td>Lo deja una jugada que mezcla 3 palos o más. ${TOWER_FX.sobrecarga.desc}</td></tr>
-    <tr><td><b>${TOWER_FX.apuntalado.name}</b></td><td>Lo traen algunos monarcas y Reinados. ${TOWER_FX.apuntalado.desc}</td></tr>
+    ${'' /* V11-A: provisional, lo rehace arte-ui */}
   </table>
 
   <h3>Más reglas</h3>
   <ul>
     <li><b>Comodín · Motín</b>: se juega solo sobre un trono. Su guardia queda <b>Desarmado</b> (Ataque 0 hasta que caiga) y no hay Contraataque. El Comodín sale del asalto.</li>
-    <li><b>Asedio final</b>: ningún asedio dura para siempre. ${cfg.fatigueStart === undefined ? `En campaña, desde el turno ${FATIGUE.start + 1}` : `Desde el turno ${cfg.fatigueStart + 1}`} y cada ${cfg.fatigueEvery ?? FATIGUE.every} turnos sube un nivel: <b>+${n(cfg.fatigueRes ?? FATIGUE.res)} de Multi</b> a todos los Golpes y <b>+1 de Ataque</b> a todos los tronos. La mesa avisa tres turnos antes.</li>
+    <li><b>Asedio final</b>: ningún asedio dura para siempre. ${cfg.fatigueStart === undefined ? `En campaña, desde el turno ${FATIGUE.start + 1}` : `Desde el turno ${cfg.fatigueStart + 1}`} y cada ${cfg.fatigueEvery ?? FATIGUE.every} turnos sube un nivel: <b>+${n(cfg.fatigueDano ?? FATIGUE.dano)} de Multi</b>${'' /* V11-A: provisional, lo rehace arte-ui */} a todos los Golpes y <b>+1 de Ataque</b> a todos los tronos. La mesa avisa tres turnos antes.</li>
     <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo, pero pierdes <b>${cfg.collapseLoss} de Vida</b> (el Escudo no lo frena). Cada vez cuesta 1 más.</li>
     <li><b>As cómplice</b>: un As forma jugada con <b>cualquier otra carta</b> (×${n(FORM.compania.r)}) y aporta el poder de su palo.</li>
     <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardas una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
@@ -254,13 +254,13 @@ function rulesEn(cfg: Config): string {
   <table>
     <tr><td><b>${fxN('fractura')}</b></td><td>Left by a play of a single suit (2 cards or more). ${fxD('fractura')}</td></tr>
     <tr><td><b>${fxN('sobrecarga')}</b></td><td>Left by a play mixing 3 suits or more. ${fxD('sobrecarga')}</td></tr>
-    <tr><td><b>${fxN('apuntalado')}</b></td><td>Brought by some monarchs and Reigns. ${fxD('apuntalado')}</td></tr>
+    ${'' /* V11-A: provisional, lo rehace arte-ui */}
   </table>
 
   <h3>More rules</h3>
   <ul>
     <li><b>Joker · Mutiny</b>: played alone on a throne. Its guard is <b>Disarmed</b> (Attack 0 until it falls) and there is no Counterattack. The Joker leaves the assault.</li>
-    <li><b>Final Siege</b>: no siege lasts forever. ${cfg.fatigueStart === undefined ? `In a campaign, from turn ${FATIGUE.start + 1}` : `From turn ${cfg.fatigueStart + 1}`} and every ${cfg.fatigueEvery ?? FATIGUE.every} turns it goes up a level: <b>+${x(cfg.fatigueRes ?? FATIGUE.res)} Mult</b> to every Hit and <b>+1 Attack</b> to every throne. The table warns you three turns ahead.</li>
+    <li><b>Final Siege</b>: no siege lasts forever. ${cfg.fatigueStart === undefined ? `In a campaign, from turn ${FATIGUE.start + 1}` : `From turn ${cfg.fatigueStart + 1}`} and every ${cfg.fatigueEvery ?? FATIGUE.every} turns it goes up a level: <b>+${x(cfg.fatigueDano ?? FATIGUE.dano)} Mult</b>${'' /* V11-A: provisional, lo rehace arte-ui */} to every Hit and <b>+1 Attack</b> to every throne. The table warns you three turns ahead.</li>
     <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again, but you lose <b>${cfg.collapseLoss} Health</b> (Shield does not stop it). Each time it costs 1 more.</li>
     <li><b>Accomplice Ace</b>: an Ace makes a play with <b>any other card</b> (×${x(FORM.compania.r)}) and brings the power of its suit.</li>
     <li><b>Up the Sleeve</b>: once per turn, without spending it, you keep a card from your hand Up the Sleeve. It does not count towards hand size and is played from there. If the sleeve is full, the stored card goes back to your hand.</li>

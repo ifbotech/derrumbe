@@ -21,8 +21,8 @@ describe('palabras clave', () => {
   });
 
   it('keywordsIn encuentra las que menciona un texto, una vez cada una', () => {
-    const found = keywordsIn('<b>Caldero</b>La Brecha multiplica ×2; los golpes de 3 palos también dejan Brecha. +1 de Multi.');
-    expect(found.map((k) => k.id)).toEqual(['resonancia', 'fractura']);
+    const found = keywordsIn('<b>Caldero</b>Expuesto hace ×3 de Daño; los golpes de 3 palos también dejan Expuesto. +1 de Multi.');
+    expect(found.map((k) => k.id)).toEqual(['fuerza', 'resonancia', 'fractura']);
     expect(keywordsIn('Robas 2 cartas extra este turno.')).toEqual([]);
   });
 

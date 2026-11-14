@@ -63,7 +63,7 @@ export function formations(hand: Card[]): Card[][] {
 
 const remaining = (towers: Record<Suit, Tower>, cfg: Config) => SUITS.reduce((a, s) => a + towers[s].floors.reduce((b, r) => b + cfg.floorHp[r], 0) - (standing(towers[s]) ? towers[s].damage : 0), 0);
 /** Daño medio que hará la próxima sirena. */
-const danger = (env: { config: Config; fatigue?: number }, towers: Record<Suit, Tower>) => SUITS.reduce((a, s) => a + (standing(towers[s]) && !towers[s].disarmed && !towers[s].fx.sobrecarga ? threatOf(env, towers[s]) : 0), 0) / 4;
+const danger = (env: { config: Config; fatigue?: number }, towers: Record<Suit, Tower>) => SUITS.reduce((a, s) => a + (standing(towers[s]) && !towers[s].fx.sobrecarga ? threatOf(env, towers[s]) : 0), 0) / 4;
 /** Herramientas que solo rinden con cartas de un palo. */
 const SUIT_TOOL: Record<string, Suit> = { piqueta: 'S', cortavidrios: 'D', metralla: 'D', paleta: 'H', botiquin: 'H', maza: 'C', sacos: 'C' };
 /** Herramientas que cobran la defensa: con ellas el muro (o reparar de más) vale el doble. */
@@ -87,11 +87,11 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
   }
   if (res.clean || res.noSiren) score += risk * 1.7 * low;
   if (res.clean) score += 3;
-  // un piso que queda desarmado deja de golpear lo que le quede de vida (unos cuantos turnos)
+  // un trono que queda Aturdido se salta su próximo Contraataque
   const hitTower = env.towers[target];
-  if (standing(hitTower) && hitTower.disarmed && !state.towers[target].disarmed) score += (threatOf(state, hitTower) / 4) * 3 * 1.7 * low;
-  // romper el apuntalamiento de un piso que amenaza más mientras lo lleva
-  if (cfg.bracedThreat && state.towers[target].fx.apuntalado && standing(hitTower) && !hitTower.fx.apuntalado) score += (cfg.bracedThreat / 4) * 3 * 1.7 * low;
+  if (standing(hitTower) && hitTower.fx.sobrecarga && !state.towers[target].fx.sobrecarga) score += (threatOf(state, hitTower) / 4) * 1.7 * low;
+  // dejar Expuesto a un trono que sigue en pie: el próximo golpe contra él hace más Daño
+  if (standing(hitTower) && hitTower.fx.fractura && !state.towers[target].fx.fractura) score += 1.5;
   const walled = Math.min(res.wallGain, cfg.wallCap - state.wall);
   score += walled * (1.3 + 0.9 * wallPays);
   // con el Rebosadero, el muro que sobra repara el búnker
@@ -116,7 +116,7 @@ export function chooseAction(state: GameState): Action {
   const targets = SUITS.filter((s) => standing(state.towers[s]));
   const joker = held.find((c) => c.suit === 'X' && !c.sp);
   if (joker) {
-    const armed = targets.filter((s) => !state.towers[s].disarmed);
+    const armed = targets.filter((s) => !state.towers[s].fx.sobrecarga);
     const pool = armed.length ? armed : targets;
     const target = pool.reduce((a, b) => (state.towers[b].floors[0] > state.towers[a].floors[0] ? b : a));
     // Úsalo cuando la torre más peligrosa es una Q o K, o si el búnker está en apuros.

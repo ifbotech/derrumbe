@@ -3,11 +3,13 @@
 // Corre entera en el cliente con el mismo motor; tests/tutorial.test.ts la juega de principio a fin.
 //
 // El guion, siguiendo el foco (5 acciones; la partida termina ganada con la última):
-//   1 · palo    6♣ a PICAS (×2): 12 de Golpe, cae su guardia y los ♣ dan +2 de Escudo.
-//   2 · inmune  8♥ a TRÉBOLES (×2): 16, cae. Los ♥ no harían nada a CORAZONES (×0).
+//   1 · palo    6♣ a PICAS: 6 × 1 = 6 de Golpe, cae su guardia y los ♣ dan +2 de Escudo.
+//   2 · inmune  8♥ a TRÉBOLES: 8, cae. Los ♥ no harían nada a CORAZONES (Inmune).
 //   3 · manga   el 9♦ a La Manga (no gasta el turno).
-//   4 · cuenta  grupo 7♠ 7♣ a DIAMANTES: (2 + 14 + 7) × 1,2 = 28, cae.
-//   5 · exacto  el 9♦ de La Manga a CORAZONES (×2): 18 justos contra 18 de Vida. Golpe exacto y victoria.
+//   4 · cuenta  grupo 7♠ 7♣ a DIAMANTES: (2 + 7 + 7) × 2 = 32, cae.
+//   5 · exacto  el 9♦ de La Manga a CORAZONES: 9 justos contra 9 de Vida. Golpe exacto y victoria.
+// V11-A: Vida de los guardias rehecha para la cuenta nueva (sin ventaja, Multi entero); el guion de dos
+// tronos del apartado 1.8 de SPECS/V11.md lo escribe el bloque B.
 // Los Contraataques que salen (♠, ♣, ♦) son de tronos ya caídos: no hacen nada. Fuera del guion la mesa
 // tampoco aprieta: Ataque 1 o 2 contra 20 de Vida.
 import { Action, Card, Config, DEFAULT_CONFIG, GameEvent, GameState, PlayerView, Suit, multiplier, newTowers, standing } from './engine';
@@ -17,7 +19,7 @@ export const TUTORIAL_PLAYER = 'tu';
 export const TUTORIAL_CONFIG: Config = {
   ...DEFAULT_CONFIG,
   collapseLoss: 2,
-  floorHp: { 11: 10, 12: 14, 13: 18 },
+  floorHp: { 11: 5, 12: 14, 13: 9 },
   floorThreat: { 11: 1, 12: 1, 13: 2 },
   reserveSize: 1,
 };
@@ -27,7 +29,7 @@ const card = (id: string): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0 } :
 const HAND = ['C6', 'H8', 'D9', 'S7', 'C7', 'H2', 'S3'];
 /** Orden del Mazo. Los tres primeros Contraataques del guion (posiciones 0, 2 y 4) salen de tronos ya caídos. */
 const DECK = ['S2', 'H3', 'C2', 'D2', 'D3', 'C3', 'S4', 'H4', 'C4', 'D4', 'S5', 'H5', 'C5', 'D5', 'S6', 'H6', 'D6', 'H7', 'D7', 'S8', 'C8', 'D8', 'S9', 'H9', 'C9', 'S10', 'H10', 'C10', 'D10', 'X1', 'S1', 'H1', 'C1', 'D1', 'X2'];
-/** Un guardia por trono: Sota (10 de Vida) en PICAS y TRÉBOLES, Reina (14) en DIAMANTES, Rey (18) en CORAZONES. */
+/** Un guardia por trono: Sota (5 de Vida) en PICAS y TRÉBOLES, Reina (14) en DIAMANTES, Rey (9) en CORAZONES. */
 const FLOORS: Record<Suit, number[]> = { S: [11], C: [11], D: [12], H: [13] };
 
 export function createTutorial(): GameState {
@@ -116,7 +118,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   line('inmune', 'Trono Inmune', 'Tus ♥ no hacen nada a CORAZONES: <b>8♥</b> a TRÉBOLES.', { ui: 'inmune' }, dodgedImmune, ['H8'], 'C'),
   line('manga', 'La Manga', 'Guarda el <b>9♦</b> en La Manga para después.', { ui: 'manga' }, (_v, ev) => ev.some((e) => e.e === 'stash' && !!e.card), ['D9']),
   line('cuenta', 'La cuenta', 'Pareja de <b>7</b> a DIAMANTES: Daño × Multi = Golpe.', { ui: 'cuenta' }, (_v, ev) => (played(ev)?.cards.length ?? 0) >= 2 && ev.some((e) => e.e === 'impact'), ['S7', 'C7'], 'D'),
-  line('exacto', 'Golpe exacto', 'El <b>9♦</b> de La Manga a CORAZONES: 18 justos.', 'target', (_v, ev) => ev.some((e) => e.e === 'floorDown' && e.clean), ['D9'], 'H'),
+  line('exacto', 'Golpe exacto', 'El <b>9♦</b> de La Manga a CORAZONES: 9 justos.', 'target', (_v, ev) => ev.some((e) => e.e === 'floorDown' && e.clean), ['D9'], 'H'),
 ];
 
 /** Acción que sugiere un paso guiado (en `manga`, guardar su carta). */

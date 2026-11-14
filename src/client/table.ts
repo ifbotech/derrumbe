@@ -1,6 +1,6 @@
 // La mesa de combate: los cuatro tronos, tu Vida, las Reliquias, poderes de palo, marcador
 // Daño × Multi = Golpe, la Manga, mano y la cola de eventos que anima cada jugada paso a paso.
-import { BEATS, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, multiplier, previewStrike, threatOf } from '../rules/engine';
+import { Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, multiplier, previewStrike, threatOf } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
 import { BOSS, CONTRACT, LAST_STAGE, stageDef } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
@@ -38,7 +38,7 @@ let stepN = 0;
 /** El último lote de eventos animado: de ahí sale la causa del derrumbe cuando la obra acaba en derrota. */
 let lastEvents: GameEvent[] = [];
 
-const WEAK_TO = Object.fromEntries(SUITS.map((s) => [BEATS[s], s])) as Record<Suit, Suit>; // torre → palo que la dobla
+const WEAK_TO = Object.fromEntries(SUITS.map((s) => [s, s])) as Record<Suit, Suit>; // V11-A: provisional, lo rehace arte-ui
 const FLOOR = (r: number) => RANK_LABEL[r];
 /** Nombre del guardia con su artículo: «la Sota», «la Reina», «el Rey». */
 const GUARD = (r: number) => (r === 11 ? L('ui.mesa.la.sota') : r === 12 ? L('ui.mesa.la.reina') : r === 13 ? L('ui.mesa.el.rey') : L('ui.mesa.el.x', { x: FLOOR(r) }));
@@ -348,13 +348,15 @@ function renderPlayers(): void {
 function plates(s: Suit): string {
   const cfg = S.shown!.config;
   const own = cfg.ownMult ?? 0;
-  const adv = cfg.advMult ?? 2;
+  const adv = 1; // V11-A: provisional, lo rehace arte-ui
   const immune =
     own === 0
       ? `<i class="plate iron" data-tip="${L('ui.mesa.inmune.tip', { g: SUIT_GLYPH[s], palo: paloN(s).toLowerCase() })}">${suitSvg(s)}<b>×0</b></i>`
       : `<i class="plate ${own > 1 ? 'brass' : 'open'}" data-tip="${L('ui.mesa.sininmune.tip', { palo: paloN(s).toLowerCase(), n: own })}">${suitSvg(s)}<b>×${own}</b></i>`;
   const w = WEAK_TO[s];
-  return `${immune}<i class="plate brass" data-tip="${L(adv === 2 ? 'ui.mesa.debil.tip.2' : 'ui.mesa.debil.tip.3', { g: SUIT_GLYPH[w], palo: paloN(w).toLowerCase() })}">${suitSvg(w)}<b>×${adv}</b></i>`;
+  void w;
+  void adv;
+  return immune; // V11-A: provisional, lo rehace arte-ui (sin la placa de «débil a»)
 }
 
 function renderTower(s: Suit): void {
@@ -367,8 +369,8 @@ function renderTower(s: Suit): void {
   el.classList.toggle('fallen', top === undefined);
   // todas las torres reservan sitio para los mismos pisos: así sus cartas miden igual
   el.parentElement?.style.setProperty('--below', String(Math.max(0, ...SUITS.map((x) => v.towers[x].floors.length - 1))));
-  el.classList.toggle('disarmed', t.disarmed);
-  const key = `${t.floors.join('-') || 'ruin'}|${cfg.ownMult ?? 0}|${cfg.advMult ?? 2}`;
+  el.classList.toggle('disarmed', false); // V11-A: provisional, lo rehace arte-ui
+  const key = `${t.floors.join('-') || 'ruin'}|${cfg.ownMult ?? 0}`; // V11-A: provisional, lo rehace arte-ui
   if (el.dataset.floor !== key) {
     const sameTop = el.dataset.top === String(top);
     el.dataset.floor = key;
@@ -399,7 +401,8 @@ function renderTower(s: Suit): void {
   }
   // V10 · V7-5: la insignia de estado va sin guiones blandos y no se parte nunca (antes salía «DESAR-MADO»)
   const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => top !== undefined && t.fx?.[k]);
-  $('.tower-fx', el).innerHTML = [...(t.disarmed && top !== undefined ? [`<em class="fx fx-sobrecarga" data-tip="${L('ui.mesa.desarmado.tip')}">${L('ui.mesa.desarmado')}</em>`] : []), ...fx.map((k) => `<em class="fx fx-${k}" data-tip="<b>${fxN(k)}</b>${fxD(k)}">${fxN(k).replace(/ (×\d+)$/, '<span class="fx-n"> $1</span>')}</em>`)].join('');
+  $('.tower-fx', el).innerHTML = [...fx.map( // V11-A: provisional, lo rehace arte-ui
+    (k) => `<em class="fx fx-${k}" data-tip="<b>${fxN(k)}</b>${fxD(k)}">${fxN(k).replace(/ (×\d+)$/, '<span class="fx-n"> $1</span>')}</em>`)].join('');
   if (top !== undefined) {
     const hp = cfg.floorHp[top];
     const left = Math.max(0, hp - t.damage);
@@ -409,7 +412,7 @@ function renderTower(s: Suit): void {
     $('.cracks', el)?.setAttribute('data-level', level);
     $('.facade .storey-art', el)?.setAttribute('data-level', level);
     const threat = threatOf(v, t);
-    $('.threat', el).innerHTML = t.disarmed ? `<span>${L('ui.mesa.ataque')}</span><b class="off">⚔ 0</b>` : `<span>${L('ui.mesa.ataque')}</span><b>⚔ ${threat}</b>`;
+    $('.threat', el).innerHTML = `<span>${L('ui.mesa.ataque')}</span><b>⚔ ${threat}</b>`; // V11-A: provisional, lo rehace arte-ui
   }
 }
 
@@ -591,7 +594,7 @@ function renderPowers(cards: Card[], r: StrikeResult | null, target: Suit | null
     H: r?.repair ? `+${r.repair}` : '',
     C: r?.wallGain ? `+${r.wallGain}` : '',
   };
-  const part: Record<Suit, string> = { S: '', D: `1/${cfg.shardDiv}`, H: cfg.repairDiv > 99 ? L('ui.mesa.anulado') : `1/${cfg.repairDiv}`, C: `1/${cfg.wallDiv}` };
+  const part: Record<Suit, string> = { S: '', D: `${cfg.salpicaPorCarta}`, H: cfg.curaPorCarta === 0 ? L('ui.mesa.anulado') : `${cfg.curaPorCarta}`, C: `${cfg.escudoPorCarta}` }; // V11-A: provisional, lo rehace arte-ui
   el.innerHTML = SUITS.map(
     (s) =>
       `<span class="power s-${s} ${value[s] ? 'on' : ''}" data-tip="<b>${SUIT_GLYPH[s]} ${POWER(s)[0]}</b>${POWER(s)[1]}${part[s] ? L('ui.mesa.poder.ahora', { x: part[s] }) : ''}${L('ui.mesa.poder.nota')}">${suitSvg(s)}<b>${POWER(s)[0]}</b>${value[s] ? `<em>${value[s]}</em>` : ''}</span>`,
@@ -784,7 +787,7 @@ function renderWheel(cards: Card[], target: Suit | null): void {
   let adv = false;
   let blocked = false;
   for (const s of SUITS) {
-    const wins = !!target && suits.has(s) && BEATS[s] === target;
+    const wins = false; // V11-A: provisional, lo rehace arte-ui
     const immune = target === s && suits.has(s) && own === 0;
     adv ||= wins;
     blocked ||= immune;
@@ -804,7 +807,7 @@ function renderFatigue(): void {
   const v = S.shown;
   if (!el || !v) return;
   const start = v.config.fatigueStart;
-  const res = v.config.fatigueRes ?? 0.25;
+  const res = v.config.fatigueDano ?? 4; // V11-A: provisional, lo rehace arte-ui
   const level = v.fatigue ?? 0;
   const left = start === undefined ? Infinity : start - v.turnCount;
   el.hidden = start === undefined || v.phase !== 'playing' || (level === 0 && left > 3);
@@ -1018,7 +1021,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       if (ev.level > 0) {
         banner(L('ui.log.asedio.banner', { n: ev.level }), 'red', L('ui.log.asedio.sub'));
         sfx.rumble(1 + ev.level);
-        logLine(L('ui.log.asedio', { n: ev.level, m: (v.config.fatigueRes ?? 0.25) * ev.level }), 'red');
+        logLine(L('ui.log.asedio', { n: ev.level, m: (v.config.fatigueDano ?? 4) * ev.level }), 'red'); // V11-A: provisional, lo rehace arte-ui
         await wait(650);
       }
       break;
@@ -1037,7 +1040,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
     case 'joker':
       logLine(L('ui.log.motin', { nombre: nameOf(ev.player), casa: LA_HOUSE(ev.target) }), 'yel');
       await flyCards(ev.player, [ev.card], () => $('.floor-slot', towerEls[ev.target]).getBoundingClientRect());
-      v.towers[ev.target].disarmed = true;
+      v.towers[ev.target].fx.sobrecarga = true; // V11-A: provisional, lo rehace arte-ui
       renderTower(ev.target);
       banner(L('ui.mesa.motin'), 'yel', L('ui.log.motin.sub'));
       sfx.mutiny();
@@ -1085,9 +1088,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       await wait(720);
       t.floors.shift();
       t.damage = ev.damage;
-      t.disarmed = false;
-      t.fx = {};
-      if (t.floors.length && v.config.apuntalado?.includes(t.floors[0])) t.fx.apuntalado = true;
+      t.fx = {}; // V11-A: provisional, lo rehace arte-ui (sin Desarmado ni En guardia)
       renderTower(ev.tower);
       if (ev.towerDown) {
         throneFall(el); // juice-ux: corona que se parte (sonido y .crown-split)
@@ -1322,7 +1323,7 @@ export function cardMath(c: Card): string {
   const cfg = v.config;
   return SUITS.filter((s) => v.towers[s].floors.length)
     .map((s) => {
-      const m = s === c.suit ? (cfg.ownMult ?? 0) : BEATS[c.suit as Suit] === s ? (cfg.advMult ?? 2) : 1;
+      const m = s === c.suit ? (cfg.ownMult ?? 0) : 1; // V11-A: provisional, lo rehace arte-ui
       return `${paloN(s)} <b>${cardValue(c) * m}</b>`;
     })
     .join(' · ');

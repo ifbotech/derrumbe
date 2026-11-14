@@ -39,12 +39,12 @@ const signed = (n: number, text = String(n)) => `${n > 0 ? '+' : n < 0 ? '−' :
 /** Con qué multiplicador pega la jugada contra ese trono: la mayor ventaja y si alguna carta se queda en ×0. */
 function material(p: Preview): { adv: number; immune: boolean; own: number } {
   const cfg = p.v.config;
-  const allAdv = p.cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.allAdv);
+  const allAdv = p.cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.noImmune); // V11-A: provisional, lo rehace arte-ui
   let adv = 0;
   let immune = false;
   for (const c of p.cards) {
     if (c.sp || c.suit === 'X') continue;
-    const m = allAdv ? (cfg.advMult ?? 2) : multiplier(c.suit, p.target, cfg);
+    const m = allAdv ? Math.max(1, multiplier(c.suit, p.target, cfg)) : multiplier(c.suit, p.target, cfg); // V11-A: provisional, lo rehace arte-ui
     if (m === 0) immune = true;
     else if (m > 1) adv = Math.max(adv, m);
   }
@@ -66,7 +66,7 @@ export function previewHtml(p: Preview, tail = ''): string {
   // cae el trono entero si el golpe se lleva a todos los guardias que le quedan
   const throne = fallen > 0 && fallen >= v.towers[target].floors.length;
   // el Contraataque saca una carta al azar: se avisa del peor Ataque posible entre los tronos en pie
-  const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].disarmed).map((s) => threatOf(v, v.towers[s])));
+  const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].fx.sobrecarga).map((s) => threatOf(v, v.towers[s]))); // V11-A: provisional, lo rehace arte-ui
   const marks = [
     r.clean ? `<em class="m gold">${L('ui.cuenta.exacto')}</em>` : '',
     fallen ? `<em class="m red">${throne ? L('ui.cuenta.cae.trono') : fallen > 1 ? L('ui.cuenta.caen', { n: fallen }) : L('ui.cuenta.cae')}</em>` : '',
@@ -124,7 +124,7 @@ function slip(p: Preview): Slip {
   const cfg = p.v.config;
   const s: Slip = { base: [], cards: [], belt: [], res: [], after: [], nBase: 0, nCards: 0, nBelt: 0 };
   const byId = new Map(p.cards.map((c) => [c.id, c]));
-  const allAdv = p.cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.allAdv);
+  const allAdv = p.cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.noImmune); // V11-A: provisional, lo rehace arte-ui
   let hit = false;
   for (const ev of p.r.events) {
     if (ev.e === 'impact') hit = true;
@@ -151,7 +151,7 @@ function slip(p: Preview): Slip {
     }
     if (ev.df !== undefined) {
       const card = ev.src === 'card' ? byId.get(ev.id) : undefined;
-      const m = card && card.suit !== 'X' ? (allAdv ? (cfg.advMult ?? 2) : multiplier(card.suit, p.target, cfg)) : 1;
+      const m = card && card.suit !== 'X' ? (allAdv ? Math.max(1, multiplier(card.suit, p.target, cfg)) : multiplier(card.suit, p.target, cfg)) : 1; // V11-A: provisional, lo rehace arte-ui
       lines.push({ who, amount: signed(ev.df), kind: 'f', note: m > 1 ? L('ui.cuenta.ventaja.nota', { n: m }) : undefined });
       if (group === 'base') s.nBase += ev.df;
       else if (group === 'cards') s.nCards += ev.df;

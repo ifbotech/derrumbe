@@ -6,6 +6,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formation, MATERIAL, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { ACHIEVEMENTS, unlocksOf } from '../src/rules/achievements';
 import { BALANCE } from '../src/rules/balance-config';
+import { fraccion } from '../src/rules/cifras';
 import { KEYWORDS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECK, DECKS, EVENTS, EVENT_AFTER, FATIGUE, LAST_STAGE, MIN_DECK, STAGES, TAGS, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
@@ -67,34 +68,33 @@ Cada palo es una casa de la corte: ♠ **${MATERIAL.S}**, ♦ **${MATERIAL.D}**,
 
 Todo golpe se calcula igual:
 
-> **Golpe = Daño × Multi** (redondeado)
+> **Golpe = Daño × Multi** (los dos, siempre números enteros)
 
 Se resuelve de izquierda a derecha, y cada paso se ve en la mesa:
 
 1. **La formación** pone la base de Daño y de Multi.
-2. **Lo que arrastra la mesa**: la Racha de Golpes exactos, el Daño cargado, el Asedio final y el estado del trono.
-3. **Cada carta**, en el orden en que la elegiste, suma su número como Daño (doble si su palo tiene ventaja). Enseguida actúan su **acabado** y su **sello de lacre**.
+2. **Lo que arrastra la mesa**: la Racha de Golpes exactos, el Daño cargado y el Asedio final.
+3. **Cada carta**, en el orden en que la elegiste, suma su número como Daño (0 contra el trono de su palo: es **Inmune**). Enseguida actúan su **acabado** y su **sello de lacre**.
 4. **Las cartas especiales** que acompañan al golpe (hasta ${MAX_SPECIALS}).
 5. **Tus reliquias**, hueco a hueco.
+6. **${TOWER_FX.fractura.name}**: si el trono lo estaba, el Daño de todo lo anterior se multiplica ×${BALANCE.golpe.expuesto}.
 
 Lo que **suma** cuenta donde está. Lo que **multiplica** el Multi multiplica todo lo acumulado hasta ese momento: conviene sumar primero y multiplicar al final. El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).
 
-${table(['Formación', 'Cartas', 'Daño base', 'Multi', 'Por nivel de Pergamino'], FORMATIONS.map((f) => [FORMATION_NAME[f], FORM_CARDS[f], `+${FORM[f].f}`, `×${n(FORM[f].r)}`, `+${FORM[f].lf} D · +${n(FORM[f].lr)} M`]))}
+${table(['Formación', 'Cartas', 'Daño base', 'Multi', 'Por nivel de Pergamino'], FORMATIONS.map((f) => [FORMATION_NAME[f], FORM_CARDS[f], `+${FORM[f].f}`, `×${FORM[f].r}`, `+${FORM[f].lf} de Daño`]))}
 
-### La rueda de palos
+### Inmune a su propio palo
 
-${table(['Trono', 'Daño doble (×2)', 'Sin Daño (×0, Inmune)'], [['♠ ' + MATERIAL.S, '♣ tréboles', '♠ picas'], ['♦ ' + MATERIAL.D, '♠ picas', '♦ diamantes'], ['♥ ' + MATERIAL.H, '♦ diamantes', '♥ corazones'], ['♣ ' + MATERIAL.C, '♥ corazones', '♣ tréboles']])}
-
-Rueda: ♠ corta ♦ · ♦ compra ♥ · ♥ doblega ♣ · ♣ quiebra ♠. Contra el trono de su propio palo, una carta no hace nada: ese trono es **Inmune** a ella.
+Una sola regla de palos: **cada trono es Inmune a su propio palo**. Contra el trono de su palo, una carta hace 0 de Daño; contra los otros tres, su número.
 
 ### Poder de cada palo
 
-Además de su Daño, las cartas de cada palo activan su poder (aunque no sumen nada):
+Además de su Daño, las cartas de cada palo activan su poder (aunque no sumen nada). Cada carta da lo mismo, sea cual sea su número:
 
 - ♠ **Perfora**: si la formación lleva alguna pica, los puntos que sobran al abatir a un guardia pasan al siguiente.
-- ♦ **Salpica**: los otros tronos reciben un tercio (hacia abajo) del valor de tus diamantes.
-- ♥ **Cura**: recuperas un tercio (hacia arriba) del valor de tus corazones en Vida.
-- ♣ **Escudo**: levantas un tercio (hacia arriba) del valor de tus tréboles como Escudo.
+- ♦ **Salpica**: cada diamante hace **${BALANCE.mesa.salpicaPorCarta}** a cada uno de los otros tronos.
+- ♥ **Cura**: cada corazón te cura **${BALANCE.mesa.curaPorCarta}** de Vida.
+- ♣ **Escudo**: cada trébol te da **+${BALANCE.mesa.escudoPorCarta}** de Escudo.
 
 ### Golpe exacto
 
@@ -102,21 +102,24 @@ Abatir a un guardia con un Golpe **igual a su Vida** es la jugada maestra del ju
 
 - **no hay Contraataque** ese turno,
 - cobras **${BALANCE.golpe.oroExacto} de oro** y **robas 1 carta** de más,
-- el guardia siguiente pierde **un cuarto de su Vida** (el **Impulso** del golpe),
-- y empiezas una **Racha**: tu próximo golpe lleva +${n(BALANCE.golpe.racha)} de Multi por cada Golpe exacto seguido (hasta +2). La Racha se corta si el golpe no es exacto.
+- el guardia siguiente pierde **${fraccion(BALANCE.golpe.onda)} de su Vida** (el **Impulso** del golpe),
+- y empiezas una **Racha**: tu próximo golpe lleva +${BALANCE.golpe.racha} de Multi por cada Golpe exacto seguido (hasta +${BALANCE.golpe.racha * BALANCE.golpe.rachaTope}). La Racha se corta si el golpe no es exacto.
 
 La mesa te lo avisa antes de golpear: la previsualización de cada trono dice si el golpe sería exacto.
 
 ### Estados de los tronos
 
-- **${TOWER_FX.fractura.name}**: la deja un golpe de un solo palo (2 o más cartas, todas del mismo palo). ${TOWER_FX.fractura.desc}
-- **${TOWER_FX.sobrecarga.name}**: lo deja un golpe que mezcla 3 palos o más. ${TOWER_FX.sobrecarga.desc}
-- **${TOWER_FX.apuntalado.name}**: lo traen algunos monarcas y Reinados. ${TOWER_FX.apuntalado.desc}
+Solo hay dos, y ninguno se acumula:
+
+- **${TOWER_FX.fractura.name}**: lo deja un golpe de un solo palo (2 o más cartas, todas del mismo palo). ${TOWER_FX.fractura.desc}
+- **${TOWER_FX.sobrecarga.name}**: lo deja un golpe que mezcla 3 palos o más, el Motín (Comodín) o El Espía. ${TOWER_FX.sobrecarga.desc}
+
+Los dos desaparecen si cae el guardia.
 
 ### Reglas especiales
 
-- **Comodín · Motín**: se juega solo sobre un trono. Su guardia de delante queda **Desarmado** (no ataca hasta que caiga) y no hay Contraataque. El comodín no vuelve en este asalto.
-- **Asedio final**: ningún asalto dura para siempre. En campaña, desde el turno ${FATIGUE.start + 1} de cada asalto y cada ${FATIGUE.every} turnos, el asedio sube un nivel; cada nivel da **+${n(FATIGUE.res)} de Multi** a todos los golpes y **+1 de Ataque** a los cuatro tronos. El asalto se acelera en los dos sentidos: pegas más y te pegan más. La mesa avisa tres turnos antes. En conjura de varios empieza más tarde, en proporción a lo que aguantan los guardias; en el Asalto único, en el turno ${(cfg.fatigueStart ?? 0) + 1} y cada ${cfg.fatigueEvery} turnos.
+- **Comodín · Motín**: se juega solo sobre un trono. Ese trono queda **${TOWER_FX.sobrecarga.name}** y este turno no hay Contraataque. El comodín no vuelve en este asalto.
+- **Asedio final**: ningún asalto dura para siempre. En campaña, desde el turno ${FATIGUE.start + 1} de cada asalto y cada ${FATIGUE.every} turnos, el asedio sube un nivel; cada nivel da **+${FATIGUE.dano} de Daño** a todos los golpes y **+1 de Ataque** a los cuatro tronos. El asalto se acelera en los dos sentidos: pegas más y te pegan más. La mesa avisa tres turnos antes. En conjura de varios empieza más tarde, en proporción a lo que aguantan los guardias; en el Asalto único, en el turno ${(cfg.fatigueStart ?? 0) + 1} y cada ${cfg.fatigueEvery} turnos.
 - **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo, pero pierdes **${cfg.collapseLoss}** de Vida (el Escudo no lo frena). Cada vuelta completa de la conjura al Mazo lo encarece en 1: los asaltos no se pueden estirar sin fin.
 - **${FORMATION_NAME.compania}**: un As forma jugada con **cualquier otra carta** (×${n(FORM.compania.r)} de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar Escudo, uno de ♥ para curar, uno de ♠ para perforar.
 - **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *${tool('pasarela')}* añade un segundo hueco. La partida guiada te enseña a usarla en su tercer paso.
@@ -239,7 +242,7 @@ ${KEYWORDS.map((k) => `- **${k.name}**: ${k.desc}`).join('\n')}
 
 ${CONTROLS_TABLE}
 
-Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón (A, B, X, Y, LB, RB, LT, RT, L3, R3) si lo último que tocaste fue un mando, y nada con ratón o pantalla táctil. Junto a los poderes de palo, la **rueda de palos** (♠ → ♦ → ♥ → ♣ → ♠) se enciende con lo que llevas elegido: una flecha si pegas con ventaja, un aspa si ese trono es Inmune a tu palo.
+Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón (A, B, X, Y, LB, RB, LT, RT, L3, R3) si lo último que tocaste fue un mando, y nada con ratón o pantalla táctil. Cada trono lleva a la vista la placa de su palo: es **Inmune** a las cartas de ese palo.
 
 La **Lupa** abre cualquier carta, reliquia, guardia o monarca a tamaño de lámina, con la cuenta exacta de lo que aporta en ese momento. En sala, pulsar un trono cuando no es tu turno (o cualquier ruta, oferta o carta con Alt) deja una **seña** con tus iniciales para la conjura: no decide nada, solo señala.
 `;

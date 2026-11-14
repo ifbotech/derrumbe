@@ -289,7 +289,7 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
     const now = formBase(run, f);
     el = tileEl('pergamino', L('ui.run.pergamino'), 'service');
     title = L('ui.run.pergamino.de', { x: formN(f) });
-    desc = L('ui.run.pergamino.desc', { f: now.f, r: num(now.r), f2: now.f + FORM[f].lf, r2: num(now.r + FORM[f].lr) });
+    desc = L('ui.run.pergamino.desc', { f: now.f, r: num(now.r), f2: now.f + FORM[f].lf, r2: num(now.r) }); // V11-A: provisional, lo rehace arte-ui
   }
   const box = choice(el, title, desc, null, buy, o.sold ? 'sold hang' : 'hang');
   box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `${cost} ${L('ui.run.de.oro')}`}</span>`);

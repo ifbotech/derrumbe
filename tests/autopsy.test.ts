@@ -261,18 +261,18 @@ describe('aviso de último turno', () => {
     expect(omen(view({ ...s, wall: 3 }))).toBeNull();
   });
 
-  it('cuenta la fatiga de cimientos y no cuenta las torres desarmadas, caídas o sin cartas de su palo por salir', () => {
+  it('cuenta la fatiga de cimientos y no cuenta los tronos Aturdidos, caídos o sin cartas de su palo por salir', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 3, 12: 3, 13: 3 } });
     const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 5, wall: 0 });
     expect(omen(view(s))).toBeNull();
     expect(omen(view({ ...s, fatigue: 2 }))?.title).toContain('(⚔ 5)');
-    // con todo desarmado no hay sirena que temer
+    // con todo Aturdido no hay sirena que temer
     const calm = structuredClone({ ...s, fatigue: 2 });
-    for (const t of Object.values(calm.towers)) t.disarmed = true;
+    for (const t of Object.values(calm.towers)) t.fx.sobrecarga = true;
     expect(omen(view(calm))).toBeNull();
     // solo queda armada la torre de ladrillo, pero ya no quedan ♥ por salir: tampoco
     const noHearts = structuredClone({ ...s, fatigue: 2 });
-    for (const t of Object.values(noHearts.towers)) t.disarmed = t.suit !== 'H';
+    for (const t of Object.values(noHearts.towers)) t.fx.sobrecarga = t.suit !== 'H';
     noHearts.deck = noHearts.deck.filter((c) => c.suit !== 'H');
     expect(omen(view(noHearts))).toBeNull();
   });
@@ -341,13 +341,13 @@ describe('avisos de herramienta que dispara (contrato C2)', () => {
   it('Rebosadero marca lo que repara con el muro que no cabe y la Fuerza que carga, con la cuenta en el texto', () => {
     const cfg = cfgWith({ floorHp: TOUGH });
     const s = table(cfg, [card('C8'), card('C9'), card('C10')], [card('X1')], ['rebosadero'], { wall: cfg.wallCap - 1, integrity: cfg.maxIntegrity - 1 });
-    // escalera de tréboles (27): muro +9; cabe 1 y no caben 8 → repara 4; cabe 1 y no caben 3 → +9 de Fuerza cargada
+    // escalera de tréboles: tres ♣ dan +6 de Escudo; cabe 1 y no caben 5 → cura 2; cabe 1 y no cabe 1 → +3 de Daño cargado
     const st = steps(applyAction(s, 'a', { type: 'attack', cards: ['C8', 'C9', 'C10'], target: 'S' }).events, 'rebosadero');
     expect(st.map((x) => x.proc)).toEqual([
-      { what: 'repara', n: 4 },
-      { what: 'carga', n: 9 },
+      { what: 'repara', n: 2 },
+      { what: 'carga', n: 3 },
     ]);
-    expect(st.map((x) => x.label)).toEqual(['Copa rebosante: 8 de Escudo que no cabe ÷ 2 = cura 4', 'Copa rebosante: 3 de curación que no cabe × 3 = +9 de Daño cargado']);
+    expect(st.map((x) => x.label)).toEqual(['Copa rebosante: 5 de Escudo que no cabe ÷ 2 = cura 2', 'Copa rebosante: 1 de curación que no cabe × 3 = +3 de Daño cargado']);
   });
 
   it('Megáfono (cualquier gancho que pega) también lleva su aviso', () => {

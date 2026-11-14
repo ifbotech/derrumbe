@@ -49,17 +49,17 @@ describe('partida guiada de cinco pasos', () => {
     expect(s.phase).toBe('won');
     expect(s.integrity).toBe(20);
 
-    // 1 · 6♣ a PICAS: ×2 = 12, cae la Sota y los ♣ dan Escudo
-    expect(impact(log[0])).toMatchObject({ tower: 'S', fuerza: 12, res: 1, total: 12 });
+    // 1 · 6♣ a PICAS: 6 de Daño, cae la Sota y el ♣ da Escudo
+    expect(impact(log[0])).toMatchObject({ tower: 'S', fuerza: 6, res: 1, total: 6 });
     expect(log[0].find((e) => e.e === 'wall')).toMatchObject({ amount: 2 });
-    // 2 · 8♥ a TRÉBOLES: ×2 = 16
-    expect(impact(log[1])).toMatchObject({ tower: 'C', total: 16 });
+    // 2 · 8♥ a TRÉBOLES: 8
+    expect(impact(log[1])).toMatchObject({ tower: 'C', total: 8 });
     // 3 · el 9♦ a La Manga
     expect(log[2]).toEqual([expect.objectContaining({ e: 'stash', card: expect.objectContaining({ id: 'D9' }), back: null })]);
-    // 4 · grupo 7♠ 7♣ a DIAMANTES: (2 + 14 + 7) × 1,2 = 28
-    expect(impact(log[3])).toMatchObject({ tower: 'D', fuerza: 23, res: 1.2, total: 28 });
-    // 5 · el 9♦ de La Manga, 18 justos contra el Rey de CORAZONES
-    expect(impact(log[4])).toMatchObject({ tower: 'H', total: 18 });
+    // 4 · grupo 7♠ 7♣ a DIAMANTES: 16 de Daño × 2 de Multi = 32
+    expect(impact(log[3])).toMatchObject({ tower: 'D', fuerza: 16, res: 2, total: 32 });
+    // 5 · el 9♦ de La Manga, 9 justos contra el Rey de CORAZONES
+    expect(impact(log[4])).toMatchObject({ tower: 'H', total: 9 });
     expect(log[4].find((e) => e.e === 'floorDown')).toMatchObject({ tower: 'H', rank: 13, clean: true, towerDown: true });
     // los Contraataques del guion salen de tronos caídos
     for (const ev of [log[0], log[1], log[3]]) expect(ev.find((e) => e.e === 'siren')).toMatchObject({ reason: 'ruin', taken: 0 });

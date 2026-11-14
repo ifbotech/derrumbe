@@ -84,8 +84,8 @@ if (env.CLAUSURA) {
   Object.assign(CLAUSURA, { stages: stages.split(',').map(Number), threat: Number(threat ?? 1) });
 }
 if (env.FAT) {
-  const [start, every, res] = env.FAT.split(',').map(Number);
-  Object.assign(FATIGUE, { start, every: every || FATIGUE.every, res: res ?? FATIGUE.res });
+  const [start, every, dano] = env.FAT.split(',').map(Number);
+  Object.assign(FATIGUE, { start, every: every || FATIGUE.every, dano: dano ?? FATIGUE.dano });
 }
 
 const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec[key] ?? 0) + 1);

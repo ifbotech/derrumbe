@@ -72,7 +72,8 @@ const GROUPS: Formation[] = ['grupo', 'doblepar', 'full', 'poker'];
 const RUNS: Formation[] = ['escalera', 'escaleracolor'];
 const perSuit = (s: Suit, n: number) => (x: Strike) => x.F(n * x.cards.filter((c) => c.suit === s).length);
 const hand = (c: Config, n: number) => void (c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, Math.max(3, v + n)])));
-const fx = (x: Strike) => Object.values(x.env.towers).reduce((a, t) => a + (t.floors.length ? Object.values(t.fx).filter(Boolean).length : 0), 0);
+/** Tronos en pie que están Expuestos o Aturdidos (cada trono cuenta una vez). */
+const fx = (x: Strike) => Object.values(x.env.towers).filter((t) => t.floors.length && Object.values(t.fx).some(Boolean)).length;
 
 // Las cifras de cada reliquia salen de balance-config.json (`reliquias.<id>`): `V.<id>.<campo>`. Las `desc`
 // son plantillas: `{campo}` se rellena con esa misma cifra al final del archivo.
@@ -87,8 +88,8 @@ export const TOOLS: ToolDef[] = [
   { id: 'cincel', name: 'Estilete', desc: '+{dano} de Daño si juegas una carta sola.', rarity: 'comun', arch: 'base', kind: 'f', strike: (x) => x.cards.length === 1 && x.F(V.cincel.dano) },
   { id: 'gemelos', name: 'Dagas gemelas', desc: '+{multi} de Multi con grupo, doble par, full o póker.', rarity: 'comun', arch: 'base', kind: 'r', strike: (x) => GROUPS.includes(x.formation) && x.R(V.gemelos.multi) },
   { id: 'cinta', name: 'Escalinata', desc: '+{multi} de Multi con escalera o escalera de color.', rarity: 'comun', arch: 'base', kind: 'r', strike: (x) => RUNS.includes(x.formation) && x.R(V.cinta.multi) },
-  { id: 'sacos', name: 'Pavés', desc: 'El Escudo sube la mitad de tus ♣ en vez de un tercio, y su tope crece +{tope}.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void ((c.wallDiv = 2), (c.wallCap += V.sacos.tope)) },
-  { id: 'botiquin', name: 'Bálsamo', desc: 'Curas la mitad de tus ♥ en vez de un tercio.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.repairDiv = Math.min(c.repairDiv, 2)) },
+  { id: 'sacos', name: 'Pavés', desc: 'Cada ♣ da +{escudo} de Escudo más, y el tope del Escudo sube +{tope}.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void ((c.escudoPorCarta += V.sacos.escudo), (c.wallCap += V.sacos.tope)) },
+  { id: 'botiquin', name: 'Bálsamo', desc: 'Cada ♥ cura +{vida} más.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.curaPorCarta += V.botiquin.vida) },
   { id: 'encofrado', name: 'Broquel', desc: 'Cada guardia abatido: +{escudo} de Escudo.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.wall += V.encofrado.escudo * r.fallen) && x.note(`+${V.encofrado.escudo * r.fallen} de Escudo`) },
   { id: 'casco', name: 'Yelmo', desc: 'Cada guardia abatido: +{vida} de Vida.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.heal += V.casco.vida * r.fallen) && x.note(`+${V.casco.vida * r.fallen} de Vida`) },
   { id: 'puntales', name: 'Baraja de reserva', desc: 'Cuando se agota el Mazo, pierdes {vida} de Vida menos.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.collapseLoss = Math.max(0, c.collapseLoss - V.puntales.vida)) },
@@ -96,11 +97,23 @@ export const TOOLS: ToolDef[] = [
   { id: 'taladro', name: 'Lanza', desc: 'Todos tus golpes Perforan, lleven o no ♠.', rarity: 'oficio', arch: 'base', kind: 'p', cfg: (c) => void (c.alwaysPierce = true) },
   { id: 'estandarte', name: 'Estandarte', desc: '+{multi} de Multi con color o escalera de color.', rarity: 'oficio', arch: 'base', kind: 'r', strike: (x) => (x.formation === 'color' || x.formation === 'escaleracolor') && x.R(V.estandarte.multi) },
   { id: 'dados', name: 'Dados cargados', desc: '+{multi} de Multi con doble par o full.', rarity: 'oficio', arch: 'base', kind: 'r', strike: (x) => (x.formation === 'doblepar' || x.formation === 'full') && x.R(V.dados.multi) },
-  { id: 'dinamita', name: 'Barril de pólvora', desc: 'La ventaja de palo multiplica ×3 en vez de ×2.', rarity: 'capataz', arch: 'base', box: 'sismo', kind: 'p', cfg: (c) => void (c.advMult = (c.advMult ?? 2) + 1) },
-  { id: 'acido', name: 'Gota de veneno', desc: 'Ningún trono es Inmune: tus cartas pegan ×1 contra el trono de su palo.', rarity: 'capataz', arch: 'base', kind: 'p', cfg: (c) => void (c.ownMult = 1) },
+  {
+    id: 'dinamita',
+    name: 'Barril de pólvora',
+    desc: 'Cada guardia abatido: los otros tronos reciben {dano}.',
+    rarity: 'capataz',
+    arch: 'base',
+    box: 'sismo',
+    kind: 'p',
+    after: (x, _, r) => {
+      for (const f of r.fell) for (const t of Object.values(x.env.towers)) if (t.suit !== f.tower && t.floors.length) x.burst.push({ tower: t.suit, n: V.dinamita.dano });
+      if (r.fallen > 0) x.note(`${V.dinamita.dano * r.fallen} a los otros tronos`);
+    },
+  },
+  { id: 'acido', name: 'Gota de veneno', desc: 'Ningún trono es Inmune: contra el trono de su palo, tus cartas hacen su Daño.', rarity: 'capataz', arch: 'base', kind: 'p', cfg: (c) => void (c.ownMult = 1) },
   { id: 'andamio', name: 'Guantelete', desc: '+{cartas} carta en la mano.', rarity: 'capataz', arch: 'base', box: 'aguante', kind: 'p', cfg: (c) => hand(c, V.andamio.cartas) },
   { id: 'pasarela', name: 'Manga doble', desc: '+1 hueco en La Manga: guardas dos cartas aparte de la mano.', rarity: 'capataz', arch: 'base', kind: 'p', cfg: (c) => void (c.reserveSize = (c.reserveSize ?? 1) + 1) },
-  { id: 'contrapeso', name: 'Máscara de traidor', desc: 'Inmune se invierte: las cartas del palo del trono pegan con ventaja contra él.', rarity: 'reliquia', arch: 'base', kind: 'p', cfg: (c) => void (c.ownMult = c.advMult ?? 2) },
+  { id: 'contrapeso', name: 'Máscara de traidor', desc: 'Inmune se invierte: contra el trono de su palo, tus cartas hacen el doble de Daño.', rarity: 'reliquia', arch: 'base', kind: 'p', cfg: (c) => void (c.ownMult = 2) },
   { id: 'sordina', name: 'Pócima de sueño', desc: 'El Ataque de todos los guardias baja {ataque}.', rarity: 'capataz', arch: 'base', box: 'limite', kind: 'p', cfg: (c) => void [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] - V.sordina.ataque))) },
   { id: 'plano_maestro', name: 'Llave maestra', desc: '×{multi} de Multi en el primer golpe contra cada guardia.', rarity: 'reliquia', arch: 'base', box: 'precision', kind: 'x', strike: (x) => x.env.towers[x.target].damage === 0 && x.X(V.plano_maestro.multi) },
 
@@ -111,14 +124,14 @@ export const TOOLS: ToolDef[] = [
   {
     id: 'calibre',
     name: 'Compás',
-    desc: 'Gana +{multi} de Multi para siempre con cada Golpe exacto.',
+    desc: 'Gana +{dano} de Daño para siempre con cada Golpe exacto.',
     rarity: 'oficio',
     arch: 'precision',
     box: 'precision',
-    kind: 'r',
-    strike: (x, self) => x.R(V.calibre.multi * self.n),
+    kind: 'f',
+    strike: (x, self) => x.F(V.calibre.dano * self.n),
     after: (x, self, r) => r.clean && ++self.n && x.note('crece'),
-    count: (self) => `+${(V.calibre.multi * self.n).toFixed(2).replace(/0$/, '').replace('.', ',')}`,
+    count: (self) => `+${V.calibre.dano * self.n}`,
   },
   {
     id: 'cizalla',
@@ -135,7 +148,7 @@ export const TOOLS: ToolDef[] = [
   },
 
   // ───────── sismo y vibración ─────────
-  { id: 'metralla', name: 'Collar roto', desc: 'Salpica hace la mitad de tus ♦ en vez de un tercio.', rarity: 'oficio', arch: 'sismo', kind: 'p', cfg: (c) => void (c.shardDiv = 2) },
+  { id: 'metralla', name: 'Collar roto', desc: 'Cada ♦ salpica +{dano} más a los otros tronos.', rarity: 'oficio', arch: 'sismo', kind: 'p', cfg: (c) => void (c.salpicaPorCarta += V.metralla.dano) },
   { id: 'percutor', name: 'Campana', desc: 'Vuelve a activar la primera carta del golpe.', rarity: 'oficio', arch: 'sismo', kind: 'f', strike: (x) => x.F(x.impacts[0] ?? 0) },
   { id: 'resonador', name: 'Cuerno de guerra', desc: '×{multi} de Multi si juegas {cartas} cartas o más.', rarity: 'capataz', arch: 'sismo', kind: 'x', strike: (x) => x.cards.length >= V.resonador.cartas && x.X(V.resonador.multi) },
   { id: 'diapason', name: 'Espejo de mano', desc: 'Copia la reliquia que tenga a su derecha.', rarity: 'oficio', arch: 'sismo', box: 'sismo', kind: 'copy' },
@@ -158,11 +171,11 @@ export const TOOLS: ToolDef[] = [
   // ───────── alquimia de materiales ─────────
   { id: 'prisma', name: 'Prisma', desc: '+{multi} de Multi por cada carta del golpe que comparta palo con otra (hasta +{tope}).', rarity: 'oficio', arch: 'alquimia', kind: 'r', strike: (x) => x.R(Math.min(V.prisma.tope, V.prisma.multi * x.cards.filter((c) => x.cards.some((o) => o !== c && o.suit === c.suit)).length)) },
   { id: 'mosaico', name: 'Vitral', desc: '+{dano} de Daño si el golpe mezcla 3 palos o más.', rarity: 'oficio', arch: 'alquimia', box: 'alquimia', kind: 'f', strike: (x) => x.poly && x.F(V.mosaico.dano) },
-  { id: 'crisol', name: 'Caldero', desc: 'La Brecha multiplica ×{multi}, y los golpes de 3 palos también dejan Brecha.', rarity: 'capataz', arch: 'alquimia', box: 'alquimia', kind: 'p', cfg: (c) => void ((c.fracturaMult = V.crisol.multi), (c.polyFractura = true)) },
-  { id: 'catalizador', name: 'Piedra filosofal', desc: '×{multi} de Multi por cada trono con Brecha, En guardia o Desarmado ×1 (se suman).', rarity: 'reliquia', arch: 'alquimia', box: 'alquimia', kind: 'x', strike: (x) => x.X(1 + (V.catalizador.multi - 1) * fx(x)) },
+  { id: 'crisol', name: 'Caldero', desc: 'Expuesto hace ×{multi} de Daño en vez de ×{base}, y los golpes de 3 palos también dejan Expuesto.', rarity: 'capataz', arch: 'alquimia', box: 'alquimia', kind: 'p', cfg: (c) => void ((c.expuestoMult = V.crisol.multi), (c.polyExpuesto = true)) },
+  { id: 'catalizador', name: 'Piedra filosofal', desc: '+{multi} de Multi por cada trono Expuesto o Aturdido.', rarity: 'reliquia', arch: 'alquimia', box: 'alquimia', kind: 'r', strike: (x) => x.R(V.catalizador.multi * fx(x)) },
 
   // ───────── búnker al límite ─────────
-  { id: 'sismografo', name: 'Vela gastada', desc: '+{multi} de Multi por cada punto de Vida que te falte.', rarity: 'oficio', arch: 'limite', kind: 'r', strike: (x) => x.R(V.sismografo.multi * Math.max(0, x.cfg.maxIntegrity - x.env.integrity)) },
+  { id: 'sismografo', name: 'Vela gastada', desc: '+{dano} de Daño por cada punto de Vida que te falte.', rarity: 'oficio', arch: 'limite', kind: 'f', strike: (x) => x.F(V.sismografo.dano * Math.max(0, x.cfg.maxIntegrity - x.env.integrity)) },
   { id: 'megafono', name: 'Rosa de espinas', desc: 'Cuando un Contraataque te quita Vida, el trono que atacó recibe {dano}.', rarity: 'oficio', arch: 'limite', box: 'limite', kind: 'p', siren: (h, _, s) => s.taken > 0 && h.hit(s.tower, V.megafono.dano) },
   {
     id: 'piquete',
@@ -206,7 +219,7 @@ export const TOOLS: ToolDef[] = [
   { id: 'montacargas', name: 'Urna de cenizas', desc: '+{dano} de Daño por cada carta quemada en la campaña.', rarity: 'oficio', arch: 'trituradora', kind: 'f', strike: (x) => x.F(V.montacargas.dano * x.env.scrap) },
   { id: 'horno', name: 'Fuelle', desc: '+{oro} de oro cada vez que arde una carta en un asalto (Brasero, Cristal maldito).', rarity: 'comun', arch: 'trituradora', box: 'trituradora', kind: 'p', burn: (h) => h.gold(V.horno.oro) },
   { id: 'contenedor', name: 'Cofre cerrado', desc: 'Lo que descartas no vuelve en este asalto, y cada carta da +{dano} de Daño a tu próximo golpe.', rarity: 'oficio', arch: 'trituradora', box: 'trituradora', kind: 'p', cfg: (c) => void (c.discardExhaust = (c.discardExhaust ?? 0) + V.contenedor.dano) },
-  { id: 'prensa', name: 'Cetro de ceniza', desc: '×{x1} de Multi por cada carta quemada en la campaña (se suman: 4 cartas, ×{x4}).', rarity: 'capataz', arch: 'trituradora', box: 'trituradora', kind: 'x', strike: (x) => x.X(1 + V.prensa.multi * x.env.scrap) },
+  { id: 'prensa', name: 'Cetro de ceniza', desc: '×{multi} de Multi si en la campaña ya ardieron {cartas} cartas o más.', rarity: 'capataz', arch: 'trituradora', box: 'trituradora', kind: 'x', strike: (x) => x.env.scrap >= V.prensa.cartas && x.X(V.prensa.multi) },
   // ── aguante: la defensa se cobra en daño ──
   { id: 'ariete', name: 'Ariete', desc: '+{dano} de Daño por cada punto de Escudo en pie.', rarity: 'oficio', arch: 'aguante', box: 'aguante', kind: 'f', loud: true, strike: (x) => x.env.wall > 0 && x.F(V.ariete.dano * x.env.wall) },
   {
@@ -229,13 +242,13 @@ export const TOOLS: ToolDef[] = [
     kind: 'p',
     cfg: (c) => void ((c.overhealCharge = (c.overhealCharge ?? 0) + V.rebosadero.dano), (c.overwallRepair = V.rebosadero.escudo)),
   },
-  { id: 'bastion', name: 'Baluarte', desc: '×{multi} de Multi con el Escudo al 50 % de su tope o más.', rarity: 'capataz', arch: 'aguante', box: 'aguante', kind: 'x', strike: (x) => x.env.wall > 0 && x.env.wall * 2 >= x.cfg.wallCap && x.X(V.bastion.multi) },
+  { id: 'bastion', name: 'Baluarte', desc: '+{multi} de Multi si tu Escudo está a la mitad de su tope o por encima.', rarity: 'capataz', arch: 'aguante', box: 'aguante', kind: 'r', strike: (x) => x.env.wall > 0 && x.env.wall * 2 >= x.cfg.wallCap && x.R(V.bastion.multi) },
 ];
 /** Cifras derivadas que algunas plantillas enseñan (ejemplos ya calculados). */
 const DERIVED: Record<string, Record<string, number>> = {
   timbre: { sellos: BALANCE.timbre.stamps },
-  prensa: { x1: 1 + V.prensa.multi, x4: 1 + 4 * V.prensa.multi },
   contragolpe: { ej: 4 * V.contragolpe.factor },
+  crisol: { base: BALANCE.golpe.expuesto },
 };
 for (const t of TOOLS) t.desc = fill(t.desc, { ...relic(t.id), ...DERIVED[t.id] });
 export const TOOL: Record<string, ToolDef> = Object.fromEntries(TOOLS.map((t) => [t.id, t]));

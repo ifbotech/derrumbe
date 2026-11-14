@@ -5,6 +5,7 @@ import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } 
 import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, LAST_STAGE, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FATIGUE } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
+import { BALANCE } from '../src/rules/balance-config';
 
 const P = [{ id: 'a', name: 'A' }];
 const act = (run: Run, a: RunAction) => expect(runAction(run, a), JSON.stringify(a)).toBeNull();
@@ -692,10 +693,10 @@ describe('niveles de obra y maestría', () => {
     const harder = stageConfig(at(1, 3)).floorHp[13] / base.floorHp[13]; // 2 · hormigón armado: +5 % (con el redondeo a enteros)
     expect(harder).toBeGreaterThan(1.03);
     expect(harder).toBeLessThan(1.07);
-    // 4 · vigas maestras: K apuntaladas, pero solo en las obras con jefe (la 5 lo es; la 4 no)
-    expect(stageConfig(at(2, 5)).apuntalado).toBeUndefined();
-    expect(stageConfig(at(3, 5)).apuntalado).toEqual([13]);
-    expect(stageConfig(at(3, 4)).apuntalado).toBeUndefined();
+    // 4 · reyes acorazados: los Reyes con más Vida, pero solo en los asaltos con monarca (el 5 lo es; el 4 no)
+    expect(stageConfig(at(3, 5)).floorHp[13]).toBeGreaterThan(stageConfig(at(2, 5)).floorHp[13]);
+    expect(stageConfig(at(3, 4)).floorHp[13]).toBe(stageConfig(at(2, 4)).floorHp[13]);
+    expect(stageConfig(at(3, 5)).floorHp[11]).toBe(stageConfig(at(2, 5)).floorHp[11]);
     // 5 · sirena afinada: solo las K
     expect(stageConfig(at(3, 3)).floorThreat[13]).toBe(base.floorThreat[13]);
     expect(stageConfig(at(4, 3)).floorThreat[13]).toBe(base.floorThreat[13] + 1);
@@ -710,8 +711,8 @@ describe('niveles de obra y maestría', () => {
     for (const r of [11, 12, 13]) expect(stageConfig(at(7, 8)).floorThreat[r]).toBe(stageConfig(at(6, 8)).floorThreat[r] + 1);
     expect(stageConfig(at(7, 7)).floorThreat[11]).toBe(stageConfig(at(6, 7)).floorThreat[11]);
     expect(stageConfig(at(7, 3)).floorThreat[11]).toBe(stageConfig(at(6, 3)).floorThreat[11]);
-    // ningún nivel alarga las obras con jefe más que el hormigón armado
-    expect(stageConfig(at(7, 3)).floorHp[13]).toBe(stageConfig(at(1, 3)).floorHp[13]);
+    // en los asaltos con monarca solo alargan las corazas y los Reyes acorazados (V11)
+    expect(stageConfig(at(7, 3)).floorHp[13]).toBe(Math.round(stageConfig(at(1, 3)).floorHp[13] * BALANCE.reinados.reyesAcorazados));
   });
 
   it('3 · precios de obra: la ferretería cuesta 2 más; al terminar una obra el búnker se repara 4', () => {
