@@ -19,6 +19,7 @@
     "simulate:run": "tsx scripts/simulate-run.ts",
     "docs": "tsx scripts/reglas.ts",
     "analyze:meta": "tsx scripts/analyze-meta.ts",
+    "balance:tune": "tsx scripts/auto-balance.ts",
     "qa:visual": "tsx scripts/visual-qa.ts",
     "qa:smoke": "tsx scripts/smoke.ts",
     "qa:fps": "tsx scripts/fps.ts",

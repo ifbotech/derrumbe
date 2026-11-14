@@ -2,6 +2,7 @@
 // El juego en solitario no la necesita: si esta instalación no tiene servidor (versión estática,
 // escritorio sin conexión), simplemente no se abre y el cooperativo queda apagado.
 import type { ClientMsg, ServerMsg } from '../shared/protocol';
+import { stateHash } from '../rules/state-hash';
 import { applyRun } from './campaign';
 import { $, S, toast } from './core';
 import { applyPing } from './pings';
@@ -106,6 +107,12 @@ function onMsg(msg: ServerMsg): void {
       } else if (S.screen === 'table' && S.shown) renderAll();
       break;
     case 'state':
+      // V9: si lo que llegó no es lo que el servidor resumió, se pide el estado entero y este se descarta
+      if (msg.hash && stateHash(msg.view) !== msg.hash) {
+        sendMsg({ t: 'resync' });
+        toast('Mesa puesta al día con el servidor');
+        break;
+      }
       S.queue.push({ view: msg.view, events: msg.events });
       if (S.screen !== 'table') setScreen('table');
       void pump();

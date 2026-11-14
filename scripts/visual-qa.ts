@@ -43,6 +43,19 @@
 //   guardias  (A3) cada fila de guardia de cada trono entra entera en la caja visible de su trono
 //   piezas    los estados de la V8 (mesa-esquirlas, cartas-lamina, taberna-monedas, mesa-lacre) enseñan
 //             sus piezas, sin filter ni mix-blend-mode y sin los cuadrados viejos .coin y .debris
+//   V9:
+//   placas    (V8-1) en mesa, mesa-mando, mesa-peligro y mesa-cuenta, la placa del golpe (.tower .preview) no
+//             corta ninguna placa del trono (.plates > *) ni su Ataque (.threat), con tolerancia 0 px
+//   bunker    (V8-2) en mesa, mesa-mando y mesa-peligro, donde se ven las barras: cada rótulo («Vida ♥»,
+//             «Escudo 🛡») va justo encima de su barra (0–8 px) y entre la barra de Vida y el rótulo del
+//             Escudo hay ≥ 12 px
+//   foco      (V8-3) además, en ferreteria-mando: una oferta de La Taberna lleva data-foco, el .focus-ring se
+//             ve y la rodea, mide ≥ 6 px de borde total y su filete de papel da ≥ 3:1 contra el fondo
+//   feedback  en la Crónica (acta, acta-derrota, acta-victoria, acta-feedback) y en Ajustes (ajustes,
+//             ajustes-prueba): el botón «Enviar Crónica / Feedback de Prueba» con ese texto, activo, con su
+//             línea role="status" que dice lo que va a pasar según la compilación; ninguna casilla; en
+//             acta-feedback la confirmación a la vista; en ajustes-prueba la fila «Datos de prueba» con
+//             «2 campañas · X kB, guardadas en este equipo», «Ver» y «Borrar»
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -55,7 +68,7 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
 const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
@@ -641,6 +654,94 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       }
       const score = union('#score > *');
       if (score && Math.min(r.right, score.r) - Math.max(r.left, score.l) > 2 && Math.min(r.bottom, score.b) - Math.max(r.top, score.t) > 2) fail('foco', 'la carta enfocada pisa la cuenta', card);
+    }
+  }
+
+  // ───────── placas (V9 · V8-1): la placa del golpe no pisa las placas del trono ni su Ataque ─────────
+  if (['mesa', 'mesa-mando', 'mesa-peligro', 'mesa-cuenta'].includes(opts.state)) {
+    const cut = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0;
+    const tags = [...document.querySelectorAll<HTMLElement>('.tower .preview')].filter(visible);
+    if (!tags.length) fail('placas', 'no hay ninguna placa de golpe (.tower .preview) a la vista para comprobar');
+    for (const p of tags) {
+      const tower = p.closest('.tower')!;
+      const suit = tower.getAttribute('data-suit') ?? '?';
+      const r = p.getBoundingClientRect();
+      for (const plate of tower.querySelectorAll<HTMLElement>('.plates > *')) if (visible(plate) && cut(r, plate.getBoundingClientRect())) fail('placas', `trono ${suit}: la placa del golpe «${p.textContent?.trim()}» pisa la placa «${plate.textContent?.trim()}»`, p);
+      const atk = tower.querySelector<HTMLElement>('.threat');
+      if (atk && visible(atk) && cut(r, atk.getBoundingClientRect())) fail('placas', `trono ${suit}: la placa del golpe pisa el Ataque del trono`, p);
+    }
+  }
+
+  // ───────── bunker (V9 · V8-2): «Tu Vida», cada rótulo encima de su barra ─────────
+  if (['mesa', 'mesa-mando', 'mesa-peligro'].includes(opts.state) && !opts.mobile) {
+    const bar = (id: string) => document.getElementById(id);
+    const label = (id: string) => document.getElementById(id)?.closest('.stat') ?? null;
+    const [ib, wb, il, wl] = [bar('int-blocks'), bar('wall-blocks'), label('int-num'), label('wall-num')];
+    if (!ib || !wb || !il || !wl || !visible(ib) || !visible(wb) || !visible(il) || !visible(wl)) fail('bunker', 'no se ven las dos barras de «Tu Vida» con sus rótulos');
+    else {
+      const [b1, b2, l1, l2] = [ib, wb, il, wl].map((e) => e.getBoundingClientRect());
+      const g1 = b1.top - l1.bottom;
+      const g2 = b2.top - l2.bottom;
+      const g3 = l2.top - b1.bottom;
+      if (g1 < -0.5 || g1 > 8.5) fail('bunker', `el rótulo «Vida» no queda justo encima de su barra (${g1.toFixed(1)} px; de 0 a 8)`, il);
+      if (g2 < -0.5 || g2 > 8.5) fail('bunker', `el rótulo «Escudo» no queda justo encima de su barra (${g2.toFixed(1)} px; de 0 a 8)`, wl);
+      if (g3 < 11.5) fail('bunker', `entre la barra de Vida y el rótulo del Escudo hay ${g3.toFixed(1)} px (mínimo 12)`, wl);
+    }
+  }
+
+  // ───────── foco (V9 · V8-3): el marco del mando en La Taberna ─────────
+  if (opts.state === 'ferreteria-mando') {
+    const offer = document.querySelector<HTMLElement>('.run-body.shop .choice[data-foco]');
+    const ring = document.querySelector<HTMLElement>('.focus-ring.on');
+    if (!offer || !visible(offer)) fail('foco', 'ninguna oferta de La Taberna lleva data-foco');
+    else if (!ring || !visible(ring)) fail('foco', 'el marco de foco (.focus-ring) no se ve en La Taberna');
+    else {
+      const o = offer.getBoundingClientRect();
+      const r = ring.getBoundingClientRect();
+      if (r.left > o.left + 0.5 || r.top > o.top + 0.5 || r.right < o.right - 0.5 || r.bottom < o.bottom - 0.5) fail('foco', 'el marco de foco no rodea la oferta enfocada', ring);
+      if (r.left < -1 || r.top < -1 || r.right > W + 1 || r.bottom > H + 1) fail('foco', 'el marco de foco se sale de la ventana', ring);
+      const i = ring.querySelector('i') ?? ring;
+      const cs = getComputedStyle(i);
+      const spreads = [...cs.boxShadow.matchAll(/(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px/g)].map((m) => Math.max(0, Number(m[4])));
+      const edge = parseFloat(cs.borderTopWidth) + spreads.reduce((a, b) => a + b, 0);
+      if (edge < 5.95) fail('foco', `el marco de foco mide ${edge.toFixed(1)} px de borde total (mínimo 6)`, ring);
+      const paper = rgb(cs.borderTopColor);
+      const back = bgOf(offer.parentElement ?? offer);
+      if (paper && back) {
+        const k = ratio(paper, back);
+        if (k < 2.95) fail('foco', `el filete de papel del marco da ${k.toFixed(1)}:1 contra el fondo de La Taberna (mínimo 3:1)`, ring);
+      } else fail('foco', 'no se puede medir el contraste del marco de foco');
+    }
+  }
+
+  // ───────── feedback (V9): «Enviar Crónica / Feedback de Prueba» en la Crónica y en Ajustes ─────────
+  if (['acta', 'acta-derrota', 'acta-victoria', 'acta-feedback', 'ajustes', 'ajustes-prueba'].includes(opts.state)) {
+    const send = scope.querySelector<HTMLButtonElement>('#fb-send');
+    const out = scope.querySelector<HTMLElement>('.fb .fb-estado');
+    if (!send || !visible(send)) fail('feedback', 'falta el botón «Enviar Crónica / Feedback de Prueba»');
+    else {
+      if (send.textContent?.trim() !== 'Enviar Crónica / Feedback de Prueba') fail('feedback', `el botón dice «${send.textContent?.trim()}»`, send);
+      if (send.disabled) fail('feedback', 'el botón está desactivado con una campaña guardada', send);
+    }
+    if (!out || out.getAttribute('role') !== 'status' || !out.textContent?.trim()) fail('feedback', 'la línea de lo que va a pasar no está o no lleva role="status"');
+    else if (!/Nada sale de este equipo|se manda tu última campaña|^(Copiado|Descargado|Compartido|Enviado)/.test(out.textContent.trim())) fail('feedback', `la línea no dice qué va a pasar: «${out.textContent.trim()}»`, out);
+    if (scope.querySelector('.fb input[type="checkbox"], .fb-datos input[type="checkbox"]')) fail('feedback', 'hay una casilla junto al botón de feedback');
+    const issue = scope.querySelector<HTMLElement>('#fb-issue');
+    if (issue && issue.textContent?.trim() !== 'Abrir aviso') fail('feedback', `el botón del aviso dice «${issue.textContent?.trim()}»`, issue);
+    if (opts.state === 'acta-feedback') {
+      const box = scope.querySelector<HTMLElement>('.fb');
+      if (box?.dataset.hecho !== 'copiado' || !/^Copiado: pega el resumen donde quieras/.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pega el resumen donde quieras»');
+    }
+    if (opts.state.startsWith('ajustes')) {
+      const n = opts.state === 'ajustes-prueba' ? 2 : 1;
+      const count = scope.querySelector<HTMLElement>('#fb-cuenta')?.textContent?.trim() ?? '';
+      if (!new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`).test(count)) fail('feedback', `la fila «Datos de prueba» dice «${count}» (se esperaban ${n})`);
+      for (const id of ['fb-ver', 'fb-borrar']) {
+        const b = scope.querySelector<HTMLButtonElement>(`#${id}`);
+        if (!b || !visible(b) || b.disabled) fail('feedback', `falta «${id === 'fb-ver' ? 'Ver' : 'Borrar'}» en la fila «Datos de prueba»`);
+      }
+      const plain = scope.querySelector<HTMLElement>('.fb-llana')?.textContent?.trim() ?? '';
+      if (!/^(Nada sale de este equipo: el botón copia o descarga\.|Al pulsar Enviar se manda tu última campaña, y nada más\.)$/.test(plain)) fail('feedback', `la línea llana de «Datos de prueba» dice «${plain}»`);
     }
   }
 

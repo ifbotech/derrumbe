@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Action, GameEvent, GameState, RuleError, applyAction, viewFor } from '../src/rules/engine';
 import { chooseAction } from '../src/rules/bot';
-import { TUTORIAL_INTRO, TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../src/rules/tutorial';
+import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../src/rules/tutorial';
 
 const impact = (events: GameEvent[]) => events.find((e): e is Extract<GameEvent, { e: 'impact' }> => e.e === 'impact')!;
 const visible = (s: string) => s.replace(/<\/?b>/g, '');
@@ -26,12 +26,10 @@ function followFocus(): { s: GameState; actions: number; doneAt: number[]; log: 
 describe('partida guiada de cinco pasos', () => {
   it('cinco pasos con id estable, en orden, de una línea', () => {
     expect(TUTORIAL_STEPS.map((p) => p.id)).toEqual(['palo', 'inmune', 'manga', 'cuenta', 'exacto']);
-    expect(TUTORIAL_INTRO).toEqual([]);
     for (const p of TUTORIAL_STEPS) {
       expect(p.line.length, p.id).toBeLessThanOrEqual(60);
       expect(p.line, p.id).not.toMatch(/\n/);
       expect(p.line.replace(/<b>[^<]*<\/b>/, ''), `${p.id}: solo un <b>`).not.toMatch(/<[^>]+>/);
-      expect(p.say).toBe(p.line);
       expect(p.title.length).toBeGreaterThan(0);
     }
     expect(TUTORIAL_STEPS.map((p) => p.focus)).toEqual(['cards', { ui: 'inmune' }, { ui: 'manga' }, { ui: 'cuenta' }, 'target']);

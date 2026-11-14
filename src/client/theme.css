@@ -1206,3 +1206,46 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
   .qa-laminas figure { font-size: 14px; }
   .qa-laminas .card { --w: min(43vw, 26vh); }
 }
+
+/* ───────────── V9 · placas de la cabecera del trono y «Tu Vida» ─────────────
+   V8-1: la placa del golpe («−n CAE») vive dentro del hueco de la carta (.floor-slot), justo bajo la fila
+   de placas de inmunidad y ventaja: ya no pisa «♣×3» ni el Ataque del rótulo. En móvil sigue a media carta.
+   V8-2: cada rótulo («Vida ♥», «Escudo 🛡») va encima de su barra; entre la barra de Vida y el rótulo del
+   Escudo queda aire (≥ 12 px) para que no se lean juntos. */
+@media (min-aspect-ratio: 1/1) and (min-width: 641px) {
+  .floor-slot > .preview { top: calc(var(--plate-h) + 5px); right: -3px; }
+}
+@media (min-aspect-ratio: 1/1) and (min-width: 641px) and (min-height: 481px) {
+  .bunker .stat { margin-bottom: clamp(3px, 0.5vh, 5px); }
+  .bunker .stat-wall { margin-top: clamp(12px, 1.8vh, 16px); }
+}
+
+/* ───────────── V9 · «Enviar Crónica / Feedback de Prueba» (Crónica y Ajustes) ─────────────
+   Un bloque de latón y tinta: el botón grande, «Abrir aviso» a su lado y, debajo, lo que va a pasar o lo
+   que pasó (role="status"). Sin casillas ni envíos al abrir. */
+.fb { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; padding: 10px 12px; margin: 4px 0 10px; border: 3px solid var(--ink); background: var(--paper-2); box-shadow: 0 4px 0 var(--ink); text-transform: none; }
+.fb button { margin: 0; min-height: 48px; }
+.fb .fb-send { --bg: var(--hazard); color: var(--ink); font-size: clamp(15px, 2vh, 18px); font-weight: 800; letter-spacing: 0.01em; line-height: 1.15; padding: 8px 14px; white-space: normal; }
+.fb .fb-send:hover:not(:disabled) { --bg: var(--ink); color: var(--hazard); }
+.fb .fb-send[aria-busy='true'] { opacity: 0.7; }
+.fb .fb-issue { font-size: clamp(13px, 1.6vh, 15px); min-width: 44px; }
+.fb .fb-estado { grid-column: 1 / -1; margin: 0; font-family: var(--mono); font-weight: 700; font-size: clamp(13px, 1.6vh, 15px); line-height: 1.3; color: var(--ink); }
+.fb[data-hecho] .fb-estado { padding-left: 10px; border-left: 5px solid var(--ink); }
+.fb[data-hecho='enviado'] .fb-estado, .fb[data-hecho='compartido'] .fb-estado, .fb[data-hecho='copiado'] .fb-estado, .fb[data-hecho='descargado'] .fb-estado { border-left-color: var(--hazard); }
+.acta-sheet .fb { margin: 2px 0 0; }
+.fb-datos > div > span { display: block; }
+.fb-datos .fb-llana { font-weight: 700; }
+.fb-ver { max-width: 760px; text-transform: none; }
+.fb-ver p { margin: 0 0 8px; font-size: clamp(13px, 1.6vh, 15px); }
+.fb-ver textarea { display: block; width: 100%; min-height: min(56vh, 520px); padding: 8px 10px; resize: vertical; font-family: var(--mono); font-size: 13px; line-height: 1.35; color: var(--ink); background: var(--card-paper); border: 2px solid var(--ink); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .fb { grid-template-columns: minmax(0, 1fr); padding: 8px; }
+  .fb .fb-send { font-size: 16px; min-height: 52px; }
+  .fb .fb-estado, .fb-ver p { font-size: 14px; }
+  .fb-ver textarea { font-size: 14px; min-height: 60vh; }
+}
+
+/* V9 · en la mesa, los avisos (p. ej. «Mesa puesta al día con el servidor») salen arriba, pequeños y bajo la
+   barra: no tapan la mano ni la cuenta. Solo transform en su entrada y salida. */
+body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padding: 5px 12px; font-size: clamp(14px, 1.8vh, 17px); max-width: calc(100vw - 32px); animation-name: toast-arriba; }
+@keyframes toast-arriba { 0% { transform: translate(-50%, -90px); } 6%, 90% { transform: translate(-50%, 0); } 100% { transform: translate(-50%, -120px); } }

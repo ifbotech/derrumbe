@@ -17,6 +17,7 @@ import { ferreteroSays, renderRun } from './runscreens';
 import { logLine, pump, renderBelt, renderHud, renderInteractive } from './table';
 import { choice, toolTile } from './widgets';
 import { platform } from './platform';
+import { noteRun } from './telemetry';
 
 const RUN_KEY = 'derrumbe:run';
 const DECK_KEY = 'derrumbe:deck';
@@ -36,6 +37,7 @@ export function savedCampaign(): Campaign | null {
 export function saveCampaign(): void {
   const c = S.campaign;
   if (!c || c.online) return;
+  noteRun(c.run); // juice-ux: datos de prueba, solo en este equipo
   if (c.run.phase === 'lost') platform.remove(RUN_KEY);
   else platform.save(RUN_KEY, JSON.stringify(c));
 }
@@ -133,6 +135,7 @@ export function runDo(a: RunAction): void {
 export function applyRun(run: Run): void {
   const prev = S.campaign?.online ? S.campaign.run : null;
   S.campaign = { run, online: true, state: null, key: `sala:${run.id}` };
+  noteRun(run, S.lobby?.players.length); // juice-ux: datos de prueba, solo en este equipo
   routeRun(prev);
 }
 

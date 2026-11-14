@@ -5,6 +5,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formation, MATERIAL, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { ACHIEVEMENTS, unlocksOf } from '../src/rules/achievements';
+import { BALANCE } from '../src/rules/balance-config';
 import { KEYWORDS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECK, DECKS, EVENTS, EVENT_AFTER, FATIGUE, LAST_STAGE, MIN_DECK, STAGES, TAGS, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
@@ -100,9 +101,9 @@ Además de su Daño, las cartas de cada palo activan su poder (aunque no sumen n
 Abatir a un guardia con un Golpe **igual a su Vida** es la jugada maestra del juego (¡EXACTO!). Cuando lo consigues:
 
 - **no hay Contraataque** ese turno,
-- cobras **1 de oro** y **robas 1 carta** de más,
+- cobras **${BALANCE.golpe.oroExacto} de oro** y **robas 1 carta** de más,
 - el guardia siguiente pierde **un cuarto de su Vida** (el **Impulso** del golpe),
-- y empiezas una **Racha**: tu próximo golpe lleva +0,5 de Multi por cada Golpe exacto seguido (hasta +2). La Racha se corta si el golpe no es exacto.
+- y empiezas una **Racha**: tu próximo golpe lleva +${n(BALANCE.golpe.racha)} de Multi por cada Golpe exacto seguido (hasta +2). La Racha se corta si el golpe no es exacto.
 
 La mesa te lo avisa antes de golpear: la previsualización de cada trono dice si el golpe sería exacto.
 
@@ -127,7 +128,7 @@ La mesa te lo avisa antes de golpear: la previsualización de cada trono dice si
 
 ## Campaña
 
-Un roguelike de construcción de mazo: **${LAST_STAGE} asaltos** cada vez más duros, una sala del castillo cada uno, ${STAGES.filter((s) => s.boss).length} de ellos con **monarca**. Empiezas con un Sobre lacrado de 3 cartas especiales y 4 de oro; entre asalto y asalto mejoras el Mazo y tus reliquias. La Vida base de los guardias es 20 / 30 / 40 y cada asalto la multiplica.
+Un roguelike de construcción de mazo: **${LAST_STAGE} asaltos** cada vez más duros, una sala del castillo cada uno, ${STAGES.filter((s) => s.boss).length} de ellos con **monarca**. Empiezas con un Sobre lacrado de ${BALANCE.inicio.sobre} cartas especiales y ${BALANCE.inicio.oro} de oro; entre asalto y asalto mejoras el Mazo y tus reliquias. La Vida base de los guardias es ${[11, 12, 13].map((r) => BALANCE.mesa.floorHp[r]).join(' / ')} y cada asalto la multiplica.
 
 ${table(['Asalto', 'Sala', 'Guardias por trono', 'Vida', 'Ataque', 'Monarca'], STAGES.map((s, i) => [String(i + 1), s.name, s.floors.map((r) => GUARD[r - 11]).join(', '), `×${n(s.hp)}`, s.threat === 0 ? 'base' : s.threat > 0 ? `+${s.threat}` : String(s.threat), s.boss ? 'sí' : '—']))}
 
@@ -154,7 +155,7 @@ ${table(['Monarca', 'Decreto', 'Efecto'], BOSSES.map((b) => [b.who, b.name, b.de
 
 ### El Botín
 
-Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada 5 de oro guardado), recuperas 4 de Vida y eliges **una de tres opciones a la vista** —dos cartas especiales y una carta de baraja ya marcada con un sello de lacre o un acabado— o pasas a cambio de 3 de oro.
+Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada ${BALANCE.cobro.interesCada} de oro guardado), recuperas ${BALANCE.cobro.curaTrasAsalto} de Vida y eliges **una de tres opciones a la vista** —dos cartas especiales y una carta de baraja ya marcada con un sello de lacre o un acabado— o pasas a cambio de ${BALANCE.cobro.sinSeleccion} de oro.
 
 ### La Taberna
 
@@ -165,7 +166,7 @@ Lo atiende el Tratante.
 - **Sobre a ciegas**: una especial sin verla, más barata.
 - **Mesa de lacre**: pone el sello de lacre o el acabado en oferta sobre la carta de tu Mazo que elijas.
 - **Pergamino**: sube de nivel una formación.
-- **Curar** (+6 de Vida), **La hoguera** (quema una carta; el Mazo no baja de ${MIN_DECK}) y **Renovar mesa** (cambia lo que hay en oferta), los tres con coste creciente.
+- **Curar** (+${BALANCE.taberna.curar.vida} de Vida), **La hoguera** (quema una carta; el Mazo no baja de ${MIN_DECK}) y **Renovar mesa** (cambia lo que hay en oferta), los tres con coste creciente.
 
 ### Secretos de la cripta
 

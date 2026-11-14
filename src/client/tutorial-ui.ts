@@ -15,6 +15,7 @@ import { setScreen } from './router';
 import { pump } from './table';
 import { showRules } from './widgets';
 import { platform } from './platform';
+import { noteGuide } from './telemetry';
 
 const TUTO_KEY = 'derrumbe:tutorial';
 /** Pausa entre el foco de un paso cumplido y el del siguiente (ms). */
@@ -25,7 +26,8 @@ export const tutorialDone = () => platform.load(TUTO_KEY) === '1';
 export const guidedStep = (): TutorialStep | null => (S.tutorial && S.tutorial.mode === 'do' ? (TUTORIAL_STEPS[S.tutorial.step] ?? null) : null);
 
 export function startTutorial(then?: () => void): void {
-  S.tutorial = { state: createTutorial(), step: 0, intro: 0, mode: 'do', then };
+  S.tutorial = { state: createTutorial(), step: 0, mode: 'do', then };
+  noteGuide('start'); // datos de prueba: cuánto dura la partida guiada
   S.campaign = null;
   S.session = null;
   S.lobby = null;
@@ -42,6 +44,7 @@ export function startTutorial(then?: () => void): void {
 /** Salta el tutorial previo a la primera campaña y sigue con ella. */
 export function skipTutorial(): void {
   const go = S.tutorial?.then;
+  if (S.tutorial) noteGuide('saltada', S.tutorial.state.turnCount);
   platform.save(TUTO_KEY, '1');
   clearSpotlight();
   S.tutorial = null;
@@ -53,6 +56,7 @@ export function leaveTutorial(): void {
   if (!S.tutorial) return;
   sfx.select(1, false);
   if (S.tutorial.then) return skipTutorial();
+  noteGuide('saltada', S.tutorial.state.turnCount);
   platform.save(TUTO_KEY, '1');
   clearSpotlight();
   forget();
@@ -136,6 +140,7 @@ export function showTutorialEnd(): void {
   clearSpotlight();
   const won = v.phase === 'won';
   won ? sfx.win() : sfx.lose();
+  noteGuide(won ? 'victoria' : 'derrota', v.turnCount);
   const then = S.tutorial?.then;
   const el = document.createElement('div');
   el.className = `end ${won ? 'won' : 'lost'}`;

@@ -60,12 +60,6 @@ export function createTutorial(): GameState {
   };
 }
 
-/**
- * @deprecated Desde la 7.0 la partida guiada no tiene ventanas de texto: la enseñanza va en los pasos.
- * Queda vacía para que el cliente viejo compile; se retira en la V9.
- */
-export const TUTORIAL_INTRO: { title: string; text: string }[] = [];
-
 /** Qué señala el foco de un paso: las cartas del paso, el trono objetivo o una pieza de la mesa. */
 export type TutorialFocus = 'cards' | 'target' | { ui: 'manga' | 'cuenta' | 'inmune' };
 
@@ -79,13 +73,9 @@ export interface TutorialStep {
   done(view: PlayerView, events: GameEvent[]): boolean;
   /** Título corto del paso. */
   title: string;
-  /** @deprecated Igual a `line`. Se retira en la V9. */
-  say: string;
   /** Jugada que sugiere el foco: cartas y trono. En `manga`, la carta que se guarda. */
   cards?: string[];
   target?: Suit;
-  /** @deprecated Sin uso desde la 7.0 (la mesa ya enseña lo que pasó). */
-  after?: string;
 }
 
 const played = (events: GameEvent[]) => events.find((e): e is Extract<GameEvent, { e: 'play' }> => e.e === 'play');
@@ -117,7 +107,6 @@ const line = (id: TutorialStep['id'], title: string, text: string, focus: Tutori
   focus,
   done,
   title,
-  say: text,
   cards,
   ...(target ? { target } : {}),
 });

@@ -26,6 +26,7 @@ import { guidedStep, leaveTutorial, renderCoach, showTutorialEnd, tutorialAct } 
 import { voiceOn } from './voces';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
 import { tableWhispers, whisper } from './whispers';
+import { noteAction, noteTurn } from './telemetry';
 
 /** Cartas de la mano y del andamio que están pintadas. */
 const cardEls = new Map<string, HTMLDivElement>();
@@ -81,10 +82,11 @@ export function buildTable(): void {
         <div class="panel bunker" id="bunker">
           <h3><span>Tu Vida</span><span id="collapses"></span></h3>
           ${bunkerArt()}
-          <div class="blocks" id="int-blocks"></div>
+          <!-- V9 · V8-2: cada rótulo va encima de su barra (leído de arriba abajo, «Vida» y luego sus celdas) -->
           <div class="stat"><span>Vida ♥</span><b id="int-num"></b></div>
+          <div class="blocks" id="int-blocks"></div>
+          <div class="stat stat-wall"><span>Escudo 🛡</span><b id="wall-num"></b></div>
           <div class="blocks wall" id="wall-blocks"></div>
-          <div class="stat"><span>Escudo 🛡</span><b id="wall-num"></b></div>
           <div class="piles">
             <div class="pile"><div class="slot" id="deck-slot"></div>Mazo <b id="deck-n"></b></div>
             <div class="pile"><div class="slot" id="siren-slot"></div>Contraataque</div>
@@ -205,6 +207,7 @@ const isJoker = (cards: Card[]) => cards.length === 1 && cards[0].suit === 'X' &
 function act(msg: ClientMsg): void {
   if (msg.t !== 'action') return;
   if (S.tutorial) return tutorialAct(msg.action);
+  if (S.campaign) noteAction(msg.action.type); // juice-ux: datos de prueba (duda, La Manga, Rebobinar)
   if (S.campaign && !S.campaign.online) return campaignAct(msg.action);
   S.waiting = true;
   sendMsg(msg);
@@ -670,6 +673,7 @@ export function renderInteractive(): void {
   if (!v || S.screen !== 'table') return;
   renderHand();
   const can = canAct();
+  if (can && S.campaign && !S.tutorial) noteTurn(v); // juice-ux: la duda del turno empieza a contar
   const cards = selCards();
   const joker = isJoker(cards);
   const formation = classify(cards);
@@ -697,7 +701,8 @@ export function renderInteractive(): void {
         tag.classList.toggle('zero', dealt === 0);
         tag.classList.toggle('clean', mine);
       }
-      el.appendChild(tag);
+      // V9 · V8-1: la placa del golpe va dentro del hueco de la carta, bajo la fila de placas (no las pisa)
+      ($('.floor-slot', el) ?? el).appendChild(tag);
     }
   }
   $<HTMLButtonElement>('#btn-discard').disabled = !can || cards.length === 0;
@@ -1254,7 +1259,7 @@ export async function pump(): Promise<void> {
     if (first) lastEvents = [];
     S.shown = batch.view;
     const c = S.campaign;
-    if (first) logLine(S.tutorial ? 'Asalto de prácticas: sigue a la Maestra.' : c ? `Asalto ${c.run.stage}: ${stageDef(c.run.stage).name}.` : `Empieza el asalto. Sala ${S.session?.room ?? ''}.`, 'yel');
+    if (first) logLine(S.tutorial ? 'Asalto de prácticas: sigue los pasos.' : c ? `Asalto ${c.run.stage}: ${stageDef(c.run.stage).name}.` : `Empieza el asalto. Sala ${S.session?.room ?? ''}.`, 'yel');
     const res = $('#reserve');
     if (res) res.dataset.key = '';
     renderAll();

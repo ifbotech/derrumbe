@@ -7,6 +7,7 @@
 //                     monarca) ] × 8 → Trono infinito
 // En el código los nombres internos siguen siendo los de antes (stage, boss, contract, shop, event…).
 import { Autopsy, autopsy } from './autopsy';
+import { BALANCE, fill } from './balance-config';
 import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool } from './tools';
@@ -24,15 +25,17 @@ export interface Ascension {
   name: string;
   desc: string;
 }
+/** Cifras de los Reinados (`reinados` y `clausura` de balance-config.json). */
+const REIN = BALANCE.reinados;
 export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
-  { name: 'Corazas finas', desc: 'Todos los guardias tienen un 5 % más de Vida.' },
-  { name: 'Impuesto real', desc: 'Todo en la Taberna cuesta 2 de oro más.' },
+  { name: 'Corazas finas', desc: 'Todos los guardias tienen un {pct} % más de Vida.' },
+  { name: 'Impuesto real', desc: 'Todo en la Taberna cuesta {impuesto} de oro más.' },
   { name: 'Reyes en guardia', desc: 'En los asaltos con monarca, los Reyes llegan En guardia.' },
-  { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube 1.' },
-  { name: 'Heridas viejas', desc: 'Tienes 1 punto menos de Vida.' },
-  { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y las Reinas sube 1.' },
-  { name: 'Puertas selladas', desc: 'Solo en el asalto 8, el Ataque de los cuatro tronos sube 1.' },
+  { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
+  { name: 'Heridas viejas', desc: 'Tienes {heridas} punto menos de Vida.' },
+  { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y las Reinas sube {noche}.' },
+  { name: 'Puertas selladas', desc: 'Solo en el asalto {asaltos}, el Ataque de los cuatro tronos sube {clausura}.' },
 ];
 export const MAX_ASCENSION = ASCENSIONS.length - 1;
 
@@ -52,21 +55,26 @@ export interface StageDef {
  * y casi ninguna pasa de 18): la dificultad sube por la amenaza de la sirena y por la fatiga de cimientos,
  * no por pisos interminables.
  */
-export const STAGES: StageDef[] = [
-  { name: 'El Puente levadizo', floors: [11], hp: 3.93, threat: 2, boss: false },
-  { name: 'El Patio de armas', floors: [11, 12], hp: 2.8, threat: 3, boss: false },
-  { name: 'La Armería', floors: [11, 12], hp: 3.35, threat: 4, boss: true },
-  { name: 'Las Cocinas', floors: [11, 12, 13], hp: 4.05, threat: 5, boss: false },
-  { name: 'La Capilla', floors: [11, 12, 13], hp: 4.5, threat: 5, boss: true },
-  { name: 'La Biblioteca', floors: [11, 12, 13], hp: 5, threat: 6, boss: false },
-  { name: 'La Galería de espejos', floors: [11, 12, 13], hp: 5.3, threat: 5, boss: true },
-  { name: 'El Salón del Trono', floors: [11, 12, 13], hp: 6.25, threat: 6, boss: true },
+const STAGE_DEFS: Omit<StageDef, 'hp' | 'threat'>[] = [
+  { name: 'El Puente levadizo', floors: [11], boss: false },
+  { name: 'El Patio de armas', floors: [11, 12], boss: false },
+  { name: 'La Armería', floors: [11, 12], boss: true },
+  { name: 'Las Cocinas', floors: [11, 12, 13], boss: false },
+  { name: 'La Capilla', floors: [11, 12, 13], boss: true },
+  { name: 'La Biblioteca', floors: [11, 12, 13], boss: false },
+  { name: 'La Galería de espejos', floors: [11, 12, 13], boss: true },
+  { name: 'El Salón del Trono', floors: [11, 12, 13], boss: true },
 ];
+/** Los ocho asaltos: su Vida (`hp`) y su Ataque (`threat`) salen de `asaltos` en balance-config.json. */
+export const STAGES: StageDef[] = STAGE_DEFS.map((s, i) => {
+  const { hp, threat } = BALANCE.asaltos[i];
+  return { name: s.name, floors: s.floors, hp, threat, boss: s.boss };
+});
 /** La obra n. Más allá de la octava empiezan los Cimientos abisales: siempre con jefe y cada vez más duros. */
 export function stageDef(n: number): StageDef {
   if (n <= LAST_STAGE) return STAGES[n - 1];
   const depth = n - LAST_STAGE;
-  return { name: `Trono infinito ${depth}`, floors: [11, 12, 13], hp: Math.round(STAGES[LAST_STAGE - 1].hp * 1.45 ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
+  return { name: `Trono infinito ${depth}`, floors: [11, 12, 13], hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
 }
 /** Tras estas obras aparece un hallazgo en los cimientos. */
 export const EVENT_AFTER = [3, 5, 7];
@@ -97,24 +105,26 @@ export interface BossCurse {
 }
 const eachHand = (c: Config, n: number) => void (c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, Math.max(3, v + n)])));
 const eachThreat = (c: Config, n: number) => void [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + n)));
+/** Cifras de los decretos (`monarcas` de balance-config.json). */
+const MON = BALANCE.monarcas;
 export const BOSSES: Boss[] = [
   {
     id: 'doble',
     who: 'El Rey de Dos Caras',
     name: 'Doble Contraataque',
-    desc: 'Hay 2 Contraataques cada turno, pero cada uno ataca un 40 % menos.',
+    desc: 'Hay {contraataques} Contraataques cada turno, pero cada uno ataca un {pct} % menos.',
     barks: { entrada: '¿Envido? Tengo dos caras y canto con las dos.', contraataque: '¡Retruco! Y cuando te des vuelta, retruco otra vez.', caida: 'Se me dio vuelta el naipe... y por los dos lados.' },
-    curse: { mark: 'contraataque', badge: '2 Contraataques por turno' },
-    apply: (c) => void ((c.sirenCount = 2), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * 0.6))))),
+    curse: { mark: 'contraataque', badge: '{contraataques} Contraataques por turno' },
+    apply: (c) => void ((c.sirenCount = MON.doble.contraataques), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * MON.doble.ataque))))),
   },
   {
     id: 'escasez',
     who: 'El Usurero',
     name: 'Escasez',
-    desc: 'Jugáis con 1 carta menos en la mano.',
+    desc: 'Jugáis con {cartas} carta menos en la mano.',
     barks: { entrada: 'Acá no se fía, querido. Jugá con lo justo y gracias.', contraataque: 'Vengo a cobrar los intereses. ¿Quiero? Siempre quiero.', caida: 'Me dejaron sin un cobre... anotá la deuda, che.' },
-    curse: { mark: 'mano', badge: '1 carta menos en la mano' },
-    apply: (c) => eachHand(c, -1),
+    curse: { mark: 'mano', badge: '{cartas} carta menos en la mano' },
+    apply: (c) => eachHand(c, -MON.escasez.cartas),
   },
   {
     id: 'sequia',
@@ -129,39 +139,45 @@ export const BOSSES: Boss[] = [
     id: 'intemperie',
     who: 'La Reina Helada',
     name: 'Escarcha',
-    desc: 'El Escudo no puede pasar de 4.',
+    desc: 'El Escudo no puede pasar de {escudoTope}.',
     barks: { entrada: 'Abrigate, naipe. En mi mesa ni la manta te tapa entero.', contraataque: 'Quiero retruco, y te lo canto con escarcha en la boca.', caida: 'Me derrito... y vos con las manos tibias. Qué injusto.' },
-    curse: { mark: 'escudo', badge: 'Escudo máx. 4' },
-    apply: (c) => void (c.wallCap = Math.min(c.wallCap, 4)),
+    curse: { mark: 'escudo', badge: 'Escudo máx. {escudoTope}' },
+    apply: (c) => void (c.wallCap = Math.min(c.wallCap, MON.intemperie.escudoTope)),
   },
   {
     id: 'blindaje',
     who: 'El Inquisidor',
     name: 'Guardia de hierro',
-    desc: 'Todos los guardias llegan En guardia y, mientras lo estén, su Ataque sube 1.',
+    desc: 'Todos los guardias llegan En guardia y, mientras lo estén, su Ataque sube {ataque}.',
     barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
-    curse: { mark: 'guardias', badge: 'En guardia: +1 de Ataque' },
-    apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = 1)),
+    curse: { mark: 'guardias', badge: 'En guardia: +{ataque} de Ataque' },
+    apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = MON.blindaje.ataque)),
   },
   {
     id: 'furia',
     who: 'El Verdugo',
     name: 'Furia',
-    desc: 'El Ataque de los cuatro tronos sube 2.',
+    desc: 'El Ataque de los cuatro tronos sube {ataque}.',
     barks: { entrada: 'Afilé el hacha toda la noche. ¡Vale cuatro, y sin piedad!', contraataque: '¡Truco! Y esta vez no me tiembla el pulso.', caida: 'Se me cayó la capucha. Mala mano, la mía.' },
-    curse: { mark: 'ataque', badge: '+2 de Ataque en cada trono' },
-    apply: (c) => eachThreat(c, 2),
+    curse: { mark: 'ataque', badge: '+{ataque} de Ataque en cada trono' },
+    apply: (c) => eachThreat(c, MON.furia.ataque),
   },
   {
     id: 'inestable',
     who: 'El Relojero',
     name: 'Arena rápida',
-    desc: 'El Asedio final empieza 3 turnos antes, y cada guardia abatido sin Golpe exacto te quita 1 de Vida.',
+    desc: 'El Asedio final empieza {antes} turnos antes, y cada guardia abatido sin Golpe exacto te quita {vida} de Vida.',
     barks: { entrada: 'Tic, tac. Cada grano de arena juega de mi lado.', contraataque: 'Se te acaba la arena, compadre. Yo no apuro: espero.', caida: 'Se me paró el reloj... justo a tu hora.' },
-    curse: { mark: 'asedio', badge: 'Asedio final 3 turnos antes' },
-    apply: (c) => void ((c.crumbleHurt = 1), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? 8) - 3))),
+    curse: { mark: 'asedio', badge: 'Asedio final {antes} turnos antes' },
+    apply: (c) => void ((c.crumbleHurt = MON.inestable.vida), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? BALANCE.asedio.start) - MON.inestable.antes))),
   },
 ];
+/** Cifras de cada decreto para su texto y su placa. */
+const BOSS_NUMS: Record<string, Record<string, number>> = { ...MON, doble: { ...MON.doble, pct: Math.round((1 - MON.doble.ataque) * 100) } };
+for (const b of BOSSES) {
+  b.desc = fill(b.desc, BOSS_NUMS[b.id] ?? {});
+  b.curse.badge = fill(b.curse.badge, BOSS_NUMS[b.id] ?? {});
+}
 export const BOSS: Record<string, Boss> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
 
 /** Lo que la mesa necesita para reconocer a un monarca: quién es, su maldición, su voz y su placa. */
@@ -319,7 +335,7 @@ const boxUp = (arch: Arch, name: string, glyph: string): Upgrade => ({
   id: `caja_${arch}`,
   name,
   glyph,
-  costs: [4],
+  costs: BALANCE.orden.costes[`caja_${arch}`],
   desc: `Añade al surtido: ${Object.values(TOOL).filter((t) => t.box === arch).map((t) => t.name).join(', ')}.`,
 });
 export const UPGRADES: Upgrade[] = [
@@ -329,12 +345,12 @@ export const UPGRADES: Upgrade[] = [
   boxUp('limite', 'Arcón del filo', 'megafono'),
   boxUp('trituradora', 'Arcón de cenizas', 'prensa'),
   boxUp('aguante', 'Arcón del escudo', 'ariete'),
-  { id: 'tampones', name: 'Lacres nuevos', desc: 'La Mesa de lacre también ofrece los sellos de pólvora y de la manga.', costs: [5], glyph: 'sello' },
-  { id: 'bronce', name: 'Cristalero real', desc: 'La Mesa de lacre también ofrece Lacre policromo y Cristal maldito.', costs: [6], glyph: 'forja' },
-  { id: 'vale', name: 'Favor del Tratante', desc: 'Un «Renovar mesa» gratis en cada Taberna, por nivel.', costs: [4, 8], glyph: 'cinta' },
-  { id: 'tienda', name: 'Puesto grande', desc: '+1 reliquia en oferta en cada Taberna, por nivel.', costs: [8, 12], glyph: 'andamio' },
-  { id: 'caja', name: 'Bolsa de la Orden', desc: '+2 de oro inicial por nivel.', costs: [3, 6], glyph: 'hucha' },
-  { id: 'rutas', name: 'Cartógrafo', desc: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.', costs: [6], glyph: 'plano' },
+  { id: 'tampones', name: 'Lacres nuevos', desc: 'La Mesa de lacre también ofrece los sellos de pólvora y de la manga.', costs: BALANCE.orden.costes.tampones, glyph: 'sello' },
+  { id: 'bronce', name: 'Cristalero real', desc: 'La Mesa de lacre también ofrece Lacre policromo y Cristal maldito.', costs: BALANCE.orden.costes.bronce, glyph: 'forja' },
+  { id: 'vale', name: 'Favor del Tratante', desc: 'Un «Renovar mesa» gratis en cada Taberna, por nivel.', costs: BALANCE.orden.costes.vale, glyph: 'cinta' },
+  { id: 'tienda', name: 'Puesto grande', desc: '+1 reliquia en oferta en cada Taberna, por nivel.', costs: BALANCE.orden.costes.tienda, glyph: 'andamio' },
+  { id: 'caja', name: 'Bolsa de la Orden', desc: fill('+{oro} de oro inicial por nivel.', { oro: BALANCE.orden.oroPorNivel }), costs: BALANCE.orden.costes.caja, glyph: 'hucha' },
+  { id: 'rutas', name: 'Cartógrafo', desc: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.', costs: BALANCE.orden.costes.rutas, glyph: 'plano' },
 ];
 /** Mejoras de versiones anteriores que ya no existen: se devuelve el renombre gastado en ellas. */
 const RETIRED: Record<string, number[]> = { seguro: [4, 8, 14], interes: [3, 6, 10], manos: [18], caja: [2, 4, 7, 11, 16], cimientos: [3, 5, 8, 12, 17], tienda: [8, 15] };
@@ -631,12 +647,14 @@ export interface DeckDef {
   build(run: Run): void;
 }
 const copyOf = (c: Card): Card => ({ ...c, id: `${c.id}b` });
+/** Cifras de cada baraja (`barajas` de balance-config.json). */
+const BAR = BALANCE.barajas;
 export const DECKS: DeckDef[] = [
-  { id: 'obra', name: 'Baraja de la conjura', desc: 'La de siempre: 40 cartas, 2 Comodines y un Sobre lacrado de 3 especiales.', unlock: null, build: () => {} },
+  { id: 'obra', name: 'Baraja de la conjura', desc: 'La de siempre: 40 cartas, 2 Comodines y un Sobre lacrado de {sobre} especiales.', unlock: null, build: () => {} },
   {
     id: 'acero',
     name: 'Baraja negra',
-    desc: 'Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +5 de Vida (+Baluarte con su arcón).',
+    desc: 'Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +{vida} de Vida (+Baluarte con su arcón).',
     unlock: 'capataz',
     build: (run) => {
       const black = run.deck.filter((c) => c.suit === 'S' || c.suit === 'C');
@@ -644,60 +662,62 @@ export const DECKS: DeckDef[] = [
       run.tools.push({ id: 'acido', n: 0 }, { id: 'sacos', n: 0 });
       // la caja de aguante del gremio le da con qué cobrar tanto muro: el Bastión
       if (run.toolPool.includes('bastion')) run.tools.push({ id: 'bastion', n: 0 });
-      run.maxIntegrity += 5;
+      run.maxIntegrity += BAR.acero.vida;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'prestamista',
     name: 'Baraja del prestamista',
-    desc: '+12 de oro inicial y el interés rinde el doble, pero tienes 1 de Vida menos.',
+    desc: '+{oro} de oro inicial y el interés rinde el doble, pero tienes {vida} de Vida menos.',
     unlock: 'media',
     build: (run) => {
-      run.gold += 12;
-      run.interestCap += 3;
-      run.maxIntegrity -= 1;
+      run.gold += BAR.prestamista.oro;
+      run.interestCap += BAR.prestamista.interes;
+      run.maxIntegrity -= BAR.prestamista.vida;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'ases',
     name: 'Baraja de ases',
-    desc: 'Ocho ases y ningún 2: más Ases cómplices y más pegada, pero tienes 4 de Vida menos.',
+    desc: 'Ocho ases y ningún 2: más Ases cómplices y más pegada, pero tienes {vida} de Vida menos.',
     unlock: 'madre',
     build: (run) => {
       const aces = run.deck.filter((c) => c.rank === 1);
       run.deck = [...run.deck.filter((c) => c.rank !== 2), ...aces.map(copyOf)];
-      run.maxIntegrity -= 4;
+      run.maxIntegrity -= BAR.ases.vida;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'corta',
     name: 'Baraja corta',
-    desc: 'Sin doses ni treses: golpes gordos, el Mazo se agota antes y tienes 6 de Vida menos. +3 de oro inicial.',
+    desc: 'Sin doses ni treses: golpes gordos, el Mazo se agota antes y tienes {vida} de Vida menos. +{oro} de oro inicial.',
     unlock: 'golpe100',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.rank < 2 || c.rank > 3);
-      run.gold += 3;
-      run.maxIntegrity -= 6;
+      run.gold += BAR.corta.oro;
+      run.maxIntegrity -= BAR.corta.vida;
       run.integrity = run.maxIntegrity;
     },
   },
   {
     id: 'caos',
     name: 'Baraja del caos',
-    desc: 'Un solo Comodín, pero el Sobre lacrado inicial trae 5 cartas especiales.',
+    desc: 'Un solo Comodín, pero el Sobre lacrado inicial trae {total} cartas especiales.',
     unlock: 'coleccion',
     build: (run) => {
       run.deck = run.deck.filter((c) => c.id !== 'X2');
-      for (const id of rollSpecials(run, 2)) {
+      for (const id of rollSpecials(run, BAR.caos.especiales)) {
         run.pack.push(id);
         addSpecial(run, id);
       }
     },
   },
 ];
+const DECK_NUMS: Record<string, Record<string, number>> = { ...BAR, obra: { sobre: BALANCE.inicio.sobre }, caos: { total: BALANCE.inicio.sobre + BAR.caos.especiales } };
+for (const d of DECKS) d.desc = fill(d.desc, DECK_NUMS[d.id] ?? {});
 export const DECK: Record<string, DeckDef> = Object.fromEntries(DECKS.map((d) => [d.id, d]));
 
 /** Semilla de la Obra diaria: la misma para todo el mundo ese día. */
@@ -710,7 +730,7 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   const seed = daily ? dailySeed(daily) : /^#[0-9A-Z]{1,7}$/.test(seedText) ? parseInt(seedText.slice(1), 36) | 0 : seedText ? seedFrom(seedText) : ((Number.isFinite(opts.seed) ? Number(opts.seed) : fallbackSeed) | 0);
   const up = daily ? cleanUp({}) : cleanUp(opts.up);
   const boxes = BOXES.filter((b) => up[`caja_${b}`]);
-  const maxIntegrity = 20;
+  const maxIntegrity = BALANCE.inicio.vida;
   const run: Run = {
     v: RUN_VERSION,
     id: seed,
@@ -726,14 +746,14 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     treats: up.bronce ? [...TREATMENTS] : ['forjado', 'templado'],
     stage: 1,
     phase: 'pack',
-    gold: 4 + 2 * up.caja,
+    gold: BALANCE.inicio.oro + BALANCE.orden.oroPorNivel * up.caja,
     integrity: maxIntegrity,
     maxIntegrity,
     tools: [],
     deck: standardDeck(),
     levels: Object.fromEntries(FORMATIONS.map((f) => [f, 0])) as Record<Formation, number>,
     handBonus: 0,
-    interestCap: 3,
+    interestCap: BALANCE.inicio.interesTope,
     scrap: 0,
     bosses: {},
     boss: null,
@@ -766,9 +786,9 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     intact: 0,
     stats: { floors: 0, cleans: 0, turns: 0, gold: 0, maxHit: 0, burned: 0, forged: 0, contracts: 0, skips: 0, toolUse: {}, stageTurns: [] },
   };
-  run.pack = rollSpecials(run, 3);
+  run.pack = rollSpecials(run, BALANCE.inicio.sobre);
   for (const id of run.pack) addSpecial(run, id);
-  if (run.ascension >= 5) run.maxIntegrity -= 1;
+  if (run.ascension >= 5) run.maxIntegrity -= REIN.heridasViejas;
   run.integrity = Math.min(run.integrity, run.maxIntegrity);
   DECK[run.deckId].build(run);
   // los jefes se sortean ya: el plano los enseña desde el primer momento
@@ -779,14 +799,15 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
 }
 
 /** Cuánto más aguantan las obras según el tamaño de la cuadrilla (1 a 4 jugadores). */
-const COOP_HP = [1, 1.3, 1.4, 1.48];
+const COOP_HP = BALANCE.cuadrilla;
 /** Fatiga de cimientos en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánta Resonancia da cada nivel. */
-export const FATIGUE = { start: 8, every: 2, res: 0.25 };
+export const FATIGUE: { start: number; every: number; res: number } = BALANCE.asedio;
 
 /** Timbre del gremio: cartas del mazo que sella al empezar cada obra (además de activar dos veces todos los sellos). */
-export const TIMBRE = { stamps: 1 };
+export const TIMBRE: { stamps: number } = BALANCE.timbre;
 /** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
-export const CLAUSURA = { stages: [8], threat: 1 };
+export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
+ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), impuesto: REIN.impuesto, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
@@ -796,10 +817,10 @@ export function stageConfig(run: Run, players = 1): Config {
   cfg.handSize = { [players]: 7 + run.handBonus };
   // en cuadrilla hay más manos entre las que elegir: las obras aguantan más
   const a = run.ascension;
-  const scale = st.hp * (a >= 1 ? 1.05 : 1) * COOP_HP[Math.min(players, 4) - 1];
+  const scale = st.hp * (a >= 1 ? REIN.corazas : 1) * COOP_HP[Math.min(players, 4) - 1];
   for (const r of [11, 12, 13]) {
     cfg.floorHp[r] = Math.round(DEFAULT_CONFIG.floorHp[r] * scale);
-    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? 1 : 0) + (a >= 6 && r !== 13 ? 1 : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
+    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? REIN.reyColerico : 0) + (a >= 6 && r !== 13 ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
   }
   if (a >= 3 && st.boss) cfg.apuntalado = [13];
   // fatiga de cimientos: en cuadrilla las obras duran más turnos y empieza en proporción
@@ -874,32 +895,32 @@ export function trackEvents(run: Run, events: GameEvent[]): void {
   }
 }
 
-export const removeCost = (run: Run) => 3 + 2 * run.removals;
-export const healCost = (run: Run) => 5 + run.heals;
-export const rerollCost = (run: Run) => (run.vouchers > 0 ? 0 : 2 + run.rerolls);
+export const removeCost = (run: Run) => BALANCE.taberna.hoguera.base + BALANCE.taberna.hoguera.paso * run.removals;
+export const healCost = (run: Run) => BALANCE.taberna.curar.base + BALANCE.taberna.curar.paso * run.heals;
+export const rerollCost = (run: Run) => (run.vouchers > 0 ? 0 : BALANCE.taberna.renovar.base + BALANCE.taberna.renovar.paso * run.rerolls);
 export const offerCost = (run: Run, o: Offer) => (run.freeShop ? 0 : o.cost);
 export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?.rarity ?? 'comun'].cost / 2));
 
 function generateShop(run: Run): Offer[] {
   const offers = stock(run);
-  if (run.ascension >= 2) for (const o of offers) o.cost += 2;
+  if (run.ascension >= 2) for (const o of offers) o.cost += REIN.impuesto;
   return offers;
 }
 
 function stock(run: Run): Offer[] {
   const offers: Offer[] = [];
   const seen: string[] = [];
-  for (let i = 0; i < 2 + lvl(run, 'tienda'); i++) {
+  for (let i = 0; i < BALANCE.taberna.reliquias + lvl(run, 'tienda'); i++) {
     const id = rollTool(run, ALL_RARITIES, seen);
     if (!id) break;
     seen.push(id);
     offers.push({ kind: 'tool', id, cost: vary(run, RARITY[TOOL[id].rarity].cost) });
   }
-  offers.push({ kind: 'sobre', cost: vary(run, 6) }, { kind: 'clandestino', cost: vary(run, 3) });
-  if (roll(run, 2)) offers.push({ kind: 'forja', cost: vary(run, 5), seal: pick(run, run.seals, 1)[0] });
-  else offers.push({ kind: 'forja', cost: vary(run, 5), tr: pick(run, run.treats, 1)[0] });
+  offers.push({ kind: 'sobre', cost: vary(run, BALANCE.taberna.sobre) }, { kind: 'clandestino', cost: vary(run, BALANCE.taberna.sobreCiego) });
+  if (roll(run, 2)) offers.push({ kind: 'forja', cost: vary(run, BALANCE.taberna.mesaLacre), seal: pick(run, run.seals, 1)[0] });
+  else offers.push({ kind: 'forja', cost: vary(run, BALANCE.taberna.mesaLacre), tr: pick(run, run.treats, 1)[0] });
   const form = pick(run, FORMATIONS, 1)[0];
-  offers.push({ kind: 'plano', cost: vary(run, 4 + 2 * run.levels[form]), form });
+  offers.push({ kind: 'plano', cost: vary(run, BALANCE.taberna.pergamino.base + BALANCE.taberna.pergamino.porNivel * run.levels[form]), form });
   return offers;
 }
 
@@ -959,20 +980,21 @@ export function finishBattle(run: Run, state: GameState): void {
     return;
   }
   const st = stageDef(run.stage);
+  const C = BALANCE.cobro;
   const lines: [string, number][] = [
-    ['Asalto ganado', 4 + Math.min(run.stage, LAST_STAGE)],
-    ['Golpes exactos', Math.min(5, run.battle.cleans)],
-    ['Vida que te queda (1 por cada 5)', Math.floor(state.integrity / 5)],
-    ['Interés (1 por cada 5 de oro)', Math.min(run.interestCap, Math.floor(run.gold / 5))],
+    ['Asalto ganado', C.asalto + Math.min(run.stage, LAST_STAGE)],
+    ['Golpes exactos', Math.min(C.exactosTope, run.battle.cleans)],
+    [fill('Vida que te queda (1 por cada {n})', { n: C.vidaCada }), Math.floor(state.integrity / C.vidaCada)],
+    [fill('Interés (1 por cada {n} de oro)', { n: C.interesCada }), Math.min(run.interestCap, Math.floor(run.gold / C.interesCada))],
   ];
-  if (run.tools.some((t) => t.id === 'hucha')) lines.push([TOOL.hucha?.name ?? 'Hucha', 4]);
+  if (run.tools.some((t) => t.id === 'hucha')) lines.push([TOOL.hucha?.name ?? 'Hucha', BALANCE.reliquias.hucha.oro]);
   run.pay = lines.filter(([, n]) => n > 0);
   const total = run.pay.reduce((a, [, n]) => a + n, 0);
   run.gold += total;
   run.stats.gold += total;
   if (state.integrity >= run.maxIntegrity) run.intact++;
   if (run.boss) run.beaten.includes(run.boss) || run.beaten.push(run.boss);
-  run.integrity = Math.min(run.maxIntegrity, state.integrity + 4);
+  run.integrity = Math.min(run.maxIntegrity, state.integrity + BALANCE.cobro.curaTrasAsalto);
   const contract = run.contract ? CONTRACT[run.contract] : null;
   if (contract) {
     run.contractDone = contract.risk ? true : !!contract.done?.(run.battle, state, run);
@@ -1034,7 +1056,7 @@ export function runAction(run: Run, a: RunAction): string | null {
     }
     case 'draft': {
       if (run.phase !== 'reward' || run.drafted) return 'No hay selección pendiente.';
-      if (a.i === null) run.gold += 3;
+      if (a.i === null) run.gold += BALANCE.cobro.sinSeleccion;
       else {
         const opt = run.draft[a.i];
         if (!opt) return 'Esa carta no está en la selección.';
@@ -1110,7 +1132,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       if (run.gold < healCost(run)) return 'No te alcanza el oro.';
       run.gold -= healCost(run);
       run.heals++;
-      run.integrity = Math.min(run.maxIntegrity, run.integrity + 6);
+      run.integrity = Math.min(run.maxIntegrity, run.integrity + BALANCE.taberna.curar.vida);
       return null;
     case 'sell': {
       if (run.phase === 'battle') return 'En pleno asalto no se vende.';

@@ -13,6 +13,7 @@ import { COMMUNITY_URL, customServer, platform, setCustomServer } from './platfo
 import { rulesHtml } from './rules-text';
 import { CONTROL_ROWS } from './prompts';
 import { whisperSetting } from './whispers';
+import { type ShareResult, clearTelemetry, feedbackIssueUrl, shareFeedback, telemetryBytes, telemetryLog, telemetryRemote } from './telemetry';
 
 export const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
 
@@ -238,10 +239,105 @@ export function showRules(): void {
 // la tabla de controles sale de prompts.ts (CONTROL_ROWS): la misma que el README y la prueba de humo
 
 /** Ajustes: mezcla de sonido, ritmo de la mesa, tintas, pantalla y controles. */
+// ───────────── V9 · Feedback de prueba ─────────────
+// Un botón de un toque que dice la verdad: con VITE_TELEMETRY_URL manda la última campaña (y nada más) al
+// pulsar; sin ella, comparte, copia o descarga. Nada se envía al abrir una pantalla.
+
+/** Lo que va a pasar al pulsar, según cómo se construyó esta versión. */
+export const feedbackPromise = (): string =>
+  telemetryRemote() ? 'Al pulsar se manda tu última campaña (solo cifras de la partida) y nada más.' : 'Copia un resumen y descarga un archivo .json con tu última campaña. Nada sale de este equipo.';
+
+/** La línea llana de Ajustes (fila «Datos de prueba»). */
+const feedbackPlain = (): string => (telemetryRemote() ? 'Al pulsar Enviar se manda tu última campaña, y nada más.' : 'Nada sale de este equipo: el botón copia o descarga.');
+
+/** Lo que pasó al pulsar, en palabras del jugador. */
+export function feedbackDone(r: ShareResult): string {
+  const miss = telemetryRemote() && r !== 'enviado' ? 'No se pudo enviar. ' : '';
+  const text: Record<ShareResult, string> = {
+    enviado: 'Enviado: tu última campaña ha salido, y nada más. ¡Gracias!',
+    compartido: 'Compartido: tu última campaña va donde la hayas mandado.',
+    copiado: 'Copiado: pega el resumen donde quieras. El archivo .json también se ha descargado.',
+    descargado: 'Descargado: el archivo .json está en tus descargas.',
+  };
+  return miss + text[r];
+}
+
+/** El bloque del botón (Crónica y Ajustes). `where` solo cambia la clase, para la maqueta de cada pantalla. */
+export function feedbackHtml(where: 'acta' | 'ajustes'): string {
+  const issue = feedbackIssueUrl();
+  const empty = !telemetryLog().length;
+  return `<div class="fb fb-${where}" id="fb-${where}">
+    <button class="fb-send" id="fb-send" ${empty ? 'disabled' : ''}>Enviar Crónica / Feedback de Prueba</button>
+    ${issue ? '<button class="fb-issue" id="fb-issue" data-tip="<b>Abrir aviso</b>Abre la página de comentarios con el resumen ya escrito: lo lees y decides si lo publicas.">Abrir aviso</button>' : ''}
+    <p class="fb-estado" id="fb-estado" role="status" aria-live="polite">${empty ? 'Aún no hay ninguna campaña guardada: juega una y vuelve.' : feedbackPromise()}</p>
+  </div>`;
+}
+
+/** Pinta en el bloque lo que pasó al pulsar (también lo usa la QA para fotografiar la confirmación). */
+export function feedbackShow(root: ParentNode, r: ShareResult): void {
+  const box = root.querySelector<HTMLElement>('.fb');
+  const out = root.querySelector<HTMLElement>('.fb-estado');
+  if (!box || !out) return;
+  out.textContent = feedbackDone(r);
+  box.dataset.hecho = r;
+}
+
+/** Engancha el botón y «Abrir aviso» del bloque. Un toque, una llamada: nada sale sin pulsar. */
+export function bindFeedback(root: ParentNode, after?: () => void): void {
+  const send = root.querySelector<HTMLButtonElement>('#fb-send');
+  const out = root.querySelector<HTMLElement>('#fb-estado');
+  if (send && out)
+    send.onclick = async () => {
+      if (send.getAttribute('aria-busy') === 'true') return;
+      send.setAttribute('aria-busy', 'true');
+      out.textContent = telemetryRemote() ? 'Enviando…' : 'Un momento…';
+      try {
+        const r = await shareFeedback();
+        feedbackShow(root, r);
+        sfx.stamp();
+      } catch {
+        out.textContent = 'No se pudo: prueba otra vez.';
+      } finally {
+        send.removeAttribute('aria-busy');
+        after?.();
+      }
+    };
+  const issue = root.querySelector<HTMLButtonElement>('#fb-issue');
+  if (issue)
+    issue.onclick = () => {
+      const url = feedbackIssueUrl();
+      if (url) platform.openExternal(url);
+    };
+}
+
+/** «N campañas · X kB, guardadas en este equipo». */
+function telemetryCount(): string {
+  const log = telemetryLog();
+  const runs = log.filter((r) => r.modo !== 'guia').length;
+  const guides = log.length - runs;
+  const kb = (telemetryBytes() / 1024).toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `${runs} ${runs === 1 ? 'campaña' : 'campañas'}${guides ? ` y ${guides} ${guides === 1 ? 'partida guiada' : 'partidas guiadas'}` : ''} · ${kb} kB, guardadas en este equipo`;
+}
+
+/** «Ver»: lo guardado, tal cual, en un cuadro de solo lectura. */
+function showTelemetry(): void {
+  const json = JSON.stringify(telemetryLog(), null, 2);
+  const el = modal(
+    `<div class="modal-box fb-ver"><h2>Datos de prueba <button class="x">CERRAR</button></h2>
+      <p>Esto es todo lo guardado en este equipo (${telemetryBytes().toLocaleString('es-ES')} bytes): cifras de partida, sin nombres ni salas.</p>
+      <textarea readonly spellcheck="false" aria-label="Datos de prueba guardados"></textarea></div>`,
+    { cls: 'fb-ver-modal' },
+  );
+  $<HTMLTextAreaElement>('textarea', el).value = json;
+}
+
 export function showSettings(onChange?: () => void): void {
   if (document.querySelector('.settings-modal')) return;
   const el = modal(
     `<div class="modal-box settings"><h2>Ajustes <button class="x">CERRAR</button></h2>
+      ${feedbackHtml('ajustes')}
+      <div class="set fb-datos"><div><b>Datos de prueba</b><span id="fb-cuenta"></span><span class="fb-llana">${feedbackPlain()}</span></div>
+        <span class="server-edit"><button id="fb-ver">Ver</button><button id="fb-borrar">Borrar</button></span></div>
       <div class="set-list" id="set-vol"></div><div class="set-list" id="set-toggles"></div>
       <div class="set server-row"><div><b>Servidor de salas</b><span>Solo para el cooperativo en línea. Vacío: el de esta misma página, si lo hay.</span></div>
         <span class="server-edit"><input id="set-server" autocomplete="off" spellcheck="false" placeholder="wss://mi-servidor/ws" /><button id="set-server-ok">Usar</button></span></div>
@@ -290,6 +386,23 @@ export function showSettings(onChange?: () => void): void {
     );
   };
   draw();
+  // V9 · Feedback de prueba: el botón, la cuenta de lo guardado, «Ver» y «Borrar»
+  const count = () => {
+    $('#fb-cuenta', el).textContent = telemetryCount();
+    $<HTMLButtonElement>('#fb-borrar', el).disabled = !telemetryLog().length;
+  };
+  count();
+  bindFeedback(el, count);
+  $('#fb-ver', el).onclick = () => showTelemetry();
+  $('#fb-borrar', el).onclick = () => {
+    clearTelemetry();
+    count();
+    $<HTMLButtonElement>('#fb-send', el).disabled = true;
+    $('#fb-estado', el).textContent = 'Borrado: ya no queda nada guardado.';
+    $('.fb', el).dataset.hecho = 'borrado';
+    $('#fb-issue', el)?.remove();
+    $<HTMLButtonElement>('#fb-ver', el).focus();
+  };
   $('#set-export', el).onclick = () => toast(`Progreso guardado en ${exportProgress()}`);
   $('#set-community', el).onclick = () => platform.openExternal(COMMUNITY_URL);
   const file = $<HTMLInputElement>('#set-file', el);
