@@ -18,6 +18,8 @@ npm run qa:visual -- mesa forja        # solo esos estados
 VIEW=1280x800 npm run qa:visual        # solo la ventana de Steam Deck
 NO_BUILD=1 npm run qa:visual -- mesa   # sin reconstruir
 QA_DIR=dist/qa-arte npm run qa:visual  # construcción propia (varias celdas a la vez)
+npm run qa:visual -- --lang=en         # el juego en inglés → artifacts/visual-qa-en/ (regla «fuga»)
+npm run qa:smoke -- --lang=en          # la prueba de humo en inglés
 NO_PAD=1 npm run qa:smoke              # sin la parte del mando
 GPU=1 npm run qa:smoke                 # mide la fluidez con aceleración
 ```
@@ -39,6 +41,7 @@ Viven en `src/client/qa.ts` y en la lista `ALL` de `scripts/visual-qa.ts`. **Los
 
 - Base: `portada`, `preparacion`, `mesa`, `lupa`, `lupa-herramienta` (Lupa sobre una reliquia), `lupa-piso` (Lupa sobre un guardia), `lupa-especial`, `mazo`, `plano` (Mapa del castillo), `cobro` (Botín), `ferreteria` (La Taberna), `forja` (Mesa de lacre), `hallazgo` (Secreto de la cripta), `gremio` (La Orden), `coleccion`, `archivo` (Archivo de crónicas), `acta` (Crónica), `ajustes`, `reglas`, `mesa-mando`, `mesa-susurro` (un Susurro sobre la mesa), `mesa-fatiga` (Asedio final).
 - Desde la 5.0: `mesa-cuenta` (recibo desplegado), `mesa-peligro` (aviso de último turno) y `acta-derrota` (causa de la Conjura deshecha).
+- Desde la 10.0: `portada-idioma`, `mesa-contraste` y `mesa-2tintas`. Desde la 11.0: `mesa-2tronos`, `mesa-3tronos`, `mesa-estados`, `mesa-inmune`, `mesa-clasica` y `ajustes-paleta`.
 
 Para añadir uno: una entrada en `qa.ts` que monte el estado **de forma determinista** (semilla fija, sin `Date`, sin azar) y su nombre en `ALL`. Si tiene que caber sin desplazamiento, también en `NO_SCROLL`.
 
@@ -48,7 +51,7 @@ Todo se comprueba con cajas (`getBoundingClientRect`, `Range.getClientRects`) y 
 
 1. **Sin desbordamiento horizontal** del documento ni de ningún elemento.
 2. **Pantallas de una pieza** (`NO_SCROLL`): nada por debajo del borde.
-3. **La mesa**: mano, tronos, reliquias, marcador, botones, La Manga, poderes y rueda de palos no se pisan; cada trono contiene sus cartas.
+3. **La mesa**: mano, tronos, reliquias, marcador, botones, La Manga y poderes no se pisan; cada trono contiene sus cartas. Con 2 y 3 tronos la fila se reparte y los ausentes no se pintan (regla «tronos»).
 4. **Tipografía ≥ 13 px** en todo nodo de texto visible, incluidos los `<text>` de SVG y de las cartas (tamaño efectivo); ≥ 14 px en móvil para lo crítico.
 5. **Ninguna cifra en la fuente de títulos**: un nodo de texto con dígitos cuya `font-family` calculada sea la de títulos falla.
 6. **Cero recortes**: ningún nodo de texto ni botón visible queda cortado por un antepasado con `overflow: hidden | clip` ni por el borde inferior de la ventana. Dentro de una caja con desplazamiento vale si se llega desplazando y la caja enseña su aviso de tinta. `scrollWidth > clientWidth` en un texto delata puntos suspensivos.
@@ -56,6 +59,7 @@ Todo se comprueba con cajas (`getBoundingClientRect`, `Range.getClientRects`) y 
 8. **Con mando** (`mesa-mando`): insignias de botón a la vista y ninguna de teclado.
 9. **Jerga**: ningún texto visible, `data-tip`, `aria-label`, `title`, `placeholder` ni `alt` contiene una palabra del tema viejo (la lista está en el apartado 5 de `SPECS/V6-normas-y-glosario.md`). Una palabra que sea identificador interno no cuenta mientras no la lea el jugador.
 10. **Cero errores** de página o de consola.
+11. **Reglas de la 11.0**: «cara-limpia», «paleta», «daltonismo», «inmune», «estados», «ataque», «apuntado» y «tronos». Mueren «sello» y «ventaja».
 
 La auditoría es necesaria y no suficiente: **abre las capturas**. Una cifra ilegible sobre una trama pasa todas las cajas.
 

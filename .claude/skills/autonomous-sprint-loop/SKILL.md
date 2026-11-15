@@ -109,7 +109,8 @@ Reglas:
 - Nombres válidos de celda: `reglas-balance`, `arte-ui`, `juice-ux`, `director`. Un bloque termina en la celda siguiente o en un `## `.
 - Las celdas corren **en serie** y comparten rama: la que expone un dato (reglas) va antes que la que lo pinta (arte, juice). Las de `director` siempre van al cierre, estén donde estén.
 - Cada encargo se entiende solo: quien lo lee no ha visto nada más. Di los archivos, el contrato con las otras celdas y la orden que lo comprueba.
-- Constitución anticomplejidad en cada versión: ≤ 6 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 caracteres, P95 ≤ 19 turnos. Una versión no añade un sistema sin retirar o simplificar otro.
+- Constitución anticomplejidad en cada versión (la de la 11.0): ≤ 5 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 caracteres en los dos idiomas, Multi siempre entero, P95 ≤ 15 turnos en los cinco asaltos.
+- Cada encargo pide lo que la misión demostró: Bitácora al día al cerrar **cada bloque**, no solo al final (una sesión cortada se retoma desde ella); los trabajos largos se lanzan en segundo plano y se **esperan en primer plano** (`node artifacts/mision/esperar.mjs`): nunca se cede el turno con uno vivo. Una versión no añade un sistema sin retirar o simplificar otro.
 - Vocabulario de la V6 en cada encargo: el título del juego solo se escribe en `src/shared/brand.ts` y ninguna palabra del tema viejo puede aparecer en lo que lee el jugador (`tests/vocabulario.test.ts` y la regla «jerga» de `npm run qa:visual`).
 
 ## Cuando algo se tuerce

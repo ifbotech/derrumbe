@@ -5,7 +5,7 @@ description: Reglas de imprenta de SANGRE Y PALO para cualquier cambio de interf
 
 # Imprenta brutalista
 
-SANGRE Y PALO es linograbado: tinta plana, papel crema, cuatro tintas de taller. La estética no excusa la lectura. La regla que manda sobre todas: **el número y el palo de una carta se leen en menos de 0,3 segundos**.
+SANGRE Y PALO es linograbado: tinta plana, papel marfil, baraja de cuatro colores. La estética no excusa la lectura. La regla que manda sobre todas: **el número y el palo de una carta se leen en menos de 0,3 segundos**.
 
 ## Las ocho reglas
 
@@ -14,7 +14,7 @@ SANGRE Y PALO es linograbado: tinta plana, papel crema, cuatro tintas de taller.
 | 1 | Texto **≥ 13 px** en todas partes (CSS y `<text>` de SVG, tamaño efectivo en pantalla). En móvil, cifras críticas y descripciones **≥ 14 px**. | `npm run qa:visual` · `tests/imprenta.test.ts` |
 | 2 | **Ninguna cifra en la fuente de títulos si no se lee.** Los títulos de pantalla van en una romana de inscripción (Cinzel) en versales, y nada más. | `npm run qa:visual` (nodos de texto con dígitos) |
 | 3 | Cifras en sans o mono de peso alto, `font-variant-numeric: tabular-nums`, sobre **placa opaca**. | a ojo, en la captura |
-| 4 | Contraste: texto ≥ **4,5:1**; cifras críticas y palos sobre crema ≥ **7:1**. | cuenta WCAG (abajo) |
+| 4 | Contraste: texto ≥ **4,5:1**; cifras críticas ≥ **7:1**; emblema y rango del palo ≥ **4,5:1** sobre el marfil y ≥ 7:1 con «Alto contraste». | cuenta WCAG (abajo) · reglas «paleta» y «daltonismo» |
 | 5 | Dianas ≥ **44 × 44 px** en escritorio y trackpad; barra del pulgar de **48 px** en móvil; ≥ 8 px entre dianas vecinas. | `npm run qa:visual` |
 | 6 | **Cero recortes** en `1920×1080`, `1366×768`, `1280×800`, `390×844`. | `npm run qa:visual` (cajas del DOM) |
 | 7 | Nada de blanco ni negro puros; lo que se anima solo cambia `transform` y `opacity`. | `npm run qa:smoke` (sonda de filtros) |
@@ -40,7 +40,7 @@ const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
 ```
 
-Mide el color real de la captura con una muestra de píxeles, no el del CSS: la trama y el grano bajan el contraste efectivo. Los cuatro palos son Picas (hierro oscuro), Diamantes (oro bruñido), Corazones (carmesí real) y Tréboles (verdín profundo), con las mismas cuatro tramas de siempre. Casos que ya fallaron una vez (en la 5.0, con las tintas de entonces): ♥ sobre crema, botón negro sobre gris («Copiar» la crónica), botón naranja sobre fondo naranja («Pasar»), las barras de Vida sobre fondo oscuro, índices de la mano sobre cartas de corazones.
+Mide el color real de la captura con una muestra de píxeles, no el del CSS: la trama y el grano bajan el contraste efectivo. Desde la 11.0 la baraja de serie es de cuatro colores: Picas `#161514`, Corazones `#C8232C`, Diamantes `#1B5E9E` y Tréboles `#1B6B46` sobre marfil `#EFE6D5` (la Clásica y Dos tintas, en Ajustes). Las cartas numeradas son de cara limpia (≥ 75 % de marfil); las tramas siguen en tronos, figuras y poderes. Casos que ya fallaron una vez (en la 5.0, con las tintas de entonces): ♥ sobre crema, botón negro sobre gris («Copiar» la crónica), botón naranja sobre fondo naranja («Pasar»), las barras de Vida sobre fondo oscuro, índices de la mano sobre cartas de corazones.
 
 ## 4 · Dianas y aire
 
@@ -60,7 +60,7 @@ Nunca: `overflow: hidden` sobre texto, puntos suspensivos en una descripción, n
 
 ## 6 · Lista antes de dar por buena una pantalla
 
-- [ ] `QA_DIR=dist/qa-arte npm run qa:visual -- <estado>` sin fallos en las cuatro ventanas (la regla «jerga» incluida).
+- [ ] `QA_DIR=dist/qa-arte npm run qa:visual -- <estado>` sin fallos en las cuatro ventanas (la regla «jerga» incluida), y en inglés (`-- --lang=en`, regla «fuga»).
 - [ ] Captura abierta y mirada en las cuatro ventanas (la auditoría del DOM no ve una cifra ilegible sobre una trama).
 - [ ] Cifras: fuera de la fuente de títulos, tabulares, con placa.
 - [ ] Contraste medido donde haya tinta sobre tinta.

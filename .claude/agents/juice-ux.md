@@ -21,7 +21,7 @@ Tus textos (Susurros, guion de la partida guiada, insignias, mensajes de la red)
 
 ## Reglas de sensación
 
-1. **Mando sin huecos**: toda acción que existe con ratón existe con mando y con teclado, con su insignia en pantalla. Ninguna combinación ambigua: una pulsación corta y una larga del mismo botón no hacen cosas distintas y peligrosas.
+1. **Mando sin huecos**: toda acción que existe con ratón existe con mando y con teclado, con su insignia en pantalla. Con 2, 3 y 4 tronos, el foco salta los tronos ausentes. Ninguna combinación ambigua: una pulsación corta y una larga del mismo botón no hacen cosas distintas y peligrosas.
 2. **< 50 ms** entre la pulsación y la primera respuesta visible (clase, foco, sonido). Nada de esperar a que acabe una animación para aceptar la siguiente pulsación de navegación.
 3. **Foco siempre visible** con teclado y mando; ninguna ventana atrapa el foco; `B` / `Esc` siempre sale.
 4. **Susurros**: una línea, en el momento exacto en que el jugador se encuentra la cosa por primera vez, una sola vez, de uno en uno, y con «No mostrar más» a un clic. Nunca tapan la mano ni la cuenta.
@@ -37,4 +37,4 @@ Tus textos (Susurros, guion de la partida guiada, insignias, mensajes de la red)
 
 ## Antes de dar por terminado
 
-`npm run typecheck` en verde y `npm run qa:smoke` con «Todo en orden». En tu informe final: qué acciones tiene ahora el mando, qué Susurros existen y cuándo saltan, qué enganches de una línea dejaste en archivos de `arte-ui` y qué comprobaciones nuevas hace la prueba de humo.
+`npm run typecheck` y `npm test` en verde (dos pasadas: todo y, aparte, el cooperativo), y `npm run qa:smoke` y `npm run qa:smoke -- --lang=en` con «Todo en orden» (partida guiada < 60 s con teclado y con mando, en los dos idiomas). Si tocas un efecto, `npm run qa:fps` con la máquina en reposo: ningún fotograma en frío de más de 50 ms. En tu informe final: qué acciones tiene ahora el mando, qué Susurros existen y cuándo saltan, qué enganches de una línea dejaste en archivos de `arte-ui` y qué comprobaciones nuevas hace la prueba de humo. Bitácora al día al cerrar **cada bloque**, no solo al final (una sesión cortada se retoma desde ella); los trabajos largos se lanzan en segundo plano y se **esperan en primer plano** (`node artifacts/mision/esperar.mjs`): nunca se cede el turno con uno vivo.

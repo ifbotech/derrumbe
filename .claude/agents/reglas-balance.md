@@ -23,21 +23,28 @@ Los nombres, descripciones y etiquetas de `src/rules` usan el glosario de `SPECS
 
 La comprueba `tests/invariantes.test.ts`; si un cambio tuyo la rompe, el cambio está mal:
 
-- **≤ 6 palabras clave** en `KEYWORDS` (Daño, Multi, Golpe exacto, Brecha, En guardia, Desarmado).
+- **≤ 5 palabras clave** en `KEYWORDS` (Daño, Multi, Golpe exacto, Expuesto, Aturdido).
 - **≤ 56 reliquias** en `TOOLS`.
-- Toda descripción (`desc`) de reliquia, especial, monarca, Reinado, juramento y sello de lacre: **≤ 115 caracteres**, y con los números a la vista (nada de «mucho» o «más»: «+4», «×1,5»).
-- **P95 ≤ 19 turnos** en los asaltos 4 a 8 con las seis barajas.
+- Toda descripción (`desc`) de reliquia, especial, monarca, Reinado, juramento, sello de lacre, acabado y estado: **≤ 115 caracteres en español y en inglés**, y con los números a la vista (nada de «mucho» o «más»: «+4», «×2»).
+- **Multi siempre entero** (`tests/v11.test.ts`: 5.000 golpes al azar con Daño, Multi y Golpe enteros, y ningún texto con un Multi decimal). Lo que crecía por contador suma Daño.
+- **P95 ≤ 15 turnos** en los cinco asaltos con las seis barajas.
 - Motor puro y determinista: sin `Math.random`, sin fechas, sin DOM. Semilla + acciones reproducen la partida.
+
+Reglas de la 11.0: Golpe = Daño × Multi sin redondeo, con formaciones de ×1 a ×4; un trono solo es Inmune a su propio palo; cada carta de palo da 2 (Escudo, Cura o Salpica) y ♠ perfora; dos estados (Expuesto y Aturdido); cinco asaltos de 2, 3, 4, 4 y 4 tronos, con monarca en 2, 4 y 5.
 
 ## Objetivos de balance (los mide `npm run analyze:meta`)
 
-- Reinado 1: La Orden vacía **24–30 %**, La Orden llena **40–48 %**.
-- Reinado 8 «Puertas selladas»: vacía **6–9 %**, llena **12–17 %**. Reinados 5 → 8 **estrictamente decrecientes**, vacía y llena.
-- Barajas (Reinado 1): 24–31 % vacía, 40–45 % llena.
+- Reinado 1: La Orden vacía **26–32 %**, La Orden llena **42–48 %**.
+- Reinado 8 «Puertas selladas»: vacía **6–10 %**, llena **12–18 %**. Reinados 1 → 8 **estrictamente decrecientes**, vacía y llena.
+- Barajas (Reinado 1): objetivo 26–32 % vacía y 42–48 % llena (avisa fuera de 23–34 y 40–50); la Orden llena suma ≥ 6 puntos.
 - Monarcas: letalidad entre **0,8× y 1,3×** de la media.
-- Ritmo: asalto 1 mediana 5–7 (P95 ≤ 10); asaltos 2–3 mediana 8–10 (P95 ≤ 15); asaltos 4–8 mediana 9–13 (**P95 ≤ 19**).
+- Ritmo: asalto 1 mediana 4–6 (P95 ≤ 9); asaltos 2–3 mediana 7–10 (P95 ≤ 13); asaltos 4–5 mediana 9–12 (**P95 ≤ 15**).
+- Muertes en el asalto 1 (Reinado 1, vacía): **≤ 8 %**.
+- **Duración estimada de la campaña: 18–22 minutos** (`OBJETIVOS.duracion`: 30 s de inicio, 60 s por entreacto, 20 s por Secreto y 18 s por jugada sobre la suma de medianas).
 - Reliquias dadas de salida: ninguna gana **menos del 35 %** (trampa) ni **más del 68 %** (victoria regalada); ninguna se elige menos del 5 %.
 - Asalto único (antes, partida clásica): 58–65 % con 1, 2, 3 y 4 jugadores.
+
+Los objetivos viven en `scripts/objetivos.ts`: si cambian, se cambian ahí, y ningún texto (tampoco `scripts/reglas.ts`) los lleva escritos a mano.
 
 ## Cómo se afina un número
 
@@ -56,4 +63,4 @@ La comprueba `tests/invariantes.test.ts`; si un cambio tuyo la rompe, el cambio 
 
 ## Antes de dar por terminado
 
-`npm run typecheck` y `npm test` en verde, el informe del laboratorio sin avisos (o cada aviso explicado con su número) y `npm run docs` ejecutado. En tu informe final: qué cambió, la medida de antes y la de después con su n, y qué datos nuevos expones para la interfaz.
+`npm run typecheck` y `npm test` en verde (dos pasadas: todo y, aparte, el cooperativo, que se repite solo si Node cae con `0xC0000409`), el informe del laboratorio sin avisos (o cada aviso explicado con su número) y `npm run docs` ejecutado. En tu informe final: qué cambió, la medida de antes y la de después con su n, y qué datos nuevos expones para la interfaz. Bitácora al día al cerrar **cada bloque**, no solo al final (una sesión cortada se retoma desde ella); los trabajos largos se lanzan en segundo plano y se **esperan en primer plano** (`node artifacts/mision/esperar.mjs`): nunca se cede el turno con uno vivo.

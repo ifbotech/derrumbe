@@ -34,7 +34,7 @@ Sale con error si hay un **fallo**. Los **avisos** no rompen: piden mirar la pie
 | Densidad de tinta a 300 px | fracción de tinta dentro de la caja de la pieza | iconos (palos, reliquias, especiales, servicios): < **3 %** (en blanco) o > **93 %** (mancha). Cartas y retratos van a sangre: solo fallan sin tinta. **Reliquias (grupo `herramientas`): fuera de 22–58 %** | iconos que no son reliquias, fuera de **12–62 %** |
 | Silueta a 24 px | parte del alto o del ancho que ocupa el mayor cuerpo conexo de tinta | reliquias: < **55 %**; cualquier pieza: sin tinta a 24 px | resto de iconos: < **55 %**, se deshace en motas |
 | Deriva de densidad | diferencia de densidad entre 300 y 24 px | — | > **18 puntos**: trazos demasiado finos, a 24 px se empasta o se borra |
-| Contraste del glifo de palo | mediana de la tinta del glifo contra el papel (WCAG) | < **7:1** | — |
+| Contraste del glifo de palo | mediana de la tinta del glifo contra el papel (WCAG) | < **4,5:1** (desde la 11.0, con los cuatro colores; el 7:1 lo pide «Alto contraste» en la QA visual) | — |
 | Tramas dos a dos | firma de dirección de los trazos (—, \|, \\, /) y fracción de píxeles distintos | un par con forma < **0,12** y píxeles < **25 %**; o una trama casi lisa (< 8 % o > 92 % de tinta) | — |
 
 Los umbrales salen de `LIMITS` en `scripts/svg-forge.ts` (`relicInk: [0.22, 0.58]`, `relicBody: 0.55`, `inkWarn: [0.12, 0.62]`). Hasta la 5.0 la densidad de las piezas del grupo `herramientas` solo avisaba fuera de 12–62 %; con las reliquias de la V6 es una regla dura.
@@ -47,14 +47,14 @@ Los iconos del juego son reliquias de corte: dagas, coronas, anillos de sello, c
 
 ## Las cuatro tramas de palo
 
-Los palos se distinguen **sin color**. Cada uno tiene su trama, definida una sola vez como `<pattern>` en `engraving.ts` y reutilizada en el fondo de la carta, en la etiqueta del trono y en la rueda de palos (♠ corta ♦ · ♦ compra ♥ · ♥ doblega ♣ · ♣ quiebra ♠):
+Los palos se distinguen **sin color**. Cada uno tiene su trama, definida una sola vez como `<pattern>` en `engraving.ts` y reutilizada en las figuras, en la etiqueta del trono y en los iconos de poder. Desde la 11.0 las cartas numeradas (A a 10) son de cara limpia, sin trama, y la rueda de palos ya no existe:
 
 | Palo | Tinta | Trama | Cómo reconocerla a 24 px |
 |---|---|---|---|
-| ♠ Picas | hierro oscuro | rayado diagonal a 45° «de lanzas» | líneas paralelas inclinadas |
-| ♦ Diamantes | oro bruñido | punteado «de gemas» | puntos sueltos, sin líneas |
-| ♥ Corazones | carmesí real | aparejo «de cáliz»: hiladas horizontales con juntas alternas | hiladas horizontales con juntas alternas |
-| ♣ Tréboles | verdín profundo | rayado cruzado heráldico | retícula de dos direcciones |
+| ♠ Picas | negro `#161514` | rayado diagonal a 45° «de lanzas» | líneas paralelas inclinadas |
+| ♦ Diamantes | azul cobalto `#1B5E9E` | punteado «de gemas» | puntos sueltos, sin líneas |
+| ♥ Corazones | carmesí `#C8232C` | aparejo «de cáliz»: hiladas horizontales con juntas alternas | hiladas horizontales con juntas alternas |
+| ♣ Tréboles | verde `#1B6B46` | rayado cruzado heráldico | retícula de dos direcciones |
 
 Reglas:
 

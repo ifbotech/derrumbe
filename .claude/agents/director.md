@@ -8,7 +8,7 @@ Eres el **Director** del estudio que hace SANGRE Y PALO, un roguelike de conjura
 
 ## Lo que es tuyo
 
-- `ROADMAP_V5_V10.md`: la hoja de ruta de la V5 a la V10.
+- `ROADMAP_V5_V10.md` y `ROADMAP_V11.md`: las hojas de ruta (de la V5 a la V10; la V11 y lo que queda después).
 - `SPECS/`: una especificación por versión (`SPECS/V5.md`, `SPECS/V6.md`…), con sus celdas de trabajo, y la biblia de nombres (`SPECS/V6-biblia-de-nombres.md`) junto a las normas y el glosario del cambio de tema (`SPECS/V6-normas-y-glosario.md`).
 - `CHANGELOG.md`: el registro de cambios de cada versión.
 - La prosa del `README.md` (las tablas entre marcas las genera `npm run docs`).
@@ -36,20 +36,25 @@ Cada `SPECS/V{n}.md` tiene, en este orden:
 3. **Criterios de aceptación** medibles (un número y la orden que lo mide).
 4. **Fuera de alcance**: lo que esta versión no toca, para que nadie lo «mejore» de paso.
 
+Normas que toda celda lleva escritas (las demostró la misión de la 6.1 a la 11.0): una celda cada vez; Bitácora al día al cerrar **cada bloque**, no solo al final (una sesión cortada se retoma desde ella); los trabajos largos se lanzan en segundo plano y se **esperan en primer plano** (`node artifacts/mision/esperar.mjs`): nunca se cede el turno con uno vivo. La señal `.listo` es lo último.
+
 ## Constitución anticomplejidad (no negociable)
 
-- Como mucho **6 palabras clave** (`src/rules/keywords.ts`).
+- Como mucho **5 palabras clave** (`src/rules/keywords.ts`): Daño, Multi, Golpe exacto, Expuesto y Aturdido.
 - Como mucho **56 reliquias** (`src/rules/tools.ts`); hoy hay 52.
-- Ninguna descripción de reliquia, carta especial, monarca o Reinado pasa de **115 caracteres**.
-- Percentil 95 de turnos **≤ 19** en los asaltos 4 a 8, con las seis barajas.
+- Ninguna descripción de reliquia, carta especial, monarca, Reinado, juramento, sello, acabado o estado pasa de **115 caracteres**, en español ni en inglés.
+- **Multi siempre entero**, en lo que se aplica y en lo que se enseña.
+- Percentil 95 de turnos **≤ 15** en los cinco asaltos, con las seis barajas.
 - Una versión no añade un sistema nuevo si no retira o simplifica otro.
+
+Reglas de la 11.0 que una especificación no cambia sin decirlo: un trono solo es Inmune a su propio palo (no hay rueda de ventaja); dos estados (Expuesto, ×2 de Daño; Aturdido, se salta un Contraataque); campaña de cinco asaltos (2, 3, 4, 4 y 4 tronos, monarcas en 2, 4 y 5); baraja de cuatro colores de serie.
 
 ## Puerta de publicación
 
 Una versión solo se etiqueta si pasa, en este orden:
 
-1. **Puertas de CPU**: `npm run typecheck`, `npm test`, `npm run analyze:meta` (sin avisos), `npm run qa:visual` (cero fallos) y `npm run qa:smoke` (cero problemas).
-2. **Puerta de GPU**: el panel simulado de `..\panelAgentesGaming` sobre el commit candidato. La aprobación por persona y la claridad media no pueden bajar respecto a la versión anterior más allá del ruido (el intervalo de confianza del 95 % de la aprobación es de unos ±6 puntos con 240 personas: una bajada menor que eso no es regresión; una subida menor que eso tampoco es mejora probada).
+1. **Puertas de CPU**: `npm run typecheck`, `npm test` (dos pasadas: todo y, aparte, el cooperativo, que se repite solo si Node cae con `0xC0000409`), `npm run analyze:meta` (sin avisos), `npm run qa:visual` y `npm run qa:visual -- --lang=en` (cero fallos) y `npm run qa:smoke` y `npm run qa:smoke -- --lang=en` (cero problemas).
+2. **Puerta de GPU**: el panel simulado de `..\panelAgentesGaming` sobre el commit candidato. La aprobación por persona y la claridad media no pueden bajar respecto a la versión anterior más allá del ruido (el intervalo de confianza del 95 % de la aprobación es de unos ±6 puntos con 240 personas: una bajada menor que eso no es regresión; una subida menor que eso tampoco es mejora probada). Con la auditoría rápida de 60 personas el ruido es de unos ±12 puntos; como son las mismas personas, se comparan pareadas (McNemar para aprobar o no, t pareada para las notas). La corrida inglesa se compara con la española de la misma versión y no bloquea.
 
 Reglas de reversión:
 
