@@ -87,7 +87,6 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .fx.pop { animation: pop 0.3s ease; }
 .float.clean { color: var(--hazard); }
 .float.small { font-size: clamp(18px, 2.6vw, 34px); top: 62%; }
-.hitstop * { animation-play-state: paused !important; }
 #gold-chip b.pulse, .purse b.pulse { animation: pulse 0.4s steps(4); }
 .tower.fallen .tower-fx { visibility: hidden; }
 

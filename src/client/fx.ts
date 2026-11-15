@@ -285,10 +285,14 @@ export const quake = (power = 0.5, dx = 0, dy = 1) => shake($('.table-screen'), 
 /** Golpe seco: la mesa se congela un instante (60–80 ms) antes de que todo salte. */
 export async function hitstop(power = 0.5): Promise<void> {
   if (settings.calm) return;
+  // V11: se pausan las animaciones que corren en la mesa (las figuras que respiran), una por una. Antes era una
+  // clase con `.hitstop *`, que obligaba a recalcular el estilo de toda la mesa dos veces; en 390×844 el primer
+  // golpe pagaba ese recálculo (forzado por el tajo, que mide la carta) con un fotograma de 50–250 ms.
   const el = $('.table-screen');
-  el?.classList.add('hitstop');
+  const frozen = el ? el.getAnimations({ subtree: true }).filter((a) => a.playState === 'running') : [];
+  frozen.forEach((a) => a.pause());
   await real(60 + 20 * Math.max(0, Math.min(1, power)));
-  el?.classList.remove('hitstop');
+  frozen.forEach((a) => a.playState === 'paused' && a.play());
 }
 
 /** Mueve un elemento de un rectángulo a otro y lo retira (o lo deja donde `keep` diga). */
@@ -564,18 +568,87 @@ export function procBadge(ev: GameEvent): void {
  */
 function warmTable(): void {
   if (!document.body) return;
-  const watch = new MutationObserver(() => {
-    const el = document.querySelector('.table-screen');
-    if (!el) return;
-    watch.disconnect();
-    const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 200));
+  // V11: cada mesa nueva (cada asalto monta su `.table-screen`) prepara su capa; los lacres y el tajo, solo la primera
+  const warmed = new WeakSet<Element>();
+  let first = true;
+  const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 200));
+  const warm = (el: Element) => {
+    if (warmed.has(el)) return;
+    warmed.add(el);
+    const once = first;
+    first = false;
     idle(() => {
       if (settings.calm || !el.isConnected) return;
       // una centésima de píxel: con 0 px el navegador se salta la animación y no prepara la capa
       el.animate([{ transform: 'translate(0px, 0.01px)' }, { transform: 'none' }], { duration: 60 });
+      // los lacres, después del temblor y en su propio fotograma: si se posan mientras la mesa sube a su capa,
+      // la capa se prepara con ellos dentro y el primer temblor de verdad la vuelve a pagar entera
+      if (once) window.setTimeout(() => idle(() => warmSeals(0)), 400);
     });
+  };
+  let host: Element | null = null;
+  const watch = new MutationObserver(() => {
+    const el = document.querySelector('.table-screen');
+    if (!el) return;
+    warm(el);
+    // en cuanto se sabe dónde se monta la mesa, se vigila solo ese sitio (sin recorrer todo el documento)
+    if (el.parentElement && el.parentElement !== host) {
+      host = el.parentElement;
+      watch.disconnect();
+      watch.observe(host, { childList: true });
+    }
   });
   watch.observe(document.body, { childList: true, subtree: true });
+}
+
+/**
+ * V11: el primer sello de lacre de la sesión aún pagaba un fotograma de ~55 ms en 1920×1080 (pintado y
+ * rasterizado del lacre al tamaño de la carta de verdad, que no es el de la esquina de warmUp). En la primera
+ * mesa, las mismas piezas de la reserva se posan un instante sobre una carta de la mano a opacidad 0,01, con su
+ * caída y su enfriado, y la lámina de cada acabado pasa una vez invisible; después vuelven a la reserva.
+ */
+function warmSeals(tries: number): void {
+  const cards = [...document.querySelectorAll<HTMLElement>('.table-screen #hand .card')];
+  if (!cards.length) {
+    if (tries < 10) window.setTimeout(() => warmSeals(tries + 1), 300);
+    return;
+  }
+  const host = cards.find((c) => SEALS.some((x) => c.classList.contains(`z-${x}`))) ?? cards[0];
+  const ghost = [{ transform: 'scale(1.4) rotate(-8deg)', opacity: 0 }, { transform: 'none', opacity: 0.01 }];
+  const used = SEALS.map((seal) => {
+    const pool = (waxFree[seal] ??= []);
+    let w = pool.pop();
+    if (!w) {
+      w = waxStamp(seal);
+      made++;
+    }
+    w.classList.add('caliente');
+    w.style.opacity = '0.01';
+    host.appendChild(w);
+    w.animate(ghost, { duration: 160 });
+    return [w, pool] as const;
+  });
+  window.setTimeout(() => used.forEach(([w]) => w.classList.remove('caliente')), 60);
+  // la lámina de cada acabado que haya en la mano, una vez y sin verse
+  for (const band of document.querySelectorAll<HTMLElement>('.table-screen #hand .card .foil-band'))
+    band.animate([{ transform: 'translateX(-160%) rotate(20deg)', opacity: 0 }, { transform: 'translateX(260%) rotate(20deg)', opacity: 0.01 }], { duration: 160 });
+  window.setTimeout(() => used.forEach(([w, pool]) => ((w.style.opacity = ''), release(w, pool))), 240);
+  // y el tajo sobre un guardia de verdad (la copia de su figura al tamaño de la mesa), invisible, con las mismas piezas
+  const guard = document.querySelector<HTMLElement>('.table-screen .tower:not([hidden]) .floor-slot .card');
+  if (guard) {
+    const reuse = slashFree.pop();
+    const halves = slashPieces(guard, reuse);
+    if (!reuse) made += halves.length;
+    halves.forEach((p) => {
+      p.style.opacity = '0.01';
+      document.body.appendChild(p);
+      p.animate([{ transform: 'translate(0, 0)' }, { transform: 'translate(1px, 1px) rotate(1deg)' }], { duration: 160 });
+    });
+    window.setTimeout(() => {
+      halves.forEach((p) => ((p.style.opacity = ''), p.getAnimations().forEach((a) => a.cancel()), p.remove()));
+      slashFree.push(halves);
+    }, 240);
+  }
 }
 // la reserva se calienta en cuanto la página pinta su primer fotograma
 requestAnimationFrame(() => requestAnimationFrame(() => (warmUp(), warmTable())));

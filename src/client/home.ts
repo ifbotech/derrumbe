@@ -9,7 +9,7 @@ import { $, $$, S, app, cap, esc, modal } from './core';
 import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, savedCampaign, today } from './campaign';
 import { glyphSvg } from './glyphs';
 import { meta, openGuild } from './guild';
-import { L, Ln, acabN, asaltoN, barD, barN, getLang, logN, reinD, reinN, selloN } from './lengua';
+import { L, Ln, acabN, asaltoN, barD, barN, getLang, logN, reinD, reinN, selloN, tiranoN } from './lengua';
 import { brandFor } from '../shared/brand';
 import { hasServer, sendMsg, updateConn } from './net';
 import { setScreen } from './router';
@@ -153,7 +153,7 @@ export function renderCamp(): void {
     <header class="deck-head"><div><h1>${L('ui.camp.titulo')}</h1><p class="sub">${L('ui.camp.sub')}</p></div><div class="purse"><b>${meta.renown} ✦</b><span>${L('ui.camp.bolsa', { n: meta.best, total: LAST_STAGE })}</span></div></header>
     <div class="camp-grid">
       <section class="panel camp-run"><div class="scroll">
-        <div class="route">${STAGES.map((s, i) => `<div class="stop ${i < meta.best ? 'done' : ''} ${s.boss ? 'boss' : ''}" data-tip="<b>${asaltoN(i + 1)}</b>${Ln(s.floors.length, 'ui.camp.parada.1', 'ui.camp.parada.n')}${s.boss ? L('ui.camp.parada.monarca') : L('ui.camp.parada.rutas')}"><b>${i + 1}</b><span>${asaltoN(i + 1)}</span></div>`).join('')}</div>
+        <div class="route">${STAGES.map((s, i) => `<div class="stop ${i < meta.best ? 'done' : ''} ${s.boss ? 'boss' : ''} ${s.tirano ? 'tirano' : ''}" data-tip="<b>${asaltoN(i + 1)}</b>${L('ui.run.tronos', { n: s.thrones })}${Ln(s.floors.length, 'ui.camp.parada.1', 'ui.camp.parada.n')}${s.tirano ? L('ui.camp.parada.tirano', { x: tiranoN(null) }) : s.boss ? L('ui.camp.parada.monarca') : s.atajo ? L('ui.camp.parada.rutas') : L('ui.camp.parada.juramento')}"><b>${i + 1}</b><span>${asaltoN(i + 1)}</span></div>`).join('')}</div>
         <h3 class="sec">${L('ui.camp.baraja')}</h3>
         <div class="deck-opts">${decks}</div>
         ${asc}

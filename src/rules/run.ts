@@ -2,20 +2,22 @@
 // y en sala online (corre en el servidor): es un reductor puro y determinista. Con la misma
 // semilla y las mismas decisiones, la campaña es idéntica.
 //
-//   Sobre lacrado → [ Mapa del castillo: ruta con Juramento · o Atajo → asalto → Botín + selección
-//                     (+ botín de monarca) → La Taberna → (Secreto de la cripta tras cada
-//                     monarca) ] × 8 → Trono infinito
+//   Sobre lacrado → [ Mapa del castillo: ruta con Juramento (o Atajo, solo en el asalto 3) → asalto →
+//                     Botín + selección (+ botín de monarca) → La Taberna → (Secreto de la cripta tras
+//                     los monarcas de los asaltos 2 y 4) ] × 5 → Trono infinito
+// Los asaltos 1 y 2 tienen menos tronos (2 y 3): los palos presentes se sortean al crear la campaña.
 // En el código los nombres internos siguen siendo los de antes (stage, boss, contract, shop, event…).
 import { Autopsy, autopsy } from './autopsy';
 import { BALANCE, fill } from './balance-config';
+import { recortaMeta10 } from './migracion';
 import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool } from './tools';
 
 export const MIN_DECK = 12;
-export const LAST_STAGE = 8;
+export const LAST_STAGE = 5;
 /** Versión del formato de campaña guardada: una campaña de otra versión no se puede continuar. */
-export const RUN_VERSION = 3;
+export const RUN_VERSION = 4;
 
 /**
  * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
@@ -31,7 +33,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
   { name: 'Corazas finas', desc: 'Todos los guardias tienen un {pct} % más de Vida.' },
   { name: 'Impuesto real', desc: 'Todo en la Taberna cuesta {impuesto} de oro más.' },
-  { name: 'Reyes en guardia', desc: 'En los asaltos con monarca, los Reyes llegan En guardia.' },
+  { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tienes {heridas} punto menos de Vida.' },
   { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y las Reinas sube {noche}.' },
@@ -44,6 +46,12 @@ export const MAX_ASCENSION = ASCENSIONS.length - 1;
 export interface StageDef {
   name: string;
   floors: number[];
+  /** Tronos en pie al empezar (2 a 4). Los que faltan se crean sin guardias y con `away`. */
+  thrones: number;
+  /** El Mapa ofrece Atajo (saltar el asalto a cambio de un premio). */
+  atajo: boolean;
+  /** El monarca de este asalto lleva el título de Rey Tirano (o Reina Tirana). */
+  tirano?: true;
   /** Multiplicador de la resistencia base de los pisos. */
   hp: number;
   /** Se suma a la amenaza base. */
@@ -51,38 +59,44 @@ export interface StageDef {
   boss: boolean;
 }
 /**
- * Balanceado con el laboratorio (npm run analyze:meta). Las obras son cortas (de 6 a 12 turnos de mediana,
- * y casi ninguna pasa de 18): la dificultad sube por la amenaza de la sirena y por la fatiga de cimientos,
- * no por pisos interminables.
+ * Cinco asaltos (SPECS/V11.md, apartado 1.6): el primero, de dos tronos, enseña; el quinto es el Salón del
+ * Trono, con su Rey Tirano. La Vida y el Ataque de cada uno salen de `asaltos` en balance-config.json.
  */
 const STAGE_DEFS: Omit<StageDef, 'hp' | 'threat'>[] = [
-  { name: 'El Puente levadizo', floors: [11], boss: false },
-  { name: 'El Patio de armas', floors: [11, 12], boss: false },
-  { name: 'La Armería', floors: [11, 12], boss: true },
-  { name: 'Las Cocinas', floors: [11, 12, 13], boss: false },
-  { name: 'La Capilla', floors: [11, 12, 13], boss: true },
-  { name: 'La Biblioteca', floors: [11, 12, 13], boss: false },
-  { name: 'La Galería de espejos', floors: [11, 12, 13], boss: true },
-  { name: 'El Salón del Trono', floors: [11, 12, 13], boss: true },
+  { name: 'El Puente levadizo', floors: [11], thrones: 2, atajo: false, boss: false },
+  { name: 'El Patio de armas', floors: [11, 12], thrones: 3, atajo: false, boss: true },
+  { name: 'La Cripta', floors: [11, 12], thrones: 4, atajo: true, boss: false },
+  { name: 'La Galería real', floors: [11, 12, 13], thrones: 4, atajo: false, boss: true },
+  { name: 'El Salón del Trono', floors: [11, 12, 13], thrones: 4, atajo: false, boss: true, tirano: true },
 ];
-/** Los ocho asaltos: su Vida (`hp`) y su Ataque (`threat`) salen de `asaltos` en balance-config.json. */
+/** Los cinco asaltos: su Vida (`hp`) y su Ataque (`threat`) salen de `asaltos` en balance-config.json. */
 export const STAGES: StageDef[] = STAGE_DEFS.map((s, i) => {
   const { hp, threat } = BALANCE.asaltos[i];
-  return { name: s.name, floors: s.floors, hp, threat, boss: s.boss };
+  return { ...s, floors: [...s.floors], hp, threat };
 });
-/** La obra n. Más allá de la octava empiezan los Cimientos abisales: siempre con jefe y cada vez más duros. */
+/** El asalto n. Más allá del quinto empieza el Trono infinito: cuatro tronos, siempre con monarca y cada vez más duro. */
 export function stageDef(n: number): StageDef {
   if (n <= LAST_STAGE) return STAGES[n - 1];
   const depth = n - LAST_STAGE;
-  return { name: `Trono infinito ${depth}`, floors: [11, 12, 13], hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
+  return { name: `Trono infinito ${depth}`, floors: [11, 12, 13], thrones: 4, atajo: false, hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
 }
-/** Tras estas obras aparece un hallazgo en los cimientos. */
-export const EVENT_AFTER = [3, 5, 7];
+/** Tras estos asaltos (los de los dos primeros monarcas) aparece un Secreto de la cripta. */
+export const EVENT_AFTER = [2, 4];
+
+/** El título del monarca del Salón del Trono, según su género (claves `asalto.tirano.m` y `asalto.tirano.f`). */
+export const TIRANO: Record<'m' | 'f', string> = { m: 'Rey Tirano', f: 'Reina Tirana' };
+/** La clave del título de Tirano que lleva un monarca (`asalto.tirano.f` si es una reina). */
+export const tiranoKey = (bossId: string): 'asalto.tirano.m' | 'asalto.tirano.f' => (BOSS[bossId]?.fem ? 'asalto.tirano.f' : 'asalto.tirano.m');
+
+/** Vida de un guardia redondeada al múltiplo de 5 más cercano, nunca menos de 5: «25 × 4 = 100» se lee de un vistazo. */
+export const roundHp = (hp: number): number => Math.max(5, Math.round(hp / 5) * 5);
 
 export interface Boss {
   id: string;
   /** El personaje. */
   who: string;
+  /** Es una reina: en el Salón del Trono se la llama «Reina Tirana». */
+  fem?: true;
   /** Su maldición. */
   name: string;
   desc: string;
@@ -129,15 +143,18 @@ export const BOSSES: Boss[] = [
   {
     id: 'sequia',
     who: 'La Dama del Cáliz',
+    fem: true,
     name: 'Cáliz envenenado',
     desc: 'Tus ♥ no curan.',
     barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
     curse: { mark: 'corazones', badge: 'Tus ♥ no curan' },
-    apply: (c) => void (c.repairDiv = 9999),
+    // se aplica después de las reliquias: con el Bálsamo, tampoco curan
+    apply: (c) => void (c.curaPorCarta = 0),
   },
   {
     id: 'intemperie',
     who: 'La Reina Helada',
+    fem: true,
     name: 'Escarcha',
     desc: 'El Escudo no puede pasar de {escudoTope}.',
     barks: { entrada: 'Abrigate, naipe. En mi mesa ni la manta te tapa entero.', contraataque: 'Quiero retruco, y te lo canto con escarcha en la boca.', caida: 'Me derrito... y vos con las manos tibias. Qué injusto.' },
@@ -148,16 +165,16 @@ export const BOSSES: Boss[] = [
     id: 'blindaje',
     who: 'El Inquisidor',
     name: 'Guardia de hierro',
-    desc: 'Todos los guardias llegan En guardia y, mientras lo estén, su Ataque sube {ataque}.',
+    desc: 'Ningún trono queda Aturdido.',
     barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
-    curse: { mark: 'guardias', badge: 'En guardia: +{ataque} de Ataque' },
-    apply: (c) => void ((c.apuntalado = [11, 12, 13]), (c.bracedThreat = MON.blindaje.ataque)),
+    curse: { mark: 'guardias', badge: 'Sin Aturdido' },
+    apply: (c) => void (c.noFx = 'sobrecarga'),
   },
   {
     id: 'furia',
     who: 'El Verdugo',
     name: 'Furia',
-    desc: 'El Ataque de los cuatro tronos sube {ataque}.',
+    desc: 'El Ataque de todos los tronos sube {ataque}.',
     barks: { entrada: 'Afilé el hacha toda la noche. ¡Vale cuatro, y sin piedad!', contraataque: '¡Truco! Y esta vez no me tiembla el pulso.', caida: 'Se me cayó la capucha. Mala mano, la mía.' },
     curse: { mark: 'ataque', badge: '+{ataque} de Ataque en cada trono' },
     apply: (c) => eachThreat(c, MON.furia.ataque),
@@ -225,7 +242,7 @@ export const CONTRACTS: Contract[] = [
   { id: 'sincolapso', name: 'Mazo medido', desc: 'Termina sin que se agote el Mazo.', reward: '+5 de oro', done: (_, s) => s.collapses === 0, pay: (run) => void (run.gold += 5) },
   { id: 'austero', name: 'Sin motines', desc: 'No juegues ningún Comodín.', reward: 'Un acabado al azar', done: (b) => b.jokers === 0, pay: (run) => void treatRandom(run) },
   { id: 'maestra', name: 'Jugada maestra', desc: 'Juega un color, un full, un póker o una escalera de color.', reward: 'Un Pergamino al azar', done: (b) => b.forms.some((f) => ['color', 'full', 'poker', 'escaleracolor'].includes(f)), pay: (run) => void run.levels[pick(run, FORMATIONS, 1)[0]]++ },
-  { id: 'horas', name: 'Noche larga', desc: 'El Ataque de los cuatro tronos sube 1.', reward: '+10 de oro', risk: true, cfg: (c) => eachThreat(c, 1), pay: (run) => void (run.gold += 10) },
+  { id: 'horas', name: 'Noche larga', desc: 'El Ataque de todos los tronos sube 1.', reward: '+10 de oro', risk: true, cfg: (c) => eachThreat(c, 1), pay: (run) => void (run.gold += 10) },
   { id: 'sinred', name: 'Sin escudo', desc: 'El Escudo no puede pasar de 2.', reward: 'Una reliquia Rara o mejor', risk: true, cfg: (c) => void (c.wallCap = Math.min(c.wallCap, 2)), pay: (run) => void grantTool(run, ['oficio', 'capataz', 'reliquia']) },
   { id: 'corta', name: 'Conjura corta', desc: 'Jugáis con 1 carta menos en la mano.', reward: '+12 de oro', risk: true, cfg: (c) => eachHand(c, -1), pay: (run) => void (run.gold += 12) },
 ];
@@ -377,7 +394,8 @@ export interface Meta {
   /** Mejor resultado en la Obra diaria. */
   daily: { date: string; cleared: number; won: boolean };
 }
-export const META_VERSION = 2;
+/** 3 desde la V11 (cinco asaltos). Ver `loadMeta` y src/rules/migracion.ts. */
+export const META_VERSION = 3;
 export const newMeta = (): Meta => ({
   v: META_VERSION,
   renown: 0,
@@ -401,13 +419,16 @@ export function loadMeta(saved: unknown): Meta {
   const old = saved as Partial<Meta> & { seen?: { relics?: string[] } & Partial<Meta['seen']> };
   const meta: Meta = { ...base, ...old, ach: { ...old.ach }, stats: { ...base.stats, ...old.stats }, seen: { ...base.seen, ...old.seen }, last: { ...base.last, ...old.last }, daily: { ...base.daily, ...old.daily }, up: { ...old.up }, mastery: { tools: { ...old.mastery?.tools }, decks: { ...old.mastery?.decks } } };
   meta.ascMax = Math.max(0, Math.min(MAX_ASCENSION, meta.ascMax));
-  if ((old.v ?? 1) < META_VERSION) {
-    // las mejoras cambiaron de arriba abajo: se devuelve todo lo gastado y se empieza de cero
+  const v = Number(old.v ?? 1) || 1;
+  if (v < 2) {
+    // perfiles de antes de la 2: las mejoras cambiaron de arriba abajo, se devuelve todo lo gastado y se empieza de cero
     for (const [id, level] of Object.entries(meta.up)) for (let i = 0; i < level; i++) meta.renown += RETIRED[id]?.[i] ?? 0;
     meta.up = {};
     meta.seen.tools = [...new Set([...(old.seen?.relics ?? []), ...meta.seen.tools])].filter((id) => TOOL[id]);
-    meta.v = META_VERSION;
   }
+  // perfiles de la 10.0 (y anteriores): se conserva todo; solo lo que contaba asaltos se recorta a cinco
+  if (v < 3) recortaMeta10(meta, LAST_STAGE);
+  meta.v = META_VERSION;
   delete (meta.seen as { relics?: unknown }).relics;
   return meta;
 }
@@ -478,7 +499,7 @@ export type RunAction =
   | { t: 'event'; i: number }
   /** Cinturón: nuevo orden de las herramientas (permutación de índices). */
   | { t: 'reorder'; order: number[] }
-  /** Tras la obra 8: seguir en los Cimientos abisales. */
+  /** Tras el asalto 5: seguir en el Trono infinito. */
   | { t: 'endless' };
 
 /** Con qué se monta una campaña: lo aporta el jugador (o el anfitrión de la sala). */
@@ -524,6 +545,8 @@ export interface Run {
   scrap: number;
   /** Jefes ya sorteados, a la vista en el plano desde el principio. */
   bosses: Record<number, string>;
+  /** Palos de los tronos presentes en los asaltos que no tienen los cuatro (1 y 2), sorteados al crear la campaña. */
+  palos: Record<number, Suit[]>;
   boss: string | null;
   node: MapNode;
   contract: string | null;
@@ -756,6 +779,7 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     interestCap: BALANCE.inicio.interesTope,
     scrap: 0,
     bosses: {},
+    palos: {},
     boss: null,
     node: { routes: [], tag: null },
     contract: null,
@@ -791,23 +815,28 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   if (run.ascension >= 5) run.maxIntegrity -= REIN.heridasViejas;
   run.integrity = Math.min(run.integrity, run.maxIntegrity);
   DECK[run.deckId].build(run);
-  // los jefes se sortean ya: el plano los enseña desde el primer momento
-  const bosses = pick(run, BOSSES, 4).map((b) => b.id);
+  // los monarcas (tres distintos) y los palos de los asaltos cortos se sortean ya: el Mapa los enseña desde el principio
+  const bosses = pick(run, BOSSES, STAGES.filter((s) => s.boss).length).map((b) => b.id);
   STAGES.forEach((s, i) => s.boss && (run.bosses[i + 1] = bosses.shift()!));
+  STAGES.forEach((s, i) => {
+    if (s.thrones >= SUITS.length) return;
+    const chosen = pick(run, SUITS, s.thrones);
+    run.palos[i + 1] = SUITS.filter((x) => chosen.includes(x));
+  });
   run.events = pick(run, EVENTS, EVENT_AFTER.length).map((e) => e.id);
   return run;
 }
 
 /** Cuánto más aguantan las obras según el tamaño de la cuadrilla (1 a 4 jugadores). */
 const COOP_HP = BALANCE.cuadrilla;
-/** Fatiga de cimientos en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánta Resonancia da cada nivel. */
-export const FATIGUE: { start: number; every: number; res: number } = BALANCE.asedio;
+/** Asedio final en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánto Daño da cada nivel. */
+export const FATIGUE: { start: number; every: number; dano: number } = BALANCE.asedio;
 
 /** Timbre del gremio: cartas del mazo que sella al empezar cada obra (además de activar dos veces todos los sellos). */
 export const TIMBRE: { stamps: number } = BALANCE.timbre;
 /** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
 export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
-ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), impuesto: REIN.impuesto, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
+ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), impuesto: REIN.impuesto, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
@@ -819,14 +848,16 @@ export function stageConfig(run: Run, players = 1): Config {
   const a = run.ascension;
   const scale = st.hp * (a >= 1 ? REIN.corazas : 1) * COOP_HP[Math.min(players, 4) - 1];
   for (const r of [11, 12, 13]) {
-    cfg.floorHp[r] = Math.round(DEFAULT_CONFIG.floorHp[r] * scale);
+    // Reinado 4 «Reyes acorazados»: en los asaltos con monarca, los Reyes tienen más Vida
+    const reyes = a >= 3 && st.boss && r === 13 ? REIN.reyesAcorazados : 1;
+    // la Vida final, redondeada al múltiplo de 5 más cercano (asalto, Reinado y conjura ya aplicados)
+    cfg.floorHp[r] = roundHp(DEFAULT_CONFIG.floorHp[r] * scale * reyes);
     cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? REIN.reyColerico : 0) + (a >= 6 && r !== 13 ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
   }
-  if (a >= 3 && st.boss) cfg.apuntalado = [13];
   // fatiga de cimientos: en cuadrilla las obras duran más turnos y empieza en proporción
   cfg.fatigueStart = Math.round(FATIGUE.start * COOP_HP[Math.min(players, 4) - 1]);
   cfg.fatigueEvery = FATIGUE.every;
-  cfg.fatigueRes = FATIGUE.res;
+  cfg.fatigueDano = FATIGUE.dano;
   cfg.formLevel = { ...run.levels };
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
   if (run.boss) BOSS[run.boss]?.apply(cfg);
@@ -849,7 +880,7 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
     players: players.map((p) => ({ id: p.id, name: p.name, hand: deck.splice(0, size), reserve: [] })),
     deck,
     discard: [],
-    towers: newTowers(stageDef(run.stage).floors, config),
+    towers: newTowers(stageDef(run.stage).floors, config, run.palos?.[run.stage]),
     integrity: Math.min(run.integrity, config.maxIntegrity),
     wall: 0,
     turn: 0,
@@ -943,10 +974,10 @@ function toMap(run: Run): void {
     run.node = { routes: [], tag: null };
     return;
   }
-  // la primera ruta nunca es de riesgo; el Topógrafo del gremio añade una tercera
+  // la primera ruta nunca es de riesgo; el Cartógrafo de la Orden añade una tercera. El Atajo, solo donde lo hay (asalto 3)
   const [safe] = pick(run, CONTRACTS.filter((c) => !c.risk), 1);
   const others = pick(run, CONTRACTS.filter((c) => c.id !== safe.id), 1 + lvl(run, 'rutas'));
-  run.node = { routes: [safe.id, ...others.map((c) => c.id)], tag: pick(run, TAGS, 1)[0].id };
+  run.node = { routes: [safe.id, ...others.map((c) => c.id)], tag: st.atajo ? pick(run, TAGS, 1)[0].id : null };
 }
 
 function advance(run: Run): void {
@@ -1281,4 +1312,5 @@ export function mvpTool(run: Run): string | null {
 }
 
 /** Base de Fuerza y Resonancia de una formación con los planos de la campaña. */
-export const formBase = (run: Run, f: Formation) => ({ f: FORM[f].f + run.levels[f] * FORM[f].lf, r: Math.round((FORM[f].r + run.levels[f] * FORM[f].lr) * 100) / 100 });
+/** Daño y Multi de una formación con su nivel de Pergamino: el Pergamino solo sube el Daño; el Multi es el de la formación. */
+export const formBase = (run: Run, f: Formation) => ({ f: FORM[f].f + run.levels[f] * FORM[f].lf, r: FORM[f].r });

@@ -200,7 +200,7 @@ export function omenWith(tx: TextosAutopsia, v: PlayerView): Omen | null {
   let worst: Suit | null = null;
   for (const s of SUITS) {
     const t = v.towers[s];
-    if (!standing(t) || t.disarmed || t.fx.sobrecarga) continue;
+    if (!standing(t) || t.fx.sobrecarga) continue;
     if (!pool.some((c) => c.suit === s)) continue;
     if (worst === null || threatOf(v, t) > threatOf(v, v.towers[worst])) worst = s;
   }

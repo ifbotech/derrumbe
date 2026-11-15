@@ -6,11 +6,10 @@ import { BALANCE, relic } from './balance-config';
 
 /** Cifras de la descripción de una reliquia (`reliquias.<id>` más las derivadas de tools.ts). */
 export function cifrasReliquia(id: string): Record<string, number> {
-  const V = BALANCE.reliquias;
   const derivadas: Record<string, Record<string, number>> = {
     timbre: { sellos: BALANCE.timbre.stamps },
-    prensa: { x1: 1 + V.prensa.multi, x4: 1 + 4 * V.prensa.multi },
-    contragolpe: { ej: 4 * V.contragolpe.factor },
+    contragolpe: { ej: 4 * BALANCE.reliquias.contragolpe.factor },
+    crisol: { base: BALANCE.golpe.expuesto },
   };
   return { ...relic(id), ...derivadas[id] };
 }
@@ -33,6 +32,7 @@ export function cifrasReinado(): Record<string, number | string> {
   const R = BALANCE.reinados;
   return {
     pct: Math.round((R.corazas - 1) * 100),
+    reyes: Math.round((R.reyesAcorazados - 1) * 100),
     impuesto: R.impuesto,
     rey: R.reyColerico,
     heridas: R.heridasViejas,
@@ -50,6 +50,18 @@ export function cifrasBaraja(id: string): Record<string, number> {
   return B[id] ?? {};
 }
 
+/** Una fracción como la lee el jugador: «¼», «½», «¾»; si no es una de esas, en tanto por ciento («30 %»). */
+export function fraccion(n: number): string {
+  const f: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '¾' };
+  return f[String(n)] ?? `${Math.round(n * 100)} %`;
+}
+
+/** Cifras de las definiciones de las palabras clave (Golpe exacto y Expuesto), en los dos idiomas. */
+export function cifrasPalabra(): Record<string, number | string> {
+  const G = BALANCE.golpe;
+  return { oro: G.oroExacto, impulso: fraccion(G.onda), racha: G.racha, tope: G.racha * G.rachaTope, expuesto: G.expuesto };
+}
+
 /** Cifras de sellos, acabados y estados de trono (como engine.ts). */
 export const CIFRAS_MESA = {
   jornal: { oro: BALANCE.sellos.jornal },
@@ -57,6 +69,5 @@ export const CIFRAS_MESA = {
   templado: { n: BALANCE.acabados.templado },
   policromado: { n: BALANCE.acabados.policromado },
   agrietado: { n: BALANCE.acabados.agrietado, cada: 1 / BALANCE.acabados.agrietadoRompe },
-  fractura: { n: BALANCE.golpe.brecha },
-  apuntalado: { n: BALANCE.golpe.enGuardia },
+  expuesto: { n: BALANCE.golpe.expuesto },
 } as const;

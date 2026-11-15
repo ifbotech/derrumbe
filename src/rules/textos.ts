@@ -85,6 +85,9 @@ function nota(lang: Lang, es: string): string | null {
 /** La etiqueta de un paso de la cuenta en `lang`. En español, la del motor tal cual. */
 export function pasoFor(lang: Lang, ev: Paso): string {
   if (lang === 'es') return ev.label;
+  // el paso de Expuesto lleva su cifra en la cabecera («Expuesto ×2»)
+  const expuesto = rehacer(lang, 'paso.expuesto', ev.label);
+  if (expuesto !== null) return expuesto;
   // la cabecera es un nombre conocido, y lo que sigue a «: », su nota
   const i = ev.label.indexOf(': ');
   if (i < 0) return cabecera(lang, ev.label);

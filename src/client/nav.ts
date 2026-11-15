@@ -231,7 +231,7 @@ function reveal(el: HTMLElement, hop = true): void {
 function nearest(a: DOMRect, list: HTMLElement[], dx: number, dy: number): HTMLElement | null {
   const ax = a.left + a.width / 2;
   const ay = a.top + a.height / 2;
-  type Option = { el: HTMLElement; gap: number; side: number; off: number; beside: boolean };
+  type Option = { el: HTMLElement; gap: number; side: number; off: number; along: number; beside: boolean };
   const all: Option[] = [];
   for (const el of list) {
     const b = el.getBoundingClientRect();
@@ -242,7 +242,7 @@ function nearest(a: DOMRect, list: HTMLElement[], dx: number, dy: number): HTMLE
     const side = dx ? Math.max(0, b.top - a.bottom, a.top - b.bottom) : Math.max(0, b.left - a.right, a.left - b.right);
     const size = dx ? Math.min(a.width, b.width) : Math.min(a.height, b.height);
     const off = Math.abs((b.left + b.width / 2 - ax) * dy) + Math.abs((b.top + b.height / 2 - ay) * dx);
-    all.push({ el, gap: Math.max(0, gap), side, off, beside: -gap > size / 2 && side > 0 });
+    all.push({ el, gap: Math.max(0, gap), side, off, along, beside: -gap > size / 2 && side > 0 });
   }
   const ahead = all.filter((o) => !o.beside);
   const pool = ahead.length ? ahead : all;
@@ -252,7 +252,11 @@ function nearest(a: DOMRect, list: HTMLElement[], dx: number, dy: number): HTMLE
       const d = score(o) - score(best);
       return d < -0.5 || (Math.abs(d) <= 0.5 && o.off < best.off) ? o : best;
     }).el;
-  const minGap = Math.min(...pool.map((o) => o.gap));
+  // V11: el hueco más corto se mide solo con lo que queda de verdad hacia ese lado (en un cono de ~56°): una
+  // reliquia del cinto, justo debajo y apenas a la derecha de la última oferta de La Taberna, ya no le quita
+  // la «→» a la columna de Curar · Renovar · Bajar que está en línea.
+  const cone = pool.filter((o) => o.off <= o.along * 1.5);
+  const minGap = Math.min(...(cone.length ? cone : pool).map((o) => o.gap));
   const inline = pool.filter((o) => o.side === 0 && o.gap <= minGap * 2.5 + 80);
   return inline.length ? pick((o) => o.gap, inline) : pick((o) => o.gap + o.side * 1.5, pool);
 }

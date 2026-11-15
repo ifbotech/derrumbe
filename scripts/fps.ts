@@ -10,6 +10,9 @@
 // antes una vez en frío (no cuenta, va a enFrio en el informe): en un perfil nuevo la GPU compila sus
 // sombreadores la primera vez que ve cada efecto, y eso no es lo que siente quien juega una partida.
 //
+// V11: antes de todo, una pasada en frío que SÍ cuenta: navegador recién lanzado, contexto nuevo en
+// 1920×1080 y el primer sello de lacre de la sesión (con su lámina); falla si un fotograma pasa de 50 ms.
+//
 // Falla si en un escenario el p95 pasa de max(16,7 ms; refresco en reposo) + 0,5 ms, o si un fotograma
 // pasa de 50 ms. Deja artifacts/mision/v8/fps.json. Tarda ≤ 3 min (sin contar la construcción); a los 5, falla.
 //
@@ -219,6 +222,57 @@ async function main(): Promise<void> {
   const report: Record<string, unknown> = { fecha: new Date().toISOString(), umbral: 'p95 ≤ max(16,7; refresco en reposo) + 0,5 ms · ningún fotograma > 50 ms', ventanas: {} };
   try {
     browser = await chromium.launch({ channel: 'chromium', args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-zero-copy'] });
+    // V11 · la pasada en frío del sello, la primera de todas: navegador recién lanzado (perfil y caché de
+    // sombreadores nuevos), contexto nuevo en 1920×1080, la mesa puesta como al empezar un asalto y el PRIMER
+    // sello de lacre de la sesión. Falla si un solo fotograma pasa de 50 ms.
+    {
+      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, locale: 'es-ES' });
+      await ctx.addInitScript({ content: NAME_SHIM });
+      await ctx.addInitScript({ content: PROBE });
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => fails.push(`[frío] error de página: ${e.message}`));
+      await page.goto(`${site.url}?qa=1`);
+      await page.waitForFunction(() => !!(window as unknown as { __qa?: unknown }).__qa);
+      await page.evaluate(() => ((window as unknown as Q).__qaFx.settings.speed = 1));
+      await go(page, 'mesa');
+      await page.mouse.click(960, 12);
+      await page.evaluate(() => (window as unknown as { __fpsSettle(ms: number): Promise<void> }).__fpsSettle(6000));
+      const cold = await page.evaluate(async () => {
+        const w = window as unknown as Q & { __fpsLoaf: unknown[] };
+        const raf = () => new Promise<number>((r) => requestAnimationFrame(r));
+        const card = document.querySelector<HTMLElement>('#hand .card.z-dinamita, #hand .card.z-eco, #hand .card.z-jornal, #hand .card.z-sindical');
+        if (!card) return null;
+        w.__fpsLoaf.length = 0;
+        await raf();
+        let last = await raf();
+        const t0 = last;
+        const d: number[] = [];
+        // como en la cuenta de verdad: el lacre cae y, 200 ms después, pasa la lámina de un acabado
+        w.__qaFx.sealStep('seal', card);
+        w.__qaSfx.tick(3);
+        let foiled = false;
+        while (last - t0 < 1400) {
+          const t = await raf();
+          d.push(t - last);
+          last = t;
+          if (!foiled && t - t0 >= 200) {
+            foiled = true;
+            w.__qaFx.sealStep('treat', document.querySelector<HTMLElement>('#hand .card.t-policromado, #hand .card.t-forjado, #hand .card.t-templado, #hand .card.t-agrietado'));
+            w.__qaSfx.tick(4);
+          }
+        }
+        return { d, loaf: w.__fpsLoaf.slice(0, 4) };
+      });
+      if (!cold) fails.push('[frío] la mesa no tiene ninguna carta con sello');
+      else {
+        const m = stats(cold.d, 1);
+        const ok = m.largos === 0;
+        console.log(`${ok ? '✓' : '✗'} en frío (1920×1080, primer sello de la sesión): n ${m.n} · media ${m.media} ms · p95 ${m.p95} ms · máx ${m.max} ms · > 50 ms: ${m.largos}`);
+        report.frioSello = { ...m, ...(m.largos ? { largosDetalle: cold.loaf } : {}) };
+        if (!ok) fails.push(`[frío] primer sello de la sesión en 1920×1080: ${m.largos} fotogramas > 50 ms (máx ${m.max} ms)`);
+      }
+      await ctx.close();
+    }
     for (const view of VIEWS) {
       const ctx = await browser.newContext({ viewport: { width: view.width, height: view.height }, locale: 'es-ES' });
       await ctx.addInitScript({ content: NAME_SHIM });
@@ -249,14 +303,17 @@ async function main(): Promise<void> {
       const limit = Math.max(16.7, refresh) + 0.5;
       console.log(`\n${view.name} · refresco en reposo ${refresh} ms (umbral p95 ${limit.toFixed(1)} ms)`);
       const out: Record<string, Medida> = {};
-      const frio: Record<string, { max: number; largos: number }> = {};
+      const frio: Record<string, { max: number; largos: number; largosDetalle?: unknown[] }> = {};
       for (const sc of SCENARIOS) {
         // una pasada en frío, que no cuenta: el perfil de Playwright es nuevo en cada lanzamiento y la GPU
         // compila sus sombreadores la primera vez que ve cada efecto (en un jugador, una vez y a disco)
         await sc.prep(page);
         await page.evaluate(() => (window as unknown as { __fpsSettle(ms: number): Promise<void> }).__fpsSettle(6000));
-        const cold = stats((await sc.run(page)).deltas, 1);
-        frio[sc.name] = { max: cold.max, largos: cold.largos };
+        const coldRun = await sc.run(page);
+        const cold = stats(coldRun.deltas, 1);
+        // V11 (cierre): la primera vez también cuenta. Un fotograma en frío de más de 50 ms es un fallo.
+        frio[sc.name] = { max: cold.max, largos: cold.largos, ...(cold.largos && coldRun.loaf?.length ? { largosDetalle: coldRun.loaf } : {}) };
+        if (cold.largos) fails.push(`[${view.name}] ${sc.label} en frío: ${cold.largos} fotogramas > 50 ms (máx ${cold.max} ms)`);
         await sc.prep(page);
         await page.evaluate(() => (window as unknown as { __fpsSettle(ms: number): Promise<void> }).__fpsSettle(6000));
         const { deltas, reps, loaf } = await sc.run(page);

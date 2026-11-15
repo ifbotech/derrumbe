@@ -65,7 +65,9 @@ html[data-guia] .table-screen #coach { display: none !important; }
 .threat .curse-tag { margin-left: 4px; align-self: center; }
 #fatigue .curse-tag { margin-left: 6px; }
 [data-curse='escudo'] #wall-blocks i:last-child { box-shadow: 6px 0 0 -1px var(--curse-lit); }
-[data-curse='guardias'] .tower .fx-apuntalado { background: var(--curse); color: var(--card-paper); border-color: var(--pit); }
+/* V11 · el Inquisidor: «Aturdido» tachado en cada trono (ninguno queda Aturdido) */
+.tower-fx .curse-tag.sin-fx { font-size: 14px; }
+.tower-fx .curse-tag.sin-fx s { text-decoration-thickness: 2px; }
 [data-curse='ataque'] .tower .threat b { box-shadow: 0 0 0 2px var(--curse-lit); }
 [data-curse='asedio'] #fatigue { border-color: var(--curse-lit); }
 #score .marks .m.curse { background: var(--curse); color: var(--card-paper); border-color: var(--pit); }

@@ -17,7 +17,7 @@ export interface Pieza {
 }
 
 /** El papel sobre el que se mide todo: el de las cartas. */
-const PAPEL = '#eae0ce';
+const PAPEL = '#efe6d5';
 /** Cartas de muestra: un as, un número bajo, uno alto y las tres figuras de cada palo, y el comodín. */
 const RANGOS = [1, 7, 10, 11, 12, 13];
 const carta = (id: string): Card | undefined => ALL_CARDS.find((c) => c.id === id);

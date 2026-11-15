@@ -3,10 +3,11 @@
 //
 // Cada golpe se resuelve en dos ejes, de izquierda a derecha:
 //
-//     Golpe = redondear(Daño × Multi)      (en el código: fuerza × res)
+//     Golpe = Daño × Multi      (en el código: fuerza × res; los dos, siempre enteros)
 //
-// La formación pone la base; cada carta suma su Daño; acabados, sellos de lacre, cartas especiales
-// y reliquias suman Daño, suman Multi o lo multiplican, en ese orden.
+// La formación pone la base; cada carta suma su Daño (0 contra el trono de su palo: Inmune); acabados,
+// sellos de lacre, cartas especiales y reliquias suman Daño, suman Multi o lo multiplican, en ese orden.
+// Al final, si el trono estaba Expuesto, el Daño se multiplica.
 // Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
 import { BALANCE, fill } from './balance-config';
 import { MAX_SPECIALS, SPECIAL } from './specials';
@@ -33,8 +34,6 @@ export interface Card {
 }
 
 export const SUITS: Suit[] = ['S', 'D', 'H', 'C'];
-/** BEATS[a] === b  →  el palo a hace daño doble a la torre b. */
-export const BEATS: Record<Suit, Suit> = { S: 'D', D: 'H', H: 'C', C: 'S' };
 /** Nombre del palo en mayúsculas, tal como se escribe en la mesa («Contraataque de PICAS»). */
 export const MATERIAL: Record<Suit, string> = { S: 'PICAS', D: 'DIAMANTES', H: 'CORAZONES', C: 'TRÉBOLES' };
 export const SUIT_GLYPH: Record<CardSuit, string> = { S: '♠', D: '♦', H: '♥', C: '♣', X: '★' };
@@ -79,8 +78,8 @@ export const FORMATION_NAME: Record<Formation, string> = {
   poker: 'Póker',
   escaleracolor: 'Escalera de color',
 };
-/** Base de cada formación (f Fuerza, r Resonancia) y lo que gana por nivel de plano (lf, lr): `formaciones` de balance-config.json. */
-export const FORM: Record<Formation, { f: number; r: number; lf: number; lr: number }> = BALANCE.formaciones as Record<Formation, { f: number; r: number; lf: number; lr: number }>;
+/** Base de cada formación (f Daño, r Multi entero) y el Daño que gana por nivel de Pergamino (lf): `formaciones` de balance-config.json. */
+export const FORM: Record<Formation, { f: number; r: number; lf: number }> = BALANCE.formaciones as Record<Formation, { f: number; r: number; lf: number }>;
 
 /**
  * Devuelve el tipo de formación o null si las cartas no forman una jugada legal de ataque.
@@ -119,17 +118,16 @@ export interface Config {
   wallCap: number;
   /** Lo que quita el primer colapso; después sube 1 por cada tanda de colapsos (uno por jugador). */
   collapseLoss: number;
-  /** Divisores de los poderes: muro = ⌈♣/wallDiv⌉, reparación = ⌈♥/repairDiv⌉, esquirlas = ⌊♦/shardDiv⌋. */
-  wallDiv: number;
-  repairDiv: number;
-  shardDiv: number;
+  /** Poderes de palo, por carta (sea cual sea su rango): Escudo por cada ♣, Cura por cada ♥ y Salpica por cada ♦. */
+  escudoPorCarta: number;
+  curaPorCarta: number;
+  salpicaPorCarta: number;
   floorHp: Record<number, number>;
   floorThreat: Record<number, number>;
   handSize: Record<number, number>;
   /** Cartas que voltea la sirena cada turno (1 por defecto). */
   sirenCount?: number;
-  /** Multiplicador con ventaja de material (2) y contra la torre del propio palo (0). */
-  advMult?: number;
+  /** Lo que multiplica una carta contra el trono de su palo (0 por defecto: Inmune). */
   ownMult?: number;
   /** Margen del golpe limpio: el piso cae y cuenta como limpio a ±cleanTol de su resistencia. */
   cleanTol?: number;
@@ -137,12 +135,12 @@ export interface Config {
   alwaysPierce?: boolean;
   /** Niveles de plano por formación. */
   formLevel?: Partial<Record<Formation, number>>;
-  /** Pisos que empiezan apuntalados (el primer golpe contra ellos resuena a la mitad). */
-  apuntalado?: number[];
-  /** Lo que multiplica una fractura expuesta (1,5 por defecto). */
-  fracturaMult?: number;
-  /** Los golpes policromos también fracturan. */
-  polyFractura?: boolean;
+  /** Lo que multiplica el Daño de un golpe contra un trono Expuesto (`golpe.expuesto` por defecto; el Caldero lo sube). */
+  expuestoMult?: number;
+  /** Los golpes de 3 palos o más también dejan Expuesto (Caldero). */
+  polyExpuesto?: boolean;
+  /** Ningún trono queda en ese estado (true: en ninguno). El decreto del Inquisidor quita Aturdido. */
+  noFx?: boolean | keyof TowerFx;
   /** Los sellos de las cartas se activan dos veces. */
   sealTwice?: boolean;
   /** Las cartas descartadas se agotan (no vuelven esta obra) y cargan Fuerza para el próximo golpe. */
@@ -151,14 +149,12 @@ export interface Config {
   reserveSize?: number;
   /**
    * Fatiga de cimientos: desde este turno de la obra, y cada `fatigueEvery` turnos, sube un nivel.
-   * Cada nivel da +`fatigueRes` de Resonancia a todos los golpes y +1 de amenaza a todas las torres:
-   * la obra se acelera en los dos sentidos. Sin definir, no hay fatiga.
+   * Cada nivel da +`fatigueDano` de Daño a todos los golpes y +1 de Ataque a todos los tronos:
+   * el asalto se acelera en los dos sentidos. Sin definir, no hay fatiga.
    */
   fatigueStart?: number;
   fatigueEvery?: number;
-  fatigueRes?: number;
-  /** Amenaza extra de un piso mientras siga apuntalado. */
-  bracedThreat?: number;
+  fatigueDano?: number;
   /** Lo que le cuesta al búnker cada piso que cae sin golpe limpio. */
   crumbleHurt?: number;
   /** Fuerza que se guarda para el próximo golpe por cada punto reparado de más con el búnker lleno. */
@@ -186,19 +182,16 @@ export const DIFFICULTY: Record<Difficulty, Config> = {
   brutal: { ...OBRA, ...BALANCE.clasica.brutal },
 };
 
-/** Estados estructurales de una torre (los provoca la mezcla de materiales del golpe, o un jefe). */
+/** Los dos estados de un trono (los deja la mezcla de palos del golpe, el Motín o El Espía). */
 export interface TowerFx {
-  /** Fractura expuesta: el próximo golpe contra ella resuena ×1,5. */
+  /** Expuesto: el próximo golpe contra él hace ×`golpe.expuesto` de Daño. */
   fractura?: boolean;
-  /** Sobrecarga: se salta su próximo golpe de sirena. */
+  /** Aturdido: se salta su próximo Contraataque. */
   sobrecarga?: boolean;
-  /** Apuntalado: el primer golpe contra este piso resuena a la mitad. */
-  apuntalado?: boolean;
 }
 export const TOWER_FX: Record<keyof TowerFx, { name: string; desc: string }> = {
-  fractura: { name: 'Brecha', desc: fill('El próximo golpe contra este trono hace ×{n} de Multi.', { n: BALANCE.golpe.brecha }) },
-  sobrecarga: { name: 'Desarmado ×1', desc: 'Este trono se salta su próximo Contraataque.' },
-  apuntalado: { name: 'En guardia', desc: fill('×{n} de Multi en el primer golpe contra este guardia.', { n: BALANCE.golpe.enGuardia }) },
+  fractura: { name: 'Expuesto', desc: fill('El próximo golpe contra este trono hace ×{n} de Daño.', { n: BALANCE.golpe.expuesto }) },
+  sobrecarga: { name: 'Aturdido', desc: 'Este trono se salta su próximo Contraataque.' },
 };
 
 export interface Tower {
@@ -206,8 +199,9 @@ export interface Tower {
   /** Pisos restantes; el índice 0 es el piso activo. */
   floors: number[];
   damage: number;
-  disarmed: boolean;
   fx: TowerFx;
+  /** No está en este asalto (los asaltos 1 y 2 tienen 2 y 3 tronos): sin guardias, no cuenta para ganar y su Contraataque no hace nada. */
+  away?: true;
 }
 
 export interface Player {
@@ -236,7 +230,7 @@ export interface GameState {
   lastSiren: Card | null;
   /** Cinturón de herramientas, de izquierda a derecha (campaña). */
   tools: ToolInst[];
-  /** Racha de golpes limpios: cada uno da +0,5 de Resonancia al siguiente golpe. */
+  /** Racha de Golpes exactos: cada eslabón da +`golpe.racha` de Multi al siguiente golpe (hasta `golpe.rachaTope`). */
   chain: number;
   /** Fuerza cargada para el próximo golpe. */
   charge: number;
@@ -299,7 +293,7 @@ export type GameEvent =
   | { e: 'hurt'; amount: number; integrity: number }
   | { e: 'gold'; amount: number }
   | { e: 'burn'; card: Card }
-  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'disarmed' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty' }
+  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty' }
   | { e: 'collapse'; loss: number; integrity: number }
   | { e: 'draw'; player: string; count: number; cards?: Card[] }
   | { e: 'turn'; player: string }
@@ -341,10 +335,11 @@ export function standardDeck(): Card[] {
   return deck;
 }
 
-const floorFx = (rank: number | undefined, cfg: Config): TowerFx => (rank !== undefined && cfg.apuntalado?.includes(rank) ? { apuntalado: true } : {});
-
-export function newTowers(floors: number[], cfg: Config): Record<Suit, Tower> {
-  return Object.fromEntries(SUITS.map((s) => [s, { suit: s, floors: [...floors], damage: 0, disarmed: false, fx: floorFx(floors[0], cfg) }])) as Record<Suit, Tower>;
+/** Los cuatro tronos con sus guardias. Con `palos`, solo esos están en el asalto: los demás salen sin guardias y con `away`. */
+export function newTowers(floors: number[], _cfg?: Config, palos?: Suit[]): Record<Suit, Tower> {
+  return Object.fromEntries(
+    SUITS.map((s) => [s, palos && !palos.includes(s) ? { suit: s, floors: [], damage: 0, fx: {}, away: true } : { suit: s, floors: [...floors], damage: 0, fx: {} }]),
+  ) as Record<Suit, Tower>;
 }
 
 export function createGame(players: { id: string; name: string }[], seed: number, config: Config = DEFAULT_CONFIG): GameState {
@@ -382,10 +377,11 @@ export function createGame(players: { id: string; name: string }[], seed: number
 
 // ───────────────────────── El golpe ─────────────────────────
 
+/** Una sola regla de palos: contra el trono de su palo, una carta hace 0 (Inmune; `ownMult` lo cambia); contra los demás, su número. */
 export function multiplier(card: CardSuit, tower: Suit, cfg: Config = DEFAULT_CONFIG): number {
   if (card === 'X') return 0;
   if (card === tower) return cfg.ownMult ?? 0;
-  return BEATS[card] === tower ? (cfg.advMult ?? 2) : 1;
+  return 1;
 }
 
 export function standing(t: Tower): boolean {
@@ -409,10 +405,10 @@ export interface StrikeEnv {
   fatigue?: number;
 }
 
-/** Amenaza de una torre ahora mismo: la de su piso, más la fatiga de cimientos y lo que añada el apuntalamiento. */
+/** Ataque de un trono ahora mismo: el de su guardia más el Asedio final. */
 export function threatOf(env: { config: Config; fatigue?: number }, t: Tower): number {
   if (!t.floors.length) return 0;
-  return env.config.floorThreat[t.floors[0]] + (env.fatigue ?? 0) + (t.fx.apuntalado ? (env.config.bracedThreat ?? 0) : 0);
+  return env.config.floorThreat[t.floors[0]] + (env.fatigue ?? 0);
 }
 
 /** El golpe en curso, tal como lo ven las cartas especiales y las herramientas. */
@@ -444,13 +440,15 @@ export interface Strike {
   draw: number;
   noSiren: boolean;
   disarm: boolean;
-  /** Daño adicional tras el golpe: fracción de la resistencia del piso activo de una torre. */
+  /** Daño adicional tras el golpe: fracción de la Vida del guardia activo de un trono. */
   extra: { tower: Suit; pct: number }[];
-  /** +n de Fuerza. */
+  /** Daño fijo adicional tras el golpe a un trono (cuenta como Salpica). */
+  burst: { tower: Suit; n: number }[];
+  /** +n de Daño. */
   F(n: number): void;
-  /** +n de Resonancia. */
+  /** +n de Multi (entero). */
   R(n: number): void;
-  /** ×n de Resonancia. */
+  /** ×n de Multi (entero). */
   X(n: number): void;
   /** Aviso sin números (un efecto que no toca Fuerza ni Resonancia). */
   note(text: string): void;
@@ -483,13 +481,18 @@ export interface StrikeResult extends Outcome {
   shattered: Card[];
 }
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
-
 interface Tally {
   events: GameEvent[];
   dealt: Partial<Record<Suit, number>>;
   fallenBy: Partial<Record<Suit, number>>;
   fell: { tower: Suit; rank: number; clean: boolean }[];
+}
+
+/** Deja un estado en un trono en pie (si no lo tiene ya y la mesa lo permite) y lo anuncia. */
+function setFx(t: Tower, fx: keyof TowerFx, events: GameEvent[], cfg?: Config): void {
+  if (!standing(t) || t.fx[fx] || cfg?.noFx === true || cfg?.noFx === fx) return;
+  t.fx[fx] = true;
+  events.push({ e: 'state', tower: t.suit, fx, on: true });
 }
 
 function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean, cfg: Config, out: Tally): void {
@@ -505,8 +508,7 @@ function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean,
     const rank = t.floors.shift()!;
     out.fallenBy[t.suit] = (out.fallenBy[t.suit] ?? 0) + 1;
     out.fell.push({ tower: t.suit, rank, clean });
-    t.disarmed = false;
-    t.fx = floorFx(t.floors[0], cfg);
+    t.fx = {};
     t.damage = pierce && standing(t) ? excess : 0;
     out.events.push({ e: 'floorDown', tower: t.suit, rank, clean, towerDown: !standing(t), damage: t.damage });
   }
@@ -530,7 +532,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   let cur: { src: StepSrc; id: string; slot?: number; label: string; loud?: boolean } = { src: 'form', id: formation, label: FORMATION_NAME[formation] };
   const emit = (d: { df?: number; dr?: number; mr?: number }) => {
     const proc: { proc?: Proc } = cur.loud && d.df ? { proc: { what: 'fuerza', n: d.df } } : {};
-    tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: cur.label, ...d, fuerza: x.fuerza, res: r2(x.res), ...proc });
+    tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: cur.label, ...d, fuerza: x.fuerza, res: x.res, ...proc });
   };
   const x: Strike = {
     env,
@@ -555,6 +557,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     noSiren: false,
     disarm: false,
     extra: [],
+    burst: [],
     F(n) {
       if (!n) return;
       x.fuerza += n;
@@ -563,26 +566,26 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     R(n) {
       if (!n) return;
       x.res += n;
-      emit({ dr: r2(n) });
+      emit({ dr: n });
     },
     X(n) {
       if (n === 1) return;
       x.res *= n;
-      emit({ mr: r2(n) });
+      emit({ mr: n });
     },
     note(text) {
-      tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: `${cur.label}: ${text}`, fuerza: x.fuerza, res: r2(x.res) });
+      tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: `${cur.label}: ${text}`, fuerza: x.fuerza, res: x.res });
     },
   };
 
-  // 1 · la formación pone la base
+  // 1 · la formación pone la base (el Pergamino solo sube su Daño)
   const level = cfg.formLevel?.[formation] ?? 0;
   const base = FORM[formation];
   x.fuerza = base.f + level * base.lf;
-  x.res = base.r + level * base.lr;
-  emit({ df: x.fuerza, dr: r2(x.res - 1) });
+  x.res = base.r;
+  emit({ df: x.fuerza, dr: x.res - 1 });
 
-  // 2 · lo que arrastra la mesa: racha de golpes limpios, carga acumulada y estado de la torre
+  // 2 · lo que arrastra la mesa: Racha de Golpes exactos, Daño cargado y Asedio final
   if (env.chain > 0) {
     cur = { src: 'chain', id: 'onda', label: 'Racha' };
     x.R(BALANCE.golpe.racha * env.chain);
@@ -594,27 +597,16 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   }
   if ((env.fatigue ?? 0) > 0) {
     cur = { src: 'state', id: 'fatiga', label: 'Asedio final' };
-    x.R(r2((cfg.fatigueRes ?? 0.25) * env.fatigue!));
-  }
-  if (standing(tower) && tower.fx.fractura) {
-    cur = { src: 'state', id: 'fractura', label: TOWER_FX.fractura.name };
-    x.X(cfg.fracturaMult ?? BALANCE.golpe.brecha);
-    tower.fx.fractura = false;
-    tally.events.push({ e: 'state', tower: target, fx: 'fractura', on: false });
-  }
-  if (standing(tower) && tower.fx.apuntalado && cards.length) {
-    cur = { src: 'state', id: 'apuntalado', label: TOWER_FX.apuntalado.name };
-    x.X(BALANCE.golpe.enGuardia);
-    tower.fx.apuntalado = false;
-    tally.events.push({ e: 'state', tower: target, fx: 'apuntalado', on: false });
+    x.F((cfg.fatigueDano ?? BALANCE.asedio.dano) * env.fatigue!);
   }
 
   // 3 · las cartas, de izquierda a derecha
   const riders = specials.map((c) => SPECIAL[c.sp!]?.fx ?? {});
   const allHigh = riders.some((fx) => fx.allHigh);
-  const allAdv = riders.some((fx) => fx.allAdv);
+  const noImmune = riders.some((fx) => fx.noImmune);
   const highest = Math.max(0, ...cards.map(cardValue));
   const sealReps = cfg.sealTwice ? 2 : 1;
+  /** Cartas de cada palo en el golpe (el sello de eco cuenta su carta dos veces): de aquí salen los poderes. */
   const power: Record<Suit, number> = { S: 0, D: 0, H: 0, C: 0 };
   let adjacent = 0;
   let jornal = 0;
@@ -622,12 +614,13 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   for (const c of cards) {
     const suit = c.suit as Suit;
     const v = allHigh ? highest : cardValue(c);
-    const impact = v * (allAdv ? (cfg.advMult ?? 2) : multiplier(suit, target, cfg));
+    const m = multiplier(suit, target, cfg);
+    const impact = v * (noImmune ? Math.max(1, m) : m);
     cur = { src: 'card', id: c.id, label: cardLabel(c) };
     x.impacts.push(impact);
     if (impact) x.F(impact);
     else x.note('inmune');
-    power[suit] += v;
+    power[suit] += 1;
     if (c.tr) {
       cur = { src: 'treat', id: c.id, label: `${cardLabel(c)} · ${TREATMENT[c.tr].name}` };
       if (c.tr === 'forjado') x.F(BALANCE.acabados.forjado);
@@ -644,7 +637,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
         if (c.seal === 'eco') {
           if (impact) x.F(impact);
           else x.note('eco');
-          power[suit] += v;
+          power[suit] += 1;
         } else if (c.seal === 'dinamita') {
           adjacent += v;
           x.note(`${v} a los tronos vecinos`);
@@ -668,6 +661,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     cur = { src: 'special', id: c.id, label: cardLabel(c) };
     const before = tally.events.length;
     x.F((fx.flat ?? 0) + (fx.flatPerCard ?? 0) * cards.length + (fx.highDouble ? best : 0) + (fx.wallForce ?? 0) * env.wall);
+    x.R(fx.multi ?? 0);
     x.X(fx.strikeMult ?? 1);
     if (fx.pierce) x.pierce = true;
     x.wall += (fx.wall ?? 0) + (fx.wallPerCard ?? 0) * all.length;
@@ -698,18 +692,27 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     def.strike?.(x, t);
   });
 
-  // 6 · Fuerza × Resonancia
-  const total = Math.max(0, Math.round(x.fuerza * x.res));
-  tally.events.push({ e: 'impact', tower: target, fuerza: x.fuerza, res: r2(x.res), total });
+  // 6 · Expuesto, al final de la columna de Daño: el golpe hace ×n de Daño (se suma otro tanto)
+  if (standing(tower) && tower.fx.fractura) {
+    const mult = cfg.expuestoMult ?? BALANCE.golpe.expuesto;
+    cur = { src: 'state', id: 'fractura', label: `Expuesto ×${mult}` };
+    x.F(x.fuerza * (mult - 1));
+    tower.fx.fractura = false;
+    tally.events.push({ e: 'state', tower: target, fx: 'fractura', on: false });
+  }
+
+  // 7 · Daño × Multi = Golpe, todo entero
+  const total = Math.max(0, x.fuerza * x.res);
+  tally.events.push({ e: 'impact', tower: target, fuerza: x.fuerza, res: x.res, total });
   applyDamage(tower, total, x.pierce, false, cfg, tally);
-  const shards = Math.floor(power.D / cfg.shardDiv) + x.splash + Math.round(total * x.splashPct);
+  const shards = power.D * cfg.salpicaPorCarta + x.splash + Math.round(total * x.splashPct);
   SUITS.forEach((s, i) => {
     if (s === target) return;
     const near = Math.abs(i - SUITS.indexOf(target)) === 1 ? adjacent : 0;
     applyDamage(env.towers[s], shards + near, false, true, cfg, tally);
   });
 
-  // 7 · golpe limpio: onda sísmica sobre el piso siguiente, un jornal extra y una carta de impulso
+  // 8 · Golpe exacto: Impulso sobre el guardia siguiente, oro y una carta
   if (tally.fell.some((f) => f.clean)) x.draw += 1;
   for (const f of [...tally.fell]) {
     if (!f.clean) continue;
@@ -721,7 +724,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     applyDamage(t, amount, false, true, cfg, tally);
   }
 
-  // 8 · las herramientas reaccionan a cómo quedó el golpe
+  // 9 · las reliquias reaccionan a cómo quedó el golpe
   const outcome = (): Outcome => ({ total, fallen: tally.fell.length, clean: tally.fell.some((f) => f.clean), fell: tally.fell });
   const seen = outcome();
   env.tools.forEach((t, slot) => {
@@ -734,6 +737,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     const t = env.towers[e.tower];
     if (standing(t)) applyDamage(t, Math.ceil(floorHp(t, cfg) * e.pct), false, true, cfg, tally);
   }
+  for (const b of x.burst) applyDamage(env.towers[b.tower], b.n, false, true, cfg, tally);
   if (tally.fell.length > 0) x.gold += goldOnKill + BALANCE.sellos.jornal * jornal;
   // suelo inestable: cada piso que cae sin golpe limpio se lleva algo del búnker
   const rough = tally.fell.filter((f) => !f.clean).length;
@@ -743,28 +747,22 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     x.note(`pierdes ${cfg.crumbleHurt * rough} de Vida`);
   }
 
-  // 9 · estados estructurales que deja la mezcla de materiales
+  // 10 · los estados que deja la mezcla de palos: un solo palo deja Expuesto; tres palos (o El Espía), Aturdido
   if (standing(tower)) {
-    if (x.disarm) tower.disarmed = true;
-    const setFx = (fx: keyof TowerFx) => {
-      if (tower.fx[fx]) return;
-      tower.fx[fx] = true;
-      tally.events.push({ e: 'state', tower: target, fx, on: true });
-    };
-    if (x.mono || (x.poly && cfg.polyFractura)) setFx('fractura');
-    if (x.poly) setFx('sobrecarga');
+    if (x.mono || (x.poly && cfg.polyExpuesto)) setFx(tower, 'fractura', tally.events, cfg);
+    if (x.poly || x.disarm) setFx(tower, 'sobrecarga', tally.events, cfg);
   }
 
-  // 10 · las cartas agrietadas pueden hacerse añicos
+  // 11 · las cartas de Cristal maldito pueden hacerse añicos
   if (rng) for (const c of cracked) if (nextRandom(rng) < BALANCE.acabados.agrietadoRompe) out.shattered.push(c);
 
   return {
     ...out,
     ...outcome(),
     fuerza: x.fuerza,
-    res: r2(x.res),
-    wallGain: x.wall + Math.ceil(power.C / cfg.wallDiv),
-    repair: x.heal + Math.ceil(power.H / cfg.repairDiv),
+    res: x.res,
+    wallGain: x.wall + power.C * cfg.escudoPorCarta,
+    repair: x.heal + power.H * cfg.curaPorCarta,
     hurt: x.hurt,
     gold: x.gold,
     draw: x.draw,
@@ -909,7 +907,6 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   if (card.suit === 'X') return say(card, null, 'joker');
   const t = state.towers[card.suit];
   if (!standing(t)) return say(card, t.suit, 'ruin');
-  if (t.disarmed) return say(card, t.suit, 'disarmed');
   if (t.fx.sobrecarga) {
     t.fx.sobrecarga = false;
     events.push({ e: 'state', tower: t.suit, fx: 'sobrecarga', on: false });
@@ -1033,7 +1030,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     }
     if (res.gold > 0) events.push({ e: 'gold', amount: res.gold });
     turn.draw += res.draw;
-    state.chain = res.clean ? Math.min(4, state.chain + 1) : 0;
+    state.chain = res.clean ? Math.min(BALANCE.golpe.rachaTope, state.chain + 1) : 0;
     state.discard.push(...cards.filter((c) => !res.shattered.includes(c)));
     for (const c of res.shattered) if (!destroy(turn, c)) state.discard.push(c);
     if (res.clean) skip = 'clean';
@@ -1057,10 +1054,11 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Ese trono ya cayó.');
     spend(p, [card.id]);
-    tower.disarmed = true;
     state.exhausted.push(card); // el comodín no vuelve esta obra
     skip = 'huelga';
     events.push({ e: 'joker', player: p.id, card, target: action.target });
+    // el Motín: ese trono queda Aturdido y este turno no hay Contraataque
+    setFx(tower, 'sobrecarga', events, state.config);
     state.tools.forEach((t, slot) => TOOL[t.id]?.joker?.(hookFor(turn, slot), t));
   } else if (action.type === 'pass') {
     if (p.hand.length + p.reserve.length > 0) throw new RuleError('Solo puedes pasar con la mano vacía.');

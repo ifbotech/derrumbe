@@ -1,7 +1,7 @@
 // Conexión con el servidor de salas (WebSocket /ws): reconecta sola y reparte lo que llega.
 // El juego en solitario no la necesita: si esta instalación no tiene servidor (versión estática,
 // escritorio sin conexión), simplemente no se abre y el cooperativo queda apagado.
-import type { ClientMsg, ServerMsg } from '../shared/protocol';
+import { PROTOCOL_VERSION, type ClientMsg, type ClientMsgSinVersion, type ServerMsg } from '../shared/protocol';
 import { stateHash } from '../rules/state-hash';
 import { applyRun } from './campaign';
 import { $, S, toast } from './core';
@@ -27,8 +27,10 @@ let retryTimer = 0;
 
 export const hasServer = () => !!platform.serverUrl();
 
-export function sendMsg(msg: ClientMsg): void {
-  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+export function sendMsg(msg: ClientMsgSinVersion): void {
+  // crear, entrar y volver a una sala llevan la versión del protocolo (V11): el servidor rechaza otra versión
+  const full = (msg.t === 'create' || msg.t === 'join' || msg.t === 'rejoin' ? { ...msg, v: PROTOCOL_VERSION } : msg) as ClientMsg;
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(full));
   else if (msg.t !== 'ping') toast(L(hasServer() ? 'ui.red.sin' : 'ui.red.sin.servidor'));
 }
 
@@ -135,11 +137,16 @@ function onMsg(msg: ServerMsg): void {
       forget();
       break;
     case 'error':
-      S.waiting = false;
-      toast(serverText(msg.message));
-      if (S.screen === 'table' && S.shown) renderInteractive();
+      serverError(msg.message);
       break;
   }
+}
+
+/** Un aviso del servidor (sala llena, otra versión del juego…), en el idioma de la mesa. */
+export function serverError(message: string): void {
+  S.waiting = false;
+  toast(serverText(message));
+  if (S.screen === 'table' && S.shown) renderInteractive();
 }
 
 export function updateConn(): void {

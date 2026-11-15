@@ -1,6 +1,8 @@
-// Las seis palabras clave del juego. Todo lo demás se dice con palabras llanas.
+// Las cinco palabras clave del juego (V11). Todo lo demás se dice con palabras llanas.
 // La interfaz las resalta en negrita allí donde aparezcan y encadena su definición en los globos
 // de ayuda; el reglamento (REGLAS.md) las lista desde aquí.
+import { fill } from './balance-config';
+import { cifrasPalabra } from './cifras';
 
 export interface Keyword {
   id: string;
@@ -12,6 +14,9 @@ export interface Keyword {
   desc: string;
 }
 
+/** Cifras de las definiciones (`golpe` de balance-config.json): ninguna se escribe a mano. */
+const C = cifrasPalabra();
+
 export const KEYWORDS: Keyword[] = [
   // Los `id` no cambian (los usa el cliente para el globo de ayuda); el nombre y el texto, sí.
   // «Daño» solo es palabra clave con mayúscula inicial: «daño» en minúscula es la palabra corriente.
@@ -20,45 +25,37 @@ export const KEYWORDS: Keyword[] = [
     name: 'Daño',
     match: /(?<![\p{L}\p{N}])Daño(?![\p{L}\p{N}])/gu,
     matchEn: /(?<![\p{L}\p{N}])Damage(?![\p{L}\p{N}])/gu,
-    desc: 'Lo que suman tus cartas: su número, el doble con ventaja de palo y nada contra el trono de su palo (Inmune).',
+    desc: 'Lo que suman tus cartas: su número (el As vale 11). Contra el trono de su palo, 0: es Inmune.',
   },
   {
     id: 'resonancia',
     name: 'Multi',
     match: /(?<![\p{L}\p{N}])Multi(?![\p{L}\p{N}])/gu,
     matchEn: /(?<![\p{L}\p{N}])Mult(?![\p{L}\p{N}])/gu,
-    desc: 'Lo que multiplica al Daño: Daño × Multi = Golpe. Lo pone la formación; lo que suma cuenta donde está y lo que multiplica, multiplica todo lo anterior.',
+    desc: 'Lo que multiplica al Daño: Daño × Multi = Golpe. Siempre es entero. Lo pone la formación y lo suben reliquias y acabados.',
   },
   {
     id: 'limpio',
     name: 'Golpe exacto',
     match: /(?<![\p{L}\p{N}])(?:golpes? exactos?|¡EXACTO!)(?![\p{L}\p{N}])/giu,
     matchEn: /(?<![\p{L}\p{N}])(?:exact hits?|EXACT!)(?![\p{L}\p{N}])/giu,
-    desc: 'Abatir a un guardia con el Golpe justo (igual a su Vida): sin Contraataque, +1 de oro, robas 1, Impulso (el siguiente guardia pierde ¼ de su Vida) y Racha (+0,5 de Multi al próximo golpe, hasta +2).',
+    desc: fill('Abatir a un guardia con el Golpe justo: sin Contraataque, +{oro} de oro, robas 1, Impulso (el siguiente pierde {impulso} de su Vida) y Racha (+{racha} de Multi al próximo golpe, hasta +{tope}).', C),
   },
   {
     id: 'fractura',
-    name: 'Brecha',
-    match: /(?<![\p{L}\p{N}])brechas?(?![\p{L}\p{N}])/giu,
-    matchEn: /(?<![\p{L}\p{N}])breach(?:es)?(?![\p{L}\p{N}])/giu,
-    desc: 'La deja un golpe de un solo palo (2 cartas o más). El próximo golpe contra ese trono hace ×1,5 de Multi.',
-  },
-  {
-    id: 'apuntalado',
-    name: 'En guardia',
-    match: /(?<![\p{L}\p{N}])en guardia(?![\p{L}\p{N}])/giu,
-    matchEn: /(?<![\p{L}\p{N}])on guard(?![\p{L}\p{N}])/giu,
-    desc: 'El primer golpe contra ese guardia hace la mitad de Multi (×0,5). Lo traen algunos monarcas y Reinados.',
+    name: 'Expuesto',
+    match: /(?<![\p{L}\p{N}])expuest[oa]s?(?![\p{L}\p{N}])/giu,
+    matchEn: /(?<![\p{L}\p{N}])exposed(?![\p{L}\p{N}])/giu,
+    desc: fill('Lo deja un golpe de un solo palo (2 cartas o más). El próximo golpe contra ese trono hace ×{expuesto} de Daño.', C),
   },
   {
     id: 'desarmada',
-    name: 'Desarmado',
-    match: /(?<![\p{L}\p{N}])desarm(?:ad[oa]s?|ar|an|a)(?![\p{L}\p{N}])/giu,
-    matchEn: /(?<![\p{L}\p{N}])disarm(?:ed|s)?(?![\p{L}\p{N}])/giu,
-    desc: 'Un trono Desarmado no ataca cuando el Contraataque saca su palo. El Motín (Comodín) lo desarma hasta que caiga su guardia; un golpe de 3 palos, solo para su próximo Contraataque (×1).',
+    name: 'Aturdido',
+    match: /(?<![\p{L}\p{N}])aturdid[oa]s?(?![\p{L}\p{N}])/giu,
+    matchEn: /(?<![\p{L}\p{N}])stun(?:ned|s)?(?![\p{L}\p{N}])/giu,
+    desc: 'Un trono Aturdido se salta su próximo Contraataque. Lo dejan un golpe de 3 palos, el Motín (Comodín) y El Espía.',
   },
 ];
-
 /** El patrón de una palabra clave en ese idioma. */
 const patron = (k: Keyword, lang: 'es' | 'en') => (lang === 'en' ? k.matchEn : k.match);
 
@@ -95,7 +92,7 @@ export function markKeywordsFor(lang: 'es' | 'en', html: string): string {
 
 /**
  * Vocabulario de mesa que se escribe con mayúscula pero NO es palabra clave (no lleva definición
- * encadenada ni cuenta para el límite de seis): las partes de la mesa, los poderes de palo y las
+ * encadenada ni cuenta para el límite de cinco): las partes de la mesa, los poderes de palo y las
  * jugadas con nombre propio. La constitución (tests/invariantes.test.ts) las acepta en mitad de frase.
  */
 export const TERMS: string[] = [

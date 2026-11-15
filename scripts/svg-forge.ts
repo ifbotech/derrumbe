@@ -48,8 +48,9 @@ const LIMITS = {
   driftWarn: 0.18,
   /** A 24 px, el mayor cuerpo conexo de tinta ocupa al menos esta parte del alto o del ancho de la pieza. */
   bodyWarn: 0.55,
-  /** Contraste WCAG del glifo de un palo contra el papel. */
-  suitContrast: 7,
+  /** Contraste WCAG del glifo de un palo contra el papel. V11: 4,5:1 con los cuatro colores (apartado 1.13: el
+   *  emblema y el índice son grandes y macizos, con contorno de tinta; el 7:1 lo pide Alto contraste). */
+  suitContrast: 4.5,
   /** Dos tramas son distintas si difieren en estructura (dirección de sus trazos) o en esta fracción de píxeles. */
   patternShape: 0.12,
   patternPixels: 0.25,

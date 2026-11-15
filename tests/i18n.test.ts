@@ -8,7 +8,7 @@
 //   · ningún resto de español en el inglés (RESTOS_ES, salvo PERMITIDOS_EN)
 //   · el glosario obligatorio de SPECS/V10.md (1.3) donde toca
 //   · sin navegador, el idioma es 'es'; setLang avisa y t() cambia sin recargar
-//   · el español no cambia: los textos de reglas son los de la 9.0 (tests/textos-es.json)
+//   · el español no cambia: los textos de reglas son los de la 11.0 (tests/textos-es.json)
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { BRAND, brandFor } from '../src/shared/brand';
@@ -120,9 +120,9 @@ describe('glosario obligatorio (SPECS/V10.md, 1.3)', () => {
     expect(en['palabra.fuerza.nombre']).toBe('Damage');
     expect(en['palabra.resonancia.nombre']).toBe('Mult');
     expect(en['palabra.limpio.nombre']).toBe('Exact Hit');
-    expect(en['palabra.fractura.nombre']).toBe('Breach');
-    expect(en['palabra.apuntalado.nombre']).toBe('On Guard');
-    expect(en['palabra.desarmada.nombre']).toBe('Disarmed');
+    expect(en['palabra.fractura.nombre']).toBe('Exposed');
+    expect(en['palabra.desarmada.nombre']).toBe('Stunned');
+    expect(en['palabra.apuntalado.nombre']).toBeUndefined();
     expect(['S', 'D', 'H', 'C'].map((s) => en[`palo.${s}.nombre`])).toEqual(['Spades', 'Diamonds', 'Hearts', 'Clubs']);
   });
 
@@ -204,14 +204,15 @@ describe('idioma de la sesión', () => {
 });
 
 describe('el español no cambia', () => {
-  it('los textos de reglas son los de la 9.0, letra por letra (tests/textos-es.json)', () => {
+  it('los textos de reglas son los de la 11.0, letra por letra (tests/textos-es.json)', () => {
     const guardados = JSON.parse(readFileSync(new URL('./textos-es.json', import.meta.url), 'utf8')) as Record<string, string>;
     const reglas = Object.fromEntries(Object.entries(ES).filter(([k]) => !k.startsWith('ui.')));
     expect(reglas).toEqual(guardados);
   });
 
   it('las plantillas españolas son las cadenas del código de las reglas', () => {
-    const fuente = ['engine', 'run', 'tools', 'achievements'].map((f) => readFileSync(new URL(`../src/rules/${f}.ts`, import.meta.url), 'utf8')).join('\n');
+    // V11: el error de versión lo escribe el servidor de salas
+    const fuente = [...['engine', 'run', 'tools', 'achievements'].map((f) => `../src/rules/${f}.ts`), '../src/server/index.ts'].map((f) => readFileSync(new URL(f, import.meta.url), 'utf8')).join('\n');
     const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const comoCodigo = (p: string) => new RegExp(p.split(/\{\w+\}/).map(esc).join('\\$\\{[^`]+?\\}'));
     const vistas = Object.entries(ES_PLANTILLAS).filter(([k]) => /^(?:error\.|paso\.|asalto\.infinito|logro\.desbloquea)/.test(k) && k !== 'paso.golpea.por');

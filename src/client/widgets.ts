@@ -406,13 +406,15 @@ export function showSettings(onChange?: () => void): void {
     input.onchange = () => input.dataset.vol !== 'music' && sfx.stamp();
   });
   const yes = (on: boolean) => (on ? L('ui.si') : L('ui.no'));
+  const CICLO = ['cuatro', 'dos', 'clasica'] as const;
   const draw = () => {
     // la fila de Susurros es de juice-ux (whispers.ts): aquí solo se traduce su Sí / No
     const [wName, wDesc, wValue, wDo] = whisperSetting();
     const rows: [string, string, string, () => void, boolean, string][] = [
       [L('ui.set.velocidad'), L('ui.set.velocidad.texto'), speedLabel(), () => void cycleSpeed(), true, 'set-speed'],
       [L('ui.set.calma'), L('ui.set.calma.texto'), yes(settings.calm), () => ((settings.calm = !settings.calm), applySettings()), settings.calm, 'set-calma'],
-      [L('ui.set.tintas'), L('ui.set.tintas.texto'), settings.inks === 4 ? L('ui.set.tintas.4') : L('ui.set.tintas.2'), () => ((settings.inks = settings.inks === 4 ? 2 : 4), applySettings()), true, 'set-tintas'],
+      // V11: «Colores de la baraja», en tres pasos: Cuatro colores → Dos tintas → Clásica (las dos tintas siguen a un toque, como en la 10.0)
+      [L('ui.set.tintas'), L('ui.set.tintas.texto'), L(`ui.set.paleta.${settings.paleta}`), () => ((settings.paleta = CICLO[(CICLO.indexOf(settings.paleta) + 1) % CICLO.length]), applySettings()), true, 'set-tintas'],
       // V10: Alto contraste va detrás de Tintas, para que las filas de la 9.0 conserven su sitio
       [L('ui.set.contraste'), L('ui.set.contraste.texto'), yes(settings.contrast), () => ((settings.contrast = !settings.contrast), applySettings()), settings.contrast, 'set-contraste'],
       [L('ui.set.pantalla'), L('ui.set.pantalla.texto'), yes(platform.isFullscreen()), () => void platform.toggleFullscreen().then(draw), platform.isFullscreen(), 'set-pantalla'],

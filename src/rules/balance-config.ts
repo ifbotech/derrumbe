@@ -5,12 +5,11 @@
 // (`fill`), para que texto y valor no se separen nunca.
 import raw from './balance-config.json';
 
-/** Base de una formación: f Daño, r Multi, y lo que gana por nivel de Pergamino (lf, lr). */
+/** Base de una formación: f Daño, r Multi (entero) y el Daño que gana por nivel de Pergamino (lf). */
 export interface FormBase {
   f: number;
   r: number;
   lf: number;
-  lr: number;
 }
 /** Vida, Ataque y mano por rango (11 Sota, 12 Reina, 13 Rey) o por número de jugadores. */
 type PorClave = Record<string, number>;
@@ -21,8 +20,12 @@ export interface FxConfig {
   wallForce?: number;
   highDouble?: boolean;
   allHigh?: boolean;
-  allAdv?: boolean;
+  /** Este golpe no respeta Inmune. */
+  noImmune?: boolean;
+  /** Multiplica el Multi del golpe (entero). */
   strikeMult?: number;
+  /** Suma al Multi del golpe (entero). */
+  multi?: number;
   pierce?: boolean;
   wall?: number;
   wallPerCard?: number;
@@ -39,17 +42,17 @@ export interface FxConfig {
 export interface BalanceConfig {
   /** Campaña nueva: Vida máxima, oro, tope de interés y cartas del Sobre lacrado inicial. */
   inicio: { vida: number; oro: number; interesTope: number; sobre: number };
-  /** Los ocho asaltos: multiplicador de la Vida de los guardias y Ataque que se suma al base. */
+  /** Los cinco asaltos: multiplicador de la Vida de los guardias (redondeada a 5) y Ataque que se suma al base. */
   asaltos: { hp: number; threat: number }[];
-  /** Trono infinito: la Vida crece ×hpCrece por cada asalto más allá del octavo. */
+  /** Trono infinito: la Vida crece ×hpCrece por cada asalto más allá del quinto. */
   tronoInfinito: { hpCrece: number };
   /** Vida de los guardias según el tamaño de la conjura (1 a 4 jugadores); también retrasa el Asedio final. */
   cuadrilla: number[];
   /** Giros de los Reinados 2, 3, 5, 6 y 7 (el 8 es `clausura`). */
-  reinados: { corazas: number; impuesto: number; reyColerico: number; heridasViejas: number; guardiaNoche: number };
-  /** Asedio final: turno en que empieza (en solitario), cada cuántos sube y Multi que da cada nivel. */
-  asedio: { start: number; every: number; res: number };
-  /** Reinado 8 «Puertas selladas»: asaltos en los que sube el Ataque de los cuatro tronos, y cuánto. */
+  reinados: { corazas: number; impuesto: number; reyesAcorazados: number; reyColerico: number; heridasViejas: number; guardiaNoche: number };
+  /** Asedio final: turno en que empieza (en solitario), cada cuántos sube y Daño que da cada nivel. */
+  asedio: { start: number; every: number; dano: number };
+  /** Reinado 8 «Puertas selladas»: asaltos en los que sube el Ataque de todos los tronos, y cuánto. */
   clausura: { stages: number[]; threat: number };
   /** Anillo de sello: cartas que sella al empezar cada asalto. */
   timbre: { stamps: number };
@@ -58,7 +61,6 @@ export interface BalanceConfig {
     doble: { contraataques: number; ataque: number };
     escasez: { cartas: number };
     intemperie: { escudoTope: number };
-    blindaje: { ataque: number };
     furia: { ataque: number };
     inestable: { antes: number; vida: number };
   };
@@ -89,14 +91,14 @@ export interface BalanceConfig {
   };
   formaciones: Record<string, FormBase>;
   /** La mesa por defecto (DEFAULT_CONFIG del motor). */
-  mesa: { maxIntegrity: number; wallCap: number; collapseLoss: number; wallDiv: number; repairDiv: number; shardDiv: number; floorHp: PorClave; floorThreat: PorClave; handSize: PorClave };
-  /** Racha de Golpes exactos, Brecha, En guardia, onda del Golpe exacto y su oro. */
-  golpe: { racha: number; brecha: number; enGuardia: number; onda: number; oroExacto: number };
+  mesa: { maxIntegrity: number; wallCap: number; collapseLoss: number; escudoPorCarta: number; curaPorCarta: number; salpicaPorCarta: number; floorHp: PorClave; floorThreat: PorClave; handSize: PorClave };
+  /** Racha de Golpes exactos (Multi por eslabón y tope de eslabones), Expuesto (×Daño), onda del Golpe exacto y su oro. */
+  golpe: { racha: number; rachaTope: number; expuesto: number; onda: number; oroExacto: number };
   acabados: { forjado: number; templado: number; policromado: number; agrietado: number; agrietadoRompe: number };
   sellos: { jornal: number };
   /** Asalto único (partida clásica): lo que cambia sobre la mesa por defecto. */
   clasica: {
-    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; fatigueStart: number; fatigueEvery: number; fatigueRes: number; collapseRelief: number[] };
+    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; fatigueStart: number; fatigueEvery: number; fatigueDano: number; collapseRelief: number[] };
     brutal: { maxIntegrity: number; collapseLoss: number };
   };
   /** Cifras de cada reliquia, por `id`. */
@@ -164,8 +166,9 @@ export const AFINABLES: Afinable[] = [
   ...BALANCE.asaltos.map((_, i): Afinable => ({ ruta: `asaltos.${i}.hp`, entero: false })),
   ...BALANCE.asaltos.map((_, i): Afinable => ({ ruta: `asaltos.${i}.threat`, entero: true })),
   { ruta: 'asedio.start', entero: true },
-  { ruta: 'asedio.res', entero: false },
+  { ruta: 'asedio.dano', entero: true },
   { ruta: 'reinados.corazas', entero: false },
+  { ruta: 'reinados.reyesAcorazados', entero: false },
   { ruta: 'cuadrilla.1', entero: false },
   { ruta: 'cuadrilla.2', entero: false },
   { ruta: 'cuadrilla.3', entero: false },

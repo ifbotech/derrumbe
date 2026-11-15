@@ -4,6 +4,7 @@ import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameState, applyAction, creat
 import { BOSS, FATIGUE, STAGES, newRun, stageConfig } from '../src/rules/run';
 import { SPECIAL } from '../src/rules/specials';
 import { TOOL, TOOLS } from '../src/rules/tools';
+import { BALANCE } from '../src/rules/balance-config';
 
 const card = (id: string): Card => ({ id, suit: id[0] as Card['suit'], rank: Number(id.slice(1)) });
 const cfgWith = (extra: Partial<Config> = {}): Config => ({ ...structuredClone(DEFAULT_CONFIG), ...extra });
@@ -20,12 +21,13 @@ describe('fatiga de cimientos', () => {
     expect(fatigueAt(cfgWith(), 99)).toBe(0);
   });
 
-  it('acelera la obra en los dos sentidos: más Resonancia para ti y más amenaza para la sirena', () => {
-    const cfg = cfgWith({ fatigueStart: 8, fatigueEvery: 2, fatigueRes: 0.25 });
+  it('acelera el asalto en los dos sentidos: más Daño para ti y más Ataque para el Contraataque', () => {
+    const cfg = cfgWith({ fatigueStart: 8, fatigueEvery: 2, fatigueDano: 4 });
     const fresh = table(cfg);
     const tired = table(cfg, [], { fatigue: 3 });
     const hit = [card('S5')];
-    expect(previewStrike(tired, hit, 'D').res).toBeCloseTo(previewStrike(fresh, hit, 'D').res + 0.75, 5);
+    expect(previewStrike(tired, hit, 'D').fuerza).toBe(previewStrike(fresh, hit, 'D').fuerza + 12);
+    expect(previewStrike(tired, hit, 'D').res).toBe(previewStrike(fresh, hit, 'D').res);
     expect(threatOf(tired, tired.towers.S)).toBe(threatOf(fresh, fresh.towers.S) + 3);
   });
 
@@ -49,9 +51,12 @@ describe('fatiga de cimientos', () => {
     expect(DEFAULT_CONFIG.fatigueStart).toBeUndefined();
   });
 
-  it('ninguna obra de la campaña alarga los pisos: la dureza va por la amenaza', () => {
-    expect(Math.max(...STAGES.map((s) => s.hp))).toBeLessThan(7);
-    expect(STAGES[7].threat).toBeGreaterThan(STAGES[0].threat + 3);
+  // V11-C: los asaltos 1–3 enseñan (Ataque bajo) y la dureza llega en el 4 y el 5; la Vida ya no se mantiene baja,
+  // porque el Asedio fuerte recorta la cola de turnos
+  it('la dureza crece: el Ataque de los asaltos 1 a 3 queda por debajo del de los asaltos 4 y 5', () => {
+    const early = Math.max(...STAGES.slice(0, 3).map((s) => s.threat));
+    for (const st of STAGES.slice(3)) expect(st.threat).toBeGreaterThan(early);
+    expect(Math.max(...STAGES.map((s) => s.hp))).toBeLessThan(10);
   });
 });
 
@@ -72,11 +77,11 @@ describe('aguante: la defensa se cobra en daño', () => {
     expect(previewStrike(table(cfg, [], { wall: 0 }), [card('S5'), rider], 'D').fuerza).toBe(bare + 4);
   });
 
-  it('Bastión multiplica con el muro a la mitad de su tope o más', () => {
+  it('Baluarte suma Multi con el Escudo a la mitad de su tope o más', () => {
     const cfg = cfgWith();
     const low = previewStrike(table(cfgWith(), ['bastion'], { wall: 3 }), [card('S5')], 'D').res;
     const high = previewStrike(table(cfg, ['bastion'], { wall: 4 }), [card('S5')], 'D').res;
-    expect(high).toBeCloseTo(low * 1.5, 5);
+    expect(high).toBe(low + BALANCE.reliquias.bastion.multi);
   });
 
   it('Contragolpe devuelve el triple de lo que el muro frena entero, y nada si la sirena pasa', () => {
@@ -99,11 +104,11 @@ describe('aguante: la defensa se cobra en daño', () => {
     s.deck = [card('X0'), ...s.deck]; // sirena muda: un comodín
     s.deck[0] = { id: 'X1', suit: 'X', rank: 0 };
     s.players[0].hand = [card('C8'), card('C9'), card('C10')];
-    // escalera de tréboles (27): muro +9; cabe 1 y sobran 8 → repara 4; cabe 1 y sobran 3 → +9 de Fuerza cargada
+    // escalera de tréboles: tres ♣, +6 de Escudo; cabe 1 y sobran 5 → cura 2; cabe 1 y sobra 1 → +3 de Daño cargado
     const out = applyAction(s, 'a', { type: 'attack', cards: ['C8', 'C9', 'C10'], target: 'S' }).state;
     expect(out.wall).toBe(cfg.wallCap);
     expect(out.integrity).toBe(cfg.maxIntegrity);
-    expect(out.charge).toBe(9);
+    expect(out.charge).toBe(3);
   });
 });
 
@@ -114,34 +119,36 @@ describe('jefes de la 4.0', () => {
     return cfg;
   };
 
-  it('El Coloso: sus pisos amenazan más mientras siguen apuntalados', () => {
+  it('El Inquisidor (V11-C): ningún trono queda Aturdido; Expuesto sigue y el Ataque no cambia', () => {
     const cfg = boss('blindaje');
     const s = table(cfg);
-    const braced = threatOf(s, s.towers.S);
-    strike(s, [card('C2')], 'S'); // el primer golpe rompe el apuntalamiento
-    expect(s.towers.S.fx.apuntalado).toBe(false);
-    expect(threatOf(s, s.towers.S)).toBe(braced - cfg.bracedThreat!);
+    const calm = table(cfgWith());
+    expect(threatOf(s, s.towers.S)).toBe(threatOf(calm, calm.towers.S));
+    strike(s, [card('C2'), card('C3'), card('C4')], 'S'); // un solo palo: sin el decreto dejaría Expuesto
+    strike(s, [card('S3'), card('H4'), card('D5')], 'C'); // tres palos: sin el decreto dejaría Aturdido (no lo deja)
+    expect(s.towers.S.fx).toEqual({ fractura: true }); // un solo palo: Expuesto, como siempre
+    expect(s.towers.C.fx).toEqual({});
   });
 
   it('El Topo: cada piso que cae sin golpe limpio le cuesta al búnker, y su fatiga llega antes', () => {
     const cfg = boss('inestable');
     cfg.fatigueStart = 8;
     BOSS.inestable.apply(cfg);
-    expect(cfg.fatigueStart).toBe(5);
+    expect(cfg.fatigueStart).toBe(8 - BALANCE.monarcas.inestable.antes);
     const s = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
     const rough = strike(s, [card('C10'), card('H10')], 'D'); // pareja sin picas: tira la J con daño de sobra y no perfora
     expect(rough.fallen).toBeGreaterThan(0);
     expect(rough.clean).toBe(false);
     expect(rough.hurt).toBe(rough.fallen);
     const exact = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
-    const clean = strike(exact, [card('S10')], 'D'); // 10 × 2 = 20: daño exacto
+    const clean = strike(exact, [card('S4'), card('H4')], 'D'); // (2 + 4 + 4) × 2 = 20: Golpe exacto
     expect(clean.clean).toBe(true);
     expect(clean.hurt).toBe(0);
   });
 
   it('La Ventisca limita el muro sin anularlo', () => {
     const cfg = boss('intemperie');
-    expect(cfg.wallCap).toBeGreaterThanOrEqual(3);
+    expect(cfg.wallCap).toBeGreaterThanOrEqual(2);
     expect(cfg.wallCap).toBeLessThan(DEFAULT_CONFIG.wallCap);
   });
 });
@@ -159,7 +166,7 @@ describe('partida clásica en cuadrilla', () => {
       const ev = out.events.find((e) => e.e === 'collapse');
       return ev && ev.e === 'collapse' ? ev.loss : before - out.state.integrity;
     };
-    expect(loss(1)).toBe(DIFFICULTY.obra.collapseLoss);
+    expect(loss(1)).toBe(DIFFICULTY.obra.collapseLoss! - (DIFFICULTY.obra.collapseRelief?.[0] ?? 0));
     expect(loss(4)).toBeLessThan(loss(1));
     expect(loss(2)).toBeGreaterThanOrEqual(loss(3));
   });

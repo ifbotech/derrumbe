@@ -12,8 +12,8 @@
   --table-3: #26231f;
   --table-4: #37322b;
   --pit: #0d0c0b;
-  --card-paper: #eae0ce;
-  --paper: #eae0ce;
+  --card-paper: #efe6d5;
+  --paper: #efe6d5;
   --paper-2: #dfd3bc;
   --paper-3: #d2c3a8;
   --ink: #181614;
@@ -32,34 +32,10 @@
   --concrete: var(--table);
   --concrete-2: var(--table-3);
   --noise: var(--grain-paper, none);
-  /* cuatro tintas de taller: una por palo (sobre papel y sobre la mesa oscura) */
-  --suit-S: #181614;
-  --suit-H: #ae2d24;
-  --suit-D: #b36a12;
-  --suit-C: #1d544b;
-  --suitd-S: #d9cfbb;
-  --suitd-H: #d9604f;
-  --suitd-D: #e09b3d;
-  --suitd-C: #62a898;
-  --mat-S: #181614;
-  --mat-H: #ae2d24;
-  --mat-D: #b36a12;
-  --mat-C: #1d544b;
   --storey-h: clamp(18px, 3.4vh, 38px);
   --plate-h: clamp(20px, 2.8vh, 30px);
   --hand-h: clamp(96px, 21vh, 250px);
 }
-/* dos tintas clásicas: rojo y negro */
-:root.inks2 {
-  --suit-C: #181614;
-  --suit-D: #ae2d24;
-  --suitd-C: #d9cfbb;
-  --suitd-D: #d9604f;
-  --mat-C: #181614;
-  --mat-D: #ae2d24;
-}
-:root.inks2 .xh { display: none; }
-
 html { background: var(--table); }
 body {
   color: var(--card-paper);
@@ -244,7 +220,6 @@ input::placeholder { color: #8a7f6d; }
 .plate .glyph { width: clamp(13px, 1.9vh, 19px); height: clamp(13px, 1.9vh, 19px); }
 .plate.iron { background: #45423d; color: #d9cfbb; }
 .plate.iron .glyph { fill: #d9cfbb; }
-.plate.iron b { text-decoration: line-through; text-decoration-thickness: 1.5px; text-decoration-color: var(--red-lit); }
 .plate.brass { background: #c69a3f; color: var(--ink); }
 .plate.brass .glyph { fill: var(--ink); }
 .plate.open { background: var(--table-3); color: var(--dim); border-style: dashed; box-shadow: none; }
@@ -273,7 +248,6 @@ input::placeholder { color: #8a7f6d; }
 .fx { border-color: var(--pit); background: var(--paper-2); color: var(--ink); }
 .fx-fractura { background: var(--red); color: var(--card-paper); }
 .fx-sobrecarga { background: var(--blue); color: var(--card-paper); }
-.fx-apuntalado { background: var(--pit); color: var(--hazard); border-color: var(--hazard); }
 .hp { height: clamp(15px, 2.2vh, 22px); border: 2px solid var(--pit); background: var(--pit); overflow: hidden; }
 .hp-fill { inset: 0; width: 100%; transform-origin: 0 50%; transition: transform 0.3s ease-out; background: repeating-linear-gradient(90deg, var(--red) 0 8px, #8e241d 8px 10px); }
 .hp span { mix-blend-mode: normal; color: var(--card-paper); text-shadow: 0 1px 0 var(--pit), 0 0 3px var(--pit); }
@@ -421,7 +395,7 @@ input::placeholder { color: #8a7f6d; }
 .lupa-math .vs-t b { font-family: var(--display); font-weight: 400; }
 .lupa-math .vs-t small { font-size: 13px; opacity: 0.75; }
 .lupa-math .vs-t.zero { opacity: 0.5; border-style: dashed; }
-.lupa-math .vs-t.adv { background: var(--hazard); }
+.lupa-math .vs-t.doble { background: var(--hazard); }
 .lupa-chain { display: grid; gap: 5px; border-top: 1px dashed var(--ink); padding-top: 8px; font-size: clamp(13px, 1.5vh, 14px); line-height: 1.35; }
 .lupa-chain .kwdef b { display: block; font-family: var(--display); font-weight: 400; text-transform: uppercase; font-size: 13px; letter-spacing: 0.04em; color: var(--red); }
 .lupa-close { justify-self: end; }
@@ -637,31 +611,6 @@ html[data-input='keys'] .only-keys, html[data-input='pad'] .only-pad { display: 
 html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slot .plus { display: none; }
 .actions button, .bar button { display: inline-flex; align-items: center; justify-content: center; }
 
-/* rueda de materiales */
-.wheel { flex: none; width: clamp(46px, 6.8vh, 66px); aspect-ratio: 1; cursor: help; }
-.wheel svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.wa path { fill: none; stroke: var(--table-4); stroke-width: 2.4; }
-.wa .head { fill: var(--table-4); stroke: none; }
-.wa.on path { stroke: #d4a348; stroke-width: 3.6; }
-.wa.on .head { fill: #d4a348; }
-.wn circle { fill: var(--table-3); stroke: var(--pit); stroke-width: 1.6; }
-.wn .pcut { stroke: none; }
-.wn.n-S .wg { fill: var(--suitd-S); }
-.wn.n-H .wg { fill: var(--suitd-H); }
-.wn.n-D .wg { fill: var(--suitd-D); }
-.wn.n-C .wg { fill: var(--suitd-C); }
-.wn.lit circle { fill: var(--paper-2); }
-.wn.lit.n-S .wg { fill: var(--suit-S); }
-.wn.lit.n-H .wg { fill: var(--suit-H); }
-.wn.lit.n-D .wg { fill: var(--suit-D); }
-.wn.lit.n-C .wg { fill: var(--suit-C); }
-.wn.aim circle { stroke: var(--hazard); stroke-width: 2.8; }
-.wn .wx { display: none; fill: none; stroke: var(--red-lit); stroke-width: 2.8; }
-.wn.immune circle { fill: #45423d; stroke: var(--red-lit); }
-.wn.immune .wg { fill: #8f897d; }
-.wn.immune .wx { display: block; }
-.wheel.adv { animation: pop2 0.26s ease; }
-
 /* fatiga de cimientos */
 .power.fatigue { border-style: dashed; cursor: help; }
 .power.fatigue em { background: var(--pit); color: var(--paper-2); }
@@ -673,7 +622,6 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 .side { position: relative; }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .side { position: static; }
-  .wheel { width: 40px; }
   .kh { display: none !important; }
   .reserve-slot .plus { display: inline !important; }
 }
@@ -710,9 +658,7 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 .og-card .og-cards { position: absolute; left: 1%; bottom: -132px; display: flex; }
 .og-card .og-cards .card { --w: 150px; margin-right: -34px; transform: translateY(var(--y, 0)) rotate(var(--r, 0deg)); }
 /* retoques tras ver las capturas de la 4.0 */
-.wheel { width: clamp(56px, 8.2vh, 78px); }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
-  .wheel { width: 44px; }
   .power.fatigue b { display: inline; }
 }
 /* pantallas de portátil: con las indicaciones de tecla o de mando a la vista, la barra y la fila del cinturón se aprietan */
@@ -734,21 +680,17 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 :root {
   --num: 'Corona Cifras', 'Archivo Black', 'Arial Black', Impact, sans-serif;
   --title: 'Corona Cifras', 'UnifrakturCook', 'Grenze Gotisch', 'Old English Text MT', serif;
-  /* tintas de palo, ≥ 7:1 sobre el papel crema y sobre el papel de las cartas tratadas (♠ 15:1 · ♥ 7,9:1 · ♦ 7,9:1 · ♣ 9,2:1) */
-  --suit-H: #7d1a13;
-  --suit-D: #5f3704;
-  --suit-C: #143d34;
 }
-:root.inks2 { --suit-D: #7d1a13; }
 .t-forjado .ly.paper { background-color: #e0dbd0; }
 .corner, .threat b, .plate b, .storey b, .storey span, .hp span, .belt-slot .kind, .belt-slot .cnt, .chip b, .power em, .preview, .kh, .pile .count, .pile b, .stat b, .level b, .purse b, .pay td + td, .slider output, .stop b, .ach-r b, .bp-n, .mastery i, .lupa-math .vs-t b, .level-twists li b, .price-tag, .reserve-slot.empty i, .hand .card[data-n]::after, .reserve .card[data-n]::after, .hold-ring b, .chalk-mark, .float, .col-sec h3.sec span {
   font-family: var(--num); font-variant-numeric: tabular-nums; font-weight: 400;
 }
 
 /* ── cartas: índice con placa de papel, palo con contorno de tinta, letra del arte solo si se lee ── */
-.corner { font-size: max(13px, calc(var(--w) * 0.2)); letter-spacing: -0.04em; }
+/* V11: el índice de la esquina crece un 40 % (0,2 → 0,28 del ancho de la carta); la carta no cambia de tamaño */
+.corner { font-size: max(13px, calc(var(--w) * 0.28)); letter-spacing: -0.04em; }
 .corner b { background: var(--card-paper); padding: 0.05em 0.07em 0.02em; line-height: 0.92; }
-.corner.wide b { font-size: max(13px, 0.74em); letter-spacing: -0.08em; }
+.corner.wide b { font-size: max(13px, 1em); letter-spacing: -0.15em; }
 .star-mini { font-size: max(13px, 0.7em); }
 .corner .glyph { stroke: var(--ink); stroke-width: 1.3; paint-order: stroke; overflow: visible; }
 .corner .glyph.s-S { stroke: var(--card-paper); stroke-width: 0.9; paint-order: normal; }
@@ -1087,21 +1029,6 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
    lacre siga a ≥ 4,5:1 sobre el papel */
 .ach.ok span { opacity: 1; color: #4d463c; }
 
-/* ───────────── V7 · F1: sello de factor en las cartas de la mano ─────────────
-   Con un trono apuntado, la misma placa que el trono (hierro «×0», latón «×2»/«×3») en el centro de la
-   carta: las dos esquinas del índice y el número de orden de arriba a la derecha quedan libres. */
-.card > .plate.factor { position: absolute; z-index: 7; left: 50%; top: 50%; translate: -50% -50%; height: auto; padding: 1px 6px 1px 4px; gap: 3px; pointer-events: none; box-shadow: 0 2px 0 var(--pit), inset 0 2px 0 rgba(255, 243, 214, 0.16); }
-.card > .plate.factor b { font-size: clamp(14px, 1.75vh, 18px); line-height: 1.1; }
-.card > .plate.factor .glyph { width: clamp(13px, 1.75vh, 18px); height: clamp(13px, 1.75vh, 18px); }
-.card > .plate.factor.iron::after { width: calc(clamp(13px, 1.75vh, 18px) + 4px); }
-@media (max-aspect-ratio: 1/1), (max-width: 640px) {
-  /* en la carta de 44 px del móvil (un 10 llena casi todo el alto con sus esquinas) el sello va sin palo,
-     con filete fino y asomando por el canto izquierdo, justo debajo del índice de arriba */
-  .card > .plate.factor { left: -5px; top: 47%; translate: none; padding: 0 3px; gap: 0; border-width: 1.5px; box-shadow: 0 1px 0 var(--pit); }
-  .card > .plate.factor b { font-size: 14px; line-height: 1; letter-spacing: -0.03em; }
-  .card > .plate.factor .glyph, .card > .plate.factor.iron::after { display: none; }
-}
-
 /* ───────────── V7 · F3: la Vida del trono sale de las rayas ─────────────
    La cifra va en su propia placa de papel con tinta (≥ 7:1), centrada sobre la barra y un poco más
    alta que ella; la barra lleva su borde de tinta de 2 px que la separa de la franja de trama. El
@@ -1131,14 +1058,13 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 /* ───────────── V8 · A3: la mesa del móvil (390 × 844) ─────────────
    Las filas de guardias de cada trono se ven enteras y la barra del pulgar respira: ≥ 12 px hasta el borde
    de abajo (más la zona segura), 8 px entre botones y a los lados. El alto no sale de los tronos ni de la
-   mano: la fila de Reliquias se lleva la rueda de palos y los poderes se llevan el Asedio, así la franja
+   mano: la fila de Reliquias y los poderes se llevan el Asedio, así la franja
    de en medio pasa de tres renglones a dos; el monarca y el aviso de último turno, en un renglón cada uno. */
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .table-screen .tray { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding-left: 8px; padding-right: 8px; }
   .table-screen .actions { gap: 8px; margin: 0; }
   .table-screen .hudrow { column-gap: 8px; row-gap: 10px; }
   .table-screen .hudrow > .beltbar { order: 1; }
-  .table-screen .hudrow > .wheel { order: 2; }
   .table-screen .hudrow > .powers { order: 3; }
   .table-screen .hudrow > .fatigue { order: 4; }
   .table-screen .hudrow .belt { gap: 8px; }
@@ -1202,11 +1128,16 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 /* ───────────── V8 · estado de QA «cartas-lamina»: las cuatro cartas con acabado ───────────── */
 .qa-laminas { display: flex; flex-wrap: wrap; justify-content: center; align-content: start; gap: 16px; padding: 16px; overflow-y: auto; }
 .qa-laminas figure { margin: 0; display: grid; justify-items: center; gap: 8px; color: var(--card-paper); font-family: var(--mono); font-weight: 700; font-size: 15px; text-transform: none; }
-.qa-laminas .card { --w: clamp(130px, min(20vw, 34vh), 230px); }
+.qa-laminas .card { --w: clamp(84px, min(9vw, 16vh), 150px); }
+/* V11: la hoja de las cuarenta numeradas, al tamaño de la mano de cada ventana */
+.qa-limpias { display: grid; grid-template-columns: repeat(10, max-content); justify-content: center; gap: 8px; padding: 12px 16px 0; }
+.qa-limpias .card { --w: clamp(75px, 5.2vw, 104px); }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .qa-laminas { gap: 12px 8px; padding: 8px; }
   .qa-laminas figure { font-size: 14px; }
-  .qa-laminas .card { --w: min(43vw, 26vh); }
+  .qa-laminas .card { --w: 64px; }
+  .qa-limpias { grid-template-columns: repeat(8, max-content); gap: 6px; padding: 8px 8px 0; }
+  .qa-limpias .card { --w: 44px; }
 }
 
 /* ───────────── V9 · placas de la cabecera del trono y «Tu Vida» ─────────────
@@ -1382,7 +1313,6 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
 @media not all and (max-aspect-ratio: 1/1) {
   @media (min-width: 641px) {
     .plate b { font-size: clamp(16px, 2.1vh, 19px); }
-    .card > .plate.factor b { font-size: clamp(16px, 2.2vh, 20px); }
   }
 }
 
@@ -1404,17 +1334,13 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
 }
 /* V10 · V7-3 y V7-4: índices de la mano ≥ 15 px en el móvil; cifras de la barra de arriba ≥ 16 px fuera de él */
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
-  .hand .card .corner b { font-size: max(15px, 1em); }
+  .hand .card .corner b { font-size: max(20px, 1em); }
   .hand .card .corner .glyph, .reserve .card .corner .glyph { width: max(10px, calc(var(--w) * 0.15)); height: max(10px, calc(var(--w) * 0.155)); }
 }
 @media not all and (max-aspect-ratio: 1/1) {
   @media (min-width: 641px) {
     .bar .chip b { font-size: max(16px, 1.05em); }
   }
-}
-/* en la torre estrecha del móvil, «Desarmado ×1» se queda en «Desarmado»: el ×1 lo cuenta el aviso emergente */
-@media (max-aspect-ratio: 1/1), (max-width: 640px) {
-  .tower .fx .fx-n { display: none; }
 }
 /* V10 · V7-2: en la torre estrecha del móvil la placa del golpe va en dos renglones (cifra y unidad) para
    que «−95 FALLS» o «−12 DE VIDA» no se salgan del trono */
@@ -1433,4 +1359,242 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
 @media (max-width: 640px) {
   .table-screen .field { grid-template-rows: auto 1fr; align-content: stretch; }
   .table-screen .field > .side { align-self: center; }
+}
+
+/* ═════════════ V11 · COLORES DE LA BARAJA Y CARA LIMPIA ═════════════
+   Tres paletas (Ajustes → «Colores de la baraja»): cuatro colores (de serie), la clásica de la 10.0 (con el
+   ocre) y dos tintas (rojo y negro). Cada una tiene su tinta sobre el papel (--suit-*), su variante clara
+   para la mesa oscura (--suitd-*: cabecera del trono y poderes, ≥ 4,5:1 sobre --table) y su versión de
+   Alto contraste (≥ 7:1 sobre el papel). El palo se distingue siempre también por su forma: ♠ ♥ ♦ ♣ van con
+   su silueta en la esquina, en el emblema, en la cabecera del trono, en el poder y en la cuenta. */
+:root {
+  /* cuatro colores, sobre el marfil #efe6d5: ♠ 15:1 · ♥ 4,5:1 · ♦ 5,4:1 · ♣ 5,2:1 (emblema e índice grandes y con contorno) */
+  --suit-S: #161514;
+  --suit-H: #c8232c;
+  --suit-D: #1b5e9e;
+  --suit-C: #1b6b46;
+  --suitd-S: #d9cfbb;
+  --suitd-H: #ef6a6e;
+  --suitd-D: #72aae2;
+  --suitd-C: #52b685;
+}
+/* la clásica: la que se imprimía en la 10.0 (tintas de 7:1 sobre el papel; el ocre de Diamantes, tostado) */
+:root.paleta-clasica {
+  --suit-S: #181614;
+  --suit-H: #7d1a13;
+  --suit-D: #5f3704;
+  --suit-C: #143d34;
+  --suitd-S: #d9cfbb;
+  --suitd-H: #d9604f;
+  --suitd-D: #e09b3d;
+  --suitd-C: #62a898;
+}
+/* dos tintas: negro para ♠ y ♣, rojo para ♥ y ♦ */
+:root.inks2 {
+  --suit-S: #161514;
+  --suit-H: #c8232c;
+  --suit-D: #c8232c;
+  --suit-C: #161514;
+  --suitd-S: #d9cfbb;
+  --suitd-H: #ef6a6e;
+  --suitd-D: #ef6a6e;
+  --suitd-C: #d9cfbb;
+}
+/* Alto contraste: el mismo tono, más oscuro, hasta ≥ 7:1 sobre el papel; la variante clara, más clara */
+:root.contraste {
+  --suit-S: #161514;
+  --suit-H: #8e1219;
+  --suit-D: #154a7e;
+  --suit-C: #12523a;
+  --suitd-S: #efe6d5;
+  --suitd-H: #ffa3a3;
+  --suitd-D: #a9cdf2;
+  --suitd-C: #95dcb6;
+}
+:root.contraste.paleta-clasica {
+  --suit-H: #7d1a13;
+  --suit-D: #5f3704;
+  --suit-C: #143d34;
+  --suitd-H: #ffb2a4;
+  --suitd-D: #f0b25a;
+  --suitd-C: #9bdccb;
+}
+:root.contraste.inks2 {
+  --suit-H: #8e1219;
+  --suit-D: #8e1219;
+  --suit-C: #161514;
+  --suitd-H: #ffa3a3;
+  --suitd-D: #ffa3a3;
+  --suitd-C: #efe6d5;
+}
+
+/* la cara limpia de las numeradas (A a 10): marfil liso, el emblema macizo con su contorno de tinta debajo */
+.art .emb-ink { fill: var(--ink); stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+/* en la carta de 44 px del móvil el índice de 20 px llena la mitad de arriba: la esquina de abajo se retira, el
+   emblema (que es el palo, al 40 % del ancho) baja a la mitad libre justo bajo el rango y hace de palo del índice
+   (solo transform; el tamaño de la carta no cambia) */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .hand .card .corner.br, .reserve .card .corner.br, .qa-limpias .card .corner.br { display: none; }
+  .hand .card svg.ly.art.face, .reserve .card svg.ly.art.face, .qa-limpias .card svg.ly.art.face { transform: translateZ(12px) translateY(21%) scale(0.985); }
+  :is(.hand, .reserve, .qa-limpias) .card .art .emb-ink { stroke-width: 0.9; }
+  :is(.hand, .reserve, .qa-limpias) .card:is(.k-number, .k-ace) .corner .glyph { display: none; }
+  .hand .card .corner.wide b, .qa-limpias .card .corner b { font-size: max(20px, 0.95em); }
+  .qa-limpias .card .corner .glyph { width: 10px; height: 10px; }
+}
+
+/* ═════════════ V11 · LA MESA DE 2, 3 Y 4 TRONOS ═════════════
+   Los tronos que no están en el asalto no se pintan y la fila se reparte entre los que hay: con dos, cada
+   trono mide ~1,5 × el de la mesa de cuatro; con tres, ~1,15 ×. */
+.tower[hidden] { display: none !important; }
+.towers[data-n='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.towers[data-n='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.towers[data-n='1'] { grid-template-columns: minmax(0, 1fr); }
+@media not all and (max-aspect-ratio: 1/1) {
+  @media (min-width: 641px) {
+    /* aire entre tronos ≥ lo que crece el apuntado por cada lado (5 % de su ancho) */
+    .towers { column-gap: clamp(14px, 1.5vw, 30px); padding-block: 2.2cqh; }
+    .towers[data-n='3'] { column-gap: clamp(22px, 2.2vw, 40px); }
+    .towers[data-n='2'] { column-gap: clamp(30px, 3vw, 56px); }
+    .towers[data-n='3'] { width: calc(min(calc(100cqw - clamp(190px, 19cqw, 330px)), calc(100cqh * 2.06)) * 0.86); }
+    .towers[data-n='2'] { width: calc(min(calc(100cqw - clamp(190px, 19cqw, 330px)), calc(100cqh * 2.06)) * 0.74); }
+    .towers[data-n='1'] { width: calc(min(calc(100cqw - clamp(190px, 19cqw, 330px)), calc(100cqh * 2.06)) * 0.4); }
+  }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .towers[data-n='2'], .towers[data-n='3'] { column-gap: 14px; }
+}
+
+/* ── el trono apuntado crece un 10 % (solo transform); con «Reducir movimiento», sin transición ── */
+.tower { transition: transform 0.16s ease-out; }
+.tower.aimed, .tower.targetable.aimed:hover { transform: scale(1.1); z-index: 4; }
+.calm .tower { transition: none; }
+
+/* ── cifras del trono +35 %: la Vida que queda manda; el «/ total», pequeño ── */
+.tower .hp span { font-size: 13px; padding: 1px 6px; display: flex; align-items: baseline; gap: 1px; }
+.tower .hp span .hp-n { font-size: clamp(21px, 2.7vh, 28px); line-height: 1; font-weight: 400; }
+.tower .hp span small { font-size: 13px; line-height: 1; opacity: 1; color: #4a4339; }
+.threat b { font-size: clamp(20px, 3.4vh, 30px); line-height: 1; padding: 1px 0.24em; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .tower .hp span { font-size: 14px; padding: 1px 3px; }
+  .tower .hp span .hp-n { font-size: 20px; }
+  .tower .hp span small { font-size: 14px; }
+  .threat b { font-size: 21px; padding: 0 3px; }
+}
+:root.contraste .tower .hp span small { color: var(--ink); }
+
+/* ── la placa Inmune del trono: ≥ 16 px, opaca, tinta sobre papel (≥ 7:1) ── */
+.plate.iron b { font-family: var(--mono); font-weight: 800; letter-spacing: 0.01em; text-transform: uppercase; font-size: max(16px, 1em); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .plate.iron { padding: 0 2px; gap: 1px; }
+  .plate.iron b { font-size: 16px; letter-spacing: -0.07em; }
+  .plate.iron .glyph { width: 11px; height: 11px; }
+  .plate.iron::after { width: 14px; left: 1px; }
+}
+
+/* ── los dos estados: «Expuesto» y «Aturdido», ≥ 14 px ── */
+.tower .fx { font-size: max(14px, 1em); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .tower .fx { font-size: 14px; letter-spacing: -0.02em; }
+}
+
+/* ── V11 · la fila de tronos en el móvil: aire para que el apuntado crezca sin pisar la barra ni a sus vecinos ── */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .towers { column-gap: 13px; padding: 10px 5px 12px; }
+  /* la fachada del piso (sus grietas) se retira en el trono estrecho: el daño ya lo cuenta la barra de Vida */
+  .towers[data-n='4'] .floor-slot > .facade { display: none; }
+  .towers[data-n='3'] { column-gap: 16px; padding-inline: 7px; }
+  .towers[data-n='2'] { column-gap: 22px; padding-inline: 11px; }
+  .floor-slot .card { --w: 50cqw; }
+  .towers:is([data-n='2'], [data-n='3']) { padding-top: 14px; }
+  .towers:is([data-n='2'], [data-n='3']) .floor-slot .card { --w: min(66cqw, 64px); }
+  .footing { height: 4px; }
+  .tower .hp { height: 18px; }
+}
+/* ── V11 · el trono estrecho (mesa de cuatro en portátil): manda el palo; el nombre sale cuando cabe ── */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  @container (max-width: 236px) {
+    .tower-tag > span { display: none; }
+    .tower-tag .glyph, .tower[data-suit] .tower-tag .glyph { display: block; width: 26px; height: 26px; font-size: inherit; stroke: var(--pit); stroke-width: 1.2; paint-order: stroke; }
+  }
+}
+/* el Juramento de la barra, sin su rótulo en las ventanas de portátil (el aviso emergente lo dice entero) */
+@media (min-width: 641px) and (max-width: 1420px) {
+  .bar .contract-chip > span, .bar .boss-chip > span { display: none; }
+}
+/* V11: la Vida del lateral, en dos filas como mucho */
+#int-blocks { grid-template-columns: repeat(var(--icols, 10), 1fr); }
+/* V11: en la carta de 44 px del móvil el rango va en Archivo 700 (palo seco de peso alto): a 20 px la Archivo Black
+   tapaba casi un tercio de la cara; así el marfil sigue en ≥ 75 % y el «10» se lee igual */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :is(.hand, .reserve, .qa-limpias) .card:is(.k-number, .k-ace) .corner b { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 700; letter-spacing: -0.06em; }
+}
+/* V11: y el filete de tinta de esa carta, de 2 px (el de 3 px se comía un tercio del borde de una carta de 44 px) */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :is(.hand, .reserve, .qa-limpias) .card:is(.k-number, .k-ace) .ly.paper { border-width: 2px; }
+}
+/* V11: con monarca (asaltos 2, 4 y 5) el lateral de un portátil no tiene alto para el diario: se retira */
+@media (min-width: 641px) and (max-height: 900px) and (min-aspect-ratio: 1/1) {
+  .table-screen:has(#monarch:not([hidden])) .side > .log { display: none; }
+}
+
+/* V11 · La Taberna con nueve ofertas: por debajo de 1420 px de ancho no caben en una fila sin cortar los
+   nombres («Estandarte», «Pergamino: …»), así que el tendedero se parte en dos filas */
+@media (min-width: 641px) and (max-width: 1420px) {
+  .run-body.shop .hangers:has(> .choice:nth-child(8)) { grid-template-columns: repeat(var(--n2, 5), minmax(0, 1fr)); row-gap: clamp(20px, 2.6vh, 28px); }
+  .run-body.shop .hangers:has(> .choice:nth-child(8)) .choice.hang .card { --w: min(100cqw, 11vh); }
+  .run-body.shop .hangers:has(> .choice:nth-child(8)) .choice p { min-height: 0; }
+}
+/* V11 · «Reliquias llenas» y demás avisos de oferta no elegible: el papel nuevo (#efe6d5) es más oscuro y a
+   media opacidad bajaba de 4,5:1; se apaga con un filete punteado, sin transparencia (va sobre tinta y sobre papel) */
+.choice.no-pick .tag-act { opacity: 1; outline: 1px dashed var(--dim); outline-offset: -3px; }
+
+/* V11 · Mapa: el asalto en curso manda aunque sea de monarca (antes el morado de .boss tapaba el ocre de .now
+   y dejaba el texto a 1,8:1) */
+.bp-node.now, .bp-node.boss.now { background: var(--hazard); color: var(--ink); }
+/* en el móvil la estampilla va dentro de la casilla, encima del número, para no tapar el número ni salirse */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .bp-node .inkstamp { position: static; transform: none; justify-self: center; margin: -2px 0 2px; max-width: 100%; white-space: nowrap; }
+  .bp-node { grid-template-rows: auto auto auto 1fr; padding-top: 6px; }
+  .bp-node.now { box-shadow: 3px 3px 0 var(--ink); }
+}
+
+/* V11 · en las ventanas bajas de portátil (≤ 820 px de alto) el trono apuntado crecía hasta 6 px del cinto de
+   reliquias: la fila de tronos se reserva 10 px más arriba y abajo y encoge lo justo */
+@media (min-width: 641px) and (max-height: 820px) and (min-aspect-ratio: 1/1) {
+  .towers { --tw: min(calc(100cqw - clamp(190px, 19cqw, 330px)), calc((100cqh - 20px) * 2.06)); padding-block: calc(2.2cqh + 10px); }
+  .towers, .towers[data-n='4'] { width: var(--tw); }
+  .towers[data-n='3'] { width: calc(var(--tw) * 0.86); }
+  .towers[data-n='2'] { width: calc(var(--tw) * 0.74); }
+  .towers[data-n='1'] { width: calc(var(--tw) * 0.4); }
+}
+
+/* V11 · móvil, mesa de cuatro: la placa del golpe sube justo bajo la placa de inmunidad (antes tapaba la
+   insignia de estado) y la insignia cabe entera en el ancho del trono */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .floor-slot > .preview { top: 22px; }
+  .tower .fx { padding-inline: 1px; letter-spacing: -0.05em; text-transform: none; }
+}
+/* V11 · con mando o teclado en portátil, el nombre largo del monarca (The Clockmaker) no dejaba sitio al turno:
+   los rótulos «Reinado» y «Oro» se recogen (el número y su aviso emergente siguen, como en el móvil) */
+@media (min-width: 641px) and (max-width: 1420px) and (min-aspect-ratio: 1/1) {
+  html:is([data-input='keys'], [data-input='pad']) .bar :is(.level-chip, #gold-chip) > span { display: none; }
+}
+/* V11 · móvil, mesa de cuatro: con Ataque de dos cifras la placa tapaba el palo del rótulo; se arrima */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .towers[data-n='4'] .tower .threat { padding: 0 1px; }
+  .towers[data-n='4'] .tower-tag { padding-left: 1px; }
+  .towers[data-n='4'] .tower-tag .glyph { width: 18px; height: 18px; }
+  .towers[data-n='4'] .tower .threat b { padding: 0 2px; letter-spacing: -0.04em; word-spacing: -0.2em; }
+}
+/* V11 · placa «Inmune ♠»: el palo tachado y la palabra no se tocan (el tachón llegaba a la «I») */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .plate.iron { gap: 5px; padding-left: 5px; }
+  .plate.iron::after { left: 4px; height: 2px; }
+}
+/* V11 · móvil: el Asedio cabe en la fila de los poderes (antes bajaba a otra fila y, con el aviso de último
+   turno, el campo se quedaba 11 px corto y el monarca se metía bajo el cinto) */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .tray .hudrow { column-gap: 4px; }
+  .tray .hudrow > #fatigue { padding-inline: 5px; }
+  .tray :is(#powers, .powers) { column-gap: 4px; }
 }

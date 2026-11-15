@@ -6,22 +6,29 @@
 /** Los rangos. Todo en % de campañas ganadas, salvo el ritmo (turnos) y la letalidad (veces la media). */
 export const OBJETIVOS = {
   /** Reinado 1 y Reinado 8 «Puertas selladas», con la Orden vacía y llena. */
-  reinado1: { vacio: [24, 30], lleno: [40, 48] },
-  reinado8: { vacio: [6, 9], lleno: [12, 17] },
-  /** Barajas en el Reinado 1. El objetivo de la Orden llena es 40–45; avisa fuera de 38–48. */
-  barajas: { lleno: [38, 48], llenoObjetivo: '40–45', vacio: [22, 32], vacioObjetivo: '24–31', sumaMinima: 6 },
+  reinado1: { vacio: [26, 32], lleno: [42, 48] },
+  reinado8: { vacio: [6, 10], lleno: [12, 18] },
+  /** Barajas en el Reinado 1. Objetivo 26–32 vacía y 42–48 llena; avisa fuera de 23–34 y 40–50. */
+  barajas: { lleno: [40, 50], llenoObjetivo: '42–48', vacio: [23, 34], vacioObjetivo: '26–32', sumaMinima: 6 },
   /** Reliquias y especiales dados de salida: trampa por debajo, victoria regalada por encima. */
   regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40 },
   /** Letalidad de cada monarca respecto a la media (con al menos `enfrentados` encuentros). */
   monarcas: { ratio: [0.8, 1.3], enfrentados: 150 },
   /** Turnos por asalto: hasta qué asalto vale cada tramo, rango de la mediana y tope del percentil 95. */
   ritmo: [
-    { hasta: 1, mediana: [5, 7], p95: 10 },
-    { hasta: 3, mediana: [8, 10], p95: 15 },
-    { hasta: Infinity, mediana: [9, 13], p95: 19 },
+    { hasta: 1, mediana: [4, 6], p95: 9 },
+    { hasta: 3, mediana: [7, 10], p95: 13 },
+    { hasta: Infinity, mediana: [9, 12], p95: 15 },
   ],
-  /** Peor percentil 95 de los asaltos 4 a 8, en cada baraja. */
-  ritmoBaraja: 19,
+  /** Peor percentil 95 de los cinco asaltos, en cada baraja. */
+  ritmoBaraja: 15,
+  /** Campañas que mueren en el asalto 1 (Reinado 1, Orden vacía), en %: el asalto de dos tronos enseña, no mata. */
+  muertesAsalto1: 8,
+  /**
+   * Duración estimada de una campaña, en minutos: (inicio + 4 entreactos + 2 Secretos + jugada × Σ medianas
+   * de turnos de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado (SPECS/V11.md 1.10).
+   */
+  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, jugada: 18 },
   /** Asalto único (partida clásica): victorias del bot con 1, 2, 3 y 4 jugadores. */
   clasica: [58, 65],
 } as const;
@@ -52,6 +59,8 @@ export interface InformeMeta {
   avgLethality: number;
   pacing: { stage: number; name: string; p50: number; p95: number; n: number }[];
   pacingByDeck: { deck: string; name: string; worstP95: number; n: number }[];
+  /** % de campañas (Reinado 1, Orden vacía) que caen en cada asalto. */
+  deaths?: number[];
   giftBaseline: number;
   giftBaselineN: number;
   classic?: { players: number; winrate: number; n: number }[];
@@ -145,7 +154,7 @@ export function revisar(r: InformeMeta): Comprobacion[] {
     const ratio = r.avgLethality ? b.lethality / r.avgLethality : 1;
     out.push({ id: `monarca.${b.id}`, texto: `Monarca ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo 0,8×–1,3×)`, ok: !(ratio < O.monarcas.ratio[0] || ratio > O.monarcas.ratio[1]), partes: [{ valor: ratio, lo: O.monarcas.ratio[0], hi: O.monarcas.ratio[1] }] });
   }
-  // ritmo: asalto 1 de 5 a 7 turnos (P95 ≤ 10), asaltos 2 y 3 de 8 a 10 (P95 ≤ 15), asaltos 4 a 8 de 9 a 13 (P95 ≤ 19)
+  // ritmo: asalto 1 de 4 a 6 turnos (P95 ≤ 9), asaltos 2 y 3 de 7 a 10 (P95 ≤ 13), asaltos 4 y 5 de 9 a 12 (P95 ≤ 15)
   for (const p of r.pacing) {
     if (!p.n) continue;
     const tramo = O.ritmo.find((t) => p.stage <= t.hasta)!;
@@ -153,8 +162,23 @@ export function revisar(r: InformeMeta): Comprobacion[] {
     const top = tramo.p95;
     out.push({ id: `ritmo.${p.stage}`, texto: `Asalto ${p.stage} (${p.name}): mediana ${p.p50} y percentil 95 ${p.p95} (objetivo ${lo}–${hi} y ≤ ${top})`, ok: !(p.p50 < lo || p.p50 > hi || p.p95 > top), partes: [{ valor: p.p50, lo, hi }, { valor: p.p95, hi: top }] });
   }
-  for (const d of r.pacingByDeck) out.push({ id: `ritmo.baraja.${d.deck}`, texto: `${d.name}: percentil 95 de ${d.worstP95} turnos en algún asalto del 4 al 8 (objetivo ≤ ${O.ritmoBaraja})`, ok: !(d.worstP95 > O.ritmoBaraja), partes: [{ valor: d.worstP95, hi: O.ritmoBaraja }] });
+  for (const d of r.pacingByDeck) out.push({ id: `ritmo.baraja.${d.deck}`, texto: `${d.name}: percentil 95 de ${d.worstP95} turnos en algún asalto (objetivo ≤ ${O.ritmoBaraja})`, ok: !(d.worstP95 > O.ritmoBaraja), partes: [{ valor: d.worstP95, hi: O.ritmoBaraja }] });
+  // el asalto 1 (dos tronos) no mata a más del 8 % de las campañas
+  const m1 = r.deaths?.[0];
+  if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con la Orden vacía (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
+  // duración estimada de la campaña con las medianas de turnos de los cinco asaltos
+  const min = duracion(r);
+  if (min !== null) out.push({ id: 'duracion', texto: `Duración estimada de la campaña: ${min} minutos (objetivo ${O.duracion.minutos.join('–')})`, ok: inRange(min, O.duracion.minutos), partes: [{ valor: min, lo: O.duracion.minutos[0], hi: O.duracion.minutos[1] }] });
   return out;
+}
+
+/** Minutos estimados de una campaña (con un decimal), o null si el informe no trae el ritmo de los cinco asaltos. */
+export function duracion(r: Pick<InformeMeta, 'pacing'>): number | null {
+  const D = OBJETIVOS.duracion;
+  const p = r.pacing.filter((x) => x.n > 0 && x.stage <= 5);
+  if (p.length < 5) return null;
+  const turnos = p.reduce((a, x) => a + x.p50, 0);
+  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + D.jugada * turnos) / 60) * 10) / 10;
 }
 
 /** La partida clásica: del 58 al 65 % con 1, 2, 3 y 4 jugadores. */

@@ -2,6 +2,116 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 11.0.0 — 2026-11-15
+
+Simplificación radical. Por primera vez desde la 6.0 cambian las reglas, y cambian para quitar cosas: Multi siempre entero, una sola regla de palos, dos estados, cartas numeradas de cara limpia con cuatro colores y una campaña de cinco asaltos. Motivo: siete versiones de interfaz con las reglas congeladas subieron la claridad (4,62 → 5,01) y no la aprobación (28,8 → 29,2 %, censos de 240). Encargo del usuario en `artifacts/mision/MISION-V11.md`; especificación y cierre en `SPECS/V11.md`; candidata `16fe20a`; puertas en `artifacts/mision/v11/puertas.md`.
+
+### Si ya jugabas
+- **La rueda de ventaja ya no existe.** Ningún palo pega doble a otro. Queda una regla: contra el trono de su palo, una carta hace 0 (es Inmune); contra los demás, su número.
+- **Tres estados pasan a dos.** Brecha pasa a llamarse **Expuesto** y ahora dobla el Daño. Desarmado pasa a ser **Aturdido**: se salta un solo Contraataque. En guardia desaparece.
+- **Ocho asaltos pasan a cinco.** La campaña dura unos 19 minutos (antes, unos 32).
+- **Tu progreso se conserva**: La Orden, las Coronas y lo comprado, la colección, los logros, las maestrías, los ajustes y el Archivo de crónicas.
+- **Una campaña a medias de la 10.0 se cierra** al abrir el juego: cobras las Coronas de lo que superaste y un aviso te lo dice. Los récords de asalto alcanzado pasan a contar sobre 5.
+
+### Reglas
+- **Multi siempre entero**: carta sola ×1; As cómplice, grupo, escalera y doble par ×2; color, full y escalera de color ×3; póker ×4. Golpe = Daño × Multi, sin redondeo. El Pergamino solo sube Daño.
+- Racha de Golpes exactos: +1 de Multi por eslabón, hasta +3. **Asedio final**: desde el turno 10, cada 2 turnos, +40 de Daño y +1 de Ataque por nivel (antes, +0,25 de Multi). Acabados: Templado +1 de Multi, Lacre policromo ×2, Cristal maldito ×3.
+- **Poderes de palo sin dividir**: cada ♣ da +2 de Escudo, cada ♥ cura 2, cada ♦ salpica 2 a los otros tronos; ♠ sigue perforando. Un 2♥ cura lo mismo que un 10♥.
+- **Expuesto** (lo deja un golpe de un solo palo con 2 cartas o más): el próximo golpe contra ese trono hace ×2 de Daño. **Aturdido** (lo dejan un golpe de 3 palos, el Motín del Comodín y El Espía): se salta su próximo Contraataque.
+- **Cinco palabras clave** (antes seis): Daño, Multi, Golpe exacto, Expuesto, Aturdido.
+- **52 reliquias**, 13 rediseñadas y ninguna retirada. El Barril de pólvora ya no lee la ventaja: cada guardia abatido salpica 6 a los otros tronos. El Pasadizo hace que un golpe no respete Inmune. Gota de veneno y Máscara de traidor siguen perforando o invirtiendo la inmunidad. Descripción más larga: 100 caracteres en español, 104 en inglés.
+- **El Inquisidor**: «Ningún trono queda Aturdido» (antes, todos llegaban En guardia). **Reinado 4**: «Reyes acorazados», los Reyes de los asaltos con monarca tienen un 25 % más de Vida.
+
+### Campaña
+- **Cinco asaltos**: El Puente levadizo (2 tronos), El Patio de armas (3, monarca), La Cripta (4), La Galería real (4, monarca) y El Salón del Trono (4, el monarca como **Rey Tirano** o **Reina Tirana**). En los asaltos 1 y 2 los palos presentes se sortean al empezar y se ven en el Mapa; un trono ausente no se pinta y su Contraataque no hace nada.
+- Tres monarcas por campaña (antes cuatro), sin repetir. **Secretos de la cripta** tras los asaltos 2 y 4. **Atajo** solo antes del 3. Juramentos en el 1 y el 3. Cuatro visitas a La Taberna, con 4 reliquias en oferta. El **Trono infinito** empieza en el asalto 6 y el **Asalto diario** es la campaña de cinco.
+- La Vida de cada guardia se redondea al múltiplo de 5 más cercano (Sota 190 en el asalto 1).
+- Logros: los mismos 36 `id`. Cambian dos condiciones: «Adiós, carcelero» pide superar el asalto 2 (antes el 3) y «Medio castillo», el 3 (antes el 5).
+
+### Balance
+Laboratorio completo: **53.240 campañas, 0 avisos** con los objetivos nuevos (huella `bb2760153dc4d238`, cuarto informe completo del rebalanceo).
+- Reinado 1: **29,2 % / 43,4 %** (objetivo 26–32 / 42–48). Reinado 8: 6,5 / 13,5 %. Cada Reinado gana menos que el anterior.
+- Barajas: 29,2–32,1 % sin la Orden y 41,3–44,4 % con ella; la Orden suma 9,8–14,7 puntos.
+- Monarcas: de ×0,84 (El Relojero) a ×1,25 (El Inquisidor) de la media (23,9 %).
+- Ritmo (mediana / P95): 6/9 · 9/12 · 10/13 · 10/14 · 10/15. Peor P95 por baraja, 15 (tope 15). Nadie muere en el asalto 1; casi el 70 % de las muertes caen en el 4 y el 5.
+- **Duración estimada: 18,2 minutos** con el tiempo de jugada medido en la prueba de humo (5,4 s de animación a 1×); 18,7 con el supuesto inicial. El supuesto de 12 s para decidir cada jugada sigue sin medir con personas.
+- Asalto único: 62,5 · 63,6 · 59,5 · 64,3 % con 1 a 4 jugadores. Ninguna reliquia ni especial trampa o regalada.
+- Palancas finales: Vida por asalto ×7,5 · 5,6 · 5,72 · 5,72 · 7,28; Ataque 2 · 2 · 3 · 5 · 5; Vida inicial 21; La Taberna más barata (4 · 6 · 8 · 11) y más oro por asalto (9). La escalera de Multi de las formaciones no se tocó.
+
+### Cartas y mesa
+- **Cartas numeradas de cara limpia** (A a 10): papel marfil en el 75,6–83,5 % de la cara, un índice grande arriba a la izquierda y un palo grande y macizo en el centro, con contorno de tinta. Las figuras, los monarcas, las reliquias y los marcos conservan el grabado. Rango de la esquina: 35,4 / 23,0 / 20,6 / 20 px en 1920 / 1366 / 1280 / 390 (+33 a +40 %), con la carta del mismo tamaño.
+- **Baraja de cuatro colores** de serie: Picas negro `#161514`, Corazones carmesí `#C8232C`, Diamantes azul cobalto `#1B5E9E`, Tréboles verde `#1B6B46`. En **Ajustes → Colores de la baraja**: Cuatro colores · Clásica (la de la 10.0) · Dos tintas. Con «Alto contraste», los cuatro se oscurecen hasta ≥ 7:1.
+- **Fuera de la mesa**: la rueda de palos, los sellos ×0 / ×2 / ×3 de cada carta de la mano y la placa «débil a». Inmune se ve en dos sitios: la placa «Inmune ♠» del trono y la línea «Inmune · 0» de la cuenta.
+- **Tronos**: Vida 15 → 21,6 px y Ataque 20 → 27,2 px en 1280×800; 14 → 20 y 15 → 21 px en 390×844. El trono apuntado crece un 10 %. Con 2 o 3 tronos la fila se reparte entre los que hay.
+- **Mapa de cinco asaltos** con los palos de cada asalto y la estampilla del Rey Tirano. La Taberna con nueve ofertas parte en dos filas.
+- Tres Susurros nuevos (trono ausente, Expuesto, Aturdido): once en total. La partida guiada juega con dos tronos y cuentas enteras.
+- Fluidez: el primer sello de lacre de la sesión baja de unos 55 ms a 6–12 ms; el primer tajo en móvil queda en 12–18 ms (ver Incidencias). Ningún fotograma en frío pasa de 50 ms, y `qa:fps` ahora falla si pasa.
+
+### Inglés
+- **Las 14 correcciones** de la lista para un hablante nativo: Royal Straight, False Bottom, Alchemist's Stone, Prismatic Wax, The Tally, Full House, Deadeye, Chest of Blades, Crown Jeweler, Black Market, Never Run Dry y Steady Hand, The Tavern Keeper, el orden natural de tres frases («Your max Health drops by…», «Kings' Attack rises by…», «… fewer card in hand») y el lema «A conspiracy roguelike played with a standard 52-card deck». Cero nombres viejos en `src/`.
+- Partida guiada en inglés: 26,2 s con teclado, 27,3 s con ratón y 28,8 s con mando.
+- Sigue sin revisarlo un hablante nativo.
+
+### Guardado y red
+- `RUN_VERSION` 4 y `META_VERSION` 3. La carga de una Meta de la 10.0 conserva mejoras, Coronas, logros, colección y maestrías; solo recorta a 5 el mejor asalto, los alcances y el diario. La devolución de Coronas sigue reservada a los perfiles de antes de la 2. Probado con un guardado real de la 10.0 (`tests/migracion.test.ts`, 11 pruebas).
+- La campaña a medias de la 10.0 se cierra y abona las Coronas de lo superado (mínimo 1, tope 8), con el aviso «Tu campaña a medias era de la 10.0, de ocho asaltos…».
+- Las actas viejas del Archivo se enseñan «asalto n de 8», sin nombre de sala.
+- **Protocolo con versión** (`PROTOCOL_VERSION` 11): una sala rechaza a un cliente de otra versión, con el mensaje en el idioma de la mesa. Un cliente de la 10.0 no puede entrar en una sala de la 11.0.
+
+### Puertas
+- `typecheck` limpio. **314 pruebas + 9 de cooperativo** en 21 archivos. Se retira `tests/congelacion.test.ts`; nacen `tests/v11.test.ts` (Multi entero en 5.000 golpes, cinco palabras clave, campaña de cinco, 36 logros, ningún texto con ventaja ni Multi decimal) y `tests/migracion.test.ts`.
+- `forja` limpia (169 piezas × 2 tamaños). `docs`, `og`, `build` y `build:web` en verde.
+- QA visual: **196 capturas** (49 estados × 4 ventanas) en español y otras 196 en inglés, 0 fallos, 0 recortes. Reglas nuevas: «cara-limpia», «paleta», «daltonismo», «inmune», «estados», «ataque», «apuntado» y «tronos». 14 avisos de «daltonismo», por diseño: la forma del palo va siempre con el color.
+- Prueba de humo: **322 comprobaciones** en español y 322 en inglés, «Todo en orden», con una campaña entera de cinco asaltos jugada por el bot con el ratón.
+- `qa:fps` «60 fps: todo en orden»; frío máximo 42,5 ms. `qa:audio` «La música no cansa: todo en orden».
+
+### Panel en español y en inglés
+Panel adaptado a la 11.0 antes de correr (lector y 19 escenas validados contra el motor; modo `--idioma en`; 124 pruebas). Mismas 60 personas y misma escena por persona que en la línea base; pruebas pareadas. Con n = 60 el ruido de la aprobación es de unos ±12 puntos.
+
+**Español, 11.0 contra 10.0** (`rapido-60-20261115-135642` contra `rapido-60-20261114-185031`; 298 evaluaciones, 0 fallidas):
+
+| | 10.0 | 11.0 | ¿Se distingue del azar? |
+|---|---:|---:|---|
+| Aprobación | 28,3 % (17 de 60) | **36,7 %** (22 de 60; IC95 25,6–49,3) | No: 7 pasan a aprobar y 2 dejan (McNemar p = 0,18) |
+| Claridad (1–10) | 4,92 | **5,40** | **Sí**: t pareada = 2,81 |
+| Diversión (1–10) | 6,32 | 6,57 | No (t = 1,45) |
+| Claridad del casual (n = 12) | 4,33 | 4,83 | No (t = 1,11; hacían falta unos 0,8 puntos) |
+| Steam Deck que aprueba (n = 9) | 2 de 9 | 4 de 9 | No |
+| Quejas de contraste de palos | 60 menciones, 44 personas | 70 menciones, 45 personas | No baja: 7 dejan de citarlo y 8 empiezan |
+
+- Es la aprobación más alta medida en la misión, y la claridad es el primer movimiento estadísticamente claro desde la 6.1. Ninguna de las dos cosas está confirmada con personas reales.
+- Por dispositivo (aprueban · claridad): PC 7 → 9 de 21 · 4,90 → 5,52; portátil 2 → 4 de 15 · 5,13 → 5,33; móvil 6 → 5 de 15 · 5,07 → 5,67; Steam Deck 2 → 4 de 9 · 4,33 → 4,78.
+- Duelos: «Una demo antes de comprar» 75 %; «El Asalto diario entre amigos» 77,5 %; «Un Golpe exacto con margen» empate (40 % a favor del margen, 50 % de pares con sesgo de posición).
+- Precio justo 8,0 USD; óptimo de Van Westendorp 8,25 → 6,25; en deseados 66,7 %.
+- Puerta (aprobación ≥ 18,5 %, claridad ≥ 4,56): **pasa**.
+
+**Inglés, 11.0 contra 11.0 en español** (`rapido-60-en-20261115-142907`; 295 evaluaciones, 0 fallidas):
+- Aprobación **40,0 %** (24 de 60) y claridad **5,28** (t pareada = −0,58): **el inglés se entiende igual que el español**.
+- Steam Deck da **0 de 9** con las mismas nueve personas que daban 4 de 9 en español: es la medida de cuánto baila ese estrato.
+- 10 menciones de traducción; de las 5 quejas explícitas, 4 son por el sello «SANGRE Y PALO» de la portada inglesa, que es la marca dual y se queda.
+- El clasificador de quejas del panel busca palabras en castellano: en la corrida inglesa, las cubetas que dependen de un término del juego (Inmune, La Manga) caen por el instrumento, no por el juego.
+
+### Lo que no mejoró
+- **Las quejas de contraste no bajan** (60 → 70). Cambian de tema: las de palos y cartas bajan (25 → 20; las de la mano, 11 → 7) y aparecen otras: el botón Golpear rojo junto al carmesí de Corazones, la placa «Inmune» sobre el grabado del trono, las barras de Vida con trama. La baraja de cuatro colores casi no se cita.
+- **Texto chico** sube de 62 a 82 menciones, con Golpes de tres y cuatro cifras. Reglas confusas, 42 → 53; palo Inmune, 28 → 45.
+- **Golpes exactos**: de 1,6–2,1 a 0,7–1,1 por asalto. Se publica así; la V12 lo mira con datos de personas (decisión en `SPECS/V11.md`, 7.3).
+- **El Golpe crece mucho más**: P99 del último asalto 944 (asalto 5 de la 10.0: 413; su asalto 8: 605), por el +40 de Daño del Asedio.
+- **El Comodín se usa menos**: de 8,9 a 5,6 veces por campaña.
+- Steam Deck sigue sin probarse en el aparato, y el estrato de 9 personas no permite concluir nada.
+
+### Incidencias
+- La primera sesión de `juice-ux` se cortó a medias; la segunda la retomó desde el commit de la celda anterior. `arte-ui` se quedó parada esperando un trabajo suyo y hubo que despertarla.
+- **Regresión del fotograma en frío**, encontrada en la certificación: el primer tajo en 390×844 daba 237–243 ms. Causa: el calentamiento del sello se pintaba en el mismo fotograma que la mesa, el parón de golpe invalidaba el estilo de toda la mesa y solo se calentaba la primera mesa de la sesión. Arreglado en `fx.ts` y `juice.css`; candidata final `16fe20a`.
+- Las marcas de maldición sobre la mesa (`src/client/guia.ts`) llevaban las cifras escritas a mano («+2» del Verdugo, «−3» del Relojero) y el rebalanceo las había cambiado; ahora salen de la configuración. Lo encontró la celda del panel.
+- La caída nativa de Node en las pruebas de cooperativo repitió una vez la pasada, como prevé `scripts/test.mjs`.
+- Pendiente: el bloque de balance del `README.md` aún dice los objetivos de la 10.0 (lo escribe `scripts/reglas.ts` con los números a mano). Celda de cierre para `reglas-balance` en `SPECS/V11.md`.
+
+### Estudio
+- Orden: director → reglas-balance (bloques A, B y C) → arte-ui → juice-ux → puertas → dos auditorías del panel → arreglo del frío → cierre. Commit local tras cada celda y entre bloques. Bitácoras en `artifacts/mision/v11/`.
+- Constitución de la V11 (`tests/invariantes.test.ts` y `tests/v11.test.ts`): ≤ 5 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 en los dos idiomas, P95 ≤ 15 en los cinco asaltos y por baraja, Multi siempre entero. La V11 añade una idea (tronos ausentes en los asaltos 1 y 2) y retira cuatro sistemas: la rueda, En guardia, los divisores de los poderes y tres asaltos.
+- Los reglamentos de `.claude/` siguen con la constitución de la V10. El cambio se le propone al usuario, listo en `artifacts/mision/v11/parche-reglamentos.mjs`.
+- Documentos: [`ROADMAP_V11.md`](ROADMAP_V11.md) y [`EVOLUCION_V11.md`](EVOLUCION_V11.md).
+
 ## 10.0.0 — 2026-11-14
 
 Candidata de lanzamiento con funciones congeladas: el juego entero en español y en inglés, alto contraste, arreglos de Steam Deck y portátil, y la envoltura de escritorio preparada para Steam. **Ninguna mecánica nueva y ningún número cambiado**: los seis archivos de la huella del laboratorio no se tocaron (`git diff v9.0.0` vacío) y el laboratorio sale idéntico al de la 9.0. Motivo: el paso 5 del encargo; los duelos de la 9.0 («Jugar en inglés», 86,7 %; «Modo de alto contraste», 100 %); y Steam Deck, 0 de 9 en cuatro corridas seguidas. Candidata `20dbf5f`, arreglos del censo en `edbbf4c`; puertas en `artifacts/mision/v10/puertas.md`.

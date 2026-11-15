@@ -1,4 +1,4 @@
-// Textos de pantalla de juice-ux (V10), en los dos idiomas a la vez: cada clave lleva [español, inglés].
+// Textos de pantalla de juice-ux (V10; V11: Susurros de la mesa de dos tronos y de los dos estados), en los dos idiomas a la vez: cada clave lleva [español, inglés].
 // es.ts y en.ts los reparten en `ES_UI` y `EN_UI`, junto a los de arte-ui (ui-arte.ts). El español es letra
 // por letra el de la 9.0: no se reescribe, solo se saca del código. Sin importaciones (fuera del ciclo de
 // las reglas). Lo que va dentro de `{campo}` lo rellena quien llama (insignias de botón, cifras, nombres).
@@ -54,8 +54,14 @@ export const UI_JUICE = {
   'ui.w.forja': ['<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.', '<b>Wax Table:</b> the card you pick stays sealed forever. Cancel spends nothing.'],
   'ui.w.atajo': ['<b>Atajo:</b> te saltas el asalto sin Botín ni Taberna, pero te llevas «{tag}».', '<b>Shortcut:</b> you skip the assault with no Spoils and no Tavern, but you take “{tag}”.'],
   'ui.w.jefe': ['<b>Monarca:</b> {who} impone un decreto en este asalto. Su ficha de la barra te lo recuerda.', '<b>Monarch:</b> {who} imposes a decree on this assault. The token on the top bar reminds you.'],
-  'ui.w.fatiga': ['<b>Asedio final:</b> desde ahora tus golpes llevan más Multi, pero los Contraataques pegan más fuerte.', '<b>Final Siege:</b> from now on your strikes carry more Mult, but Counterattacks hit harder.'],
+  'ui.w.fatiga': ['<b>Asedio final:</b> desde ahora tus golpes suman más Daño cada turno, pero los Contraataques pegan más fuerte.', '<b>Final Siege:</b> from now on your strikes add more Damage each turn, but Counterattacks hit harder.'],
   'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte y pierdes {loss} de Vida. El Escudo no lo frena.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back and you lose {loss} Health. Shield does not stop it.'],
+  // V11: la mesa de dos o tres tronos y los dos estados, la primera vez que se ven
+  'ui.w.ausente': ['<b>En este asalto hay {n} tronos:</b> si el Contraataque saca el palo de uno que no está, no pasa nada.', '<b>This assault has {n} thrones:</b> if the Counterattack draws the suit of one that is not here, nothing happens.'],
+  'ui.w.expuesto': ['<b>Expuesto {glyph}:</b> el próximo golpe contra ese trono hace ×{n} de Daño. Lo deja un golpe de 2 cartas o más de un solo palo.', '<b>Exposed {glyph}:</b> the next hit against that throne deals ×{n} Damage. A hit of 2+ cards of one suit leaves it Exposed.'],
+  'ui.w.aturdido': ['<b>Aturdido {glyph}:</b> ese trono se salta su próximo Contraataque. Lo deja un golpe de tres palos.', '<b>Stunned {glyph}:</b> that throne skips its next Counterattack. A hit with three suits leaves it Stunned.'],
+  // V11: el registro de la mesa, cuando el Contraataque saca el palo de un trono que no está en el asalto (table.ts)
+  'ui.log.por.ausente': ['{casa} no está en este asalto', '{casa} is not in this assault'],
   'ui.w.off': ['No mostrar más', 'Do not show again'],
   'ui.w.ajuste': ['Susurros', 'Whispers'],
   'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Asedio final…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Final Siege…).'],

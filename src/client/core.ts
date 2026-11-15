@@ -78,22 +78,28 @@ export interface Settings {
   speed: 1 | 2 | 4;
   /** Reducir movimiento: sin temblores, partículas ni destellos. */
   calm: boolean;
-  /** Tintas de la baraja: 4 de taller (una por palo) o las 2 clásicas (rojo y negro). */
-  inks: 4 | 2;
+  /** V11 · Colores de la baraja: cuatro colores (por defecto), la clásica de la 10.0 (con el ocre) o dos tintas (rojo y negro). */
+  paleta: Paleta;
   /** V10 · Alto contraste: tinta negra sobre papel claro, contornos más gruesos y la mesa sin textura. */
   contrast: boolean;
 }
+export type Paleta = 'cuatro' | 'clasica' | 'dos';
+export const PALETAS: Paleta[] = ['cuatro', 'clasica', 'dos'];
 const SETTINGS_KEY = 'derrumbe:settings';
 // sin nada guardado, «Reducir movimiento» y «Alto contraste» siguen a lo que pida el sistema
-export const settings: Settings = { speed: 1, inks: 4, calm: matchMedia('(prefers-reduced-motion: reduce)').matches, contrast: matchMedia('(prefers-contrast: more)').matches, ...loadJson<Partial<Settings>>(SETTINGS_KEY) };
+const saved = loadJson<Partial<Settings> & { inks?: number }>(SETTINGS_KEY) ?? {};
+export const settings: Settings = { speed: 1, calm: matchMedia('(prefers-reduced-motion: reduce)').matches, contrast: matchMedia('(prefers-contrast: more)').matches, ...saved, paleta: 'cuatro' };
 if (![1, 2, 4].includes(settings.speed)) settings.speed = 1;
-if (settings.inks !== 2) settings.inks = 4;
+// V11: los ajustes de la 10.0 guardaban `inks` (4 o 2); las dos tintas se conservan, lo demás pasa a cuatro colores
+settings.paleta = PALETAS.includes(saved.paleta as Paleta) ? (saved.paleta as Paleta) : saved.inks === 2 ? 'dos' : 'cuatro';
+delete (settings as Partial<Settings> & { inks?: number }).inks;
 settings.contrast = settings.contrast === true;
 
 export function applySettings(): void {
   platform.save(SETTINGS_KEY, JSON.stringify(settings));
   document.documentElement.classList.toggle('calm', settings.calm);
-  document.documentElement.classList.toggle('inks2', settings.inks === 2);
+  document.documentElement.classList.toggle('inks2', settings.paleta === 'dos');
+  document.documentElement.classList.toggle('paleta-clasica', settings.paleta === 'clasica');
   document.documentElement.classList.toggle('contraste', settings.contrast);
   document.documentElement.dataset.speed = String(settings.speed);
 }

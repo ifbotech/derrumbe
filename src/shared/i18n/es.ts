@@ -10,7 +10,7 @@ import { ACHIEVEMENTS, unlocksOf } from '../../rules/achievements';
 import { fill, BALANCE } from '../../rules/balance-config';
 import { FORMATION_NAME, FORMATIONS, MATERIAL, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
 import { KEYWORDS } from '../../rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, UPGRADES } from '../../rules/run';
+import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
 import { SPECIALS } from '../../rules/specials';
 import { ARCH, RARITY, TOOLS } from '../../rules/tools';
 import { TUTORIAL_STEPS, createTutorial } from '../../rules/tutorial';
@@ -51,6 +51,8 @@ export function reglasEs(): Record<string, string> {
     o[`monarca.${b.id}.bark.caida`] = b.barks.caida;
   }
   STAGES.forEach((s, i) => (o[`asalto.${i + 1}.nombre`] = s.name));
+  o['asalto.tirano.m'] = TIRANO.m;
+  o['asalto.tirano.f'] = TIRANO.f;
   ASCENSIONS.forEach((a, i) => {
     o[`reinado.${i + 1}.nombre`] = a.name;
     o[`reinado.${i + 1}.desc`] = a.desc;

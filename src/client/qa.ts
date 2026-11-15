@@ -59,10 +59,10 @@ function clean(): void {
   S.queue.length = 0;
   S.selected.length = 0;
   S.screen = null;
-  // V10: cada estado parte de las tintas y el contraste de serie (mesa-contraste y mesa-2tintas los cambian)
-  if (settings.contrast || settings.inks !== 4) {
+  // cada estado parte de la paleta y el contraste de serie (mesa-contraste, mesa-2tintas y mesa-clasica los cambian)
+  if (settings.contrast || settings.paleta !== 'cuatro') {
     settings.contrast = false;
-    settings.inks = 4;
+    settings.paleta = 'cuatro';
     applySettings();
   }
 }
@@ -90,13 +90,15 @@ function show(run: Run, state: GameState | null = null, key = 'qa'): void {
  *  sonar y el temporizador de la anterior queda anulado, en vez de esconder el bocadillo de la siguiente. */
 let monarchRuns = 0;
 
-async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null): Promise<void> {
+async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null, stage = 0): Promise<void> {
   setMode(input);
   // los Susurros solo salen en la primera campaña de un perfil
   meta.runs = firstRun ? 0 : Math.max(1, meta.runs);
-  // con monarca, el asalto 5 (La Capilla: Sota, Reina y Rey, como el 4) con ese monarca en el trono
-  const run = baseRun(boss ? 5 : 4);
-  if (boss) run.bosses[5] = boss;
+  // V11: la mesa de siempre es el asalto 4 (La Galería real: cuatro tronos con Sota, Reina y Rey); con monarca,
+  // ese monarca en su trono. Con `stage` 1 o 2, la mesa corta de dos o tres tronos (los ausentes no se pintan).
+  const at = stage || 4;
+  const run = baseRun(at);
+  if (boss) run.bosses[at] = boss;
   runAction(run, { t: 'route', i: 0 });
   let state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
   // la mano que se quiere ver: trío de sietes, cartas marcadas, un as, una especial y el comodín
@@ -107,11 +109,14 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   p.hand = hand;
   // un asalto ya empezado: daño, un guardia abatido, estados y algo de Escudo
   const hp = state.config.floorHp;
-  state.towers.S.damage = Math.floor(hp[state.towers.S.floors[0]] * 0.72);
-  state.towers.H.floors.shift();
-  state.towers.H.damage = Math.floor(hp[state.towers.H.floors[0]] * 0.35);
-  state.towers.D.fx = { fractura: true };
-  state.towers.C.fx = { ...state.towers.C.fx, sobrecarga: true };
+  const here = SUITS.filter((s) => !state.towers[s].away);
+  const [a, b, c, d] = here;
+  state.towers[a].damage = Math.floor(hp[state.towers[a].floors[0]] * 0.72);
+  if (state.towers[b].floors.length > 1) state.towers[b].floors.shift();
+  state.towers[b].damage = Math.floor(hp[state.towers[b].floors[0]] * 0.35);
+  // los dos estados de la V11: Expuesto y Aturdido (con dos tronos, los dos en el segundo)
+  state.towers[c ?? b].fx = { fractura: true };
+  state.towers[d ?? b].fx = { ...state.towers[d ?? b].fx, sobrecarga: true };
   state.wall = 3;
   state.integrity = 13;
   state.chain = 1;
@@ -128,6 +133,12 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   // la previsualización en vivo: el trío de sietes elegido
   S.selected = (['S', 'D', 'H'] as Suit[]).map((s) => find(state.players[0].hand, s, 7)?.id).filter((id): id is string => !!id);
   renderInteractive();
+}
+
+/** V11: apunta a un trono como lo hace el puntero (la cuenta y el trono apuntado siguen al foco). */
+function apunta(s: Suit): void {
+  const t = document.querySelector<HTMLElement>(`.tower[data-suit="${s}"]`);
+  t?.dispatchEvent(new PointerEvent('pointerenter'));
 }
 
 /** V7 · la mesa de un asalto con monarca: retrato, placa del decreto, la maldición marcada y su bocadillo de entrada. */
@@ -179,12 +190,12 @@ function logged(run: Run): void {
 
 /** La campaña perdida de acta-derrota (y de acta-feedback): causa de la derrota y semilla con enlace. */
 function derrota(): Run {
-  const run = baseRun(6);
+  const run = baseRun(4);
   run.phase = 'lost';
   run.integrity = 0;
-  run.stats.turns = 71;
-  run.stats.gold = 143;
-  run.stats.contracts = 3;
+  run.stats.turns = 41;
+  run.stats.gold = 103;
+  run.stats.contracts = 2;
   run.death = { kind: 'sirena', title: 'Contraataque de PICAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Un ♣ más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
   return run;
 }
@@ -226,8 +237,31 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // V10: las 2 tintas clásicas (rojo y negro): las tramas siguen distinguiendo el palo
   'mesa-2tintas': async () => {
     await mesa();
-    settings.inks = 2;
+    settings.paleta = 'dos';
     applySettings();
+  },
+  // V11: la paleta clásica de la 10.0 (con el ocre de Diamantes), opción de Ajustes
+  'mesa-clasica': async () => {
+    await mesa();
+    settings.paleta = 'clasica';
+    applySettings();
+  },
+  // V11: el asalto 1 (dos tronos) y el 2 (tres tronos, con monarca): la fila se reparte entre los que hay
+  'mesa-2tronos': () => mesa(false, 'pointer', 4, null, 1),
+  'mesa-3tronos': () => mesa(false, 'pointer', 4, null, 2),
+  // V11: los dos estados a la vista, sin jugada elegida: un trono Expuesto y otro Aturdido
+  'mesa-estados': async () => {
+    await mesa();
+    S.selected.length = 0;
+    renderInteractive();
+  },
+  // V11: cartas del palo del trono apuntado (el trío de sietes contra PICAS): placa Inmune en el trono y,
+  // con la cuenta abierta, la línea «Inmune · 0» del 7♠
+  'mesa-inmune': async () => {
+    await mesa();
+    apunta('S');
+    const { pinReceipt } = await import('./cuenta');
+    pinReceipt();
   },
   preparacion: () => {
     clean();
@@ -263,6 +297,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     setScreen('home');
     showRules();
   },
+  // V11: el Mapa de cinco asaltos en el asalto 2: los palos de los asaltos 1 y 2 a la vista y el Rey Tirano en el 5
   plano: () => {
     show(baseRun(2));
     setScreen('run');
@@ -294,7 +329,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     setScreen('run');
   },
   hallazgo: () => {
-    const run = baseRun(3);
+    const run = baseRun(2);
     toShop(run);
     run.events = ['horno', ...run.events.filter((e) => e !== 'horno')];
     runAction(run, { t: 'next' });
@@ -306,7 +341,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     EVENTS.filter((e) => e.id !== 'horno').map((e) => [
       `hallazgo-${e.id}`,
       () => {
-        const run = baseRun(3);
+        const run = baseRun(2);
         toShop(run);
         run.events = [e.id, ...run.events.filter((x) => x !== e.id)];
         runAction(run, { t: 'next' });
@@ -337,12 +372,12 @@ const STATES: Record<string, () => void | Promise<void>> = {
     openGuild('col');
   },
   acta: () => {
-    const run = baseRun(6);
+    const run = baseRun(4);
     run.phase = 'lost';
     run.integrity = 0;
-    run.stats.turns = 71;
-    run.stats.gold = 143;
-    run.stats.contracts = 3;
+    run.stats.turns = 41;
+    run.stats.gold = 103;
+    run.stats.contracts = 2;
     logged(run);
     show(run);
     setScreen('run');
@@ -370,20 +405,33 @@ const STATES: Record<string, () => void | Promise<void>> = {
     card?.setAttribute('data-foco', '');
     card?.focus({ preventScroll: true });
   },
-  // un asalto que se alarga: Asedio final de nivel 3, con su Multi y su Ataque de más
+  // un asalto que se alarga: Asedio final de nivel 2, con su Daño y su Ataque de más
   'mesa-fatiga': () => mesa(false, 'pointer', 12),
+  // V11: Ajustes con la fila «Colores de la baraja» enfocada (Cuatro colores, Clásica o Dos tintas)
+  'ajustes-paleta': () => {
+    clean();
+    S.campaign = null;
+    setMode('keys');
+    setScreen('home');
+    showSettings();
+    const row = document.querySelector<HTMLElement>('#set-toggles .set-tintas');
+    row?.scrollIntoView({ block: 'center' });
+    row?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+  },
   archivo: () => {
     clean();
     archive.length = 0;
-    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'obra', level = 1, death: Autopsy | null = null) => ({
+    // V11: las actas nuevas llevan `de` (5 asaltos); la última es de la 10.0, sin `de`: «asalto 7 de 8», sin sala
+    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'obra', level = 1, death: Autopsy | null = null, de: number | undefined = 5) => ({
       key: `qa:${i}`,
       when: new Date(Date.UTC(2026, 10, 12 - i, 20, 0)).toISOString(),
       won,
-      cleared: won ? 8 : stage - 1,
+      de,
+      cleared: won ? (de ?? 8) : stage - 1,
       stage,
       boss,
       depth: 0,
-      turns: won ? 84 : 9 * stage + i,
+      turns: won ? 48 : 9 * stage + i,
       maxHit: 120 + 37 * ((i * 5) % 7),
       tools,
       seed,
@@ -396,8 +444,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
       death,
     });
     archive.push(
-      sample(0, true, 8, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
-      sample(1, false, 5, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
+      sample(0, true, 5, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
+      sample(1, false, 4, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
         kind: 'sirena',
         title: 'Contraataque de TRÉBOLES: ⚔ 18 contra Escudo 4 → entran 14',
         detail: 'Te quedaba 11 de Vida. Un ♣ más o un Golpe exacto lo evitaban.',
@@ -407,7 +455,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
         taken: 14,
         tower: 'C',
       }),
-      sample(2, false, 7, 'La Reina Helada', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3, {
+      sample(2, false, 5, 'La Reina Helada', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3, {
         kind: 'colapso',
         title: 'Mazo agotado: te quitó 4 de Vida y el Escudo no lo frena',
         detail: 'Te quedaba 3 de Vida. Cada vez que se agota el Mazo quita 1 más: cuenta el Mazo antes de robar.',
@@ -416,8 +464,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
         blocked: 0,
         taken: 4,
       }),
-      sample(3, true, 8, 'El Relojero', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
-      sample(4, false, 3, 'El Usurero', ['hucha', 'cinta'], '4HH2PA'),
+      sample(3, true, 5, 'El Relojero', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
+      sample(4, false, 7, 'El Usurero', ['hucha', 'cinta'], '4HH2PA', 'obra', 1, null, undefined),
     );
     openGuild('arc');
   },
@@ -450,12 +498,12 @@ const STATES: Record<string, () => void | Promise<void>> = {
   },
   // la crónica de una campaña ganada: sello «Corte vencida», el más ancho, junto a la ficha de la baraja y el Reinado
   'acta-victoria': () => {
-    const run = baseRun(8);
+    const run = baseRun(5);
     run.phase = 'won';
     run.conquered = true; // como en una partida de verdad: la lámina y la crónica copiada lo leen de aquí
-    run.stats.turns = 96;
-    run.stats.gold = 188;
-    run.stats.contracts = 5;
+    run.stats.turns = 52;
+    run.stats.gold = 120;
+    run.stats.contracts = 2;
     logged(run);
     show(run);
     setScreen('run');
@@ -517,7 +565,10 @@ const STATES: Record<string, () => void | Promise<void>> = {
     clean();
     S.campaign = null;
     setMode('pointer');
-    app.innerHTML = `<div class="run"><div class="run-head"><h1>${L('ui.qa.laminas')}</h1></div><div class="qa-laminas"></div></div>`;
+    app.innerHTML = `<div class="run"><div class="run-head"><h1>${L('ui.qa.laminas')}</h1></div><div class="qa-limpias"></div><div class="qa-laminas"></div></div>`;
+    // V11: las cuarenta numeradas de cara limpia, del As al 10 de cada palo (las mide la regla «cara-limpia»)
+    const sheet = app.querySelector('.qa-limpias')!;
+    for (const suit of ['S', 'H', 'D', 'C'] as Suit[]) for (let rank = 1; rank <= 10; rank++) sheet.appendChild(cardEl({ id: `lim-${suit}${rank}`, suit, rank }, { tilt: false }));
     const host = app.querySelector('.qa-laminas')!;
     ([['forjado', 'C', 9, 52], ['templado', 'D', 10, 78], ['policromado', 'H', 7, 104], ['agrietado', 'S', 4, 64]] as [Treatment, Suit, number, number][]).forEach(([tr, suit, rank, at]) => {
       const fig = document.createElement('figure');
@@ -529,6 +580,11 @@ const STATES: Record<string, () => void | Promise<void>> = {
       fig.insertAdjacentHTML('beforeend', `<figcaption>${acabN(tr)}</figcaption>`);
       host.appendChild(fig);
     });
+    // y una figura junto a las numeradas: la Reina conserva su grabado
+    const fig = document.createElement('figure');
+    fig.append(cardEl({ id: 'lam-figura', suit: 'H', rank: 12 }, { tilt: false }));
+    fig.insertAdjacentHTML('beforeend', `<figcaption>${L('ui.carta.reina')}</figcaption>`);
+    host.appendChild(fig);
   },
   // la Taberna con el oro en vuelo: seis monedas grabadas entre la primera oferta y la bolsa
   'taberna-monedas': async () => {
@@ -587,12 +643,12 @@ const STATES: Record<string, () => void | Promise<void>> = {
     const lost = derrota();
     lost.id = 9101;
     noteRun(lost);
-    const won = baseRun(8);
+    const won = baseRun(5);
     won.id = 9102;
     won.seedText = 'QA-VICTORIA';
     won.phase = 'won';
     won.conquered = true;
-    won.stats.turns = 96;
+    won.stats.turns = 52;
     noteRun(won);
     clean();
     S.campaign = null;

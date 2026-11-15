@@ -194,6 +194,8 @@ connect();
 // control de calidad visual: estados montados a mano, solo si la dirección lleva ?qa
 if (new URLSearchParams(location.search).has('qa')) {
   void import('./qa').then((m) => m.installQa());
+  // V11: la campaña de cinco asaltos de la prueba de humo (scripts/campana-qa.ts)
+  void import('./qa-juice').then((m) => m.installQaJuice());
   // el banco de la forja de grabado (npm run forja): cada pieza del arte, suelta
   void import('./forja-qa').then((m) => m.installForja());
 }

@@ -26,8 +26,8 @@ export const TOOL_GOAL = 30;
 
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'primera', name: 'Primer paso', desc: 'Gana tu primer asalto de campaña.', renown: 1, progress: count((m) => m.stats.reach, 1) },
-  { id: 'capataz', name: 'Adiós, carcelero', desc: 'Supera el asalto 3.', renown: 2, progress: count((m) => m.stats.reach, 3) },
-  { id: 'media', name: 'Medio castillo', desc: 'Supera el asalto 5.', renown: 3, progress: count((m) => m.stats.reach, 5) },
+  { id: 'capataz', name: 'Adiós, carcelero', desc: 'Supera el asalto 2.', renown: 2, progress: count((m) => m.stats.reach, 2) },
+  { id: 'media', name: 'Medio castillo', desc: 'Supera el asalto 3.', renown: 3, progress: count((m) => m.stats.reach, 3) },
   { id: 'madre', name: 'Fin del reinado', desc: 'Gana una campaña.', renown: 5, progress: count((m) => m.wins, 1) },
   { id: 'asc3', name: 'Gran conspirador', desc: 'Gana una campaña en el Reinado 4 o superior.', renown: 8, progress: count((m) => m.stats.winAsc + 1, 4) },
   { id: 'abismo', name: 'Más allá del trono', desc: 'Supera un Trono infinito.', renown: 4, progress: count((m) => m.stats.depth, 1) },
