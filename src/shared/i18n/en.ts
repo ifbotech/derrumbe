@@ -76,7 +76,7 @@ const RELIQUIAS: Record<string, [string, string]> = {
   contenedor: ['Locked Chest', 'Discards do not come back this assault, and each card gives +{dano} Damage to your next hit.'],
   prensa: ['Ash Scepter', '×{multi} Mult if {cartas} cards or more have burned this campaign.'],
   ariete: ['Battering Ram', '+{dano} Damage for each point of Shield standing.'],
-  contragolpe: ['Spiked Shield', 'If Shield fully stops a Counterattack, its throne takes {factor} × what was stopped. E.g.: stops 4 → takes {ej}.'],
+  contragolpe: ['Spiked Shield', 'If Shield fully stops a Counterattack, its throne takes {factor} × the amount. E.g.: stops 4 → takes {ej}.'],
   rebosadero: ['Brimming Cup', 'Overflow Shield: every {escudo} heals 1. Overflow healing: +{dano} Damage per point to your next hit.'],
   bastion: ['Bulwark', '+{multi} Mult if your Shield is at half its cap or above.'],
 };
@@ -192,7 +192,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
   inestable: {
     nombre: 'The Clockmaker',
     decreto: 'Quicksand',
-    desc: 'The Final Siege starts {antes} turns earlier, and each guard defeated without an Exact Hit costs you {vida} Health.',
+    desc: 'The Final Siege starts {antes} turns earlier; each guard defeated without an Exact Hit costs {vida} Health.',
     badge: 'Final Siege {antes} turns early',
     entrada: 'Tick, tock. Every grain of sand is playing on my side.',
     contraataque: 'Your sand is running out, partner. I never rush: I wait.',
@@ -263,7 +263,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: "The Alchemist's Cauldron",
     texto: 'A cauldron boils on its own in a corner. Whatever goes in comes out as something else.',
     opciones: [
-      { etiqueta: 'Melt two cards', gana: 'Card in Prismatic Wax', cuesta: 'Two cards burn', desc: 'Pick two: they burn and one is born with the higher number, in Prismatic Wax and with any seals they had.' },
+      { etiqueta: 'Melt two cards', gana: 'Card in Prismatic Wax', cuesta: 'Two cards burn', desc: 'Pick two: they burn and one is born with the higher number, in Prismatic Wax, keeping their seals.' },
       { etiqueta: 'Warm up and move on', gana: '+4 Health', desc: '+4 Health.' },
     ],
   },
@@ -374,7 +374,7 @@ const FORMACIONES: Record<Formation, string> = {
 };
 
 const SELLOS: Record<Seal, [string, string]> = {
-  dinamita: ['Powder Seal', "On a hit, the neighboring thrones (order ♠ ♦ ♥ ♣) take this card's value."],
+  dinamita: ['Powder Seal', "When it strikes, the thrones beside the target on the table take this card's value."],
   eco: ['Echo Seal', 'Its Damage and its suit power count 2 times.'],
   jornal: ['Royal Gold Seal', '+{oro} gold if the hit defeats a guard.'],
   sindical: ['Sleeve Seal', 'Draw 1 extra card when you play or discard it.'],
@@ -635,6 +635,8 @@ export function reglasEn(): Record<string, string> {
   o['cuenta.exactos'] = 'Exact Hits';
   o['cuenta.vida'] = f('Health left (1 for every {n})', { n: C.vidaCada });
   o['cuenta.interes'] = f('Interest (1 for every {n} gold)', { n: C.interesCada });
+  // V12: the Best Play rule (src/rules/mejor-jugada.ts)
+  o['regla.mejor'] = 'Best Play: if you can land an Exact Hit, it picks it. If not, your highest Hit. You confirm.';
   for (const [id, [titulo, linea]] of Object.entries(GUIA)) {
     o[`guia.${id}.titulo`] = titulo;
     o[`guia.${id}.linea`] = linea;

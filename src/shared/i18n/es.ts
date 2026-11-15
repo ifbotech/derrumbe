@@ -9,6 +9,7 @@
 import { ACHIEVEMENTS, unlocksOf } from '../../rules/achievements';
 import { fill, BALANCE } from '../../rules/balance-config';
 import { FORMATION_NAME, FORMATIONS, MATERIAL, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
+import { REGLA_MEJOR } from '../../rules/mejor-jugada';
 import { KEYWORDS } from '../../rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
 import { SPECIALS } from '../../rules/specials';
@@ -118,6 +119,8 @@ export function reglasEs(): Record<string, string> {
   o['cuenta.exactos'] = 'Golpes exactos';
   o['cuenta.vida'] = fill('Vida que te queda (1 por cada {n})', { n: C.vidaCada });
   o['cuenta.interes'] = fill('Interés (1 por cada {n} de oro)', { n: C.interesCada });
+  // V12: la regla de Mejor jugada (src/rules/mejor-jugada.ts)
+  o['regla.mejor'] = REGLA_MEJOR;
   // la partida guiada
   for (const s of TUTORIAL_STEPS) {
     o[`guia.${s.id}.titulo`] = s.title;

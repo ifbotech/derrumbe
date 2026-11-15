@@ -9,19 +9,25 @@
 
 export type Locale = 'es' | 'en';
 
-/** Las dos caras de la marca: cada idioma lleva su título y, de sello, el título del otro. */
-export const BRAND: Record<Locale, { title: string; seal: string; subtitle: string; tagline: string }> = {
+/**
+ * Las dos caras de la marca: cada idioma lleva su título y, de sello, el título del otro.
+ * `emblema` (V12) es lo que la portada enseña bajo el título: en inglés, «Original edition · SANGRE Y PALO»
+ * (la frase «Edición original · Sangre y Palo» dicha en el idioma de la portada); en español, el sello de siempre.
+ */
+export const BRAND: Record<Locale, { title: string; seal: string; subtitle: string; tagline: string; emblema: string }> = {
   es: {
     title: 'SANGRE Y PALO',
     seal: 'BLOOD & SUITS',
     subtitle: 'La conjura de los naipes',
     tagline: 'Roguelike de conjura con baraja francesa',
+    emblema: 'BLOOD & SUITS',
   },
   en: {
     title: 'BLOOD & SUITS',
     seal: 'SANGRE Y PALO',
     subtitle: 'A card conspiracy against the court',
     tagline: 'A conspiracy roguelike played with a standard 52-card deck',
+    emblema: 'Original edition · SANGRE Y PALO',
   },
 };
 
@@ -40,7 +46,7 @@ const navegador =
 export const LOCALE: Locale = brandLocale(navegador);
 
 /** La cara de la marca de un idioma (V10): título, sello, lema y frase. Para pintar al cambiar de idioma sin recargar. */
-export function brandFor(lang: Locale): { title: string; seal: string; subtitle: string; tagline: string; titleProse: string; fullTitle: string } {
+export function brandFor(lang: Locale): { title: string; seal: string; subtitle: string; tagline: string; emblema: string; titleProse: string; fullTitle: string } {
   const cara = BRAND[lang];
   return { ...cara, titleProse: prosa(cara.title), fullTitle: `${cara.title} · ${prosa(cara.seal)}` };
 }

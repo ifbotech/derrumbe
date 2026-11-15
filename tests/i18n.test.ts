@@ -4,11 +4,11 @@
 //
 //   · mismas claves, ninguna cadena vacía, los mismos `{campo}`
 //   · mismas cifras (el multiconjunto de números, con la coma decimal normalizada)
-//   · la constitución también en inglés: descripciones ≤ 115 caracteres, nombres propios ≤ 24
+//   · la constitución en los dos idiomas: descripciones ≤ 100 caracteres (V12), nombres propios ≤ 24
 //   · ningún resto de español en el inglés (RESTOS_ES, salvo PERMITIDOS_EN)
 //   · el glosario obligatorio de SPECS/V10.md (1.3) donde toca
 //   · sin navegador, el idioma es 'es'; setLang avisa y t() cambia sin recargar
-//   · el español no cambia: los textos de reglas son los de la 11.0 (tests/textos-es.json)
+//   · el español no cambia: los textos de reglas son los de la 12.0 (tests/textos-es.json)
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { BRAND, brandFor } from '../src/shared/brand';
@@ -65,15 +65,20 @@ describe('paridad de claves', () => {
 });
 
 describe('la constitución también en inglés', () => {
-  const DESCS = /^(?:reliquia|especial|monarca|juramento|atajo|sello|acabado|estado)\.[^.]+\.desc$|^reinado\.\d+\.desc$/;
+  // V12: también las mejoras (nodos del Árbol) y las opciones de los Secretos (`secreto.<id>.<n>.desc`)
+  const DESCS = /^(?:reliquia|especial|monarca|juramento|atajo|sello|acabado|estado|mejora)\.[^.]+\.desc$|^reinado\.\d+\.desc$|^secreto\.[^.]+(?:\.\d+)?\.desc$/;
+  const MAX_DESC = 100;
   const NOMBRES = /^(?:reliquia|especial|monarca|asalto|reinado|baraja|juramento|atajo|secreto|mejora|logro)\.[^.]+\.nombre$/;
 
-  it('descripciones ≤ 115 caracteres, ya rellenas, y frases con punto', () => {
-    const largas = claves.filter((k) => DESCS.test(k) && en[k].length > 115).map((k) => `${k} (${en[k].length}): ${en[k]}`);
-    expect(largas).toEqual([]);
-    for (const k of claves.filter((x) => DESCS.test(x))) expect(en[k], k).toMatch(/[.!]$/);
-    const mas = Math.max(...claves.filter((k) => DESCS.test(k)).map((k) => en[k].length));
-    expect(mas).toBeLessThanOrEqual(115);
+  it(`descripciones ≤ ${MAX_DESC} caracteres en español y en inglés, ya rellenas, y frases con punto`, () => {
+    const descs = claves.filter((k) => DESCS.test(k));
+    expect(descs.length).toBeGreaterThanOrEqual(140);
+    for (const lang of LANGS) {
+      const d = DICCIONARIOS[lang];
+      const largas = descs.filter((k) => d[k].length > MAX_DESC).map((k) => `${lang} ${k} (${d[k].length}): ${d[k]}`);
+      expect(largas).toEqual([]);
+      for (const k of descs) expect(d[k], `${lang} ${k}`).toMatch(/[.!]$/);
+    }
   });
 
   it('nombres propios ≤ 24 caracteres y sin repetirse entre reliquias', () => {
@@ -204,7 +209,7 @@ describe('idioma de la sesión', () => {
 });
 
 describe('el español no cambia', () => {
-  it('los textos de reglas son los de la 11.0, letra por letra (tests/textos-es.json)', () => {
+  it('los textos de reglas son los de la 12.0, letra por letra (tests/textos-es.json)', () => {
     const guardados = JSON.parse(readFileSync(new URL('./textos-es.json', import.meta.url), 'utf8')) as Record<string, string>;
     const reglas = Object.fromEntries(Object.entries(ES).filter(([k]) => !k.startsWith('ui.')));
     expect(reglas).toEqual(guardados);

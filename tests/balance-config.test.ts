@@ -129,10 +129,10 @@ describe('balance-config.json: esquema y rangos', () => {
 describe('constitución con los textos generados', () => {
   const descs = [...TOOLS.map((t) => t.desc), ...SPECIALS.map((s) => s.desc), ...BOSSES.flatMap((b) => [b.desc, b.curse.badge]), ...ASCENSIONS.map((a) => a.desc), ...DECKS.map((d) => d.desc), ...UPGRADES.map((u) => u.desc), ...SEALS.map((s) => SEAL[s].desc), ...TREATMENTS.map((t) => TREATMENT[t].desc), ...Object.values(TOWER_FX).map((f) => f.desc)];
 
-  it('≤ 5 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 y sin plantillas sin rellenar', () => {
+  it('≤ 5 palabras clave, ≤ 56 reliquias, descripciones ≤ 100 y sin plantillas sin rellenar', () => {
     expect(KEYWORDS.length).toBeLessThanOrEqual(5);
     expect(TOOLS.length).toBeLessThanOrEqual(56);
-    for (const d of [...TOOLS.map((t) => t.desc), ...SPECIALS.map((s) => s.desc), ...BOSSES.map((b) => b.desc), ...ASCENSIONS.map((a) => a.desc)]) expect(d.length, d).toBeLessThanOrEqual(115);
+    for (const d of [...TOOLS.map((t) => t.desc), ...SPECIALS.map((s) => s.desc), ...BOSSES.map((b) => b.desc), ...ASCENSIONS.map((a) => a.desc)]) expect(d.length, d).toBeLessThanOrEqual(100);
     for (const d of descs) expect(d, d).not.toMatch(/[{}]/);
   });
 

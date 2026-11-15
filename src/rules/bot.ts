@@ -10,7 +10,7 @@ import { RARITY, TOOL, TOOL_SLOTS, bestOrder } from './tools';
 // ───────────────────────── La obra ─────────────────────────
 
 /** Orden de las cartas dentro del golpe: la más alta primero (el Percutor la repite) y lo que multiplica, al final. */
-function arrange(cards: Card[]): Card[] {
+export function arrange(cards: Card[]): Card[] {
   const late = (c: Card) => (c.tr === 'policromado' || c.tr === 'agrietado' ? 1 : 0);
   return [...cards].sort((a, b) => late(a) - late(b) || cardValue(b) - cardValue(a));
 }
