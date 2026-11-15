@@ -2,7 +2,7 @@
 // Vive en el navegador de cada uno, así que cuenta igual en solitario y en sala online.
 import { Card, FORMATIONS, SEALS, TREATMENTS } from '../rules/engine';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteRun, unlocksOf } from '../rules/achievements';
-import { dondeActa } from '../rules/migracion'; // V11-B
+import { dondeActa } from '../rules/migracion';
 import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, UPGRADES, buyUpgrade, depthOf, loadMeta, settle, stagesCleared } from '../rules/run';
 import { SPECIALS } from '../rules/specials';
 import { ARCH, Arch, TOOLS } from '../rules/tools';
@@ -43,7 +43,7 @@ export interface Acta {
   /** Obras superadas y obra en la que terminó. */
   cleared: number;
   stage: number;
-  /** V11-B: asaltos de la campaña de este acta (5). Un acta sin `de` es de la 10.0, de ocho asaltos. */
+  /** Asaltos de la campaña de este acta (5). Un acta sin `de` es de la 10.0, de ocho asaltos. */
   de?: number;
   boss: string | null;
   depth: number;
@@ -71,7 +71,7 @@ function fileActa(c: Campaign, gain: number): void {
     won: run.conquered,
     cleared: stagesCleared(run),
     stage: run.stage,
-    de: LAST_STAGE, // V11-B
+    de: LAST_STAGE, // V11: un acta sin `de` es de la 10.0
     boss: run.boss ? (BOSS[run.boss]?.who ?? null) : null,
     depth: depthOf(run),
     turns: run.stats.turns,
@@ -247,10 +247,10 @@ export function renderGuild(): void {
 }
 
 /** Archivo de crónicas: cómo acabó cada una de las últimas campañas, con su semilla para volver a jugarla. */
-/** V11-B: provisional, lo rehace arte-ui. «asalto n/total · sala»; un acta de la 10.0 dice «de 8» y sin sala (sus salas ya no existen). */
+/** «asalto n/5 · sala»; un acta de la 10.0 dice «asalto n de 8», sin sala (sus salas ya no existen). */
 function donde(a: Acta): string {
   const d = dondeActa(a, LAST_STAGE);
-  return d.sala ? L('ui.orden.donde', { n: d.n, total: d.total, nombre: asaltoN(a.stage) }) : L('ui.orden.donde', { n: d.n, total: d.total, nombre: '' }).replace(/\s*·\s*$/, '');
+  return d.sala ? L('ui.orden.donde', { n: d.n, total: d.total, nombre: asaltoN(a.stage) }) : L('ui.orden.donde.vieja', { n: d.n, total: d.total });
 }
 
 function archiveTab(list: HTMLElement): void {

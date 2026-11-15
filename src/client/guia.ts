@@ -14,7 +14,7 @@ import type { PlayerView } from '../rules/engine';
 import { BOSSES, bossIdentity, type CurseMark } from '../rules/run';
 import type { TutorialFocus } from '../rules/tutorial';
 import { MonarchMood, monarchSvg } from './art';
-import { monBadge, monD, monDec, monN } from './lengua';
+import { fxN, monBadge, monD, monDec, monN } from './lengua';
 
 // ───────────────────────── iconos de la maldición ─────────────────────────
 // Pequeños, de trazo grueso y en currentColor: van en la placa del decreto y en las marcas de la mesa.
@@ -86,6 +86,8 @@ function markTable(mark: CurseMark, v: PlayerView | null): void {
   };
   if (mark === 'contraataque') tag(document.getElementById('siren-slot')?.closest('.pile') ?? null, '×2');
   if (mark === 'ataque') for (const t of document.querySelectorAll('.tower:not(.fallen) .threat')) tag(t, '+2', 'mini');
+  // el Inquisidor: ningún trono queda Aturdido; cada trono en pie lo dice con «Aturdido» tachado
+  if (mark === 'guardias') for (const t of document.querySelectorAll('.tower:not([hidden]):not(.fallen) .tower-fx')) tag(t, `<s>${fxN('sobrecarga')}</s>`, 'sin-fx');
   if (mark === 'escudo') tag(document.getElementById('wall-num')?.closest('.stat') ?? null, 'Tope');
   if (mark === 'asedio') {
     const f = document.getElementById('fatigue');

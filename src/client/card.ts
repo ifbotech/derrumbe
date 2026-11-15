@@ -1,5 +1,7 @@
 // Baraja del juego — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
 // líneas talladas en color papel, tintas planas por palo y textura de imprenta.
+// V11: las numeradas (A a 10) van de cara limpia: marfil liso, índice grande y un solo emblema macizo
+// del palo con contorno de tinta. Las figuras, los especiales y el comodín conservan el grabado.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
 import { Card, CardSuit, RANK_LABEL, Seal, Suit, Treatment } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
@@ -25,15 +27,14 @@ export function suitSvg(suit: Suit, cls = ''): string {
 }
 
 const FILL: Record<Suit, string> = { S: 'kS', C: 'kC', H: 'kH', D: 'kD' };
-/** La pinta tal como se estampa: las picas llevan además un contrarrayado, para distinguirlas sin depender del color. */
-const SPADE_D = PIP.S.match(/d="([^"]+)"/)![1];
-const pipInk = (suit: Suit) => PIP[suit] + (suit === 'S' ? `<path class="xh" d="${SPADE_D}" fill="url(#hatch-pip)"/>` : '');
+/** La pinta maciza, sin las tallas de papel: la silueta sola (el emblema de la cara limpia). */
+const pipSolid = (suit: Suit) => PIP[suit].replace(/<path class="pcut"[^>]*\/>/g, '');
 const pipAt = (suit: Suit, x: number, y: number, scale: number, cls = FILL[suit], rot = 0) =>
   `<g transform="translate(${x} ${y})${rot ? ` rotate(${rot})` : ''} scale(${scale})" class="${cls}">${PIP[suit]}</g>`;
 
 // ───────────────────────── Definiciones compartidas ─────────────────────────
 
-const PAPER = '#eae0ce';
+const PAPER = '#efe6d5';
 const INK = '#181614';
 /** Qué carta representa cada elemento pintado (para la lupa de grabador). */
 export const cardOf = new WeakMap<Element, Card>();
@@ -54,7 +55,6 @@ export function ensureDefs(): void {
     </filter>
     ${suitWeaves()}
     ${engravingDefs()}
-    <pattern id="hatch-pip" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0,1.2 H2.4 M1.2,0 V2.4" stroke="${PAPER}" stroke-width="0.3" opacity="0.55"/></pattern>
     <pattern id="pat-back" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${PAPER}" stroke-width="1" opacity="0.5"/><rect x="8" y="8" width="4" height="4" fill="${PAPER}"/></pattern>
     <pattern id="pat-back-ink" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${INK}" stroke-width="1" opacity="0.45"/><rect x="8" y="8" width="4" height="4" fill="${INK}"/></pattern>
     <pattern id="pat-haz" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="20" height="20" fill="#e0a43a"/><rect width="10" height="20" fill="${INK}"/></pattern>
@@ -202,37 +202,18 @@ function figure(suit: Suit, rank: number): string {
 
 // ───────────────────────── Numerales, ases y comodín ─────────────────────────
 
-const X = [78, 125, 172];
-const LAYOUT: Record<number, [number, number][]> = {
-  2: [[1, 64], [1, 286]],
-  3: [[1, 64], [1, 175], [1, 286]],
-  4: [[0, 64], [2, 64], [0, 286], [2, 286]],
-  5: [[0, 64], [2, 64], [1, 175], [0, 286], [2, 286]],
-  6: [[0, 64], [2, 64], [0, 175], [2, 175], [0, 286], [2, 286]],
-  7: [[0, 64], [2, 64], [0, 175], [1, 175], [2, 175], [0, 286], [2, 286]],
-  8: [[0, 64], [2, 64], [1, 119.5], [0, 175], [2, 175], [1, 230.5], [0, 286], [2, 286]],
-  9: [[0, 64], [2, 64], [0, 138], [2, 138], [1, 175], [0, 212], [2, 212], [0, 286], [2, 286]],
-  10: [[0, 64], [2, 64], [1, 101], [0, 138], [2, 138], [0, 212], [2, 212], [1, 249], [0, 286], [2, 286]],
-};
-
-function numberArt(suit: Suit, rank: number): string {
-  const pips = LAYOUT[rank]
-    .map(([c, y], i) => `<g transform="translate(${X[c]} ${y})${y > 176 ? ' rotate(180)' : ''}"><g class="stamp" style="--i:${i}"><g class="pip" style="--i:${i}"><g class="${FILL[suit]}" transform="scale(${rank >= 7 ? 1.95 : 2.3})">${pipInk(suit)}</g></g></g></g>`)
-    .join('');
-  const marks = '<path class="reg" d="M125,12 v9 M125,329 v9 M12,175 h9 M229,175 h9"/>';
-  return `<svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">${marks}${pips}</svg>`;
-}
-
-function aceArt(suit: Suit): string {
-  const rays = Array.from({ length: 24 }, (_, i) => `<path d="M0,-58 L3.4,-98 L-3.4,-98 Z" transform="rotate(${i * 15})"/>`).join('');
-  return `<svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
-    <g filter="url(#rough)">
-      <g transform="translate(125 168)"><g class="burst ink">${rays}</g><circle class="ring" r="56"/><circle class="ring thin2" r="104"/></g>
-      <path class="ink" d="M60,291 L190,284 L187,311 L57,318 Z"/>
-    </g>
-    <text class="banner-txt" x="123" y="307" text-anchor="middle" transform="rotate(-3.1 123 301)"${MATERIAL(suit).length > 6 ? ' textLength="118" lengthAdjust="spacingAndGlyphs"' : ''}>${MATERIAL(suit)}</text>
-    <g transform="translate(125 168)"><g class="stamp" style="--i:1"><g class="pip ace-pip" style="--i:0"><g class="${FILL[suit]}" transform="scale(4.6)">${pipInk(suit)}</g></g></g></g>
-  </svg>`;
+/**
+ * V11 · cara limpia (A a 10): un solo emblema del palo, macizo y con contorno de tinta, en el centro
+ * del marfil. Cada palo con su escala, para que los cuatro midan lo mismo de ancho: 102 de 250 (41 %, más
+ * el contorno); el rombo, que es estrecho, sube más. El contorno se dibuja debajo, con la misma silueta engordada, para que el trébol no enseñe las
+ * costuras de sus tres círculos. Nada de trama, ruido ni marcas de registro dentro.
+ */
+/** Escala del emblema por palo: ancho de la pinta (20 / 20 / 16,4 / 20,6 unidades) × k = 102. */
+const EMB_K: Record<Suit, number> = { S: 5.1, H: 5.1, D: 6.22, C: 4.95 };
+function numberArt(suit: Suit): string {
+  const k = EMB_K[suit];
+  const shape = pipSolid(suit);
+  return `<svg class="ly art face" viewBox="0 0 250 350" aria-hidden="true"><g transform="translate(125 175)"><g class="stamp" style="--i:0"><g class="pip" style="--i:0"><g transform="scale(${k})"><g class="emb-ink">${shape}</g><g class="${FILL[suit]}">${shape}</g></g></g></g></g></svg>`;
 }
 
 function jokerArt(): string {
@@ -595,16 +576,19 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
   cardOf.set(el, card);
   const tip = cardTip(card);
   if (tip) el.dataset.tip = tip;
-  const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : card.rank > 10 ? figure(card.suit, card.rank) : card.rank === 1 ? aceArt(card.suit) : numberArt(card.suit, card.rank);
+  const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : card.rank > 10 ? figure(card.suit, card.rank) : numberArt(card.suit);
+  // las numeradas, de cara limpia: sin el marco de trama ni el grano del papel, y un solo índice (arriba a la
+  // izquierda): el emblema del centro ya dice el palo y la cara queda en marfil
+  const limpia = kind === 'number' || kind === 'ace';
   el.innerHTML = `
     <div class="card-in">
       <div class="card-front">
         <div class="ly paper"></div>
-        ${card.sp || card.suit === 'X' ? '' : weaveFrame(card.suit)}
+        ${card.sp || card.suit === 'X' || limpia ? '' : weaveFrame(card.suit)}
         ${art}
-        <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + corner(card.suit, card.rank, 'br')}</div>
+        <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + (limpia ? '' : corner(card.suit, card.rank, 'br'))}</div>
         ${card.tr ? treatLayer(card.tr) + foilLayer(card.tr) : ''}${card.seal ? sealLayer(card.seal) : ''}
-        <div class="ly grain"></div>
+        ${limpia ? '' : '<div class="ly grain"></div>'}
         <div class="ly glare"></div>
       </div>
       <div class="card-back">${backSvg()}</div>

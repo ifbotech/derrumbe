@@ -2,14 +2,14 @@
 // clandestino, los Secretos de la cripta y la Crónica final.
 import { whisper } from './whispers';
 import { Card, FORM } from '../rules/engine';
-import { BOSS, CONTRACT, DraftOpt, EVENT, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
+import { BOSS, CONTRACT, DraftOpt, EVENT, EVENT_AFTER, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
 import { BALANCE } from '../rules/balance-config';
 import { TOOL, TOOL_SLOTS } from '../rules/tools';
 import { cobroFor } from '../rules/textos';
 import { rubble, skyline } from './art';
 import { setScene, sfx } from './audio';
 import { isRunHost, runDo } from './campaign';
-import { cardEl, ferreteroEl, portraitEl, setDeckBack, tileEl } from './card';
+import { cardEl, ferreteroEl, portraitEl, setDeckBack, suitSvg, tileEl } from './card';
 import { $, $$, S, app, esc, modal, num, toast } from './core';
 import { causeHtml, causeText, validDeath } from './causa';
 import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
@@ -19,7 +19,7 @@ import { lastGain } from './guild';
 import { sendMsg } from './net';
 import { setScreen } from './router';
 import { renderPings } from './pings';
-import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, monD, monDec, monN, numL, rarN, relD, relN, secN, secO, secT, selloD, selloN } from './lengua';
+import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
 import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
@@ -170,10 +170,15 @@ function mapScreen(run: Run): void {
     const boss = run.bosses[n] ? BOSS[run.bosses[n]] : null;
     const nombre = asaltoN(n);
     const state = n < run.stage ? (run.skipped.includes(n) ? 'skip' : 'done') : n === run.stage ? 'now' : 'next';
-    const mark = state === 'done' ? `<i class="inkstamp s-done">${L('ui.run.tomado')}</i>` : state === 'skip' ? `<i class="inkstamp s-skip">${L('ui.run.esquivado')}</i>` : def.boss ? `<i class="inkstamp s-boss">${L('ui.run.monarca')}</i>` : '';
-    const tip = `<b>${nombre}</b>${Ln(def.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(def.hp) })}${boss ? `<hr><b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}` : def.boss ? L('ui.run.monarca.llegar') : L('ui.run.dos.rutas')}`;
-    nodes.push(`<div class="bp-node ${state} ${def.boss ? 'boss' : ''}" data-tip="${tip.replace(/"/g, '&quot;')}">
-      <span class="bp-n">${n}</span><b>${nombre}</b>
+    // V11: el Salón del Trono lleva el título de su monarca («Rey Tirano» o «Reina Tirana»)
+    const title = def.tirano ? tiranoN(boss?.id ?? null) : L('ui.run.monarca');
+    const mark = state === 'done' ? `<i class="inkstamp s-done">${L('ui.run.tomado')}</i>` : state === 'skip' ? `<i class="inkstamp s-skip">${L('ui.run.esquivado')}</i>` : def.boss ? `<i class="inkstamp s-boss ${def.tirano ? 's-tirano' : ''}">${title}</i>` : '';
+    // V11: en los asaltos 1 y 2 faltan tronos; sus palos se sortean al empezar y el Mapa los enseña desde el principio
+    const palos = run.palos?.[n];
+    const tronos = palos?.length ? `<span class="bp-palos" aria-label="${L('ui.run.tronos.aria', { n: palos.length, palos: palos.map(paloN).join(', ') })}">${palos.map((s) => `<i class="s-${s}">${suitSvg(s)}</i>`).join('')}</span>` : '';
+    const tip = `<b>${nombre}</b>${L('ui.run.tronos', { n: palos?.length ?? def.thrones })}${Ln(def.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(def.hp) })}${boss ? `<hr><b>${def.tirano ? `${title} · ` : ''}${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}` : def.boss ? L('ui.run.monarca.llegar') : L('ui.run.dos.rutas')}`;
+    nodes.push(`<div class="bp-node ${state} ${def.boss ? 'boss' : ''} ${def.tirano ? 'tirano' : ''}" data-tip="${tip.replace(/"/g, '&quot;')}">
+      <span class="bp-n">${n}</span><b>${nombre}</b>${tronos}
       ${boss ? `<span class="bp-boss" data-boss="${boss.id}"></span><em>${monN(boss.id)}<small>${monDec(boss.id)}</small></em>` : def.boss ? `<em>¿?<small>${L('ui.run.por.conocer')}</small></em>` : `<em class="plain">${L('ui.run.rutas')}</em>`}
       ${mark}</div>`);
   }
@@ -289,7 +294,8 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
     const now = formBase(run, f);
     el = tileEl('pergamino', L('ui.run.pergamino'), 'service');
     title = L('ui.run.pergamino.de', { x: formN(f) });
-    desc = L('ui.run.pergamino.desc', { f: now.f, r: num(now.r), f2: now.f + FORM[f].lf, r2: num(now.r) }); // V11-A: provisional, lo rehace arte-ui
+    // V11: el Pergamino solo sube el Daño de la formación; su Multi no cambia
+    desc = L('ui.run.pergamino.desc', { f: now.f, f2: now.f + FORM[f].lf, r: now.r });
   }
   const box = choice(el, title, desc, null, buy, o.sold ? 'sold hang' : 'hang');
   box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `${cost} ${L('ui.run.de.oro')}`}</span>`);
@@ -315,7 +321,7 @@ function shopScreen(run: Run): void {
           <button id="heal" data-tip="${L('ui.run.curar.tip', { v: BALANCE.taberna.curar.vida, i: run.integrity, max: run.maxIntegrity, p: BALANCE.taberna.curar.paso })}" ${can && run.gold >= healCost(run) && run.integrity < run.maxIntegrity ? '' : 'disabled'}>${L('ui.run.curar', { n: healCost(run) })}</button>
           <button id="burn" data-tip="${L('ui.run.hoguera.tip', { p: BALANCE.taberna.hoguera.paso })}" ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>${L('ui.run.hoguera', { n: removeCost(run) })}</button>
           <button id="reroll" data-tip="${L('ui.run.renovar.tip', { p: BALANCE.taberna.renovar.paso })}${run.vouchers ? L('ui.run.renovar.vales', { n: run.vouchers }) : ''}." ${can && run.gold >= rerollCost(run) ? '' : 'disabled'}>${L('ui.run.renovar', { x: rerollCost(run) || L('ui.run.vale') })}</button>
-          <button class="primary" id="go" ${can ? '' : 'disabled'}>${!run.endless && [3, 5, 7].includes(run.stage) && run.events.length ? L('ui.run.cripta.bajar') : L('ui.run.al.mapa')}</button>
+          <button class="primary" id="go" ${can ? '' : 'disabled'}>${!run.endless && EVENT_AFTER.includes(run.stage) && run.events.length ? L('ui.run.cripta.bajar') : L('ui.run.al.mapa')}</button>
         </div>
       </aside>
     </div></div>`;
@@ -323,6 +329,7 @@ function shopScreen(run: Run): void {
   $('#belt-host').appendChild(beltStrip(run, true));
   if (boss) $('#next-boss').appendChild(portraitEl(`j-${boss.id}`, monN(boss.id)));
   $('#offers').style.setProperty('--n', String(run.shop.length));
+  $('#offers').style.setProperty('--n2', String(Math.ceil(run.shop.length / 2))); // V11: en dos filas si no caben
   run.shop.forEach((o, i) => $('#offers').appendChild(offerChoice(run, o, i)));
   if (lastPhase === 'shop' && lastGold >= 0 && run.gold < lastGold) {
     sfx.coins(lastGold - run.gold), coins('.purse b', '#npc', lastGold - run.gold); // juice-ux V8: de la bolsa al Tratante

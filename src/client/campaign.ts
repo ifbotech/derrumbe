@@ -2,7 +2,7 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { abonoCampanaVieja } from '../rules/migracion'; // V11-B
+import { abonoCampanaVieja } from '../rules/migracion';
 import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
 import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
@@ -53,7 +53,7 @@ export function retireOldSave(): void {
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
   if (old.run.phase === 'won' || old.run.phase === 'lost') return; // ya estaba cobrada
-  const gain = abonoCampanaVieja(old.run.stage); // V11-B: lo superado, hasta los 8 asaltos de la 10.0 (src/rules/migracion.ts)
+  const gain = abonoCampanaVieja(old.run.stage); // lo superado, hasta los 8 asaltos de la 10.0 (src/rules/migracion.ts)
   meta.renown += gain;
   saveMeta();
   setTimeout(() => toast(L('ui.camp.vieja', { n: gain })), 600);

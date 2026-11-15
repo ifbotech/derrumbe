@@ -2,6 +2,7 @@
 // Daño × Multi = Golpe, la Manga, mano y la cola de eventos que anima cada jugada paso a paso.
 import { Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, multiplier, previewStrike, threatOf } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
+import { BALANCE } from '../rules/balance-config';
 import { BOSS, CONTRACT, LAST_STAGE, stageDef } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
 import type { ClientMsg } from '../shared/protocol';
@@ -38,8 +39,9 @@ let stepN = 0;
 /** El último lote de eventos animado: de ahí sale la causa del derrumbe cuando la obra acaba en derrota. */
 let lastEvents: GameEvent[] = [];
 
-const WEAK_TO = Object.fromEntries(SUITS.map((s) => [s, s])) as Record<Suit, Suit>; // V11-A: provisional, lo rehace arte-ui
 const FLOOR = (r: number) => RANK_LABEL[r];
+/** El Multi que suma la Racha de Golpes exactos (entero, con su tope). */
+const racha = (chain: number) => BALANCE.golpe.racha * Math.min(chain, BALANCE.golpe.rachaTope);
 /** Nombre del guardia con su artículo: «la Sota», «la Reina», «el Rey». */
 const GUARD = (r: number) => (r === 11 ? L('ui.mesa.la.sota') : r === 12 ? L('ui.mesa.la.reina') : r === 13 ? L('ui.mesa.el.rey') : L('ui.mesa.el.x', { x: FLOOR(r) }));
 /** «Casa de Picas»: el trono de un palo, como se lee en pantalla. */
@@ -101,7 +103,6 @@ export function buildTable(): void {
       <div class="hudrow">
         <div class="beltbar" id="beltbar" hidden></div>
         <div class="powers" id="powers"></div>
-        <div class="wheel" id="wheel" data-tip="${L('ui.mesa.rueda.tip')}"></div>
         <div class="power fatigue" id="fatigue" hidden></div>
       </div>
       <div class="status score" id="score"></div>
@@ -325,7 +326,7 @@ export function renderBelt(): void {
   bar.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')}</span>`;
   bar.appendChild(beltEl(tools, { onReorder: canOrder ? (order) => runDo({ t: 'reorder', order }) : undefined }));
   const carry: string[] = [];
-  if (v?.chain) carry.push(`<em class="carry chain" data-tip="${Ln(v.chain, 'ui.mesa.racha.tip.1', 'ui.mesa.racha.tip.n', { m: 0.5 * v.chain })}">${L('ui.mesa.racha', { m: 0.5 * v.chain })}</em>`);
+  if (v?.chain) carry.push(`<em class="carry chain" data-tip="${Ln(v.chain, 'ui.mesa.racha.tip.1', 'ui.mesa.racha.tip.n', { m: racha(v.chain) })}">${L('ui.mesa.racha', { m: racha(v.chain) })}</em>`);
   if (v?.charge) carry.push(`<em class="carry charge" data-tip="${L('ui.mesa.carga.tip')}">${L('ui.mesa.carga', { n: v.charge })}</em>`);
   if (v?.scrap) carry.push(`<em class="carry scrap" data-tip="${L('ui.mesa.destruidas.tip')}">${L('ui.mesa.destruidas', { n: v.scrap })}</em>`);
   bar.insertAdjacentHTML('beforeend', `<span class="carries">${carry.join('')}</span>`);
@@ -344,19 +345,16 @@ function renderPlayers(): void {
     .join('');
 }
 
-/** Las dos placas del guardia: de qué palo es inmune (hierro) y a cuál es débil (latón). */
+/**
+ * La única placa del guardia: la de hierro de su propio palo, «Inmune ♠». Es uno de los dos sitios
+ * donde se dice Inmune (el otro es la línea de la carta en la cuenta). Con la Gota de veneno se abre
+ * («×1») y con la Máscara de traidor se vuelve de latón («×2»).
+ */
 function plates(s: Suit): string {
-  const cfg = S.shown!.config;
-  const own = cfg.ownMult ?? 0;
-  const adv = 1; // V11-A: provisional, lo rehace arte-ui
-  const immune =
-    own === 0
-      ? `<i class="plate iron" data-tip="${L('ui.mesa.inmune.tip', { g: SUIT_GLYPH[s], palo: paloN(s).toLowerCase() })}">${suitSvg(s)}<b>×0</b></i>`
-      : `<i class="plate ${own > 1 ? 'brass' : 'open'}" data-tip="${L('ui.mesa.sininmune.tip', { palo: paloN(s).toLowerCase(), n: own })}">${suitSvg(s)}<b>×${own}</b></i>`;
-  const w = WEAK_TO[s];
-  void w;
-  void adv;
-  return immune; // V11-A: provisional, lo rehace arte-ui (sin la placa de «débil a»)
+  const own = S.shown!.config.ownMult ?? 0;
+  return own === 0
+    ? `<i class="plate iron" data-tip="${L('ui.mesa.inmune.tip', { g: SUIT_GLYPH[s], palo: paloN(s).toLowerCase() })}">${suitSvg(s)}<b>${L('ui.mesa.inmune')}</b></i>`
+    : `<i class="plate ${own > 1 ? 'brass' : 'open'}" data-tip="${L('ui.mesa.sininmune.tip', { palo: paloN(s).toLowerCase(), n: own })}">${suitSvg(s)}<b>×${own}</b></i>`;
 }
 
 function renderTower(s: Suit): void {
@@ -366,11 +364,14 @@ function renderTower(s: Suit): void {
   const cfg = v.config;
   const el = towerEls[s];
   const top = t.floors[0];
+  // un trono que no está en este asalto (asaltos 1 y 2) no se pinta: la fila se reparte entre los que hay
+  el.hidden = !!t.away;
+  el.parentElement?.setAttribute('data-n', String(SUITS.filter((x) => !v.towers[x].away).length));
+  if (t.away) return;
   el.classList.toggle('fallen', top === undefined);
   // todas las torres reservan sitio para los mismos pisos: así sus cartas miden igual
   el.parentElement?.style.setProperty('--below', String(Math.max(0, ...SUITS.map((x) => v.towers[x].floors.length - 1))));
-  el.classList.toggle('disarmed', false); // V11-A: provisional, lo rehace arte-ui
-  const key = `${t.floors.join('-') || 'ruin'}|${cfg.ownMult ?? 0}`; // V11-A: provisional, lo rehace arte-ui
+  const key = `${t.floors.join('-') || 'ruin'}|${cfg.ownMult ?? 0}`;
   if (el.dataset.floor !== key) {
     const sameTop = el.dataset.top === String(top);
     el.dataset.floor = key;
@@ -399,20 +400,20 @@ function renderTower(s: Suit): void {
       .map((r) => `<div class="storey" data-tip="${L('ui.mesa.guardia.tip', { guardia: cap(GUARD(r)), casa: HOUSE(s), vida: cfg.floorHp[r], ataque: cfg.floorThreat[r] })}">${storeySvg(s, r)}<b>${FLOOR(r)}</b><span>${cfg.floorHp[r]}</span></div>`)
       .join('');
   }
-  // V10 · V7-5: la insignia de estado va sin guiones blandos y no se parte nunca (antes salía «DESAR-MADO»)
+  // V11: dos estados, Expuesto y Aturdido; la insignia no se parte nunca y no lleva cifra
   const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => top !== undefined && t.fx?.[k]);
-  $('.tower-fx', el).innerHTML = [...fx.map( // V11-A: provisional, lo rehace arte-ui
-    (k) => `<em class="fx fx-${k}" data-tip="<b>${fxN(k)}</b>${fxD(k)}">${fxN(k).replace(/ (×\d+)$/, '<span class="fx-n"> $1</span>')}</em>`)].join('');
+  $('.tower-fx', el).innerHTML = fx.map((k) => `<em class="fx fx-${k}" data-tip="<b>${fxN(k)}</b>${fxD(k)}">${fxN(k)}</em>`).join('');
   if (top !== undefined) {
     const hp = cfg.floorHp[top];
     const left = Math.max(0, hp - t.damage);
     const level = String(Math.min(3, Math.ceil((3 * t.damage) / hp)));
     $('.hp-fill', el).style.transform = `scaleX(${left / hp})`;
-    $('.hp span', el).textContent = `${left} / ${hp}`;
+    // la cifra que cuenta es la Vida que queda; el total va detrás, más pequeño
+    $('.hp span', el).innerHTML = `<b class="hp-n">${left}</b><small>/${hp}</small>`;
     $('.cracks', el)?.setAttribute('data-level', level);
     $('.facade .storey-art', el)?.setAttribute('data-level', level);
     const threat = threatOf(v, t);
-    $('.threat', el).innerHTML = `<span>${L('ui.mesa.ataque')}</span><b>⚔ ${threat}</b>`; // V11-A: provisional, lo rehace arte-ui
+    $('.threat', el).innerHTML = `<span>${L('ui.mesa.ataque')}</span><b>⚔ ${threat}</b>`;
   }
 }
 
@@ -423,6 +424,8 @@ function renderBunker(): void {
   const int = Math.max(0, v.integrity);
   const blocks = $('#int-blocks');
   blocks.style.setProperty('--cap', String(Math.min(cfg.maxIntegrity, 15)));
+  // V11: la Vida en dos filas como mucho (21 de serie: 11 + 10), así «Tu Vida» no crece una fila
+  blocks.style.setProperty('--icols', String(Math.max(10, Math.ceil(cfg.maxIntegrity / 2))));
   blocks.innerHTML = Array.from({ length: cfg.maxIntegrity }, (_, i) => `<i class="${i < int ? '' : 'off'}"></i>`).join('');
   blocks.classList.toggle('danger', int <= 6);
   // la música sigue a la obra: cuanto más herido el búnker, más capas y más tambor
@@ -555,31 +558,6 @@ function bestTarget(pv: Partial<Record<Suit, StrikeResult>>): Suit | null {
 }
 const standingTargets = () => SUITS.filter((s) => S.shown!.towers[s].floors.length > 0);
 
-/**
- * F1 · sello de factor: con un trono apuntado, cada carta de la mano y de La Manga lleva la misma placa
- * que el trono: hierro «×0» si es Inmune, latón «×2»/«×3» si tiene ventaja; nada si es ×1, un comodín
- * o una especial (`multiplier('X', …)` da 0 y no debe salir «×0»). Va en el centro de la carta, fuera
- * de las esquinas, y solo se repinta si cambia el factor.
- */
-function renderFactorSeals(target: Suit | null): void {
-  const v = S.shown;
-  if (!v) return;
-  const all = held();
-  for (const [id, el] of cardEls) {
-    const c = all.find((x) => x.id === id);
-    const m = c && target && !c.sp && c.suit !== 'X' ? multiplier(c.suit, target, v.config) : 1;
-    const key = m === 1 ? '' : `${target}:${m}`;
-    if ((el.dataset.factor ?? '') === key) continue;
-    el.querySelector(':scope > .factor')?.remove();
-    if (!key || !c || c.suit === 'X') {
-      delete el.dataset.factor;
-      continue;
-    }
-    el.dataset.factor = key;
-    el.insertAdjacentHTML('beforeend', `<i class="plate factor ${m === 0 ? 'iron' : 'brass'}" aria-hidden="true">${suitSvg(c.suit)}<b>×${num(m)}</b></i>`);
-  }
-}
-
 /** Los cuatro poderes de palo, siempre a la vista; se encienden con lo que aporta la jugada elegida. */
 function renderPowers(cards: Card[], r: StrikeResult | null, target: Suit | null): void {
   const el = $('#powers');
@@ -594,7 +572,7 @@ function renderPowers(cards: Card[], r: StrikeResult | null, target: Suit | null
     H: r?.repair ? `+${r.repair}` : '',
     C: r?.wallGain ? `+${r.wallGain}` : '',
   };
-  const part: Record<Suit, string> = { S: '', D: `${cfg.salpicaPorCarta}`, H: cfg.curaPorCarta === 0 ? L('ui.mesa.anulado') : `${cfg.curaPorCarta}`, C: `${cfg.escudoPorCarta}` }; // V11-A: provisional, lo rehace arte-ui
+  const part: Record<Suit, string> = { S: '', D: `${cfg.salpicaPorCarta}`, H: cfg.curaPorCarta === 0 ? L('ui.mesa.anulado') : `${cfg.curaPorCarta}`, C: `${cfg.escudoPorCarta}` }; // lo que da cada carta de ese palo en esta mesa
   el.innerHTML = SUITS.map(
     (s) =>
       `<span class="power s-${s} ${value[s] ? 'on' : ''}" data-tip="<b>${SUIT_GLYPH[s]} ${POWER(s)[0]}</b>${POWER(s)[1]}${part[s] ? L('ui.mesa.poder.ahora', { x: part[s] }) : ''}${L('ui.mesa.poder.nota')}">${suitSvg(s)}<b>${POWER(s)[0]}</b>${value[s] ? `<em>${value[s]}</em>` : ''}</span>`,
@@ -651,10 +629,7 @@ function renderScore(): void {
     }
   }
   paintScore(el, tag + body, preview, v);
-  // F1: con un trono apuntado (el puntero o el foco encima, o el que elige la cuenta), cada carta lleva su factor
-  renderFactorSeals(aim && v.towers[aim].floors.length ? aim : shownTarget);
   renderPowers(cards, shown, shownTarget);
-  renderWheel(cards, shownTarget);
   if (shown?.clean) whisper('limpio');
   if (shownTarget && (v.config.ownMult ?? 0) === 0 && cards.some((c) => !c.sp && c.suit === shownTarget))
     whisper('inmune', { material: paloN(shownTarget).toLowerCase(), glyph: SUIT_GLYPH[shownTarget] });
@@ -753,61 +728,13 @@ export function refreshSpeed(): void {
   if (btn) btn.innerHTML = `${speedLabel()}${hint('speed')}`;
 }
 
-// ── rueda de materiales: ♠ → ♦ → ♥ → ♣ → ♠ ──
-const WHEEL_AT: Record<Suit, number> = { S: -90, D: 0, H: 90, C: 180 };
-function wheelSvg(): string {
-  const at = (deg: number, r: number): [number, number] => [32 + r * Math.cos((deg * Math.PI) / 180), 32 + r * Math.sin((deg * Math.PI) / 180)];
-  const f = (n: number) => n.toFixed(1);
-  const arcs = SUITS.map((s) => {
-    const from = WHEEL_AT[s] + 27;
-    const to = WHEEL_AT[s] + 63;
-    const [x1, y1] = at(from, 23);
-    const [x2, y2] = at(to, 23);
-    // punta de flecha, tangente al final del arco
-    const [tx, ty] = at(to + 9, 23);
-    const [ax, ay] = at(to - 3, 27.5);
-    const [bx, by] = at(to - 3, 18.5);
-    return `<g class="wa a-${s}"><path d="M${f(x1)},${f(y1)} A23,23 0 0 1 ${f(x2)},${f(y2)}"/><path class="head" d="M${f(tx)},${f(ty)} L${f(ax)},${f(ay)} L${f(bx)},${f(by)} Z"/></g>`;
-  }).join('');
-  const nodes = SUITS.map((s) => {
-    const [x, y] = at(WHEEL_AT[s], 23);
-    return `<g class="wn n-${s}" transform="translate(${f(x)} ${f(y)})"><path class="wt" d="M-11,0 a11,11 0 1 0 22,0 a11,11 0 1 0 -22,0 Z" fill="url(#pat-${s})"/><circle r="7.8"/><g class="wg" transform="scale(0.6)">${pipPath(s)}</g><path class="wx" d="M-5.4,-5.4 L5.4,5.4 M5.4,-5.4 L-5.4,5.4"/></g>`;
-  }).join('');
-  return `<svg viewBox="0 0 64 64" aria-hidden="true">${arcs}${nodes}</svg>`;
-}
-
-/** Enciende en la rueda lo que hace la jugada elegida: ventaja (flecha de latón) o inmunidad (aspa de hierro). */
-function renderWheel(cards: Card[], target: Suit | null): void {
-  const el = $('#wheel');
-  const v = S.shown;
-  if (!el || !v) return;
-  if (!el.firstChild) el.innerHTML = wheelSvg();
-  const own = v.config.ownMult ?? 0;
-  const suits = new Set(cards.filter((c) => !c.sp && c.suit !== 'X').map((c) => c.suit as Suit));
-  let adv = false;
-  let blocked = false;
-  for (const s of SUITS) {
-    const wins = false; // V11-A: provisional, lo rehace arte-ui
-    const immune = target === s && suits.has(s) && own === 0;
-    adv ||= wins;
-    blocked ||= immune;
-    el.querySelector(`.a-${s}`)?.classList.toggle('on', wins);
-    const node = el.querySelector(`.n-${s}`);
-    node?.classList.toggle('lit', suits.has(s));
-    node?.classList.toggle('aim', target === s);
-    node?.classList.toggle('immune', immune);
-  }
-  el.classList.toggle('adv', adv);
-  el.classList.toggle('blocked', blocked);
-}
-
 /** Fatiga de cimientos: avisa tres turnos antes de empezar y luego enseña su nivel. */
 function renderFatigue(): void {
   const el = $('#fatigue');
   const v = S.shown;
   if (!el || !v) return;
   const start = v.config.fatigueStart;
-  const res = v.config.fatigueDano ?? 4; // V11-A: provisional, lo rehace arte-ui
+  const res = v.config.fatigueDano ?? BALANCE.asedio.dano;
   const level = v.fatigue ?? 0;
   const left = start === undefined ? Infinity : start - v.turnCount;
   el.hidden = start === undefined || v.phase !== 'playing' || (level === 0 && left > 3);
@@ -1021,7 +948,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       if (ev.level > 0) {
         banner(L('ui.log.asedio.banner', { n: ev.level }), 'red', L('ui.log.asedio.sub'));
         sfx.rumble(1 + ev.level);
-        logLine(L('ui.log.asedio', { n: ev.level, m: (v.config.fatigueDano ?? 4) * ev.level }), 'red'); // V11-A: provisional, lo rehace arte-ui
+        logLine(L('ui.log.asedio', { n: ev.level, m: (v.config.fatigueDano ?? BALANCE.asedio.dano) * ev.level }), 'red');
         await wait(650);
       }
       break;
@@ -1040,8 +967,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
     case 'joker':
       logLine(L('ui.log.motin', { nombre: nameOf(ev.player), casa: LA_HOUSE(ev.target) }), 'yel');
       await flyCards(ev.player, [ev.card], () => $('.floor-slot', towerEls[ev.target]).getBoundingClientRect());
-      v.towers[ev.target].fx.sobrecarga = true; // V11-A: provisional, lo rehace arte-ui
-      renderTower(ev.target);
+      // el Aturdido llega en su propio evento 'state' (con El Inquisidor no llega)
       banner(L('ui.mesa.motin'), 'yel', L('ui.log.motin.sub'));
       sfx.mutiny();
       await wait(800);
@@ -1088,7 +1014,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       await wait(720);
       t.floors.shift();
       t.damage = ev.damage;
-      t.fx = {}; // V11-A: provisional, lo rehace arte-ui (sin Desarmado ni En guardia)
+      t.fx = {}; // Expuesto y Aturdido se van con el guardia que cae
       renderTower(ev.tower);
       if (ev.towerDown) {
         throneFall(el); // juice-ux: corona que se parte (sonido y .crown-split)
@@ -1189,7 +1115,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
         logLine(`${L('ui.log.contra', { g: glyph, casa: LA_HOUSE(ev.tower), n: ev.threat })}${ev.blocked ? L('ui.log.contra.frena', { n: ev.blocked }) : ''} → ${ev.taken ? L('ui.log.contra.vida', { n: ev.taken }) : L('ui.log.contra.salvo')}`, ev.taken ? 'red' : 'dim');
         await wait(650);
       } else {
-        const why = ev.reason === 'joker' ? L('ui.log.por.joker') : ev.reason === 'ruin' ? L('ui.log.por.ruin', { casa: LA_HOUSE(ev.tower!) }) : ev.reason === 'sobrecarga' ? L('ui.log.por.sobrecarga', { casa: LA_HOUSE(ev.tower!) }) : L('ui.log.por.desarmado', { casa: LA_HOUSE(ev.tower!) });
+        const why = ev.reason === 'joker' ? L('ui.log.por.joker') : ev.reason === 'ruin' ? L('ui.log.por.ruin', { casa: LA_HOUSE(ev.tower!) }) : L('ui.log.por.sobrecarga', { casa: LA_HOUSE(ev.tower!) });
         logLine(L('ui.log.contra.otro', { g: glyph, por: why }), 'dim');
         await wait(300);
       }
@@ -1323,7 +1249,7 @@ export function cardMath(c: Card): string {
   const cfg = v.config;
   return SUITS.filter((s) => v.towers[s].floors.length)
     .map((s) => {
-      const m = s === c.suit ? (cfg.ownMult ?? 0) : 1; // V11-A: provisional, lo rehace arte-ui
+      const m = s === c.suit ? (cfg.ownMult ?? 0) : 1; // Inmune a su propio palo
       return `${paloN(s)} <b>${cardValue(c) * m}</b>`;
     })
     .join(' · ');

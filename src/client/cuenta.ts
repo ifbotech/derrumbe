@@ -1,7 +1,7 @@
 // La cuenta central de la mesa.
 //
 //  · Por defecto, limpia: el Golpe final entero en grande, el trono contra el que va y las insignias
-//    que deciden la jugada (exacto, cae el guardia, ventaja, inmune…). Daño y Multi, en pequeño.
+//    que deciden la jugada (exacto, cae el guardia, Inmune…). Daño y Multi, en pequeño.
 //  · Bajo demanda, el recibo paso a paso: Base + Cartas + Reliquias × Multi = Golpe. Se despliega
 //    al pasar el ratón, al enfocar la cuenta con teclado o mando y al tocarla; cada línea sale de los
 //    eventos `step` de la previsualización, con el nombre de quien aporta. Sube desde la cuenta y
@@ -36,20 +36,16 @@ const WARN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,2.5 L22.5
 
 const signed = (n: number, text = String(n)) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${text.replace('-', '')}`;
 
-/** Con qué multiplicador pega la jugada contra ese trono: la mayor ventaja y si alguna carta se queda en ×0. */
-function material(p: Preview): { adv: number; immune: boolean; own: number } {
-  const cfg = p.v.config;
-  const allAdv = p.cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.noImmune); // V11-A: provisional, lo rehace arte-ui
-  let adv = 0;
-  let immune = false;
-  for (const c of p.cards) {
-    if (c.sp || c.suit === 'X') continue;
-    const m = allAdv ? Math.max(1, multiplier(c.suit, p.target, cfg)) : multiplier(c.suit, p.target, cfg); // V11-A: provisional, lo rehace arte-ui
-    if (m === 0) immune = true;
-    else if (m > 1) adv = Math.max(adv, m);
-  }
-  return { adv, immune, own: cfg.ownMult ?? 0 };
+/** Pasadizo: una especial del golpe que no respeta Inmune. */
+const sinInmune = (cards: Card[]) => cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.noImmune);
+/** Qué hace el trono con esta carta: 0 si es Inmune a su palo, 1 lo normal, 2 con la Máscara de traidor. */
+function factor(c: Card, target: Suit, p: Preview): number {
+  if (c.sp || c.suit === 'X') return 1;
+  const m = multiplier(c.suit, target, p.v.config);
+  return sinInmune(p.cards) ? Math.max(1, m) : m;
 }
+/** Si alguna carta de la jugada se queda en 0 contra ese trono (Inmune a su propio palo). */
+const immuneIn = (p: Preview) => p.cards.some((c) => factor(c, p.target, p) === 0);
 
 /**
  * La línea por defecto: Golpe final en grande, contra qué trono, y las insignias por orden de peso
@@ -61,16 +57,16 @@ export function previewHtml(p: Preview, tail = ''): string {
   const fallen = r.fallenBy[target] ?? 0;
   const wallGain = Math.min(r.wallGain, v.config.wallCap - v.wall);
   const repair = Math.min(r.repair, v.config.maxIntegrity - v.integrity);
-  const { adv, immune } = material(p);
+  const immune = immuneIn(p);
   const mat = paloN(target);
   // cae el trono entero si el golpe se lleva a todos los guardias que le quedan
   const throne = fallen > 0 && fallen >= v.towers[target].floors.length;
   // el Contraataque saca una carta al azar: se avisa del peor Ataque posible entre los tronos en pie
-  const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].fx.sobrecarga).map((s) => threatOf(v, v.towers[s]))); // V11-A: provisional, lo rehace arte-ui
+  // (un trono Aturdido se salta su próximo Contraataque: no cuenta)
+  const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].fx.sobrecarga).map((s) => threatOf(v, v.towers[s])));
   const marks = [
     r.clean ? `<em class="m gold">${L('ui.cuenta.exacto')}</em>` : '',
     fallen ? `<em class="m red">${throne ? L('ui.cuenta.cae.trono') : fallen > 1 ? L('ui.cuenta.caen', { n: fallen }) : L('ui.cuenta.cae')}</em>` : '',
-    adv ? `<em class="m adv" data-tip="${L('ui.cuenta.ventaja.tip', { n: adv })}">${L('ui.cuenta.ventaja', { n: adv })}</em>` : '',
     immune ? `<em class="m inm" data-tip="${L('ui.cuenta.inmune.tip')}">${L('ui.cuenta.inmune')}</em>` : '',
     r.hurt ? `<em class="m red">${L('ui.cuenta.vida', { n: r.hurt })}</em>` : '',
     r.clean || r.noSiren ? `<em class="m good">${L('ui.cuenta.sin.contra')}</em>` : (v.config.sirenCount ?? 1) > 1
@@ -121,10 +117,8 @@ interface Slip {
 
 /** Reparte los pasos de la previsualización entre las fichas del recibo. */
 function slip(p: Preview): Slip {
-  const cfg = p.v.config;
   const s: Slip = { base: [], cards: [], belt: [], res: [], after: [], nBase: 0, nCards: 0, nBelt: 0 };
   const byId = new Map(p.cards.map((c) => [c.id, c]));
-  const allAdv = p.cards.some((c) => c.sp && SPECIAL[c.sp]?.fx.noImmune); // V11-A: provisional, lo rehace arte-ui
   let hit = false;
   for (const ev of p.r.events) {
     if (ev.e === 'impact') hit = true;
@@ -151,8 +145,9 @@ function slip(p: Preview): Slip {
     }
     if (ev.df !== undefined) {
       const card = ev.src === 'card' ? byId.get(ev.id) : undefined;
-      const m = card && card.suit !== 'X' ? (allAdv ? Math.max(1, multiplier(card.suit, p.target, cfg)) : multiplier(card.suit, p.target, cfg)) : 1; // V11-A: provisional, lo rehace arte-ui
-      lines.push({ who, amount: signed(ev.df), kind: 'f', note: m > 1 ? L('ui.cuenta.ventaja.nota', { n: m }) : undefined });
+      // con la Máscara de traidor, el palo del trono pega el doble: se dice en la línea de la carta
+      const m = card ? factor(card, p.target, p) : 1;
+      lines.push({ who, amount: signed(ev.df), kind: 'f', note: m > 1 ? L('ui.cuenta.doble.nota', { n: m }) : undefined });
       if (group === 'base') s.nBase += ev.df;
       else if (group === 'cards') s.nCards += ev.df;
       else s.nBelt += ev.df;
@@ -161,7 +156,8 @@ function slip(p: Preview): Slip {
     if (ev.mr !== undefined) s.res.push({ who, amount: `×${num(ev.mr)}`, kind: 'x' });
     if (ev.df === undefined && ev.dr === undefined && ev.mr === undefined) {
       const immune = ev.src === 'card' && noteEs === 'inmune';
-      lines.push({ who, amount: immune ? '×0' : '', kind: 'n', note: immune ? L('ui.cuenta.inmune.nota') : note });
+      // la carta Inmune: «Inmune · 0», con su cero en la columna de las cifras
+      lines.push({ who, amount: '', kind: 'n', note: immune ? L('ui.cuenta.inmune.nota') : note, cls: immune ? 'inmune' : undefined });
     }
   }
   // por si el motor suma algún día Daño por un camino sin paso: la Base absorbe la diferencia y la cuenta siempre cuadra

@@ -8,7 +8,7 @@ import { getLang, initLang, numFor, t, type Lang } from '../shared/i18n';
 import type { ClaveUi } from '../shared/i18n/es';
 import { brandFor } from '../shared/brand';
 import { cardLabel, type Card, type Formation, type Suit } from '../rules/engine';
-import { LAST_STAGE } from '../rules/run';
+import { LAST_STAGE, tiranoKey } from '../rules/run';
 import { platform } from './platform';
 
 initLang(platform);
@@ -45,6 +45,8 @@ export const monDec = (id: string) => t(`monarca.${id}.decreto`);
 export const monD = (id: string) => t(`monarca.${id}.desc`);
 export const monBadge = (id: string) => t(`monarca.${id}.badge`);
 /** Nombre del asalto `n` (más allá del último, el Trono infinito con su profundidad). */
+/** V11: el título del monarca del Salón del Trono, según su género («Rey Tirano» / «Reina Tirana»). */
+export const tiranoN = (bossId: string | null) => t(bossId ? tiranoKey(bossId) : 'asalto.tirano.m');
 export const asaltoN = (n: number) => (n <= LAST_STAGE ? t(`asalto.${n}.nombre`) : t('asalto.infinito.nombre', { n: n - LAST_STAGE }));
 /** Reinado por su índice (0 = el primero). */
 export const reinN = (i: number) => t(`reinado.${i + 1}.nombre`);
