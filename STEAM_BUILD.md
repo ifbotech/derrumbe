@@ -1,6 +1,6 @@
 # SANGRE Y PALO en Steam: cómo se construye y qué falta
 
-Escrito por el Director al cerrar la 10.0 (2026-11-14), a partir de `tauri/`, `src/client/platform.ts`, sus pruebas y la bitácora de `juice-ux` (`artifacts/mision/v10/progreso-juice-ux.md`).
+Escrito por el Director al cerrar la 10.0 (2026-11-14), a partir de `tauri/`, `src/client/platform.ts`, sus pruebas y la bitácora de `juice-ux` (`artifacts/mision/v10/progreso-juice-ux.md`). Puesto al día al cerrar la 11.0 (2026-11-15): lo que cambia para la ficha está en el apartado 4, «Lo que cambió con la 11.0». La envoltura no se tocó.
 
 **Resumen honesto.** La versión de escritorio está **preparada, no hecha**. Hay una configuración de Tauri v2 y un puente con seis comandos de Steam que el juego ya llama. No se ha compilado ningún binario, no hay cuenta de Steamworks, ni AppID, ni depósitos, ni logros dados de alta. Ninguna medida de este documento viene de una Steam Deck física.
 
@@ -8,7 +8,7 @@ Escrito por el Director al cerrar la 10.0 (2026-11-14), a partir de `tauri/`, `s
 
 | | Estado | Cómo se sabe |
 |---|---|---|
-| El juego web (`dist/web`) | Probado | Todas las puertas de la 10.0: 309 pruebas, 172 + 172 capturas (ES y EN) sin fallos, 306 + 306 comprobaciones de humo con ratón, teclado y mando virtual (`artifacts/mision/v10/puertas.md`) |
+| El juego web (`dist/web`) | Probado | Todas las puertas de la 11.0: 314 pruebas + 9 de cooperativo, 196 + 196 capturas (ES y EN) sin fallos, 322 + 322 comprobaciones de humo con ratón, teclado y mando virtual, con una campaña entera de cinco asaltos (`artifacts/mision/v11/puertas.md`) |
 | `tauri/tauri.conf.json` | Leído por una prueba | `tests/tauri.test.ts` (6 pruebas): rutas, nombres contra `src/shared/brand.ts`, ventana, CSP, `withGlobalTauri`, archivos de Rust, permisos e iconos |
 | El puente (`src/client/platform.ts`) | Probado con un `invoke` falso | `tests/platform.test.ts` (9 pruebas): logro → comando con su `id`; tabla de idiomas de Steam; comando que falla → lo de la web; título que sigue al idioma; Steam Cloud sube sin la dirección del servidor y un equipo nuevo recupera; sin `__TAURI__`, el puente es el de la web |
 | Compilar la envoltura | **No hecho** | No se instaló Rust ni la CLI de Tauri |
@@ -16,7 +16,7 @@ Escrito por el Director al cerrar la 10.0 (2026-11-14), a partir de `tauri/`, `s
 | SDK de Steamworks | **No está** | Ni en el repositorio ni en `Cargo.toml` |
 | Cuenta, AppID, depósitos, ramas, logros, página de tienda | **No existen** | — |
 | Capa de Steam, Steam Cloud, firma del binario | **Sin probar** | — |
-| Steam Deck física | **Sin probar** | El panel simulado da 4 aprobaciones de 36 en Steam Deck |
+| Steam Deck física | **Sin probar** | El panel simulado da 4 aprobaciones de 36 en Steam Deck (censo de la 10.0); en la 11.0, 4 de 9 en español y 0 de 9 en inglés con las mismas nueve personas: ese estrato no permite concluir nada |
 
 ## 2. Construir la envoltura de escritorio
 
@@ -33,7 +33,7 @@ Escrito por el Director al cerrar la 10.0 (2026-11-14), a partir de `tauri/`, `s
 
 ### Qué fija la configuración
 - `productName` «Sangre y Palo» (la cara española en prosa, `brandFor('es').titleProse`) y `mainBinaryName` `sangre-y-palo` (`SLUG`).
-- `identifier` `com.sangreypalo.juego`; `version` leída de `package.json` (10.0.0).
+- `identifier` `com.sangreypalo.juego`; `version` leída de `package.json` (11.0.0).
 - Ventana `main` de 1280 × 800, redimensionable (mínimo 960 × 600), centrada, sin pantalla completa de entrada (F o R3, como en la web). Título inicial «SANGRE Y PALO · Blood & Suits»; el juego lo cambia con el idioma.
 - `app.withGlobalTauri: true`: el puente usa `window.__TAURI__.core.invoke`, sin dependencias npm nuevas.
 - CSP sin `*` ni `http:`. `connect-src 'self' ws: wss: https:`: `ws:`/`wss:` para el servidor de la conjura que se escribe en Ajustes; `https:` para el recolector de `VITE_TELEMETRY_URL`, que se fija al construir. `style-src 'unsafe-inline'` hace falta: el juego pinta con atributos `style`.
@@ -78,7 +78,7 @@ Los dos títulos van en los términos de búsqueda de la tienda, en los dos idio
 ### Descripción corta
 Sale de `src/shared/brand.ts` (lema y frase de cada cara). Propuesta:
 - **Español**: «La conjura de los naipes. Roguelike de conjura con baraja francesa.»
-- **Inglés**: «A card conspiracy against the court. A conspiracy roguelike with a French deck.»
+- **Inglés**: «A card conspiracy against the court. A conspiracy roguelike played with a standard 52-card deck.» (corrección 14 de `SPECS/V11.md`, apartado 1.14: *French deck* no se dice en inglés; es verdad en el juego: 40 cartas en el Mazo y las 12 figuras como guardias).
 
 El largo máximo de la descripción corta: por comprobar en la documentación de Steamworks. Si `brand.ts` cambia, esta ficha se cambia con él.
 
@@ -93,7 +93,7 @@ El largo máximo de la descripción corta: por comprobar en la documentación de
 El juego se juega entero con mando: la prueba de humo hace una campaña completa con un mando virtual, con las insignias de cada botón en pantalla y el conmutador de idioma y «Alto contraste» alcanzables. Antes de marcar «compatibilidad completa con mando», comprobar en una Steam Deck física los campos de texto (dirección del servidor de salas, semilla, código de sala): el juego no llama al teclado en pantalla de Steam.
 
 ### Logros: 36
-Los `id` salen de `src/rules/achievements.ts` (`ACHIEVEMENTS`), y su lista congelada está en `tests/congelacion.json` (`logros`):
+Los `id` salen de `src/rules/achievements.ts` (`ACHIEVEMENTS`). Desde la 11.0, la lista de la 10.0 está escrita en `tests/v11.test.ts`, que falla si cambia un solo `id` (`tests/congelacion.json` se retiró):
 - 28 fijos: `primera`, `capataz`, `media`, `madre`, `asc3`, `abismo`, `abismo3`, `diaria`, `doblepar`, `color`, `full`, `poker`, `real`, `golpe100`, `golpe500`, `golpe2000`, `limpio10`, `limpio50`, `pisos100`, `pisos500`, `intacto`, `rico`, `cinturon`, `forja`, `contratos`, `atajo`, `coleccion`, `ferretero`;
 - 7 trofeos de monarca: `j-doble`, `j-escasez`, `j-sequia`, `j-intemperie`, `j-blindaje`, `j-furia`, `j-inestable`;
 - 1 final: `jefes`.
@@ -123,7 +123,16 @@ Las medidas **no se copian de memoria**: no se pudo consultar la documentación 
 **Lo que ya existe en el repositorio:**
 - `public/og-card-es.png` y `public/og-card-en.png` (1200 × 630): tarjetas para redes. Son **la fuente del candado** de cada idioma, no cápsulas: cada cápsula pide su propio arte y su propio encuadre.
 - `tauri/icons/`: 32 × 32, 128 × 128, 256 × 256 (`128x128@2x.png`), 512 × 512, 1024 × 1024 (`icon.png`) e `icon.ico` (un PNG de 256 dentro). Salen de `public/favicon.svg`.
-- Candidatas a captura: `artifacts/visual-qa/1920x1080/` (43 estados, en español) y `artifacts/visual-qa-en/1920x1080/` (los mismos, en inglés). Son capturas de QA con estados fijos: elegir las que enseñan juego (mesa, monarca, La Taberna, Mapa) y no las de ajustes o pruebas.
+- Candidatas a captura: `artifacts/visual-qa/1920x1080/` (49 estados, en español) y `artifacts/visual-qa-en/1920x1080/` (los mismos, en inglés). Son capturas de QA con estados fijos: elegir las que enseñan juego (mesa, monarca, La Taberna, Mapa) y no las de ajustes o pruebas.
+
+### Lo que cambió con la 11.0
+- **Campaña de cinco asaltos, unos 20 minutos** (18,2 estimados por el laboratorio con la animación medida; la de la 10.0 eran unos 32). Cualquier texto de la tienda que hable de ocho asaltos, de la rueda de palos, de la ventaja, de Brecha, En guardia o Desarmado, o de un Multi con decimales, ya no es verdad.
+- **Reglas para la descripción larga**: Multi siempre entero; un trono es Inmune solo a su propio palo; dos estados (Expuesto y Aturdido); cinco palabras clave.
+- **Logros: los mismos 36 `id`**. Cambian dos condiciones y sus descripciones: `capataz` («Adiós, carcelero») pide superar el asalto 2 y `media` («Medio castillo»), el asalto 3. Si ya estaban dados de alta, se actualiza su texto, no su `id`.
+- **Capturas**: las de la 10.0 enseñan la rueda de palos y las cartas con trama. Hay que sacarlas de nuevo de la 11.0 (baraja de cuatro colores, cartas de cara limpia, mesas de 2 a 4 tronos).
+- **Inglés**: con las 14 correcciones, y todavía **sin revisión de un hablante nativo**. El panel simulado ya lo audita en inglés y lo entiende igual que el español (claridad 5,28 frente a 5,40).
+- **Cooperativo**: una sala solo admite clientes de la misma versión (`PROTOCOL_VERSION`). El binario de Steam y el servidor de salas tienen que publicarse a la vez.
+- **Guardado**: un perfil de la 10.0 conserva La Orden, los logros y la colección; su campaña a medias se cierra con abono y aviso. Vale igual para una copia de Steam Cloud subida con la 10.0.
 
 ### Steam Cloud
 Dos opciones, sin decidir:

@@ -56,4 +56,42 @@ Una celda cada vez. Commit local tras cada celda y entre los bloques A, B y C. T
 
 ## Resultado
 
-Pendiente (lo escribe el Director en el cierre).
+**Hecha** (cierre del Director, 2026-11-15). Candidata `16fe20a`; **se etiqueta `v11.0.0`**. Pasan los 15 criterios de `SPECS/V11.md` y la puerta del panel. Detalle: `SPECS/V11.md` (apartado 7), `CHANGELOG.md` y [`EVOLUCION_V11.md`](EVOLUCION_V11.md).
+
+| | 10.0 | 11.0 | Lectura |
+|---|---:|---:|---|
+| Aprobación (panel, 60 personas) | 28,3 % | **36,7 %** | la más alta de la misión; no concluyente (p = 0,18; ruido ±12) |
+| Claridad (1–10) | 4,92 | **5,40** | **se distingue del azar** (t pareada = 2,81) |
+| Claridad del casual | 4,33 | 4,83 | apunta, no concluyente |
+| Steam Deck que aprueba | 2 de 9 | 4 de 9 | apunta; en inglés, 0 de 9 con las mismas personas |
+| Quejas de contraste de palos | 60 | 70 | no baja; cambia de tema |
+| Inglés (misma versión) | — | 40,0 % · 5,28 | igual que el español |
+| Palabras clave | 6 | 5 | |
+| Asaltos por campaña | 8 | 5 | |
+| Duración estimada | ~32 min | **18,2 min** | con la animación medida |
+| Reinado 1 (vacía / llena) | 29,7 / 45,1 % (obj. 24–30 / 40–48) | 29,2 / 43,4 % (obj. 26–32 / 42–48) | 0 avisos |
+| Peor P95 de turnos | 18 (tope 19) | 15 (tope 15) | |
+| Golpes exactos por asalto | 1,6–2,1 | 0,7–1,1 | el precio del Multi entero |
+| P99 del Golpe, último asalto | 605 (asalto 8) | 944 (asalto 5) | Asedio de +40 de Daño |
+| Comodín por campaña | 8,9 | 5,6 | |
+
+Decisión del riesgo «Golpes exactos más difíciles»: se publica así y la V12 lo mira con datos de personas antes de tocar una regla (`SPECS/V11.md`, 7.3).
+
+## Después de la 11.0
+
+Lo que la 11.0 deja abierto, con su dueño. Todo lo del panel es simulado: ordena, no confirma.
+
+| # | Qué | Evidencia | Dueño | Primera comprobación |
+|---|---|---|---|---|
+| 1 | **Objetivos viejos en el `README.md`**: el bloque de balance dice los rangos de la 10.0 | `scripts/reglas.ts` los lleva escritos a mano | `reglas-balance` | que lea `OBJETIVOS` y `npm run docs` (celda de cierre en `SPECS/V11.md`; si no entra antes de fusionar, va primero) |
+| 2 | **Contraste que ahora cita el panel**: el botón Golpear rojo junto al carmesí de Corazones (4 personas), la placa «Inmune» sobre el grabado del trono y las barras de Vida con trama | 54 quejas de interfaz leídas; las de palos y cartas bajan de 25 a 20 | `arte-ui` | medir en la captura cada caso antes de cambiarlo; que el rojo de la mesa quede para daño y peligro, no para navegar |
+| 3 | **Texto chico**: 62 → 82 menciones, con Golpes de tres y cuatro cifras (mediana 204 y P99 944 en el asalto 5) | cubeta del panel; observaciones del laboratorio | `arte-ui` | la cuenta y el Golpe en grande con 4 cifras en 1366×768, 1280×800 y 390×844, sin recorte y a su tamaño mínimo |
+| 4 | **Sello de pólvora y sus «tronos vecinos (orden ♠ ♦ ♥ ♣)»** en mesas de 2 y 3 tronos | lo marcó la celda del panel; con tronos ausentes, «vecino» se lee raro | `reglas-balance` (texto y regla), `arte-ui` (cómo se ve en la mesa) | qué hace hoy el motor con un vecino ausente, y un texto que lo diga en ≤ 115 caracteres |
+| 5 | **Golpe exacto**: de 1,6–2,1 a 0,7–1,1 por asalto | laboratorio; duelo «Un Golpe exacto con margen» en empate (40 %) | `reglas-balance`, con `arte-ui` para la lectura | la telemetría de la prueba con amigos; después, si hace falta, una hipótesis de laboratorio (`SPECS/V11.md`, 7.3) |
+| 6 | **Steam Deck**: 2 → 4 de 9 en español y 0 de 9 en inglés con las mismas personas | dos corridas de la 11.0 | `juice-ux` (mando y aparato), `arte-ui` (lectura a 40 cm) | una Steam Deck física: legibilidad, mando de punta a punta y el teclado en pantalla (`STEAM_BUILD.md`, paso 11) |
+| 7 | **El clasificador de quejas del panel no entiende inglés**: «palo Inmune» cae de 45 a 6 y «otras» sube de 56 a 87 por el instrumento | corrida inglesa | celda `panel` (`..\panelAgentesGaming`) | que las cubetas lean también los términos ingleses del juego (Immune, Sleeve, Relics…) antes de comparar quejas entre idiomas |
+| 8 | **El sello «SANGRE Y PALO» en la portada inglesa** se lee como texto sin traducir (4 de 5 quejas explícitas de traducción) | corrida inglesa | `director` | es la marca dual que eligió el usuario: no se cambia; se le cuenta |
+| 9 | **La prueba con personas reales** | ninguna cifra de esta tabla viene de una persona | `director` (organiza), `juice-ux` (telemetría) | la guía de `EVOLUCION_V4_V10.md` (apartado 10) con la campaña de cinco asaltos; es lo único que puede confirmar la claridad, el casual, Steam Deck y la duración (el supuesto de 12 s por decisión y de 60 s por entreacto) |
+| 10 | Reglamentos de `.claude/` con la constitución de la V10 | 6 palabras clave, P95 ≤ 19, Reinado 1 24–30 % | el usuario decide | propuesta lista: `artifacts/mision/v11/parche-reglamentos.mjs` |
+
+Siguen abiertos de `ROADMAP_V5_V10.md` («Después de la 10.0»): la envoltura de escritorio sin compilar, Steamworks, la revisión del inglés por un hablante nativo, la demo y el Asalto diario entre amigos (los dos duelos los vuelve a ganar la propuesta: 75 % y 77,5 %).

@@ -262,32 +262,42 @@ interface Report {
   classic?: { players: number; winrate: number; turns: number; n: number }[];
   flags: string[];
 }
+import { OBJETIVOS } from './objetivos';
 const p = (x: number) => `${n(Math.round(x * 10) / 10)} %`;
 function balanceMd(r: Report): string {
   const levels = r.winrate.levels.filter((l) => l.n);
   const decks = r.winrate.decks.filter((d) => d.n);
+  // Los objetivos salen de scripts/objetivos.ts: no se escriben a mano.
+  const O = OBJETIVOS;
+  const entre = (par: readonly number[]) => `entre el ${n(par[0])} y el ${n(par[1])} %`;
+  const tramos = O.ritmo.map((t, i) => {
+    const desde = i === 0 ? 1 : (O.ritmo[i - 1].hasta as number) + 1;
+    const hasta = Number.isFinite(t.hasta) ? (t.hasta as number) : r.pacing.length;
+    const cuales = desde === hasta ? `asalto ${desde}` : hasta === desde + 1 ? `asaltos ${desde} y ${hasta}` : `asaltos ${desde} a ${hasta}`;
+    return `${cuales} de ${t.mediana[0]} a ${t.mediana[1]}${i === 0 ? ' turnos de mediana' : ''} (P95 ≤ ${t.p95})`;
+  });
   return [
     `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Taberna, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
-    `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 entre el 24 y el 30 % con la Orden vacía y entre el 40 y el 48 % con la Orden llena; Reinado 8 entre el 6 y el 9 % con la Orden vacía y entre el 12 y el 17 % con la Orden llena; y cada Reinado, más difícil que el anterior.`,
+    `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con la Orden vacía y ${entre(O.reinado1.lleno)} con la Orden llena; Reinado 8 ${entre(O.reinado8.vacio)} con la Orden vacía y ${entre(O.reinado8.lleno)} con la Orden llena; y cada Reinado, más difícil que el anterior.`,
     '',
     table(['Reinado', 'Orden vacía', 'Orden llena'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
     '',
-    `Por baraja inicial (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el 24 y el 31 % sin la Orden y entre el 40 y el 45 % con ella.`,
+    `Por baraja inicial (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el ${O.barajas.vacioObjetivo} % sin la Orden y entre el ${O.barajas.llenoObjetivo} % con ella (el informe avisa fuera de ${O.barajas.vacio[0]}–${O.barajas.vacio[1]} y de ${O.barajas.lleno[0]}–${O.barajas.lleno[1]}).`,
     '',
     table(['Baraja', 'Orden vacía', 'Orden llena', 'Lo que suma la Orden'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
     '',
-    `Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media ${p(r.avgLethality)}). Objetivo: todos entre 0,8× y 1,3× de la media.`,
+    `Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media ${p(r.avgLethality)}). Objetivo: todos entre ${n(O.monarcas.ratio[0])}× y ${n(O.monarcas.ratio[1])}× de la media.`,
     '',
     table(['Monarca', 'Letalidad', 'Frente a la media'], r.bosses.map((b) => [b.who, p(b.lethality), `×${n(Math.round((b.lethality / (r.avgLethality || 1)) * 100) / 100)}`])),
     '',
-    'Turnos por asalto. Objetivo: asalto 1 de 5 a 7 turnos de mediana (P95 ≤ 10); asaltos 2 y 3 de 8 a 10 (P95 ≤ 15); asaltos 4 a 8 de 9 a 13 (P95 ≤ 19), con cualquier baraja.',
+    `Turnos por asalto. Objetivo: ${tramos.join('; ')}, con cualquier baraja (peor P95 ≤ ${O.ritmoBaraja}).`,
     '',
     table(['Asalto', 'Mediana', 'P95'], r.pacing.map((x) => [`${x.stage} · ${x.name}`, String(x.p50), String(x.p95)])),
     '',
-    r.pacingByDeck?.length ? `Peor percentil 95 de los asaltos 4 a 8, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}.` : '',
+    r.pacingByDeck?.length ? `Peor percentil 95 de los ${r.pacing.length} asaltos, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}.` : '',
     '',
-    r.classic?.length ? `Asalto único (${r.classic[0].n} partidas por celda; objetivo 58–65 %): ${r.classic.map((c) => `${c.players} jugador${c.players > 1 ? 'es' : ''} ${p(c.winrate)}`).join(' · ')}.` : '',
+    r.classic?.length ? `Asalto único (${r.classic[0].n} partidas por celda; objetivo ${O.clasica[0]}–${O.clasica[1]} %): ${r.classic.map((c) => `${c.players} jugador${c.players > 1 ? 'es' : ''} ${p(c.winrate)}`).join(' · ')}.` : '',
     '',
     r.flags.length ? `Avisos del informe (${r.flags.length}): ${r.flags.join('; ')}.` : 'El informe no deja ningún aviso: todos los objetivos se cumplen en la muestra.',
   ]
