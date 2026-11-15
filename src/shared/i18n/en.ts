@@ -395,7 +395,7 @@ const GUIA: Record<string, [string, string]> = {
   palo: ['The Power of a Suit', 'Play the <b>6♣</b> against SPADES: ♣ give you Shield.'],
   inmune: ['Immune Throne', 'Your ♥ do nothing to HEARTS: <b>8♥</b> to SPADES.'],
   manga: ['Up the Sleeve', 'Keep the <b>9♦</b> Up the Sleeve for later.'],
-  cuenta: ['The Tally', 'A pair of <b>7</b>s to HEARTS: Damage 16 × Mult 2 = 32.'],
+  cuenta: ['The Tally', 'A pair of <b>7</b>s to HEARTS: Damage × Mult = Hit.'],
   exacto: ['Exact Hit', 'The <b>9♦</b> from Up the Sleeve to HEARTS: exactly 9.'],
 };
 

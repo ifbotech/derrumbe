@@ -100,7 +100,8 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
       else if (await has('#loot .choice.pick')) await page.locator('#loot .choice.pick').first().click();
     } else if (r.phase === 'shop') await page.locator('#go').click();
     else if (r.phase === 'event') {
-      const opt = page.locator('#opts > button:not(:disabled)').first();
+      // la última opción de cada Secreto es la que no pide elegir cartas («Sigue tu camino», «Caliéntate y sigue»…)
+      const opt = page.locator('#opts > button:not(:disabled)').last();
       await page.waitForTimeout(500); // las opciones se dan la vuelta de una en una
       if (await opt.count()) await opt.click();
     } else if (r.phase === 'battle') {

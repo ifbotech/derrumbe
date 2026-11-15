@@ -573,9 +573,44 @@ function warmTable(): void {
       if (settings.calm || !el.isConnected) return;
       // una centésima de píxel: con 0 px el navegador se salta la animación y no prepara la capa
       el.animate([{ transform: 'translate(0px, 0.01px)' }, { transform: 'none' }], { duration: 60 });
+      warmSeals(0);
     });
   });
   watch.observe(document.body, { childList: true, subtree: true });
+}
+
+/**
+ * V11: el primer sello de lacre de la sesión aún pagaba un fotograma de ~55 ms en 1920×1080 (pintado y
+ * rasterizado del lacre al tamaño de la carta de verdad, que no es el de la esquina de warmUp). En la primera
+ * mesa, las mismas piezas de la reserva se posan un instante sobre una carta de la mano a opacidad 0,01, con su
+ * caída y su enfriado, y la lámina de cada acabado pasa una vez invisible; después vuelven a la reserva.
+ */
+function warmSeals(tries: number): void {
+  const cards = [...document.querySelectorAll<HTMLElement>('.table-screen #hand .card')];
+  if (!cards.length) {
+    if (tries < 10) window.setTimeout(() => warmSeals(tries + 1), 300);
+    return;
+  }
+  const host = cards.find((c) => SEALS.some((x) => c.classList.contains(`z-${x}`))) ?? cards[0];
+  const ghost = [{ transform: 'scale(1.4) rotate(-8deg)', opacity: 0 }, { transform: 'none', opacity: 0.01 }];
+  const used = SEALS.map((seal) => {
+    const pool = (waxFree[seal] ??= []);
+    let w = pool.pop();
+    if (!w) {
+      w = waxStamp(seal);
+      made++;
+    }
+    w.classList.add('caliente');
+    w.style.opacity = '0.01';
+    host.appendChild(w);
+    w.animate(ghost, { duration: 160 });
+    return [w, pool] as const;
+  });
+  window.setTimeout(() => used.forEach(([w]) => w.classList.remove('caliente')), 60);
+  // la lámina de cada acabado que haya en la mano, una vez y sin verse
+  for (const band of document.querySelectorAll<HTMLElement>('.table-screen #hand .card .foil-band'))
+    band.animate([{ transform: 'translateX(-160%) rotate(20deg)', opacity: 0 }, { transform: 'translateX(260%) rotate(20deg)', opacity: 0.01 }], { duration: 160 });
+  window.setTimeout(() => used.forEach(([w, pool]) => ((w.style.opacity = ''), release(w, pool))), 240);
 }
 // la reserva se calienta en cuanto la página pinta su primer fotograma
 requestAnimationFrame(() => requestAnimationFrame(() => (warmUp(), warmTable())));

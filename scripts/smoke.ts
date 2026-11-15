@@ -354,6 +354,26 @@ async function main(): Promise<void> {
     check(said === T('error.version'), `un cliente de otra versión que no entra en una sala ve el aviso en su idioma («${said}»)`);
   }
 
+  // ── V11 · una campaña a medias de la 10.0 (guardado v 3, asalto 4) se cierra al abrir y lo dice, con lo cobrado ──
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
+    await ctx.addInitScript({ content: NAME_SHIM });
+    await ctx.addInitScript(() => {
+      if (sessionStorage.getItem('qa-vieja')) return;
+      sessionStorage.setItem('qa-vieja', '1');
+      localStorage.setItem('derrumbe:run', JSON.stringify({ key: 'qa-10', run: { v: 3, stage: 4, phase: 'map' } }));
+    });
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => problems.push(`[campaña vieja] error de página: ${e.message}`));
+    await p.goto(site.url);
+    await p.waitForSelector('.toast', { timeout: 4000 }).catch(() => undefined);
+    const toastText = (await p.locator('.toast').last().textContent().catch(() => null))?.trim() ?? '';
+    const gone = await p.evaluate(() => localStorage.getItem('derrumbe:run'));
+    const head = T('ui.camp.vieja', { n: '§' }).split('§')[0];
+    check(toastText.startsWith(head) && /\d+ ✦/.test(toastText) && gone === null, `una campaña a medias de la 10.0 se cierra al abrir y avisa en su idioma («${toastText}»)`);
+    await ctx.close();
+  }
+
   // ── V7 · la partida guiada se juega entera: con el teclado (medida) y con el ratón ──
   console.log('Partida guiada');
   const shot = (p: Page, name: string) => p.screenshot({ path: join(OUT, `${name}.png`) });

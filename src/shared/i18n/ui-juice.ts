@@ -58,7 +58,7 @@ export const UI_JUICE = {
   'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte y pierdes {loss} de Vida. El Escudo no lo frena.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back and you lose {loss} Health. Shield does not stop it.'],
   // V11: la mesa de dos o tres tronos y los dos estados, la primera vez que se ven
   'ui.w.ausente': ['<b>En este asalto hay {n} tronos:</b> si el Contraataque saca el palo de uno que no está, no pasa nada.', '<b>This assault has {n} thrones:</b> if the Counterattack draws the suit of one that is not here, nothing happens.'],
-  'ui.w.expuesto': ['<b>Expuesto {glyph}:</b> el próximo golpe contra ese trono hace ×{n} de Daño. Lo deja un golpe de un solo palo.', '<b>Exposed {glyph}:</b> the next hit against that throne deals ×{n} Damage. A single-suit hit leaves it Exposed.'],
+  'ui.w.expuesto': ['<b>Expuesto {glyph}:</b> el próximo golpe contra ese trono hace ×{n} de Daño. Lo deja un golpe de 2 cartas o más de un solo palo.', '<b>Exposed {glyph}:</b> the next hit against that throne deals ×{n} Damage. A hit of 2+ cards of one suit leaves it Exposed.'],
   'ui.w.aturdido': ['<b>Aturdido {glyph}:</b> ese trono se salta su próximo Contraataque. Lo deja un golpe de tres palos.', '<b>Stunned {glyph}:</b> that throne skips its next Counterattack. A hit with three suits leaves it Stunned.'],
   // V11: el registro de la mesa, cuando el Contraataque saca el palo de un trono que no está en el asalto (table.ts)
   'ui.log.por.ausente': ['{casa} no está en este asalto', '{casa} is not in this assault'],

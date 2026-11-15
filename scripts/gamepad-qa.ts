@@ -568,26 +568,40 @@ export async function immuneCheck(page: Page, how: 'pad' | 'keys', check: Check)
   const go = (sel: string) => (how === 'pad' ? focusOn(page, sel) : walkKeys(page, sel));
   // con 2, 3 y 4 tronos: de un trono a otro con izquierda y derecha, solo los presentes, y en los extremos no se sale a un ausente
   let towers: string[] = [];
-  for (const [state, n] of [['mesa', 4], ['mesa-3tronos', 3], ['guia-palo', 2]] as const) {
+  // (la mesa de dos tronos es la del asalto 1; la partida guiada, que también tiene dos, deja el foco solo en lo
+  // que enseña su paso: se cuenta aparte)
+  await page.evaluate(() => (window as unknown as QaWindow).__qa.go('guia-palo'));
+  await page.waitForSelector('.table-screen #hand .card');
+  await page.waitForTimeout(150);
+  const guided = await presentTowers(page);
+  check(guided.length === 2, `[${name}] la partida guiada se juega en una mesa de dos tronos (${guided.map((t) => t.slice(18, 19)).join(' ')})`);
+  for (const [state, n] of [['mesa', 4], ['mesa-3tronos', 3], ['mesa-2tronos', 2]] as const) {
     await page.evaluate((s) => (window as unknown as QaWindow).__qa.go(s), state);
     await page.waitForSelector('.table-screen #hand .card');
     await page.waitForTimeout(150);
     await key('D');
     towers = await presentTowers(page);
-    const visited = new Set<string>();
+    // de cada trono al de al lado con una pulsación (→ y ←), sin pisar nunca uno ausente (oculto o sin caja)
+    const at = () =>
+      page.evaluate(() => {
+        const t = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.tower');
+        return t ? `${t.dataset.suit}${t.hidden || t.getBoundingClientRect().width === 0 ? '!' : ''}` : '·';
+      });
+    const path: string[] = [];
     let reachedAll = true;
-    for (const t of towers) {
-      reachedAll &&= await go(t);
-      for (const k of ['L', 'L', 'R', 'R', 'R', 'R'] as const) {
-        await key(k);
-        const at = await page.evaluate(() => (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.tower')?.dataset.suit ?? null);
-        if (at) visited.add(at);
-      }
+    let hops = true;
+    for (const t of towers) reachedAll &&= await go(t);
+    for (let i = 0; i + 1 < towers.length; i++) {
+      await go(towers[i]);
+      await key('R');
+      const r = await at();
+      await key('L');
+      const l = await at();
+      path.push(`${towers[i].slice(18, 19)}→${r}←${l}`);
+      hops &&= r === towers[i + 1].slice(18, 19) && l === towers[i].slice(18, 19);
     }
-    const present = new Set(towers.map((t) => t.slice(18, 19)));
-    check(towers.length === n && reachedAll && [...visited].every((s) => present.has(s)) && visited.size === n, `[${name}] con ${n} tronos (${state}), el foco llega a cada uno y izquierda y derecha recorren solo los presentes (${[...visited].join(' ')})`);
+    check(towers.length === n && reachedAll && hops && !path.join().includes('!'), `[${name}] con ${n} tronos (${state}), el foco llega a cada uno y → / ← pasan de un trono presente al de al lado (${path.join(' · ')})`);
   }
-  check(towers.length === 2, `[${name}] la partida guiada se juega en una mesa de dos tronos (${towers.map((t) => t.slice(18, 19)).join(' ')})`);
   const plate = () =>
     page.evaluate(() => {
       const tower = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.tower');
@@ -604,14 +618,22 @@ export async function immuneCheck(page: Page, how: 'pad' | 'keys', check: Check)
     platesOk &&= p.iron && p.factor === 0 && p.text.includes(T('ui.mesa.inmune'));
   }
   check(platesOk, `[${name}] al apuntar cada trono se ve su placa «${T('ui.mesa.inmune')}» y ninguna carta lleva sello de factor (${seen.join(' · ')})`);
-  // una carta de corazones elegida, apuntando a CORAZONES: la cuenta dice «Inmune · 0»
-  const heart = await page.evaluate(() => document.querySelector<HTMLElement>('#hand .card.s-H:not(.k-special)')?.dataset.id ?? null);
+  // una carta del palo de un trono presente elegida, apuntando a ese trono: la cuenta dice «Inmune · 0»
+  const pick = await page.evaluate(() => {
+    for (const t of document.querySelectorAll<HTMLElement>('.tower:not([hidden])')) {
+      const c = document.querySelector<HTMLElement>(`#hand .card.s-${t.dataset.suit}:not(.k-special)`);
+      if (c) return { suit: t.dataset.suit!, id: c.dataset.id! };
+    }
+    return null;
+  });
   let line = '';
-  if (heart && (await go(`.handrow .card[data-id="${heart}"]`))) {
+  // la mesa de QA trae un trío ya elegido: se suelta antes (B / Esc deshace la elección)
+  for (let i = 0; i < 4 && (await page.locator('#hand .card.sel').count()); i++) await key('B');
+  if (pick && (await go(`.handrow .card[data-id="${pick.id}"]`))) {
     await key('A');
-    if (await go('.tower[data-suit="H"]')) line = await page.evaluate(() => document.querySelector('#score')?.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+    if (await go(`.tower[data-suit="${pick.suit}"]`)) line = await page.evaluate(() => document.querySelector('#score')?.textContent?.replace(/\s+/g, ' ').trim() ?? '');
   }
-  check(line.includes(T('ui.cuenta.inmune')), `[${name}] con un ♥ elegido y CORAZONES apuntado, la cuenta dice «${T('ui.cuenta.inmune')}» (${line.slice(0, 60) || 'sin cuenta'})`);
+  check(line.includes(T('ui.cuenta.inmune')), `[${name}] con una carta de su palo elegida y su trono apuntado (${pick?.suit ?? '—'}), la cuenta dice «${T('ui.cuenta.inmune')}» (${line.slice(0, 60) || 'sin cuenta'})`);
   await key('B');
 }
 
