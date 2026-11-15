@@ -303,14 +303,17 @@ async function main(): Promise<void> {
       const limit = Math.max(16.7, refresh) + 0.5;
       console.log(`\n${view.name} · refresco en reposo ${refresh} ms (umbral p95 ${limit.toFixed(1)} ms)`);
       const out: Record<string, Medida> = {};
-      const frio: Record<string, { max: number; largos: number }> = {};
+      const frio: Record<string, { max: number; largos: number; largosDetalle?: unknown[] }> = {};
       for (const sc of SCENARIOS) {
         // una pasada en frío, que no cuenta: el perfil de Playwright es nuevo en cada lanzamiento y la GPU
         // compila sus sombreadores la primera vez que ve cada efecto (en un jugador, una vez y a disco)
         await sc.prep(page);
         await page.evaluate(() => (window as unknown as { __fpsSettle(ms: number): Promise<void> }).__fpsSettle(6000));
-        const cold = stats((await sc.run(page)).deltas, 1);
-        frio[sc.name] = { max: cold.max, largos: cold.largos };
+        const coldRun = await sc.run(page);
+        const cold = stats(coldRun.deltas, 1);
+        // V11 (cierre): la primera vez también cuenta. Un fotograma en frío de más de 50 ms es un fallo.
+        frio[sc.name] = { max: cold.max, largos: cold.largos, ...(cold.largos && coldRun.loaf?.length ? { largosDetalle: coldRun.loaf } : {}) };
+        if (cold.largos) fails.push(`[${view.name}] ${sc.label} en frío: ${cold.largos} fotogramas > 50 ms (máx ${cold.max} ms)`);
         await sc.prep(page);
         await page.evaluate(() => (window as unknown as { __fpsSettle(ms: number): Promise<void> }).__fpsSettle(6000));
         const { deltas, reps, loaf } = await sc.run(page);

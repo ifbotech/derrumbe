@@ -285,10 +285,14 @@ export const quake = (power = 0.5, dx = 0, dy = 1) => shake($('.table-screen'), 
 /** Golpe seco: la mesa se congela un instante (60–80 ms) antes de que todo salte. */
 export async function hitstop(power = 0.5): Promise<void> {
   if (settings.calm) return;
+  // V11: se pausan las animaciones que corren en la mesa (las figuras que respiran), una por una. Antes era una
+  // clase con `.hitstop *`, que obligaba a recalcular el estilo de toda la mesa dos veces; en 390×844 el primer
+  // golpe pagaba ese recálculo (forzado por el tajo, que mide la carta) con un fotograma de 50–250 ms.
   const el = $('.table-screen');
-  el?.classList.add('hitstop');
+  const frozen = el ? el.getAnimations({ subtree: true }).filter((a) => a.playState === 'running') : [];
+  frozen.forEach((a) => a.pause());
   await real(60 + 20 * Math.max(0, Math.min(1, power)));
-  el?.classList.remove('hitstop');
+  frozen.forEach((a) => a.playState === 'paused' && a.play());
 }
 
 /** Mueve un elemento de un rectángulo a otro y lo retira (o lo deja donde `keep` diga). */
@@ -564,17 +568,35 @@ export function procBadge(ev: GameEvent): void {
  */
 function warmTable(): void {
   if (!document.body) return;
-  const watch = new MutationObserver(() => {
-    const el = document.querySelector('.table-screen');
-    if (!el) return;
-    watch.disconnect();
-    const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 200));
+  // V11: cada mesa nueva (cada asalto monta su `.table-screen`) prepara su capa; los lacres y el tajo, solo la primera
+  const warmed = new WeakSet<Element>();
+  let first = true;
+  const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 200));
+  const warm = (el: Element) => {
+    if (warmed.has(el)) return;
+    warmed.add(el);
+    const once = first;
+    first = false;
     idle(() => {
       if (settings.calm || !el.isConnected) return;
       // una centésima de píxel: con 0 px el navegador se salta la animación y no prepara la capa
       el.animate([{ transform: 'translate(0px, 0.01px)' }, { transform: 'none' }], { duration: 60 });
-      warmSeals(0);
+      // los lacres, después del temblor y en su propio fotograma: si se posan mientras la mesa sube a su capa,
+      // la capa se prepara con ellos dentro y el primer temblor de verdad la vuelve a pagar entera
+      if (once) window.setTimeout(() => idle(() => warmSeals(0)), 400);
     });
+  };
+  let host: Element | null = null;
+  const watch = new MutationObserver(() => {
+    const el = document.querySelector('.table-screen');
+    if (!el) return;
+    warm(el);
+    // en cuanto se sabe dónde se monta la mesa, se vigila solo ese sitio (sin recorrer todo el documento)
+    if (el.parentElement && el.parentElement !== host) {
+      host = el.parentElement;
+      watch.disconnect();
+      watch.observe(host, { childList: true });
+    }
   });
   watch.observe(document.body, { childList: true, subtree: true });
 }
@@ -611,6 +633,22 @@ function warmSeals(tries: number): void {
   for (const band of document.querySelectorAll<HTMLElement>('.table-screen #hand .card .foil-band'))
     band.animate([{ transform: 'translateX(-160%) rotate(20deg)', opacity: 0 }, { transform: 'translateX(260%) rotate(20deg)', opacity: 0.01 }], { duration: 160 });
   window.setTimeout(() => used.forEach(([w, pool]) => ((w.style.opacity = ''), release(w, pool))), 240);
+  // y el tajo sobre un guardia de verdad (la copia de su figura al tamaño de la mesa), invisible, con las mismas piezas
+  const guard = document.querySelector<HTMLElement>('.table-screen .tower:not([hidden]) .floor-slot .card');
+  if (guard) {
+    const reuse = slashFree.pop();
+    const halves = slashPieces(guard, reuse);
+    if (!reuse) made += halves.length;
+    halves.forEach((p) => {
+      p.style.opacity = '0.01';
+      document.body.appendChild(p);
+      p.animate([{ transform: 'translate(0, 0)' }, { transform: 'translate(1px, 1px) rotate(1deg)' }], { duration: 160 });
+    });
+    window.setTimeout(() => {
+      halves.forEach((p) => ((p.style.opacity = ''), p.getAnimations().forEach((a) => a.cancel()), p.remove()));
+      slashFree.push(halves);
+    }, 240);
+  }
 }
 // la reserva se calienta en cuanto la página pinta su primer fotograma
 requestAnimationFrame(() => requestAnimationFrame(() => (warmUp(), warmTable())));
