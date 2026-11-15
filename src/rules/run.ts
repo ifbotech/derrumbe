@@ -165,10 +165,10 @@ export const BOSSES: Boss[] = [
     id: 'blindaje',
     who: 'El Inquisidor',
     name: 'Guardia de hierro',
-    desc: 'Ningún trono queda Expuesto ni Aturdido, y el Ataque de todos sube {ataque}.',
+    desc: 'Ningún trono queda Aturdido.',
     barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
-    curse: { mark: 'guardias', badge: 'Sin Expuesto ni Aturdido' },
-    apply: (c) => void ((c.noFx = true), eachThreat(c, MON.blindaje.ataque)),
+    curse: { mark: 'guardias', badge: 'Sin Aturdido' },
+    apply: (c) => void (c.noFx = 'sobrecarga'),
   },
   {
     id: 'furia',

@@ -4,6 +4,7 @@ import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameState, applyAction, creat
 import { BOSS, FATIGUE, STAGES, newRun, stageConfig } from '../src/rules/run';
 import { SPECIAL } from '../src/rules/specials';
 import { TOOL, TOOLS } from '../src/rules/tools';
+import { BALANCE } from '../src/rules/balance-config';
 
 const card = (id: string): Card => ({ id, suit: id[0] as Card['suit'], rank: Number(id.slice(1)) });
 const cfgWith = (extra: Partial<Config> = {}): Config => ({ ...structuredClone(DEFAULT_CONFIG), ...extra });
@@ -50,9 +51,12 @@ describe('fatiga de cimientos', () => {
     expect(DEFAULT_CONFIG.fatigueStart).toBeUndefined();
   });
 
-  it('ninguna obra de la campaña alarga los pisos: la dureza va por la amenaza', () => {
-    expect(Math.max(...STAGES.map((s) => s.hp))).toBeLessThan(7);
-    expect(STAGES[STAGES.length - 1].threat).toBeGreaterThan(STAGES[0].threat + 3);
+  // V11-C: los asaltos 1–3 enseñan (Ataque bajo) y la dureza llega en el 4 y el 5; la Vida ya no se mantiene baja,
+  // porque el Asedio fuerte recorta la cola de turnos
+  it('la dureza crece: el Ataque de los asaltos 1 a 3 queda por debajo del de los asaltos 4 y 5', () => {
+    const early = Math.max(...STAGES.slice(0, 3).map((s) => s.threat));
+    for (const st of STAGES.slice(3)) expect(st.threat).toBeGreaterThan(early);
+    expect(Math.max(...STAGES.map((s) => s.hp))).toBeLessThan(10);
   });
 });
 
@@ -77,7 +81,7 @@ describe('aguante: la defensa se cobra en daño', () => {
     const cfg = cfgWith();
     const low = previewStrike(table(cfgWith(), ['bastion'], { wall: 3 }), [card('S5')], 'D').res;
     const high = previewStrike(table(cfg, ['bastion'], { wall: 4 }), [card('S5')], 'D').res;
-    expect(high).toBe(low + 2);
+    expect(high).toBe(low + BALANCE.reliquias.bastion.multi);
   });
 
   it('Contragolpe devuelve el triple de lo que el muro frena entero, y nada si la sirena pasa', () => {
@@ -115,14 +119,14 @@ describe('jefes de la 4.0', () => {
     return cfg;
   };
 
-  it('El Inquisidor: ningún trono queda Expuesto ni Aturdido, y el Ataque de todos sube', () => {
+  it('El Inquisidor (V11-C): ningún trono queda Aturdido; Expuesto sigue y el Ataque no cambia', () => {
     const cfg = boss('blindaje');
     const s = table(cfg);
     const calm = table(cfgWith());
-    expect(threatOf(s, s.towers.S)).toBe(threatOf(calm, calm.towers.S) + 1);
+    expect(threatOf(s, s.towers.S)).toBe(threatOf(calm, calm.towers.S));
     strike(s, [card('C2'), card('C3'), card('C4')], 'S'); // un solo palo: sin el decreto dejaría Expuesto
-    strike(s, [card('S3'), card('H4'), card('D5')], 'C'); // tres palos: sin el decreto dejaría Aturdido
-    expect(s.towers.S.fx).toEqual({});
+    strike(s, [card('S3'), card('H4'), card('D5')], 'C'); // tres palos: sin el decreto dejaría Aturdido (no lo deja)
+    expect(s.towers.S.fx).toEqual({ fractura: true }); // un solo palo: Expuesto, como siempre
     expect(s.towers.C.fx).toEqual({});
   });
 
@@ -130,7 +134,7 @@ describe('jefes de la 4.0', () => {
     const cfg = boss('inestable');
     cfg.fatigueStart = 8;
     BOSS.inestable.apply(cfg);
-    expect(cfg.fatigueStart).toBe(5);
+    expect(cfg.fatigueStart).toBe(8 - BALANCE.monarcas.inestable.antes);
     const s = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
     const rough = strike(s, [card('C10'), card('H10')], 'D'); // pareja sin picas: tira la J con daño de sobra y no perfora
     expect(rough.fallen).toBeGreaterThan(0);
@@ -144,7 +148,7 @@ describe('jefes de la 4.0', () => {
 
   it('La Ventisca limita el muro sin anularlo', () => {
     const cfg = boss('intemperie');
-    expect(cfg.wallCap).toBeGreaterThanOrEqual(3);
+    expect(cfg.wallCap).toBeGreaterThanOrEqual(2);
     expect(cfg.wallCap).toBeLessThan(DEFAULT_CONFIG.wallCap);
   });
 });
@@ -162,7 +166,7 @@ describe('partida clásica en cuadrilla', () => {
       const ev = out.events.find((e) => e.e === 'collapse');
       return ev && ev.e === 'collapse' ? ev.loss : before - out.state.integrity;
     };
-    expect(loss(1)).toBe(DIFFICULTY.obra.collapseLoss);
+    expect(loss(1)).toBe(DIFFICULTY.obra.collapseLoss! - (DIFFICULTY.obra.collapseRelief?.[0] ?? 0));
     expect(loss(4)).toBeLessThan(loss(1));
     expect(loss(2)).toBeGreaterThanOrEqual(loss(3));
   });

@@ -9,6 +9,8 @@
 //            HPX=1.2 LATE=0.3 HPS=1.5,1.8,… THR=-1,-1,0,… (mandos de ajuste de las obras)
 //            UPS=caja_sismo,vale,legendarias (con gremio lleno, solo estas mejoras)
 //            GIVE=prisma (herramienta de regalo al empezar, para medir lo que vale)
+// el parche del afinador (BALANCE_PATCH) va antes que las reglas: los módulos de src/rules leen BALANCE al cargarse
+import './balance-patch';
 import { DECKS, LAST_STAGE } from '../src/rules/run';
 import { playCampaign } from './lab';
 

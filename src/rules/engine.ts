@@ -139,8 +139,8 @@ export interface Config {
   expuestoMult?: number;
   /** Los golpes de 3 palos o más también dejan Expuesto (Caldero). */
   polyExpuesto?: boolean;
-  /** Ningún trono queda Expuesto ni Aturdido (decreto del Inquisidor). */
-  noFx?: boolean;
+  /** Ningún trono queda en ese estado (true: en ninguno). El decreto del Inquisidor quita Aturdido. */
+  noFx?: boolean | keyof TowerFx;
   /** Los sellos de las cartas se activan dos veces. */
   sealTwice?: boolean;
   /** Las cartas descartadas se agotan (no vuelven esta obra) y cargan Fuerza para el próximo golpe. */
@@ -490,7 +490,7 @@ interface Tally {
 
 /** Deja un estado en un trono en pie (si no lo tiene ya y la mesa lo permite) y lo anuncia. */
 function setFx(t: Tower, fx: keyof TowerFx, events: GameEvent[], cfg?: Config): void {
-  if (!standing(t) || t.fx[fx] || cfg?.noFx) return;
+  if (!standing(t) || t.fx[fx] || cfg?.noFx === true || cfg?.noFx === fx) return;
   t.fx[fx] = true;
   events.push({ e: 'state', tower: t.suit, fx, on: true });
 }

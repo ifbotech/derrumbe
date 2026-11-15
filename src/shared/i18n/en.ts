@@ -174,8 +174,8 @@ const MONARCAS: Record<string, MonarcaEn> = {
   blindaje: {
     nombre: 'The Inquisitor',
     decreto: 'Iron Guard',
-    desc: "No throne is ever Exposed or Stunned, and every throne's Attack rises by {ataque}.",
-    badge: 'No Exposed or Stunned',
+    desc: 'No throne is ever Stunned.',
+    badge: 'Never Stunned',
     entrada: 'My guards pray with their eyes open. No one surprises them.',
     contraataque: 'Confess your hand, heretic. A fierce card never lies.',
     caida: 'Heresy! They beat me with marked cards.',

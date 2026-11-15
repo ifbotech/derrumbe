@@ -1,13 +1,15 @@
 // Constitución anticomplejidad del juego. Si un cambio rompe una de estas pruebas, el cambio está mal:
 // no se sube el límite, se simplifica otra cosa.
 //
-//   · como mucho 6 palabras clave y 56 reliquias (TOOLS), con identificadores únicos
+//   · como mucho 5 palabras clave (V11) y 56 reliquias (TOOLS), con identificadores únicos
 //   · toda descripción cabe en 115 caracteres y no inventa palabras clave
 //   · el informe publicado del laboratorio (scripts/meta-report.json) es de estas reglas, no trae avisos,
-//     ningún asalto del 4 al 8 pasa de 19 turnos en el percentil 95 y los niveles 1 y 8 están en rango
+//     ningún asalto (los cinco) pasa de 15 turnos en el percentil 95 con ninguna baraja, y los Reinados 1 y 8
+//     están en rango y bajan del 1 al 8 (objetivos de scripts/objetivos.ts, SPECS/V11.md 1.10)
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fingerprint } from '../scripts/lab';
+import { OBJETIVOS } from '../scripts/objetivos';
 import { FORMATION_NAME, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { KEYWORDS, TERMS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FATIGUE, TAGS, UPGRADES } from '../src/rules/run';
@@ -113,8 +115,7 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     expect(x, what).toBeLessThanOrEqual(hi);
   };
 
-  // V11-A: la huella vuelve en el bloque C
-  it.skip('es un informe completo y de estas mismas reglas (si no, vuelve a lanzar npm run analyze:meta)', () => {
+  it('es un informe completo y de estas mismas reglas (si no, vuelve a lanzar npm run analyze:meta)', () => {
     expect(r.quick).toBe(false);
     expect(r.rules, 'el informe se generó con otras reglas: npm run analyze:meta').toBe(fingerprint());
     expect(r.tools.map((t) => t.id)).toEqual(TOOLS.map((t) => t.id));
@@ -126,28 +127,27 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     expect(r.flags).toEqual([]);
   });
 
-  it('ninguna obra de la 4 a la 8 pasa de 19 turnos en el percentil 95, con ninguna de las seis barajas', () => {
+  it('ningún asalto de los cinco pasa de 15 turnos en el percentil 95, con ninguna de las seis barajas', () => {
     expect(r.pacingByDeck.map((d) => d.deck).sort()).toEqual(DECKS.map((d) => d.id).sort());
     for (const d of r.pacingByDeck) {
       expect(d.n, d.name).toBeGreaterThan(0);
-      expect(d.worstP95, d.name).toBeLessThanOrEqual(19);
+      expect(d.worstP95, d.name).toBeLessThanOrEqual(15);
     }
-    for (const p of r.pacing.filter((x) => x.stage >= 4)) expect(p.p95, `obra ${p.stage}`).toBeLessThanOrEqual(19);
+    expect(r.pacing.map((p) => p.stage)).toEqual([1, 2, 3, 4, 5]);
+    for (const p of r.pacing) expect(p.p95, `asalto ${p.stage}`).toBeLessThanOrEqual(15);
   });
 
-  it('el nivel 1 y el nivel 8 están en rango, y del 5 al 8 cada nivel gana menos que el anterior', () => {
-    const [l1, , , , l5, l6, l7, l8] = r.winrate.levels;
-    between(l1.vacio, 24, 30, 'nivel 1, gremio vacío');
-    between(l1.lleno, 40, 48, 'nivel 1, gremio lleno');
-    between(l8.vacio, 6, 9, 'nivel 8, gremio vacío');
-    between(l8.lleno, 12, 17, 'nivel 8, gremio lleno');
-    for (const [a, b] of [
-      [l5, l6],
-      [l6, l7],
-      [l7, l8],
-    ]) {
-      expect(b.vacio, `niveles ${a.level} → ${b.level}, gremio vacío`).toBeLessThan(a.vacio);
-      expect(b.lleno, `niveles ${a.level} → ${b.level}, gremio lleno`).toBeLessThan(a.lleno);
+  it('el Reinado 1 y el Reinado 8 están en rango, y del 1 al 8 cada Reinado gana menos que el anterior', () => {
+    const L = r.winrate.levels;
+    const [l1, l8] = [L[0], L[7]];
+    const O = OBJETIVOS;
+    between(l1.vacio, O.reinado1.vacio[0], O.reinado1.vacio[1], 'Reinado 1, Orden vacía');
+    between(l1.lleno, O.reinado1.lleno[0], O.reinado1.lleno[1], 'Reinado 1, Orden llena');
+    between(l8.vacio, O.reinado8.vacio[0], O.reinado8.vacio[1], 'Reinado 8, Orden vacía');
+    between(l8.lleno, O.reinado8.lleno[0], O.reinado8.lleno[1], 'Reinado 8, Orden llena');
+    for (const [a, b] of L.slice(1).map((b, i) => [L[i], b])) {
+      expect(b.vacio, `Reinados ${a.level} → ${b.level}, Orden vacía`).toBeLessThan(a.vacio);
+      expect(b.lleno, `Reinados ${a.level} → ${b.level}, Orden llena`).toBeLessThan(a.lleno);
     }
   });
 

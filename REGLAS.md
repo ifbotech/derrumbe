@@ -17,9 +17,9 @@ Se gana o se pierde en equipo. El Asalto único también se puede jugar en mesa 
 
 | Guardia | Vida | Ataque |
 |---|---|---|
-| Sota (J) | 124 | ⚔ 3 |
-| Reina (Q) | 177 | ⚔ 5 |
-| Rey (K) | 231 | ⚔ 7 |
+| Sota (J) | 150 | ⚔ 3 |
+| Reina (Q) | 215 | ⚔ 6 |
+| Rey (K) | 280 | ⚔ 8 |
 
 Cada palo es una casa de la corte: ♠ **PICAS**, ♦ **DIAMANTES**, ♥ **CORAZONES**, ♣ **TRÉBOLES**.
 
@@ -94,7 +94,7 @@ Los dos desaparecen si cae el guardia.
 ### Reglas especiales
 
 - **Comodín · Motín**: se juega solo sobre un trono. Ese trono queda **Aturdido** y este turno no hay Contraataque. El comodín no vuelve en este asalto.
-- **Asedio final**: ningún asalto dura para siempre. En campaña, desde el turno 9 de cada asalto y cada 2 turnos, el asedio sube un nivel; cada nivel da **+4 de Daño** a todos los golpes y **+1 de Ataque** a todos los tronos. El asalto se acelera en los dos sentidos: pegas más y te pegan más. La mesa avisa tres turnos antes. En conjura de varios empieza más tarde, en proporción a lo que aguantan los guardias; en el Asalto único, en el turno 33 y cada 3 turnos.
+- **Asedio final**: ningún asalto dura para siempre. En campaña, desde el turno 10 de cada asalto y cada 2 turnos, el asedio sube un nivel; cada nivel da **+40 de Daño** a todos los golpes y **+1 de Ataque** a todos los tronos. El asalto se acelera en los dos sentidos: pegas más y te pegan más. La mesa avisa tres turnos antes. En conjura de varios empieza más tarde, en proporción a lo que aguantan los guardias; en el Asalto único, en el turno 30 y cada 3 turnos.
 - **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo, pero pierdes **5** de Vida (el Escudo no lo frena). Cada vuelta completa de la conjura al Mazo lo encarece en 1: los asaltos no se pueden estirar sin fin.
 - **As cómplice**: un As forma jugada con **cualquier otra carta** (×2 de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar Escudo, uno de ♥ para curar, uno de ♠ para perforar.
 - **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *Manga doble* añade un segundo hueco. La partida guiada te enseña a usarla en su tercer paso.
@@ -102,7 +102,7 @@ Los dos desaparecen si cae el guardia.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
 - **Victoria** (*Corte vencida*): todos los tronos caídos (en los primeros asaltos de la campaña hay menos de cuatro). **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
 - Modo **BRUTAL** (Asalto único): 16 de Vida y el Mazo agotado quita 6.
-- **Asalto único en conjura de varios**: lo que quita el Mazo agotado se ajusta a cuántos jugáis, porque con más manos el Mazo se acaba antes: 5 con 1, 6 con 2, 5 con 3, 4 con 4.
+- **Asalto único en conjura de varios**: lo que quita el Mazo agotado se ajusta a cuántos jugáis, porque con más manos el Mazo se acaba antes: 4 con 1, 5 con 2, 5 con 3, 3 con 4.
 
 ## Campaña
 
@@ -112,11 +112,11 @@ Los primeros asaltos tienen menos tronos: los palos que faltan se sortean al emp
 
 | Asalto | Sala | Tronos | Guardias por trono | Vida | Ataque | Monarca | Atajo |
 |---|---|---|---|---|---|---|---|
-| 1 | El Puente levadizo | 2 | Sota | ×3,1 | +2 | — | — |
-| 2 | El Patio de armas | 3 | Sota, Reina | ×2,7 | +4 | sí | — |
-| 3 | La Cripta | 4 | Sota, Reina | ×3 | +4 | — | sí |
-| 4 | La Galería real | 4 | Sota, Reina, Rey | ×3,6 | +5 | sí | — |
-| 5 | El Salón del Trono | 4 | Sota, Reina, Rey | ×5 | +6 | sí, Rey Tirano | — |
+| 1 | El Puente levadizo | 2 | Sota | ×7,5 | +2 | — | — |
+| 2 | El Patio de armas | 3 | Sota, Reina | ×5,6 | +2 | sí | — |
+| 3 | La Cripta | 4 | Sota, Reina | ×5,72 | +3 | — | sí |
+| 4 | La Galería real | 4 | Sota, Reina, Rey | ×5,72 | +5 | sí | — |
+| 5 | El Salón del Trono | 4 | Sota, Reina, Rey | ×7,28 | +5 | sí, Rey Tirano | — |
 
 En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
@@ -158,10 +158,10 @@ El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuá
 | El Rey de Dos Caras | Doble Contraataque | Hay 2 Contraataques cada turno, pero cada uno ataca un 40 % menos. |
 | El Usurero | Escasez | Jugáis con 1 carta menos en la mano. |
 | La Dama del Cáliz | Cáliz envenenado | Tus ♥ no curan. |
-| La Reina Helada | Escarcha | El Escudo no puede pasar de 4. |
-| El Inquisidor | Guardia de hierro | Ningún trono queda Expuesto ni Aturdido, y el Ataque de todos sube 1. |
-| El Verdugo | Furia | El Ataque de todos los tronos sube 2. |
-| El Relojero | Arena rápida | El Asedio final empieza 3 turnos antes, y cada guardia abatido sin Golpe exacto te quita 1 de Vida. |
+| La Reina Helada | Escarcha | El Escudo no puede pasar de 2. |
+| El Inquisidor | Guardia de hierro | Ningún trono queda Aturdido. |
+| El Verdugo | Furia | El Ataque de todos los tronos sube 3. |
+| El Relojero | Arena rápida | El Asedio final empieza 4 turnos antes, y cada guardia abatido sin Golpe exacto te quita 1 de Vida. |
 
 ### El Botín
 
@@ -171,7 +171,7 @@ Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda
 
 Lo atiende el Tratante.
 
-- **Reliquias** (su precio depende de la rareza: común ~5, rara ~8, noble ~11, regia ~15). Se pueden vender por la mitad.
+- **Reliquias** (su precio depende de la rareza: común ~4, rara ~6, noble ~8, regia ~11). Se pueden vender por la mitad.
 - **Sobre lacrado**: lo abres ahí mismo y te quedas con 1 de 3.
 - **Sobre a ciegas**: una especial sin verla, más barata.
 - **Mesa de lacre**: pone el sello de lacre o el acabado en oferta sobre la carta de tu Mazo que elijas.
@@ -202,7 +202,7 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
 
 ### Trono infinito, semillas y Reinados
 
-- Después del asalto 5 puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un 45 % más resistente que el anterior (el primero, ×7,3).
+- Después del asalto 5 puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un 45 % más resistente que el anterior (el primero, ×10,6).
 - **Semilla**: la misma semilla y las mismas decisiones dan exactamente la misma campaña. Puedes escribir la tuya al empezar.
 - **Asalto diario**: usa la fecha como semilla, con la baraja de la conjura, en el Reinado 1 y sin nada de la Orden. Igual para todo el mundo.
 - **Reinados**: hay 8. Ganar una campaña abre el Reinado siguiente; cada uno añade **un giro** a todos los anteriores y da un 25 % más de Coronas.
@@ -210,10 +210,10 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
 | Reinado | Nombre | Giro |
 |---|---|---|
 | 1 | Reinado de paz | Las reglas de siempre. |
-| 2 | Corazas finas | Todos los guardias tienen un 10 % más de Vida. |
+| 2 | Corazas finas | Todos los guardias tienen un 15 % más de Vida. |
 | 3 | Impuesto real | Todo en la Taberna cuesta 2 de oro más. |
 | 4 | Reyes acorazados | En los asaltos con monarca, los Reyes tienen un 25 % más de Vida. |
-| 5 | Rey colérico | El Ataque de los Reyes sube 1. |
+| 5 | Rey colérico | El Ataque de los Reyes sube 2. |
 | 6 | Heridas viejas | Tienes 1 punto menos de Vida. |
 | 7 | Guardia de noche | El Ataque de las Sotas y las Reinas sube 1. |
 | 8 | Puertas selladas | Solo en el asalto 5, el Ataque de los cuatro tronos sube 1. |
@@ -310,7 +310,7 @@ Llevas hasta **6 reliquias**, y se activan **de izquierda a derecha**. Puedes re
 | Ariete | Rara | +D suma Daño | +4 de Daño por cada punto de Escudo en pie. | arcón de la Orden |
 | Rodela de púas | Rara | • pasiva | Si el Escudo frena entero un Contraataque, su trono recibe 3 × lo frenado. Ej.: frena 4 → recibe 12. | arcón de la Orden |
 | Copa rebosante | Rara | • pasiva | Escudo que no cabe: cada 2 curan 1. Cura que no cabe: +3 de Daño por punto a tu próximo golpe. | arcón de la Orden |
-| Baluarte | Noble | +M suma Multi | +2 de Multi si tu Escudo está a la mitad de su tope o por encima. | arcón de la Orden |
+| Baluarte | Noble | +M suma Multi | +1 de Multi si tu Escudo está a la mitad de su tope o por encima. | arcón de la Orden |
 
 ## Sellos de lacre y acabados
 
@@ -369,11 +369,11 @@ No tienen palo ni número: acompañan a cualquier golpe (hasta 2 por golpe) o se
 | Baraja | Cómo cambia la campaña | Se desbloquea con |
 |---|---|---|
 | Baraja de la conjura | La de siempre: 40 cartas, 2 Comodines y un Sobre lacrado de 3 especiales. | — |
-| Baraja negra | Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +5 de Vida (+Baluarte con su arcón). | Adiós, carcelero |
-| Baraja del prestamista | +12 de oro inicial y el interés rinde el doble, pero tienes 1 de Vida menos. | Medio castillo |
-| Baraja de ases | Ocho ases y ningún 2: más Ases cómplices y más pegada, pero tienes 4 de Vida menos. | Fin del reinado |
-| Baraja corta | Sin doses ni treses: golpes gordos, el Mazo se agota antes y tienes 6 de Vida menos. +3 de oro inicial. | De un solo golpe |
-| Baraja del caos | Un solo Comodín, pero el Sobre lacrado inicial trae 5 cartas especiales. | Coleccionista |
+| Baraja negra | Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +3 de Vida (+Baluarte con su arcón). | Adiós, carcelero |
+| Baraja del prestamista | +4 de oro inicial y el interés rinde el doble, pero tienes 1 de Vida menos. | Medio castillo |
+| Baraja de ases | Ocho ases y ningún 2: más Ases cómplices y más pegada, pero tienes 2 de Vida menos. | Fin del reinado |
+| Baraja corta | Sin doses ni treses: golpes gordos, el Mazo se agota antes y tienes 5 de Vida menos. +3 de oro inicial. | De un solo golpe |
+| Baraja del caos | Un solo Comodín, pero el Sobre lacrado inicial trae 6 cartas especiales. | Coleccionista |
 
 ## La Orden
 
@@ -391,7 +391,7 @@ Ganes o pierdas, cada campaña deja **Coronas**. En la Orden se gastan en **abri
 | Cristalero real | La Mesa de lacre también ofrece Lacre policromo y Cristal maldito. | 6 ✦ |
 | Favor del Tratante | Un «Renovar mesa» gratis en cada Taberna, por nivel. | 4 ✦ · 8 ✦ |
 | Puesto grande | +1 reliquia en oferta en cada Taberna, por nivel. | 8 ✦ · 12 ✦ |
-| Bolsa de la Orden | +2 de oro inicial por nivel. | 3 ✦ · 6 ✦ |
+| Bolsa de la Orden | +4 de oro inicial por nivel. | 3 ✦ · 6 ✦ |
 | Cartógrafo | Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2. | 6 ✦ |
 
 ### Archivo de crónicas y copia de seguridad

@@ -61,7 +61,6 @@ export interface BalanceConfig {
     doble: { contraataques: number; ataque: number };
     escasez: { cartas: number };
     intemperie: { escudoTope: number };
-    blindaje: { ataque: number };
     furia: { ataque: number };
     inestable: { antes: number; vida: number };
   };
@@ -169,6 +168,7 @@ export const AFINABLES: Afinable[] = [
   { ruta: 'asedio.start', entero: true },
   { ruta: 'asedio.dano', entero: true },
   { ruta: 'reinados.corazas', entero: false },
+  { ruta: 'reinados.reyesAcorazados', entero: false },
   { ruta: 'cuadrilla.1', entero: false },
   { ruta: 'cuadrilla.2', entero: false },
   { ruta: 'cuadrilla.3', entero: false },

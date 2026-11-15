@@ -221,60 +221,57 @@ Es para pruebas con gente de confianza: no hay cuentas, ni clasificaciones, ni f
 ## Balance
 
 <!-- balance:inicio -->
-Medido con `npm run analyze:meta`: **55.640 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Taberna, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
+Medido con `npm run analyze:meta`: **53.240 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Taberna, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
 
 Campañas ganadas por Reinado (baraja de la conjura, 1500 campañas por celda). Objetivos: Reinado 1 entre el 24 y el 30 % con la Orden vacía y entre el 40 y el 48 % con la Orden llena; Reinado 8 entre el 6 y el 9 % con la Orden vacía y entre el 12 y el 17 % con la Orden llena; y cada Reinado, más difícil que el anterior.
 
 | Reinado | Orden vacía | Orden llena |
 |---|---|---|
-| 1 · Reinado de paz | 29,7 % | 45,1 % |
-| 2 · Corazas finas | 25,6 % | 41,5 % |
-| 3 · Impuesto real | 23,5 % | 35,9 % |
-| 4 · Reyes en guardia | 18,3 % | 34,3 % |
-| 5 · Rey colérico | 14,1 % | 29,1 % |
-| 6 · Heridas viejas | 12,3 % | 24,9 % |
-| 7 · Guardia de noche | 7,9 % | 16,9 % |
-| 8 · Puertas selladas | 6,8 % | 15,3 % |
+| 1 · Reinado de paz | 29,2 % | 43,4 % |
+| 2 · Corazas finas | 21,9 % | 37,5 % |
+| 3 · Impuesto real | 20,3 % | 32,1 % |
+| 4 · Reyes acorazados | 17,5 % | 29 % |
+| 5 · Rey colérico | 14,4 % | 25,3 % |
+| 6 · Heridas viejas | 13,1 % | 23,2 % |
+| 7 · Guardia de noche | 8,1 % | 16 % |
+| 8 · Puertas selladas | 6,5 % | 13,5 % |
 
 Por baraja inicial (Reinado 1, 1500 campañas por celda). Objetivo: todas entre el 24 y el 31 % sin la Orden y entre el 40 y el 45 % con ella.
 
 | Baraja | Orden vacía | Orden llena | Lo que suma la Orden |
 |---|---|---|---|
-| Baraja de la conjura | 29,7 % | 45,1 % | +15,4 |
-| Baraja negra | 29,3 % | 45,1 % | +15,8 |
-| Baraja del prestamista | 28,7 % | 43,3 % | +14,6 |
-| Baraja de ases | 26,3 % | 41,6 % | +15,3 |
-| Baraja corta | 29,6 % | 42,5 % | +12,9 |
-| Baraja del caos | 28 % | 44 % | +16 |
+| Baraja de la conjura | 29,2 % | 43,4 % | +14,2 |
+| Baraja negra | 29,9 % | 43,2 % | +13,3 |
+| Baraja del prestamista | 29,8 % | 41,3 % | +11,5 |
+| Baraja de ases | 32,1 % | 41,9 % | +9,8 |
+| Baraja corta | 30,7 % | 42,8 % | +12,1 |
+| Baraja del caos | 29,7 % | 44,4 % | +14,7 |
 
-Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media 14,9 %). Objetivo: todos entre 0,8× y 1,3× de la media.
+Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media 23,9 %). Objetivo: todos entre 0,8× y 1,3× de la media.
 
 | Monarca | Letalidad | Frente a la media |
 |---|---|---|
-| El Rey de Dos Caras | 15 % | ×1,01 |
-| El Usurero | 16,4 % | ×1,1 |
-| La Dama del Cáliz | 13,6 % | ×0,91 |
-| La Reina Helada | 14 % | ×0,94 |
-| El Inquisidor | 15,9 % | ×1,07 |
-| El Verdugo | 15 % | ×1,01 |
-| El Relojero | 14,4 % | ×0,97 |
+| El Rey de Dos Caras | 24 % | ×1 |
+| El Usurero | 21,8 % | ×0,91 |
+| La Dama del Cáliz | 23,5 % | ×0,98 |
+| La Reina Helada | 24,1 % | ×1,01 |
+| El Inquisidor | 29,8 % | ×1,25 |
+| El Verdugo | 24,2 % | ×1,01 |
+| El Relojero | 20,1 % | ×0,84 |
 
 Turnos por asalto. Objetivo: asalto 1 de 5 a 7 turnos de mediana (P95 ≤ 10); asaltos 2 y 3 de 8 a 10 (P95 ≤ 15); asaltos 4 a 8 de 9 a 13 (P95 ≤ 19), con cualquier baraja.
 
 | Asalto | Mediana | P95 |
 |---|---|---|
 | 1 · El Puente levadizo | 6 | 9 |
-| 2 · El Patio de armas | 8 | 11 |
-| 3 · La Armería | 9 | 12 |
-| 4 · Las Cocinas | 11 | 15 |
-| 5 · La Capilla | 11 | 17 |
-| 6 · La Biblioteca | 11 | 16 |
-| 7 · La Galería de espejos | 11 | 17 |
-| 8 · El Salón del Trono | 11 | 17 |
+| 2 · El Patio de armas | 9 | 12 |
+| 3 · La Cripta | 10 | 13 |
+| 4 · La Galería real | 10 | 14 |
+| 5 · El Salón del Trono | 10 | 15 |
 
-Peor percentil 95 de los asaltos 4 a 8, por baraja: de la conjura 18 · negra 18 · del prestamista 18 · de ases 17 · corta 16 · del caos 17.
+Peor percentil 95 de los asaltos 4 a 8, por baraja: de la conjura 15 · negra 15 · del prestamista 15 · de ases 15 · corta 14 · del caos 15.
 
-Asalto único (1500 partidas por celda; objetivo 58–65 %): 1 jugador 59,3 % · 2 jugadores 58,5 % · 3 jugadores 64,5 % · 4 jugadores 63,1 %.
+Asalto único (1500 partidas por celda; objetivo 58–65 %): 1 jugador 62,5 % · 2 jugadores 63,6 % · 3 jugadores 59,5 % · 4 jugadores 64,3 %.
 
 El informe no deja ningún aviso: todos los objetivos se cumplen en la muestra.
 <!-- balance:fin -->

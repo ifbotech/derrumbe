@@ -66,8 +66,8 @@ describe('la maldición a la vista', () => {
     expect(cfg('doble').sirenCount).toBe(Number(BOSS.doble.curse.badge.match(/\d+/)![0]));
     expect(DEFAULT_CONFIG.handSize[1] - cfg('escasez').handSize[1]).toBe(Number(BOSS.escasez.curse.badge.match(/\d+/)![0]));
     expect(cfg('intemperie').wallCap).toBe(Number(BOSS.intemperie.curse.badge.match(/\d+/)![0]));
-    expect(cfg('blindaje').noFx).toBe(true);
-    expect(BOSS.blindaje.curse.badge).toBe('Sin Expuesto ni Aturdido');
+    expect(cfg('blindaje').noFx).toBe('sobrecarga');
+    expect(BOSS.blindaje.curse.badge).toBe('Sin Aturdido');
     expect(cfg('furia').floorThreat[11] - DEFAULT_CONFIG.floorThreat[11]).toBe(Number(BOSS.furia.curse.badge.match(/\d+/)![0]));
     const c = { ...DEFAULT_CONFIG, fatigueStart: 8 };
     BOSS.inestable.apply(c);

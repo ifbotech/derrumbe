@@ -18,12 +18,15 @@ const copia = (name: string) => {
   return p;
 };
 
-/** Objetivo de juguete: el «Reinado 1» gana 10 × asaltos.0.hp − 10 %, y quiere entre 24 y 30 (o lo que se pida). */
+/**
+ * Objetivo de juguete: el «Reinado 1» gana 10 × h − 10 %, con h = asaltos.0.hp escalado para que `base` valga 3,93
+ * (así sirve con cualquier punto de partida del archivo), y quiere entre 24 y 30 (o lo que se pida).
+ */
 function juguete(lo = 24, hi = 30, base = 3.93): { medir: Medidor; vistos: Record<string, number>[] } {
   const vistos: Record<string, number>[] = [];
   const medir: Medidor = async (patch) => {
     vistos.push(patch);
-    const hp = patch['asaltos.0.hp'] ?? base;
+    const hp = ((patch['asaltos.0.hp'] ?? base) / base) * 3.93;
     const v = Math.round((10 * hp - 10) * 10) / 10;
     const c: Comprobacion = { id: 'reinado1.vacio', texto: `juguete ${v}`, ok: v >= lo && v <= hi, partes: [{ valor: v, lo, hi }] };
     return [c];
@@ -90,12 +93,14 @@ describe('candidatos y tope de ±15 %', () => {
 
 describe('propone, no aplica', () => {
   const args = (...a: string[]) => [...a, '--minutos=1'];
+  /** asaltos.0.hp del archivo real: el afinador parte de él. */
+  const HP0 = getPath(JSON.parse(readFileSync(REAL, 'utf8')), 'asaltos.0.hp');
 
   it('sin --aplicar, balance-config.json no cambia (misma SHA-256) y la propuesta queda escrita', async () => {
     const cfg = copia('sin-aplicar');
     const out = join(dir, 'sin-aplicar');
     const antes = sha256(cfg);
-    const { medir } = juguete(24, 28);
+    const { medir } = juguete(24, 28, HP0);
     const p = (await ejecutar({ args: args(), configPath: cfg, outDir: out, medir, log: () => {} })) as Propuesta;
     expect(sha256(cfg)).toBe(antes);
     expect(p.config).toBe(antes);
@@ -108,7 +113,7 @@ describe('propone, no aplica', () => {
   it('con --aplicar, escribe solo los campos de la propuesta', async () => {
     const cfg = copia('aplicar');
     const out = join(dir, 'aplicar');
-    const { medir } = juguete(24, 28);
+    const { medir } = juguete(24, 28, HP0);
     await ejecutar({ args: args(), configPath: cfg, outDir: out, medir, log: () => {} });
     const antes = JSON.parse(readFileSync(cfg, 'utf8'));
     const escritos = (await ejecutar({ args: ['--aplicar'], configPath: cfg, outDir: out, log: () => {} })) as string[];

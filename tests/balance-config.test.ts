@@ -74,7 +74,7 @@ describe('balance-config.json: esquema y rangos', () => {
     expect(m.doble.ataque).toBeLessThan(1);
     expect(m.escasez.cartas).toBeGreaterThanOrEqual(1);
     expect(m.intemperie.escudoTope).toBeGreaterThanOrEqual(1);
-    for (const v of [m.blindaje.ataque, m.furia.ataque, m.inestable.antes, m.inestable.vida]) expect(ent(v) && v >= 1).toBe(true);
+    for (const v of [m.furia.ataque, m.inestable.antes, m.inestable.vida]) expect(ent(v) && v >= 1).toBe(true);
   });
 
   it('La Taberna, el cobro y la Orden: precios ≥ 0, enteros; pesos > 0', () => {
@@ -231,8 +231,9 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(usurero.handSize[2]).toBe(B.mesa.handSize[2] - B.monarcas.escasez.cartas);
     const inq = base();
     run.BOSS.blindaje.apply(inq);
-    expect(inq.noFx).toBe(true);
-    expect(inq.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.monarcas.blindaje.ataque);
+    expect(inq.noFx).toBe('sobrecarga');
+    // V11-C: el Inquisidor solo quita los estados (sin Ataque extra)
+    expect(inq.floorThreat[11]).toBe(B.mesa.floorThreat[11]);
     const rel = { ...base(), fatigueStart: 20 };
     run.BOSS.inestable.apply(rel);
     expect(rel.fatigueStart).toBe(20 - B.monarcas.inestable.antes);
