@@ -117,7 +117,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   line('palo', 'El poder del palo', 'Juega el <b>6♣</b> contra PICAS: los ♣ te dan Escudo.', 'cards', (_v, ev) => sawPower(ev), ['C6'], 'S'),
   line('inmune', 'Trono Inmune', 'Tus ♥ no hacen nada a CORAZONES: <b>8♥</b> a PICAS.', { ui: 'inmune' }, dodgedImmune, ['H8'], 'S'),
   line('manga', 'La Manga', 'Guarda el <b>9♦</b> en La Manga para después.', { ui: 'manga' }, (_v, ev) => ev.some((e) => e.e === 'stash' && !!e.card), ['D9']),
-  line('cuenta', 'La cuenta', 'Pareja de <b>7</b> a CORAZONES: Daño × Multi = Golpe.', { ui: 'cuenta' }, (_v, ev) => (played(ev)?.cards.length ?? 0) >= 2 && ev.some((e) => e.e === 'impact'), ['D7', 'C7'], 'H'),
+  line('cuenta', 'La cuenta', 'Pareja de <b>7</b> a CORAZONES: Daño 16 × Multi 2 = 32.', { ui: 'cuenta' }, (_v, ev) => (played(ev)?.cards.length ?? 0) >= 2 && ev.some((e) => e.e === 'impact'), ['D7', 'C7'], 'H'),
   line('exacto', 'Golpe exacto', 'El <b>9♦</b> de La Manga a CORAZONES: 9 justos.', 'target', (_v, ev) => ev.some((e) => e.e === 'floorDown' && e.clean), ['D9'], 'H'),
 ];
 

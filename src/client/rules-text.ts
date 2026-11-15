@@ -201,7 +201,7 @@ function rulesEn(cfg: Config): string {
 
   <h3>Your turn</h3>
   <ul>
-    <li><b>1 · Hit</b> a throne with a <b>formation</b>. Before you hit, the table shows you the count.</li>
+    <li><b>1 · Hit</b> a throne with a <b>formation</b>. Before you hit, the table shows you the tally.</li>
     <li>Instead of hitting you can <b>discard</b> any cards you like, or play a <b>Joker</b>.</li>
     <li><b>2 · Counterattack</b> ⚔: a card is flipped from the Deck and the throne of that suit attacks, with the Attack of its guard. Your Shield is spent first; whatever is left takes Health. If that throne already fell, is not in the assault or a Joker comes up, nothing happens.</li>
     <li><b>3 · Draw</b> up to your full hand. Next player's turn.</li>
@@ -264,7 +264,7 @@ function rulesEn(cfg: Config): string {
   <ul>
     <li><b>The Castle Map</b> shows from the start which monarch awaits in each assault and their <b>decree</b>. In assaults without a monarch you pick a <b>route</b>: each one brings an <b>Oath</b> (a condition with a reward; risky ones make the assault harder and always pay). In assault ${STAGES.findIndex((s) => s.atajo) + 1} you can also take the <b>Shortcut</b>: you skip the assault (no Spoils or Tavern) in exchange for a <b>conspirator Shortcut</b>.</li>
     <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. Monarchs also leave a relic.</li>
-    <li><b>The Tavern</b> of the Dealer sells relics, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
+    <li>In <b>The Tavern</b>, the Tavern Keeper sells relics, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
     <li>After each middle monarch there is a <b>Crypt Secret</b>: a dilemma with a reward and a price.</li>
     <li>After the last assault you can go on to the <b>Endless Throne</b>: assaults without end, each one harder.</li>
     <li><b>Seed</b>: the same seed and the same choices give the same campaign. The <b>Daily Assault</b> uses the date as its seed, with the crew's deck and no Order upgrades.</li>

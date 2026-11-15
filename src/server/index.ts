@@ -219,7 +219,7 @@ export function startServer(opts: ServerOptions): Promise<RunningServer> {
 
   function handle(ws: WebSocket, msg: ClientMsg): void {
     const ctx = sockets.get(ws);
-    // V11-B: un cliente de otra versión (o de la 10.0, que no manda `v`) no entra ni crea sala
+    // V11: un cliente de otra versión (o de la 10.0, que no manda `v`) no entra ni crea sala
     if ((msg.t === 'create' || msg.t === 'join' || msg.t === 'rejoin') && (msg as { v?: unknown }).v !== PROTOCOL_VERSION) return send(ws, { t: 'error', message: 'Esta sala es de otra versión del juego.' });
 
     if (msg.t === 'create') {

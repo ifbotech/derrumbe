@@ -17,7 +17,8 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
-import { LANG, LOCALE, OTHER, T, gamepadSuite, guidedRun, langSwitchSuite, sealCheck } from './gamepad-qa';
+import { campaignSuite } from './campana-qa';
+import { LANG, LOCALE, OTHER, T, gamepadSuite, guidedRun, immuneCheck, langSwitchSuite } from './gamepad-qa';
 import { controlRows } from '../src/client/prompts';
 import { BRAND } from '../src/shared/brand';
 import { telemetrySuite } from './telemetry-qa';
@@ -343,6 +344,16 @@ async function main(): Promise<void> {
     await ctx.close();
   }
 
+  // ── V11 · red: el rechazo de versión del servidor («otra versión del juego») sale en el idioma de la mesa ──
+  {
+    const said = await page.evaluate(async () => {
+      (window as unknown as { __qaJuice: { serverError(m: string): void } }).__qaJuice.serverError('Esta sala es de otra versión del juego.');
+      await new Promise((r) => setTimeout(r, 80));
+      return document.querySelector('.toast:last-of-type')?.textContent?.trim() ?? '';
+    });
+    check(said === T('error.version'), `un cliente de otra versión que no entra en una sala ve el aviso en su idioma («${said}»)`);
+  }
+
   // ── V7 · la partida guiada se juega entera: con el teclado (medida) y con el ratón ──
   console.log('Partida guiada');
   const shot = (p: Page, name: string) => p.screenshot({ path: join(OUT, `${name}.png`) });
@@ -360,8 +371,8 @@ async function main(): Promise<void> {
   await page.waitForTimeout(200);
   check((await count(page, '.table-screen')) === 0 && (await count(page, '#m-tuto')) === 1 && !(await page.evaluate(() => document.documentElement.dataset.guia)), 'Esc salta la partida guiada de un toque y vuelve a la portada');
 
-  // ── V7 · F1 con el teclado: el sello «×0» sigue al trono enfocado ──
-  await sealCheck(page, 'keys', check);
+  // ── V11 · con el teclado: dos tronos, las flechas solo pisan los presentes y la placa Inmune se ve ──
+  await immuneCheck(page, 'keys', check);
 
   // ── V7 · la voz del monarca: su frase de entrada, sin tapar mano ni cuenta, y se va sola ──
   {
@@ -438,6 +449,10 @@ async function main(): Promise<void> {
     check(log.some((r) => r.modo === 'guia' && r.guia === 'victoria') && log.some((r) => r.modo === 'guia' && r.guia === 'saltada'), 'la partida guiada queda apuntada: terminada y saltada');
   }
   await page.screenshot({ path: join(OUT, 'fin-de-asalto.png') });
+
+  // ── V11 · la campaña de cinco asaltos entera, con el bot y el ratón a 1×: mide la jugada y los entreactos ──
+  console.log('Campaña de cinco asaltos');
+  await campaignSuite(browser, site.url, check, problems);
 
   // ── la campaña jugada solo con un mando (virtual): menú, asalto entero, Botín y La Taberna ──
   if (!process.env.NO_PAD) {

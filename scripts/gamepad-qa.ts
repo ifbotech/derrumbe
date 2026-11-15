@@ -161,6 +161,9 @@ function walk(page: Page, selector: string, stick = false, limit = 60, ms = 0): 
         path.push(`${dir}→${name(document.activeElement)}`);
       };
       let stuck = 0;
+      // V11: como walkKeys, si vuelve por segunda vez a un sitio ya pisado (va y viene entre dos filas), prueba por el otro eje
+      const visits = new Map<Element, number>();
+      let flip = false;
       for (let i = 0; i <= max; i++) {
         const target = document.querySelector(sel);
         if (!target) return { steps: -1, path: [...path, `(no existe ${sel})`] };
@@ -178,9 +181,12 @@ function walk(page: Page, selector: string, stick = false, limit = 60, ms = 0): 
         const sameRow = Math.abs(dy) < Math.max(ah, th) * 0.5;
         let dir: 'U' | 'D' | 'L' | 'R' = sameRow ? (dx > 0 ? 'R' : 'L') : dy > 0 ? 'D' : 'U';
         // si el último intento no movió el foco, se prueba por el otro eje
-        if (stuck % 2 === 1) dir = dir === 'U' || dir === 'D' ? (dx > 0 ? 'R' : 'L') : dy > 0 ? 'D' : 'U';
+        if (flip || stuck % 2 === 1) dir = dir === 'U' || dir === 'D' ? (dx > 0 ? 'R' : 'L') : dy > 0 ? 'D' : 'U';
         await go(dir);
-        stuck = document.activeElement === from ? stuck + 1 : 0;
+        const now = document.activeElement;
+        stuck = now === from ? stuck + 1 : 0;
+        if (now) visits.set(now, (visits.get(now) ?? 0) + 1);
+        flip = stuck === 0 && !!now && (visits.get(now) ?? 0) >= 2;
         if (stuck > 6) break;
       }
       return { steps: -1, path };
@@ -540,33 +546,73 @@ export async function langSwitchSuite(page: Page, how: 'pad' | 'keys', check: Ch
   check((await count(page, '.settings-modal')) === 0 && (await page.evaluate(() => (window as unknown as { __sinRecarga?: number }).__sinRecarga === 1)), `[${name}] ${how === 'pad' ? 'B' : 'Esc'} cierra Ajustes y la página nunca se recargó`);
 }
 
+/** V11 · los tronos de la mesa que están en el asalto (los ausentes van `hidden`), de izquierda a derecha. */
+export const presentTowers = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('.tower:not([hidden])')]
+      .filter((t) => t.getBoundingClientRect().width > 0)
+      .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+      .map((t) => `.tower[data-suit="${t.dataset.suit}"]`),
+  );
+
 /**
- * F1 con teclado o mando: al apuntar un trono (con el foco encima), las cartas de su palo en la mano
- * enseñan el sello de hierro «×0» y ninguna otra; al pasar al trono de al lado, el sello se va con él.
+ * V11 (sustituye al sello «×0» de la V7): en una mesa de dos tronos, con teclado o mando, las flechas
+ * recorren solo los tronos presentes (nunca un ausente) y, al apuntar cada uno, su placa «Inmune» de hierro
+ * se ve y ninguna carta de la mano lleva sello de factor. Con una carta de su palo elegida, la cuenta lo dice:
+ * «Inmune · 0».
  */
-export async function sealCheck(page: Page, how: 'pad' | 'keys', check: Check): Promise<void> {
+export async function immuneCheck(page: Page, how: 'pad' | 'keys', check: Check): Promise<void> {
   const name = how === 'pad' ? 'mando' : 'teclado';
-  await page.evaluate(() => (window as unknown as QaWindow).__qa.go('guia-palo'));
-  await page.waitForSelector('.table-screen #hand .card');
-  if (how === 'pad') await press(page, BTN.DOWN);
-  else await page.keyboard.press('ArrowDown');
-  const seals = () =>
-    page.evaluate(() => {
-      const t = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.tower')?.dataset.suit ?? null;
-      const cards = [...document.querySelectorAll<HTMLElement>('#hand .card')];
-      const iron = cards.filter((c) => c.querySelector('.plate.factor.iron')).map((c) => c.dataset.id!);
-      const ok = !!t && cards.every((c) => {
-        const own = c.classList.contains(`s-${t}`) && !c.classList.contains('k-special');
-        const plate = c.querySelector('.plate.factor.iron');
-        return own ? plate?.textContent?.includes('×0') : !plate;
-      });
-      return { t, iron, ok };
-    });
+  const key = (k: 'L' | 'R' | 'D' | 'A' | 'B') =>
+    how === 'pad' ? press(page, { L: BTN.LEFT, R: BTN.RIGHT, D: BTN.DOWN, A: BTN.A, B: BTN.B }[k]) : page.keyboard.press({ L: 'ArrowLeft', R: 'ArrowRight', D: 'ArrowDown', A: 'Enter', B: 'Escape' }[k]);
   const go = (sel: string) => (how === 'pad' ? focusOn(page, sel) : walkKeys(page, sel));
-  const first = (await go('.tower[data-suit="H"]')) ? await seals() : null;
-  check(first?.t === 'H' && first.ok && first.iron.length > 0, `[${name}] al apuntar CORAZONES, sus ♥ de la mano llevan el sello de hierro «×0» (${first?.iron.join(' ') || 'ninguna'})`);
-  const next = (await go('.tower[data-suit="C"]')) ? await seals() : null;
-  check(next?.t === 'C' && next.ok && next.iron.length > 0 && next.iron.join() !== first?.iron.join(), `[${name}] al pasar a TRÉBOLES, el sello se va a sus ♣ (${next?.iron.join(' ') || 'ninguna'})`);
+  // con 2, 3 y 4 tronos: de un trono a otro con izquierda y derecha, solo los presentes, y en los extremos no se sale a un ausente
+  let towers: string[] = [];
+  for (const [state, n] of [['mesa', 4], ['mesa-3tronos', 3], ['guia-palo', 2]] as const) {
+    await page.evaluate((s) => (window as unknown as QaWindow).__qa.go(s), state);
+    await page.waitForSelector('.table-screen #hand .card');
+    await page.waitForTimeout(150);
+    await key('D');
+    towers = await presentTowers(page);
+    const visited = new Set<string>();
+    let reachedAll = true;
+    for (const t of towers) {
+      reachedAll &&= await go(t);
+      for (const k of ['L', 'L', 'R', 'R', 'R', 'R'] as const) {
+        await key(k);
+        const at = await page.evaluate(() => (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.tower')?.dataset.suit ?? null);
+        if (at) visited.add(at);
+      }
+    }
+    const present = new Set(towers.map((t) => t.slice(18, 19)));
+    check(towers.length === n && reachedAll && [...visited].every((s) => present.has(s)) && visited.size === n, `[${name}] con ${n} tronos (${state}), el foco llega a cada uno y izquierda y derecha recorren solo los presentes (${[...visited].join(' ')})`);
+  }
+  check(towers.length === 2, `[${name}] la partida guiada se juega en una mesa de dos tronos (${towers.map((t) => t.slice(18, 19)).join(' ')})`);
+  const plate = () =>
+    page.evaluate(() => {
+      const tower = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.tower');
+      const iron = tower?.querySelector<HTMLElement>('.plate.iron');
+      const r = iron?.getBoundingClientRect();
+      return { t: tower?.dataset.suit ?? null, iron: !!r && r.width > 0 && getComputedStyle(iron!).visibility !== 'hidden', text: iron?.textContent?.trim() ?? '', factor: document.querySelectorAll('#hand .plate.factor, #reserve .plate.factor').length };
+    });
+  const seen: string[] = [];
+  let platesOk = true;
+  for (const t of towers) {
+    await go(t);
+    const p = await plate();
+    seen.push(`${p.t}: «${p.text}»`);
+    platesOk &&= p.iron && p.factor === 0 && p.text.includes(T('ui.mesa.inmune'));
+  }
+  check(platesOk, `[${name}] al apuntar cada trono se ve su placa «${T('ui.mesa.inmune')}» y ninguna carta lleva sello de factor (${seen.join(' · ')})`);
+  // una carta de corazones elegida, apuntando a CORAZONES: la cuenta dice «Inmune · 0»
+  const heart = await page.evaluate(() => document.querySelector<HTMLElement>('#hand .card.s-H:not(.k-special)')?.dataset.id ?? null);
+  let line = '';
+  if (heart && (await go(`.handrow .card[data-id="${heart}"]`))) {
+    await key('A');
+    if (await go('.tower[data-suit="H"]')) line = await page.evaluate(() => document.querySelector('#score')?.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+  }
+  check(line.includes(T('ui.cuenta.inmune')), `[${name}] con un ♥ elegido y CORAZONES apuntado, la cuenta dice «${T('ui.cuenta.inmune')}» (${line.slice(0, 60) || 'sin cuenta'})`);
+  await key('B');
 }
 
 export async function gamepadSuite(browser: Browser, url: string, check: Check, problems: string[], shot: (page: Page, name: string) => Promise<unknown>): Promise<void> {
@@ -761,7 +807,9 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   // ── la mesa, fila a fila: desde cualquier sitio se llega a cada trono, y de cada trono a la mano ──
   // (el mismo focusOn voraz del asalto, con 6 pulsaciones como mucho y sin reintentos)
   {
-    const towers = ['S', 'D', 'H', 'C'].map((s) => `.tower[data-suit="${s}"]`);
+    // V11: solo los tronos de este asalto (en el 1 hay dos; los ausentes van `hidden` y no se enfocan)
+    const towers = await presentTowers(page);
+    check(towers.length >= 2 && towers.length <= 4, `la mesa del asalto tiene de 2 a 4 tronos a la vista (${towers.length})`);
     const misses: string[] = [];
     let tries = 0;
     const reach = async (from: string, to: string) => {
@@ -800,7 +848,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     // mando): si hay uno, se comprueba que se llega a él desde el trono de la derecha y se aparta. Durante el barrido no
     // se escriben más, para medir la mesa y no el susurro de turno.
     if (await count(page, '.table-screen .side > .whisper')) {
-      await focusDirect(page, '.tower[data-suit="C"]');
+      await focusDirect(page, towers[towers.length - 1]);
       const w = await walk(page, '.side > .whisper .whisper-off', false, 2, 30);
       if (w.steps < 0) console.log(`  · trono de la derecha → susurro: ${w.path.join(' ')}`);
       check(w.steps >= 0, 'con un susurro al margen, su «No mostrar más» queda a una o dos pulsaciones del trono de la derecha');
@@ -1065,8 +1113,8 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   await press(page, BTN.DOWN);
   check((await inputMode(page)) === 'pad', 'un toque del mando las devuelve');
 
-  // ── V7 · F1 con el mando y la partida guiada entera, a 1× ──
-  await sealCheck(page, 'pad', check);
+  // ── V11 · Inmune y tronos presentes con el mando, y la partida guiada entera, a 1× ──
+  await immuneCheck(page, 'pad', check);
   await guidedRun(page, 'pad', check, shot);
   await context.close();
 }

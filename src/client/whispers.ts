@@ -4,11 +4,13 @@
 // pantalla y su sonido. Las pantallas solo llaman a whisper('id') en el punto donde ocurre la cosa.
 //
 // Cuándo salen: los tres de lo básico de la mesa (trono Inmune, La Manga, Golpe exacto) solo en la
-// primera campaña del perfil, que es cuando se aprende a golpear; los otros cinco (Mesa de lacre, Atajo,
-// primer monarca, Asedio final, Mazo bajo) la primera vez que se ven, sea en la campaña que sea, porque
-// mucha gente no llega al Asedio final ni a la Mesa de lacre en la primera. Nunca en la partida guiada:
+// primera campaña del perfil, que es cuando se aprende a golpear; los demás (Mesa de lacre, Atajo, primer
+// monarca, Asedio final, Mazo bajo y, desde la V11, trono que falta, Expuesto y Aturdido) la primera vez que
+// se ven, sea en la campaña que sea: mucha gente no llega al Asedio final en la primera, y quien viene de la
+// 10.0 no conoce los dos estados nuevos ni la mesa de dos tronos. Nunca en la partida guiada:
 // ahí habla la Maestra. (Los id internos —andamio, forja, cantera…— no cambian: son el guardado.)
-import { nextCollapse } from '../rules/engine';
+import { SUITS, SUIT_GLYPH, type TowerFx, nextCollapse } from '../rules/engine';
+import { BALANCE } from '../rules/balance-config';
 import { BOSS } from '../rules/run';
 import { sfx } from './audio';
 import { S, topModal } from './core';
@@ -18,7 +20,7 @@ import { hint } from './prompts';
 import { L, monN } from './lengua';
 import type { ClaveUi } from '../shared/i18n/es';
 
-export type WhisperId = 'inmune' | 'andamio' | 'limpio' | 'forja' | 'atajo' | 'jefe' | 'fatiga' | 'cantera';
+export type WhisperId = 'inmune' | 'andamio' | 'limpio' | 'forja' | 'atajo' | 'jefe' | 'fatiga' | 'cantera' | 'ausente' | 'expuesto' | 'aturdido';
 
 /** El catálogo: una línea cada uno, por su clave (src/shared/i18n/ui-juice.ts). `{x}` se rellena con `vars`. */
 const TEXT: Record<WhisperId, ClaveUi> = {
@@ -30,6 +32,9 @@ const TEXT: Record<WhisperId, ClaveUi> = {
   jefe: 'ui.w.jefe',
   fatiga: 'ui.w.fatiga',
   cantera: 'ui.w.cantera',
+  ausente: 'ui.w.ausente',
+  expuesto: 'ui.w.expuesto',
+  aturdido: 'ui.w.aturdido',
 };
 /** Lo que se aprende en la primera campaña; el resto sale la primera vez que se ve, en cualquiera. */
 const BASIC = new Set<WhisperId>(['inmune', 'andamio', 'limpio']);
@@ -125,10 +130,22 @@ export function whisper(id: WhisperId, vars: Record<string, string> = {}): void 
   void timer;
 }
 
-/** Los susurros que dependen del estado de la mesa (monarca, Asedio final, Mazo bajo). La mesa lo llama al repintarse. */
+/**
+ * Los susurros que dependen del estado de la mesa (trono que falta, Expuesto, Aturdido, monarca, Asedio
+ * final, Mazo bajo). La mesa lo llama al repintarse, justo después de enseñar el estado nuevo.
+ */
 export function tableWhispers(): void {
   const v = S.shown;
   if (!v || v.phase !== 'playing' || S.screen !== 'table') return;
+  // V11: los estados, la primera vez que un trono queda Expuesto o Aturdido (con el palo del trono)
+  const fx = (k: keyof TowerFx) => SUITS.find((s) => !v.towers[s].away && v.towers[s].fx[k]);
+  const exp = fx('fractura');
+  if (exp) whisper('expuesto', { glyph: SUIT_GLYPH[exp], n: String(BALANCE.golpe.expuesto) });
+  const stun = fx('sobrecarga');
+  if (stun) whisper('aturdido', { glyph: SUIT_GLYPH[stun] });
+  // V11: el asalto de dos (o tres) tronos: lo que pasa con el palo de un trono que no está
+  const here = SUITS.filter((s) => !v.towers[s].away).length;
+  if (here < SUITS.length) whisper('ausente', { n: String(here) });
   const boss = S.campaign?.run.boss ? BOSS[S.campaign.run.boss] : null;
   if (boss) whisper('jefe', { who: monN(boss.id) });
   if ((v.fatigue ?? 0) > 0) whisper('fatiga');

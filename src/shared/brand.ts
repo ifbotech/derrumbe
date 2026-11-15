@@ -21,7 +21,7 @@ export const BRAND: Record<Locale, { title: string; seal: string; subtitle: stri
     title: 'BLOOD & SUITS',
     seal: 'SANGRE Y PALO',
     subtitle: 'A card conspiracy against the court',
-    tagline: 'A conspiracy roguelike with a French deck',
+    tagline: 'A conspiracy roguelike played with a standard 52-card deck',
   },
 };
 

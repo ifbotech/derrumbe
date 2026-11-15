@@ -33,12 +33,12 @@ const RELIQUIAS: Record<string, [string, string]> = {
   maza: ['Club Mace', '+{dano} Damage for each ♣ you play.'],
   cincel: ['Stiletto', '+{dano} Damage if you play a single card.'],
   gemelos: ['Twin Daggers', '+{multi} Mult with a group, two pair, full house or four of a kind.'],
-  cinta: ['Grand Staircase', '+{multi} Mult with a straight or straight flush.'],
+  cinta: ['Royal Straight', '+{multi} Mult with a straight or straight flush.'],
   sacos: ['Great Shield', 'Each ♣ gives +{escudo} more Shield, and the Shield cap rises +{tope}.'],
   botiquin: ['Balm', 'Each ♥ heals +{vida} more.'],
   encofrado: ['Buckler', 'Each guard defeated: +{escudo} Shield.'],
   casco: ['Helm', 'Each guard defeated: +{vida} Health.'],
-  puntales: ['Spare Deck', 'When the Deck runs out, you lose {vida} less Health.'],
+  puntales: ['False Bottom', 'When the Deck runs out, you lose {vida} less Health.'],
   hucha: ['Coin Purse', '+{oro} gold at the end of each assault.'],
   taladro: ['Lance', 'All your hits Pierce, with or without ♠.'],
   estandarte: ['Banner', '+{multi} Mult with a flush or straight flush.'],
@@ -64,7 +64,7 @@ const RELIQUIAS: Record<string, [string, string]> = {
   prisma: ['Prism', '+{multi} Mult for each card in the hit that shares a suit with another (up to +{tope}).'],
   mosaico: ['Stained Glass', '+{dano} Damage if the hit mixes 3 suits or more.'],
   crisol: ['Cauldron', 'Exposed deals ×{multi} Damage instead of ×{base}, and 3-suit hits also leave Exposed.'],
-  catalizador: ["Philosopher's Stone", '+{multi} Mult for each throne that is Exposed or Stunned.'],
+  catalizador: ["Alchemist's Stone", '+{multi} Mult for each throne that is Exposed or Stunned.'],
   sismografo: ['Spent Candle', '+{dano} Damage for each point of Health you are missing.'],
   megafono: ['Thorned Rose', 'When a Counterattack takes your Health, the throne that attacked takes {dano}.'],
   piquete: ['Torch', 'Each Mutiny (Joker): +{oro} gold and you draw {cartas} cards.'],
@@ -111,7 +111,7 @@ const ESPECIALES: Record<string, [string, string]> = {
   cemento: ['Chain Mail', '+{wallPerCard} Shield for each card in the hit.'],
   embestida: ['Onslaught', '+{flat} Damage, and +{wallForce} more for each point of Shield standing.'],
   sierra: ['Secret Passage', 'This hit ignores Immune: your cards deal their Damage against any throne.'],
-  ferretero: ['The Dealer', '+{gold} gold and you draw {draw} extra card.'],
+  ferretero: ['The Tavern Keeper', '+{gold} gold and you draw {draw} extra card.'],
   'j-doble': ['The Two-Faced King', 'No Counterattack and you draw {draw} extra card.'],
   'j-escasez': ['The Usurer', '+{gold} gold.'],
   'j-sequia': ['The Chalice Lady', '+{heal} Health.'],
@@ -147,8 +147,8 @@ const MONARCAS: Record<string, MonarcaEn> = {
   escasez: {
     nombre: 'The Usurer',
     decreto: 'Scarcity',
-    desc: 'You all play with {cartas} card fewer in hand.',
-    badge: '{cartas} card fewer in hand',
+    desc: 'Everyone plays with {cartas} fewer card in hand.',
+    badge: '{cartas} fewer card in hand',
     entrada: 'No credit at this table, dear. Play with what you have.',
     contraataque: 'I came to collect the interest. Call? I always call.',
     caida: 'Not a copper left to my name... put it on my tab, friend.',
@@ -207,9 +207,9 @@ const REINADOS: [string, string][] = [
   ['Fine Armor', 'Every guard has {pct} % more Health.'],
   ['Royal Tax', 'Everything in the Tavern costs {impuesto} more gold.'],
   ['Armored Kings', 'In assaults with a monarch, Kings have {reyes} % more Health.'],
-  ['Wrathful King', 'The Attack of Kings rises by {rey}.'],
-  ['Old Wounds', 'You have {heridas} point of Health less.'],
-  ['Night Watch', 'The Attack of Jacks and Queens rises by {noche}.'],
+  ['Wrathful King', "Kings' Attack rises by {rey}."],
+  ['Old Wounds', 'Your max Health drops by {heridas}.'],
+  ['Night Watch', "Jacks' and Queens' Attack rises by {noche}."],
   ['Sealed Gates', 'Only in assault {asaltos}, the Attack of all four thrones rises by {clausura}.'],
 ];
 
@@ -225,14 +225,14 @@ const BARAJAS: Record<string, [string, string]> = {
 /** Oaths: [name, condition, reward]. Their figures are written in run.ts, so here too (the parity test compares them). */
 const JURAMENTOS: Record<string, [string, string, string]> = {
   intacto: ['Unscathed', 'Finish the assault without losing Health.', '+8 gold'],
-  limpios: ['Steady Pulse', 'Land 3 Exact Hits.', 'A random wax seal'],
+  limpios: ['Steady Hand', 'Land 3 Exact Hits.', 'A random wax seal'],
   rapido: ['At a Gallop', 'Win the assault in 3 turns + 4 per guard of each throne, or fewer (3 guards: 15).', '+6 gold'],
-  sincolapso: ['Measured Deck', 'Finish without the Deck running out.', '+5 gold'],
+  sincolapso: ['Never Run Dry', 'Finish without the Deck running out.', '+5 gold'],
   austero: ['No Mutinies', 'Do not play any Joker.', 'A random finish'],
   maestra: ['Master Play', 'Play a flush, a full house, four of a kind or a straight flush.', 'A random Scroll'],
   horas: ['Long Night', 'The Attack of every throne rises by 1.', '+10 gold'],
   sinred: ['No Shield', 'Shield cannot go above 2.', 'A Rare relic or better'],
-  corta: ['Short Conspiracy', 'You all play with 1 card fewer in hand.', '+12 gold'],
+  corta: ['Short Conspiracy', 'Everyone plays with 1 fewer card in hand.', '+12 gold'],
 };
 
 const ATAJOS: Record<string, [string, string]> = {
@@ -256,14 +256,14 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     texto: 'Between two tombs a padlocked chest peeks out. Forcing it open will shake half the crypt.',
     opciones: [
       { etiqueta: 'Force it open', gana: 'Noble or Royal relic', cuesta: '−5 Health', desc: 'You lose 5 Health. You take a Noble or Royal relic.' },
-      { etiqueta: 'Sell it to the Dealer', gana: '+8 gold', desc: '+8 gold.' },
+      { etiqueta: 'Sell it to the Tavern Keeper', gana: '+8 gold', desc: '+8 gold.' },
     ],
   },
   horno: {
     nombre: "The Alchemist's Cauldron",
     texto: 'A cauldron boils on its own in a corner. Whatever goes in comes out as something else.',
     opciones: [
-      { etiqueta: 'Melt two cards', gana: 'Card in Polychrome Wax', cuesta: 'Two cards burn', desc: 'Pick two: they burn and one is born with the higher number, in Polychrome Wax and with any seals they had.' },
+      { etiqueta: 'Melt two cards', gana: 'Card in Prismatic Wax', cuesta: 'Two cards burn', desc: 'Pick two: they burn and one is born with the higher number, in Prismatic Wax and with any seals they had.' },
       { etiqueta: 'Warm up and move on', gana: '+4 Health', desc: '+4 Health.' },
     ],
   },
@@ -280,7 +280,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     texto: 'Three monks seal whatever you set before them by candlelight, and they never haggle.',
     opciones: [
       { etiqueta: 'Pay with Health', gana: '3 sealed cards', cuesta: '−6 Health', desc: 'You lose 6 Health. Three random cards get a wax seal.' },
-      { etiqueta: 'Pay with gold', gana: 'Polychrome best card', cuesta: '−8 gold', desc: '8 gold. Your highest card gets Polychrome Wax.' },
+      { etiqueta: 'Pay with gold', gana: 'Prismatic best card', cuesta: '−8 gold', desc: '8 gold. Your highest card gets Prismatic Wax.' },
       { etiqueta: 'Walk on by', gana: 'Nothing changes', desc: 'Nothing changes.' },
     ],
   },
@@ -300,13 +300,13 @@ const MEJORAS: Record<string, [string, string?]> = {
   caja_precision: ['Chest of Precision'],
   caja_sismo: ['Chest of Echoes'],
   caja_alquimia: ['Chest of Alchemy'],
-  caja_limite: ['Chest of the Edge'],
+  caja_limite: ['Chest of Blades'],
   caja_trituradora: ['Chest of Ashes'],
   caja_aguante: ['Chest of the Shield'],
   tampones: ['New Seals', 'The Wax Table also offers the powder and sleeve seals.'],
-  bronce: ['Royal Glazier', 'The Wax Table also offers Polychrome Wax and Cursed Glass.'],
-  vale: ["Dealer's Favor", 'One free Refresh Table at each Tavern, per level.'],
-  tienda: ['Big Stall', '+1 relic on offer at each Tavern, per level.'],
+  bronce: ['Crown Jeweler', 'The Wax Table also offers Prismatic Wax and Cursed Glass.'],
+  vale: ["Keeper's Favor", 'One free Refresh Table at each Tavern, per level.'],
+  tienda: ['Black Market', '+1 relic on offer at each Tavern, per level.'],
   caja: ["The Order's Purse", '+{oro} starting gold per level.'],
   rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
 };
@@ -323,14 +323,14 @@ const LOGROS: Record<string, [string, string]> = {
   diaria: ['Daily Round', 'Finish a Daily Assault.'],
   doblepar: ['Two and Two', 'Play two pair.'],
   color: ['All One Suit', 'Play a flush.'],
-  full: ['House Full', 'Play a full house.'],
+  full: ['Full House', 'Play a full house.'],
   poker: ['Four of a Kind', 'Play four of a kind.'],
   real: ['Royal Straight', 'Play a straight flush of 5 cards or more.'],
   golpe100: ['In One Blow', 'Land a Hit of 100 or more.'],
   golpe500: ['Thunder', 'Land a Hit of 500 or more.'],
   golpe2000: ['Cataclysm', 'Land a Hit of 2000 or more.'],
   limpio10: ['Firm Hand', 'Land 10 Exact Hits.'],
-  limpio50: ["Thief's Touch", 'Land 50 Exact Hits.'],
+  limpio50: ['Deadeye', 'Land 50 Exact Hits.'],
   pisos100: ['A Hundred Guards', 'Defeat 100 guards.'],
   pisos500: ['Scourge of the Court', 'Defeat 500 guards.'],
   intacto: ['Not a Scratch', 'Finish an assault with full Health.'],
@@ -340,7 +340,7 @@ const LOGROS: Record<string, [string, string]> = {
   contratos: ['Word of Honor', 'Fulfill 10 Oaths.'],
   atajo: ['Through the Back Door', 'Skip 3 assaults.'],
   coleccion: ['Collector', 'Get the {n} common special cards, across all your campaigns.'],
-  ferretero: ["The Dealer's Client", 'Carry {n} different relics, across all your campaigns.'],
+  ferretero: ["The Keeper's Regular", 'Carry {n} different relics, across all your campaigns.'],
   jefes: ['No King Left Standing', 'Defeat all {n} monarchs.'],
 };
 /** Figures of the achievements whose Spanish text is built in achievements.ts. */
@@ -382,7 +382,7 @@ const SELLOS: Record<Seal, [string, string]> = {
 const ACABADOS: Record<Treatment, [string, string]> = {
   forjado: ['Silver Edge', '+{n} Damage.'],
   templado: ['Tempered', '+{n} Mult.'],
-  policromado: ['Polychrome Wax', '×{n} Mult.'],
+  policromado: ['Prismatic Wax', '×{n} Mult.'],
   agrietado: ['Cursed Glass', '×{n} Mult, but 1 time in {cada} the card shatters.'],
 };
 const ESTADOS: Record<keyof TowerFx, [string, string]> = {
@@ -395,7 +395,7 @@ const GUIA: Record<string, [string, string]> = {
   palo: ['The Power of a Suit', 'Play the <b>6♣</b> against SPADES: ♣ give you Shield.'],
   inmune: ['Immune Throne', 'Your ♥ do nothing to HEARTS: <b>8♥</b> to SPADES.'],
   manga: ['Up the Sleeve', 'Keep the <b>9♦</b> Up the Sleeve for later.'],
-  cuenta: ['The Count', 'A pair of <b>7</b>s to HEARTS: Damage × Mult = Hit.'],
+  cuenta: ['The Tally', 'A pair of <b>7</b>s to HEARTS: Damage 16 × Mult 2 = 32.'],
   exacto: ['Exact Hit', 'The <b>9♦</b> from Up the Sleeve to HEARTS: exactly 9.'],
 };
 
