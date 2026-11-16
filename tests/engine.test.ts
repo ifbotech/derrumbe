@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameEvent, GameState, StrikeEnv, Suit, applyAction, classify, createGame, currentPlayer, eventsFor, newTowers, previewStrike, reorder, seedFrom, sortCards, strike, viewFor } from '../src/rules/engine';
 import { chooseAction, formations } from '../src/rules/bot';
 import { ARCH, RARITY, TOOL, TOOLS, bestOrder, toolPool } from '../src/rules/tools';
+import { muestra } from './muestra';
 
 const card = (id: string, extra: Partial<Card> = {}): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0, ...extra } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)), ...extra });
 const cards = (...ids: string[]) => ids.map((id) => card(id));
@@ -606,7 +607,7 @@ describe('fuzz: 500 partidas con semilla', () => {
 
   it('ninguna rompe una invariante y todas se reproducen desde su registro de acciones', { timeout: 240_000 }, () => {
     let wins = 0;
-    for (let seed = 1; seed <= 500; seed++) {
+    for (let seed = 1; seed <= muestra(500, 90); seed++) {
       const n = 1 + (seed % 2);
       let state = createGame(players.slice(0, n), seed * 7919, DIFFICULTY.obra);
       const log: [string, ReturnType<typeof chooseAction>][] = [];
@@ -629,7 +630,7 @@ describe('fuzz: 500 partidas con semilla', () => {
       }
     }
     // la obra clásica está equilibrada para que el bot gane en torno al 60 %
-    expect(wins).toBeGreaterThan(200);
-    expect(wins).toBeLessThan(420);
+    expect(wins / muestra(500, 90)).toBeGreaterThan(0.4);
+    expect(wins / muestra(500, 90)).toBeLessThan(0.84);
   });
 });

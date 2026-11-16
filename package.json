@@ -14,6 +14,7 @@
     "preview:web": "vite preview --mode web --outDir dist/web",
     "start": "node dist/server/index.js",
     "test": "node scripts/test.mjs",
+    "test:full": "node scripts/test.mjs --completo",
     "typecheck": "tsc --noEmit",
     "simulate": "tsx scripts/simulate.ts",
     "simulate:run": "tsx scripts/simulate-run.ts",

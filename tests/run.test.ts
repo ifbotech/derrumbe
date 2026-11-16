@@ -6,6 +6,7 @@ import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_S
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
+import { muestra } from './muestra';
 
 const P = [{ id: 'a', name: 'A' }];
 const act = (run: Run, a: RunAction) => expect(runAction(run, a), JSON.stringify(a)).toBeNull();
@@ -767,8 +768,8 @@ describe('niveles de obra y maestría', () => {
     expect(loadMeta({ ascMax: 20 }).ascMax).toBe(7);
   });
 
-  it('30 campañas del bot con semilla: mismas decisiones, mismo resultado, y nada se sale de sus límites', { timeout: 240_000 }, () => {
-    for (let seed = 1; seed <= 30; seed++) {
+  it('campañas del bot con semilla (30 en la pasada completa, 8 en la rápida): mismas decisiones, mismo resultado, y nada se sale de sus límites', { timeout: 240_000 }, () => {
+    for (let seed = 1; seed <= muestra(30, 8); seed++) {
       const a = botRun(newRun({ ascension: seed % 8 }, seed * 104729));
       const b = botRun(newRun({ ascension: seed % 8 }, seed * 104729));
       expect(JSON.stringify(a)).toBe(JSON.stringify(b));

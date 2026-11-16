@@ -34,7 +34,38 @@ GUARDIÁN · npm test: una pasada de Vitest pasó de ${TOPE_TEST} s. Se corta co
   return { codigo: r.status ?? 1, salida: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
 
-if (args.length) process.exit(vitest(args).codigo);
+// Misión V12 → V26: dos modos.
+//   npm test             rápido (< 25 s): muestras cortas de Monte Carlo y las dos pasadas a la vez
+//   npm run test:full    completo: PRUEBAS_COMPLETAS=1 (muestras enteras) y las pasadas una tras otra, como siempre
+const COMPLETO = args.includes('--completo') || process.env.PRUEBAS_COMPLETAS === '1';
+if (COMPLETO) process.env.PRUEBAS_COMPLETAS = '1';
+const sueltos = args.filter((a) => a !== '--completo');
+if (sueltos.length) process.exit(vitest(sueltos).codigo);
+
+if (!COMPLETO) {
+  const { spawn } = await import('node:child_process');
+  const lanza = (extra) =>
+    new Promise((ok) => {
+      const h = spawn(process.execPath, [...VITEST, ...extra], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let salida = '';
+      h.stdout.on('data', (d) => (salida += d));
+      h.stderr.on('data', (d) => (salida += d));
+      const reloj = setTimeout(() => h.kill('SIGKILL'), TOPE_TEST * 1000);
+      h.on('exit', (codigo) => (clearTimeout(reloj), ok({ codigo: codigo ?? 1, salida })));
+    });
+  const t0 = Date.now();
+  const [todo, primera] = await Promise.all([lanza(['--exclude', COOP]), lanza([COOP])]);
+  process.stdout.write(todo.salida);
+  let coop = primera;
+  for (let i = 1; coop.codigo !== 0 && i < INTENTOS && CAIDA_NATIVA.test(coop.salida) && !/AssertionError|Test timed out| FAIL /.test(coop.salida); i++) {
+    console.log(`\n[npm test] El proceso de las pruebas de cooperativo se cayó de forma nativa (0xC0000409). Se repite (${i + 1} de ${INTENTOS}).\n`);
+    coop = await lanza([COOP]);
+  }
+  process.stdout.write(coop.salida);
+  console.log(`\n[npm test] rápido: ${((Date.now() - t0) / 1000).toFixed(1)} s (muestras cortas; la pasada completa es npm run test:full)`);
+  process.exit(todo.codigo !== 0 ? todo.codigo : coop.codigo);
+}
+
 
 const resto = vitest(['--exclude', COOP]);
 if (resto.codigo !== 0) process.exit(resto.codigo);
