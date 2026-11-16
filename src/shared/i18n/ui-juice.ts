@@ -19,6 +19,19 @@ export const UI_JUICE = {
   'ui.ctl.golpear.k': ['{k} · clic en el trono', '{k} · click the throne'],
   'ui.ctl.manga': ['Guardar en La Manga', 'Keep a card Up the Sleeve'],
   'ui.ctl.rebobinar': ['Rebobinar (deshacer)', 'Rewind (undo)'],
+  'ui.ctl.rebobinar.p': ['{p} (pulsar la palanca derecha)', '{p} (press the right stick)'],
+  // V12: Mejor jugada, AUTO, la tirada de huesos y el Árbol de la Conjura
+  'ui.ctl.mejor': ['Mejor jugada (elige; no golpea)', 'Best Play (picks; does not strike)'],
+  'ui.ctl.auto': ['AUTO: encender o apagar', 'AUTO: on or off'],
+  'ui.ctl.ritual': ['Saltar la tirada de huesos', 'Skip the Bone Roll'],
+  'ui.ctl.ritual.k': ['Cualquier tecla', 'Any key'],
+  'ui.ctl.ritual.p': ['Cualquier botón', 'Any button'],
+  'ui.ctl.arbol.comprar': ['Árbol: elegir un nodo y comprarlo', 'Tree: pick a node and buy it'],
+  'ui.ctl.arbol.comprar.k': ['{k} en el nodo · {k} en Comprar', '{k} on the node · {k} on Buy'],
+  'ui.ctl.arbol.zum': ['Árbol: alejar / ampliar', 'Tree: zoom out / in'],
+  'ui.ctl.arbol.mover': ['Árbol: mover la vista', 'Tree: move the view'],
+  'ui.ctl.arbol.mover.k': ['Arrastrar · {mayus} + flechas', 'Drag · {mayus} + arrow keys'],
+  'ui.ctl.arbol.mover.p': ['Palanca derecha', 'Right stick'],
   'ui.ctl.descartar': ['Descartar lo elegido', 'Discard what you chose'],
   'ui.ctl.descartar.p': ['{p} (pulsar la palanca izquierda)', '{p} (press the left stick)'],
   'ui.ctl.atras': ['Atrás / soltar la selección', 'Back / drop the selection'],
@@ -29,10 +42,10 @@ export const UI_JUICE = {
   'ui.ctl.reliquias': ['Reordenar las reliquias', 'Reorder your Relics'],
   'ui.ctl.reliquias.k': ['Arrastrar · {mayus} + flechas', 'Drag · {mayus} + arrow keys'],
   'ui.ctl.reliquias.p': ['{a} / {b} con el foco en la reliquia', '{a} / {b} with the focus on a relic'],
-  'ui.ctl.velocidad': ['Cambiar la velocidad (1× → 2× → 4×)', 'Change the speed (1× → 2× → 4×)'],
+  'ui.ctl.velocidad': ['Cambiar la velocidad (1× → 2× → 4× → 8×)', 'Change the speed (1× → 2× → 4× → 8×)'],
   'ui.ctl.barra': ['botón de la barra', 'button on the top bar'],
   'ui.ctl.pantalla': ['Pantalla completa', 'Full screen'],
-  'ui.ctl.pantalla.p': ['{p} (pulsar la palanca derecha)', '{p} (press the right stick)'],
+  'ui.ctl.pantalla.p': ['{p} → Ajustes → Pantalla completa', '{p} → Settings → Full screen'],
   'ui.ctl.reiniciar': ['Reiniciar la campaña', 'Restart the campaign'],
   'ui.ctl.mantener': ['Mantener {k}', 'Hold {k}'],
   'ui.ctl.ajustes': ['Ajustes', 'Settings'],
@@ -81,6 +94,10 @@ export const UI_JUICE = {
   // ── la barra y el reinicio (main.ts) ──
   'ui.main.reiniciar': ['Reiniciar campaña', 'Restart campaign'],
   'ui.main.velocidad': ['Velocidad {v}', 'Speed {v}'],
+  // V12 · AUTO (auto.ts): encendido y apagado fuera de la mesa (en la mesa lo dice su botón)
+  'ui.auto.on': ['AUTO encendido: cualquier tecla o botón lo apaga', 'AUTO on: any key or button turns it off'],
+  'ui.auto.off': ['AUTO apagado: ahora juegas tú', 'AUTO off: your turn to play'],
+  'ui.main.reiniciar.pad': ['Select + Start', 'Select + Start'],
 
   // ── insignias de reliquia (fx.ts, procBadge) ──
   'ui.proc.dano': ['Daño', 'Damage'],

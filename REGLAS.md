@@ -513,16 +513,22 @@ El juego usa solo seis palabras con significado propio. Todo lo demás se dice c
 | Elegir | Enter · 1–9 en la mano · clic | A |
 | Golpear el trono apuntado | Espacio · clic en el trono | X |
 | Guardar en La Manga | Y | Y |
-| Rebobinar (deshacer) | Z | LT |
+| Mejor jugada (elige; no golpea) | Q | LT |
+| Rebobinar (deshacer) | Z | R3 (pulsar la palanca derecha) |
 | Descartar lo elegido | Supr | L3 (pulsar la palanca izquierda) |
 | Atrás / soltar la selección | Esc | B |
 | Saltar la partida guiada (sin nada elegido) | Esc | B |
 | Ver el Mazo y el Descarte | Tab | LB |
 | Lupa | L · clic derecho · pulsación larga | RB |
 | Reordenar las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |
-| Cambiar la velocidad (1× → 2× → 4×) | botón de la barra | RT |
-| Pantalla completa | F | R3 (pulsar la palanca derecha) |
-| Reiniciar la campaña | Mantener R | Mantener Select |
+| Cambiar la velocidad (1× → 2× → 4× → 8×) | botón de la barra | RT |
+| AUTO: encender o apagar | A | Select |
+| Saltar la tirada de huesos | Cualquier tecla | Cualquier botón |
+| Árbol: elegir un nodo y comprarlo | Enter en el nodo · Enter en Comprar | A en el nodo · A en Comprar |
+| Árbol: alejar / ampliar | − / + | LT / RT |
+| Árbol: mover la vista | Arrastrar · Mayús + flechas | Palanca derecha |
+| Pantalla completa | F | Start → Ajustes → Pantalla completa |
+| Reiniciar la campaña | Mantener R | Mantener Select + Start |
 | Ajustes | botón de la barra | Start |
 
 Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón (A, B, X, Y, LB, RB, LT, RT, L3, R3) si lo último que tocaste fue un mando, y nada con ratón o pantalla táctil. Cada trono lleva a la vista la placa de su palo: es **Inmune** a las cartas de ese palo.

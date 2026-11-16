@@ -691,13 +691,17 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   };
   check(await toTable(), 'sobre → mapa → ruta → mesa, todo con A y la cruceta');
 
-  // ── mantener Select: reinicio rápido ──
-  const holding = hold(page, BTN.SELECT, 950);
+  // ── V12 · mantener Select + Start: reinicio rápido (Select solo es AUTO; Start solo, Ajustes) ──
+  await page.evaluate((b) => ((window as unknown as QaWindow).__qaGamepad.pad.buttons[b] = { pressed: true, touched: true, value: 1 }), BTN.SELECT);
+  await page.waitForTimeout(120);
+  const holding = hold(page, BTN.START, 950);
   await page.waitForTimeout(300);
-  check((await count(page, '.hold-ring')) === 1, 'mantener Select enseña el anillo de reinicio');
+  check((await count(page, '.hold-ring')) === 1 && (await count(page, '.settings-modal')) === 0, 'mantener Select + Start enseña el anillo de reinicio (y no abre Ajustes)');
   await holding;
+  await page.evaluate((b) => ((window as unknown as QaWindow).__qaGamepad.pad.buttons[b] = { pressed: false, touched: false, value: 0 }), BTN.SELECT);
   await page.waitForTimeout(300);
-  check((await run(page))?.phase === 'pack', 'mantener Select reinicia la campaña (vuelve al sobre)');
+  check((await run(page))?.phase === 'pack', 'mantener Select + Start reinicia la campaña (vuelve al sobre)');
+  check(!(await page.evaluate(() => (window as unknown as { __qaJuice: { auto(): { on: boolean } } }).__qaJuice.auto().on)), 'y AUTO no queda encendido por el Select del reinicio');
   check(await toTable(), 'tras el reinicio se vuelve a la mesa con el mando');
 
   // ── gatillos y botones superiores ──
@@ -786,14 +790,18 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     console.log(`  (A1: marco de ${a1.border} px de papel, ${a1.total} px con los filetes de tinta)`);
   }
 
-  // ── R3: pantalla completa (se comprueba la llamada, no el modo real) ──
+  // ── V12 · pantalla completa desde Ajustes (Start → Pantalla completa; se comprueba la llamada, no el modo real) ──
   await page.evaluate(() => {
     const w = window as unknown as QaWindow;
     w.__fs = 0;
     document.documentElement.requestFullscreen = () => ((w.__fs += 1), Promise.resolve());
   });
-  await press(page, BTN.R3);
-  check((await page.evaluate(() => (window as unknown as QaWindow).__fs)) === 1, 'R3 pide pantalla completa, como la tecla F');
+  await press(page, BTN.START);
+  check(await focusOn(page, '#set-toggles .set-pantalla button'), 'en Ajustes, el foco llega a «Pantalla completa»');
+  await A();
+  check((await page.evaluate(() => (window as unknown as QaWindow).__fs)) === 1, 'Start → Ajustes → Pantalla completa la pide, como la tecla F');
+  await B();
+  check((await count(page, '.settings-modal')) === 0, 'B vuelve a cerrar los ajustes');
 
   // (LB / RB sobre las reliquias de la mesa se prueban al final, en la mesa de QA con seis)
   check(await focusOn(page, '#hand .card'), 'fuera de las reliquias…');
@@ -956,19 +964,19 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     }
     await page.waitForTimeout(150);
     await settled(page);
-    // una vez, tras el primer golpe: LT deshace con Rebobinar
+    // una vez, tras el primer golpe: R3 deshace con Rebobinar (V12: LT es la Mejor jugada)
     if (!undone && action.type === 'attack' && (await run(page))?.phase === 'battle' && (await page.locator('#btn-undo').isEnabled())) {
       const hp = await page.locator('.tower .hp span').allTextContents();
-      await press(page, BTN.LT);
+      await press(page, BTN.R3);
       await page.waitForTimeout(300);
       await settled(page);
       const back = await page.locator('.tower .hp span').allTextContents();
-      check(hp.join() !== back.join() && (await page.locator('#btn-undo').isDisabled()), 'LT gasta Rebobinar y deshace el golpe');
+      check(hp.join() !== back.join() && (await page.locator('#btn-undo').isDisabled()), 'R3 gasta Rebobinar y deshace el golpe');
       undone = true;
     }
   }
   check(navFails === 0, `la cruceta y la palanca llegan siempre a la carta y al trono que tocan${navFails ? ` (${navFails} fallos)` : ''}`);
-  check(undone, 'Rebobinar se probó con LT durante el asalto');
+  check(undone, 'Rebobinar se probó con R3 durante el asalto');
   if (animLag !== null)
     check(animLag >= 0 && animLag < 50, `con la mesa animando, el foco responde en menos de 50 ms (mediana ${ms(animLag)} de ${animSamples.map((n) => ms(n)).join(' · ')})`);
   else console.log('  (no se pilló ningún golpe animando para medir el foco)');
@@ -979,6 +987,26 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
 
   // ── Botín: elegir una carta ──
   if (after?.phase === 'reward') {
+    // V12 · la tirada de huesos (si la hay): A tira, y en el resultado B sigue. Una ventana encima de la tirada (el
+    // premio del Juramento) va primero: se cierra con B
+    for (let i = 0; i < 3 && (await count(page, '.modal')) > 0 && (await count(page, '#ritual')) > 0; i++) {
+      await B();
+      await page.waitForTimeout(200);
+    }
+    let tiradas = 0;
+    for (let i = 0; i < 4 && (await count(page, '#ritual')) > 0; i++) {
+      if ((await count(page, '#ritual #ritual-tirar')) > 0) {
+        check(await focusOn(page, '#ritual-tirar'), 'en la tirada de huesos, el foco llega a «Tirar»');
+        await A();
+        tiradas++;
+        await page.waitForSelector('#ritual #ritual-seguir', { timeout: 8_000 }).catch(() => undefined);
+        const visto = await page.evaluate(() => ({ fase: document.getElementById('ritual')?.dataset.fase ?? 'sin capa', foco: document.activeElement?.id || document.activeElement?.className || '∅', capas: [...document.querySelectorAll('.modal, .end, .lupa, .whisper')].map((m) => m.className).join(' · ') }));
+        check(visto.fase === 'final' || visto.fase === 'sin capa', `A tira los huesos y enseña lo que cae${visto.fase === 'antes' ? ` (sigue en «antes»; foco en ${visto.foco}; capas: ${visto.capas || 'ninguna'})` : ''}`);
+      }
+      await B();
+      await page.waitForTimeout(300);
+    }
+    if (tiradas) check((await count(page, '#ritual')) === 0, 'B sigue tras la tirada de huesos');
     // si el Juramento premió con una carta, su ventana llega primero: B la cierra
     for (let i = 0; i < 3 && (await count(page, '.modal')) > 0; i++) {
       await B();

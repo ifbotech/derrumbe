@@ -22,7 +22,9 @@ import { bindEyes, ensureDefs } from './card';
 import { S, applySettings, bindClacks, bindTips, closeModal, cycleSpeed, speedLabel, toast, topModal } from './core';
 import { bakeGrain } from './engraving';
 import { bindLupa, closeLupa, lupaOpen, openLupa } from './lupa';
-import { activate, beltSlot, bindNav, focused, keysInUse, moveFocus, shiftBelt } from './nav';
+import { activate, beltSlot, bindNav, enfoca, focused, keysInUse, moveFocus, onRightStick, padHeld, shiftBelt } from './nav';
+import { alternaAuto, bindAuto, entradaMando } from './auto';
+import { arbolVista } from './arbol';
 import { connect } from './net';
 import { openSeedLink } from './lamina';
 import { bindPings } from './pings';
@@ -30,7 +32,7 @@ import { platform, startDesktop, tauriInvoke } from './platform';
 import { CLAVE_IDIOMA, getLang, initLang, onLangChange, setLang } from '../shared/i18n';
 import { brandFor } from '../shared/brand';
 import { setScreen } from './router';
-import { onTableKey, refreshSpeed } from './table';
+import { onTableKey, refreshSpeed, usarMejor } from './table';
 import { showSettings } from './widgets';
 import { L } from './lengua';
 
@@ -44,6 +46,7 @@ bindClacks();
 bindLupa();
 bindPings(() => !S.campaign || isRunHost());
 applySettings();
+bindAuto();
 addEventListener('pointerdown', startMusic, { once: true });
 addEventListener('keydown', startMusic, { once: true });
 
@@ -53,11 +56,12 @@ let holdTimer = 0;
 let holdRing: HTMLElement | null = null;
 const HOLD_MS = 700;
 
-function startHold(): void {
+/** `pad`: con el mando el reinicio es Select + Start a la vez (el anillo lo dice). */
+function startHold(pad = false): void {
   if (holdTimer || !canRestart() || topModal() || lupaOpen()) return;
   holdRing = document.createElement('div');
-  holdRing.className = 'hold-ring';
-  holdRing.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="42"/><circle class="prog" cx="50" cy="50" r="42" pathLength="100" transform="rotate(-90 50 50)"/></svg><b>R</b><span>${L('ui.main.reiniciar')}</span>`;
+  holdRing.className = `hold-ring${pad ? ' chord' : ''}`;
+  holdRing.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="42"/><circle class="prog" cx="50" cy="50" r="42" pathLength="100" transform="rotate(-90 50 50)"/></svg><b>${pad ? L('ui.main.reiniciar.pad') : 'R'}</b><span>${L('ui.main.reiniciar')}</span>`;
   document.body.appendChild(holdRing);
   holdTimer = window.setTimeout(() => {
     endHold();
@@ -100,6 +104,72 @@ function back(): boolean {
   return !!btn;
 }
 
+// ───────────────────────── V12 · el Árbol de la Conjura con teclado y mando ─────────────────────────
+
+/** El Árbol está a la vista y nada encima. */
+const arbolAqui = () => !!document.querySelector('.arbol-vista') && !topModal() && !lupaOpen();
+/** Amplía o aleja alrededor del nodo enfocado (o del centro del pergamino). */
+function zumArbol(f: number): void {
+  const vp = document.querySelector<HTMLElement>('.arbol-vista');
+  const el = focused()?.closest<HTMLElement>('[data-nodo], [data-raiz]');
+  if (!vp) return;
+  const v = vp.getBoundingClientRect();
+  const r = el && vp.contains(el) ? el.getBoundingClientRect() : null;
+  arbolVista.zum(f, r ? r.left + r.width / 2 - v.left : undefined, r ? r.top + r.height / 2 - v.top : undefined);
+  sfx.focus(f > 1 ? 1 : -1, 0);
+}
+/** Teclas propias del Árbol. A / Enter sobre un nodo lo elige y lleva el foco a «Comprar» (comprar es otro A). */
+function arbolKey(key: string, e?: KeyboardEvent): boolean {
+  if (!arbolAqui()) return false;
+  const target = focused();
+  if (e?.shiftKey && key in ARROWS) {
+    const [dx, dy] = ARROWS[key];
+    arbolVista.mover(-dx * 90, -dy * 90);
+    return true;
+  }
+  if (key === '+' || key === '=' || (!e && key === 'Speed')) return zumArbol(1.3), true;
+  if (key === '-' || key === '−' || (!e && key === 'q')) return zumArbol(1 / 1.3), true;
+  if (key === 'Enter' && target?.matches('[data-nodo], [data-raiz]')) {
+    target.click(); // lo elige (el panel de detalle lo enseña)
+    const buy = document.querySelector<HTMLElement>('#arbol-comprar');
+    if (buy && target.matches('[data-nodo]')) enfoca(buy);
+    sfx.focus(0, 1);
+    return true;
+  }
+  if (key === 'Escape' && target?.id === 'arbol-comprar') {
+    // B / Esc desde «Comprar» vuelve al nodo elegido; otra vez, sale del Árbol
+    const nodo = document.querySelector<HTMLElement>('.arbol [data-nodo][aria-current], .arbol [data-raiz][aria-current]');
+    if (nodo) return enfoca(nodo), true;
+  }
+  return false;
+}
+// la palanca derecha mueve la vista del Árbol (unos 900 px por segundo con la palanca a fondo)
+onRightStick((x, y, dt) => {
+  if (!arbolAqui()) return false;
+  arbolVista.mover(-x * dt * 0.9, -y * dt * 0.9);
+  return true;
+});
+
+// ───────────────────────── V12 · la tirada de huesos: cualquier tecla la salta ─────────────────────────
+
+/** Con la tirada a la vista: cualquier tecla (salvo moverse) la salta; Esc / B, en el resultado, sigue. */
+function ritualKey(key: string): boolean {
+  const capa = document.getElementById('ritual');
+  if (!capa || key in ARROWS || topModal()) return false;
+  const saltar = capa.querySelector<HTMLElement>('#ritual-saltar');
+  if (saltar) {
+    // Enter / A sobre «Tirar» tira (es lo mismo: el resultado ya está decidido)
+    if (key === 'Enter' && focused()?.id === 'ritual-tirar') return false;
+    saltar.click();
+    return true;
+  }
+  if (key === 'Escape') {
+    capa.querySelector<HTMLElement>('#ritual-seguir')?.click();
+    return true;
+  }
+  return false;
+}
+
 function toggleSettings(): void {
   const open = document.querySelector('.settings-modal');
   if (open) closeModal(open);
@@ -114,6 +184,8 @@ function toggleSettings(): void {
  */
 function onKey(key: string, e?: KeyboardEvent): boolean {
   const target = focused();
+  if (ritualKey(key)) return true;
+  if (arbolKey(key, e)) return true;
   if (key in ARROWS) {
     if (e?.shiftKey) return false; // Mayús + flechas reordena el cinturón
     // con el teclado, izquierda y derecha dentro de un campo son del campo; el mando no escribe, así que mueve (o ajusta el deslizador)
@@ -130,14 +202,31 @@ function onKey(key: string, e?: KeyboardEvent): boolean {
   }
   if (e && typing(target)) return false;
   if (key === 'Speed') {
-    // gatillo derecho: 1× → 2× → 4×
+    // gatillo derecho: 1× → 2× → 4× → 8×
     cycleSpeed();
     refreshSpeed();
     toast(L('ui.main.velocidad', { v: speedLabel() }));
     return true;
   }
+  // V12 · mando: Select + Start mantenidos a la vez reinician la campaña; Select solo es AUTO, Start solo, Ajustes
+  if ((key === 'Start' && padHeld('Select')) || (key === 'Select' && padHeld('Start'))) {
+    document.querySelector('.settings-modal')?.remove(); // si Start llegó primero, su ventana se quita
+    startHold(true);
+    return true;
+  }
   if (key === 'Start') {
     toggleSettings();
+    return true;
+  }
+  // V12 · AUTO: A (teclado) o Select (mando), en una campaña
+  if ((key === 'Select' || key === 'a' || key === 'A') && S.campaign && !lupaOpen()) {
+    alternaAuto();
+    return true;
+  }
+  // V12 · Mejor jugada: Q (teclado) o LT (mando), en la mesa
+  if ((key === 'q' || key === 'Q') && S.screen === 'table' && !topModal() && !lupaOpen()) {
+    const m = usarMejor();
+    if (m) sfx.select(m.cards.length, true);
     return true;
   }
   if (key === 'Enter') {
@@ -182,8 +271,11 @@ addEventListener('keyup', (e) => {
 });
 addEventListener('blur', endHold);
 bindNav(
-  (key) => void onKey(key),
-  (key) => key === 'r' && endHold(),
+  (key) => {
+    entradaMando(key); // V12: cualquier botón (salvo Select y RT) apaga AUTO, en la misma pulsación
+    void onKey(key);
+  },
+  (key) => (key === 'Select' || key === 'Start') && endHold(),
 );
 
 // en desarrollo, el estado queda a mano en la consola para depurar

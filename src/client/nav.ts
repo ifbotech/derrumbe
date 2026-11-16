@@ -4,10 +4,13 @@
 //
 //   Teclado   flechas · Enter elegir · Espacio golpear · Y La Manga · Z Rebobinar · Supr descartar · L lupa
 //             Tab mazo · Esc atrás · F pantalla completa · Mayús + flechas reordena las reliquias
-//             · mantener R reinicia la campaña
+//             · Q Mejor jugada · A AUTO · mantener R reinicia la campaña
 //   Mando     cruceta o palanca · A elegir · X golpear · Y La Manga · B atrás · L3 descartar · LB mazo
 //             · RB lupa (con el foco en una reliquia, LB / RB la mueven a izquierda y derecha)
-//             · LT Rebobinar · RT velocidad · R3 pantalla completa · Start ajustes · mantener Select reinicia
+//             · LT Mejor jugada · RT velocidad · R3 Rebobinar · Start ajustes · Select AUTO
+//             · mantener Select + Start reinicia
+//   Árbol     cruceta por los nodos · A elige y lleva a «Comprar» · B vuelve al nodo y otra B sale
+//             · LT / RT o − / + alejan y amplían · palanca derecha o Mayús + flechas mueven la vista
 //
 // El foco responde en el mismo fotograma de la pulsación (marco, salto de escala y un toque de latón)
 // y marca lo enfocado con data-foco (V8 · A1: la carta enfocada de la mano se levanta, theme.css),
@@ -24,7 +27,10 @@ const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), select, [tabinde
 /** Lo que tiene desplazamiento propio: solo ahí dentro se mueve la vista para enseñar lo enfocado. */
 const SCROLLERS = '.scroll, .run-body, .modal-box, .lupa-sheet, .lupa-box, .home-right, .lobby-side, .camp-grid, .acta-sheet, .deck-rows';
 /** Atributos que identifican un elemento aunque se vuelva a pintar (para devolverle el foco). */
-const KEYS = ['id', 'data-id', 'data-slot', 'data-suit', 'data-tab', 'data-set', 'data-vol', 'data-i', 'data-opt', 'data-lang'];
+const KEYS = ['id', 'data-id', 'data-slot', 'data-suit', 'data-tab', 'data-set', 'data-vol', 'data-i', 'data-opt', 'data-lang', 'data-nodo'];
+/** V12: el pergamino del Árbol (arbol.ts): dentro, la cruceta va de nodo en nodo aunque estén fuera de la vista. */
+const LIENZO = '[data-lienzo]';
+const NODOS = '[data-nodo], [data-raiz]';
 
 export type InputMode = 'pointer' | 'keys' | 'pad';
 let mode: InputMode = 'pointer';
@@ -44,14 +50,21 @@ export function setMode(next: InputMode): void {
 /** La capa en la que se navega: la ventana de arriba si hay alguna, o la pantalla. */
 function scope(): HTMLElement {
   const layers = [...document.querySelectorAll<HTMLElement>('.modal, .end, .lupa')];
-  return layers[layers.length - 1] ?? document.getElementById('app') ?? document.body;
+  // V12: la tirada de huesos (#ritual) es una capa sobre el Botín, por debajo de las ventanas (z-index 85 < 90)
+  return layers[layers.length - 1] ?? document.getElementById('ritual') ?? document.getElementById('app') ?? document.body;
 }
 
 function candidates(): HTMLElement[] {
   return [...scope().querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => {
     if (el.closest('[hidden]')) return false;
     const r = el.getBoundingClientRect();
-    return r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    if (!(r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth)) return false;
+    // V12: un nodo del Árbol fuera de su pergamino (ampliado) no se ve: desde fuera solo se entra a lo visible
+    const lienzo = el.closest(LIENZO);
+    if (!lienzo) return true;
+    const v = lienzo.getBoundingClientRect();
+    const [cx, cy] = [r.left + r.width / 2, r.top + r.height / 2];
+    return cx >= v.left && cx <= v.right && cy >= v.top && cy <= v.bottom;
   });
 }
 
@@ -280,14 +293,31 @@ export function moveFocus(dx: number, dy: number): void {
     return;
   }
   if (!from) {
-    const first = list.find((el) => el.matches('.primary, .choice.pick, #hand .card')) ?? list[0];
+    // V12: en el Árbol, el primer toque enciende el foco en el nodo elegido (nunca directamente en «Comprar»)
+    const first = list.find((el) => el.matches('[data-nodo][aria-current]')) ?? list.find((el) => el.matches('.primary, .choice.pick, #hand .card')) ?? list[0];
     if (first) {
       reveal(first);
       sfx.focus();
     }
     return;
   }
-  const best = nearest(from.getBoundingClientRect(), list.filter((el) => el !== from), dx, dy);
+  // V12 · Árbol: de nodo en nodo por el mapa (también los que quedan fuera de la vista: el pergamino se mueve
+  // hasta el nodo al enfocarlo, arbol.ts). Si no queda nodo hacia ese lado, se sale del pergamino (panel, pestañas)
+  const lienzo = from.matches(NODOS) ? from.closest(LIENZO) : null;
+  if (lienzo) {
+    const nodo = nearest(from.getBoundingClientRect(), [...lienzo.querySelectorAll<HTMLElement>(NODOS)].filter((el) => el !== from && !el.closest('[hidden]')), dx, dy);
+    if (nodo) {
+      reveal(nodo);
+      sfx.focus(dx, dy);
+      return;
+    }
+  }
+  let best = nearest(from.getBoundingClientRect(), list.filter((el) => el !== from && (!lienzo || !lienzo.contains(el))), dx, dy);
+  // V12 · mesa: «arriba» desde la botonera (Mejor jugada, Rebobinar…) no salta la mesa hasta la barra de arriba:
+  // se para en el trono más cercano (a la barra se sube desde los tronos)
+  if (dy < 0 && best?.closest('.bar') && from.closest('.table-screen .actions')) {
+    best = nearest(from.getBoundingClientRect(), list.filter((el) => el.matches('.tower')), dx, dy) ?? best;
+  }
   if (best) {
     reveal(best);
     sfx.focus(dx, dy);
@@ -309,6 +339,11 @@ export function activate(): boolean {
 }
 
 export const focused = () => (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+/** V12: enfoca un elemento como si se hubiera llegado con la cruceta (marco, salto y memoria del foco). */
+export function enfoca(el: HTMLElement): void {
+  if (mode === 'pointer') setMode('keys');
+  reveal(el);
+}
 
 // ───────────────────────── Reliquias (el cinturón, .belt) ─────────────────────────
 
@@ -346,6 +381,15 @@ let release: Handler = () => undefined;
 /** Tecla → instante en que toca repetirla (solo se repiten las direcciones). */
 const held = new Map<string, number>();
 
+/** V12: lo que hace la palanca derecha (x, y en −1…1 fuera de la zona muerta; dt en ms). La pone main.ts (el Árbol). */
+let stick2: (x: number, y: number, dt: number) => boolean = () => false;
+export function onRightStick(fn: (x: number, y: number, dt: number) => boolean): void {
+  stick2 = fn;
+}
+/** V12: si una tecla del mando está pulsada ahora mismo (Select + Start, el reinicio, se pulsan a la vez). */
+export const padHeld = (key: string): boolean => held.has(key);
+let lastPoll = 0;
+
 /** Zona muerta de la palanca, primera repetición al mantener y ritmo de las siguientes (ms). */
 export const PAD = { deadzone: 0.28, first: 320, repeat: 110 };
 /**
@@ -363,18 +407,23 @@ const BUTTONS: [number, string][] = [
   [3, 'y'], // Y
   [4, 'Tab'], // LB
   [5, 'l'], // RB
-  [6, 'z'], // LT
-  [7, 'Speed'], // RT
-  [8, 'r'], // Select
+  [6, 'q'], // LT: Mejor jugada (en el Árbol, alejar)
+  [7, 'Speed'], // RT: velocidad (en el Árbol, ampliar)
+  [8, 'Select'], // Select: AUTO (con Start a la vez y mantenidos, reinicia la campaña)
   [9, 'Start'],
   [10, 'Delete'], // L3: pulsar la palanca izquierda descarta lo elegido
-  [11, 'f'], // R3: pulsar la palanca derecha, pantalla completa
+  [11, 'z'], // R3: pulsar la palanca derecha, Rebobinar
 ];
 
 /** Convierte botones y palanca en las mismas teclas que usa el teclado. */
 function poll(now: number): void {
   const pad = [...(navigator.getGamepads?.() ?? [])].find((p) => p && p.connected);
+  const dt = Math.min(50, now - (lastPoll || now));
+  lastPoll = now;
   if (pad) {
+    // V12: la palanca derecha (ejes 2 y 3), continua: en el Árbol mueve la vista
+    const [rx, ry] = [pad.axes[2] ?? 0, pad.axes[3] ?? 0];
+    if (Math.hypot(rx, ry) > PAD.deadzone && stick2(rx, ry, dt)) setMode('pad');
     const down = (i: number) => !!pad.buttons[i] && (pad.buttons[i].pressed || pad.buttons[i].value > 0.5);
     const x = pad.axes[0] ?? 0;
     const y = pad.axes[1] ?? 0;

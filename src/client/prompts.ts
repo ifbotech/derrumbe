@@ -9,14 +9,15 @@
 // las filas de la tabla salen de las claves `ui.tecla.*` y `ui.ctl.*` (src/shared/i18n/ui-juice.ts).
 import { getLang, tFor, type Lang } from '../shared/i18n';
 
-export type Act = 'choose' | 'strike' | 'stash' | 'undo' | 'back' | 'deck' | 'lupa' | 'speed' | 'settings' | 'discard' | 'restart' | 'beltLeft' | 'beltRight' | 'fullscreen';
+export type Act = 'choose' | 'strike' | 'stash' | 'undo' | 'back' | 'deck' | 'lupa' | 'speed' | 'settings' | 'discard' | 'restart' | 'beltLeft' | 'beltRight' | 'fullscreen' | 'best' | 'auto' | 'zoomIn' | 'zoomOut';
 
 /** [tecla, botón del mando] (la tecla con su nombre español). Vacío: esa acción no tiene atajo ahí. */
 export const CONTROLS: Record<Act, [string, string]> = {
   choose: ['Enter', 'A'],
   strike: ['Espacio', 'X'],
   stash: ['Y', 'Y'],
-  undo: ['Z', 'LT'],
+  // V12: R3 = pulsar la palanca derecha (en la mesa no mueve nada: no se pulsa sin querer). LT es ahora Mejor jugada
+  undo: ['Z', 'R3'],
   back: ['Esc', 'B'],
   deck: ['Tab', 'LB'],
   lupa: ['L', 'RB'],
@@ -24,12 +25,20 @@ export const CONTROLS: Record<Act, [string, string]> = {
   settings: ['', 'Start'],
   // L3 = pulsar la palanca izquierda. Botón propio: una pulsación corta de X golpea y nunca descarta
   discard: ['Supr', 'L3'],
-  restart: ['R', 'Select'],
+  // V12: dos botones a la vez (Select a solas es AUTO: tocar y mantener un mismo botón no hacen cosas distintas)
+  restart: ['R', 'Select + Start'],
   // con el foco en una reliquia; fuera de ellas, LB abre el mazo y RB la lupa
   beltLeft: ['Mayús ←', 'LB'],
   beltRight: ['Mayús →', 'RB'],
-  // R3 = pulsar la palanca derecha
-  fullscreen: ['F', 'R3'],
+  // V12: con el mando, desde Ajustes (Start), como con el ratón
+  fullscreen: ['F', 'Start'],
+  // V12 · Mejor jugada: elige las cartas y el trono; no golpea
+  best: ['Q', 'LT'],
+  // V12 · AUTO: enciende o apaga (cualquier otra tecla o botón lo apaga)
+  auto: ['A', 'Select'],
+  // V12 · el Árbol de la Conjura: ampliar y alejar
+  zoomIn: ['+', 'RT'],
+  zoomOut: ['−', 'LT'],
 };
 
 /** Las teclas cuyo nombre cambia con el idioma. */
@@ -42,7 +51,7 @@ export function keyName(lang: Lang, key: string): string {
 /** Las insignias de una acción (tecla y botón) en el idioma de la mesa; el CSS enseña la que toca. */
 export function hint(act: Act): string {
   const [key, pad] = CONTROLS[act];
-  return `${key ? `<kbd class="kh kb">${keyName(getLang(), key)}</kbd>` : ''}${pad ? `<kbd class="kh pd b-${pad.toLowerCase()}">${pad}</kbd>` : ''}`;
+  return `${key ? `<kbd class="kh kb">${keyName(getLang(), key)}</kbd>` : ''}${pad ? `<kbd class="kh pd b-${pad.toLowerCase().replace(/[^a-z0-9]+/g, '-')}">${pad}</kbd>` : ''}`;
 }
 
 /**
@@ -60,7 +69,8 @@ export function controlRows(lang: Lang, kbd = false): [string, string, string][]
     [T('ui.ctl.elegir'), T('ui.ctl.elegir.k', { k: key('choose') }), pad('choose')],
     [T('ui.ctl.golpear'), T('ui.ctl.golpear.k', { k: key('strike') }), pad('strike')],
     [T('ui.ctl.manga'), key('stash'), pad('stash')],
-    [T('ui.ctl.rebobinar'), key('undo'), pad('undo')],
+    [T('ui.ctl.mejor'), key('best'), pad('best')],
+    [T('ui.ctl.rebobinar'), key('undo'), T('ui.ctl.rebobinar.p', { p: pad('undo') })],
     [T('ui.ctl.descartar'), key('discard'), T('ui.ctl.descartar.p', { p: pad('discard') })],
     [T('ui.ctl.atras'), key('back'), pad('back')],
     [T('ui.ctl.saltar'), key('back'), pad('back')],
@@ -68,6 +78,11 @@ export function controlRows(lang: Lang, kbd = false): [string, string, string][]
     [T('ui.ctl.lupa'), T('ui.ctl.lupa.k', { k: key('lupa') }), pad('lupa')],
     [T('ui.ctl.reliquias'), T('ui.ctl.reliquias.k', { mayus: box(T('ui.tecla.mayus')) }), T('ui.ctl.reliquias.p', { a: pad('beltLeft'), b: pad('beltRight') })],
     [T('ui.ctl.velocidad'), T('ui.ctl.barra'), pad('speed')],
+    [T('ui.ctl.auto'), key('auto'), pad('auto')],
+    [T('ui.ctl.ritual'), T('ui.ctl.ritual.k'), T('ui.ctl.ritual.p')],
+    [T('ui.ctl.arbol.comprar'), T('ui.ctl.arbol.comprar.k', { k: key('choose') }), T('ui.ctl.arbol.comprar.k', { k: pad('choose') })],
+    [T('ui.ctl.arbol.zum'), `${key('zoomOut')} / ${key('zoomIn')}`, `${pad('zoomOut')} / ${pad('zoomIn')}`],
+    [T('ui.ctl.arbol.mover'), T('ui.ctl.arbol.mover.k', { mayus: box(T('ui.tecla.mayus')) }), T('ui.ctl.arbol.mover.p')],
     [T('ui.ctl.pantalla'), key('fullscreen'), T('ui.ctl.pantalla.p', { p: pad('fullscreen') })],
     [T('ui.ctl.reiniciar'), T('ui.ctl.mantener', { k: key('restart') }), T('ui.ctl.mantener', { k: pad('restart') })],
     [T('ui.ctl.ajustes'), T('ui.ctl.barra'), pad('settings')],

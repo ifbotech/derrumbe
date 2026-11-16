@@ -78,7 +78,7 @@ export function buildTable(): void {
       <div class="players" id="players"></div>
       <button id="btn-deck" data-tip="${L('ui.mesa.mazo.tip')}">${L('ui.mesa.mazo')}${hint('deck')}</button>
       <button id="btn-speed" class="ritmo" data-tip="${L('ui.mesa.velocidad.tip')}"></button>
-      ${t ? '' : `<button id="btn-auto" class="ritmo" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span></button>`}
+      ${t ? '' : `<button id="btn-auto" class="ritmo" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span>${hint('auto')}</button>`}
       <button id="btn-set">${L('ui.ajustes')}${hint('settings')}</button>
       <button id="btn-rules">${L('ui.reglas')}</button>
       <button id="btn-leave">${L('ui.salir')}</button>
@@ -120,7 +120,7 @@ export function buildTable(): void {
       </div>
       <div class="actions">
         <button id="btn-strike" class="primary" data-tip="${L('ui.mesa.golpear.tip')}"><span class="lbl">${L('ui.mesa.golpear')}</span>${hint('strike')}</button>
-        <button id="btn-mejor" class="secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span></button>
+        <button id="btn-mejor" class="secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span>${hint('best')}</button>
         <button id="btn-stash" data-tip="${L('ui.mesa.manga.tip')}"><span class="lbl">${L('ui.mesa.manga')}</span>${hint('stash')}</button>
         <button id="btn-undo" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${L('ui.mesa.deshacer')}</span>${hint('undo')}</button>
         <button id="btn-discard"><span class="lbl">${L('ui.mesa.descartar')}</span><b class="sel-n" id="discard-n" hidden></b>${hint('discard')}</button>

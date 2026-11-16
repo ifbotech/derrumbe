@@ -22,6 +22,7 @@ import { colocarCaida, recogerCaida } from './caida';
 import { pintarRitual, ritualNuevo } from './ritual';
 import type { Pieza } from '../rules/caida';
 import { conmutaAuto, refreshSpeed, renderHud, usarMejor } from './table';
+import { congelaAuto } from './auto'; // juice-ux: AUTO encendido a la vista sin jugar (mesa-auto)
 
 import { openLupa } from './lupa';
 import { InputMode, setMode } from './nav';
@@ -658,6 +659,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     settings.speed = 8;
     refreshSpeed();
     conmutaAuto(true);
+    congelaAuto();
     renderInteractive();
   },
   // V12 · Mejor jugada pulsada: las cartas elegidas y su trono marcados, y las coronas del Golpe exacto en la mano

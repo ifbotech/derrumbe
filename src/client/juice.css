@@ -325,3 +325,18 @@ button.whisper-off:hover:not(:disabled), button.whisper-off:focus-visible { --bg
 .focus-ring .pad-hint b { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; min-height: 30px; font-family: 'Archivo', Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: none; color: var(--ring-paper); background: var(--ring-ink); border: 2px solid var(--ring-paper); border-radius: 999px; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45); }
 .focus-ring .pad-hint .kh { margin: 0; background: var(--ring-paper); color: var(--ring-ink); box-shadow: none; border-color: var(--ring-paper); }
 .focus-ring .pad-hint .kh + .kh { margin-left: -2px; }
+
+/* V12 · AUTO en pausa (auto.ts): una línea arriba en el centro, sin punteros (no tapa nada que se pulse). Entra
+   solo con opacity; con «Reducir movimiento», sin animación. */
+#auto-aviso { position: fixed; left: 50%; top: 8px; transform: translateX(-50%); z-index: 120; max-width: calc(100vw - 32px); padding: 6px 14px; font-family: 'Archivo', Arial, sans-serif; font-size: 15px; font-weight: 700; line-height: 1.25; letter-spacing: 0; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink, #14110e); background: var(--laton, #d4a94c); border: 2px solid var(--pit, #0d0c0b); box-shadow: 0 3px 0 var(--pit, #0d0c0b); pointer-events: none; animation: calmin 0.18s linear both; }
+.calm #auto-aviso { animation: none; }
+@media (prefers-reduced-motion: reduce) { #auto-aviso { animation: none; } }
+@media (max-width: 640px) { #auto-aviso { white-space: normal; font-size: 14px; } }
+/* V12 · el reinicio con el mando es Select + Start: el anillo lo escribe en pequeño */
+.hold-ring.chord b { font-size: clamp(15px, 2.6vh, 22px); letter-spacing: 0; white-space: nowrap; margin-top: -0.6em; }
+
+/* V12 · la insignia de AUTO en la barra va en la esquina, como las de la botonera: así «Select» no ensancha la
+   barra y el turno no se pisa con «Mazo» a 1280 × 800 en inglés */
+.bar #btn-auto { position: relative; }
+.bar #btn-auto .kh { position: absolute; z-index: 2; top: -8px; right: -6px; margin: 0; }
+.bar #btn-auto .kh + .kh { right: auto; left: -6px; }

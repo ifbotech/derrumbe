@@ -89,6 +89,13 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
       await page.waitForTimeout(250);
       continue;
     }
+    // V12 · la tirada de huesos (al ganar un asalto): se tira y se sigue con el ratón
+    if (await has('#ritual')) {
+      const boton = (await has('#ritual #ritual-tirar')) ? '#ritual #ritual-tirar' : '#ritual #ritual-seguir';
+      await page.locator(boton).click({ timeout: 5_000 }).catch(() => undefined);
+      await page.waitForTimeout(300);
+      continue;
+    }
     if (r.phase === 'pack') await page.locator('#go').click();
     else if (r.phase === 'map') {
       // el Mapa del Salón del Trono lleva la estampilla «Rey Tirano» (o «Reina Tirana») en su asalto
