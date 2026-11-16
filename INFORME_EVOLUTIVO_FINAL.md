@@ -1,6 +1,6 @@
 # Informe evolutivo final · de la 10.0 a la 20.0
 
-**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-16. Campeón publicado: **20.0** (`v20.0.0`, commit `c19e864` en `origin/main`), jugable en <https://ifbotech.github.io/derrumbe/>.
+**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-16. Campeón publicado: **20.0** (`v20.0.1` en `origin/main`; la 20.0.1 solo arregla la barra en inglés con mando), jugable en <https://ifbotech.github.io/derrumbe/>.
 
 ## En corto
 
@@ -9,6 +9,7 @@
 - **De la 12.0 a la 20.0 se construyeron nueve versiones**: cuatro publicadas (12.0, 16.0, 19.0, 20.0) y cinco rechazadas y guardadas en ramas (13.0, 14.0, 15.0, 17.0, 18.0).
 - **El efecto más firme de la misión es la cuenta entera** («1.036 = Daño 148 × Multi ×7» en vez de «1K»): sube la claridad unas seis décimas en dos corridas seguidas (p ≈ 0,05–0,08).
 - **El instrumento tiene más ruido que casi todos los cambios**: con 24 personas, una corrida se mueve ±10–15 puntos de F sin que cambie nada. Dos de las tres aceptaciones recientes (16.0 y 20.0) dependen de un solo voto de Steam Deck; en la 20.0 ese voto es ajeno al cambio.
+- **Al final se corrigió el instrumento y se volvió a medir al Campeón: 140,36** (su corrida original dio 162,28). El mismo juego, 22 puntos de diferencia: el 162 fue suerte y ninguna decisión de la 13.0 a la 20.0 queda demostrada por F.
 - **No se corrió la réplica en inglés ni el `rapido-60` ni el censo de 240**: estaban reservados para cuando una corrida pasara los seis objetivos.
 
 ## 1. Trayectoria
@@ -45,6 +46,7 @@ Todas las filas son del panel simulado (`..\panelAgentesGaming`). Las cifras de 
 | 18.0 | rechazada | 50,0 | 25,0 | 37,5 | 0,0 | 66,7 | 6,46 | 7,12 | 134,36 | 8,00 |
 | **19.0** | **publicada** | 54,2 | 25,0 | 37,5 | 25,0 | 66,7 | 6,50 | 7,17 | 151,55 | 8,00 |
 | **20.0** | **publicada (Campeón)** | 54,2 | 37,5 | 37,5 | 50,0 | 66,7 | 6,38 | 7,21 | **162,28** | 5,25 |
+| 20.0, remedida con el instrumento corregido | Campeón (listón vigente) | 45,8 | 25,0 | 37,5 | 25,0 | 50,0 | 6,21 | 6,96 | **140,36** | — |
 
 Notas de lectura:
 
@@ -81,8 +83,10 @@ También se descartó por el camino, sin llegar a medirse: atenuar las cartas no
 1. **Una corrida de 24 personas no distingue mejoras chicas.** La misma persona, con las mismas capturas y el mismo texto, cambia de voto entre corridas. El estrato de Steam Deck (4 personas) se mueve de 25 en 25 puntos.
 2. **La regla «F de una corrida mayor que F del Campeón» hace de trinquete con la suerte**: cada corrida afortunada sube el listón. El 162,28 actual incluye un voto de Steam Deck que no se puede atribuir a la 20.0.
 3. **El auditor visual tiene manías por dispositivo**: en portátil escribe siempre «botones chicos y pegados para trackpad»; en Steam Deck, siempre algo sobre el foco. Perseguir esas frases captura a captura no converge. Sí es señal lo que repite en dos re-sorteos seguidos (así se encontró la etiqueta pegada a la carta).
-4. **Las capturas de 1280×800 se auditan como «Steam Deck solo con mando», pero salvo dos están tomadas con ratón** (sin marco de foco ni insignias de botón). El auditor marca «no hay foco» en pantallas donde el juego, con mando, sí lo enseña. Corregirlo es cambiar el instrumento y pide volver a medir el Campeón; quedó sin hacer.
-5. **Dos escenas del panel describen de menos el juego**: dicen que las Reliquias «se reordenan arrastrando», y el juego también las mueve con dos clics (una Reliquia y luego el hueco) y con Mayús + flechas. Tres personas de portátil votan en contra citando el arrastre. Misma advertencia: es una corrección del instrumento, no del juego.
+4. **Las capturas de 1280×800 se auditaban como «Steam Deck solo con mando», pero salvo dos estaban tomadas con ratón** (sin marco de foco ni insignias de botón). **Corregido al final** (20.0.1): la QA fotografía esa ventana jugando con mando. De paso apareció un fallo real, ya arreglado: en inglés, con mando y monarca, la barra se pisaba 5 px.
+5. **Dos escenas del panel describen de menos el juego**: dicen que las Reliquias «se reordenan arrastrando», y el juego también las mueve con dos clics (una Reliquia y luego el hueco) y con Mayús + flechas. Tres personas de portátil votaban en contra citando el arrastre. **Corregido al final** junto con lo anterior.
+
+**La remedida del Campeón con las dos correcciones dio F 140,36 frente a 162,28**: no subieron la nota (Steam Deck sigue en 1 de 4) y dejaron medido el ruido. Es el dato más útil del final de la misión: dos corridas del mismo juego difieren en 22 puntos de F.
 6. **Lo que funcionó como método**: leer primero qué capturas ve el estrato que hace de piso; cambiar solo lo que se ve con `data-input=pad` para no tocar las capturas de los demás; recombinar lo que subió en candidatas rechazadas; y escribir la predicción de F antes de medir.
 
 ### Qué haría falta para acercarse a los objetivos
