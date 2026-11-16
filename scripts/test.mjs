@@ -35,7 +35,7 @@ GUARDIÁN · npm test: una pasada de Vitest pasó de ${TOPE_TEST} s. Se corta co
 }
 
 // Misión V12 → V26: dos modos.
-//   npm test             rápido (< 25 s): muestras cortas de Monte Carlo y las dos pasadas a la vez
+//   npm test             rápido (< 25 s): muestras cortas de Monte Carlo; las dos pasadas, una tras otra
 //   npm run test:full    completo: PRUEBAS_COMPLETAS=1 (muestras enteras) y las pasadas una tras otra, como siempre
 const COMPLETO = args.includes('--completo') || process.env.PRUEBAS_COMPLETAS === '1';
 if (COMPLETO) process.env.PRUEBAS_COMPLETAS = '1';
@@ -54,7 +54,9 @@ if (!COMPLETO) {
       h.on('exit', (codigo) => (clearTimeout(reloj), ok({ codigo: codigo ?? 1, salida })));
     });
   const t0 = Date.now();
-  const [todo, primera] = await Promise.all([lanza(['--exclude', COOP]), lanza([COOP])]);
+  // una tras otra: a la vez, con la máquina cargada, la prueba de cortes del cooperativo (sensible al tiempo) fallaba
+  const todo = await lanza(['--exclude', COOP]);
+  const primera = await lanza([COOP]);
   process.stdout.write(todo.salida);
   let coop = primera;
   for (let i = 1; coop.codigo !== 0 && i < INTENTOS && CAIDA_NATIVA.test(coop.salida) && !/AssertionError|Test timed out| FAIL /.test(coop.salida); i++) {
