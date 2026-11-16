@@ -36,15 +36,15 @@
     "curar": { "base": 5, "paso": 1, "vida": 6 },
     "renovar": { "base": 2, "paso": 1 }
   },
-  "cobro": { "asalto": -2, "vidaCada": 5, "interesCada": 5, "curaTrasAsalto": 4, "sinSeleccion": 3 },
+  "cobro": { "asalto": -1, "vidaCada": 5, "interesCada": 5, "curaTrasAsalto": 4, "sinSeleccion": 3 },
   "arbol": {
-    "oroPorNivel": 2,
+    "oroPorNivel": 1,
     "costes": {
-      "caja": [300, 600, 900, 1200, 1500],
+      "caja": [300, 600, 700, 800, 900],
       "vale": [400, 800],
       "tienda": [800, 1200],
       "rutas": [600],
-      "tasador": [400, 800, 1600],
+      "tasador": [200, 300, 400],
       "caja_precision": [400],
       "caja_sismo": [400],
       "caja_alquimia": [400],

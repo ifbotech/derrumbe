@@ -851,9 +851,10 @@ export function stageConfig(run: Run, players = 1): Config {
   cfg.fatigueEvery = FATIGUE.every;
   cfg.fatigueDano = FATIGUE.dano;
   cfg.formLevel = { ...run.levels };
-  // Árbol (Arsenal): Manga honda guarda 2 cartas; Buen ojo da Golpe exacto pasándose por poco (solo por arriba)
-  if (rangoDe(run.up, 'manga') > 0) cfg.reserveSize = 2;
-  if (rangoDe(run.up, 'gracia') > 0) cfg.cleanOver = cifraDe('gracia', rangoDe(run.up, 'gracia')).n;
+  // Árbol (Corona de hierro), solo en el Trono infinito: Manga honda guarda 2 cartas; Buen ojo da Golpe exacto
+  // pasándose por poco (solo por arriba). En los cinco asaltos no tocan la mesa (V12-C).
+  if (run.endless && rangoDe(run.up, 'manga') > 0) cfg.reserveSize = 2;
+  if (run.endless && rangoDe(run.up, 'gracia') > 0) cfg.cleanOver = cifraDe('gracia', rangoDe(run.up, 'gracia')).n;
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
   if (run.boss) BOSS[run.boss]?.apply(cfg);
   if (run.contract) CONTRACT[run.contract]?.cfg?.(cfg);

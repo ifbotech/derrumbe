@@ -25,10 +25,11 @@ export const OBJETIVOS = {
   /** Campañas que mueren en el asalto 1 (Reinado 1, Árbol vacío), en %: el asalto de dos tronos enseña, no mata. */
   muertesAsalto1: 8,
   /**
-   * Duración estimada de una campaña, en minutos: (inicio + 4 entreactos + 2 Secretos + jugada × Σ medianas
-   * de turnos de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado (SPECS/V11.md 1.10).
+   * Duración estimada de una campaña, en minutos: (inicio + 4 entreactos + 2 Secretos + 5 tiradas de huesos +
+   * jugada × Σ medianas de turnos de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado
+   * (SPECS/V11.md 1.10; la tirada, SPECS/V12.md 1.12).
    */
-  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, jugada: 18 },
+  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 18 },
   /** Asalto único (partida clásica): victorias del bot con 1, 2, 3 y 4 jugadores. */
   clasica: [58, 65],
 } as const;
@@ -178,7 +179,7 @@ export function duracion(r: Pick<InformeMeta, 'pacing'>): number | null {
   const p = r.pacing.filter((x) => x.n > 0 && x.stage <= 5);
   if (p.length < 5) return null;
   const turnos = p.reduce((a, x) => a + x.p50, 0);
-  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + D.jugada * turnos) / 60) * 10) / 10;
+  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual + D.jugada * turnos) / 60) * 10) / 10;
 }
 
 /** La partida clásica: del 58 al 65 % con 1, 2, 3 y 4 jugadores. */

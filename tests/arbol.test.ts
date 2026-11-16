@@ -1,10 +1,13 @@
 // V12 · el Árbol de la Conjura (SPECS/V12.md, apartados 1.5 y 1.12): 30 nodos y la raíz, costes, textos,
-// compras y la neutralidad de los 15 nodos incrementales (no cambian ninguna partida).
+// compras y la neutralidad de los 17 nodos que no son del Arsenal en la campaña de cinco asaltos (V12-C: Manga
+// honda y Buen ojo solo actúan en el Trono infinito; los otros 15 no cambian ningún combate).
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from '../src/rules/achievements';
 import { ARBOL, RAIZ, RAMAS, arbolLleno, cifraDe, comprarNodo, costeDe, dosCifras, imanDe, nodo, puedeComprar } from '../src/rules/arbol';
 import { BALANCE, fill, fillFor } from '../src/rules/balance-config';
 import { BOSSES, CONTRACTS, EVENTS, TAGS, UPGRADES, buyUpgrade, cleanUp, newMeta, newRun, stageConfig, startStage } from '../src/rules/run';
+import { newTowers, previewStrike } from '../src/rules/engine';
+import type { Card } from '../src/rules/engine';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
 import { DICCIONARIOS, tFor } from '../src/shared/i18n';
@@ -12,15 +15,18 @@ import { playCampaign } from '../scripts/lab';
 
 const ORDEN_11 = ['caja_precision', 'caja_sismo', 'caja_alquimia', 'caja_limite', 'caja_trituradora', 'caja_aguante', 'tampones', 'bronce', 'vale', 'tienda', 'caja', 'rutas'];
 const INCREMENTALES = ARBOL.filter((n) => !n.combate);
+const PUROS = ARBOL.filter((n) => !n.combate && !n.infinito);
 
 describe('la forma del Árbol', () => {
-  it('30 nodos y la raíz; 15 de combate y 15 incrementales; 14 de 5 rangos', () => {
+  it('30 nodos y la raíz; 13 de combate, 2 del Trono infinito y 15 incrementales puros; 14 de 5 rangos', () => {
     expect(ARBOL).toHaveLength(30);
     expect(RAIZ.id).toBe('raiz');
     expect(nodo('raiz')).toBeUndefined();
     expect(new Set(ARBOL.map((n) => n.id)).size).toBe(30);
-    expect(ARBOL.filter((n) => n.combate)).toHaveLength(15);
-    expect(INCREMENTALES).toHaveLength(15);
+    expect(ARBOL.filter((n) => n.combate)).toHaveLength(13);
+    expect(INCREMENTALES).toHaveLength(17);
+    expect(PUROS).toHaveLength(15);
+    expect(ARBOL.filter((n) => n.infinito).map((n) => n.id).sort()).toEqual(['gracia', 'manga']);
     expect(ARBOL.filter((n) => n.rangos === 5)).toHaveLength(14);
     expect(ARBOL.filter((n) => n.rangos === 2 || n.rangos === 3).map((n) => n.id).sort()).toEqual(['gracia', 'tasador', 'tienda', 'vale']);
     expect(ARBOL.filter((n) => n.rangos === 1)).toHaveLength(12);
@@ -29,11 +35,14 @@ describe('la forma del Árbol', () => {
 
   it('las 12 mejoras de La Orden siguen con su id en el Arsenal, con sus costes de hoy × 100 (la Bolsa, con 5 rangos)', () => {
     for (const id of ORDEN_11) expect(nodo(id)?.rama, id).toBe('arsenal');
-    expect(nodo('caja')!.costs).toEqual([300, 600, 900, 1200, 1500]);
+    // V12-C: los rangos 3 a 5 (nuevos) bajan para que el Arsenal lleno cueste unas 7 campañas (criterio 7)
+    expect(nodo('caja')!.costs).toEqual([300, 600, 700, 800, 900]);
+    expect(nodo('tasador')!.costs).toEqual([200, 300, 400]);
     expect(nodo('vale')!.costs).toEqual([400, 800]);
     expect(nodo('tienda')!.costs).toEqual([800, 1200]);
     for (const id of ['caja_precision', 'caja_sismo', 'caja_alquimia', 'caja_limite', 'caja_trituradora', 'caja_aguante']) expect(nodo(id)!.costs).toEqual([400]);
-    expect(BALANCE.arbol.oroPorNivel).toBe(2);
+    // V12-C: 1 de oro por rango (5 con la Bolsa llena; La Orden de la 11.0 daba 2 × 4 = 8)
+    expect(BALANCE.arbol.oroPorNivel).toBe(1);
   });
 
   it('cuatro ramas; cada padre existe, está en el Árbol y no hay ciclos', () => {
@@ -48,6 +57,11 @@ describe('la forma del Árbol', () => {
     }
     for (const r of RAMAS) expect(ARBOL.some((n) => n.rama === r.id)).toBe(true);
     expect(ARBOL.filter((n) => n.combate).every((n) => n.rama === 'arsenal')).toBe(true);
+    // lo que solo actúa en el Trono infinito vive en su rama, la Corona de hierro
+    expect(ARBOL.filter((n) => n.infinito).every((n) => n.rama === 'corona' && !n.combate)).toBe(true);
+    // ningún par de nodos ocupa el mismo sitio del pergamino
+    const sitios = [RAIZ, ...ARBOL].map((n) => `${n.pos.x},${n.pos.y}`);
+    expect(new Set(sitios).size).toBe(sitios.length);
   });
 
   it('costes enteros, positivos y crecientes; los incrementales, base × 3^(rango − 1) a dos cifras significativas', () => {
@@ -63,7 +77,7 @@ describe('la forma del Árbol', () => {
   });
 
   it('cifras de cada rango (enteras salvo los segundos del imán) y los dados con multiplicadores enteros', () => {
-    expect(cifraDe('caja', 3)).toEqual({ oro: 2 });
+    expect(cifraDe('caja', 3)).toEqual({ oro: 1 });
     expect(cifraDe('esq_monarca', 2)).toEqual({ n: 50 });
     expect(cifraDe('cara_rey', 1)).toEqual({ n: 4 });
     expect(cifraDe('cara_rey', 5)).toEqual({ n: 8 });
@@ -135,7 +149,7 @@ describe('comprar', () => {
     expect(meta).toMatchObject({ renown: 9_700, up: { caja: 1 } });
     expect(puedeComprar(meta, 'vale')).toBeNull();
     for (let i = 0; i < 4; i++) expect(buyUpgrade(meta, 'caja')).toBe(true);
-    expect(meta.renown).toBe(10_000 - 4_500);
+    expect(meta.renown).toBe(10_000 - 3_300);
     expect(costeDe(meta, 'caja')).toBeNull();
     expect(puedeComprar(meta, 'caja')).toBe('tope');
     expect(buyUpgrade(meta, 'caja')).toBe(false);
@@ -151,29 +165,55 @@ describe('comprar', () => {
   });
 });
 
-describe('efectos de combate del Arsenal', () => {
-  it('Bolsa de la conjura, Manga honda, Buen ojo y Ojo del tasador', () => {
+describe('efectos de combate', () => {
+  it('Bolsa de la conjura y Ojo del tasador (Arsenal)', () => {
     expect(newRun({ up: { caja: 5 } }, 1).gold).toBe(BALANCE.inicio.oro + 5 * BALANCE.arbol.oroPorNivel);
-    const manga = newRun({ up: { manga: 1, gracia: 2 } }, 1);
-    manga.phase = 'battle';
-    const cfg = stageConfig(manga);
-    expect(cfg.reserveSize).toBe(2);
-    expect(cfg.cleanOver).toBe(2);
-    expect(stageConfig(newRun({}, 1)).cleanOver).toBeUndefined();
     // el tasador baja el precio de cada reliquia de La Taberna (nunca de 1) sin cambiar el azar de la campaña
     const base = newRun({}, 11);
     const tas = newRun({ up: { tasador: 3 } }, 11);
     expect(tas.rng).toBe(base.rng);
   });
+
+  it('Manga honda y Buen ojo: nada en los cinco asaltos; en el Trono infinito, 2 huecos y exacto pasándose por 1 o 2', () => {
+    for (let s = 1; s <= 5; s++) {
+      const r = newRun({ up: { manga: 1, gracia: 2 } }, 40 + s);
+      r.stage = s;
+      expect(stageConfig(r)).toEqual(stageConfig(Object.assign(newRun({}, 40 + s), { stage: s })));
+      expect(stageConfig(r).reserveSize).toBeUndefined();
+      expect(stageConfig(r).cleanOver).toBeUndefined();
+    }
+    const inf = (up: Record<string, number>) => Object.assign(newRun({ up }, 7), { stage: 6, endless: true });
+    expect(stageConfig(inf({})).reserveSize).toBeUndefined();
+    expect(stageConfig(inf({ manga: 1 })).reserveSize).toBe(2);
+    expect(startStage(inf({ manga: 1 }), [{ id: 'p', name: 'p' }]).config.reserveSize).toBe(2);
+    expect(stageConfig(inf({})).cleanOver).toBeUndefined();
+    expect(stageConfig(inf({ gracia: 1 })).cleanOver).toBe(1);
+    expect(stageConfig(inf({ gracia: 2 })).cleanOver).toBe(2);
+    // con números: un 10 de ♠ contra el guardia de ♦ que se pasa por 0, 1, 2 y 3 de su Vida
+    const exacto = (gracia: number, sobra: number) => {
+      const config = stageConfig(inf({ gracia }));
+      const towers = newTowers([11, 12, 13], config);
+      const diez: Card[] = [{ id: 'S10', suit: 'S', rank: 10 }];
+      const env = { config, towers, tools: [], chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
+      const total = previewStrike(env, diez, 'D').total;
+      towers.D.damage = config.floorHp[11] - total + sobra;
+      return previewStrike(env, diez, 'D').clean;
+    };
+    expect([0, 1, 2, 3].map((sobra) => exacto(0, sobra))).toEqual([true, false, false, false]);
+    expect([0, 1, 2, 3].map((sobra) => exacto(1, sobra))).toEqual([true, true, false, false]);
+    expect([0, 1, 2, 3].map((sobra) => exacto(2, sobra))).toEqual([true, true, true, false]);
+  });
 });
 
 describe('neutralidad del incremental (criterio 5)', () => {
-  it('los 15 nodos incrementales al máximo no cambian la configuración de ningún asalto', () => {
-    const lleno = arbolLleno('incremental');
-    expect(Object.values(lleno).filter((v) => v > 0)).toHaveLength(15);
+  it('los 15 incrementales puros no cambian ningún asalto (tampoco el Trono infinito); los 17 que no son del Arsenal, ninguno de los cinco', () => {
+    const puro = arbolLleno('puro');
+    expect(Object.values(puro).filter((v) => v > 0)).toHaveLength(15);
+    const incr = arbolLleno('incremental');
+    expect(Object.values(incr).filter((v) => v > 0)).toHaveLength(17);
     for (let s = 1; s <= 8; s++) {
       const a = newRun({}, 100 + s);
-      const b = newRun({ up: lleno }, 100 + s);
+      const b = newRun({ up: s > 5 ? puro : incr }, 100 + s);
       a.stage = b.stage = s;
       a.endless = b.endless = s > 5;
       expect(stageConfig(b)).toEqual(stageConfig(a));
@@ -183,7 +223,7 @@ describe('neutralidad del incremental (criterio 5)', () => {
     }
   });
 
-  it('≥ 300 campañas con semilla: mismos resultados de combate con los 15 incrementales al máximo y con el Árbol vacío', () => {
+  it('≥ 300 campañas con semilla: mismos resultados de combate con los 17 nodos que no son del Arsenal al máximo y con el Árbol vacío', () => {
     const incr = arbolLleno('incremental');
     let distintas = 0;
     let n = 0;

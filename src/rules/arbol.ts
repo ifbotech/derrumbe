@@ -1,8 +1,9 @@
 // El Árbol de la Conjura (V12, SPECS/V12.md apartado 1.5): sustituye a La Orden. Treinta nodos y una raíz,
-// en cuatro ramas. El Arsenal (15 nodos, poder de combate) lleva las 12 mejoras de La Orden con su mismo `id`,
-// sus rangos y su efecto, y tres nuevas (Ojo del tasador, Manga honda, Buen ojo). Las otras tres ramas (la
-// Bolsa, los Huesos y la Corona de hierro) son incremental puro: solo cambian las esquirlas que caen y los
-// dados de hueso; no tocan `Config`, ni el oro, ni el mazo (lo comprueba tests/arbol.test.ts).
+// en cuatro ramas. El Arsenal (13 nodos, poder de combate) lleva las 12 mejoras de La Orden con su mismo `id`,
+// sus rangos y su efecto, y una nueva (Ojo del tasador). Las otras tres ramas (la Bolsa, los Huesos y la Corona
+// de hierro) no cambian la campaña de cinco asaltos: solo las esquirlas que caen y los dados de hueso, y en el
+// Trono infinito, además, Manga honda y Buen ojo (V12-C: en la campaña sumaban ~20 puntos al Árbol lleno y no
+// cabían en el presupuesto del Arsenal). Lo comprueba tests/arbol.test.ts.
 //
 // Puro y sin importar run.ts en tiempo de ejecución (run.ts importa este módulo). Los costes y las cifras
 // salen de la sección `arbol` de balance-config.json. Los textos que lee el jugador viven aquí en español
@@ -21,8 +22,10 @@ export interface Nodo {
   rangos: number;
   /** Esquirlas de cada rango (enteros, crecientes). */
   costs: number[];
-  /** Poder de combate (cuenta en «Árbol lleno» del laboratorio y puede mover el balance). */
+  /** Poder de combate en la campaña de cinco asaltos (puede mover el balance que mide el laboratorio). */
   combate: boolean;
+  /** Solo actúa en el combate del Trono infinito (Manga honda, Buen ojo): neutral en los cinco asaltos. */
+  infinito: boolean;
   /** Emblema con que se dibuja (GLYPH de src/client/glyphs.ts). */
   glyph: string;
   /** Sitio en el pergamino, en unidades de nodo (la raíz en 0,0). */
@@ -48,7 +51,7 @@ export function dosCifras(n: number): number {
 /** Costes de un nodo incremental: base × crece^(rango − 1), a dos cifras significativas. */
 const incremental = (id: string, rangos: number): number[] => Array.from({ length: rangos }, (_, r) => dosCifras(BALANCE.arbol.bases[id] * BALANCE.arbol.crece ** r));
 
-type Def = Omit<Nodo, 'costs' | 'desc' | 'combate' | 'plantilla'> & { plantilla?: string; texto?: string };
+type Def = Omit<Nodo, 'costs' | 'desc' | 'combate' | 'infinito' | 'plantilla'> & { plantilla?: string; texto?: string; infinito?: true };
 
 /** Los seis arcones: añaden reliquias al surtido de La Taberna. */
 const arcon = (arch: Arch, name: string, glyph: string, pos: { x: number; y: number }): Def => ({
@@ -79,8 +82,6 @@ const ARSENAL: Def[] = [
   arcon('aguante', 'Arcón del escudo', 'ariete', { x: -3, y: 1.5 }),
   { id: 'tampones', rama: 'arsenal', padre: null, rangos: 1, name: 'Lacres nuevos', glyph: 'sello', pos: { x: -0.6, y: 1.5 }, texto: 'La Mesa de lacre también ofrece los sellos de pólvora y de la manga.' },
   { id: 'bronce', rama: 'arsenal', padre: 'tampones', rangos: 1, name: 'Cristalero real', glyph: 'forja', pos: { x: -1.3, y: 2.4 }, texto: 'La Mesa de lacre también ofrece Lacre policromo y Cristal maldito.' },
-  { id: 'manga', rama: 'arsenal', padre: null, rangos: 1, name: 'Manga honda', glyph: 'pasarela', pos: { x: -0.6, y: -1.5 }, texto: 'La Manga guarda 2 cartas en vez de 1.' },
-  { id: 'gracia', rama: 'arsenal', padre: 'manga', rangos: 2, name: 'Buen ojo', glyph: 'nivel', pos: { x: -1.3, y: -2.4 }, plantilla: 'Golpe exacto también si te pasas por {n} o menos.' },
 ];
 
 const BOLSA: Def[] = [
@@ -95,7 +96,7 @@ const BOLSA: Def[] = [
 ];
 
 const HUESOS: Def[] = [
-  { id: 'hueso_tallado', rama: 'huesos', padre: null, rangos: 5, name: 'Hueso tallado', glyph: 'dados', pos: { x: 0.4, y: -1.8 }, plantilla: 'Sube 1 la cara más baja del Dado de la Corona, {n} veces.' },
+  { id: 'hueso_tallado', rama: 'huesos', padre: null, rangos: 5, name: 'Hueso tallado', glyph: 'dados', pos: { x: 0.4, y: -1.8 }, plantilla: 'Mejoras de +1 a la cara más baja del Dado de la Corona: {n}.' },
   { id: 'cara_rey', rama: 'huesos', padre: 'hueso_tallado', rangos: 5, name: 'Cara del rey', glyph: 'estandarte', pos: { x: 0.4, y: -2.8 }, plantilla: 'La cara más alta del Dado de la Corona vale ×{n}.' },
   { id: 'segundo_hueso', rama: 'huesos', padre: 'cara_rey', rangos: 1, name: 'Segundo hueso', glyph: 'naipes_par', pos: { x: 0.4, y: -3.8 }, texto: 'Tiras dos Dados de la Corona y sus caras se multiplican.' },
 ];
@@ -105,6 +106,9 @@ const CORONA: Def[] = [
   { id: 'pendon', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Pendón negro', glyph: 'cajones', pos: { x: 5, y: -1.8 }, plantilla: '+{n} esquirlas por cada Trono infinito que superas.' },
   { id: 'sangre_real', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Sangre real', glyph: 'corazon', pos: { x: 5, y: -0.6 }, plantilla: 'En el Trono infinito, cada cara del Dado de la Corona sube {n}.' },
   { id: 'trono_huesos', rama: 'corona', padre: 'sangre_real', rangos: 1, name: 'Trono de huesos', glyph: 'relicario', pos: { x: 6, y: -0.6 }, texto: 'En el Trono infinito tiras un Dado de la Corona más.' },
+  // combate solo en el Trono infinito: costes fijos de `arbol.costes`, como los del Arsenal
+  { id: 'manga', rama: 'corona', padre: 'corona_hierro', rangos: 1, name: 'Manga honda', glyph: 'pasarela', pos: { x: 4, y: -2.4 }, texto: 'En el Trono infinito, La Manga guarda 2 cartas en vez de 1.', infinito: true },
+  { id: 'gracia', rama: 'corona', padre: 'manga', rangos: 2, name: 'Buen ojo', glyph: 'nivel', pos: { x: 5, y: -3 }, plantilla: 'En el Trono infinito, Golpe exacto también si te pasas por {n} o menos.', infinito: true },
 ];
 
 /**
@@ -129,15 +133,16 @@ export function cifraDe(id: string, rango: number): Record<string, number> {
 }
 
 function build(d: Def, combate: boolean): Nodo {
-  const costs = combate ? [...BALANCE.arbol.costes[d.id]] : incremental(d.id, d.rangos);
+  const fijos = BALANCE.arbol.costes[d.id];
+  const costs = fijos ? [...fijos] : incremental(d.id, d.rangos);
   if (costs.length !== d.rangos) throw new Error(`árbol: ${d.id} tiene ${d.rangos} rangos y ${costs.length} costes`);
   const plantilla = d.plantilla ?? '';
   const desc = d.texto ?? fill(plantilla, cifraDe(d.id, 1));
-  const { texto: _t, plantilla: _p, ...rest } = d;
-  return { ...rest, costs, combate, desc, plantilla };
+  const { texto: _t, plantilla: _p, infinito, ...rest } = d;
+  return { ...rest, costs, combate, infinito: infinito === true, desc, plantilla };
 }
 
-/** Los 30 nodos comprables: 15 del Arsenal (combate) y 15 incrementales. */
+/** Los 30 nodos comprables: 13 del Arsenal (combate) y 17 que no cambian la campaña (2 de ellos, combate del Trono infinito). */
 export const ARBOL: Nodo[] = [...ARSENAL.map((d) => build(d, true)), ...[...BOLSA, ...HUESOS, ...CORONA].map((d) => build(d, false))];
 
 /** La raíz, «La corona quebrada» (el anexo A decía «La corona rota», que es un título viejo prohibido por tests/vocabulario.test.ts): no se compra, enseña el saldo. */
@@ -148,7 +153,7 @@ export const RAMAS: { id: Rama; name: string; desc: string }[] = [
   { id: 'arsenal', name: 'El Arsenal', desc: 'Mejoras que te ayudan a ganar.' },
   { id: 'bolsa', name: 'La Bolsa', desc: 'Más esquirlas con cada golpe.' },
   { id: 'huesos', name: 'Los Huesos', desc: 'Dados que multiplican tus esquirlas.' },
-  { id: 'corona', name: 'La Corona de hierro', desc: 'Más esquirlas en el Trono infinito.' },
+  { id: 'corona', name: 'La Corona de hierro', desc: 'Más esquirlas y más poder en el Trono infinito.' },
 ];
 
 const POR_ID: Record<string, Nodo> = Object.fromEntries(ARBOL.map((n) => [n.id, n]));
@@ -190,9 +195,13 @@ export function cleanUp(up: unknown): Record<string, number> {
   return Object.fromEntries(ARBOL.map((n) => [n.id, Math.max(0, Math.min(n.rangos, Math.floor(Number(src[n.id]) || 0)))]));
 }
 
-/** Todos los nodos al máximo (o solo los de combate, o solo los incrementales). */
-export function arbolLleno(cual: 'todo' | 'combate' | 'incremental' = 'todo'): Record<string, number> {
-  return Object.fromEntries(ARBOL.map((n) => [n.id, cual === 'todo' || (cual === 'combate') === n.combate ? n.rangos : 0]));
+/**
+ * Todos los nodos al máximo, o solo una parte: 'combate' (el Arsenal), 'incremental' (los que no cambian la
+ * campaña, también Manga honda y Buen ojo), 'puro' (los 15 que no cambian ningún combate, ni en el Trono infinito).
+ */
+export function arbolLleno(cual: 'todo' | 'combate' | 'incremental' | 'puro' = 'todo'): Record<string, number> {
+  const entra = (n: Nodo) => cual === 'todo' || (cual === 'combate' ? n.combate : cual === 'incremental' ? !n.combate : !n.combate && !n.infinito);
+  return Object.fromEntries(ARBOL.map((n) => [n.id, entra(n) ? n.rangos : 0]));
 }
 
 /** El imán de lo que cae (cliente): cuánto más lejos llega (factor, 1 = de serie) y a los cuántos segundos recoge solo. */

@@ -115,9 +115,7 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     expect(x, what).toBeLessThanOrEqual(hi);
   };
 
-  // V12: la rehace el bloque C. La pólvora entre tronos presentes (bloque A) cambia la huella de las reglas y
-  // el informe completo no se corre hasta el bloque C; mientras, se salta solo la comparación de la huella.
-  it.skip('es de estas mismas reglas (si no, vuelve a lanzar npm run analyze:meta)', () => {
+  it('es de estas mismas reglas (si no, vuelve a lanzar npm run analyze:meta)', () => {
     expect(r.rules, 'el informe se generó con otras reglas: npm run analyze:meta').toBe(fingerprint());
   });
 

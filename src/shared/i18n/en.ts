@@ -316,8 +316,8 @@ const MEJORAS: Record<string, [string, string?]> = {
   caja: ['Conspiracy Purse', '+{oro} starting gold per rank.'],
   rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
   tasador: ["Appraiser's Eye", 'Relics at the Tavern cost {n} gold less (minimum 1).'],
-  manga: ['Deep Sleeve', 'The Sleeve holds 2 cards instead of 1.'],
-  gracia: ['Keen Eye', 'Exact Hit also counts if you go over by {n} or less.'],
+  manga: ['Deep Sleeve', 'On the Endless Throne, the Sleeve holds 2 cards instead of 1.'],
+  gracia: ['Keen Eye', 'On the Endless Throne, Exact Hit also counts if you go over by {n} or less.'],
   piedra_iman: ['Lodestone', 'The magnet reaches {pct}% farther and collects {s} s sooner.'],
   esq_golpe: ['Crown Splinters', '+{n} shards for each strike.'],
   esq_guardia: ["Guard's Tithe", '+{n} shards for each guard defeated.'],
@@ -326,7 +326,7 @@ const MEJORAS: Record<string, [string, string?]> = {
   esq_derrota: ['Ashes of the Fallen', 'When you lose, +{n} shards for each guard you defeated.'],
   esq_formacion: ['Full Hand', '+{n} shards for each strike of 3 cards or more.'],
   esq_racha: ['Blood Streak', '+{n} shards for each Streak link when you strike.'],
-  hueso_tallado: ['Carved Bone', 'Raises the lowest face of the Crown Die by 1, {n} times.'],
+  hueso_tallado: ['Carved Bone', 'Upgrades of +1 to the lowest face of the Crown Die: {n}.'],
   cara_rey: ["King's Face", 'The highest face of the Crown Die is worth ×{n}.'],
   segundo_hueso: ['Second Bone', 'You roll two Crown Dice and their faces multiply.'],
   corona_hierro: ['Iron Crown', 'On the Endless Throne, shards on the table are worth ×{n}.'],
@@ -339,7 +339,7 @@ const RAMAS_EN: Record<string, [string, string]> = {
   arsenal: ['The Armory', 'Upgrades that help you win.'],
   bolsa: ['The Purse', 'More shards from every strike.'],
   huesos: ['The Bones', 'Dice that multiply your shards.'],
-  corona: ['The Iron Crown', 'More shards on the Endless Throne.'],
+  corona: ['The Iron Crown', 'More shards and more power on the Endless Throne.'],
 };
 
 /** Achievements: [name, description]. The monarch trophies (`j-<id>`) are built from the monarchs. */

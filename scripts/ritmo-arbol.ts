@@ -12,8 +12,9 @@
 // El guion prueba `buyUpgrade` (que mira saldo, padre y tope) sobre `UPGRADES`, ordenadas por el coste de su
 // rango siguiente.
 //
-// Para caber en diez minutos, cada campaña se juega una sola vez por (semilla, Arsenal, legendarias): los 15
-// nodos incrementales no cambian ninguna partida (tests/arbol.test.ts), así que la campaña se juega sin ellos
+// Para caber en diez minutos, cada campaña se juega una sola vez por (semilla, Arsenal, legendarias): los 17
+// nodos que no son del Arsenal no cambian ninguna partida de cinco asaltos (tests/arbol.test.ts; Manga honda y
+// Buen ojo solo actúan en el Trono infinito, que este guion no juega: cuentan como del Trono infinito), así que la campaña se juega sin ellos
 // y sus esquirlas se recalculan para el Árbol de cada jugador con las mismas `caidaDe` y `tirarHuesos` sobre
 // los eventos guardados. `--comprueba=n` juega además n campañas con el Árbol real y exige el mismo cobro.
 // Con el Arsenal lleno, cada proceso toma las campañas de un banco de semillas (`--banco=2200` en total):
