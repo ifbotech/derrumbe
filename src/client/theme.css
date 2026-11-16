@@ -1684,3 +1684,8 @@ button.primary:disabled, .table-screen button.primary:disabled { --bg: var(--lat
 }
 /* la cifra compacta de la bolsa va en <i> dentro de la <b>: recta y con la letra de la bolsa (no la del rótulo) */
 .purse b i { font-style: normal; font-size: inherit; }
+
+/* V12 · fotograma en frío: la mesa vive en su propia capa desde el fotograma del montaje. Antes subía a ella con el
+   primer temblor (el de calentamiento de warmTable o el del primer golpe) y la GPU volvía a tramarla entera, y en
+   un navegador recién abierto a compilar sus sombreadores, con la mesa ya en marcha: 230–560 ms en 390×844. */
+.table-screen { will-change: transform; }
