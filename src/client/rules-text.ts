@@ -6,7 +6,31 @@ import { BALANCE } from '../rules/balance-config';
 import { ASCENSIONS, FATIGUE, LAST_STAGE, STAGES } from '../rules/run';
 import { TOOL_SLOTS } from '../rules/tools';
 import { SUBTITLE, TITLE } from '../shared/brand';
+import { tFor } from '../shared/i18n';
+import { RAMAS } from '../rules/arbol';
 import { suitSvg } from './card';
+
+/** «Mejor jugada: …» con el nombre en negrita (la regla es de reglas-balance: `regla.mejor`). */
+const mejor = (l: 'es' | 'en') => tFor(l, 'regla.mejor').replace(/^([^:]+):/, '<b>$1</b>:');
+const ramas = (l: 'es' | 'en') => RAMAS.map((r) => tFor(l, `rama.${r.id}.nombre`)).join(', ');
+
+/** V12 · lo que cae, la tirada de huesos y el Árbol de la Conjura, en pocas líneas. */
+const caeEs = () => `<h3>Lo que cae, los huesos y el Árbol</h3>
+  <ul>
+    <li><b>Lo que cae</b>: cada golpe suelta <b>Esquirlas de Corona</b>; cada guardia abatido, una moneda y más esquirlas; cada Golpe exacto, esquirlas y una <b>gota de lacre</b>. Todo va solo a tu bolsa: no se pierde nada por no recogerlo.</li>
+    <li><b>Gotas de lacre</b>: ${tFor('es', 'pieza.gota.desc')}</li>
+    <li><b>Tirada de huesos</b>: al ganar un asalto, el <b>Dado de oro</b> multiplica las monedas que cayeron en él y el <b>Dado de la Corona</b>, las esquirlas.</li>
+    <li><b>Árbol de la Conjura</b>: las esquirlas se guardan aunque pierdas y se gastan en mejoras para siempre, rama a rama (${ramas('es')}). Cada rango pide el anterior.</li>
+    <li>${mejor('es')}</li>
+  </ul>`;
+const caeEn = () => `<h3>What drops, the bones and the Tree</h3>
+  <ul>
+    <li><b>What drops</b>: every hit drops <b>Crown Shards</b>; every guard you take down, a coin and more shards; every Exact Hit, shards and a <b>wax drop</b>. It all goes to your purse on its own: nothing is lost by not picking it up.</li>
+    <li><b>Wax drops</b>: ${tFor('en', 'pieza.gota.desc')}</li>
+    <li><b>Bone roll</b>: when you win an assault, the <b>Gold Die</b> multiplies the coins that dropped in it and the <b>Crown Die</b>, the shards.</li>
+    <li><b>The Conspiracy Tree</b>: shards stay with you even if you lose and buy upgrades for good, branch by branch (${ramas('en')}). Each rank needs the one before.</li>
+    <li>${mejor('en')}</li>
+  </ul>`;
 import { acabD, acabN, formN, fxD, fxN, getLang, marca, numL, palabraD, palabraN, reinD, reinN, selloD, selloN } from './lengua';
 
 const FORM_CARDS: Record<Formation, string> = {
@@ -117,12 +141,14 @@ function rulesEs(cfg: Config): string {
     <li><b>La Taberna</b> del Tratante vende reliquias, Sobres lacrados (abres uno y eliges 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
     <li>Tras cada monarca intermedio hay un <b>Secreto de la cripta</b>: un dilema con premio y precio.</li>
     <li>Después del último asalto puedes seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
-    <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña. El <b>Asalto diario</b> usa la fecha como semilla, con la baraja de la conjura y sin mejoras de la Orden.</li>
+    <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña. El <b>Asalto diario</b> usa la fecha como semilla, con la baraja de la conjura y sin mejoras del Árbol.</li>
     <li><b>Reinicio rápido</b>: mantén <b>R</b> 0,7 segundos para empezar de nuevo con la misma baraja y el mismo Reinado. No cuenta como derrota.</li>
   </ul>
 
+  ${caeEs()}
+
   <h3>Reinados</h3>
-  <p>Ganar una campaña abre el Reinado siguiente. Cada uno añade un giro a todos los anteriores y da un 25 % más de <b>Coronas</b> ✦. Al ganar, la baraja y tus Reliquias reciben su <b>sello de maestría</b> (bronce, hierro u oro) en la colección.</p>
+  <p>Ganar una campaña abre el Reinado siguiente. Cada uno añade un giro a todos los anteriores y da un 25 % más de <b>esquirlas</b> ✦. Al ganar, la baraja y tus Reliquias reciben su <b>sello de maestría</b> (bronce, hierro u oro) en la colección.</p>
   <table>
     <tr><th>Reinado</th><th>Nombre</th><th>Giro</th></tr>
     ${ASCENSIONS.map((a, i) => `<tr><td>${i + 1}</td><td>${a.name}</td><td>${a.desc}</td></tr>`).join('')}
@@ -267,12 +293,14 @@ function rulesEn(cfg: Config): string {
     <li>In <b>The Tavern</b>, the Tavern Keeper sells relics, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
     <li>After each middle monarch there is a <b>Crypt Secret</b>: a dilemma with a reward and a price.</li>
     <li>After the last assault you can go on to the <b>Endless Throne</b>: assaults without end, each one harder.</li>
-    <li><b>Seed</b>: the same seed and the same choices give the same campaign. The <b>Daily Assault</b> uses the date as its seed, with the crew's deck and no Order upgrades.</li>
+    <li><b>Seed</b>: the same seed and the same choices give the same campaign. The <b>Daily Assault</b> uses the date as its seed, with the crew's deck and no Tree upgrades.</li>
     <li><b>Quick restart</b>: hold <b>R</b> for ${x(0.7)} seconds to start again with the same deck and the same Reign. It does not count as a defeat.</li>
   </ul>
 
+  ${caeEn()}
+
   <h3>Reigns</h3>
-  <p>Winning a campaign opens the next Reign. Each one adds a twist to all the previous ones and gives 25 % more <b>Crowns</b> ✦. When you win, the deck and your Relics get their <b>mastery seal</b> (bronze, iron or gold) in the collection.</p>
+  <p>Winning a campaign opens the next Reign. Each one adds a twist to all the previous ones and gives 25 % more <b>shards</b> ✦. When you win, the deck and your Relics get their <b>mastery seal</b> (bronze, iron or gold) in the collection.</p>
   <table>
     <tr><th>Reign</th><th>Name</th><th>Twist</th></tr>
     ${ASCENSIONS.map((_, i) => `<tr><td>${i + 1}</td><td>${reinN(i)}</td><td>${reinD(i)}</td></tr>`).join('')}

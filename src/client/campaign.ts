@@ -32,7 +32,8 @@ export function pickDeck(id: string): void {
 
 export function savedCampaign(): Campaign | null {
   const c = loadJson<Campaign>(RUN_KEY);
-  if (c?.run) c.run = cargaRun(c.run) ?? c.run; // V12-B: provisional, lo rehace arte-ui (la campaña de la 11.0 se pone al día y sigue)
+  // V12: una campaña guardada con la 11.0 se pone al día (esquirlas, gotas, lo que cae) y sigue donde estaba
+  if (c?.run) c.run = cargaRun(c.run) ?? c.run;
   // descarta guardados de versiones anteriores del juego
   return c && c.run && c.key && c.run.v === RUN_VERSION && Array.isArray(c.run.tools) && c.run.node && c.run.stats?.toolUse ? c : null;
 }
@@ -54,7 +55,8 @@ export function retireOldSave(): void {
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
   if (old.run.phase === 'won' || old.run.phase === 'lost') return; // ya estaba cobrada
-  const gain = abonoCampanaVieja(old.run.stage) * ESQUIRLAS_POR_CORONA; // V12-B: provisional, lo rehace arte-ui (Coronas de lo superado en esquirlas)
+  // lo superado se cobra en esquirlas, al cambio de la V12 (cada Corona de antes vale ESQUIRLAS_POR_CORONA)
+  const gain = abonoCampanaVieja(old.run.stage) * ESQUIRLAS_POR_CORONA;
   meta.renown += gain;
   saveMeta();
   setTimeout(() => toast(L('ui.camp.vieja', { n: gain })), 600);

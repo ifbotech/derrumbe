@@ -22,6 +22,7 @@ import { setScreen } from './router';
 import { renderPings } from './pings';
 import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
 import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
+import { ritualDelBotin } from './ritual';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
 // Iconos de juramentos, atajos y secretos: el emblema de GLYPH que mejor dice la imagen de la biblia de
@@ -245,6 +246,8 @@ function rewardScreen(run: Run): void {
     </div></div>`;
   if (contract) stampOn($('#contract-res'), run.contractDone ? L('ui.run.cumplido') : L('ui.run.incumplido'), run.contractDone ? 's-done' : 's-skip');
   if (lastPhase !== 'reward') sfx.coins(total);
+  // V12: la tirada de huesos del asalto recién ganado, una vez, sobre el Botín
+  ritualDelBotin(`${run.id}:${run.stage}`, run.ritual?.asalto === run.stage ? run.ritual : null);
   $('#belt-host').appendChild(beltStrip(run));
   if (!run.drafted) {
     run.draft.forEach((o, i) => {

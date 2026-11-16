@@ -137,13 +137,13 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
 const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
 const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
 
 /**
@@ -312,7 +312,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
   // ───────── maqueta · sin desbordamiento horizontal ─────────
   if (document.documentElement.scrollWidth > W + 1) fail('maqueta', `desbordamiento horizontal del documento: ${document.documentElement.scrollWidth} > ${W}`);
   for (const el of scope.querySelectorAll<HTMLElement>('*')) {
-    if (el.closest('svg, .hero-art, .card, .chalk-mark') || !visible(el)) continue;
+    if (el.closest('svg, .hero-art, .card, .chalk-mark, [data-lienzo]') || !visible(el)) continue;
     const r = el.getBoundingClientRect();
     if (r.right > W + 2 || r.left < -2) {
       // dentro de una caja con desplazamiento propio no cuenta
@@ -335,7 +335,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
   if (opts.noScroll) {
     if (document.documentElement.scrollHeight > H + 1) fail('maqueta', `desbordamiento vertical del documento: ${document.documentElement.scrollHeight} > ${H}`);
     for (const el of scope.querySelectorAll<HTMLElement>('button, .card, .tower, .panel, .belt-slot, #score, .power, .reserve')) {
-      if (!visible(el) || el.closest('.lupa-sheet')) continue;
+      if (!visible(el) || el.closest('.lupa-sheet, [data-lienzo]')) continue;
       const r = el.getBoundingClientRect();
       if (r.bottom > H + 2 || r.top < -2) fail('maqueta', `fuera de la ventana en vertical: ${name(el)} (${Math.round(r.top)}…${Math.round(r.bottom)} de ${H})`, el);
     }
@@ -441,6 +441,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const tolX = 2;
     let pos = self ? 'static' : getComputedStyle(el).position;
     for (let p = self ? (el as HTMLElement) : el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+      // V12 · un lienzo que se arrastra y se amplía (el Árbol): lo que corta se alcanza arrastrando (la regla «arbol»
+      // pide aparte que cada nodo quepa entero en su caja y que el nodo enfocado se vea entero)
+      if (p.hasAttribute('data-lienzo')) return;
       const cs = getComputedStyle(p);
       // un absoluto no lo recorta un antepasado estático; un fijo, solo la ventana
       const skip = (pos === 'absolute' && cs.position === 'static' && cs.transform === 'none') || (pos === 'fixed' && cs.transform === 'none' && cs.filter === 'none');
@@ -450,10 +453,12 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       const oy = cs.overflowY;
       if (ox === 'visible' && oy === 'visible') continue;
       const pr = p.getBoundingClientRect();
-      const top = pr.top + p.clientTop;
-      const left = pr.left + p.clientLeft;
-      const bottom = top + p.clientHeight;
-      const right = left + p.clientWidth;
+      // V12 · dentro de un lienzo ampliado (el Árbol) la caja va escalada: su interior también
+      const k = p instanceof HTMLElement && p.offsetWidth ? pr.width / p.offsetWidth : 1;
+      const top = pr.top + p.clientTop * k;
+      const left = pr.left + p.clientLeft * k;
+      const bottom = top + p.clientHeight * k;
+      const right = left + p.clientWidth * k;
       if (oy !== 'visible' && (r.bottom > bottom + tolY || r.top < top - tolY)) {
         const scrollable = /(auto|scroll)/.test(oy) && p.scrollHeight > p.clientHeight + 1;
         if (scrollable && r.top - top + p.scrollTop > -tolY) return void scrollers.add(p as HTMLElement);
@@ -582,8 +587,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const hand = el.matches('#hand .card');
     if (!hand && Math.min(r.width, r.height) < need - 0.5) fail('diana', `diana de ${Math.round(r.width)}×${Math.round(r.height)} px (mínimo ${need}): ${path(el)}`, el);
     if (!el.matches('.tower')) clipCheck(el, r, `diana ${path(el)}`);
-    // márgenes de seguridad: nada pulsable pegado al borde físico
-    if (inView(r) && r.top >= 0 && r.bottom <= H) {
+    // márgenes de seguridad: nada pulsable pegado al borde físico (en un lienzo que se arrastra, cuenta su caja)
+    if (inView(r) && r.top >= 0 && r.bottom <= H && !el.closest('[data-lienzo]')) {
       const scrolls = (() => {
         for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) if (/(auto|scroll)/.test(getComputedStyle(p).overflowY) && p.scrollHeight > p.clientHeight + 1) return true;
         return false;
@@ -1682,6 +1687,21 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (c && c !== 'none' && c !== 'normal' && /^["'].*\p{L}/u.test(c)) jerga(`el ${pseudo} de ${path(el)}`, c.slice(1, -1), el);
     }
   }
+  // ── esquirlas (V12): la moneda permanente se llama Esquirlas y la pantalla de progreso es el Árbol: ni «Coronas»
+  // ni «La Orden» en lo que se lee (salvo el aviso de la migración, que dice de dónde vienen) ──
+  const VIEJA = /(?<![\p{L}])(?:Coronas|Crowns|[Ll]a Orden|[Tt]he Order|de la Orden|Order upgrades)(?![\p{L}])/u;
+  const vieja = (where: string, text: string | null | undefined, el: Element | null) => {
+    if (!text || el?.closest('.arbol-aviso')) return;
+    const m = text.replace(/<[^>]+>/g, ' ').match(VIEJA);
+    if (m) fail('esquirlas', `«${m[0]}» en ${where} (desde la V12: esquirlas y el Árbol de la Conjura)`, el);
+  };
+  const vw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = vw.nextNode(); node; node = vw.nextNode()) {
+    const el = node.parentElement;
+    if (!el || !node.textContent?.trim() || el.closest('script, style, template') || !visible(el)) continue;
+    vieja(`el texto de ${path(el)}`, node.textContent, el);
+  }
+  for (const el of document.querySelectorAll('[data-tip], [aria-label], [title]')) for (const attr of ['data-tip', 'aria-label', 'title']) if (el.hasAttribute(attr)) vieja(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
 
   // ── fuga (V10, pasada inglesa): ningún resto de español en lo que lee una persona ──
   if (opts.fuga) {
@@ -2013,6 +2033,273 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       }
       const m = [...document.querySelectorAll<HTMLElement>('#score .marks .m.polvora')].find(visible);
       if (!m && opts.state === 'mesa-polvora') fail('polvora', 'la cuenta no enseña la marca «Pólvora +n»', document.querySelector('#score'));
+    }
+  }
+
+  // ───────── arbol (V12): el Árbol de la Conjura entero de serie, el detalle en su panel y el zum semántico ─────────
+  if (opts.state === 'gremio' || opts.state === 'arbol-zoom' || opts.state === 'arbol-aviso') {
+    const vista = document.querySelector<HTMLElement>('.arbol-vista');
+    const nodos = [...document.querySelectorAll<HTMLElement>('.arbol .nodo[data-nodo]')];
+    const raiz = document.querySelector<HTMLElement>('.arbol .arbol-raiz');
+    if (!vista || !raiz) fail('arbol', 'no hay pergamino del Árbol (.arbol-vista) con su raíz');
+    else {
+      if (vista.getAttribute('data-lienzo') === null) fail('arbol', 'el pergamino no se declara lienzo (data-lienzo)', vista);
+      if (getComputedStyle(vista).touchAction !== 'none') fail('arbol', 'el pergamino no captura el dedo (touch-action: none): no se podría arrastrar ni pellizcar', vista);
+      if (nodos.length !== 30) fail('arbol', `el Árbol tiene ${nodos.length} nodos (30)`);
+      const banderas = [...document.querySelectorAll<HTMLElement>('.arbol .estandarte')];
+      if (banderas.length !== 4) fail('arbol', `el Árbol tiene ${banderas.length} estandartes de rama (4)`);
+      for (const b of banderas) if (!b.querySelector('b')?.textContent?.trim()) fail('arbol', 'un estandarte no dice el nombre de su rama', b);
+      const z = Number(vista.dataset.zum ?? '0');
+      const lod = vista.dataset.lod;
+      if (opts.state !== 'arbol-zoom' && Math.abs(z - 1) > 0.001) fail('arbol', `el Árbol abre a zum ${z} (de serie, 1: el árbol entero)`);
+      if (opts.state === 'arbol-zoom' && (z < 1.2 || lod !== 'tarjeta')) fail('arbol', `en arbol-zoom el zum es ${z} y el nivel «${lod}» (se piden tarjetas completas)`);
+      const vr = vista.getBoundingClientRect();
+      const dentro = (r: DOMRect) => r.left >= vr.left - 0.5 && r.right <= vr.right + 0.5 && r.top >= vr.top - 0.5 && r.bottom <= vr.bottom + 0.5;
+      const ramaDe = new Set<string>();
+      const need = opts.mobile ? 48 : 44;
+      for (const n of nodos) {
+        const id = n.dataset.nodo!;
+        ramaDe.add([...n.classList].find((c) => c.startsWith('r-')) ?? '');
+        const r = n.getBoundingClientRect();
+        const rango = n.querySelector<HTMLElement>('.nodo-rango');
+        if (!/^\d+\/\d+$/.test(rango?.textContent?.trim() ?? '')) fail('arbol', `el nodo ${id} no enseña su rango «r/n»`, n);
+        if (rango && dentro(r)) {
+          const fs = parseFloat(getComputedStyle(rango).fontSize);
+          if (fs < (opts.mobile ? 13.95 : 12.95)) fail('arbol', `el rango del nodo ${id} mide ${fs} px (mínimo ${opts.mobile ? 14 : 13})`, rango);
+        }
+        if (!n.querySelector('.nodo-sello svg')) fail('arbol', `el nodo ${id} no lleva su emblema`, n);
+        if (n.matches('.es-padre') && !n.querySelector('.candado')) fail('arbol', `el nodo ${id} espera a su anterior y no lleva candado`, n);
+        if (n.matches('.es-saldo, .es-padre, .es-tope') !== n.hasAttribute('aria-disabled')) fail('arbol', `el nodo ${id} no marca aria-disabled como su estado`, n);
+        const nombre = n.querySelector('.nodo-nombre')?.textContent?.trim() ?? '#';
+        if (!(n.getAttribute('aria-label') ?? '').includes(nombre)) fail('arbol', `el nodo ${id} no lleva su nombre en aria-label`, n);
+        if (n.scrollHeight > n.clientHeight + 1 || n.scrollWidth > n.clientWidth + 1) fail('arbol', `el contenido del nodo ${id} no cabe en él (${n.scrollWidth}×${n.scrollHeight} en ${n.clientWidth}×${n.clientHeight}, nivel ${lod})`, n);
+        if (Math.min(r.width, r.height) < need - 0.5) fail('arbol', `el nodo ${id} mide ${Math.round(r.width)}×${Math.round(r.height)} px (diana mínima ${need})`, n);
+        if (lod === 'tarjeta' && dentro(r)) {
+          if (!n.querySelector('.nodo-efecto')?.textContent?.trim() || !visible(n.querySelector('.nodo-efecto')!)) fail('arbol', `la tarjeta del nodo ${id} no enseña su efecto`, n);
+          if (!n.querySelector('.nodo-coste')?.textContent?.trim()) fail('arbol', `la tarjeta del nodo ${id} no enseña su coste`, n);
+          if (n.matches('.es-saldo, .es-padre') && !n.querySelector('.nodo-motivo')?.textContent?.trim()) fail('arbol', `la tarjeta del nodo ${id} no dice por qué no se puede comprar`, n);
+        }
+      }
+      if (ramaDe.size !== 4) fail('arbol', `los nodos son de ${ramaDe.size} ramas (4)`);
+      // de serie, el árbol ENTERO: los 30 nodos, la raíz y los estandartes dentro del pergamino, sin montarse (8 px)
+      const cajas = [...nodos, raiz, ...banderas].map((e) => ({ e, r: e.getBoundingClientRect() }));
+      if (opts.state === 'gremio') {
+        for (const { e, r } of cajas) if (!dentro(r)) fail('arbol', `de serie, ${e.dataset.nodo ?? e.className} no cabe en el pergamino (hay que arrastrar para verlo)`, e);
+      }
+      for (let i = 0; i < cajas.length; i++) {
+        for (let j = i + 1; j < cajas.length; j++) {
+          const a = cajas[i].r;
+          const b = cajas[j].r;
+          const w = Math.min(a.right, b.right) - Math.max(a.left, b.left) + 8;
+          const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + 8;
+          if (w > 0 && h > 0) fail('arbol', `se montan (o quedan a menos de 8 px) ${cajas[i].e.dataset.nodo ?? cajas[i].e.className} y ${cajas[j].e.dataset.nodo ?? cajas[j].e.className}`, cajas[i].e);
+        }
+      }
+      // la raíz enseña el saldo (en la vista general, en el panel si se elige la raíz)
+      const saldo = document.querySelector<HTMLElement>('.arbol-raiz [data-cifra-k="esquirlas"]');
+      if (!saldo) fail('arbol', 'la raíz no lleva el saldo de esquirlas');
+      else if (Number(saldo.dataset.cifra) >= 1000 && !/[KMBT]$/.test((saldo.textContent ?? '').trim())) fail('arbol', `el saldo de la raíz no va en notación compacta: «${saldo.textContent}»`, saldo);
+      // el panel de detalle: un nodo con su nombre, rango, efecto, coste y «Comprar»
+      const det = document.querySelector<HTMLElement>('.arbol-detalle');
+      if (!det || !visible(det)) fail('arbol', 'no hay panel de detalle del nodo elegido (.arbol-detalle)');
+      else {
+        const dr = det.getBoundingClientRect();
+        if (dr.left < -0.5 || dr.right > innerWidth + 0.5 || dr.bottom > innerHeight + 0.5) fail('arbol', 'el panel de detalle se sale de la ventana', det);
+        for (const [sel, que] of [['.det-nombre', 'el nombre'], ['.det-rango', 'el rango'], ['.det-efecto', 'el efecto'], ['.det-coste', 'el coste']] as const) {
+          const e = det.querySelector<HTMLElement>(sel);
+          if (!e?.textContent?.trim()) fail('arbol', `el panel de detalle no enseña ${que}`, det);
+        }
+        const btn = det.querySelector<HTMLElement>('#arbol-comprar');
+        if (!btn || !visible(btn)) fail('arbol', 'el panel de detalle no tiene el botón «Comprar»', det);
+        else {
+          const br = btn.getBoundingClientRect();
+          if (br.height < need - 0.5 || br.width < 44) fail('arbol', `«Comprar» mide ${Math.round(br.width)}×${Math.round(br.height)} px (mínimo 44, 48 en móvil)`, btn);
+          if (btn.hasAttribute('aria-disabled') && !det.querySelector('.det-motivo')?.textContent?.trim()) fail('arbol', 'no se puede comprar y el panel no dice por qué', det);
+        }
+        const cur = document.querySelector<HTMLElement>('.arbol [aria-current="true"]');
+        if (!cur) fail('arbol', 'ningún sello sale elegido (aria-current)');
+        if (opts.state === 'gremio' && cur && !cur.matches('.es-comprable')) fail('arbol', 'de entrada no viene elegido un rango comprable', cur);
+      }
+      if (opts.mobile && opts.state === 'gremio') {
+        const alto = vr.height + (det?.getBoundingClientRect().height ?? 0);
+        if (alto < innerHeight * 0.65 - 0.5) fail('arbol', `en el móvil el pergamino y el detalle ocupan ${Math.round(alto)} px (${Math.round((alto / innerHeight) * 100)} %; mínimo 65 %)`);
+      }
+      if (opts.state === 'arbol-zoom') {
+        const f = document.activeElement as HTMLElement | null;
+        if (!f?.matches('.nodo[data-nodo]')) fail('arbol', 'en arbol-zoom el foco no está en un nodo');
+        else {
+          if (!dentro(f.getBoundingClientRect())) fail('arbol', `el nodo enfocado (${f.dataset.nodo}) no se ve entero`, f);
+          const o = getComputedStyle(f);
+          if (o.outlineStyle === 'none' || parseFloat(o.outlineWidth) < 3) fail('arbol', `el foco del nodo ${f.dataset.nodo} no lleva marco de 3 px`, f);
+        }
+      }
+      if (opts.state === 'arbol-aviso') {
+        const a = document.querySelector<HTMLElement>('.arbol-aviso');
+        if (!a || !visible(a)) fail('arbol', 'en arbol-aviso no se ve el aviso de la migración');
+        else if (!/37/.test(a.textContent ?? '') || !/3[.,]7K/.test(a.textContent ?? '')) fail('arbol', `el aviso no dice las Coronas y las esquirlas: «${(a.textContent ?? '').trim().slice(0, 80)}»`, a);
+      }
+    }
+  }
+
+  // ───────── caida (V12): la bolsa en la barra y lo que cae, quieto, sin tapar nada que se lea ─────────
+  const corta = (a: DOMRect, b: DOMRect) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+  if (document.querySelector('.table-screen.is-run')) {
+    const bolsa = document.querySelector<HTMLElement>('#bolsa');
+    if (!bolsa || !visible(bolsa)) fail('caida', 'la mesa de campaña no enseña la bolsa (#bolsa)');
+    else {
+      if (!bolsa.closest('.bar')) fail('caida', 'la bolsa no está en la barra de arriba', bolsa);
+      if (document.querySelectorAll('.chip.gold, #gold-n').length) fail('caida', 'el oro sale dos veces: queda el indicador viejo de la barra además de la bolsa');
+      for (const id of ['bolsa-oro', 'bolsa-esquirlas', 'bolsa-gotas']) {
+        const b = document.getElementById(id);
+        if (!b || !visible(b)) {
+          fail('caida', `la bolsa no enseña #${id}`, bolsa);
+          continue;
+        }
+        const fs = parseFloat(getComputedStyle(b).fontSize);
+        if (fs < 13.95) fail('caida', `la cifra #${id} de la bolsa mide ${fs.toFixed(1)} px (mínimo 14)`, b);
+        const n = Number(b.dataset.cifra);
+        if (n >= 1000 && !/[KMBT]$/.test((b.textContent ?? '').trim())) fail('caida', `#${id} no va en notación compacta: «${b.textContent}»`, b);
+        // cada contador lleva su forma (moneda, esquirla, gota): el color nunca va solo
+        if (!b.parentElement?.querySelector('svg')) fail('caida', `#${id} no lleva el grabado de su pieza`, b);
+      }
+    }
+  }
+  if (opts.state === 'mesa-caida') {
+    const capa = document.getElementById('caida');
+    const todas = [...document.querySelectorAll<HTMLElement>('#caida > .caida-pieza')];
+    if (!capa) fail('caida', 'no hay capa #caida');
+    else {
+      if (todas.length !== 40) fail('caida', `el depósito de piezas tiene ${todas.length} (40)`);
+      if (getComputedStyle(capa).pointerEvents !== 'none') fail('caida', 'la capa #caida atrapa el puntero', capa);
+    }
+    const quietas = todas.filter((p) => !p.hidden);
+    if (quietas.length < 4) fail('caida', `solo se ven ${quietas.length} piezas en la mesa (mínimo 4)`);
+    const tipos = new Set(quietas.map((p) => p.dataset.tipo));
+    if (tipos.size < 2) fail('caida', 'las piezas de la mesa son de un solo tipo');
+    const nada = '.hand .card, .reserve, #score, #btn-strike, #btn-mejor, .actions button, #bolsa, .tower .preview, .tower .plates > *, .tower .threat, .tower .hp, .tower .storey, .tower .tower-tag';
+    const malas = [...document.querySelectorAll<HTMLElement>(nada)].filter(visible);
+    for (const p of quietas) {
+      const r = p.getBoundingClientRect();
+      if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight) fail('caida', 'una pieza se sale de la ventana', p);
+      const m = malas.find((e) => corta(r, e.getBoundingClientRect()));
+      if (m) fail('caida', `una ${p.dataset.tipo} tapa ${m.id ? '#' + m.id : m.className}`, p);
+    }
+  }
+
+  // ───────── ritual (V12): la tirada de huesos sobre el Botín; la cara que sale y el total, grandes ─────────
+  if (opts.state === 'ritual' || opts.state === 'ritual-dos') {
+    const capa = document.querySelector<HTMLElement>('#ritual');
+    if (!capa || !visible(capa)) fail('ritual', 'no se ve la tirada de huesos (#ritual)');
+    else {
+      if (!document.querySelector('.run')) fail('ritual', 'la tirada no está sobre la pantalla del Botín', capa);
+      if (capa.dataset.fase !== 'final') fail('ritual', `la tirada no queda quieta en su fase final («${capa.dataset.fase}»)`, capa);
+      const dados = [...capa.querySelectorAll<HTMLElement>('.hueso[data-i]')];
+      const quiere = opts.state === 'ritual-dos' ? 3 : 2;
+      if (dados.length !== quiere) fail('ritual', `hay ${dados.length} dados (se esperan ${quiere}: el de oro y ${quiere - 1} de la Corona)`, capa);
+      const caja = capa.querySelector<HTMLElement>('.ritual-caja')!.getBoundingClientRect();
+      for (const d of dados) {
+        const cara = d.querySelector<HTMLElement>('.hueso-cara');
+        const txt = cara?.textContent?.trim() ?? '';
+        if (!/^×\d+$/.test(txt)) fail('ritual', `el dado ${d.dataset.i} no enseña la cara que sale («${txt}»)`, d);
+        else {
+          const fs = parseFloat(getComputedStyle(cara!).fontSize);
+          if (fs < 20) fail('ritual', `la cara «${txt}» mide ${fs} px (mínimo 20)`, cara!);
+          // la cara va tallada en la cara de arriba del cubo (dentro del dado, por encima de su canto de delante)
+          const cd = cara!.getBoundingClientRect();
+          const dd = d.querySelector<HTMLElement>('.hueso-dado')!.getBoundingClientRect();
+          if (cd.left < dd.left || cd.right > dd.right || cd.top < dd.top || cd.bottom > dd.top + dd.height * 0.7)
+            fail('ritual', `la cara «${txt}» del dado ${d.dataset.i} no cae sobre la cara de arriba del dado`, cara!);
+        }
+        // debajo, sus seis caras en pequeño, con la que salió marcada (y es la misma que está tallada arriba)
+        const caras = [...d.querySelectorAll<HTMLElement>('.hueso-caras .cara')];
+        const dichas = (d.querySelector<HTMLElement>('.hueso-caras')?.getAttribute('aria-label') ?? '').split(/\s+/).filter(Boolean);
+        if (caras.length !== 6 || dichas.length !== 6)
+          fail('ritual', `el dado ${d.dataset.i} enseña ${caras.length} caras (deben verse sus 6)`, d);
+        for (const c of caras) {
+          const fs = parseFloat(getComputedStyle(c).fontSize);
+          if (fs < 13) fail('ritual', `la cara pequeña «${c.textContent}» mide ${fs} px (mínimo 13)`, c);
+          if (!visible(c)) fail('ritual', `la cara pequeña «${c.textContent}» del dado ${d.dataset.i} no se ve`, c);
+        }
+        const sale = caras.filter((c) => c.classList.contains('sale'));
+        if (sale.length !== 1) fail('ritual', `el dado ${d.dataset.i} marca ${sale.length} caras como la que salió (debe ser 1)`, d);
+        else {
+          if (sale[0].textContent?.trim() !== txt) fail('ritual', `la cara marcada «${sale[0].textContent}» no es la tallada «${txt}»`, sale[0]);
+          if (sale[0].dataset.k !== d.dataset.sale) fail('ritual', `la cara marcada (${sale[0].dataset.k}) no es la que dice data-sale (${d.dataset.sale})`, sale[0]);
+        }
+        const r = d.getBoundingClientRect();
+        if (r.left < caja.left - 0.5 || r.right > caja.right + 0.5) fail('ritual', `el dado ${d.dataset.i} se sale de la caja de la tirada`, d);
+      }
+      const total = capa.querySelector<HTMLElement>('#ritual-total');
+      const t = total?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+      if (!/\d+ × \d+ = \d+.*\d+ × \d+ = \d+/.test(t)) fail('ritual', `la línea del resultado no dice «base × dado = total» de monedas y esquirlas: «${t}»`, total ?? capa);
+      else if (parseFloat(getComputedStyle(total!).fontSize) < 20) fail('ritual', 'la línea del resultado mide menos de 20 px', total!);
+      if (total && /·/.test(total.textContent ?? '')) fail('ritual', 'la línea del resultado lleva un «·» suelto', total);
+      const seguir = capa.querySelector<HTMLElement>('#ritual-seguir');
+      if (!seguir || !visible(seguir)) fail('ritual', 'la tirada no tiene botón para seguir', capa);
+      else if (seguir.getBoundingClientRect().height < (opts.mobile ? 47.5 : 43.5)) fail('ritual', 'el botón «Seguir» no llega a la diana mínima', seguir);
+    }
+  }
+
+  // ───────── auto (V12): el conmutador junto a la velocidad, encendido sin depender del color ─────────
+  if (opts.state === 'mesa-auto') {
+    const a = document.querySelector<HTMLButtonElement>('#btn-auto');
+    const v = document.querySelector<HTMLElement>('#btn-speed');
+    if (!a || !visible(a)) fail('auto', 'no hay conmutador AUTO (#btn-auto)');
+    else if (v) {
+      if (a.getAttribute('aria-pressed') !== 'true') fail('auto', 'AUTO encendido no dice aria-pressed="true"', a);
+      if (a.parentElement !== v.parentElement) fail('auto', 'AUTO y la velocidad no comparten zona', a);
+      const ra = a.getBoundingClientRect();
+      const rv = v.getBoundingClientRect();
+      const gap = Math.max(ra.left - rv.right, rv.left - ra.right, ra.top - rv.bottom, rv.top - ra.bottom);
+      if (gap > 16) fail('auto', `AUTO queda a ${Math.round(gap)} px de la velocidad (máximo 16)`, a);
+      if (Math.min(ra.width, ra.height) < 43.5) fail('auto', `AUTO mide ${Math.round(ra.width)}×${Math.round(ra.height)} px (diana mínima 44)`, a);
+      if (!/8×/.test(v.textContent ?? '')) fail('auto', `la velocidad no llega a 8×: «${v.textContent?.trim()}»`, v);
+      // encendido se ve por la forma (luz maciza y redonda), no solo por el color
+      const luz = a.querySelector<HTMLElement>('.luz');
+      const cs = luz ? getComputedStyle(luz) : null;
+      if (!cs || cs.backgroundColor === 'rgba(0, 0, 0, 0)' || parseFloat(cs.borderTopLeftRadius) < 2) fail('auto', 'AUTO encendido no cambia de forma (la luz no sale maciza y redonda)', a);
+    }
+  }
+
+  // ───────── cuadra (V12): la placa del trono apuntado y la cuenta dicen el mismo número ─────────
+  // placa = Golpe de la cuenta + lo que la cuenta dice que se suma aparte (Impulso, reliquias: .m.mas)
+  {
+    const golpe = document.querySelector<HTMLElement>('#score [data-cifra-k="golpe"]');
+    const placa = document.querySelector<HTMLElement>('.tower.aimed .preview [data-cifra-k="aviso"]');
+    if (golpe && placa && visible(golpe) && visible(placa)) {
+      const mas = [...document.querySelectorAll<HTMLElement>('#score .m.mas')].reduce((a, m) => a + Number(m.dataset.extra ?? 0), 0);
+      const g = Number(golpe.dataset.cifra);
+      const p = Number(placa.dataset.cifra);
+      if (g + mas !== p) fail('cuadra', `la placa del trono apuntado dice −${p} y la cuenta ${g}${mas ? ` + ${mas}` : ''}: no cuadran`, placa);
+    }
+  }
+
+  // ───────── mejor (V12): Mejor jugada secundario junto a Golpear, marcas legibles, nada tapa la mano ─────────
+  if (opts.state === 'mesa-mejor') {
+    const m = document.querySelector<HTMLElement>('#btn-mejor');
+    const g = document.querySelector<HTMLElement>('#btn-strike');
+    if (!m || !visible(m) || !g) fail('mejor', 'no hay botón Mejor jugada (#btn-mejor)');
+    else {
+      if (m.classList.contains('primary')) fail('mejor', 'Mejor jugada se pinta como botón principal (Golpear es el único)', m);
+      const rm = m.getBoundingClientRect();
+      const rg = g.getBoundingClientRect();
+      const need = opts.mobile ? 48 : 44;
+      if (Math.min(rm.width, rm.height) < need - 0.5) fail('mejor', `Mejor jugada mide ${Math.round(rm.width)}×${Math.round(rm.height)} px (diana mínima ${need})`, m);
+      const gap = Math.max(rm.left - rg.right, rg.left - rm.right, rm.top - rg.bottom, rg.top - rm.bottom);
+      if (gap > 16) fail('mejor', `Mejor jugada queda a ${Math.round(gap)} px de Golpear (máximo 16)`, m);
+      for (const c of document.querySelectorAll<HTMLElement>('.hand .card, .reserve .card')) if (visible(c) && corta(rm, c.getBoundingClientRect())) fail('mejor', 'Mejor jugada tapa una carta de la mano', m);
+      if (!m.getAttribute('aria-label')) fail('mejor', 'Mejor jugada no lleva aria-label', m);
+    }
+    const marcadas = [...document.querySelectorAll<HTMLElement>('.hand .card.mejor, .reserve .card.mejor')];
+    if (!marcadas.length) fail('mejor', 'no hay cartas marcadas con la Mejor jugada (.mejor)');
+    if (!document.querySelector('.tower.mejor')) fail('mejor', 'el trono de la Mejor jugada no va marcado (.tower.mejor)');
+    const ins = [...document.querySelectorAll<HTMLElement>('.card .insignia-exacta')].filter(visible);
+    if (!ins.length) fail('mejor', 'ninguna carta lleva la corona del Golpe exacto (.corona-exacta)');
+    for (const i of ins) {
+      const r = i.getBoundingClientRect();
+      if (Math.min(r.width, r.height) < 14) fail('mejor', `la corona del Golpe exacto mide ${Math.round(r.width)} px (mínimo 14)`, i);
+      const idx = i.closest('.card')?.querySelector<HTMLElement>('.corner');
+      if (idx && corta(r, idx.getBoundingClientRect())) fail('mejor', 'la corona del Golpe exacto tapa el índice de la carta', i);
     }
   }
 

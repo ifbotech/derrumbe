@@ -79,11 +79,15 @@ export function previewHtml(p: Preview, tail = ''): string {
   const polvora = vecinosPresentes(v.towers, target).some((s) => v.towers[s].floors.length) ? polvoraDe(p.cards, r) : 0;
   // el Contraataque saca una carta al azar: se avisa del peor Ataque posible entre los tronos en pie
   // (un trono Aturdido se salta su próximo Contraataque: no cuenta)
+  // V12 · lo que el trono apuntado pierde además del Golpe (el Impulso del Golpe exacto sobre el guardia siguiente, o
+  // el daño que añaden las reliquias tras el golpe): la placa del trono dice el total y la cuenta, de dónde sale
+  const mas = Math.max(0, (r.dealt[target] ?? 0) - r.total);
   const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].fx.sobrecarga).map((s) => threatOf(v, v.towers[s])));
   const marks = [
     r.clean ? `<em class="m gold">${L('ui.cuenta.exacto')}</em>` : '',
     fallen ? `<em class="m red">${throne ? L('ui.cuenta.cae.trono') : fallen > 1 ? L('ui.cuenta.caen', { n: fallen }) : L('ui.cuenta.cae')}</em>` : '',
     immune ? `<em class="m inm" data-tip="${L('ui.cuenta.inmune.tip')}">${L('ui.cuenta.inmune')}</em>` : '',
+    mas ? `<em class="m mas" data-extra="${mas}">${r.clean ? L('ui.cuenta.impulso', { n: mas }) : L('ui.cuenta.mas', { n: mas })}</em>` : '',
     r.hurt ? `<em class="m red">${L('ui.cuenta.vida', { n: r.hurt })}</em>` : '',
     r.clean || r.noSiren ? `<em class="m good">${L('ui.cuenta.sin.contra')}</em>` : (v.config.sirenCount ?? 1) > 1
         ? `<em class="m dim curse" data-tip="${L('ui.cuenta.doble.tip', { n: worst })}">${L('ui.cuenta.doble', { n: worst })}</em>`

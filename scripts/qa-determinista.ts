@@ -110,8 +110,11 @@ if (distintas.length) {
 // Residuo de rasterizado (decisión del orquestador, V12): Chromium trama algunas capas compuestas a ± unos niveles
 // de una pasada a otra. Se tolera como AVISO si son como mucho RESIDUO.capturas capturas, cada una con diferencia
 // máxima por canal ≤ RESIDUO.max y menos de RESIDUO.superficie de sus píxeles. Cualquier otra cosa es error.
-const RESIDUO = { capturas: 4, max: 8, superficie: 0.01 };
-const esResiduo = (d: Dif) => !('tam' in d) && d.max <= RESIDUO.max && d.distintos / d.total < RESIDUO.superficie;
+// Segundo caso (orquestador, arte B): un puñado de píxeles en el borde de un glifo (antialias del texto), sea cual
+// sea su amplitud, si son menos de RESIDUO.borde de la captura (medido: 55 px de 1.024.000, máx. 37, en la bolsa).
+const RESIDUO = { capturas: 4, max: 8, superficie: 0.01, borde: 0.0005 };
+const esResiduo = (d: Dif) =>
+  !('tam' in d) && ((d.max <= RESIDUO.max && d.distintos / d.total < RESIDUO.superficie) || d.distintos / d.total < RESIDUO.borde);
 const residuo = distintas.filter((f) => esResiduo(detalle[f]));
 const graves = distintas.filter((f) => !esResiduo(detalle[f]));
 const toleradas = graves.length === 0 && residuo.length <= RESIDUO.capturas;

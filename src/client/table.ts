@@ -13,7 +13,7 @@ import { backEl, cardEl, pipPath, setDeckBack, suitSvg } from './card';
 import { causeHtml } from './causa';
 import { liveHtml, Preview, closeReceipt, paintScore, polvoraDe, previewHtml, stageOver } from './cuenta';
 import { L, Ln, asaltoN, espN, formN, fxD, fxN, juraD, juraN, juraP, marca, monD, monDec, monN, paloN } from './lengua';
-import { $, $$, RUN_PLAYER, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, sortHand, speedLabel, toast, topModal } from './core';
+import { $, $$, RUN_PLAYER, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, settings, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
 import { CRACKS, exactChain, sealStep, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, guardFall, hitstop, pop, quake, restart, ribbon, shake, procBadge, stampOn, tear, throneFall, wait } from './fx';
 import { maybeSettle, trackMeta } from './guild';
@@ -28,6 +28,11 @@ import { voiceOn } from './voces';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
 import { tableWhispers, whisper } from './whispers';
 import { cifra, cifraEl, marcaCifra } from './cifra';
+import { bolsaHtml, capaCaida, recogerCaida } from './caida';
+import { ICONO_AUTO, ICONO_MEJOR, INSIGNIA_EXACTA } from './grabado12';
+import { MejorJugada, cartasConExacto, mejorJugada } from '../rules/mejor-jugada';
+import type { GameState } from '../rules/engine';
+import { t } from '../shared/i18n';
 import { noteAction, noteTurn } from './telemetry';
 
 /** Cartas de la mano y del andamio que están pintadas. */
@@ -68,11 +73,12 @@ export function buildTable(): void {
     <header class="bar">
       <div class="brand">${marca().title}</div>
       <div class="room" id="room"></div>
-      ${c ? `<div class="chip gold" id="gold-chip" data-tip="<b>${L('ui.mesa.oro')}</b>${L('ui.mesa.oro.tip')}"><span>${L('ui.mesa.oro')}</span>${cifraEl(c.run.gold, 'oro', 'b', 'id="gold-n"')}</div>` : ''}
+      ${c ? bolsaHtml(c.run.gold, c.run.esquirlas, c.run.gotas) : ''}
       <div class="obra-chips" id="obra"></div>
       <div class="players" id="players"></div>
       <button id="btn-deck" data-tip="${L('ui.mesa.mazo.tip')}">${L('ui.mesa.mazo')}${hint('deck')}</button>
-      <button id="btn-speed" data-tip="${L('ui.mesa.velocidad.tip')}"></button>
+      <button id="btn-speed" class="ritmo" data-tip="${L('ui.mesa.velocidad.tip')}"></button>
+      ${t ? '' : `<button id="btn-auto" class="ritmo" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span></button>`}
       <button id="btn-set">${L('ui.ajustes')}${hint('settings')}</button>
       <button id="btn-rules">${L('ui.reglas')}</button>
       <button id="btn-leave">${L('ui.salir')}</button>
@@ -114,6 +120,7 @@ export function buildTable(): void {
       </div>
       <div class="actions">
         <button id="btn-strike" class="primary" data-tip="${L('ui.mesa.golpear.tip')}"><span class="lbl">${L('ui.mesa.golpear')}</span>${hint('strike')}</button>
+        <button id="btn-mejor" class="secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span></button>
         <button id="btn-stash" data-tip="${L('ui.mesa.manga.tip')}"><span class="lbl">${L('ui.mesa.manga')}</span>${hint('stash')}</button>
         <button id="btn-undo" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${L('ui.mesa.deshacer')}</span>${hint('undo')}</button>
         <button id="btn-discard"><span class="lbl">${L('ui.mesa.descartar')}</span><b class="sel-n" id="discard-n" hidden></b>${hint('discard')}</button>
@@ -164,6 +171,7 @@ export function buildTable(): void {
   $('#btn-set').onclick = () => showSettings(refreshSpeed);
   $('#btn-rules').onclick = showRules;
   $('#btn-deck').onclick = toggleInspector;
+  vigilaBarra();
   $('#deck-slot').onclick = toggleInspector;
   $('#disc-slot').onclick = toggleInspector;
   const leave = $('#btn-leave');
@@ -184,6 +192,13 @@ export function buildTable(): void {
   $('#btn-stash').onclick = () => stash();
   $('#btn-discard').onclick = discardSelection;
   $('#btn-undo').onclick = undo;
+  $('#btn-mejor').onclick = () => usarMejor();
+  refreshAuto();
+  const auto = document.getElementById('btn-auto');
+  if (auto) auto.onclick = () => conmutaAuto();
+  colocaMejor();
+  capaCaida();
+  recogerCaida();
   $('#btn-pass').onclick = () => canAct() && act({ t: 'action', action: { type: 'pass' } });
   renderHud();
 }
@@ -299,10 +314,15 @@ export function renderHud(): void {
   const room = $('#room');
   if (!room) return;
   const c = S.campaign;
-  room.textContent = S.tutorial ? L('ui.mesa.tutorial') : c ? `${L('ui.mesa.asalto', { n: c.run.stage })}${c.run.stage <= LAST_STAGE ? `/${LAST_STAGE}` : ''} · ${asaltoN(c.run.stage)}` : L('ui.mesa.sala', { sala: S.session?.room ?? '' });
+  // V12: el nombre del asalto cede su sitio en la barra estrecha a la bolsa y a AUTO (va entero en el aviso)
+  room.innerHTML = S.tutorial ? L('ui.mesa.tutorial') : c ? `${L('ui.mesa.asalto', { n: c.run.stage })}${c.run.stage <= LAST_STAGE ? `/${LAST_STAGE}` : ''}<span class="room-nombre"> · ${asaltoN(c.run.stage)}</span>` : L('ui.mesa.sala', { sala: S.session?.room ?? '' });
   if (c) {
-    setNum('#gold-n', cifra(c.run.gold));
-    marcaCifra($('#gold-n'), c.run.gold, 'oro');
+    setNum('#bolsa-oro', cifra(c.run.gold));
+    marcaCifra($('#bolsa-oro'), c.run.gold, 'oro');
+    setNum('#bolsa-esquirlas', cifra(c.run.esquirlas));
+    marcaCifra($('#bolsa-esquirlas'), c.run.esquirlas, 'esquirlas');
+    setNum('#bolsa-gotas', cifra(c.run.gotas));
+    marcaCifra($('#bolsa-gotas'), c.run.gotas, 'gotas');
   }
   const obra = $('#obra');
   if (obra && c) {
@@ -315,6 +335,32 @@ export function renderHud(): void {
       c.run.ascension ? `<div class="chip level-chip" data-tip="${L('ui.mesa.reinado.tip', { n: c.run.ascension + 1 })}"><span>${L('ui.mesa.reinado')}</span><b>${c.run.ascension + 1}</b></div>` : '',
     ].join('');
   }
+  ajustaBarra();
+}
+
+/**
+ * V12 · la barra de arriba no se pisa nunca: si lo de la izquierda (asalto, bolsa, monarca, turno) no cabe junto a los
+ * botones, primero se recoge el nombre del asalto, después las etiquetas de los chips («Monarca», «Reinado»; el
+ * dato se queda), luego se estrecha el aire entre piezas y, al final, AUTO se queda en su luz y su icono (con su
+ * aria-label y su aviso). Se mide de nuevo cuando cambian los botones (indicaciones del mando).
+ */
+function ajustaBarra(): void {
+  const bar = document.querySelector<HTMLElement>('.table-screen .bar');
+  const players = bar?.querySelector<HTMLElement>('#players');
+  if (!bar || !players) return;
+  const sobra = () => players.scrollWidth > players.clientWidth + 1 || bar.scrollWidth > bar.clientWidth + 1;
+  const pasos = ['apretada', 'apretada2', 'apretada3', 'apretada4'];
+  bar.classList.remove(...pasos);
+  for (const p of pasos) {
+    if (!sobra()) return;
+    bar.classList.add(p);
+  }
+}
+const vigiaBarra = typeof ResizeObserver === 'function' ? new ResizeObserver(() => requestAnimationFrame(ajustaBarra)) : null;
+function vigilaBarra(): void {
+  if (!vigiaBarra) return;
+  vigiaBarra.disconnect();
+  for (const b of document.querySelectorAll<HTMLElement>('.table-screen .bar > button')) vigiaBarra.observe(b);
 }
 
 /** El cinturón de herramientas y lo que la mesa arrastra de golpe en golpe. */
@@ -533,7 +579,14 @@ function renderHand(): void {
     res.classList.toggle('used', v.stashed);
     res.dataset.tip = `${L('ui.mesa.manga.hueco.tip')}${v.reserveSize > 1 ? '' : L('ui.mesa.manga.lleno')}${L('ui.mesa.manga.como')}${v.stashed ? L('ui.mesa.manga.usada') : ''}`;
   }
+  const exactas = new Set(lecturaMejor()?.exactas ?? []);
+  const mejor = mejorActiva();
   for (const [id, el] of cardEls) {
+    el.classList.toggle('corona-exacta', exactas.has(id));
+    const ins = el.querySelector(':scope > .insignia-exacta');
+    if (exactas.has(id) && !ins) el.insertAdjacentHTML('beforeend', INSIGNIA_EXACTA);
+    else if (!exactas.has(id)) ins?.remove();
+    el.classList.toggle('mejor', !!mejor?.cards.includes(id));
     const at = S.selected.indexOf(id);
     el.classList.toggle('sel', at >= 0);
     if (at >= 0 && S.selected.length > 1) el.dataset.n = String(at + 1);
@@ -683,6 +736,8 @@ export function renderInteractive(): void {
   const formation = classify(cards);
   $$('.preview').forEach((p) => p.remove());
   for (const s of SUITS) towerEls[s].classList.remove('targetable');
+  const mejor = mejorActiva();
+  for (const s of SUITS) towerEls[s].classList.toggle('mejor', mejor?.target === s);
   renderScore();
 
   if (can && (joker || formation)) {
@@ -749,6 +804,99 @@ export function renderAll(): void {
   renderInteractive();
   renderPings();
   renderFatigue();
+}
+
+// ───────────────────────── V12 · Mejor jugada y AUTO ─────────────────────────
+
+const tx = (k: string, vals?: Record<string, string | number>) => t(k, vals);
+
+/** El estado de reglas que ve este jugador (la vista basta: `previewStrike` trabaja sobre ella). */
+function estadoVisto(): GameState | null {
+  const v = S.shown;
+  if (!v) return null;
+  return { ...v, players: [{ ...v.players.find((p) => p.id === v.you), id: v.you, hand: v.hand, reserve: v.reserve }] } as unknown as GameState;
+}
+
+/** Lo que dice la mesa a la vista (una vez por vista): las cartas con Golpe exacto y la Mejor jugada. */
+const lecturas = new WeakMap<object, { exactas: string[]; mejor: MejorJugada | null }>();
+function lecturaMejor(): { exactas: string[]; mejor: MejorJugada | null } | null {
+  const v = S.shown;
+  const st = estadoVisto();
+  if (!v || !st || !canAct()) return null;
+  let l = lecturas.get(v);
+  if (!l) {
+    try {
+      l = { exactas: cartasConExacto(st, v.you), mejor: mejorJugada(st, v.you) };
+    } catch {
+      l = { exactas: [], mejor: null };
+    }
+    lecturas.set(v, l);
+  }
+  return l;
+}
+
+/** La Mejor jugada si es justo lo elegido (las cartas y el trono): entonces lleva su marca `.mejor`. */
+function mejorActiva(): MejorJugada | null {
+  const m = lecturaMejor()?.mejor;
+  if (!m || S.selected.length !== m.cards.length || !m.cards.every((id) => S.selected.includes(id))) return null;
+  return aim === null || aim === m.target ? m : null;
+}
+
+/** Mejor jugada: elige las cartas y apunta al trono; no golpea (confirma Golpear). Sin jugada, lo dice. */
+export function usarMejor(): MejorJugada | null {
+  if (!canAct()) return null;
+  const m = lecturaMejor()?.mejor ?? null;
+  if (!m) {
+    toast(tx('mejor.nada'));
+    return null;
+  }
+  S.selected.length = 0;
+  S.selected.push(...m.cards);
+  aim = m.target;
+  renderInteractive();
+  return m;
+}
+
+/** En el móvil, Mejor jugada baja junto a La Manga, encima de Golpear (la barra del pulgar no encoge). */
+const MOVIL = '(max-aspect-ratio: 1/1), (max-width: 640px)';
+function colocaMejor(): void {
+  const b = document.getElementById('btn-mejor');
+  if (!b) return;
+  const movil = matchMedia(MOVIL).matches;
+  const sitio = movil ? $('.handrow') : $('.actions');
+  if (!sitio) return;
+  if (movil) $('#hand').after(b);
+  else $('#btn-strike').after(b);
+}
+matchMedia(MOVIL).addEventListener('change', colocaMejor);
+
+/** Por qué no hay AUTO en esta mesa (`null`: sí hay). */
+export function autoVetado(): string | null {
+  const c = S.campaign;
+  if (c?.run.daily) return tx('auto.pausa.diaria');
+  if (!c || c.online) return tx('auto.pausa.coop');
+  return null;
+}
+
+/** El conmutador AUTO: encendido se ve por la luz maciza y el botón hundido, no solo por el color. */
+export function refreshAuto(): void {
+  const b = document.getElementById('btn-auto') as HTMLButtonElement | null;
+  if (!b) return;
+  const veto = autoVetado();
+  if (veto) settings.auto = false;
+  b.disabled = !!veto;
+  b.setAttribute('aria-pressed', String(settings.auto));
+  b.classList.toggle('encendido', settings.auto);
+  b.dataset.tip = `<b>${tx('auto.nombre')}</b>${veto ?? tx('auto.desc')}`;
+  b.setAttribute('aria-label', `${tx('auto.nombre')}${veto ? ` · ${veto}` : ''}`);
+}
+
+/** Enciende o apaga AUTO (el bucle que juega lo pone juice-ux y escucha `derrumbe:auto`). */
+export function conmutaAuto(on = !settings.auto): void {
+  if (autoVetado()) return void (sfx.deny(), refreshAuto());
+  settings.auto = on;
+  refreshAuto();
+  document.dispatchEvent(new CustomEvent('derrumbe:auto', { detail: on }));
 }
 
 /** La velocidad de la mesa, en su botón (con su indicación de mando). */
@@ -1096,7 +1244,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
     case 'gold':
       // en sala, el oro del asalto se va sumando aquí; al cerrar el asalto llega la cuenta buena del servidor
       if (S.campaign?.online && S.campaign.run.phase === 'battle') S.campaign.run.gold += ev.amount;
-      coins($('#stage').firstElementChild ?? $('#score'), $('#gold-chip'), ev.amount);
+      coins($('#stage').firstElementChild ?? $('#score'), $('#bolsa-oro')?.parentElement ?? $('#bolsa'), ev.amount);
       sfx.coins(ev.amount);
       renderHud();
       logLine(L('ui.log.oro', { n: ev.amount }), 'yel');
