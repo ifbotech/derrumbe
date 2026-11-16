@@ -100,7 +100,9 @@ function place(el: Element): void {
   box.style.width = `${r.width + 12}px`;
   box.style.height = `${r.height + 12}px`;
   // la insignia del mando (SD5) va debajo del marco; arriba si no cabe, y pegada al lado si el marco toca el borde
-  box.classList.toggle('hint-up', r.bottom + 56 > innerHeight);
+  // V16: en La Taberna, sobre una oferta con otra fila debajo, la insignia va arriba (abajo tapaba el precio vecino)
+  const filaDebajo = el instanceof HTMLElement && el.matches('#offers > .choice') && [...el.parentElement!.children].some((c) => (c as HTMLElement).offsetTop > el.offsetTop);
+  box.classList.toggle('hint-up', r.bottom + 56 > innerHeight || filaDebajo);
   box.classList.toggle('hint-l', r.left + r.width / 2 < 130);
   box.classList.toggle('hint-r', r.left + r.width / 2 > innerWidth - 130);
 }
@@ -119,7 +121,10 @@ const SHOP_VERBS: [string, string][] = [
 const padKey = (b: string) => `<kbd class="kh pd b-${b.toLowerCase()}">${b}</kbd>`;
 /** La insignia de lo enfocado: vacía sin mando, fuera de La Taberna o con una ventana encima. */
 export function padPrompt(el: Element | null): string {
-  if (mode !== 'pad' || !el || !el.closest('.run-body.shop') || el.closest('.modal')) return '';
+  if (mode !== 'pad' || !el || el.closest('.modal')) return '';
+  // V16 · Steam Deck: en la mesa, la carta enfocada dice qué hace A
+  if (el.matches('#hand .card, #reserve .card')) return `<b>${padKey('A')}${t(el.classList.contains('sel') ? 'ui.pad.soltar' : 'ui.pad.elegir')}</b>`;
+  if (!el.closest('.run-body.shop')) return '';
   const hit = SHOP_VERBS.find(([sel]) => el.matches(sel));
   if (!hit) return '';
   const a = `<b>${padKey('A')}${t(hit[1])}</b>`;
@@ -335,6 +340,8 @@ export function activate(): boolean {
   const el = document.activeElement;
   if (!(el instanceof HTMLElement) || el === document.body || !scope().contains(el)) return false;
   el.click();
+  // V16: lo que hace A puede haber cambiado (Elegir pasa a Soltar): la insignia se vuelve a escribir en el fotograma siguiente
+  requestAnimationFrame(() => mode === 'pad' && paintPrompt(document.activeElement));
   return true;
 }
 

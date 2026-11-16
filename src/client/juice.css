@@ -352,3 +352,23 @@ button.whisper-off:hover:not(:disabled), button.whisper-off:focus-visible { --bg
 /* V12 · el Susurro del Árbol: arriba en el pergamino, sobre las ramas, sin tapar el panel ni «Comprar» */
 .arbol-lienzo:has(> .whisper.sobre-arbol) { position: relative; }
 .whisper.sobre-arbol { position: absolute; z-index: 6; left: 8px; top: 8px; max-width: min(34em, calc(100% - 16px)); box-shadow: 0 0 0 4px var(--pit, #0d0c0b); }
+
+/* ───── V16 · Steam Deck: el foco del mando se ve por luz ─────
+   («no sé qué carta tengo enfocada con la cruceta», 0 de 4 en Steam Deck desde la 12.0). Con mando, la carta
+   enfocada sube 20 px sobre la fila (el doble que con teclado), el marco del foco engorda (6 px de papel entre dos
+   filetes de tinta de 3 px) y lleva un halo de luz fijo alrededor; encima, la etiqueta del botón A dice qué hace
+   («A Elegir», «A Soltar»). No se atenúa ninguna carta (su tinta se queda en 4,5:1). El halo es una sombra fija:
+   solo se mueve con transform. En el móvil la carta sigue subiendo 4 px (la cuenta está justo encima). */
+html[data-input='pad'] .focus-ring i { inset: -3px; border-width: 6px; border-radius: 8px; box-shadow: 0 0 0 3px var(--ring-ink), inset 0 0 0 3px var(--ring-ink), 0 0 22px 9px rgba(243, 234, 210, 0.5); }
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  html[data-input='pad'] #hand .card[data-foco] { transform: translateY(-20px) rotate(0deg); z-index: 6; }
+}
+/* y en La Taberna, con mando, se lee a 40 cm: la cifra del precio a 22 px dentro de su etiqueta (la etiqueta
+   no se ensancha), los botones del lateral a 16 px y la línea de estado a 15 px */
+.price-tag b { font: inherit; }
+@media (min-width: 641px) {
+  html[data-input='pad'] .run-body.shop .price-tag { display: inline-flex; align-items: baseline; gap: 0.3em; padding-block: 3px; }
+  html[data-input='pad'] .run-body.shop .price-tag b { font-size: 22px; }
+}
+html[data-input='pad'] .shop-side .grid2 > button { font-size: 16px; min-height: 56px; padding-block: 8px; }
+html[data-input='pad'] .run .deck-head .sub { font-size: 15px; }
