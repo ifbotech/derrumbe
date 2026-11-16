@@ -128,27 +128,32 @@ async function golpe(r: Rapido, { page }: Estado, how: 'ratón' | 'teclado' | 'm
   await velocidad(page, 1);
 }
 
-/** V16 · Steam Deck: con mando, la carta enfocada de la mano dice qué hace A (Elegir; ya elegida, Soltar). */
+/** V19 · Steam Deck: con mando, la carta enfocada de la mano es la más grande de la fila; A la elige y la suelta. */
 async function v16_foco(r: Rapido, { page }: Estado): Promise<void> {
   await go(page, 'mesa');
   await page.evaluate(() => (window as unknown as W).__qaGamepad.connect());
   await press(page, BTN.DOWN);
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(250);
   const lee = () =>
     page.evaluate(() => {
       const c = document.querySelector<HTMLElement>('#hand .card[data-foco]');
+      const otra = [...document.querySelectorAll<HTMLElement>('#hand .card')].find((x) => x !== c);
       const h = document.querySelector<HTMLElement>('.focus-ring .pad-hint');
-      return { modo: document.documentElement.dataset.input, carta: !!c, elegida: !!c?.classList.contains('sel'), pista: h && !h.hidden ? (h.textContent ?? '').trim() : '' };
+      return {
+        modo: document.documentElement.dataset.input,
+        carta: !!c,
+        elegida: !!c?.classList.contains('sel'),
+        razon: c && otra ? c.getBoundingClientRect().width / otra.getBoundingClientRect().width : 0,
+        pista: h && !h.hidden ? (h.textContent ?? '').trim() : '',
+      };
     });
   let v = await lee();
-  // el foco entra por la mano; si cayó en una carta ya elegida, la pista dice Soltar
-  const esperado = (x: { elegida: boolean }) => (x.elegida ? 'Soltar' : 'Elegir');
-  r.check(v.modo === 'pad' && v.carta && v.pista.includes(esperado(v)), `[v16] con mando, la carta enfocada lleva «A ${esperado(v)}» (pista: «${v.pista}»)`);
+  r.check(v.modo === 'pad' && v.carta && v.razon > 1.2 && !v.pista, `[v19] con mando, la carta enfocada es la más grande de la fila (×${v.razon.toFixed(2)}) y no lleva nada encima (pista: «${v.pista}»)`);
   const antes = v.elegida;
   await press(page, BTN.A);
   await page.waitForTimeout(150);
   v = await lee();
-  r.check(v.carta && v.elegida !== antes && v.pista.includes(esperado(v)), `[v16] tras pulsar A, la pista pasa a «A ${esperado(v)}» (pista: «${v.pista}»)`);
+  r.check(v.carta && v.elegida !== antes, `[v19] A sobre la carta enfocada la ${antes ? 'suelta' : 'elige'}`);
 }
 
 async function mejorGolpear(r: Rapido, { page }: Estado): Promise<void> {

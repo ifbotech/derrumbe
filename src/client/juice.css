@@ -361,7 +361,9 @@ button.whisper-off:hover:not(:disabled), button.whisper-off:focus-visible { --bg
    solo se mueve con transform. En el móvil la carta sigue subiendo 4 px (la cuenta está justo encima). */
 html[data-input='pad'] .focus-ring i { inset: -3px; border-width: 6px; border-radius: 8px; box-shadow: 0 0 0 3px var(--ring-ink), inset 0 0 0 3px var(--ring-ink), 0 0 22px 9px rgba(243, 234, 210, 0.5); }
 @media (min-width: 641px) and (min-aspect-ratio: 1/1) {
-  html[data-input='pad'] #hand .card[data-foco] { transform: translateY(-20px) rotate(0deg); z-index: 6; }
+  /* V19: además crece (1,3×, anclada abajo a la derecha: hacia arriba y hacia la izquierda, sin tapar el índice de
+     la carta siguiente); la enfocada es la carta más grande de la fila y no lleva nada encima */
+  html[data-input='pad'] #hand .card[data-foco] { transform: scale(1.3) rotate(0deg); transform-origin: 100% 100%; z-index: 6; }
 }
 /* y en La Taberna, con mando, se lee a 40 cm: la cifra del precio a 22 px dentro de su etiqueta (la etiqueta
    no se ensancha), los botones del lateral a 16 px y la línea de estado a 15 px */
