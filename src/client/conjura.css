@@ -1,0 +1,284 @@
+/* ═════════════ V12 · bloque B de arte: el Árbol de la Conjura, lo que cae a la mesa, la bolsa, la tirada de huesos,
+   Mejor jugada y AUTO. Todo quieto: lo que se mueve lo anima juice-ux (transform y opacity) desde fx/juice. ═════════════ */
+
+/* ───────────── El Árbol: el conjunto entero de serie, el detalle en su panel, zum semántico ───────────── */
+.guild.con-arbol .guild-panel.arbol-panel { padding: 6px; overflow: hidden; }
+.arbol-host { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.arbol { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 24vw, 340px); gap: 10px; }
+.arbol-lienzo { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.arbol-vista {
+  position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; touch-action: none; cursor: grab; user-select: none;
+  border: 2px solid var(--ink);
+  background-color: #e6d9bb;
+  background-image:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 250, 235, 0.55), transparent 70%),
+    repeating-linear-gradient(97deg, rgba(120, 92, 48, 0.05) 0 2px, transparent 2px 11px),
+    repeating-linear-gradient(8deg, rgba(120, 92, 48, 0.04) 0 1px, transparent 1px 17px);
+}
+.arbol-vista:active { cursor: grabbing; }
+.arbol-vista:focus-visible { outline: 3px solid var(--laton); outline-offset: -3px; }
+.arbol-ramas { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.arbol-ramas .rama { fill: none; stroke: #6d5a3c; stroke-width: 3; stroke-dasharray: 2 7; stroke-linecap: round; }
+.arbol-ramas .rama.viva { stroke: var(--ink); stroke-width: 6; stroke-dasharray: none; }
+.arbol-vista > .nodo, .arbol-vista > .arbol-raiz, .arbol-vista > .estandarte { position: absolute; left: 0; top: 0; margin: 0; box-sizing: border-box; }
+
+/* la barra de debajo: alejar, acercar, ver todo y la línea de ayuda */
+.arbol-barra { flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.arbol-barra button { min-width: 48px; min-height: 44px; padding: 0 12px; font-family: var(--mono); font-weight: 800; font-size: 18px; line-height: 1; }
+.arbol-barra #arbol-centro { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+.arbol-ayuda { flex: 1 1 120px; min-width: 0; font-family: var(--mono); font-weight: 700; font-size: 13px; line-height: 1.25; color: var(--ink); }
+.arbol-lado { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.arbol-lado .arbol-detalle { flex: 1 1 auto; }
+
+/* un nodo: rasgos comunes a los tres niveles */
+.arbol .nodo {
+  display: flex; flex-direction: column; align-items: stretch; gap: 5px; padding: 8px 10px 9px;
+  text-align: left; text-transform: none; letter-spacing: 0; white-space: normal; overflow: hidden;
+  font-family: var(--mono); font-weight: 500; font-size: 13px; line-height: 1.22; color: var(--ink);
+  --bg: #f3ead6; --bd: var(--ink); --bw: 3px; --sh: 3px 4px 0 rgba(24, 22, 20, 0.5); cursor: pointer;
+}
+.arbol .nodo:hover { --bg: #f8e3b4; }
+/* estados por la forma: comprable (filete de latón doble), padre (apagado, discontinuo, candado), saldo (apagado), lleno (lacre) */
+.arbol .nodo.es-comprable { --bd: #7a5410; --bw: 4px; --sh: 0 0 0 3px var(--laton), 3px 4px 0 rgba(24, 22, 20, 0.5); }
+.arbol .nodo.es-padre { --bg: #d9ceb5; --bs: dashed; --sh: none; }
+.arbol .nodo.es-saldo { --bg: #e4dac4; --sh: none; }
+.arbol .nodo.es-tope { --bg: #f1e2c4; }
+.arbol .nodo[aria-current='true'], .arbol .arbol-raiz[aria-current='true'] { outline: 3px solid var(--laton); outline-offset: 3px; box-shadow: 0 0 0 7px var(--ink); z-index: 2; }
+.arbol .nodo:focus-visible, .arbol .nodo[data-foco], .arbol .arbol-raiz:focus-visible { outline: 3px solid var(--laton); outline-offset: 3px; box-shadow: 0 0 0 7px var(--card-paper); z-index: 3; }
+.nodo-cab { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.nodo-sello { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: #d9ccae; border: 2px solid var(--ink); box-shadow: inset 0 0 0 3px #efe6d5; }
+.nodo.con-rango .nodo-sello { background: #9c2a20; box-shadow: inset 0 0 0 3px #c4473a; }
+.nodo-sello .nodo-glifo { width: 28px; height: 28px; }
+.nodo-sello .candado { position: absolute; right: -7px; bottom: -6px; width: 18px; height: 18px; color: var(--ink); background: var(--card-paper); border-radius: 50%; padding: 1px; }
+.nodo.es-padre .nodo-glifo { opacity: 0.45; }
+.nodo-nombre { flex: 1 1 auto; min-width: 0; font-family: var(--display); font-weight: 400; font-size: 14px; line-height: 1.12; text-transform: uppercase; letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.nodo-efecto { flex: 1 1 auto; min-height: 0; overflow-wrap: anywhere; }
+.nodo-pie { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.nodo-rango, .nodo-coste { font-family: var(--display); font-weight: 400; font-size: 14px; line-height: 1; padding: 3px 6px 2px; font-variant-numeric: tabular-nums; background: var(--ink); color: var(--card-paper); white-space: nowrap; }
+.nodo.es-comprable .nodo-coste { background: var(--laton); color: var(--ink); box-shadow: inset 0 0 0 2px #7a5410; }
+.nodo.es-tope .nodo-coste { background: #1d544b; color: var(--card-paper); }
+.nodo-motivo { font-family: var(--mono); font-weight: 800; font-size: 13px; line-height: 1.15; color: #7d1d15; }
+.nodo.es-padre .nodo-motivo { color: var(--ink); }
+
+/* nivel «sello» (la vista general): emblema y rango; el estado por la forma */
+.arbol-vista[data-lod='sello'] .nodo { padding: 3px 2px 4px; gap: 1px; align-items: center; justify-content: space-between; }
+.arbol-vista[data-lod='sello'] .nodo :is(.nodo-nombre, .nodo-efecto, .nodo-coste, .nodo-motivo) { display: none; }
+.arbol-vista[data-lod='sello'] .nodo-cab { min-height: 0; }
+.arbol-vista[data-lod='sello'] .nodo-sello { width: 28px; height: 28px; border-width: 1.5px; box-shadow: none; }
+.arbol-vista[data-lod='sello'] .nodo-sello .nodo-glifo { width: 21px; height: 21px; }
+.arbol-vista[data-lod='sello'] .nodo-pie { justify-content: center; }
+.arbol-vista[data-lod='sello'] .nodo-rango { font-size: 13px; padding: 2px 4px 1px; }
+.arbol-vista[data-lod='sello'] .nodo.es-comprable .nodo-rango { background: var(--laton); color: var(--ink); }
+.arbol-vista[data-lod='sello'] .nodo.es-tope .nodo-rango { background: #9c2a20; color: var(--card-paper); }
+.arbol-vista[data-lod='sello'] .nodo-sello .candado { right: -9px; bottom: -4px; width: 16px; height: 16px; }
+
+/* nivel «nombre» (escritorio ancho): emblema, nombre, rango y coste */
+.arbol-vista[data-lod='nombre'] .nodo { padding: 5px 6px 6px; gap: 3px; align-items: center; text-align: center; }
+.arbol-vista[data-lod='nombre'] .nodo :is(.nodo-efecto, .nodo-motivo) { display: none; }
+.arbol-vista[data-lod='nombre'] .nodo-cab { flex-direction: column; gap: 3px; min-height: 0; flex: 1 1 auto; }
+.arbol-vista[data-lod='nombre'] .nodo-sello { width: 32px; height: 32px; }
+.arbol-vista[data-lod='nombre'] .nodo-sello .nodo-glifo { width: 23px; height: 23px; }
+.arbol-vista[data-lod='nombre'] .nodo-nombre { font-family: var(--mono); font-weight: 800; font-size: 13px; line-height: 1.1; text-transform: none; }
+.arbol-vista[data-lod='nombre'] .nodo-pie { align-self: stretch; }
+.arbol-vista[data-lod='nombre'] .nodo-rango, .arbol-vista[data-lod='nombre'] .nodo-coste { font-size: 13px; padding: 2px 4px 1px; }
+
+/* la raíz: la corona quebrada con el saldo de esquirlas */
+.arbol-raiz { display: grid; justify-items: center; align-content: center; gap: 4px; padding: 6px; text-align: center; color: var(--card-paper); --bg: #1e1b18; --bd: var(--laton); --bw: 3px; cursor: pointer; overflow: hidden; }
+.raiz-sello { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: #9c2a20; border: 2px solid var(--pit); box-shadow: 0 0 0 3px var(--laton); }
+.raiz-sello .raiz-glifo { width: 38px; height: 38px; }
+.raiz-nombre { font-family: 'Corona Talla', var(--title); font-weight: 900; font-size: 16px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.04em; }
+.raiz-saldo { display: inline-flex; align-items: baseline; gap: 6px; background: var(--pit); padding: 2px 10px; }
+.raiz-saldo b { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.05; color: var(--laton-hi); font-variant-numeric: tabular-nums; }
+.raiz-saldo i { font-style: normal; font-size: 20px; color: var(--laton-hi); }
+.raiz-desc { font-family: var(--mono); font-weight: 700; font-size: 13px; line-height: 1.2; color: var(--card-paper); }
+.arbol-vista:not([data-lod='tarjeta']) .arbol-raiz :is(.raiz-desc) { display: none; }
+.arbol-vista[data-lod='sello'] .arbol-raiz { padding: 2px; }
+.arbol-vista[data-lod='sello'] .arbol-raiz :is(.raiz-nombre, .raiz-saldo) { display: none; }
+.arbol-vista[data-lod='sello'] .raiz-sello { width: 44px; height: 44px; }
+.arbol-vista[data-lod='sello'] .raiz-sello .raiz-glifo { width: 32px; height: 32px; }
+.arbol-vista[data-lod='nombre'] .raiz-saldo b { font-size: 20px; }
+.arbol-vista[data-lod='nombre'] .raiz-sello { width: 40px; height: 40px; }
+.arbol-vista[data-lod='nombre'] .raiz-sello .raiz-glifo { width: 30px; height: 30px; }
+
+/* los cuatro estandartes de rama: paño oscuro con cola de golondrina y el nombre en romana de inscripción */
+.estandarte { display: grid; align-content: center; gap: 3px; padding: 4px 18px 6px 10px; color: #f3ead6; pointer-events: none; }
+.estandarte .estandarte-pano { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.estandarte b, .estandarte span { position: relative; z-index: 1; justify-self: start; background-color: var(--pano); }
+.estandarte b { font-family: 'Corona Talla', var(--title); font-weight: 900; font-size: 14px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.03em; padding: 0 2px; }
+.estandarte span { font-family: var(--mono); font-weight: 700; font-size: 13px; line-height: 1.2; padding: 0 2px; }
+.arbol-vista:not([data-lod='tarjeta']) .estandarte span { display: none; }
+.estandarte .corto { display: none; }
+.arbol-vista[data-lod='tarjeta'] .estandarte { align-content: start; padding: 22px 16px 0; }
+.arbol-vista[data-lod='tarjeta'] .estandarte b { font-size: 17px; }
+.estandarte.r-arsenal { --pano: #5e1a15; } .estandarte.r-bolsa { --pano: #5a3f0c; } .estandarte.r-huesos { --pano: #463f35; } .estandarte.r-corona { --pano: #262b30; }
+/* el filete de cada nodo dice su rama (con el nombre de la rama en su estandarte: el color nunca va solo) */
+.arbol .nodo::after { content: ''; position: absolute; left: 3px; right: 3px; top: 3px; height: 4px; pointer-events: none; }
+.arbol .nodo.r-arsenal::after { background: #9c2a20; }
+.arbol .nodo.r-bolsa::after { background: #b8860b; }
+.arbol .nodo.r-huesos::after { background: #8e8268; }
+.arbol .nodo.r-corona::after { background: #4b5560; }
+
+/* el panel de detalle: el nodo elegido, su cifra, su coste y «Comprar» */
+.arbol-detalle { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px; background: #f3ead6; color: var(--ink); border: 2px solid var(--ink); box-shadow: inset 0 0 0 3px var(--laton); overflow: auto; }
+.det-cab { display: flex; align-items: center; gap: 10px; }
+.det-sello { flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: #9c2a20; border: 2px solid var(--ink); box-shadow: inset 0 0 0 3px #c4473a; color: var(--card-paper); }
+.det-sello .det-glifo { width: 36px; height: 36px; }
+.det-cab > div { display: grid; gap: 2px; min-width: 0; }
+.det-nombre { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: 1.1; text-transform: uppercase; overflow-wrap: anywhere; }
+.det-rama { font-family: var(--mono); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #5e4a2c; }
+.det-efecto { margin: 0; font-family: var(--mono); font-weight: 600; font-size: 15px; line-height: 1.35; }
+.det-cifras { display: flex; flex-wrap: wrap; gap: 8px 16px; font-family: var(--mono); font-weight: 800; font-size: 13px; text-transform: uppercase; align-items: center; }
+.det-cifras b { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: 1; padding: 3px 7px 2px; background: var(--ink); color: var(--card-paper); font-variant-numeric: tabular-nums; text-transform: none; }
+.det-motivo { margin: 0; font-family: var(--mono); font-weight: 800; font-size: 14px; line-height: 1.25; color: #7d1d15; }
+#arbol-comprar { min-height: 48px; font-size: 16px; margin-top: auto; }
+#arbol-comprar[aria-disabled='true'] { --bg: #cfc3a8; color: #3a332a; cursor: not-allowed; }
+
+/* el aviso de la migración (una vez): Coronas → Esquirlas */
+.arbol-aviso .arbol-aviso-cifras { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 6px 0 10px; }
+.arbol-aviso .arbol-aviso-cifras span { font-family: var(--display); font-size: 30px; line-height: 1.1; background: var(--ink); color: var(--laton-hi); padding: 2px 12px; }
+.arbol-aviso .arbol-aviso-cifras i { font-style: normal; font-family: var(--mono); font-weight: 800; font-size: 26px; }
+.arbol-aviso p { font-size: 15px; line-height: 1.4; }
+
+/* móvil: cabecera y pestañas compactas; el pergamino arriba, la hoja de detalle debajo */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .guild.con-arbol .deck-head { gap: 8px; align-items: center; padding-bottom: 6px; }
+  .guild.con-arbol .deck-head h1 { font-size: 20px; line-height: 1.05; }
+  .guild.con-arbol .deck-head .sub { display: none; }
+  .guild.con-arbol .deck-head .purse span { display: none; }
+  .guild.con-arbol .deck-head .purse b { font-size: 22px; }
+  .guild.con-arbol .row.tabs { display: grid; grid-template-columns: repeat(3, auto); gap: 8px; margin-top: 0; }
+  .guild.con-arbol .row.tabs button { min-height: 44px; padding: 0 4px; font-size: 13px; }
+  .arbol { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
+  .arbol .nodo { --sh: 2px 3px 0 rgba(24, 22, 20, 0.5); }
+  .guild.con-arbol .guild-panel.arbol-panel { padding: 4px; }
+  .arbol-vista[data-lod='sello'] .nodo-rango, .nodo-rango, .nodo-coste { font-size: 14px; }
+  .arbol-vista[data-lod='sello'] .nodo-sello { width: 24px; height: 24px; }
+  .arbol-vista[data-lod='sello'] .nodo-sello .nodo-glifo { width: 19px; height: 19px; }
+  .arbol-barra { gap: 8px; }
+  .arbol-ayuda { display: none; }
+  .arbol-vista[data-lod='sello'] .estandarte { padding: 2px 12px 2px 5px; }
+  .arbol-vista[data-lod='sello'] .estandarte .largo { display: none; }
+  .arbol-vista[data-lod='sello'] .estandarte .corto { display: block; }
+  .estandarte b { font-size: 13px; letter-spacing: 0; line-height: 1.05; }
+  .arbol-detalle { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; padding: 8px 10px; overflow: visible; }
+  .arbol-detalle .det-cab { grid-column: 1 / -1; }
+  .det-sello { width: 40px; height: 40px; }
+  .det-sello .det-glifo { width: 28px; height: 28px; }
+  .det-nombre { font-size: 16px; }
+  .det-efecto { grid-column: 1 / -1; font-size: 14px; line-height: 1.3; }
+  .det-cifras { gap: 6px 10px; flex-wrap: nowrap; white-space: nowrap; }
+  .det-cifras b { font-size: 15px; padding: 3px 5px 2px; }
+  .det-cifras { gap: 4px 8px; }
+  .det-motivo { grid-column: 1 / -1; font-size: 14px; }
+  .arbol-detalle #arbol-comprar { grid-column: 2; grid-row: 3; margin: 0; padding: 0 10px; min-height: 48px; }
+  .arbol-lado { gap: 6px; }
+  .guild.con-arbol .row.tabs { margin-bottom: 0; }
+}
+
+/* ───────────── La bolsa (barra de arriba): un solo sitio para el oro, las esquirlas y las gotas ───────────── */
+.bar .chip.bolsa { gap: 10px; padding: 2px 8px; }
+.bolsa-c { display: inline-flex; align-items: center; gap: 4px; }
+.bolsa-svg { width: 20px; height: 20px; flex: none; }
+.bar .chip.bolsa b { font-size: max(15px, 1.05em); font-variant-numeric: tabular-nums; }
+
+/* ───────────── Lo que cae: capa fija, sin punteros; las piezas quietas hasta que el imán las lleva ───────────── */
+#caida { position: fixed; inset: 0; z-index: 45; pointer-events: none; }
+.caida-pieza { position: fixed; width: 28px; height: 28px; filter: drop-shadow(2px 2px 0 rgba(20, 18, 16, 0.6)); will-change: transform; }
+.caida-pieza[hidden] { display: none; }
+.caida-pieza .caida-svg { width: 100%; height: 100%; display: block; }
+.caida-esquirla { transform: rotate(-12deg); }
+.caida-gota { transform: rotate(6deg); }
+
+/* ───────────── Ritmo de la mesa: velocidad y AUTO comparten zona y lenguaje (filete de latón) ───────────── */
+.bar button.ritmo { --bd: var(--laton-off, #8a6d2f); gap: 6px; font-variant-numeric: tabular-nums; }
+#btn-auto .ico-btn { width: 18px; height: 18px; flex: none; }
+#btn-auto .luz { width: 11px; height: 11px; flex: none; border: 2px solid currentColor; background: transparent; }
+/* encendido: luz maciza, botón hundido y latón (forma, relieve y color: nunca el color solo) */
+#btn-auto[aria-pressed='true'] { --bg: var(--laton); --sh: inset 3px 3px 0 rgba(24, 22, 20, 0.55); color: var(--ink); }
+#btn-auto[aria-pressed='true'] .luz { background: currentColor; border-radius: 50%; }
+#btn-auto:disabled .luz { border-style: dashed; }
+
+/* ───────────── Mejor jugada: secundario junto a Golpear (oscuro con filete de latón; Golpear sigue siendo el rojo) ───────────── */
+#btn-mejor { grid-area: mejor; gap: 6px; --bg: var(--table-3); --bd: var(--laton); color: var(--card-paper); }
+#btn-mejor .ico-btn { width: 18px; height: 18px; flex: none; color: var(--laton-hi); }
+#btn-mejor:hover:not(:disabled) { --bg: var(--table-4); }
+.actions { grid-template-areas: 'strike mejor' 'stash undo' 'discard clear'; }
+#btn-mejor .lbl { font-size: max(14px, 1.6vh); }
+
+/* la corona del Golpe exacto en la carta (forma maciza, no solo color) y la marca de la Mejor jugada */
+.card .insignia-exacta { position: absolute; z-index: 6; right: 4px; bottom: 4px; width: 22px; height: 22px; display: grid; place-items: center; background: var(--laton); color: var(--ink); border: 2px solid var(--ink); border-radius: 50%; pointer-events: none; }
+.card .insignia-exacta svg { width: 15px; height: 15px; }
+.hand .card.mejor, .reserve .card.mejor { outline: 3px dashed var(--laton); outline-offset: 2px; }
+.tower.mejor { outline: 3px dashed var(--laton); outline-offset: 3px; }
+
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .bar .chip.bolsa { gap: 8px; padding: 1px 5px; }
+  .bolsa-svg { width: 18px; height: 18px; }
+  .bar .chip.bolsa b { font-size: 14px; }
+  .caida-pieza { width: 20px; height: 20px; }
+  #btn-auto .ico-btn { display: none; }
+  /* Mejor jugada baja a la columna de La Manga, encima de Golpear: la barra del pulgar no encoge */
+  .hand, .is-run .hand { grid-row: span 2; }
+  .handrow > #btn-mejor { grid-column: 1; align-self: end; justify-self: stretch; min-width: 48px; min-height: 48px; padding: 2px; flex-direction: column; gap: 1px; font-family: var(--mono); font-weight: 700; }
+  .handrow > #btn-mejor .lbl { font-size: 13px; line-height: 1; }
+}
+
+/* barra de escritorio estrecha (1280, 1366): el nombre del asalto se recoge para que quepan la bolsa y AUTO */
+@media (max-width: 1500px) and (min-aspect-ratio: 1/1) and (min-width: 641px) {
+  .bar .room-nombre { display: none; }
+}
+/* y en cualquier ancho, si la barra no cabe (table.ts · ajustaBarra): fuera el nombre del asalto y, si aún no cabe,
+   las etiquetas de los chips; el dato se queda */
+.bar.apretada .room-nombre { display: none; }
+.bar.apretada2 .obra-chips .chip > span { display: none; }
+.bar.apretada3 { gap: 8px; }
+.bar.apretada4 #btn-auto .lbl { display: none; }
+/* el móvil conserva su barra del pulgar de cuatro (Mejor jugada no está en ella) y la mano rellena el hueco */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .actions { grid-template-areas: 'strike stash discard undo'; }
+  .handrow > #btn-mejor { order: 1; }
+  .bar button { flex: 1 1 0; }
+  .bar #btn-speed { flex-grow: 0.6; }
+  .bar #btn-set { flex-grow: 1.25; }
+  .bar #btn-rules { flex-grow: 1.1; }
+  #btn-auto { gap: 3px; }
+  #btn-auto .luz { width: 9px; height: 9px; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .handrow > #btn-mejor { grid-area: auto / 1; margin-bottom: 3px; }
+}
+
+/* ───────────── La tirada de huesos: sobre el Botín; la cara que sale y el total, grandes y solos ───────────── */
+#ritual { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 16px; background: rgba(12, 11, 10, 0.82); }
+.ritual-caja { width: min(640px, 100%); max-height: calc(100dvh - 32px); overflow: auto; display: grid; justify-items: center; gap: 16px; padding: 20px 18px; background: var(--pit); color: var(--card-paper); border: 3px solid var(--laton); box-shadow: 0 0 0 4px var(--ink), 8px 10px 0 rgba(0, 0, 0, 0.6); text-align: center; }
+.ritual-caja h2 { margin: 0; font-family: var(--title); font-weight: 900; font-size: clamp(22px, 3.2vh, 32px); letter-spacing: 0.04em; text-transform: uppercase; color: var(--card-paper); }
+.ritual-dados { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+.hueso { display: grid; justify-items: center; gap: 6px; width: 128px; }
+.hueso-dado { position: relative; width: 112px; height: 112px; }
+.hueso-dado .hueso-svg { width: 100%; height: 100%; display: block; }
+/* la cara que salió, tallada en la cara de arriba del cubo de hueso: tinta parda sobre el marfil viejo (la cara lisa
+   del dado es su placa; contraste ≈ 12:1), con un filo claro debajo como el corte del buril */
+.hueso-cara { position: absolute; left: 50%; top: 43%; transform: translate(-50%, -50%); font-family: var(--num); font-weight: 400; font-size: 36px; line-height: 1; color: #3a2a18; text-shadow: 0 1px 0 rgba(255, 250, 235, 0.85), 0 -1px 0 rgba(58, 42, 24, 0.35); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
+.hueso-nombre { min-height: 2.5em; display: flex; align-items: center; font-family: var(--mono); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--card-paper); }
+/* sus seis caras, en pequeño: cajitas de hueso; la que salió, en tinta con marco de latón (forma, no solo color) */
+.hueso-caras { display: grid; grid-template-columns: repeat(3, auto); gap: 4px; justify-content: center; }
+.hueso-caras .cara { min-width: 30px; padding: 2px 4px 1px; font-family: var(--mono); font-weight: 800; font-size: 13px; line-height: 1.2; color: #3a2a18; background: #e6d8b4; border: 1px solid #7d6b45; font-variant-numeric: tabular-nums; text-align: center; }
+.hueso-caras .cara.sale { color: var(--laton-hi); background: var(--ink); border: 2px solid var(--laton); padding: 1px 3px 0; box-shadow: 0 0 0 1px var(--ink); }
+.ritual-desc { margin: 0; font-family: var(--mono); font-weight: 600; font-size: 15px; line-height: 1.35; color: var(--card-paper); }
+.ritual-total { margin: 0; display: flex; flex-direction: column; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; font-family: var(--display); font-weight: 400; font-size: clamp(20px, 2.6vh, 26px); line-height: 1.2; font-variant-numeric: tabular-nums; }
+.ritual-total > span:not(.ritual-sep) { background: var(--ink); padding: 4px 10px 3px; }
+.ritual-oro { color: var(--laton-hi); }
+.ritual-esq { color: var(--card-paper); }
+.ritual-sep { display: none; }
+.ritual-botones { display: flex; gap: 12px; justify-content: center; }
+.ritual-botones button { min-width: 140px; min-height: 48px; font-size: 16px; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .ritual-caja { gap: 12px; padding: 16px 12px; }
+  .hueso { width: 104px; }
+  .hueso-dado { width: 96px; height: 96px; }
+  .hueso-cara { font-size: 32px; }
+  .ritual-total { font-size: 20px; flex-direction: column; }
+  .ritual-sep { display: none; }
+  .ritual-botones button { min-width: 0; flex: 1 1 0; }
+  .ritual-botones { align-self: stretch; }
+}

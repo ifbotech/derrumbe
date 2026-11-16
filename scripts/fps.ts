@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('qa:fps', 300); // tope duro: ver scripts/guardian.ts
 // V8 · npm run qa:fps — 60 fotogramas por segundo, medidos con aceleración gráfica de verdad.
 // Lanza Chromium con los mismos argumentos que usaba GPU=1 en la prueba de humo y, si el renderizador de
 // WebGL es por software (SwiftShader, llvmpipe) o no hay WebGL, falla: la medida no valdría.
@@ -9,6 +11,9 @@
 // Antes de cada ventana, 1 s en reposo: la mediana es el refresco de la pantalla. Cada escenario se juega
 // antes una vez en frío (no cuenta, va a enFrio en el informe): en un perfil nuevo la GPU compila sus
 // sombreadores la primera vez que ve cada efecto, y eso no es lo que siente quien juega una partida.
+//
+// V12: un sexto escenario, «caida», solo en 1280×800 y 390×844: 40 piezas que saltan de los tronos, se posan, el
+// cursor las aspira y el imán se lleva el resto a la bolsa (iman.ts).
 //
 // V11: antes de todo, una pasada en frío que SÍ cuenta: navegador recién lanzado, contexto nuevo en
 // 1920×1080 y el primer sello de lacre de la sesión (con su lámina); falla si un fotograma pasa de 50 ms.
@@ -48,6 +53,19 @@ const PROBE = `(() => {
   window.__fpsSettle = async (ms) => {
     const t0 = performance.now();
     while (performance.now() - t0 < ms && document.getAnimations().some((a) => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming().endTime ?? Infinity))) await raf();
+  };
+  // V12 · una mesa recién montada en un navegador nuevo sigue pintándose (la GPU compila sus sombreadores) aunque
+  // ya no haya nada animándose: la pasada en frío del sello medía a veces ese montaje y no el sello (1 de cada 4).
+  // Se espera a que lleve ms milisegundos seguidos pintando fotogramas de menos de 34 ms (por tiempo, no por número
+  // de fotogramas: la pantalla puede ir a 165 Hz), o al tope, y se devuelve cuánto tardó en EMPEZAR ese tramo quieto.
+  // Los 800 ms dejan terminar el calentamiento de los lacres del juego (warmSeals, que arranca a los 150 ms de
+  // quietud y dura 240 ms): nadie puede sellar una carta antes de un segundo con la mesa recién puesta.
+  window.__fpsQuieta = async (ms, tope) => {
+    const t0 = performance.now();
+    let last = await raf();
+    let desde = last;
+    while (last - desde < ms && performance.now() - t0 < tope) { const t = await raf(); if (t - last >= 34) desde = t; last = t; }
+    return Math.round(Math.max(0, desde - t0));
   };
   window.__fpsMeasure = async (trigger, minMs, reset) => {
     const deltas = [];
@@ -98,7 +116,7 @@ type Q = { __qa: { go(s: string): Promise<boolean> }; __qaFx: Record<string, (..
 const go = (page: Page, s: string) => page.evaluate((x) => (window as unknown as Q).__qa.go(x), s);
 
 /** Los cinco escenarios: cada uno prepara su pantalla y dispara el efecto como lo dispara el juego. */
-const SCENARIOS: { name: string; label: string; prep: (p: Page) => Promise<unknown>; run: (p: Page) => Promise<{ deltas: number[]; reps: number; loaf?: unknown[] }> }[] = [
+const SCENARIOS: { name: string; label: string; views?: string[]; prep: (p: Page) => Promise<unknown>; run: (p: Page) => Promise<{ deltas: number[]; reps: number; loaf?: unknown[] }> }[] = [
   {
     name: 'tajo',
     label: 'golpe con tajo',
@@ -172,6 +190,34 @@ const SCENARIOS: { name: string; label: string; prep: (p: Page) => Promise<unkno
       }),
   },
   {
+    // V12 · juice-ux B: lo que cae. 40 piezas saltan desde los tronos y se posan; el cursor pasa por encima de la mitad
+    // (las aspira) y el imán se lleva el resto al segundo. Solo transform y opacity, con el depósito de 40.
+    name: 'caida',
+    label: '40 piezas que caen y se aspiran',
+    views: ['1280x800', '390x844'],
+    prep: async (p) => {
+      await go(p, 'mesa');
+      await p.evaluate(() => document.querySelectorAll('.whisper').forEach((w) => w.remove()));
+    },
+    run: (p) =>
+      p.evaluate(() => {
+        const w = window as unknown as Q & { __qaIman: { soltar(n: number): number; quietas(): { x: number; y: number }[]; estado(): { vivas: number } } };
+        const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        return w.__fpsMeasure(async () => {
+          w.__qaIman.soltar(40);
+          // el cursor barre la mesa cuando ya hay piezas posadas: aspira las que pilla
+          await pausa(900);
+          const q = w.__qaIman.quietas().slice(0, 20);
+          for (const pt of q) {
+            dispatchEvent(new PointerEvent('pointermove', { clientX: pt.x + 6, clientY: pt.y + 4, pointerType: 'mouse', bubbles: true }));
+            await pausa(16);
+          }
+          const t0 = performance.now();
+          while (w.__qaIman.estado().vivas > 0 && performance.now() - t0 < 5000) await pausa(50);
+        }, 2000);
+      }),
+  },
+  {
     name: 'foco',
     label: 'barrido del foco por la mano con el mando',
     prep: async (p) => {
@@ -237,6 +283,10 @@ async function main(): Promise<void> {
       await go(page, 'mesa');
       await page.mouse.click(960, 12);
       await page.evaluate(() => (window as unknown as { __fpsSettle(ms: number): Promise<void> }).__fpsSettle(6000));
+      // el sello se mide con la mesa ya quieta: lo que tarda en asentarse el montaje en frío se informa aparte
+      const asentado = await page.evaluate(() => (window as unknown as { __fpsQuieta(ms: number, tope: number): Promise<number> }).__fpsQuieta(800, 6000));
+      report.frioMontajeAsentadoMs = asentado;
+      console.log(`  en frío (1920×1080): la mesa recién montada queda quieta ${asentado} ms después del reparto; el sello se mide desde ahí`);
       const cold = await page.evaluate(async () => {
         const w = window as unknown as Q & { __fpsLoaf: unknown[] };
         const raf = () => new Promise<number>((r) => requestAnimationFrame(r));
@@ -305,6 +355,7 @@ async function main(): Promise<void> {
       const out: Record<string, Medida> = {};
       const frio: Record<string, { max: number; largos: number; largosDetalle?: unknown[] }> = {};
       for (const sc of SCENARIOS) {
+        if (sc.views && !sc.views.includes(view.name)) continue;
         // una pasada en frío, que no cuenta: el perfil de Playwright es nuevo en cada lanzamiento y la GPU
         // compila sus sombreadores la primera vez que ve cada efecto (en un jugador, una vez y a disco)
         await sc.prep(page);

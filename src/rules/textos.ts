@@ -97,10 +97,13 @@ export function pasoFor(lang: Lang, ev: Paso): string {
   return n === null ? cabecera(lang, head) : `${cabecera(lang, head)}: ${n}`;
 }
 
-/** Una línea del cobro (`run.pay`) en `lang`. Las de cifra fija y el nombre de la Bolsa de monedas. */
+/** Una línea del cobro (`run.pay`) en `lang`. Las de cifra fija, la del Dado de oro y el nombre de la Bolsa de monedas. */
 export function cobroFor(lang: Lang, label: string): string {
   if (lang === 'es') return label;
-  for (const k of ['cuenta.asalto', 'cuenta.exactos', 'cuenta.vida', 'cuenta.interes']) if (tFor('es', k) === label) return tFor(lang, k);
+  for (const k of ['cuenta.asalto', 'cuenta.vida', 'cuenta.interes']) if (tFor('es', k) === label) return tFor(lang, k);
+  // V12: «Dado de oro ×2»
+  const dado = rehacer(lang, 'cuenta.dado', label);
+  if (dado !== null) return dado;
   return nombreEn(lang, label);
 }
 

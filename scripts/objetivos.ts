@@ -5,10 +5,10 @@
 
 /** Los rangos. Todo en % de campañas ganadas, salvo el ritmo (turnos) y la letalidad (veces la media). */
 export const OBJETIVOS = {
-  /** Reinado 1 y Reinado 8 «Puertas selladas», con la Orden vacía y llena. */
+  /** Reinado 1 y Reinado 8 «Puertas selladas», con el Árbol vacío y lleno. */
   reinado1: { vacio: [26, 32], lleno: [42, 48] },
   reinado8: { vacio: [6, 10], lleno: [12, 18] },
-  /** Barajas en el Reinado 1. Objetivo 26–32 vacía y 42–48 llena; avisa fuera de 23–34 y 40–50. */
+  /** Barajas en el Reinado 1. Objetivo 26–32 vacío y 42–48 lleno; avisa fuera de 23–34 y 40–50. */
   barajas: { lleno: [40, 50], llenoObjetivo: '42–48', vacio: [23, 34], vacioObjetivo: '26–32', sumaMinima: 6 },
   /** Reliquias y especiales dados de salida: trampa por debajo, victoria regalada por encima. */
   regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40 },
@@ -22,13 +22,14 @@ export const OBJETIVOS = {
   ],
   /** Peor percentil 95 de los cinco asaltos, en cada baraja. */
   ritmoBaraja: 15,
-  /** Campañas que mueren en el asalto 1 (Reinado 1, Orden vacía), en %: el asalto de dos tronos enseña, no mata. */
+  /** Campañas que mueren en el asalto 1 (Reinado 1, Árbol vacío), en %: el asalto de dos tronos enseña, no mata. */
   muertesAsalto1: 8,
   /**
-   * Duración estimada de una campaña, en minutos: (inicio + 4 entreactos + 2 Secretos + jugada × Σ medianas
-   * de turnos de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado (SPECS/V11.md 1.10).
+   * Duración estimada de una campaña, en minutos: (inicio + 4 entreactos + 2 Secretos + 5 tiradas de huesos +
+   * jugada × Σ medianas de turnos de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado
+   * (SPECS/V11.md 1.10; la tirada, SPECS/V12.md 1.12).
    */
-  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, jugada: 18 },
+  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 18 },
   /** Asalto único (partida clásica): victorias del bot con 1, 2, 3 y 4 jugadores. */
   clasica: [58, 65],
 } as const;
@@ -59,7 +60,7 @@ export interface InformeMeta {
   avgLethality: number;
   pacing: { stage: number; name: string; p50: number; p95: number; n: number }[];
   pacingByDeck: { deck: string; name: string; worstP95: number; n: number }[];
-  /** % de campañas (Reinado 1, Orden vacía) que caen en cada asalto. */
+  /** % de campañas (Reinado 1, Árbol vacío) que caen en cada asalto. */
   deaths?: number[];
   giftBaseline: number;
   giftBaselineN: number;
@@ -100,27 +101,27 @@ export function revisar(r: InformeMeta): Comprobacion[] {
   const l8 = r.winrate.levels[7];
   const rango = (id: string, v: number, rg: readonly number[], texto: string) => out.push({ id, texto, ok: inRange(v, rg), partes: [{ valor: v, lo: rg[0], hi: rg[1] }] });
   if (l1 && has(l1)) {
-    rango('reinado1.vacio', l1.vacio, O.reinado1.vacio, `Reinado 1 con la Orden vacía: ${l1.vacio} % (objetivo ${O.reinado1.vacio.join('–')})`);
-    rango('reinado1.lleno', l1.lleno, O.reinado1.lleno, `Reinado 1 con la Orden llena: ${l1.lleno} % (objetivo ${O.reinado1.lleno.join('–')})`);
+    rango('reinado1.vacio', l1.vacio, O.reinado1.vacio, `Reinado 1 con el Árbol vacío: ${l1.vacio} % (objetivo ${O.reinado1.vacio.join('–')})`);
+    rango('reinado1.lleno', l1.lleno, O.reinado1.lleno, `Reinado 1 con el Árbol lleno: ${l1.lleno} % (objetivo ${O.reinado1.lleno.join('–')})`);
   }
   if (l8 && has(l8)) {
-    rango('reinado8.vacio', l8.vacio, O.reinado8.vacio, `Reinado 8 con la Orden vacía: ${l8.vacio} % (objetivo ${O.reinado8.vacio.join('–')})`);
-    rango('reinado8.lleno', l8.lleno, O.reinado8.lleno, `Reinado 8 con la Orden llena: ${l8.lleno} % (objetivo ${O.reinado8.lleno.join('–')})`);
+    rango('reinado8.vacio', l8.vacio, O.reinado8.vacio, `Reinado 8 con el Árbol vacío: ${l8.vacio} % (objetivo ${O.reinado8.vacio.join('–')})`);
+    rango('reinado8.lleno', l8.lleno, O.reinado8.lleno, `Reinado 8 con el Árbol lleno: ${l8.lleno} % (objetivo ${O.reinado8.lleno.join('–')})`);
   }
-  // cada nivel tiene que ser más difícil que el anterior, con la Orden vacía y con la llena
+  // cada nivel tiene que ser más difícil que el anterior, con el Árbol vacío y con el lleno
   for (let i = 1; i < r.winrate.levels.length; i++) {
     const a = r.winrate.levels[i - 1];
     const b = r.winrate.levels[i];
     if (!has(a) || !has(b)) continue;
-    out.push({ id: `escalera.${b.level}.vacio`, texto: `Reinados ${a.level} → ${b.level} con la Orden vacía: ${a.vacio} % → ${b.vacio} % (no baja)`, ok: b.vacio < a.vacio, partes: [{ valor: a.vacio - b.vacio, lo: 0.1 }] });
-    out.push({ id: `escalera.${b.level}.lleno`, texto: `Reinados ${a.level} → ${b.level} con la Orden llena: ${a.lleno} % → ${b.lleno} % (no baja)`, ok: b.lleno < a.lleno, partes: [{ valor: a.lleno - b.lleno, lo: 0.1 }] });
+    out.push({ id: `escalera.${b.level}.vacio`, texto: `Reinados ${a.level} → ${b.level} con el Árbol vacío: ${a.vacio} % → ${b.vacio} % (no baja)`, ok: b.vacio < a.vacio, partes: [{ valor: a.vacio - b.vacio, lo: 0.1 }] });
+    out.push({ id: `escalera.${b.level}.lleno`, texto: `Reinados ${a.level} → ${b.level} con el Árbol lleno: ${a.lleno} % → ${b.lleno} % (no baja)`, ok: b.lleno < a.lleno, partes: [{ valor: a.lleno - b.lleno, lo: 0.1 }] });
   }
   for (const d of r.winrate.decks) {
     if (!has(d) || d.deck === 'obra') continue;
-    rango(`baraja.${d.deck}.lleno`, d.lleno, O.barajas.lleno, `${d.name}: ${d.lleno} % con la Orden llena (objetivo ${O.barajas.llenoObjetivo}, margen ${O.barajas.lleno.join('–')})`);
-    rango(`baraja.${d.deck}.vacio`, d.vacio, O.barajas.vacio, `${d.name}: ${d.vacio} % con la Orden vacía (objetivo ${O.barajas.vacioObjetivo})`);
+    rango(`baraja.${d.deck}.lleno`, d.lleno, O.barajas.lleno, `${d.name}: ${d.lleno} % con el Árbol lleno (objetivo ${O.barajas.llenoObjetivo}, margen ${O.barajas.lleno.join('–')})`);
+    rango(`baraja.${d.deck}.vacio`, d.vacio, O.barajas.vacio, `${d.name}: ${d.vacio} % con el Árbol vacío (objetivo ${O.barajas.vacioObjetivo})`);
     const suma = d.lleno - d.vacio;
-    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: la Orden llena solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.barajas.sumaMinima), partes: [{ valor: suma, lo: O.barajas.sumaMinima }] });
+    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: el Árbol lleno solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.barajas.sumaMinima), partes: [{ valor: suma, lo: O.barajas.sumaMinima }] });
   }
   const ref = r.giftBaselineN;
   const refPct = r.giftBaseline;
@@ -165,7 +166,7 @@ export function revisar(r: InformeMeta): Comprobacion[] {
   for (const d of r.pacingByDeck) out.push({ id: `ritmo.baraja.${d.deck}`, texto: `${d.name}: percentil 95 de ${d.worstP95} turnos en algún asalto (objetivo ≤ ${O.ritmoBaraja})`, ok: !(d.worstP95 > O.ritmoBaraja), partes: [{ valor: d.worstP95, hi: O.ritmoBaraja }] });
   // el asalto 1 (dos tronos) no mata a más del 8 % de las campañas
   const m1 = r.deaths?.[0];
-  if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con la Orden vacía (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
+  if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con el Árbol vacío (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
   // duración estimada de la campaña con las medianas de turnos de los cinco asaltos
   const min = duracion(r);
   if (min !== null) out.push({ id: 'duracion', texto: `Duración estimada de la campaña: ${min} minutos (objetivo ${O.duracion.minutos.join('–')})`, ok: inRange(min, O.duracion.minutos), partes: [{ valor: min, lo: O.duracion.minutos[0], hi: O.duracion.minutos[1] }] });
@@ -178,7 +179,7 @@ export function duracion(r: Pick<InformeMeta, 'pacing'>): number | null {
   const p = r.pacing.filter((x) => x.n > 0 && x.stage <= 5);
   if (p.length < 5) return null;
   const turnos = p.reduce((a, x) => a + x.p50, 0);
-  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + D.jugada * turnos) / 60) * 10) / 10;
+  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual + D.jugada * turnos) / 60) * 10) / 10;
 }
 
 /** La partida clásica: del 58 al 65 % con 1, 2, 3 y 4 jugadores. */

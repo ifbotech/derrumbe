@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('forja', 300); // tope duro: ver scripts/guardian.ts
 // Forja de grabado: renderiza cada pieza del arte suelta (palos, tramas de palo, cartas, reliquias
 // —grupo «herramientas»—, especiales y monarcas —grupo «jefes»—) a 24 y a 300 px sobre papel crema, mide su tinta y comprueba que los cuatro palos se
 // distinguen sin color. Abre el juego construido con ?qa=1 y usa el banco de src/client/forja-qa.ts.

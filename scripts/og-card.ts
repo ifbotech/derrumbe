@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('og', 120); // tope duro: ver scripts/guardian.ts
 // Tarjetas para compartir: fotografía el estado «og» del propio juego (el grabado de la portada, el
 // título y cuatro figuras) a 1200 × 630, una por idioma: public/og-card-es.png y public/og-card-en.png.
 // public/og-card.png sigue siendo la española: es la que enseñan Discord, WhatsApp, X o Reddit al pegar
@@ -31,3 +33,4 @@ copyFileSync(resolve('public/og-card-es.png'), resolve('public/og-card.png'));
 console.log(`${resolve('public/og-card.png')} · 1200 × 630 (la española)`);
 await browser.close();
 site.close();
+process.exit(0);

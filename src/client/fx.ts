@@ -583,7 +583,10 @@ function warmTable(): void {
       el.animate([{ transform: 'translate(0px, 0.01px)' }, { transform: 'none' }], { duration: 60 });
       // los lacres, después del temblor y en su propio fotograma: si se posan mientras la mesa sube a su capa,
       // la capa se prepara con ellos dentro y el primer temblor de verdad la vuelve a pagar entera
-      if (once) window.setTimeout(() => idle(() => warmSeals(0)), 400);
+      // V12: y con la pantalla ya quieta. En un navegador recién abierto la GPU puede tardar ~2 s en tragar el
+      // montaje de la primera mesa; si los lacres se posan mientras tanto, sus fotogramas no se llegan a pintar,
+      // no calientan nada y el primer sello de verdad paga ~70 ms (medido en la pasada en frío de 1920×1080).
+      if (once) window.setTimeout(() => cuandoQuieta(() => warmSeals(0)), 400);
     });
   };
   let host: Element | null = null;
@@ -599,6 +602,23 @@ function warmTable(): void {
     }
   });
   watch.observe(document.body, { childList: true, subtree: true });
+}
+
+/**
+ * V12: llama a `fn` cuando la pantalla lleva `ms` milisegundos seguidos pintando fotogramas de menos de 34 ms (o
+ * pasan `tope` ms). Por tiempo y no por número de fotogramas: a 165 Hz doce fotogramas son 70 ms.
+ */
+function cuandoQuieta(fn: () => void, ms = 150, tope = 5000): void {
+  const t0 = performance.now();
+  let last = t0;
+  let desde = t0;
+  const paso = (t: number): void => {
+    if (t - last >= 34) desde = t;
+    last = t;
+    if (t - desde >= ms || t - t0 > tope) fn();
+    else requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
 }
 
 /**

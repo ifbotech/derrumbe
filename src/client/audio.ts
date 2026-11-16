@@ -15,7 +15,7 @@
 // dos toques de madera hacia abajo, la sirena que el muro frena entera es piedra contra piedra con un
 // respiro que sube, y la que entra es hierro, un cuerno que se desploma y cascotes. Lo que se repite
 // (elegir carta, mover el foco) nunca suena dos veces igual: cambia unos cents, el ataque y la nota.
-import { PAN, campana, compas, flujo, mezcla, variacion, type Escena, type Evento, type Voz } from './audio-frases';
+import { PAN, campana, compas, flujo, mezcla, notaRecogida, variacion, type Escena, type Evento, type Voz } from './audio-frases';
 import { loadJson, platform, saveJson } from './platform';
 
 /** La semilla de la música y de las variaciones: una por sesión (con ?qa, siempre 1). */
@@ -318,6 +318,48 @@ export const sfx = logged({
         note(o, f * 0.749, at + 0.03, 0.08, { type: 'triangle', vol: 0.015, attack: 0.002 });
         noise(o, at, 0.02, 0.05, 'highpass', 5000);
       }
+    }, v.pan);
+  },
+  /**
+   * V12 · una pieza de lo que cae llega a la bolsa. `paso` es su peldaño en la escala de la recogida
+   * (audio-frases.ts): sube mientras se recoge seguido y vuelve abajo tras una pausa. Cada pieza con su voz:
+   * la moneda, una campanilla con su canto de metal; la esquirla, una cuerda de laúd con un poco de hierro;
+   * la gota de lacre, una nota grave y redonda que cae un poco al final (la cera que se posa). Cada vez varía
+   * unos cents, el ataque y el lado.
+   */
+  recoge: (tipo: 'moneda' | 'esquirla' | 'gota', paso = 0) => {
+    const v = vario(`recoge-${tipo}`);
+    const f = 293.66 * semi(notaRecogida(tipo, paso)) * cents(v.cents);
+    fx((_, o, t) => {
+      if (tipo === 'moneda') {
+        note(o, f * 2, t, 0.22 * sway(0.1), { type: 'sine', vol: 0.045 * sway(0.1), attack: v.ataque });
+        note(o, f * 2 * 2.76, t, 0.08, { type: 'sine', vol: 0.012, attack: 0.001 });
+        noise(o, t, 0.015, 0.035, 'highpass', 5600);
+      } else if (tipo === 'esquirla') {
+        note(o, f, t, 0.2 * sway(0.12), { type: 'triangle', vol: 0.06 * sway(0.1), attack: v.ataque, cutoff: 2600 });
+        note(o, f * 2, t, 0.07, { type: 'sine', vol: 0.014, attack: 0.002 });
+        note(o, f * 3.1, t + 0.005, 0.05, { type: 'sine', vol: 0.008, attack: 0.001 });
+      } else {
+        note(o, f, t, 0.26, { type: 'sine', vol: 0.09 * sway(0.1), attack: 0.004 + v.ataque, slide: f * 0.94 });
+        note(o, f * 2, t, 0.06, { type: 'triangle', vol: 0.015, attack: 0.003, cutoff: 1400 });
+        noise(o, t, 0.03, 0.04, 'lowpass', 700);
+      }
+    }, v.pan * 0.6);
+  },
+  /**
+   * V12 · un dado de hueso que cae sobre la mesa de roble: un toc seco de madera (ruido corto en banda media y
+   * un cuerpo grave que muere enseguida) y el clic hueco del hueso. `fuerza` de 0 a 1: el primer bote suena
+   * entero y los siguientes, cada vez más flojos y más cortos. Nunca dos iguales.
+   */
+  hueso: (fuerza = 1) => {
+    const v = vario('hueso');
+    const k = cents(v.cents * 3);
+    const g = Math.max(0.15, Math.min(1, fuerza));
+    fx((_, o, t) => {
+      noise(o, t, 0.035 + 0.03 * g, 0.22 * g, 'bandpass', 900 * k);
+      note(o, 150 * k, t, 0.06 + 0.05 * g, { type: 'sine', vol: 0.22 * g, slide: 90 * k, attack: v.ataque });
+      note(o, 1250 * k * sway(0.05), t + 0.004, 0.035, { type: 'triangle', vol: 0.05 * g, attack: 0.001, cutoff: 3200 });
+      noise(o, t + 0.006, 0.02, 0.07 * g, 'highpass', 3600 * k);
     }, v.pan);
   },
   /**

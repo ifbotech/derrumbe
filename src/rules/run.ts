@@ -9,15 +9,22 @@
 // En el código los nombres internos siguen siendo los de antes (stage, boss, contract, shop, event…).
 import { Autopsy, autopsy } from './autopsy';
 import { BALANCE, fill } from './balance-config';
-import { recortaMeta10 } from './migracion';
+import { ARBOL, Nodo, cifraDe, cleanUp as limpiaArbol, comprarNodo, rangoDe } from './arbol';
+import { Caida, Pieza, caidaDe, caidaVacia, sumaPiezas } from './caida';
+import { Tirada, multiplicadores, tirarHuesos } from './huesos';
+import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, RUN_11, migraMeta11, migraRun11, recortaMeta10 } from './migracion';
 import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
+import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool } from './tools';
 
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
-/** Versión del formato de campaña guardada: una campaña de otra versión no se puede continuar. */
-export const RUN_VERSION = 4;
+/**
+ * Versión del formato de campaña guardada. 5 desde la V12 (esquirlas, gotas, lo que cae y la tirada): una de la
+ * 11.0 (4) se pone al día con `cargaRun` y se sigue jugando; una más vieja no se puede continuar.
+ */
+export const RUN_VERSION = 5;
 
 /**
  * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
@@ -338,37 +345,14 @@ export const EVENTS: EventDef[] = [
 ];
 export const EVENT: Record<string, EventDef> = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
 
-// ───────────────────────── Gremio (progreso permanente, horizontal) ─────────────────────────
+// ───────────────────────── Árbol de la Conjura (progreso permanente) ─────────────────────────
+// Los 30 nodos viven en arbol.ts. `UPGRADES`, `buyUpgrade` y `cleanUp` quedan como alias para el laboratorio,
+// el cooperativo y el cliente de la 11.0.
 
-export interface Upgrade {
-  id: string;
-  name: string;
-  desc: string;
-  costs: number[];
-  /** Emblema con que se dibuja. */
-  glyph: string;
-}
-const boxUp = (arch: Arch, name: string, glyph: string): Upgrade => ({
-  id: `caja_${arch}`,
-  name,
-  glyph,
-  costs: BALANCE.orden.costes[`caja_${arch}`],
-  desc: `Añade al surtido: ${Object.values(TOOL).filter((t) => t.box === arch).map((t) => t.name).join(', ')}.`,
-});
-export const UPGRADES: Upgrade[] = [
-  boxUp('precision', 'Arcón de precisión', 'calibre'),
-  boxUp('sismo', 'Arcón del eco', 'diapason'),
-  boxUp('alquimia', 'Arcón de alquimia', 'crisol'),
-  boxUp('limite', 'Arcón del filo', 'megafono'),
-  boxUp('trituradora', 'Arcón de cenizas', 'prensa'),
-  boxUp('aguante', 'Arcón del escudo', 'ariete'),
-  { id: 'tampones', name: 'Lacres nuevos', desc: 'La Mesa de lacre también ofrece los sellos de pólvora y de la manga.', costs: BALANCE.orden.costes.tampones, glyph: 'sello' },
-  { id: 'bronce', name: 'Cristalero real', desc: 'La Mesa de lacre también ofrece Lacre policromo y Cristal maldito.', costs: BALANCE.orden.costes.bronce, glyph: 'forja' },
-  { id: 'vale', name: 'Favor del Tratante', desc: 'Un «Renovar mesa» gratis en cada Taberna, por nivel.', costs: BALANCE.orden.costes.vale, glyph: 'cinta' },
-  { id: 'tienda', name: 'Puesto grande', desc: '+1 reliquia en oferta en cada Taberna, por nivel.', costs: BALANCE.orden.costes.tienda, glyph: 'andamio' },
-  { id: 'caja', name: 'Bolsa de la Orden', desc: fill('+{oro} de oro inicial por nivel.', { oro: BALANCE.orden.oroPorNivel }), costs: BALANCE.orden.costes.caja, glyph: 'hucha' },
-  { id: 'rutas', name: 'Cartógrafo', desc: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.', costs: BALANCE.orden.costes.rutas, glyph: 'plano' },
-];
+/** Un nodo del Árbol (alias de la 11.0: las mejoras de La Orden son nodos del Arsenal con su mismo `id`). */
+export type Upgrade = Nodo;
+/** Los 30 nodos del Árbol (alias de la 11.0). */
+export const UPGRADES: Upgrade[] = ARBOL;
 /** Mejoras de versiones anteriores que ya no existen: se devuelve el renombre gastado en ellas. */
 const RETIRED: Record<string, number[]> = { seguro: [4, 8, 14], interes: [3, 6, 10], manos: [18], caja: [2, 4, 7, 11, 16], cimientos: [3, 5, 8, 12, 17], tienda: [8, 15] };
 
@@ -393,9 +377,11 @@ export interface Meta {
   mastery: { tools: Record<string, number>; decks: Record<string, number> };
   /** Mejor resultado en la Obra diaria. */
   daily: { date: string; cleared: number; won: boolean };
+  /** Aviso de la migración a la V12 (Coronas → Esquirlas): el Árbol lo enseña una vez y lo borra. */
+  aviso?: AvisoArbol;
 }
-/** 3 desde la V11 (cinco asaltos). Ver `loadMeta` y src/rules/migracion.ts. */
-export const META_VERSION = 3;
+/** 4 desde la V12 (Árbol de la Conjura, `renown` en Esquirlas de Corona). Ver `loadMeta` y src/rules/migracion.ts. */
+export const META_VERSION = 4;
 export const newMeta = (): Meta => ({
   v: META_VERSION,
   renown: 0,
@@ -428,27 +414,18 @@ export function loadMeta(saved: unknown): Meta {
   }
   // perfiles de la 10.0 (y anteriores): se conserva todo; solo lo que contaba asaltos se recorta a cinco
   if (v < 3) recortaMeta10(meta, LAST_STAGE);
+  // perfiles de la 11.0 (y anteriores): Coronas × 100 y las mejoras de La Orden, tal cual, en el Arsenal
+  if (v <= META_11) migraMeta11(meta, Object.fromEntries(ARBOL.map((n) => [n.id, n.rangos])));
   meta.v = META_VERSION;
   delete (meta.seen as { relics?: unknown }).relics;
   return meta;
 }
 
-/** Niveles válidos de mejora (lo que llega de un cliente se recorta a su máximo). */
-export function cleanUp(up: unknown): Record<string, number> {
-  const src = (up && typeof up === 'object' ? up : {}) as Record<string, unknown>;
-  return Object.fromEntries(UPGRADES.map((u) => [u.id, Math.max(0, Math.min(u.costs.length, Math.floor(Number(src[u.id]) || 0)))]));
-}
+/** Rangos válidos de cada nodo del Árbol (lo que llega de un cliente se recorta a su tope). Ver arbol.ts. */
+export const cleanUp = limpiaArbol;
 
-export function buyUpgrade(meta: Meta, id: string): boolean {
-  const u = UPGRADES.find((x) => x.id === id);
-  if (!u) return false;
-  const level = meta.up[id] ?? 0;
-  const cost = u.costs[level];
-  if (cost === undefined || meta.renown < cost) return false;
-  meta.renown -= cost;
-  meta.up[id] = level + 1;
-  return true;
-}
+/** Compra el rango siguiente de un nodo (alias de `comprarNodo`: mira saldo, padre y tope). */
+export const buyUpgrade = (meta: Meta, id: string): boolean => comprarNodo(meta, id);
 
 // ───────────────────────── Campaña ─────────────────────────
 
@@ -581,7 +558,17 @@ export interface Run {
   /** Jefes derrotados y obras terminadas con el búnker entero. */
   beaten: string[];
   intact: number;
-  stats: { floors: number; cleans: number; turns: number; gold: number; maxHit: number; burned: number; forged: number; contracts: number; skips: number; toolUse: Record<string, number>; stageTurns: number[] };
+  stats: { floors: number; cleans: number; turns: number; gold: number; maxHit: number; burned: number; forged: number; contracts: number; skips: number; toolUse: Record<string, number>; stageTurns: number[]; esquirlas: number; gotas: number; sellosGratis: number };
+  /** Esquirlas de Corona de la mesa y de los huesos en esta campaña (se cobran al cerrarla, también al perder). */
+  esquirlas: number;
+  /** Gotas de lacre: con `caida.gotasPorSello`, la Mesa de lacre sella gratis. */
+  gotas: number;
+  /** Lo que cayó a la mesa en el asalto en curso (o en el último). */
+  caida: Caida;
+  /** La tirada de huesos del último asalto ganado (null hasta la primera o al empezar otro asalto). */
+  ritual: Tirada | null;
+  /** Esquirlas que llevaba la campaña al vencer a la corte (las ya cobradas si sigue al Trono infinito). */
+  esquirlasCorte: number;
   /** Cartas (ids) que el Timbre del gremio selló al entrar a la obra en curso; vacío si no lo llevas. */
   stamped?: string[];
   /** Autopsia de la derrota: qué tiró el búnker en la última obra. La rellena `trackEvents` y se limpia al empezar otra obra. */
@@ -769,7 +756,7 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     treats: up.bronce ? [...TREATMENTS] : ['forjado', 'templado'],
     stage: 1,
     phase: 'pack',
-    gold: BALANCE.inicio.oro + BALANCE.orden.oroPorNivel * up.caja,
+    gold: BALANCE.inicio.oro + BALANCE.arbol.oroPorNivel * up.caja,
     integrity: maxIntegrity,
     maxIntegrity,
     tools: [],
@@ -808,7 +795,12 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     skipped: [],
     beaten: [],
     intact: 0,
-    stats: { floors: 0, cleans: 0, turns: 0, gold: 0, maxHit: 0, burned: 0, forged: 0, contracts: 0, skips: 0, toolUse: {}, stageTurns: [] },
+    stats: { floors: 0, cleans: 0, turns: 0, gold: 0, maxHit: 0, burned: 0, forged: 0, contracts: 0, skips: 0, toolUse: {}, stageTurns: [], esquirlas: 0, gotas: 0, sellosGratis: 0 },
+    esquirlas: 0,
+    gotas: 0,
+    caida: caidaVacia(),
+    ritual: null,
+    esquirlasCorte: 0,
   };
   run.pack = rollSpecials(run, BALANCE.inicio.sobre);
   for (const id of run.pack) addSpecial(run, id);
@@ -859,6 +851,10 @@ export function stageConfig(run: Run, players = 1): Config {
   cfg.fatigueEvery = FATIGUE.every;
   cfg.fatigueDano = FATIGUE.dano;
   cfg.formLevel = { ...run.levels };
+  // Árbol (Corona de hierro), solo en el Trono infinito: Manga honda guarda 2 cartas; Buen ojo da Golpe exacto
+  // pasándose por poco (solo por arriba). En los cinco asaltos no tocan la mesa (V12-C).
+  if (run.endless && rangoDe(run.up, 'manga') > 0) cfg.reserveSize = 2;
+  if (run.endless && rangoDe(run.up, 'gracia') > 0) cfg.cleanOver = cifraDe('gracia', rangoDe(run.up, 'gracia')).n;
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
   if (run.boss) BOSS[run.boss]?.apply(cfg);
   if (run.contract) CONTRACT[run.contract]?.cfg?.(cfg);
@@ -874,6 +870,8 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
   const size = config.handSize[players.length];
   run.battle = { taken: 0, cleans: 0, jokers: 0, forms: [] };
   run.death = null;
+  run.caida = caidaVacia();
+  run.ritual = null;
   return {
     config,
     rng: (run.rng ^ 0x5bd1e995) | 0,
@@ -902,8 +900,12 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
   };
 }
 
-/** Anota lo que la campaña necesita de cada jugada: oro, golpes limpios, contratos y estadísticas. */
-export function trackEvents(run: Run, events: GameEvent[]): void {
+/**
+ * Anota lo que la campaña necesita de cada jugada (golpes limpios, Juramentos, estadísticas) y abona en el acto
+ * lo que cae a la mesa (`caidaDe`): monedas a `run.gold`, esquirlas a `run.esquirlas`, gotas a `run.gotas`, y lo
+ * del asalto a `run.caida`. Devuelve las piezas, para que el cliente las haga volar.
+ */
+export function trackEvents(run: Run, events: GameEvent[]): Pieza[] {
   for (const ev of events) {
     if (ev.e === 'floorDown') {
       run.stats.floors++;
@@ -911,9 +913,6 @@ export function trackEvents(run: Run, events: GameEvent[]): void {
         run.battle.cleans++;
         run.stats.cleans++;
       }
-    } else if (ev.e === 'gold') {
-      run.gold += ev.amount;
-      run.stats.gold += ev.amount;
     } else if (ev.e === 'siren') run.battle.taken += ev.taken;
     else if (ev.e === 'collapse') run.battle.taken += ev.loss;
     else if (ev.e === 'hurt') run.battle.taken += ev.amount;
@@ -924,12 +923,30 @@ export function trackEvents(run: Run, events: GameEvent[]): void {
     else if (ev.e === 'step' && ev.src === 'tool') run.stats.toolUse[ev.id] = (run.stats.toolUse[ev.id] ?? 0) + 1;
     else if (ev.e === 'end' && ev.result === 'lost') run.death = autopsy(events, stageConfig(run));
   }
+  const piezas = caidaDe(run, events);
+  abona(run, sumaPiezas(piezas));
+  return piezas;
+}
+
+/** Abona lo que cae: monedas, esquirlas y gotas, a la campaña y a lo del asalto en curso. */
+function abona(run: Run, c: Caida): void {
+  run.gold += c.oro;
+  run.stats.gold += c.oro;
+  run.esquirlas += c.esquirlas;
+  run.stats.esquirlas += c.esquirlas;
+  run.gotas += c.gotas;
+  run.stats.gotas += c.gotas;
+  run.caida.oro += c.oro;
+  run.caida.esquirlas += c.esquirlas;
+  run.caida.gotas += c.gotas;
 }
 
 export const removeCost = (run: Run) => BALANCE.taberna.hoguera.base + BALANCE.taberna.hoguera.paso * run.removals;
 export const healCost = (run: Run) => BALANCE.taberna.curar.base + BALANCE.taberna.curar.paso * run.heals;
 export const rerollCost = (run: Run) => (run.vouchers > 0 ? 0 : BALANCE.taberna.renovar.base + BALANCE.taberna.renovar.paso * run.rerolls);
-export const offerCost = (run: Run, o: Offer) => (run.freeShop ? 0 : o.cost);
+/** La Mesa de lacre sella gratis si llevas `caida.gotasPorSello` gotas de lacre (y las gasta al sellar). */
+export const selloGratis = (run: Run, o: Offer): boolean => !run.freeShop && o.kind === 'forja' && run.gotas >= BALANCE.caida.gotasPorSello;
+export const offerCost = (run: Run, o: Offer) => (run.freeShop || selloGratis(run, o) ? 0 : o.cost);
 export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?.rarity ?? 'comun'].cost / 2));
 
 function generateShop(run: Run): Offer[] {
@@ -945,7 +962,8 @@ function stock(run: Run): Offer[] {
     const id = rollTool(run, ALL_RARITIES, seen);
     if (!id) break;
     seen.push(id);
-    offers.push({ kind: 'tool', id, cost: vary(run, RARITY[TOOL[id].rarity].cost) });
+    // Ojo del tasador (Árbol): las reliquias cuestan menos, nunca menos de 1
+    offers.push({ kind: 'tool', id, cost: Math.max(1, vary(run, RARITY[TOOL[id].rarity].cost) - cifraDe('tasador', lvl(run, 'tasador')).n) });
   }
   offers.push({ kind: 'sobre', cost: vary(run, BALANCE.taberna.sobre) }, { kind: 'clandestino', cost: vary(run, BALANCE.taberna.sobreCiego) });
   if (roll(run, 2)) offers.push({ kind: 'forja', cost: vary(run, BALANCE.taberna.mesaLacre), seal: pick(run, run.seals, 1)[0] });
@@ -1013,12 +1031,19 @@ export function finishBattle(run: Run, state: GameState): void {
   const st = stageDef(run.stage);
   const C = BALANCE.cobro;
   const lines: [string, number][] = [
-    ['Asalto ganado', C.asalto + Math.min(run.stage, LAST_STAGE)],
-    ['Golpes exactos', Math.min(C.exactosTope, run.battle.cleans)],
+    // V12: la moneda del guardia y el Dado de oro dan oro nuevo; cobro.asalto puede ser negativo para compensar (nunca menos de 0)
+    ['Asalto ganado', Math.max(0, C.asalto + Math.min(run.stage, LAST_STAGE))],
     [fill('Vida que te queda (1 por cada {n})', { n: C.vidaCada }), Math.floor(state.integrity / C.vidaCada)],
     [fill('Interés (1 por cada {n} de oro)', { n: C.interesCada }), Math.min(run.interestCap, Math.floor(run.gold / C.interesCada))],
   ];
   if (run.tools.some((t) => t.id === 'hucha')) lines.push([TOOL.hucha?.name ?? 'Hucha', BALANCE.reliquias.hucha.oro]);
+  // la tirada de huesos (azar propio: no toca run.rng): el Dado de oro multiplica las monedas que cayeron en el
+  // asalto y el de la Corona, sus esquirlas; lo extra se abona en el acto
+  run.ritual = tirarHuesos(run);
+  const dados = multiplicadores(run.ritual);
+  lines.push([fill(ES_PLANTILLAS['cuenta.dado'], { n: dados.oro }), run.ritual.oro.extra]);
+  run.esquirlas += run.ritual.esquirlas.extra;
+  run.stats.esquirlas += run.ritual.esquirlas.extra;
   run.pay = lines.filter(([, n]) => n > 0);
   const total = run.pay.reduce((a, [, n]) => a + n, 0);
   run.gold += total;
@@ -1037,6 +1062,7 @@ export function finishBattle(run: Run, state: GameState): void {
   run.curse = false;
   if (run.stage === LAST_STAGE && !run.endless) {
     run.conquered = true;
+    run.esquirlasCorte = run.esquirlas;
     run.phase = 'won';
     return;
   }
@@ -1230,6 +1256,10 @@ function resolvePending(run: Run, ids: string[]): string | null {
     if (run.gold < cost) return 'No te alcanza el oro.';
     if (o.seal) chosen[0].seal = o.seal;
     if (o.tr) chosen[0].tr = o.tr;
+    if (selloGratis(run, o)) {
+      run.gotas -= BALANCE.caida.gotasPorSello;
+      run.stats.sellosGratis++;
+    }
     run.gold -= cost;
     o.sold = true;
     run.stats.forged++;
@@ -1264,9 +1294,12 @@ export function renownFor(run: Run): number {
   return Math.max(1, Math.ceil(base * (1 + 0.25 * run.ascension)));
 }
 
-/** Abona al gremio el renombre de una campaña terminada. */
+/** Esquirlas del cobro de la conjura: las Coronas de `renownFor` × 100 y las esquirlas que cayeron a la mesa (también al perder). */
+export const cobroDe = (run: Run): number => renownFor(run) * ESQUIRLAS_POR_CORONA + (run.esquirlas ?? 0);
+
+/** Abona al perfil el cobro de la conjura de una campaña terminada (en esquirlas, también al perder) y lo devuelve. */
 export function settle(meta: Meta, run: Run): number {
-  const gained = renownFor(run);
+  const gained = cobroDe(run);
   meta.renown += gained;
   meta.runs++;
   meta.best = Math.max(meta.best, Math.min(LAST_STAGE, stagesCleared(run)));
@@ -1284,6 +1317,24 @@ export function settle(meta: Meta, run: Run): number {
     meta.stats.dailies++;
   }
   return gained;
+}
+
+/**
+ * El cobro al caer en el Trono infinito (tras cobrar la victoria con `settle`): 100 esquirlas por cada Trono
+ * infinito superado y las esquirlas que cayeron desde que se venció a la corte. Lo abona y lo devuelve.
+ */
+export function cobroAbismo(meta: Meta, run: Run): number {
+  const gained = depthOf(run) * ESQUIRLAS_POR_CORONA + Math.max(0, (run.esquirlas ?? 0) - (run.esquirlasCorte ?? 0));
+  meta.renown += gained;
+  return gained;
+}
+
+/** Una campaña guardada lista para seguir: la de esta versión tal cual, la de la 11.0 puesta al día; si no, null. */
+export function cargaRun(raw: unknown): Run | null {
+  const r = raw as Run | null;
+  if (!r || typeof r !== 'object' || !r.stats) return null;
+  if (r.v === RUN_11) migraRun11(r, RUN_VERSION);
+  return r.v === RUN_VERSION ? r : null;
 }
 
 /** Reordena el cinturón de la campaña y, si hay obra en curso, el de la mesa (misma permutación). */

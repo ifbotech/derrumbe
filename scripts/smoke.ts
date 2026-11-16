@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('qa:smoke', 1500); // tope duro: ver scripts/guardian.ts
 // Prueba de humo en el navegador: juega de verdad unos turnos sobre el juego construido
 // (dist/web) y falla si algo lanza un error. Cubre lo que las pruebas del motor no ven: la mesa,
 // La Manga, Rebobinar, la Lupa, el foco de teclado (papel y tinta, ≥ 6 px, < 50 ms), Mayús + flechas
@@ -18,11 +20,13 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
 import { campaignSuite } from './campana-qa';
-import { LANG, LOCALE, OTHER, T, gamepadSuite, guidedRun, immuneCheck, langSwitchSuite } from './gamepad-qa';
+import { LANG, LOCALE, OTHER, T, VIRTUAL_GAMEPAD, gamepadSuite, guidedRun, immuneCheck, langSwitchSuite } from './gamepad-qa';
 import { controlRows } from '../src/client/prompts';
 import { BRAND } from '../src/shared/brand';
 import { telemetrySuite } from './telemetry-qa';
 import { feedbackButtonsSuite } from './feedback-qa';
+import { arbolSuite, autoDiariaSuite, autoPausaSuite, autoSuite, mejorSuite } from './v12-qa';
+import { caidaSuite, susurrosSuite, tiradaSuite } from './v12-sensacion';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
 const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : LANG === 'en' ? 'artifacts/visual-qa-en/smoke' : 'artifacts/visual-qa/smoke');
@@ -294,9 +298,11 @@ async function main(): Promise<void> {
   await whisperRow.click();
   check((await whisperRow.textContent()) === si && !(await whispers(page, (x) => x.off())), 'y se vuelven a encender');
   const pads = await page.locator('.keys tr td:nth-child(3)').allTextContents();
-  check(pads.length >= 12 && !pads.some((t) => t.trim() === '—' || t.trim() === ''), 'en la tabla de controles ninguna acción se queda sin mando');
-  check(pads.some((t) => t.includes('L3')) && pads.some((t) => t.includes('R3')) && pads.some((t) => t.includes('LB / RB')), 'la tabla enseña L3 (descartar), R3 (pantalla completa) y LB / RB (reliquias)');
   const rows = await page.locator('.keys tr td:nth-child(1)').allTextContents();
+  check(pads.length >= 12 && !pads.some((t) => t.trim() === '—' || t.trim() === ''), 'en la tabla de controles ninguna acción se queda sin mando');
+  check(pads.some((t) => t.includes('L3')) && pads.some((t) => t.includes('R3')) && pads.some((t) => t.includes('LB / RB')), 'la tabla enseña L3 (descartar), R3 (Rebobinar) y LB / RB (reliquias)');
+  check(pads.some((t) => t.trim() === 'LT') && pads.some((t) => t.trim() === 'Select') && pads.some((t) => t.includes('Select + Start')), 'V12: la tabla enseña LT (Mejor jugada), Select (AUTO) y Select + Start (reiniciar)');
+  check(['ui.ctl.mejor', 'ui.ctl.auto', 'ui.ctl.ritual', 'ui.ctl.arbol.comprar', 'ui.ctl.arbol.zum', 'ui.ctl.arbol.mover'].every((k) => rows.includes(T(k))), 'V12: y las filas de Mejor jugada, AUTO, la tirada de huesos y el Árbol');
   const want = controlRows(LANG).map((r) => r.map((c) => c.replace(/<[^>]+>/g, '')));
   check(['ui.ctl.manga', 'ui.ctl.rebobinar', 'ui.ctl.reliquias', 'ui.ctl.golpear'].every((k) => rows.includes(T(k))), 'la tabla de controles habla de La Manga, Rebobinar, reliquias y tronos');
   const shown = await page.locator('.keys tr').evaluateAll((trs) => trs.slice(1).map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent ?? '')));
@@ -487,6 +493,40 @@ async function main(): Promise<void> {
   console.log('Botón de feedback');
   await feedbackButtonsSuite(browser, site.url, check, problems);
 
+  // ── V12 · Mejor jugada (ratón y teclado; el mando, en su suite), AUTO y el Árbol con mando y teclado ──
+  if (!process.env.NO_V12) {
+    console.log('Mejor jugada');
+    {
+      const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
+      await ctx.addInitScript({ content: NAME_SHIM });
+      await ctx.addInitScript({ content: VIRTUAL_GAMEPAD });
+      const p = await ctx.newPage();
+      p.on('pageerror', (e) => problems.push(`[mejor] error de página: ${e.message}`));
+      await p.goto(`${site.url}?qa=1`);
+      await p.waitForFunction(() => !!(window as unknown as { __qaJuice?: unknown }).__qaJuice);
+      await p.evaluate(() => (window as unknown as { __qaGamepad: { connect(): void } }).__qaGamepad.connect());
+      await mejorSuite(p, 'mouse', check);
+      await mejorSuite(p, 'keys', check);
+      await mejorSuite(p, 'pad', check);
+      await ctx.close();
+    }
+    console.log('Árbol con mando y con teclado');
+    await arbolSuite(browser, site.url, 'pad', check, problems);
+    await arbolSuite(browser, site.url, 'keys', check, problems);
+    console.log('AUTO');
+    await autoPausaSuite(browser, site.url, check, problems);
+    await autoDiariaSuite(browser, site.url, check, problems);
+    await autoSuite(browser, site.url, check, problems);
+    // ── V12 · juice-ux B: lo que cae y el imán, la tirada de huesos animada y los seis Susurros nuevos ──
+    console.log('Lo que cae');
+    const caida = await caidaSuite(browser, site.url, check, problems);
+    console.log('Tirada de huesos');
+    const huesos = await tiradaSuite(browser, site.url, check, problems);
+    console.log(`  medidas para la duración (1×): tirada ${(huesos.mediana / 1000).toFixed(2)} s (mediana de ${huesos.medidas.length}) · jugada con lo que cae ${(caida.jugada / 1000).toFixed(1)} s (mediana de ${caida.jugadas.length})`);
+    console.log('Susurros nuevos');
+    await susurrosSuite(browser, site.url, check, problems);
+  }
+
   // ── V8 · una segunda pasada con «Reducir movimiento»: nada vuela ni tiembla ──
   console.log('Reducir movimiento');
   await calmPass(browser, site.url);
@@ -505,25 +545,25 @@ async function main(): Promise<void> {
     // un perfil con algo que perder
     await p.evaluate(() => {
       const meta = JSON.parse(localStorage.getItem('derrumbe:meta') ?? '{}') as Record<string, unknown>;
-      localStorage.setItem('derrumbe:meta', JSON.stringify({ ...meta, renown: 77 }));
+      localStorage.setItem('derrumbe:meta', JSON.stringify({ ...meta, renown: 7700 }));
       localStorage.setItem('derrumbe:name', 'Conjurada QA');
     });
     await p.reload();
     await p.waitForSelector('#m-guild');
-    check((await guild())?.includes('77 ✦'), 'el perfil de prueba tiene 77 Coronas');
+    check(/7[,.]7K ✦/.test((await guild()) ?? ''), 'el perfil de prueba tiene 7700 esquirlas (7,7K en la portada)');
     await p.locator('#m-set').click();
     const [download] = await Promise.all([p.waitForEvent('download'), p.locator('#set-export').click()]);
     const saved = join(OUT, 'copia.json');
     await download.saveAs(saved);
     const copy = JSON.parse(readFileSync(saved, 'utf8')) as { app: string; data: Record<string, string> };
     check(/^sangre-y-palo-progreso-\d{4}-\d{2}-\d{2}\.json$/.test(download.suggestedFilename()), `Exportar progreso descarga sangre-y-palo-progreso-AAAA-MM-DD.json (${download.suggestedFilename()})`);
-    check(copy.app === 'derrumbe' && JSON.parse(copy.data['derrumbe:meta']).renown === 77 && copy.data['derrumbe:name'] === 'Conjurada QA', 'la copia lleva la Orden y el nombre (marcador interno app: «derrumbe»)');
+    check(copy.app === 'derrumbe' && JSON.parse(copy.data['derrumbe:meta']).renown === 7700 && copy.data['derrumbe:name'] === 'Conjurada QA', 'la copia lleva la Orden y el nombre (marcador interno app: «derrumbe»)');
     check(!Object.keys(copy.data).includes('derrumbe:server'), 'la copia no se lleva la dirección del servidor de esta instalación');
     // se pierde todo…
     await p.evaluate(() => localStorage.clear());
     await p.reload();
     await p.waitForSelector('#m-guild');
-    check((await guild())?.includes('0 ✦') && !(await guild())?.includes('77'), 'tras borrar el navegador, la Orden vuelve a cero');
+    check((await guild())?.includes('0 ✦') && !/7[,.]7K/.test((await guild()) ?? ''), 'tras borrar el navegador, la Orden vuelve a cero');
     await p.locator('#m-set').click();
     // …un archivo cualquiera no cuela…
     await p.locator('#set-file').setInputFiles({ name: 'otra-cosa.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"otro","data":{}}') });
@@ -535,10 +575,10 @@ async function main(): Promise<void> {
     // …y la copia buena lo devuelve todo, previa confirmación
     await p.locator('#set-file').setInputFiles(saved);
     await p.waitForSelector('.modal-box.confirm');
-    check(/77 ✦ (Coronas|Crowns)/.test((await p.locator('.modal-box.confirm').textContent()) ?? ''), 'antes de importar se enseña qué trae la copia');
+    check(/7700 ✦ (esquirlas|shards)/.test((await p.locator('.modal-box.confirm').textContent()) ?? ''), 'antes de importar se enseña qué trae la copia');
     await Promise.all([p.waitForEvent('load'), p.locator('#yes').click()]);
     await p.waitForSelector('#m-guild');
-    check((await guild())?.includes('77 ✦'), 'Importar progreso recupera la Orden tras recargar');
+    check(/7[,.]7K ✦/.test((await guild()) ?? ''), 'Importar progreso recupera la Orden tras recargar');
     check((await p.evaluate(() => localStorage.getItem('derrumbe:name'))) === 'Conjurada QA', 'y el resto de lo guardado');
     await ctx.close();
   }

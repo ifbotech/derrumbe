@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 // Laboratorio de balance: miles de campañas con semilla, repartidas entre los núcleos de la máquina,
 // y un informe con lo que hay que mirar antes de tocar un número.
 //
@@ -10,7 +12,7 @@
 //   Solo el informe completo escribe meta-report.json.
 //
 // Qué mide:
-//   · porcentaje de campañas ganadas por baraja y por Reinado, con la Orden vacía y llena
+//   · porcentaje de campañas ganadas por baraja y por Reinado, con el Árbol vacío y lleno
 //   · cada reliquia, carta especial, sello de lacre y acabado: cuánto se elige, cuánto se activa y
 //     cuánto cambia el resultado (dada de salida frente a las campañas sin regalo, y llevándola a
 //     media campaña)
@@ -86,8 +88,8 @@ function plan(): Spec[] {
   if (mode === 'rapido') return levels(all, N || 300), decks(N || 300), specs;
   levels(all, N || 1500);
   decks(N || 1500);
-  // cada herramienta y cada especial, de regalo al empezar (gremio lleno, nivel 1)
-  // y, de control, las mismas semillas sin regalo: se suman a la referencia (nivel 1, gremio lleno)
+  // cada herramienta y cada especial, de regalo al empezar (Árbol lleno, nivel 1)
+  // y, de control, las mismas semillas sin regalo: se suman a la referencia (nivel 1, Árbol lleno)
   for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, control: 'tool' });
   for (const t of TOOLS) for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, giveTool: t.id });
   for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, control: 'special' });
@@ -143,10 +145,10 @@ function report(logs: Log[], confirm: Log[] = []) {
     decks: DECKS.map((d) => ({ deck: d.id, name: d.name, vacio: wr(group(d.id, 0, false)), lleno: wr(group(d.id, 0, true)), n: group(d.id, 0, true).length })),
   };
 
-  // referencia para medir el valor de cada cosa: gremio lleno, nivel 1, baraja de obra
+  // referencia para medir el valor de cada cosa: Árbol lleno, nivel 1, baraja de obra
   const base = group('obra', 0, true);
   const baseWr = wr(base);
-  /** Referencia de los regalos: todas las campañas sin regalo de nivel 1 con gremio lleno (las de la tabla de niveles y las de control). */
+  /** Referencia de los regalos: todas las campañas sin regalo de nivel 1 con Árbol lleno (las de la tabla de niveles y las de control). */
   const noGift = [...base, ...logs.filter((l) => l.spec.control), ...confirm.filter((l) => l.spec.control)];
   const giftRef = wr(noGift);
   const reached = plain.filter((l) => l.spec.full && l.spec.ascension === 0 && l.mid);
@@ -223,7 +225,7 @@ function report(logs: Log[], confirm: Log[] = []) {
     const p95 = STAGES.map((_, i) => i).map((i) => quantile(mine.flatMap((l) => (l.stageTurns[i] !== undefined ? [l.stageTurns[i]] : [])), 0.95));
     return { deck: d.id, name: d.name, worstP95: Math.max(0, ...p95), n: mine.length };
   }).filter((d) => d.n > 0);
-  // dónde se pierden las campañas (gremio vacío, nivel 1, baraja de obra)
+  // dónde se pierden las campañas (Árbol vacío, nivel 1, baraja de obra)
   const fresh = group('obra', 0, false);
   const deaths = Array.from({ length: LAST_STAGE }, (_, i) => pct(fresh.filter((l) => l.diedAt === i + 1).length, fresh.length));
 
@@ -250,7 +252,7 @@ function print(r: ReturnType<typeof report>): void {
   for (const l of r.winrate.levels) if (l.n) console.log(`  ${l.level} ${pad(l.name, 18)} vacío ${num(l.vacio)} %   lleno ${num(l.lleno)} %   (${l.n} por celda)`);
   if (r.winrate.decks.some((d) => d.n)) console.log('\nPor baraja inicial (Reinado 1)');
   for (const d of r.winrate.decks) if (d.n) console.log(`  ${pad(d.name, 24)} vacío ${num(d.vacio)} %   lleno ${num(d.lleno)} %   (${d.n} por celda)`);
-  if (r.winrate.levels[0]?.n) console.log(`\nDónde se pierde (Orden vacía, % de campañas por asalto): ${r.deaths.join(' · ')}`);
+  if (r.winrate.levels[0]?.n) console.log(`\nDónde se pierde (Árbol vacío, % de campañas por asalto): ${r.deaths.join(' · ')}`);
   const gifts = !quick || mode === 'regalos';
   const shown = <T extends { givenN: number }>(rows: T[]) => (mode === 'regalos' ? rows.filter((x) => x.givenN) : rows);
   if (gifts) console.log(`\nReliquias (de regalo al empezar; sin regalo: ${r.giftBaseline} % en ${r.giftBaselineN} campañas; por debajo de ±${r.giftNoise} puntos es ruido)`);

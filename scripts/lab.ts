@@ -25,6 +25,8 @@ export interface Spec {
   /** Con gremio lleno, solo estas mejoras (y «legendarias»). */
   only?: string[];
   policy?: RunPolicy;
+  /** Rangos del Árbol tal cual (manda sobre `full`/`only`): para medir nodos sueltos, p. ej. los incrementales. */
+  up?: Record<string, number>;
 }
 
 /** Lo que se apunta de cada campaña. */
@@ -47,6 +49,8 @@ export interface Log {
   taken: Record<string, number>;
   maxHit: number;
   gold: number;
+  /** Golpes del jugador en la campaña (eventos `impact`). */
+  golpes: number;
 }
 
 // Mandos de ajuste (variables de entorno): valen para el laboratorio entero, también en sus procesos hijos.
@@ -117,7 +121,8 @@ export function fingerprint(): string {
 }
 
 export function optsFor(spec: Spec): RunOpts {
-  const up = spec.full ? Object.fromEntries(UPGRADES.filter((u) => !spec.only || spec.only.includes(u.id)).map((u) => [u.id, u.costs.length])) : {};
+  // V12: «Árbol lleno» = los 30 nodos al máximo (UPGRADES es el Árbol); los incrementales no mueven el combate
+  const up = spec.up ? { ...spec.up } : spec.full ? Object.fromEntries(UPGRADES.filter((u) => !spec.only || spec.only.includes(u.id)).map((u) => [u.id, u.costs.length])) : {};
   const pool = spec.full && (!spec.only || spec.only.includes('legendarias')) ? SPECIALS.map((s) => s.id) : [];
   return { up, deck: spec.deck, pool, ascension: spec.ascension };
 }
@@ -127,7 +132,7 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   const run = newRun(optsFor(spec), spec.seed);
   if (spec.giveTool) run.tools.push({ id: spec.giveTool, n: 0 });
   if (spec.giveSpecial) addSpecial(run, spec.giveSpecial);
-  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0 };
+  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0 };
   let shop: unknown = null;
   let rewardFor = 0;
   for (let guard = 0; guard < 6000; guard++) {
@@ -147,6 +152,7 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
         if (turns > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
         const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
         trackEvents(run, res.events);
+        for (const ev of res.events) if (ev.e === 'impact') log.golpes++;
         state = res.state;
       }
       const boss = run.boss;

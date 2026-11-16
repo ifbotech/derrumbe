@@ -12,7 +12,8 @@
 import type { Autopsy, Omen } from '../rules/autopsy';
 import { omenFor, pasoFor } from '../rules/textos';
 import { L, formN, getLang, numL, palo, paloN } from './lengua';
-import { Card, FORMATION_NAME, Formation, MATERIAL, PlayerView, RANK_LABEL, SUITS, StrikeResult, Suit, multiplier, threatOf } from '../rules/engine';
+import { Card, FORMATION_NAME, Formation, MATERIAL, PlayerView, RANK_LABEL, SUITS, StrikeResult, Suit, multiplier, threatOf, vecinosPresentes } from '../rules/engine';
+import { cifraEl } from './cifra';
 import { SPECIAL } from '../rules/specials';
 import { causeHtml } from './causa';
 import { cap, esc, hideTip, num } from './core';
@@ -52,6 +53,19 @@ const immuneIn = (p: Preview) => p.cards.some((c) => factor(c, p.target, p) === 
  * (lo que decide la jugada primero; lo que solo acompaña, después). `tail` son avisos de la mesa que
  * no salen del golpe (el Rebobinar).
  */
+/**
+ * V12 · lo que reparte el sello de pólvora de las cartas elegidas a los tronos de al lado del golpeado: la suma
+ * de lo que dicen sus pasos en el golpe («7♠ · Sello de pólvora: 7 a los tronos vecinos»). 0 si no hay sello.
+ */
+export function polvoraDe(cards: Card[], r: StrikeResult | null | undefined): number {
+  if (!r) return 0;
+  const ids = new Set(cards.filter((c) => !c.sp && c.seal === 'dinamita').map((c) => c.id));
+  if (!ids.size) return 0;
+  let n = 0;
+  for (const e of r.events) if (e.e === 'step' && e.src === 'seal' && ids.has(e.id)) n += Number(/:\s*(\d+)/.exec(e.label)?.[1] ?? 0);
+  return n;
+}
+
 export function previewHtml(p: Preview, tail = ''): string {
   const { v, r, target } = p;
   const fallen = r.fallenBy[target] ?? 0;
@@ -61,13 +75,19 @@ export function previewHtml(p: Preview, tail = ''): string {
   const mat = paloN(target);
   // cae el trono entero si el golpe se lleva a todos los guardias que le quedan
   const throne = fallen > 0 && fallen >= v.towers[target].floors.length;
+  // V12 · pólvora: «+n» si algún trono de al lado (presente y en pie) lo recibe
+  const polvora = vecinosPresentes(v.towers, target).some((s) => v.towers[s].floors.length) ? polvoraDe(p.cards, r) : 0;
   // el Contraataque saca una carta al azar: se avisa del peor Ataque posible entre los tronos en pie
   // (un trono Aturdido se salta su próximo Contraataque: no cuenta)
+  // V12 · lo que el trono apuntado pierde además del Golpe (el Impulso del Golpe exacto sobre el guardia siguiente, o
+  // el daño que añaden las reliquias tras el golpe): la placa del trono dice el total y la cuenta, de dónde sale
+  const mas = Math.max(0, (r.dealt[target] ?? 0) - r.total);
   const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].fx.sobrecarga).map((s) => threatOf(v, v.towers[s])));
   const marks = [
     r.clean ? `<em class="m gold">${L('ui.cuenta.exacto')}</em>` : '',
     fallen ? `<em class="m red">${throne ? L('ui.cuenta.cae.trono') : fallen > 1 ? L('ui.cuenta.caen', { n: fallen }) : L('ui.cuenta.cae')}</em>` : '',
     immune ? `<em class="m inm" data-tip="${L('ui.cuenta.inmune.tip')}">${L('ui.cuenta.inmune')}</em>` : '',
+    mas ? `<em class="m mas" data-extra="${mas}">${r.clean ? L('ui.cuenta.impulso', { n: mas }) : L('ui.cuenta.mas', { n: mas })}</em>` : '',
     r.hurt ? `<em class="m red">${L('ui.cuenta.vida', { n: r.hurt })}</em>` : '',
     r.clean || r.noSiren ? `<em class="m good">${L('ui.cuenta.sin.contra')}</em>` : (v.config.sirenCount ?? 1) > 1
         ? `<em class="m dim curse" data-tip="${L('ui.cuenta.doble.tip', { n: worst })}">${L('ui.cuenta.doble', { n: worst })}</em>`
@@ -75,15 +95,16 @@ export function previewHtml(p: Preview, tail = ''): string {
     wallGain > 0 ? `<em class="m">${L('ui.cuenta.escudo', { n: wallGain })}</em>` : '',
     repair > 0 ? `<em class="m">${L('ui.cuenta.cura', { n: repair })}</em>` : '',
     r.gold ? `<em class="m gold">${L('ui.cuenta.oro', { n: r.gold })}</em>` : '',
+    polvora ? `<em class="m polvora">${L('ui.cuenta.polvora', { n: polvora })}</em>` : '',
     r.draw ? `<em class="m">${L('ui.cuenta.robas', { n: r.draw })}</em>` : '',
     tail,
   ].join('');
   const open = why !== null;
   return `<div class="calc" tabindex="0" role="button" aria-expanded="${open}" aria-controls="recibo" aria-label="${L('ui.cuenta.aria', { t: r.total, palo: mat, forma: formN(p.formation), d: r.fuerza, m: r.res })}">
-      <b class="t">${r.total}</b>
+      ${cifraEl(r.total, 'golpe', 'b', 'class="t"')}
       <span class="calc-txt">
         <span class="vs"><span class="forma">${formN(p.formation)}</span><span>${L('ui.cuenta.contra.vs')}</span><strong>${palo(target)}</strong>${hint('strike')}</span>
-        <span class="fr"><span class="fr-f"><i class="lg">${L('ui.cuenta.dano')}</i><i class="sh">${L('ui.cuenta.dano.corto')}</i><b>${r.fuerza}</b></span><i class="por" aria-hidden="true">×</i><span class="fr-r"><i class="lg">${L('ui.cuenta.multi')}</i><i class="sh">${L('ui.cuenta.multi.corto')}</i><b>×${numL(r.res)}</b></span><em class="abre">${L('ui.cuenta.abre')}${CHEVRON}</em></span>
+        <span class="fr"><span class="fr-f"><i class="lg">${L('ui.cuenta.dano')}</i><i class="sh">${L('ui.cuenta.dano.corto')}</i>${cifraEl(r.fuerza, 'dano', 'b')}</span><i class="por" aria-hidden="true">×</i><span class="fr-r"><i class="lg">${L('ui.cuenta.multi')}</i><i class="sh">${L('ui.cuenta.multi.corto')}</i><b>×${numL(r.res)}</b></span><em class="abre">${L('ui.cuenta.abre')}${CHEVRON}</em></span>
       </span>
     </div>
     <span class="marks">${marks}</span>`;

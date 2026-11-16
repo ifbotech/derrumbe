@@ -9,8 +9,10 @@
 import { ACHIEVEMENTS, unlocksOf } from '../../rules/achievements';
 import { fill, BALANCE } from '../../rules/balance-config';
 import { FORMATION_NAME, FORMATIONS, MATERIAL, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
+import { REGLA_MEJOR } from '../../rules/mejor-jugada';
 import { KEYWORDS } from '../../rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
+import { RAIZ, RAMAS } from '../../rules/arbol';
 import { SPECIALS } from '../../rules/specials';
 import { ARCH, RARITY, TOOLS } from '../../rules/tools';
 import { TUTORIAL_STEPS, createTutorial } from '../../rules/tutorial';
@@ -81,10 +83,20 @@ export function reglasEs(): Record<string, string> {
       if (op.read.cost) o[`secreto.${e.id}.${i}.cuesta`] = op.read.cost;
     });
   }
+  // V12: los 30 nodos del Árbol de la Conjura (src/rules/arbol.ts); `.plantilla` se rellena con `cifraDe(id, rango)`
   for (const u of UPGRADES) {
     o[`mejora.${u.id}.nombre`] = u.name;
     o[`mejora.${u.id}.desc`] = u.desc;
+    if (u.plantilla) o[`mejora.${u.id}.plantilla`] = u.plantilla;
   }
+  for (const r of RAMAS) {
+    o[`rama.${r.id}.nombre`] = r.name;
+    o[`rama.${r.id}.desc`] = r.desc;
+  }
+  o['arbol.nombre'] = 'Árbol de la Conjura';
+  o['arbol.desc'] = 'Gasta esquirlas aquí para mejorar para siempre.';
+  o['arbol.raiz.nombre'] = RAIZ.name;
+  o['arbol.raiz.desc'] = RAIZ.desc;
   for (const a of ACHIEVEMENTS) {
     o[`logro.${a.id}.nombre`] = a.name;
     o[`logro.${a.id}.desc`] = a.desc;
@@ -115,9 +127,41 @@ export function reglasEs(): Record<string, string> {
   // la cuenta del cobro (run.ts, finishBattle): las mismas cadenas que acaban en `run.pay`
   const C = BALANCE.cobro;
   o['cuenta.asalto'] = 'Asalto ganado';
-  o['cuenta.exactos'] = 'Golpes exactos';
   o['cuenta.vida'] = fill('Vida que te queda (1 por cada {n})', { n: C.vidaCada });
   o['cuenta.interes'] = fill('Interés (1 por cada {n} de oro)', { n: C.interesCada });
+  // V12: la regla de Mejor jugada (src/rules/mejor-jugada.ts)
+  o['regla.mejor'] = REGLA_MEJOR;
+  o['mejor.nada'] = 'Ninguna jugada hace Daño: descarta o guarda en La Manga.';
+  // V12: monedas, esquirlas, gotas, dados de hueso, tirada, imán, cobro y AUTO (anexo A de SPECS/V12.md)
+  o['pieza.moneda.nombre'] = 'Monedas';
+  o['pieza.moneda.desc'] = 'Oro para La Taberna.';
+  o['pieza.esquirla.nombre'] = 'Esquirlas de Corona';
+  o['pieza.esquirla.desc'] = 'Trozos de corona: se guardan aunque pierdas.';
+  o['pieza.gota.nombre'] = 'Gotas de lacre';
+  o['pieza.gota.desc'] = fill('Junta {n} y la Mesa de lacre te sella gratis.', { n: BALANCE.caida.gotasPorSello });
+  o['hueso.oro.nombre'] = 'Dado de oro';
+  o['hueso.oro.desc'] = 'Multiplica tus monedas del asalto.';
+  o['hueso.corona.nombre'] = 'Dado de la Corona';
+  o['hueso.corona.desc'] = 'Multiplica tus esquirlas del asalto.';
+  o['ritual.nombre'] = 'Tirada de huesos';
+  o['ritual.desc'] = 'Tras ganar un asalto, los dados multiplican lo que cayó.';
+  o['iman.nombre'] = 'Imán';
+  o['iman.desc'] = 'Lo que cae vuela solo a tu bolsa.';
+  o['cobro.conjura.nombre'] = 'Cobro de la conjura';
+  o['cobro.conjura.desc'] = 'Las esquirlas que ganas al acabar la campaña.';
+  o['auto.nombre'] = 'AUTO';
+  o['auto.desc'] = 'El juego juega solo. Toca para volver.';
+  o['auto.saquear.nombre'] = 'Auto-saquear';
+  o['auto.saquear.desc'] = 'El bot elige tu Botín.';
+  o['auto.taberna.nombre'] = 'Auto-taberna';
+  o['auto.taberna.desc'] = 'El bot compra en La Taberna y elige ruta.';
+  o['auto.pausa.botin'] = 'AUTO espera: elige tu Botín.';
+  o['auto.pausa.taberna'] = 'AUTO espera: compra en La Taberna o sigue.';
+  o['auto.pausa.mapa'] = 'AUTO espera: elige tu ruta en el Mapa.';
+  o['auto.pausa.secreto'] = 'AUTO espera: elige en el Secreto.';
+  o['auto.pausa.fin'] = 'La campaña terminó: AUTO se apaga.';
+  o['auto.pausa.diaria'] = 'En el Asalto diario se juega a mano.';
+  o['auto.pausa.coop'] = 'En cooperativo se juega a mano.';
   // la partida guiada
   for (const s of TUTORIAL_STEPS) {
     o[`guia.${s.id}.titulo`] = s.title;

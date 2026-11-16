@@ -2,7 +2,7 @@
 // de mazos, las reglas y los ajustes.
 import { Card, SUITS, SUIT_GLYPH, sortCards } from '../rules/engine';
 import { TOOL, TOOL_SLOTS, ToolInst } from '../rules/tools';
-import { isLang, onLangChange, setLang, tFor } from '../shared/i18n';
+import { isLang, onLangChange, setLang, t as tr, tFor } from '../shared/i18n';
 import { L, Ln, archN, espD, espN, getLang, palo, rarN, relD, relN } from './lengua';
 import { Volume, getVolume, setVolume, sfx } from './audio';
 import { cardEl, suitSvg, tileEl } from './card';
@@ -419,6 +419,9 @@ export function showSettings(onChange?: () => void): void {
       [L('ui.set.contraste'), L('ui.set.contraste.texto'), yes(settings.contrast), () => ((settings.contrast = !settings.contrast), applySettings()), settings.contrast, 'set-contraste'],
       [L('ui.set.pantalla'), L('ui.set.pantalla.texto'), yes(platform.isFullscreen()), () => void platform.toggleFullscreen().then(draw), platform.isFullscreen(), 'set-pantalla'],
       [wName, wDesc, wValue === 'No' ? L('ui.no') : wValue === 'Sí' ? L('ui.si') : wValue, wDo, wValue !== 'No', 'set-susurros'],
+      // V12 · lo que AUTO hace por ti fuera de la mesa (AUTO mismo se enciende en la mesa y nunca se guarda)
+      [tr('auto.saquear.nombre'), tr('auto.saquear.desc'), yes(settings.autoSaquear), () => ((settings.autoSaquear = !settings.autoSaquear), applySettings()), settings.autoSaquear, 'set-auto-saquear'],
+      [tr('auto.taberna.nombre'), tr('auto.taberna.desc'), yes(settings.autoTaberna), () => ((settings.autoTaberna = !settings.autoTaberna), applySettings()), settings.autoTaberna, 'set-auto-taberna'],
     ];
     const list = $('#set-toggles', el);
     list.innerHTML = rows.map(([name, desc, value, , on, cls], i) => `<div class="set ${cls}"><div><b>${name}</b><span>${desc}</span></div><button data-set="${i}" class="${on ? 'on' : ''}">${value}</button></div>`).join('');

@@ -327,9 +327,12 @@ function placeSpotlight(root: HTMLElement): void {
   const ring = root.querySelector<HTMLElement>('.guia-aro')!;
   const pad = 8;
   // el hueco y su aro, con su margen, sin salirse de la ventana
-  const l = r ? Math.max(3, r.left - pad) : W / 2;
-  const t = r ? Math.max(3, r.top - pad) : H / 2;
-  const rect = r ? { left: l, top: t, width: Math.min(W - 3, r.right + pad) - l, height: Math.min(H - 3, r.bottom + pad) - t } : { left: l, top: t, width: 0, height: 0 };
+  // el aro late hasta scale(1.04): el margen con el borde crece con su tamaño para que ni en el pico se salga
+  const mx = r ? 3 + Math.ceil((r.width + 2 * pad) * 0.021) : 3;
+  const my = r ? 3 + Math.ceil((r.height + 2 * pad) * 0.021) : 3;
+  const l = r ? Math.max(mx, r.left - pad) : W / 2;
+  const t = r ? Math.max(my, r.top - pad) : H / 2;
+  const rect = r ? { left: l, top: t, width: Math.min(W - mx, r.right + pad) - l, height: Math.min(H - my, r.bottom + pad) - t } : { left: l, top: t, width: 0, height: 0 };
   for (const n of [hole, ring]) {
     n.style.left = `${rect.left}px`;
     n.style.top = `${rect.top}px`;

@@ -41,7 +41,7 @@ export const RANK_LABEL = ['★', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '
 
 export const SEALS: Seal[] = ['dinamita', 'eco', 'jornal', 'sindical'];
 export const SEAL: Record<Seal, { name: string; desc: string }> = {
-  dinamita: { name: 'Sello de pólvora', desc: 'Al golpear, los tronos vecinos (orden ♠ ♦ ♥ ♣) reciben el valor de esta carta.' },
+  dinamita: { name: 'Sello de pólvora', desc: 'Al golpear, los tronos al lado del golpeado en la mesa reciben el valor de esta carta.' },
   eco: { name: 'Sello de eco', desc: 'Su Daño y el poder de su palo cuentan 2 veces.' },
   jornal: { name: 'Sello de oro real', desc: fill('+{oro} de oro si el golpe abate a un guardia.', { oro: BALANCE.sellos.jornal }) },
   sindical: { name: 'Sello de la manga', desc: 'Robas 1 carta extra al jugarla o descartarla.' },
@@ -131,6 +131,8 @@ export interface Config {
   ownMult?: number;
   /** Margen del golpe limpio: el piso cae y cuenta como limpio a ±cleanTol de su resistencia. */
   cleanTol?: number;
+  /** Gracia del Golpe exacto por arriba (V12, Buen ojo): también es exacto si el Daño se pasa por cleanTol + cleanOver o menos. */
+  cleanOver?: number;
   /** Todo golpe perfora, lleve o no picas. */
   alwaysPierce?: boolean;
   /** Niveles de plano por formación. */
@@ -387,6 +389,17 @@ export function multiplier(card: CardSuit, tower: Suit, cfg: Config = DEFAULT_CO
 export function standing(t: Tower): boolean {
   return t.floors.length > 0;
 }
+
+/**
+ * Los tronos al lado de `target` en la mesa (V12): el de su izquierda y el de su derecha en la fila ♠ ♦ ♥ ♣,
+ * saltándose los que no están en el asalto (`away`). Un trono ya caído sigue en la mesa y cuenta. Con 4
+ * tronos son los vecinos de siempre; con 2, el otro; con 3, uno o dos. Lo usa el sello de pólvora.
+ */
+export function vecinosPresentes(towers: Record<Suit, Tower>, target: Suit): Suit[] {
+  const fila = SUITS.filter((s) => s === target || !towers[s].away);
+  const i = fila.indexOf(target);
+  return [fila[i - 1], fila[i + 1]].filter((s): s is Suit => s !== undefined);
+}
 export const floorHp = (t: Tower, cfg: Config): number => cfg.floorHp[t.floors[0]];
 
 /** Etiqueta en mesa del decreto «inestable» (cada guardia abatido sin Golpe exacto te cuesta Vida). */
@@ -503,7 +516,8 @@ function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean,
   out.events.push({ e: 'hit', tower: t.suit, amount, splash, damage: t.damage, hp: floorHp(t, cfg) });
   while (standing(t) && t.damage >= floorHp(t, cfg) - tol) {
     const hp = floorHp(t, cfg);
-    const clean = Math.abs(t.damage - hp) <= tol;
+    // exacto a ±cleanTol; por arriba, también hasta cleanTol + cleanOver (Buen ojo)
+    const clean = t.damage - hp >= -tol && t.damage - hp <= tol + (cfg.cleanOver ?? 0);
     const excess = clean ? 0 : t.damage - hp;
     const rank = t.floors.shift()!;
     out.fallenBy[t.suit] = (out.fallenBy[t.suit] ?? 0) + 1;
@@ -706,9 +720,10 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   tally.events.push({ e: 'impact', tower: target, fuerza: x.fuerza, res: x.res, total });
   applyDamage(tower, total, x.pierce, false, cfg, tally);
   const shards = power.D * cfg.salpicaPorCarta + x.splash + Math.round(total * x.splashPct);
-  SUITS.forEach((s, i) => {
+  const vecinos = adjacent ? vecinosPresentes(env.towers, target) : [];
+  SUITS.forEach((s) => {
     if (s === target) return;
-    const near = Math.abs(i - SUITS.indexOf(target)) === 1 ? adjacent : 0;
+    const near = vecinos.includes(s) ? adjacent : 0;
     applyDamage(env.towers[s], shards + near, false, true, cfg, tally);
   });
 

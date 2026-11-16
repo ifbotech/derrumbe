@@ -2,14 +2,15 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { abonoCampanaVieja } from '../rules/migracion';
-import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
+import { ESQUIRLAS_POR_CORONA, abonoCampanaVieja } from '../rules/migracion';
+import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
 import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
 import { sfx } from './audio';
 import { cardEl, portraitEl } from './card';
 import { $, Campaign, RUN_PLAYER, S, loadJson, modal, toast } from './core';
 import { dealIn, ribbon } from './fx';
+import { caidaPendiente } from './caida';
 import { voiceEnter } from './voces';
 import { maybeSettle, meta, saveMeta, trackMeta } from './guild';
 import { sendMsg } from './net';
@@ -32,6 +33,8 @@ export function pickDeck(id: string): void {
 
 export function savedCampaign(): Campaign | null {
   const c = loadJson<Campaign>(RUN_KEY);
+  // V12: una campaña guardada con la 11.0 se pone al día (esquirlas, gotas, lo que cae) y sigue donde estaba
+  if (c?.run) c.run = cargaRun(c.run) ?? c.run;
   // descarta guardados de versiones anteriores del juego
   return c && c.run && c.key && c.run.v === RUN_VERSION && Array.isArray(c.run.tools) && c.run.node && c.run.stats?.toolUse ? c : null;
 }
@@ -53,7 +56,8 @@ export function retireOldSave(): void {
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
   if (old.run.phase === 'won' || old.run.phase === 'lost') return; // ya estaba cobrada
-  const gain = abonoCampanaVieja(old.run.stage); // lo superado, hasta los 8 asaltos de la 10.0 (src/rules/migracion.ts)
+  // lo superado se cobra en esquirlas, al cambio de la V12 (cada Corona de antes vale ESQUIRLAS_POR_CORONA)
+  const gain = abonoCampanaVieja(old.run.stage) * ESQUIRLAS_POR_CORONA;
   meta.renown += gain;
   saveMeta();
   setTimeout(() => toast(L('ui.camp.vieja', { n: gain })), 600);
@@ -236,7 +240,7 @@ export function campaignAct(action: Action): void {
       c.undoRun = null;
     } else {
       if (action.type !== 'stash') c.undoRun = before ?? null;
-      trackEvents(c.run, res.events);
+      caidaPendiente.push(...trackEvents(c.run, res.events)); // juice-ux V12: lo que cae, para que la mesa lo haga volar (iman.ts)
       if (res.state.phase !== 'playing') finishBattle(c.run, res.state);
     }
     S.selected.length = 0;

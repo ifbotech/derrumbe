@@ -4,7 +4,7 @@
 import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
-import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, viewFor } from '../rules/engine';
+import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, previewStrike, viewFor } from '../rules/engine';
 import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
 import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../rules/tutorial';
 import { TOOLS } from '../rules/tools';
@@ -17,13 +17,20 @@ import { getLang, isLang, setLang } from '../shared/i18n';
 import { L, acabN } from './lengua';
 import { brandLockup, renderHome } from './home';
 import { archive, meta, openGuild } from './guild';
+import { arbolVista, vistaNueva } from './arbol';
+import { colocarCaida, recogerCaida } from './caida';
+import { pintarRitual, ritualNuevo } from './ritual';
+import type { Pieza } from '../rules/caida';
+import { conmutaAuto, refreshSpeed, renderHud, usarMejor } from './table';
+import { congelaAuto } from './auto'; // juice-ux: AUTO encendido a la vista sin jugar (mesa-auto)
+
 import { openLupa } from './lupa';
 import { InputMode, setMode } from './nav';
 import { platform } from './platform';
 import { setScreen } from './router';
 import { renderRun } from './runscreens';
 import { pump, renderInteractive, toggleInspector } from './table';
-import { monarchGallery, showBark, spotlight } from './guia';
+import { hideBark, monarchGallery, showBark, spotlight } from './guia';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import { feedbackShow, showRules, showSettings } from './widgets';
 import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
@@ -50,7 +57,21 @@ const quieto = () =>
     }
   });
 
+/** V12: el perfil de partida (rangos del Árbol y saldo): cada estado lo recupera, así los del Árbol no tocan a los demás. */
+let perfil0: { up: Record<string, number>; renown: number } | null = null;
 function clean(): void {
+  perfil0 ??= { up: { ...meta.up }, renown: meta.renown };
+  meta.up = { ...perfil0.up };
+  meta.renown = perfil0.renown;
+  delete meta.aviso;
+  vistaNueva();
+  // V12: AUTO apagado y la velocidad de serie en cada estado; sin piezas en la mesa
+  settings.auto = false;
+  settings.speed = 1;
+  settings.autoSaquear = false;
+  settings.autoTaberna = false;
+  recogerCaida();
+  ritualNuevo();
   document.querySelectorAll('.modal, .lupa, .end:not(.in-page), .toast, .ach-stack, .tip, .ribbon, .banner, body > .pieza, body > .esquirlas').forEach((n) => n.remove());
   S.tutorial = null;
   S.session = null;
@@ -90,14 +111,16 @@ function show(run: Run, state: GameState | null = null, key = 'qa'): void {
  *  sonar y el temporizador de la anterior queda anulado, en vez de esconder el bocadillo de la siguiente. */
 let monarchRuns = 0;
 
-async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null, stage = 0): Promise<void> {
+async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null, stage = 0, depth = 0): Promise<void> {
   setMode(input);
   // los Susurros solo salen en la primera campaña de un perfil
   meta.runs = firstRun ? 0 : Math.max(1, meta.runs);
   // V11: la mesa de siempre es el asalto 4 (La Galería real: cuatro tronos con Sota, Reina y Rey); con monarca,
   // ese monarca en su trono. Con `stage` 1 o 2, la mesa corta de dos o tres tronos (los ausentes no se pintan).
-  const at = stage || 4;
+  const at = depth ? 5 + depth : stage || 4;
   const run = baseRun(at);
+  // V12: el Trono infinito (mesa-cifras): la campaña ya ganada y abierta hacia abajo
+  if (depth) run.endless = true;
   if (boss) run.bosses[at] = boss;
   runAction(run, { t: 'route', i: 0 });
   let state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
@@ -130,6 +153,12 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   setScreen('table');
   await pump();
   document.querySelectorAll('.modal').forEach((m) => m.remove());
+  // V12 · la voz de entrada del monarca del asalto 4 sale en cuanto se quitan las ventanas y dura 2,5 s: la foto la
+  // pillaba o no según lo que tardase (qa:determinista). Fuera de las mesas que la enseñan a propósito
+  if (!boss) {
+    await new Promise((ok) => setTimeout(ok, 160));
+    hideBark();
+  }
   // la previsualización en vivo: el trío de sietes elegido
   S.selected = (['S', 'D', 'H'] as Suit[]).map((s) => find(state.players[0].hand, s, 7)?.id).filter((id): id is string => !!id);
   renderInteractive();
@@ -170,6 +199,23 @@ async function guia(step: number): Promise<void> {
 }
 
 /** Da por ganado el asalto en curso y deja la campaña en el Botín. */
+/** V12: el Botín de un asalto ganado con lo que cayó en él y la tirada pintada en su fase final. */
+function huesos(dos: boolean): void {
+  const run = baseRun(2);
+  if (dos) run.up = { ...run.up, hueso_tallado: 1, cara_rey: 1, segundo_hueso: 1 };
+  runAction(run, { t: 'route', i: 0 });
+  const state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  run.caida = { oro: 12, esquirlas: 140, gotas: 1 };
+  for (const s of SUITS) state.towers[s].floors = [];
+  state.phase = 'won';
+  state.turnCount = 9;
+  finishBattle(run, state);
+  show(run);
+  setScreen('run');
+  ritualNuevo();
+  if (run.ritual) pintarRitual(run.ritual, 'final');
+}
+
 function winStage(run: Run): void {
   runAction(run, { t: 'route', i: 0 });
   const state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
@@ -198,6 +244,16 @@ function derrota(): Run {
   run.stats.contracts = 2;
   run.death = { kind: 'sirena', title: 'Contraataque de PICAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Un ♣ más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
   return run;
+}
+
+/** V12: el Árbol con rangos comprados en las cuatro ramas y 12.345 esquirlas. */
+function arbol(): void {
+  clean();
+  setMode('pointer');
+  meta.renown = 12345;
+  for (const a of ACHIEVEMENTS.slice(0, 9)) meta.ach[a.id] = true;
+  meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 2, tasador: 1, caja_sismo: 1, caja_precision: 1, tampones: 1, piedra_iman: 1, esq_golpe: 3, esq_guardia: 2, esq_monarca: 1, esq_derrota: 1, hueso_tallado: 2, cara_rey: 1, corona_hierro: 1, pendon: 1 };
+  openGuild('ups');
 }
 
 function toShop(run: Run): void {
@@ -249,6 +305,34 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // V11: el asalto 1 (dos tronos) y el 2 (tres tronos, con monarca): la fila se reparte entre los que hay
   'mesa-2tronos': () => mesa(false, 'pointer', 4, null, 1),
   'mesa-3tronos': () => mesa(false, 'pointer', 4, null, 2),
+  // V12: la mesa de dos tronos con el 7♠ del sello de pólvora elegido contra el otro trono: la vista previa
+  // enseña «+n» en el trono de al lado (vecinosPresentes) y la cuenta, «Pólvora +n al lado»
+  'mesa-polvora': async () => {
+    await mesa(false, 'pointer', 4, null, 1);
+    const state = S.campaign?.state;
+    if (!state) return;
+    const siete = find(state.players[0].hand, 'S', 7);
+    S.selected.splice(0, S.selected.length, ...(siete ? [siete.id] : []));
+    renderInteractive();
+    const otro = SUITS.find((x) => x !== 'S' && !state.towers[x].away && state.towers[x].floors.length);
+    if (otro) apunta(otro);
+  },
+  // V12: el Trono infinito hondo (Trono infinito 18): Vida de los guardias de seis cifras, un Golpe de cuatro con
+  // una Racha de 8 Golpes exactos y los tronos Expuestos, y 1.234 de oro: todo en notación compacta (regla «compacto»)
+  'mesa-cifras': async () => {
+    await mesa(false, 'pointer', 6, null, 0, 18);
+    const c = S.campaign;
+    const state = c?.state;
+    if (!c || !state) return;
+    c.run.gold = 1234;
+    state.chain = 8;
+    for (const x of SUITS) if (!state.towers[x].away) state.towers[x].fx = { fractura: true };
+    const keep = [...S.selected];
+    S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
+    await pump();
+    S.selected.splice(0, S.selected.length, ...keep);
+    renderInteractive();
+  },
   // V11: los dos estados a la vista, sin jugada elegida: un trono Expuesto y otro Aturdido
   'mesa-estados': async () => {
     await mesa();
@@ -307,7 +391,12 @@ const STATES: Record<string, () => void | Promise<void>> = {
     winStage(run);
     show(run);
     setScreen('run');
+    ritualNuevo(); // el Botín sin la tirada encima (la tirada tiene sus estados)
   },
+  // V12 · la tirada de huesos del Botín, ya tirada: el Dado de oro y uno de la Corona
+  ritual: () => huesos(false),
+  // con Segundo hueso: dos Dados de la Corona (sus caras se multiplican)
+  'ritual-dos': () => huesos(true),
   ferreteria: () => {
     const run = baseRun(2);
     toShop(run);
@@ -350,10 +439,24 @@ const STATES: Record<string, () => void | Promise<void>> = {
       },
     ]),
   ),
-  gremio: () => {
+  // V12: el Árbol de la Conjura a zum de serie, con rangos en las cuatro ramas y un saldo de cinco cifras
+  gremio: () => arbol(),
+  // el Árbol ampliado hasta las tarjetas completas sobre la Bolsa, con un nodo enfocado con teclado
+  'arbol-zoom': () => {
+    arbol();
+    setMode('keys');
+    arbolVista.detalle('esq_guardia');
+    const n = document.querySelector<HTMLElement>('.nodo[data-nodo="esq_guardia"]');
+    n?.setAttribute('data-foco', '');
+    n?.focus({ preventScroll: true });
+  },
+  // el aviso de la migración de la 11.0: 37 Coronas son ahora 3.700 esquirlas y 9 mejoras siguen en el Arsenal
+  'arbol-aviso': () => {
     clean();
-    meta.renown = 37;
-    for (const a of ACHIEVEMENTS.slice(0, 9)) meta.ach[a.id] = true;
+    meta.renown = 3700;
+    meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 1, rutas: 1, tampones: 1, caja_sismo: 1, caja_precision: 1, bronce: 1 };
+    meta.aviso = { id: 'arbol-v12', coronas: 37, esquirlas: 3700, rangos: 9 };
+    setMode('pointer');
     openGuild('ups');
   },
   // la pestaña de logros, con la mitad conseguidos: cada logro con su icono
@@ -408,6 +511,19 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // un asalto que se alarga: Asedio final de nivel 2, con su Daño y su Ataque de más
   'mesa-fatiga': () => mesa(false, 'pointer', 12),
   // V11: Ajustes con la fila «Colores de la baraja» enfocada (Cuatro colores, Clásica o Dos tintas)
+  // V12 · Auto-saquear encendido y Auto-taberna apagado, cada uno con su línea
+  'ajustes-auto': () => {
+    clean();
+    S.campaign = null;
+    setMode('keys');
+    setScreen('home');
+    settings.autoSaquear = true;
+    settings.autoTaberna = false;
+    showSettings();
+    const row = document.querySelector<HTMLElement>('#set-toggles .set-auto-saquear');
+    row?.scrollIntoView({ block: 'center' });
+    row?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+  },
   'ajustes-paleta': () => {
     clean();
     S.campaign = null;
@@ -519,6 +635,53 @@ const STATES: Record<string, () => void | Promise<void>> = {
   ...Object.fromEntries(BOSSES.map((b) => [`mesa-monarca-${b.id}`, () => mesaMonarca(b.id)])),
   // ── arte-ui V8: las piezas de la caída, congeladas a mano (sin fx.ts) ──
   // el trono de Diamantes caído con la corona hecha esquirlas, y el guardia de Picas cortado por el tajo
+  // V12 · lo que cae, quieto: monedas, esquirlas y gotas junto a sus tronos y la bolsa con las tres cuentas
+  'mesa-caida': async () => {
+    await mesa();
+    const c = S.campaign;
+    if (!c) return;
+    c.run.esquirlas = 1240;
+    c.run.gotas = 2;
+    renderHud();
+    const piezas: Pieza[] = [];
+    for (const s of SUITS) {
+      if (c.state?.towers[s].away) continue;
+      piezas.push({ tipo: 'esquirla', n: 1, trono: s, de: 'golpe' }, { tipo: 'moneda', n: 1, trono: s, de: 'guardia' }, { tipo: 'esquirla', n: 2, trono: s, de: 'guardia' });
+    }
+    piezas.push({ tipo: 'esquirla', n: 5, trono: 'H', de: 'exacto' }, { tipo: 'gota', n: 1, trono: 'H', de: 'exacto' }, { tipo: 'moneda', n: 3, trono: null, de: 'oro' });
+    await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+    colocarCaida(piezas);
+  },
+  // V12 · AUTO encendido (luz maciza, botón hundido) junto a la velocidad a 8×, sin nada elegido
+  'mesa-auto': async () => {
+    await mesa();
+    S.selected.length = 0;
+    settings.speed = 8;
+    refreshSpeed();
+    conmutaAuto(true);
+    congelaAuto();
+    renderInteractive();
+  },
+  // V12 · Mejor jugada pulsada: las cartas elegidas y su trono marcados, y las coronas del Golpe exacto en la mano
+  'mesa-mejor': async () => {
+    await mesa();
+    // un Golpe exacto a mano: el as contra Tréboles deja el guardia justo a cero
+    const st = S.campaign?.state;
+    if (st) {
+      const as = st.players[0].hand.find((c) => c.rank === 1 && !c.sp);
+      const tr = st.towers.C;
+      if (as && tr.floors.length) {
+        tr.damage = 0;
+        const dealt = previewStrike(st, [as], 'C').dealt.C ?? 0;
+        tr.damage = Math.max(0, st.config.floorHp[tr.floors[0]] - dealt);
+      }
+      S.queue.push({ view: viewFor(st, RUN_PLAYER), events: [] });
+      await pump();
+    }
+    S.selected.length = 0;
+    renderInteractive();
+    usarMejor();
+  },
   'mesa-esquirlas': async () => {
     await mesa();
     const state = S.campaign?.state;
@@ -701,6 +864,8 @@ export function installQa(): void {
     __qa: {
       states: Object.keys(STATES),
       go: async (name: string) => {
+        // V12 · QA determinista: cada estado empieza con el mismo azar, pase lo que pase en los anteriores
+        (window as unknown as { __qaSemilla?: (t: string) => void }).__qaSemilla?.(name);
         await STATES[name]?.();
         settle(); // todo quieto y en su sitio antes de la foto
         return name in STATES;

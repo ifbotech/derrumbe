@@ -75,7 +75,13 @@ export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
 
 export interface Settings {
   /** Velocidad de las animaciones de la mesa. */
-  speed: 1 | 2 | 4;
+  speed: 1 | 2 | 4 | 8;
+  /** V12 · AUTO: el bot de referencia juega por ti. Nunca se guarda encendido (sale apagado al abrir el juego). */
+  auto: boolean;
+  /** V12 · con AUTO, el bot elige también tu Botín. */
+  autoSaquear: boolean;
+  /** V12 · con AUTO, el bot compra en La Taberna y elige ruta. */
+  autoTaberna: boolean;
   /** Reducir movimiento: sin temblores, partículas ni destellos. */
   calm: boolean;
   /** V11 · Colores de la baraja: cuatro colores (por defecto), la clásica de la 10.0 (con el ocre) o dos tintas (rojo y negro). */
@@ -88,28 +94,31 @@ export const PALETAS: Paleta[] = ['cuatro', 'clasica', 'dos'];
 const SETTINGS_KEY = 'derrumbe:settings';
 // sin nada guardado, «Reducir movimiento» y «Alto contraste» siguen a lo que pida el sistema
 const saved = loadJson<Partial<Settings> & { inks?: number }>(SETTINGS_KEY) ?? {};
-export const settings: Settings = { speed: 1, calm: matchMedia('(prefers-reduced-motion: reduce)').matches, contrast: matchMedia('(prefers-contrast: more)').matches, ...saved, paleta: 'cuatro' };
-if (![1, 2, 4].includes(settings.speed)) settings.speed = 1;
+export const settings: Settings = { speed: 1, auto: false, autoSaquear: false, autoTaberna: false, calm: matchMedia('(prefers-reduced-motion: reduce)').matches, contrast: matchMedia('(prefers-contrast: more)').matches, ...saved, paleta: 'cuatro' };
+if (![1, 2, 4, 8].includes(settings.speed)) settings.speed = 1;
+settings.auto = false; // V12: AUTO nunca arranca encendido
+settings.autoSaquear = settings.autoSaquear === true;
+settings.autoTaberna = settings.autoTaberna === true;
 // V11: los ajustes de la 10.0 guardaban `inks` (4 o 2); las dos tintas se conservan, lo demás pasa a cuatro colores
 settings.paleta = PALETAS.includes(saved.paleta as Paleta) ? (saved.paleta as Paleta) : saved.inks === 2 ? 'dos' : 'cuatro';
 delete (settings as Partial<Settings> & { inks?: number }).inks;
 settings.contrast = settings.contrast === true;
 
 export function applySettings(): void {
-  platform.save(SETTINGS_KEY, JSON.stringify(settings));
+  platform.save(SETTINGS_KEY, JSON.stringify({ ...settings, auto: undefined }));
   document.documentElement.classList.toggle('calm', settings.calm);
   document.documentElement.classList.toggle('inks2', settings.paleta === 'dos');
   document.documentElement.classList.toggle('paleta-clasica', settings.paleta === 'clasica');
   document.documentElement.classList.toggle('contraste', settings.contrast);
   document.documentElement.dataset.speed = String(settings.speed);
 }
-/** 1× → 2× → 4× (Turbo) → 1×. */
+/** 1× → 2× → 4× → 8× → 1×. */
 export function cycleSpeed(): number {
-  settings.speed = settings.speed === 1 ? 2 : settings.speed === 2 ? 4 : 1;
+  settings.speed = settings.speed === 1 ? 2 : settings.speed === 2 ? 4 : settings.speed === 4 ? 8 : 1;
   applySettings();
   return settings.speed;
 }
-export const speedLabel = () => (settings.speed === 4 ? '4× Turbo' : `${settings.speed}×`);
+export const speedLabel = () => `${settings.speed}×`;
 
 // ───────────────────────── Avisos y ventanas ─────────────────────────
 

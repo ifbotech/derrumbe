@@ -4,7 +4,7 @@
 // inglés (sello SANGRE Y PALO).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { BRAND, FULL_TITLE, LOCALE, SEAL, SLUG, SUBTITLE, TAGLINE, TITLE, TITLE_PROSE, brandLocale, fileName } from '../src/shared/brand';
+import { BRAND, FULL_TITLE, LOCALE, SEAL, SLUG, SUBTITLE, TAGLINE, TITLE, TITLE_PROSE, brandFor, brandLocale, fileName } from '../src/shared/brand';
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const ES = 'SANGRE Y PALO';
@@ -24,6 +24,12 @@ describe('marca dual', () => {
     expect(BRAND.es.subtitle).toBe('La conjura de los naipes');
     expect(BRAND.en.subtitle).toBe('A card conspiracy against the court');
     for (const cara of Object.values(BRAND)) expect(cara.tagline.length).toBeGreaterThan(0);
+  });
+
+  it('el emblema de la portada (V12): en inglés, «Original edition · SANGRE Y PALO»; en español, el sello', () => {
+    expect(BRAND.en.emblema).toBe(`Original edition · ${ES}`);
+    expect(BRAND.es.emblema).toBe(BRAND.es.seal);
+    expect(brandFor('en').emblema).toBe(BRAND.en.emblema);
   });
 
   it('el idioma de marca: «es…» es español, todo lo demás inglés, y sin navegador español', () => {

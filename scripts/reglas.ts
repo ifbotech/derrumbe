@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('docs', 120); // tope duro: ver scripts/guardian.ts
 // Genera REGLAS.md a partir de los datos del propio motor, para que el reglamento escrito
 // nunca se desincronice de lo que el juego hace de verdad:  npm run docs
 // De paso pone al día en README.md las tablas de balance (desde scripts/meta-report.json) y la de
@@ -12,6 +14,8 @@ import { ASCENSIONS, BOSSES, CONTRACTS, DECK, DECKS, EVENTS, EVENT_AFTER, FATIGU
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
 import { ARCH, Arch, RARITY, TOOL, TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 import { TITLE, SUBTITLE } from '../src/shared/brand';
+import { ARBOL, RAIZ, RAMAS } from '../src/rules/arbol';
+import { ESQUIRLAS_POR_CORONA } from '../src/rules/migracion';
 import { CONTROL_ROWS } from '../src/client/prompts';
 
 const cfg = DIFFICULTY.obra;
@@ -143,7 +147,7 @@ En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
 El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuál es su decreto. En los asaltos sin monarca eliges:
 
-- una **ruta** (dos a elegir; tres con el ${up('rutas')} de la Orden), cada una con su **Juramento**;
+- una **ruta** (dos a elegir; tres con el ${up('rutas')} del Árbol), cada una con su **Juramento**;
 - o, solo en el asalto ${STAGES.flatMap((s, i) => (s.atajo ? [i + 1] : [])).join(' y ')}, el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Taberna) a cambio de un **Atajo de conspirador**.
 
 **Juramentos.** Los normales piden una condición y pagan si la cumples; los de **riesgo** endurecen el asalto y pagan siempre que lo ganes.
@@ -183,20 +187,20 @@ ${EVENTS.map((e) => `- **${e.name}.** ${e.text}\n${e.options.map((o) => `  - *${
 
 - Después del asalto ${LAST_STAGE} puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un ${Math.round((BALANCE.tronoInfinito.hpCrece - 1) * 100)} % más resistente que el anterior (el primero, ×${n(stageDef(LAST_STAGE + 1).hp)}).
 - **Semilla**: la misma semilla y las mismas decisiones dan exactamente la misma campaña. Puedes escribir la tuya al empezar.
-- **Asalto diario**: usa la fecha como semilla, con la ${DECK.obra.name.toLowerCase()}, en el Reinado 1 y sin nada de la Orden. Igual para todo el mundo.
-- **Reinados**: hay ${ASCENSIONS.length}. Ganar una campaña abre el Reinado siguiente; cada uno añade **un giro** a todos los anteriores y da un 25 % más de Coronas.
+- **Asalto diario**: usa la fecha como semilla, con la ${DECK.obra.name.toLowerCase()}, en el Reinado 1 y sin nada del Árbol. Igual para todo el mundo.
+- **Reinados**: hay ${ASCENSIONS.length}. Ganar una campaña abre el Reinado siguiente; cada uno añade **un giro** a todos los anteriores y sube un 25 % el cobro de la conjura (sin contar lo que cae a la mesa).
 
 ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), a.name, a.desc]))}
 
 - **Sellos de maestría**: al ganar, la baraja usada y cada reliquia que llevabas quedan marcadas en la colección con el Reinado más alto que has ganado con ellas: sello de **bronce** (Reinados 1–3), de **hierro** (4–6) o de **oro** (7–8).
-- **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con la misma baraja y el mismo Reinado. La que dejas no cuenta como derrota ni da Coronas.
+- **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con la misma baraja y el mismo Reinado. La que dejas no cuenta como derrota ni da esquirlas.
 
 ## Reliquias
 
-Llevas hasta **${TOOL_SLOTS} reliquias**, y se activan **de izquierda a derecha**. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en pleno asalto. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones de la Orden.
+Llevas hasta **${TOOL_SLOTS} reliquias**, y se activan **de izquierda a derecha**. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en pleno asalto. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Árbol.
 
 ${(Object.keys(ARCH) as Arch[])
-  .map((a) => `### ${ARCH[a]}\n\n${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.filter((t) => t.arch === a).map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón de la Orden' : 'de salida']))}`)
+  .map((a) => `### ${ARCH[a]}\n\n${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.filter((t) => t.arch === a).map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Árbol' : 'de salida']))}`)
   .join('\n\n')}
 
 ## Sellos de lacre y acabados
@@ -219,20 +223,32 @@ ${table(['Carta', 'Efecto', 'Tipo'], SPECIALS.map((s) => [s.name, s.desc, s.lock
 
 ${table(['Baraja', 'Cómo cambia la campaña', 'Se desbloquea con'], DECKS.map((d) => [d.name, d.desc, d.unlock ? (ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name ?? d.unlock) : '—']))}
 
-## La Orden
+## El Árbol de la Conjura
 
-Ganes o pierdas, cada campaña deja **Coronas**. En la Orden se gastan en **abrir arcones**, no en subir números. El surtido de salida es corto a propósito (${TOOLS.filter((t) => !t.box).length} reliquias); los arcones abren las otras ${TOOLS.filter((t) => t.box).length}, cada uno con su manera de jugar:
+Ganes o pierdas, cada campaña deja **Esquirlas de Corona** ✦: las que caen a la mesa durante los asaltos y el **cobro de la conjura** al cerrarla (${ESQUIRLAS_POR_CORONA} por cada punto de la cuenta de siempre). Lo que cae a la mesa:
 
-${table(['Mejora', 'Efecto', 'Coste'], UPGRADES.map((u) => [u.name, u.desc, u.costs.map((c) => `${c} ✦`).join(' · ')]))}
+${table(['Qué pasa', 'Monedas', 'Esquirlas', 'Gotas de lacre'], [
+  ['Cada golpe', '—', String(BALANCE.caida.esquirlaGolpe), '—'],
+  ['Cada guardia abatido', String(BALANCE.caida.oroGuardia), String(BALANCE.caida.esquirlaGuardia), '—'],
+  ['Cada Golpe exacto', String(BALANCE.golpe.oroExacto), String(BALANCE.caida.esquirlaExacto), String(BALANCE.caida.gotaExacto)],
+  ['Cada monarca vencido', '—', String(BALANCE.caida.esquirlaMonarca), '—'],
+])}
+
+- Con **${BALANCE.caida.gotasPorSello} gotas de lacre**, la Mesa de lacre te sella gratis.
+- **Tirada de huesos**: al ganar cada asalto se tiran dos dados. El **Dado de oro** (caras ${BALANCE.huesos.oro.map((x) => `×${x}`).join(' ')}) multiplica las monedas que cayeron en ese asalto; el **Dado de la Corona** (caras ${BALANCE.huesos.corona.map((x) => `×${x}`).join(' ')}) multiplica sus esquirlas. Al perder no hay tirada.
+
+Las esquirlas se gastan en el Árbol, que crece desde su raíz, «${RAIZ.name}», en cuatro ramas. Un nodo pide tener antes su padre. Solo **el Arsenal** cambia la campaña de cinco asaltos; la Bolsa y los Huesos solo dan más esquirlas, y la Corona de hierro solo actúa en el Trono infinito. El surtido de salida es corto a propósito (${TOOLS.filter((t) => !t.box).length} reliquias); los arcones del Arsenal abren las otras ${TOOLS.filter((t) => t.box).length}, cada uno con su manera de jugar.
+
+${RAMAS.map((r) => `### ${r.name}\n\n${r.desc}\n\n${table(['Nodo', 'Efecto', 'Rangos', 'Coste de cada rango'], ARBOL.filter((u) => u.rama === r.id).map((u) => [u.name, u.desc, String(u.rangos), u.costs.map((c) => `${c} ✦`).join(' · ')]))}`).join('\n\n')}
 
 ### Archivo de crónicas y copia de seguridad
 
-- La Orden guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué asalto y ante qué monarca, turnos, mayor Golpe, reliquias y semilla. Desde ahí se puede **copiar la Crónica** o **rejugar la semilla** con la misma baraja y el mismo Reinado.
-- En **Ajustes**, *Exportar progreso* guarda la Orden, la colección, las crónicas y los ajustes en un archivo .json, e *Importar progreso* lo recupera en otro navegador, otro equipo o la versión de escritorio.
+- El archivo guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué asalto y ante qué monarca, turnos, mayor Golpe, reliquias y semilla. Desde ahí se puede **copiar la Crónica** o **rejugar la semilla** con la misma baraja y el mismo Reinado.
+- En **Ajustes**, *Exportar progreso* guarda el Árbol, la colección, las crónicas y los ajustes en un archivo .json, e *Importar progreso* lo recupera en otro navegador, otro equipo o la versión de escritorio.
 
 ### Logros
 
-${table(['Logro', 'Cómo', 'Coronas', 'Desbloquea'], ACHIEVEMENTS.map((a) => [a.name, a.desc, `+${a.renown}`, unlocksOf(a.id) ?? '—']))}
+${table(['Logro', 'Cómo', 'Esquirlas', 'Desbloquea'], ACHIEVEMENTS.map((a) => [a.name, a.desc, `+${a.renown} ✦`, unlocksOf(a.id) ?? '—']))}
 
 ## Palabras clave
 
@@ -279,13 +295,13 @@ function balanceMd(r: Report): string {
   return [
     `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Taberna, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
-    `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con la Orden vacía y ${entre(O.reinado1.lleno)} con la Orden llena; Reinado 8 ${entre(O.reinado8.vacio)} con la Orden vacía y ${entre(O.reinado8.lleno)} con la Orden llena; y cada Reinado, más difícil que el anterior.`,
+    `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con el Árbol vacío y ${entre(O.reinado1.lleno)} con el Árbol lleno; Reinado 8 ${entre(O.reinado8.vacio)} con el Árbol vacío y ${entre(O.reinado8.lleno)} con el Árbol lleno; y cada Reinado, más difícil que el anterior.`,
     '',
-    table(['Reinado', 'Orden vacía', 'Orden llena'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
+    table(['Reinado', 'Árbol vacío', 'Árbol lleno'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
     '',
-    `Por baraja inicial (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el ${O.barajas.vacioObjetivo} % sin la Orden y entre el ${O.barajas.llenoObjetivo} % con ella (el informe avisa fuera de ${O.barajas.vacio[0]}–${O.barajas.vacio[1]} y de ${O.barajas.lleno[0]}–${O.barajas.lleno[1]}).`,
+    `Por baraja inicial (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el ${O.barajas.vacioObjetivo} % con el Árbol vacío y entre el ${O.barajas.llenoObjetivo} % con el Árbol lleno (el informe avisa fuera de ${O.barajas.vacio[0]}–${O.barajas.vacio[1]} y de ${O.barajas.lleno[0]}–${O.barajas.lleno[1]}).`,
     '',
-    table(['Baraja', 'Orden vacía', 'Orden llena', 'Lo que suma la Orden'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
+    table(['Baraja', 'Árbol vacío', 'Árbol lleno', 'Lo que suma el Árbol'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
     '',
     `Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media ${p(r.avgLethality)}). Objetivo: todos entre ${n(O.monarcas.ratio[0])}× y ${n(O.monarcas.ratio[1])}× de la media.`,
     '',

@@ -1,15 +1,19 @@
-// La Orden: progreso permanente del jugador (Coronas, mejoras, logros y colección).
+// El progreso permanente del jugador (V12): el Árbol de la Conjura con sus Esquirlas de Corona, los logros, la
+// colección y el archivo de crónicas.
 // Vive en el navegador de cada uno, así que cuenta igual en solitario y en sala online.
 import { Card, FORMATIONS, SEALS, TREATMENTS } from '../rules/engine';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteRun, unlocksOf } from '../rules/achievements';
 import { dondeActa } from '../rules/migracion';
-import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, UPGRADES, buyUpgrade, depthOf, loadMeta, settle, stagesCleared } from '../rules/run';
+import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, cobroAbismo, depthOf, loadMeta, settle, stagesCleared } from '../rules/run';
 import { SPECIALS } from '../rules/specials';
 import { ARCH, Arch, TOOLS } from '../rules/tools';
 import { DICCIONARIOS } from '../shared/i18n';
-import { L, acabD, acabN, archN, asaltoN, barD, barN, espD, espN, formN, getLang, logD, logDes, logN, mejD, mejN, monD, monDec, monN, relD, relN, selloD, selloN } from './lengua';
+import { L, acabD, acabN, archN, asaltoN, barD, barN, espD, espN, formN, getLang, logD, logDes, logN, monD, monDec, monN, relD, relN, selloD, selloN } from './lengua';
+import { t } from '../shared/i18n';
+import { avisoMigracion, pintarArbol } from './arbol';
 import type { Autopsy } from '../rules/autopsy';
 import { sfx } from './audio';
+import { cifra, cifraEl } from './cifra';
 import { ALL_CARDS, backEl, cardEl, ferreteroEl, portraitEl } from './card';
 import { masteryBadge } from './engraving';
 import { newCampaign, pickDeck, prefs, runOpts } from './campaign';
@@ -21,6 +25,7 @@ import { deathIn, validDeath } from './causa';
 import { setScreen } from './router';
 import { choice, toolTile } from './widgets';
 import { platform } from './platform';
+import { whisper } from './whispers';
 
 const META_KEY = 'derrumbe:meta';
 const SETTLED_KEY = 'derrumbe:settled';
@@ -29,7 +34,7 @@ export const meta: Meta = loadMeta(loadJson(META_KEY));
 export const saveMeta = () => platform.save(META_KEY, JSON.stringify(meta));
 saveMeta(); // deja guardada la migración, si la hubo
 
-/** Coronas que dio la última campaña cerrada (para la crónica). */
+/** Esquirlas que dio la última campaña cerrada (para la crónica). */
 export let lastGain = 0;
 
 // ── archivo de crónicas: las 25 últimas campañas terminadas ──
@@ -111,15 +116,13 @@ export function maybeSettle(c: Campaign): void {
     fileActa(c, 0);
     return saveMeta();
   }
-  if (run.endless) {
-    lastGain = depthOf(run);
-    meta.renown += lastGain;
-  } else lastGain = settle(meta, run);
+  // quien sigue al Trono infinito cobra al caer los Tronos superados y las esquirlas desde la corte (la corte ya se cobró al ganar)
+  lastGain = run.endless ? cobroAbismo(meta, run) : settle(meta, run);
   fileActa(c, lastGain);
   saveMeta();
 }
 
-/** Pasa a la Orden lo que ha ocurrido y avisa de los logros nuevos. */
+/** Apunta en el perfil lo que ha ocurrido y avisa de los logros nuevos. */
 export function trackMeta(): void {
   if (S.campaign) noteRun(meta, S.campaign.run);
   const fresh = claim(meta);
@@ -137,7 +140,7 @@ function achToast(name: string, renown: number, unlock: string | null): void {
   }
   const el = document.createElement('div');
   el.className = 'ach-toast';
-  el.innerHTML = `<small>${L('ui.orden.logro')}</small><b>${name}</b><span>+${renown} ✦${unlock ? ` · ${unlock}` : ''}</span>`;
+  el.innerHTML = `<small>${L('ui.orden.logro')}</small><b>${name}</b><span>+${cifra(renown)} ✦${unlock ? ` · ${unlock}` : ''}</span>`;
   stack.appendChild(el);
   sfx.stamp();
   setTimeout(() => el.remove(), 5200);
@@ -184,11 +187,6 @@ const ACH_GLYPH: Record<string, string> = {
   'j-furia': 'saboteador', // capucha negra
   'j-inestable': 'ultimo', // reloj de arena
 };
-/** Mejoras de la Orden cuyo emblema (`glyph` en run.ts, de reglas) ya no dice lo que son tras el regrabado. */
-const UP_GLYPH: Record<string, string> = {
-  vale: 'cajones', // Favor del Tratante: un «Renovar mesa» gratis (antes la escalinata)
-  tienda: 'toldo', // Puesto grande (antes el guantelete)
-};
 
 /** V10: el archivo guarda el monarca por su nombre español; aquí se busca su clave para nombrarlo en el idioma de la mesa. */
 function monarcaGuardado(who: string): string {
@@ -207,10 +205,12 @@ export const openGuild = (t: Tab) => {
 
 export function renderGuild(): void {
   const done = ACHIEVEMENTS.filter((a) => meta.ach[a.id]).length;
+  const arbol = tab === 'ups';
+  const titulo = arbol ? t('arbol.nombre') : tab === 'ach' ? L('ui.gremio.logros') : tab === 'col' ? L('ui.orden.coleccion') : L('ui.gremio.archivo');
   app.innerHTML = `
-  <div class="camp guild">
-    <header class="deck-head"><div><h1>${L('ui.orden.titulo')}</h1><p class="sub">${L('ui.orden.sub')}</p></div>
-      <div class="purse"><b>${meta.renown} ✦</b><span>${L('ui.orden.bolsa', { n: meta.runs, g: meta.wins })}</span></div></header>
+  <div class="camp guild ${arbol ? 'con-arbol' : ''}">
+    <header class="deck-head"><div><h1>${titulo}</h1><p class="sub">${arbol ? t('arbol.desc') : L('ui.gremio.sub')}</p></div>
+      <div class="purse"><b>${cifraEl(meta.renown, 'esquirlas', 'i')} ✦</b><span>${L('ui.orden.bolsa', { n: meta.runs, g: meta.wins })}</span></div></header>
     <div class="guild-body">
       <div class="row tabs">
         <button data-tab="ups" class="${tab === 'ups' ? 'on' : ''}">${L('ui.orden.mejoras')}</button>
@@ -219,11 +219,11 @@ export function renderGuild(): void {
         <button data-tab="arc" class="${tab === 'arc' ? 'on' : ''}">${L('ui.orden.archivo', { n: archive.length })}</button>
         <button id="back">${L('ui.volver')}</button>
       </div>
-      <section class="panel guild-panel"><div class="scroll" id="guild-list"></div></section>
+      <section class="panel guild-panel ${arbol ? 'arbol-panel' : ''}"><div class="${arbol ? 'arbol-host' : 'scroll'}" id="guild-list"></div></section>
     </div>
   </div>`;
   const list = $('#guild-list');
-  if (tab === 'ups') list.innerHTML = upgradesHtml();
+  if (tab === 'ups') pintarArbol(list, meta, () => (saveMeta(), renderGuild()));
   else if (tab === 'ach') list.innerHTML = achievementsHtml();
   else if (tab === 'arc') archiveTab(list);
   else collection(list);
@@ -235,15 +235,8 @@ export function renderGuild(): void {
         renderGuild();
       }),
   );
-  $$<HTMLButtonElement>('[data-up]').forEach(
-    (b) =>
-      (b.onclick = () => {
-        if (!buyUpgrade(meta, b.dataset.up!)) return;
-        saveMeta();
-        sfx.stamp();
-        renderGuild();
-      }),
-  );
+  if (tab === 'ups') avisoMigracion(meta, saveMeta);
+  if (tab === 'ups') whisper('arbol'); // juice-ux V12: el Susurro del Árbol, la primera vez que se abre
 }
 
 /** Archivo de crónicas: cómo acabó cada una de las últimas campañas, con su semilla para volver a jugarla. */
@@ -263,7 +256,7 @@ function archiveTab(list: HTMLElement): void {
     const d = new Date(iso);
     return Number.isNaN(d.getTime()) ? '' : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
-  list.innerHTML = `<p class="col-note">${L('ui.orden.archivo.cab', { n: archive.length, g: wins, m: Math.max(...archive.map((a) => a.maxHit)), r: wins ? L('ui.orden.turnos', { n: Math.min(...archive.filter((a) => a.won).map((a) => a.turns)) }) : '—' })}</p>
+  list.innerHTML = `<p class="col-note">${L('ui.orden.archivo.cab', { n: archive.length, g: wins, m: cifraEl(Math.max(...archive.map((a) => a.maxHit)), 'record'), r: wins ? L('ui.orden.turnos', { n: Math.min(...archive.filter((a) => a.won).map((a) => a.turns)) }) : '—' })}</p>
   <div class="actas">${archive
     .map((a, i) => {
       const where = a.won ? (a.depth ? L('ui.orden.vencida.inf', { n: a.depth }) : L('ui.fin.corte')) : `${donde(a)}${a.boss ? L('ui.orden.ante', { x: monarcaGuardado(a.boss) }) : ''}`;
@@ -277,7 +270,7 @@ function archiveTab(list: HTMLElement): void {
         <span class="acta-stamp">${a.won ? L('ui.fin.corte') : L('ui.acta.deshecha')}</span>
         <div class="acta-main">
           <b>${L('ui.orden.fila', { baraja: DECK[a.deck] ? barN(a.deck) : a.deck, n: a.level })}${a.daily ? L('ui.orden.diaria', { d: a.daily }) : ''}${a.online ? L('ui.orden.sala') : ''}</b>
-          <span>${L('ui.orden.linea', { dia: day(a.when), donde: where, t: a.turns, m: a.maxHit })}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
+          <span>${L('ui.orden.linea', { dia: day(a.when), donde: where, t: a.turns, m: cifraEl(a.maxHit, 'record') })}${a.gain ? ` · +${cifra(a.gain)} ✦` : ''}</span>
           <span class="acta-tools">${a.tools.map((id) => glyphSvg(id, 'mini-ico')).join('') || `<em>${L('ui.orden.sin.reliquias')}</em>`}<em>${a.seed ? L('ui.orden.semilla', { s: a.seed }) : L('ui.orden.semilla.servidor')}</em></span>
           ${cause}
         </div>
@@ -310,16 +303,6 @@ function archiveTab(list: HTMLElement): void {
   );
 }
 
-function upgradesHtml(): string {
-  return `<div class="two-col">${UPGRADES.map((u) => {
-    const level = meta.up[u.id] ?? 0;
-    const cost = u.costs[level];
-    const pips = u.costs.map((_, i) => `<i class="${i < level ? 'on' : ''}"></i>`).join('');
-    return `<div class="up ${cost === undefined ? 'maxed' : ''}">${glyphSvg(UP_GLYPH[u.id] ?? u.glyph, 'badge')}<div><b>${mejN(u.id)}</b><span>${mejD(u.id)}</span><div class="pips">${pips}</div></div>
-      <button data-up="${u.id}" ${cost === undefined || meta.renown < cost ? 'disabled' : ''}>${cost === undefined ? L('ui.orden.hecho') : `${cost} ✦`}</button></div>`;
-  }).join('')}</div>`;
-}
-
 function achievementsHtml(): string {
   return `<div class="two-col">${ACHIEVEMENTS.map((a) => {
     const [now, goal] = a.progress(meta);
@@ -327,7 +310,7 @@ function achievementsHtml(): string {
     const unlock = unlocksOf(a.id);
     return `<div class="ach ${ok ? 'ok' : ''}">${glyphSvg(ACH_GLYPH[a.id] ?? 'estandarte', 'badge')}<div><b>${logN(a.id)}</b><span>${logD(a.id)}${unlock ? ` <em>${L('ui.orden.desbloquea', { x: logDes(a.id) })}</em>` : ''}</span>
       <div class="bar-prog"><i style="width:${Math.round((Math.min(now, goal) / goal) * 100)}%"></i></div></div>
-      <div class="ach-r">${ok ? L('ui.orden.hecho') : goal > 1 ? `${now}/${goal}` : ''}<b>+${a.renown} ✦</b></div></div>`;
+      <div class="ach-r">${ok ? L('ui.orden.hecho') : goal > 1 ? `${now}/${goal}` : ''}<b>+${cifra(a.renown)} ✦</b></div></div>`;
   }).join('')}</div>`;
 }
 

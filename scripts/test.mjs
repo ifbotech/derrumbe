@@ -10,6 +10,10 @@
 // Con argumentos (`npm test -- tests/engine.test.ts`), se le pasan a Vitest tal cual.
 import { spawnSync } from 'node:child_process';
 
+// Misión V12 → V26: tope duro. Cada pasada de Vitest se corta a los TOPE_TEST segundos (spawnSync bloquea el
+// bucle de eventos, así que el tope va en la propia llamada) y `npm test` sale con 124.
+const TOPE_TEST = Number(process.env.GUARDIAN_S) || 600;
+
 const VITEST = ['node_modules/vitest/vitest.mjs', 'run'];
 const COOP = 'tests/coop-estres.test.ts';
 const CAIDA_NATIVA = /Worker exited unexpectedly with exit code 3221226505/;
@@ -17,7 +21,12 @@ const INTENTOS = 3;
 const args = process.argv.slice(2);
 
 function vitest(extra, capturar = false) {
-  const r = spawnSync(process.execPath, [...VITEST, ...extra], { stdio: capturar ? ['inherit', 'pipe', 'pipe'] : 'inherit', encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [...VITEST, ...extra], { stdio: capturar ? ['inherit', 'pipe', 'pipe'] : 'inherit', encoding: 'utf8', timeout: TOPE_TEST * 1000, killSignal: 'SIGKILL' });
+  if (r.error && /ETIMEDOUT/.test(String(r.error.code ?? r.error.message))) {
+    console.error(`
+GUARDIÁN · npm test: una pasada de Vitest pasó de ${TOPE_TEST} s. Se corta con 124.`);
+    process.exit(124);
+  }
   if (capturar) {
     process.stdout.write(r.stdout ?? '');
     process.stderr.write(r.stderr ?? '');

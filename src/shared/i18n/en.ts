@@ -13,6 +13,7 @@ import { BALANCE, fillFor } from '../../rules/balance-config';
 import { CIFRAS_MESA, cifrasBaraja, cifrasPalabra, cifrasEspecial, cifrasMonarca, cifrasReinado, cifrasReliquia } from '../../rules/cifras';
 import type { Formation, Seal, Suit, Treatment, TowerFx } from '../../rules/engine';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, UPGRADES } from '../../rules/run';
+import { cifraDe } from '../../rules/arbol';
 import { BASE_POOL, SPECIALS } from '../../rules/specials';
 import { TOOL_SLOTS, TOOLS } from '../../rules/tools';
 import type { Arch, Rarity } from '../../rules/tools';
@@ -76,7 +77,7 @@ const RELIQUIAS: Record<string, [string, string]> = {
   contenedor: ['Locked Chest', 'Discards do not come back this assault, and each card gives +{dano} Damage to your next hit.'],
   prensa: ['Ash Scepter', '×{multi} Mult if {cartas} cards or more have burned this campaign.'],
   ariete: ['Battering Ram', '+{dano} Damage for each point of Shield standing.'],
-  contragolpe: ['Spiked Shield', 'If Shield fully stops a Counterattack, its throne takes {factor} × what was stopped. E.g.: stops 4 → takes {ej}.'],
+  contragolpe: ['Spiked Shield', 'If Shield fully stops a Counterattack, its throne takes {factor} × the amount. E.g.: stops 4 → takes {ej}.'],
   rebosadero: ['Brimming Cup', 'Overflow Shield: every {escudo} heals 1. Overflow healing: +{dano} Damage per point to your next hit.'],
   bastion: ['Bulwark', '+{multi} Mult if your Shield is at half its cap or above.'],
 };
@@ -192,7 +193,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
   inestable: {
     nombre: 'The Clockmaker',
     decreto: 'Quicksand',
-    desc: 'The Final Siege starts {antes} turns earlier, and each guard defeated without an Exact Hit costs you {vida} Health.',
+    desc: 'The Final Siege starts {antes} turns earlier; each guard defeated without an Exact Hit costs {vida} Health.',
     badge: 'Final Siege {antes} turns early',
     entrada: 'Tick, tock. Every grain of sand is playing on my side.',
     contraataque: 'Your sand is running out, partner. I never rush: I wait.',
@@ -263,7 +264,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: "The Alchemist's Cauldron",
     texto: 'A cauldron boils on its own in a corner. Whatever goes in comes out as something else.',
     opciones: [
-      { etiqueta: 'Melt two cards', gana: 'Card in Prismatic Wax', cuesta: 'Two cards burn', desc: 'Pick two: they burn and one is born with the higher number, in Prismatic Wax and with any seals they had.' },
+      { etiqueta: 'Melt two cards', gana: 'Card in Prismatic Wax', cuesta: 'Two cards burn', desc: 'Pick two: they burn and one is born with the higher number, in Prismatic Wax, keeping their seals.' },
       { etiqueta: 'Warm up and move on', gana: '+4 Health', desc: '+4 Health.' },
     ],
   },
@@ -296,6 +297,11 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
 };
 
 /** Upgrades of the Order. The chests list the relics they add (with their English names). */
+/**
+ * Nodes of the Conspiracy Tree (V12): [name, description or template]. A template has `{campo}` and is filled
+ * with `cifraDe(id, rango)`: rank 1 for `mejora.<id>.desc`, and kept as `mejora.<id>.plantilla` for the screen.
+ * The six chests are built from their relics.
+ */
 const MEJORAS: Record<string, [string, string?]> = {
   caja_precision: ['Chest of Precision'],
   caja_sismo: ['Chest of Echoes'],
@@ -307,8 +313,33 @@ const MEJORAS: Record<string, [string, string?]> = {
   bronce: ['Crown Jeweler', 'The Wax Table also offers Prismatic Wax and Cursed Glass.'],
   vale: ["Keeper's Favor", 'One free Refresh Table at each Tavern, per level.'],
   tienda: ['Black Market', '+1 relic on offer at each Tavern, per level.'],
-  caja: ["The Order's Purse", '+{oro} starting gold per level.'],
+  caja: ['Conspiracy Purse', '+{oro} starting gold per rank.'],
   rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
+  tasador: ["Appraiser's Eye", 'Relics at the Tavern cost {n} gold less (minimum 1).'],
+  manga: ['Deep Sleeve', 'On the Endless Throne, the Sleeve holds 2 cards instead of 1.'],
+  gracia: ['Keen Eye', 'On the Endless Throne, Exact Hit also counts if you go over by {n} or less.'],
+  piedra_iman: ['Lodestone', 'The magnet reaches {pct}% farther and collects {s} s sooner.'],
+  esq_golpe: ['Crown Splinters', '+{n} shards for each strike.'],
+  esq_guardia: ["Guard's Tithe", '+{n} shards for each guard defeated.'],
+  esq_exacto: ['Clean Cut', '+{n} shards for each Exact Hit.'],
+  esq_monarca: ["King's Ransom", '+{n} shards for each monarch defeated.'],
+  esq_derrota: ['Ashes of the Fallen', 'When you lose, +{n} shards for each guard you defeated.'],
+  esq_formacion: ['Full Hand', '+{n} shards for each strike of 3 cards or more.'],
+  esq_racha: ['Blood Streak', '+{n} shards for each Streak link when you strike.'],
+  hueso_tallado: ['Carved Bone', 'Upgrades of +1 to the lowest face of the Crown Die: {n}.'],
+  cara_rey: ["King's Face", 'The highest face of the Crown Die is worth ×{n}.'],
+  segundo_hueso: ['Second Bone', 'You roll two Crown Dice and their faces multiply.'],
+  corona_hierro: ['Iron Crown', 'On the Endless Throne, shards on the table are worth ×{n}.'],
+  pendon: ['Black Banner', '+{n} shards for each Endless Throne you clear.'],
+  sangre_real: ['Royal Blood', 'On the Endless Throne, each face of the Crown Die rises by {n}.'],
+  trono_huesos: ['Bone Throne', 'On the Endless Throne you roll one more Crown Die.'],
+};
+/** The four branches of the Tree: [name, line]. */
+const RAMAS_EN: Record<string, [string, string]> = {
+  arsenal: ['The Armory', 'Upgrades that help you win.'],
+  bolsa: ['The Purse', 'More shards from every strike.'],
+  huesos: ['The Bones', 'Dice that multiply your shards.'],
+  corona: ['The Iron Crown', 'More shards and more power on the Endless Throne.'],
 };
 
 /** Achievements: [name, description]. The monarch trophies (`j-<id>`) are built from the monarchs. */
@@ -374,7 +405,7 @@ const FORMACIONES: Record<Formation, string> = {
 };
 
 const SELLOS: Record<Seal, [string, string]> = {
-  dinamita: ['Powder Seal', "On a hit, the neighboring thrones (order ♠ ♦ ♥ ♣) take this card's value."],
+  dinamita: ['Powder Seal', "When it strikes, the thrones beside the target on the table take this card's value."],
   eco: ['Echo Seal', 'Its Damage and its suit power count 2 times.'],
   jornal: ['Royal Gold Seal', '+{oro} gold if the hit defeats a guard.'],
   sindical: ['Sleeve Seal', 'Draw 1 extra card when you play or discard it.'],
@@ -402,6 +433,9 @@ const GUIA: Record<string, [string, string]> = {
 /** Texts the rules build on the fly: same keys and `{campo}` as `ES_PLANTILLAS`. */
 export const EN_PLANTILLAS: Record<string, string> = {
   'asalto.infinito.nombre': 'Endless Throne {n}',
+  // V12
+  'cuenta.dado': 'Gold Die ×{n}',
+  'arbol.aviso': 'Your {coronas} Crowns are now {esquirlas} Crown Shards. Your {rangos} upgrades remain in the Armory.',
   'logro.desbloquea.carta': 'Legendary card: {nombre}',
   'causa.quedaba.1': 'You had {n} Health left',
   'causa.quedaba.n': 'You had {n} Health left',
@@ -592,8 +626,19 @@ export function reglasEn(): Record<string, string> {
     if (u.id.startsWith('caja_')) {
       const arch = u.id.slice('caja_'.length);
       o[`mejora.${u.id}.desc`] = `Adds to the pool: ${TOOLS.filter((t) => t.box === arch).map((t) => nombreReliquia(t.id)).join(', ')}.`;
-    } else if (m[1]) o[`mejora.${u.id}.desc`] = f(m[1], { oro: BALANCE.orden.oroPorNivel });
+    } else if (m[1]) {
+      o[`mejora.${u.id}.desc`] = f(m[1], cifraDe(u.id, 1));
+      if (u.plantilla) o[`mejora.${u.id}.plantilla`] = m[1];
+    }
   }
+  for (const [id, [nombre, linea]] of Object.entries(RAMAS_EN)) {
+    o[`rama.${id}.nombre`] = nombre;
+    o[`rama.${id}.desc`] = linea;
+  }
+  o['arbol.nombre'] = 'The Conspiracy Tree';
+  o['arbol.desc'] = 'Spend shards here to get better for good.';
+  o['arbol.raiz.nombre'] = 'The Broken Crown';
+  o['arbol.raiz.desc'] = 'Your shards are shown here.';
   for (const a of ACHIEVEMENTS) {
     const boss = a.id.startsWith('j-') ? MONARCAS[a.id.slice(2)] : undefined;
     if (boss) {
@@ -632,9 +677,41 @@ export function reglasEn(): Record<string, string> {
   }
   const C = BALANCE.cobro;
   o['cuenta.asalto'] = 'Assault won';
-  o['cuenta.exactos'] = 'Exact Hits';
   o['cuenta.vida'] = f('Health left (1 for every {n})', { n: C.vidaCada });
   o['cuenta.interes'] = f('Interest (1 for every {n} gold)', { n: C.interesCada });
+  // V12: the Best Play rule (src/rules/mejor-jugada.ts)
+  o['regla.mejor'] = 'Best Play: if you can land an Exact Hit, it picks it. If not, your highest Hit. You confirm.';
+  o['mejor.nada'] = 'No play deals Damage: discard, or keep a card in the Sleeve.';
+  // V12: coins, shards, drops, bone dice, roll, magnet, payout and AUTO (annex A of SPECS/V12.md)
+  o['pieza.moneda.nombre'] = 'Coins';
+  o['pieza.moneda.desc'] = 'Gold for the Tavern.';
+  o['pieza.esquirla.nombre'] = 'Crown Shards';
+  o['pieza.esquirla.desc'] = 'Crown pieces: you keep them even if you lose.';
+  o['pieza.gota.nombre'] = 'Wax Drops';
+  o['pieza.gota.desc'] = f('Collect {n} and the Wax Table seals for free.', { n: BALANCE.caida.gotasPorSello });
+  o['hueso.oro.nombre'] = 'Gold Die';
+  o['hueso.oro.desc'] = 'Multiplies your coins from the assault.';
+  o['hueso.corona.nombre'] = 'Crown Die';
+  o['hueso.corona.desc'] = 'Multiplies your shards from the assault.';
+  o['ritual.nombre'] = 'Bone Roll';
+  o['ritual.desc'] = 'After a win, dice multiply what dropped.';
+  o['iman.nombre'] = 'Magnet';
+  o['iman.desc'] = 'Loot flies to your purse by itself.';
+  o['cobro.conjura.nombre'] = 'Conspiracy Payout';
+  o['cobro.conjura.desc'] = 'The shards you earn when the campaign ends.';
+  o['auto.nombre'] = 'AUTO';
+  o['auto.desc'] = 'The game plays itself. Tap to take over.';
+  o['auto.saquear.nombre'] = 'Auto-Loot';
+  o['auto.saquear.desc'] = 'The bot picks your Loot.';
+  o['auto.taberna.nombre'] = 'Auto-Tavern';
+  o['auto.taberna.desc'] = 'The bot shops at the Tavern and picks a route.';
+  o['auto.pausa.botin'] = 'AUTO is waiting: pick your Loot.';
+  o['auto.pausa.taberna'] = 'AUTO is waiting: shop at the Tavern or move on.';
+  o['auto.pausa.mapa'] = 'AUTO is waiting: pick your route on the Map.';
+  o['auto.pausa.secreto'] = 'AUTO is waiting: choose in the Secret.';
+  o['auto.pausa.fin'] = 'The campaign is over: AUTO turns off.';
+  o['auto.pausa.diaria'] = 'In the Daily Assault you play by hand.';
+  o['auto.pausa.coop'] = 'In co-op you play by hand.';
   for (const [id, [titulo, linea]] of Object.entries(GUIA)) {
     o[`guia.${id}.titulo`] = titulo;
     o[`guia.${id}.linea`] = linea;

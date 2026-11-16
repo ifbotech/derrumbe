@@ -10,7 +10,7 @@ import { RARITY, TOOL, TOOL_SLOTS, bestOrder } from './tools';
 // ───────────────────────── La obra ─────────────────────────
 
 /** Orden de las cartas dentro del golpe: la más alta primero (el Percutor la repite) y lo que multiplica, al final. */
-function arrange(cards: Card[]): Card[] {
+export function arrange(cards: Card[]): Card[] {
   const late = (c: Card) => (c.tr === 'policromado' || c.tr === 'agrietado' ? 1 : 0);
   return [...cards].sort((a, b) => late(a) - late(b) || cardValue(b) - cardValue(a));
 }
@@ -253,7 +253,8 @@ function shopAction(run: Run): RunAction {
   }
   const reserve = run.freeShop ? 0 : 5;
   const spare = (x: { cost: number }) => run.gold - x.cost >= reserve;
-  const forja = open.find((x) => x.o.kind === 'forja' && spare(x));
+  // con gotas de lacre la Mesa de lacre sella gratis: se usa aunque no sobre oro
+  const forja = open.find((x) => x.o.kind === 'forja' && (x.cost === 0 || spare(x)));
   if (forja && run.deck.some((c) => isPlain(c) && (forja.o.seal ? !c.seal : !c.tr))) return { t: 'buy', i: forja.i };
   const sobre = open.find((x) => x.o.kind === 'sobre' && spare(x));
   if (sobre) return { t: 'buy', i: sobre.i };
