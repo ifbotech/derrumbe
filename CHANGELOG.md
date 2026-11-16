@@ -2,6 +2,19 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 16.0.0 — 2026-11-16
+
+El foco del mando se ve. Jugando con mando (Steam Deck), lo enfocado lleva un marco claro más grueso con un halo de luz, la carta enfocada de la mano sube sobre la fila y dice qué hace el botón A. Ninguna regla cambia; con ratón, teclado y pantalla táctil el juego se ve igual que en la 12.0. (La 13.0, la 14.0 y la 15.0 fueron candidatas que el panel rechazó; no se publicaron.)
+
+### Con mando
+- **El marco del foco**: 6 px de papel entre dos filetes de tinta de 3 px y un halo de luz fijo alrededor (antes, 4 px y sin halo).
+- **En la mesa**, la carta enfocada de la mano sube 20 px sobre la fila y lleva encima la etiqueta del botón A con lo que hace: «A Elegir» o, si ya está elegida, «A Soltar» (en inglés, «A Pick» y «A Drop»). En el móvil sigue subiendo 4 px.
+- **En La Taberna**, la cifra de cada precio mide 22 px dentro de su etiqueta, los botones del lateral 16 px y la línea de estado 15 px. La etiqueta «A Comprar» va encima de la oferta enfocada cuando hay otra fila debajo (antes tapaba el precio de la oferta de abajo).
+
+### Por dentro
+- El humo rápido comprueba la etiqueta del botón A sobre la mano (`v16-foco`): 32 comprobaciones.
+- Sin cambios de reglas: el laboratorio no se repite (misma huella de combate que la 12.0).
+
 ## 12.0.0 — 2026-11-16
 
 Cimiento incremental y cero fricción. Una tecla que propone la mejor jugada, un AUTO que juega por ti, monedas, esquirlas y gotas de lacre que caen a la mesa y se recogen solas, una tirada de dados de hueso tras cada asalto y el **Árbol de la Conjura** en lugar de La Orden. Las reglas de combate de la 11.0 no cambian.
