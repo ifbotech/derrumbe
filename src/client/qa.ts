@@ -23,7 +23,7 @@ import { platform } from './platform';
 import { setScreen } from './router';
 import { renderRun } from './runscreens';
 import { pump, renderInteractive, toggleInspector } from './table';
-import { monarchGallery, showBark, spotlight } from './guia';
+import { hideBark, monarchGallery, showBark, spotlight } from './guia';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import { feedbackShow, showRules, showSettings } from './widgets';
 import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
@@ -90,14 +90,16 @@ function show(run: Run, state: GameState | null = null, key = 'qa'): void {
  *  sonar y el temporizador de la anterior queda anulado, en vez de esconder el bocadillo de la siguiente. */
 let monarchRuns = 0;
 
-async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null, stage = 0): Promise<void> {
+async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, boss: string | null = null, stage = 0, depth = 0): Promise<void> {
   setMode(input);
   // los Susurros solo salen en la primera campaña de un perfil
   meta.runs = firstRun ? 0 : Math.max(1, meta.runs);
   // V11: la mesa de siempre es el asalto 4 (La Galería real: cuatro tronos con Sota, Reina y Rey); con monarca,
   // ese monarca en su trono. Con `stage` 1 o 2, la mesa corta de dos o tres tronos (los ausentes no se pintan).
-  const at = stage || 4;
+  const at = depth ? 5 + depth : stage || 4;
   const run = baseRun(at);
+  // V12: el Trono infinito (mesa-cifras): la campaña ya ganada y abierta hacia abajo
+  if (depth) run.endless = true;
   if (boss) run.bosses[at] = boss;
   runAction(run, { t: 'route', i: 0 });
   let state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
@@ -130,6 +132,12 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   setScreen('table');
   await pump();
   document.querySelectorAll('.modal').forEach((m) => m.remove());
+  // V12 · la voz de entrada del monarca del asalto 4 sale en cuanto se quitan las ventanas y dura 2,5 s: la foto la
+  // pillaba o no según lo que tardase (qa:determinista). Fuera de las mesas que la enseñan a propósito
+  if (!boss) {
+    await new Promise((ok) => setTimeout(ok, 160));
+    hideBark();
+  }
   // la previsualización en vivo: el trío de sietes elegido
   S.selected = (['S', 'D', 'H'] as Suit[]).map((s) => find(state.players[0].hand, s, 7)?.id).filter((id): id is string => !!id);
   renderInteractive();
@@ -249,6 +257,34 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // V11: el asalto 1 (dos tronos) y el 2 (tres tronos, con monarca): la fila se reparte entre los que hay
   'mesa-2tronos': () => mesa(false, 'pointer', 4, null, 1),
   'mesa-3tronos': () => mesa(false, 'pointer', 4, null, 2),
+  // V12: la mesa de dos tronos con el 7♠ del sello de pólvora elegido contra el otro trono: la vista previa
+  // enseña «+n» en el trono de al lado (vecinosPresentes) y la cuenta, «Pólvora +n al lado»
+  'mesa-polvora': async () => {
+    await mesa(false, 'pointer', 4, null, 1);
+    const state = S.campaign?.state;
+    if (!state) return;
+    const siete = find(state.players[0].hand, 'S', 7);
+    S.selected.splice(0, S.selected.length, ...(siete ? [siete.id] : []));
+    renderInteractive();
+    const otro = SUITS.find((x) => x !== 'S' && !state.towers[x].away && state.towers[x].floors.length);
+    if (otro) apunta(otro);
+  },
+  // V12: el Trono infinito hondo (Trono infinito 18): Vida de los guardias de seis cifras, un Golpe de cuatro con
+  // una Racha de 8 Golpes exactos y los tronos Expuestos, y 1.234 de oro: todo en notación compacta (regla «compacto»)
+  'mesa-cifras': async () => {
+    await mesa(false, 'pointer', 6, null, 0, 18);
+    const c = S.campaign;
+    const state = c?.state;
+    if (!c || !state) return;
+    c.run.gold = 1234;
+    state.chain = 8;
+    for (const x of SUITS) if (!state.towers[x].away) state.towers[x].fx = { fractura: true };
+    const keep = [...S.selected];
+    S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
+    await pump();
+    S.selected.splice(0, S.selected.length, ...keep);
+    renderInteractive();
+  },
   // V11: los dos estados a la vista, sin jugada elegida: un trono Expuesto y otro Aturdido
   'mesa-estados': async () => {
     await mesa();
@@ -701,6 +737,8 @@ export function installQa(): void {
     __qa: {
       states: Object.keys(STATES),
       go: async (name: string) => {
+        // V12 · QA determinista: cada estado empieza con el mismo azar, pase lo que pase en los anteriores
+        (window as unknown as { __qaSemilla?: (t: string) => void }).__qaSemilla?.(name);
         await STATES[name]?.();
         settle(); // todo quieto y en su sitio antes de la foto
         return name in STATES;

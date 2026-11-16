@@ -660,7 +660,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     // el título se compone en versalitas por CSS: se lee su nombre accesible, y el sello tal cual
     const title = await page.locator('.home h1.title').getAttribute('aria-label');
     const seal = (await page.locator('.home .brand-seal .seal-ribbon').textContent())?.trim();
-    check(title === BRAND[LANG].title && seal === BRAND[LANG].seal,`la portada enseña la marca dual: «${BRAND[LANG].title}» con el sello «${BRAND[LANG].seal}»`);
+    check(title === BRAND[LANG].title && seal === BRAND[LANG].emblema, `la portada enseña la marca dual: «${BRAND[LANG].title}» con la cinta «${BRAND[LANG].emblema}»`); // V12 arte A: la cinta lleva el emblema
   }
   await press(page, BTN.DOWN);
   check((await inputMode(page)) === 'pad', 'el primer toque del mando cambia las indicaciones a botones');

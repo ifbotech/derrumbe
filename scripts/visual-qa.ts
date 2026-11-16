@@ -104,12 +104,28 @@
 //             de la ventana y sin pisar a otro trono ni la mano
 //   tronos    en mesa-2tronos y mesa-3tronos se ven 2 y 3 tronos, los ausentes no se pintan y, con 2, cada trono
 //             mide ≥ 1,4 × el ancho del trono de la mesa de cuatro en la misma ventana
+//   V12 (bloque A de arte):
+//   golpear   en toda mesa, Golpear (#btn-strike) es una placa de latón ámbar: tono HSL 35°–60°, ΔE2000 ≥ 30 frente
+//             al carmesí de Corazones #c8232c y texto ≥ 7:1 sobre ella (también con Alto contraste y desactivado)
+//   rojo      en todo estado, ningún botón (button, [role=button]) lleva de relleno el tono de Corazones: ΔE2000 ≥ 20
+//             frente a #c8232c (el rojo de la mesa queda para el daño y el peligro)
+//   inmune    además, medido en la captura (mesa, mesa-inmune, mesa-contraste, mesa-cifras): cada placa «Inmune ♠»
+//             va sobre tinta maciza con 4 px de margen: en ese marco, ≥ 95 % de los píxeles a ΔE ≤ 6 de la tinta de la
+//             placa o de su texto, y el fondo de la placa es esa tinta (≥ 50 % de sus píxeles; el resto, letra y palo)
+//   vida      además, medido en la captura (mesa, mesa-inmune, mesa-contraste, mesa-cifras): el relleno de cada
+//             barra de Vida es liso, ≥ 90 % de sus píxeles (sin la placa de la cifra) a ΔE ≤ 6 de su color medio
+//   compacto  en mesa-cifras (Trono infinito 18): toda cifra marcada (data-cifra) ≤ 5 caracteres sin el signo, en
+//             notación compacta desde 1.000 con el número entero en aria-label, del mismo tamaño de letra que esa
+//             cifra en «mesa» (± 0,5 px) y dentro de su caja; se ven oro, Golpe, Vida, total de Vida y aviso del golpe
+//   polvora   en mesa-polvora (2 tronos, 7♠ con sello de pólvora contra el otro): el trono de al lado enseña «+n»
+//             (.preview.polvora) dentro de su trono, sin pisar la placa del golpe ni las placas, y la cuenta su marca
 //   (mueren «sello» y «ventaja»: la mano ya no lleva sellos ×0 / ×2 / ×3 ni los tronos placas de ventaja; la
 //   «trama» ya no se pide en el emblema de las numeradas, sí en tronos, figuras y poderes)
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { PERMITIDOS_EN, RESTOS_ES } from '../src/shared/i18n';
+import { BRAND } from '../src/shared/brand';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
 /** V10: idioma de la pasada. El inglés escribe en su propia carpeta. */
@@ -121,13 +137,13 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
 const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras'];
 const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
 
 /**
@@ -155,8 +171,28 @@ interface Fail {
   aviso?: boolean;
 }
 
+/**
+ * V12 · QA determinista: Math.random sale de una semilla (mulberry32). `__qaSemilla(texto)` la vuelve a poner a
+ * partir de un texto (qa.ts la llama con el nombre de cada estado). Se instala antes de que cargue el juego.
+ */
+const AZAR_QA = `(() => {
+  let a = 0x2545f491;
+  const azar = () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  Math.random = azar;
+  globalThis.__qaSemilla = (texto) => {
+    let h = 2166136261;
+    for (const ch of String(texto)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    a = h | 0;
+  };
+})();`;
+
 /** Lo que se comprueba dentro de la página. Devuelve la lista de fallos, cada uno con su regla. */
-async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; pendiente: string[]; fuga: { re: string; permitidos: string[]; pendiente: string[] } | null; ref4?: number }): Promise<Fail[]> {
+async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; pendiente: string[]; fuga: { re: string; permitidos: string[]; pendiente: string[] } | null; ref4?: number; emblemas?: Record<string, string>; refCifras?: Record<string, number> }): Promise<Fail[]> {
   const out: Fail[] = [];
   const seen = new Set<string>();
   const W = innerWidth;
@@ -1076,7 +1112,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
   // la cinta ≥ 13 px (14 en móvil) y en romana, y sin tapar las rodelas de los cuatro estandartes
   if (opts.state === 'portada' || opts.state === 'portada-en') {
     // V10: en la pasada inglesa la portada ya es la cara inglesa
-    const want = opts.state === 'portada-en' || document.documentElement.lang === 'en' ? ['BLOOD & SUITS', 'SANGRE Y PALO'] : ['SANGRE Y PALO', 'BLOOD & SUITS'];
+    // V12: la cinta lleva el emblema de la cara (BRAND[cara].emblema): en inglés, «Original edition · SANGRE Y PALO»
+    const cara = opts.state === 'portada-en' || document.documentElement.lang === 'en' ? 'en' : 'es';
+    const want = cara === 'en' ? ['BLOOD & SUITS', (opts.emblemas?.en ?? 'SANGRE Y PALO').toUpperCase()] : ['SANGRE Y PALO', (opts.emblemas?.es ?? 'BLOOD & SUITS').toUpperCase()];
     const norm = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
     const title = document.querySelector('.home-left .title');
     const ribbon = document.querySelector('.home-left .brand-seal .seal-ribbon');
@@ -1369,9 +1407,11 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       const calc = document.querySelector<HTMLElement>('#score .calc[role="button"]');
       if (calc && visible(calc)) {
         const cifra = (s: string | null | undefined) => parseFloat((s ?? '').replace(/[^\d.,-]/g, '').replace(',', '.'));
-        const d = cifra(calc.querySelector('.fr-f b')?.textContent);
+        // V12: Daño y Golpe pueden ir en notación compacta: se lee el número entero que llevan en data-cifra
+        const lee = (el: Element | null | undefined) => cifra(el?.getAttribute('data-cifra') ?? el?.textContent);
+        const d = lee(calc.querySelector('.fr-f b'));
         const m = cifra(calc.querySelector('.fr-r b')?.textContent);
-        const t = cifra(calc.querySelector('b.t')?.textContent);
+        const t = lee(calc.querySelector('b.t'));
         if (![d, m, t].every(Number.isFinite)) fail('cuenta', `no se leen Daño, Multi y Golpe en la cuenta plegada (${d} × ${m} = ${t})`, calc);
         else if (!Number.isInteger(m)) fail('cuenta', `el Multi de la cuenta plegada no es entero: ${m}`, calc);
         else if (d * m !== t) fail('cuenta', `la cuenta plegada no cuadra: ${d} × ${m} = ${d * m} contra ${t} en pantalla`, calc);
@@ -1846,7 +1886,252 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     }
   }
 
+  // ───────── V12 · bloque A de arte: golpear, rojo, compacto y pólvora ─────────
+  {
+    const lin = (v: number) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4);
+    const labOf = (c: { r: number; g: number; b: number }) => {
+      const [R, G, B] = [lin(c.r), lin(c.g), lin(c.b)];
+      const x = (0.4124564 * R + 0.3575761 * G + 0.1804375 * B) / 0.95047;
+      const y = 0.2126729 * R + 0.7151522 * G + 0.072175 * B;
+      const z = (0.0193339 * R + 0.119192 * G + 0.9503041 * B) / 1.08883;
+      const fl = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+      return [116 * fl(y) - 16, 500 * (fl(x) - fl(y)), 200 * (fl(y) - fl(z))];
+    };
+    const de2000 = (p: number[], q: number[]) => {
+      const [L1, a1, b1] = p;
+      const [L2, a2, b2] = q;
+      const rad = Math.PI / 180;
+      const Cm = (Math.hypot(a1, b1) + Math.hypot(a2, b2)) / 2;
+      const G = 0.5 * (1 - Math.sqrt(Cm ** 7 / (Cm ** 7 + 25 ** 7)));
+      const a1p = (1 + G) * a1;
+      const a2p = (1 + G) * a2;
+      const C1p = Math.hypot(a1p, b1);
+      const C2p = Math.hypot(a2p, b2);
+      const hh = (b: number, a: number) => (b === 0 && a === 0 ? 0 : (Math.atan2(b, a) / rad + 360) % 360);
+      const h1 = hh(b1, a1p);
+      const h2 = hh(b2, a2p);
+      let dh = 0;
+      if (C1p * C2p !== 0) dh = Math.abs(h2 - h1) <= 180 ? h2 - h1 : h2 - h1 > 180 ? h2 - h1 - 360 : h2 - h1 + 360;
+      const dH = 2 * Math.sqrt(C1p * C2p) * Math.sin((dh / 2) * rad);
+      const Lm = (L1 + L2) / 2;
+      const Cmp = (C1p + C2p) / 2;
+      let hm = h1 + h2;
+      if (C1p * C2p !== 0) hm = Math.abs(h1 - h2) <= 180 ? (h1 + h2) / 2 : h1 + h2 < 360 ? (h1 + h2 + 360) / 2 : (h1 + h2 - 360) / 2;
+      const T = 1 - 0.17 * Math.cos((hm - 30) * rad) + 0.24 * Math.cos(2 * hm * rad) + 0.32 * Math.cos((3 * hm + 6) * rad) - 0.2 * Math.cos((4 * hm - 63) * rad);
+      const dTh = 30 * Math.exp(-(((hm - 275) / 25) ** 2));
+      const Rc = 2 * Math.sqrt(Cmp ** 7 / (Cmp ** 7 + 25 ** 7));
+      const Sl = 1 + (0.015 * (Lm - 50) ** 2) / Math.sqrt(20 + (Lm - 50) ** 2);
+      const Sc = 1 + 0.045 * Cmp;
+      const Sh = 1 + 0.015 * Cmp * T;
+      const Rt = -Math.sin(2 * dTh * rad) * Rc;
+      return Math.sqrt(((L2 - L1) / Sl) ** 2 + ((C2p - C1p) / Sc) ** 2 + (dH / Sh) ** 2 + Rt * ((C2p - C1p) / Sc) * (dH / Sh));
+    };
+    const hueOf = (c: { r: number; g: number; b: number }) => {
+      const [R, G, B] = [c.r / 255, c.g / 255, c.b / 255];
+      const mx = Math.max(R, G, B);
+      const d = mx - Math.min(R, G, B);
+      if (!d) return 0;
+      const h = mx === R ? ((G - B) / d) % 6 : mx === G ? (B - R) / d + 2 : (R - G) / d + 4;
+      return (h * 60 + 360) % 360;
+    };
+    const CORAZONES = labOf({ r: 0xc8, g: 0x23, b: 0x2c });
+    /** El relleno de un botón: el --bg del marco único o, si no, su fondo. null si es transparente. */
+    const relleno = (el: Element) => {
+      const cs = getComputedStyle(el);
+      let c = rgb(cs.getPropertyValue('--bg'));
+      if (!c || c.a < 0.6) c = rgb(cs.backgroundColor);
+      return c && c.a >= 0.6 ? c : null;
+    };
+    // golpear: latón ámbar, lejos del ♥ y con la tinta a 7:1
+    if (opts.state.startsWith('mesa')) {
+      const g = document.getElementById('btn-strike');
+      if (g && visible(g)) {
+        const bg = relleno(g);
+        const fg = rgb(getComputedStyle(g).color);
+        if (!bg) fail('golpear', 'Golpear no lleva placa de color propia', g);
+        else {
+          const h = hueOf(bg);
+          const d = de2000(labOf(bg), CORAZONES);
+          if (h < 35 || h > 60) fail('golpear', `Golpear va en tono ${h.toFixed(1)}° (latón ámbar: 35°–60°)`, g);
+          if (d < 30) fail('golpear', `Golpear está a ΔE2000 ${d.toFixed(1)} del carmesí de Corazones (mínimo 30)`, g);
+          if (!fg || ratio(fg, bg) < 6.995) fail('golpear', `el texto de Golpear va a ${fg ? ratio(fg, bg).toFixed(2) : '?'}:1 sobre su placa (mínimo 7:1)`, g);
+        }
+      }
+    }
+    // rojo: ningún botón con el tono de Corazones
+    for (const b of document.querySelectorAll<HTMLElement>('button, [role="button"]')) {
+      if (!visible(b) || b.closest('.card, svg')) continue;
+      const bg = relleno(b);
+      if (!bg) continue;
+      const d = de2000(labOf(bg), CORAZONES);
+      if (d < 20) fail('rojo', `${path(b)} va en el tono de Corazones (ΔE2000 ${d.toFixed(1)} frente a #c8232c; mínimo 20)`, b);
+    }
+    // compacto: el Trono infinito hondo, con todas sus cifras cortas, enteras en aria-label y del tamaño de siempre
+    if (opts.state === 'mesa-cifras') {
+      const els = [...document.querySelectorAll<HTMLElement>('[data-cifra]')].filter(visible);
+      // en el trono estrecho del móvil (mesa de cuatro) el total de Vida se recoge: allí no se pide
+      for (const k of ['oro', 'golpe', 'vida', ...(opts.mobile ? [] : ['vida-total']), 'aviso']) if (!els.some((e) => e.dataset.cifraK === k && Math.abs(Number(e.dataset.cifra)) >= 1000)) fail('compacto', `en mesa-cifras no se ve ninguna cifra «${k}» de 4 cifras o más`);
+      for (const e of els) {
+        const n = Number(e.dataset.cifra);
+        const k = e.dataset.cifraK ?? '?';
+        const txt = (e.textContent ?? '').trim();
+        if (txt.replace(/^[−-]/, '').length > 5) fail('compacto', `la cifra «${txt}» (${k}) tiene más de 5 caracteres`, e);
+        if (Math.abs(n) >= 1000) {
+          if (!/[KMBT]$/.test(txt)) fail('compacto', `la cifra ${n} (${k}) no va en notación compacta: «${txt}»`, e);
+          if ((e.getAttribute('aria-label') ?? '').replace(/\D/g, '') !== String(Math.abs(Math.trunc(n)))) fail('compacto', `la cifra «${txt}» (${k}) no lleva el número entero ${n} en aria-label`, e);
+        }
+        const px = parseFloat(getComputedStyle(e).fontSize);
+        const ref = opts.refCifras?.[k];
+        if (ref === undefined) fail('compacto', `la cifra «${k}» no tiene medida de referencia en «mesa»`, e);
+        else if (Math.abs(px - ref) > 0.5) fail('compacto', `la cifra «${txt}» (${k}) mide ${px.toFixed(2)} px y en «mesa» ${ref.toFixed(2)} px (± 0,5)`, e);
+        const caja = e.closest('.tower, .chip, #score, .bar, .storey')?.getBoundingClientRect();
+        const alto = (e.closest('.storey') ? e.closest('.tower') : null)?.getBoundingClientRect() ?? caja;
+        const r = e.getBoundingClientRect();
+        if (caja && alto && (r.left < caja.left - 1 || r.right > caja.right + 1 || r.top < alto.top - 1 || r.bottom > alto.bottom + 1)) fail('compacto', `la cifra «${txt}» (${k}) se sale de su caja`, e);
+        if (r.left < -1 || r.right > W + 1 || r.top < -1 || r.bottom > H + 1) fail('compacto', `la cifra «${txt}» (${k}) se sale de la ventana`, e);
+      }
+    }
+    // pólvora: con 2 tronos, el de al lado del apuntado enseña «+n»; dentro de su trono y sin pisar nada suyo
+    if (opts.state === 'mesa-polvora' || [...document.querySelectorAll<HTMLElement>('.tower .preview.polvora')].some(visible)) {
+      const aimed = document.querySelector<HTMLElement>('.tower.aimed');
+      const pv = [...document.querySelectorAll<HTMLElement>('.tower .preview.polvora')].filter(visible);
+      if (!aimed) fail('polvora', 'en mesa-polvora no hay trono apuntado');
+      if (!pv.length) fail('polvora', 'en mesa-polvora ningún trono enseña la vista previa «+n» del sello de pólvora');
+      for (const p of pv) {
+        const t = p.closest<HTMLElement>('.tower')!;
+        if (t === aimed) fail('polvora', 'la vista previa de la pólvora va en el trono apuntado y no en el de al lado', p);
+        if (!/^\+\d/.test((p.textContent ?? '').trim())) fail('polvora', `la vista previa de la pólvora dice «${p.textContent?.trim()}» (debe empezar por «+n»)`, p);
+        const r = p.getBoundingClientRect();
+        const tr = t.getBoundingClientRect();
+        if (r.left < tr.left - 4 || r.right > tr.right + 4 || r.top < tr.top - 1 || r.bottom > tr.bottom + 1) fail('polvora', 'la vista previa de la pólvora se sale de su trono', p);
+        if (p.scrollWidth > p.clientWidth + 1) fail('polvora', `la vista previa de la pólvora no cabe en su placa (${p.scrollWidth} px de texto en ${p.clientWidth} px)`, p);
+        for (const o of t.querySelectorAll<HTMLElement>('.preview:not(.polvora), .plates > *, .threat b, .hp, .tower-fx .fx')) {
+          if (!visible(o)) continue;
+          const q = o.getBoundingClientRect();
+          if (Math.min(r.right, q.right) - Math.max(r.left, q.left) > 1 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 1) fail('polvora', `la vista previa de la pólvora pisa ${name(o)}`, p);
+        }
+      }
+      const m = [...document.querySelectorAll<HTMLElement>('#score .marks .m.polvora')].find(visible);
+      if (!m && opts.state === 'mesa-polvora') fail('polvora', 'la cuenta no enseña la marca «Pólvora +n»', document.querySelector('#score'));
+    }
+  }
+
   return out;
+}
+
+/**
+ * V12 · reglas «inmune» y «vida» medidas en la captura (la técnica de «cara-limpia»): el marco de 4 px alrededor de
+ * cada placa «Inmune ♠» es tinta maciza (≥ 95 % de sus píxeles a ΔE ≤ 6 de la tinta de la placa o de su texto) y el
+ * relleno de cada barra de Vida es liso (≥ 90 % a ΔE ≤ 6 de su color medio, sin la placa de la cifra).
+ */
+async function placasPx(png: string): Promise<{ fails: Fail[]; inmune: number; inmuneMarco: number; inmuneTinta: number; vida: number; nI: number; nV: number }> {
+  const img = new Image();
+  img.src = `data:image/png;base64,${png}`;
+  await img.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(img, 0, 0);
+  const lin = (v: number) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4);
+  const lab = (r: number, g: number, b: number) => {
+    const [R, G, B] = [lin(r), lin(g), lin(b)];
+    const x = (0.4124564 * R + 0.3575761 * G + 0.1804375 * B) / 0.95047;
+    const y = 0.2126729 * R + 0.7151522 * G + 0.072175 * B;
+    const z = (0.0193339 * R + 0.119192 * G + 0.9503041 * B) / 1.08883;
+    const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+    return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+  };
+  const dE = (p: number[], q: number[]) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+  const col = (c: string) => {
+    const m = c.match(/rgba?\(([^)]+)\)/);
+    const p = m ? m[1].split(/[,\s/]+/).filter(Boolean).map(Number) : [0, 0, 0];
+    return lab(p[0], p[1], p[2]);
+  };
+  const rect = (r: DOMRect, m = 0) => ({ x0: Math.max(0, Math.floor(r.left - m)), y0: Math.max(0, Math.floor(r.top - m)), x1: Math.min(canvas.width, Math.ceil(r.right + m)), y1: Math.min(canvas.height, Math.ceil(r.bottom + m)) });
+  const fails: Fail[] = [];
+  let inmune = 1;
+  let inmuneMarco = 1;
+  let inmuneTinta = 1;
+  let vida = 1;
+  let nI = 0;
+  let nV = 0;
+  const vis = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 2 && r.height > 2 && getComputedStyle(el).visibility !== 'hidden' && r.bottom > 0 && r.top < innerHeight;
+  };
+  for (const p of document.querySelectorAll<HTMLElement>('.tower .plates .plate.iron')) {
+    if (!vis(p)) continue;
+    const ink = col(getComputedStyle(p).backgroundColor);
+    const txt = col(getComputedStyle(p.querySelector('b') ?? p).color);
+    const pr = p.getBoundingClientRect();
+    // solo los píxeles enteros del marco: el borde de fuera, a medio píxel, no cuenta
+    const x0 = Math.max(0, Math.ceil(pr.left - 4));
+    const y0 = Math.max(0, Math.ceil(pr.top - 4));
+    const x1 = Math.min(canvas.width, Math.floor(pr.right + 4));
+    const y1 = Math.min(canvas.height, Math.floor(pr.bottom + 4));
+    const d = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    // el marco de 4 px que rodea la placa (lo que la separa del grabado y del rótulo) y, dentro, la placa: tinta
+    // de fondo con su texto (el borde suavizado de las letras no es ni lo uno ni lo otro: se informa, no se pide)
+    let ok = 0;
+    let anillo = 0;
+    let okAnillo = 0;
+    let dentro = 0;
+    let okTinta = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const c = lab(d[i], d[i + 1], d[i + 2]);
+      const enTinta = dE(c, ink) <= 6;
+      const bien = enTinta || dE(c, txt) <= 6;
+      if (bien) ok++;
+      const x = x0 + ((i / 4) % (x1 - x0)) + 0.5;
+      const y = y0 + Math.floor(i / 4 / (x1 - x0)) + 0.5;
+      if (x < pr.left || x > pr.right || y < pr.top || y > pr.bottom) {
+        anillo++;
+        if (bien) okAnillo++;
+      } else {
+        dentro++;
+        if (enTinta) okTinta++;
+      }
+    }
+    const frac = ok / (d.length / 4);
+    const fracAnillo = anillo ? okAnillo / anillo : 1;
+    const fracTinta = dentro ? okTinta / dentro : 0;
+    nI++;
+    inmune = Math.min(inmune, fracAnillo);
+    inmuneMarco = Math.min(inmuneMarco, frac);
+    inmuneTinta = Math.min(inmuneTinta, fracTinta);
+    const suit = p.closest<HTMLElement>('.tower')?.dataset.suit;
+    if (fracAnillo < 0.95) fails.push({ regla: 'inmune', msg: `el marco de 4 px de la placa Inmune del trono ${suit} es tinta o texto en un ${(fracAnillo * 100).toFixed(1)} % (mínimo 95 %): la placa toca el grabado o el rótulo`, ajeno: false });
+    if (fracTinta < 0.5) fails.push({ regla: 'inmune', msg: `la placa Inmune del trono ${suit} no es de tinta maciza: solo un ${(fracTinta * 100).toFixed(1)} % de su fondo es la tinta (mínimo 50 %)`, ajeno: false });
+  }
+  for (const hp of document.querySelectorAll<HTMLElement>('.tower .hp')) {
+    const fill = hp.querySelector<HTMLElement>('.hp-fill');
+    if (!fill || !vis(hp) || !vis(fill)) continue;
+    const fr = fill.getBoundingClientRect();
+    const hr = hp.getBoundingClientRect();
+    const bw = parseFloat(getComputedStyle(hp).borderTopWidth) || 0;
+    // el relleno visible: dentro del borde de la barra, 1 px más adentro por el suavizado del filo
+    const box = { left: Math.max(fr.left, hr.left + bw) + 1, top: Math.max(fr.top, hr.top + bw) + 1, right: Math.min(fr.right, hr.right - bw) - 1, bottom: Math.min(fr.bottom, hr.bottom - bw) - 1 } as DOMRect;
+    if (box.right - box.left < 6 || box.bottom - box.top < 4) continue;
+    const { x0, y0, x1, y1 } = rect(box);
+    const plate = hp.querySelector('span')?.getBoundingClientRect();
+    const d = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    const px: number[][] = [];
+    for (let i = 0; i < d.length; i += 4) {
+      const x = x0 + ((i / 4) % (x1 - x0));
+      const y = y0 + Math.floor(i / 4 / (x1 - x0));
+      if (plate && x >= plate.left - 2 && x <= plate.right + 2 && y >= plate.top - 2 && y <= plate.bottom + 2) continue;
+      px.push(lab(d[i], d[i + 1], d[i + 2]));
+    }
+    if (px.length < 20) continue;
+    const mean = [0, 1, 2].map((k) => px.reduce((a, c) => a + c[k], 0) / px.length);
+    const frac = px.filter((c) => dE(c, mean) <= 6).length / px.length;
+    nV++;
+    vida = Math.min(vida, frac);
+    const suit = hp.closest<HTMLElement>('.tower')?.dataset.suit;
+    if (frac < 0.9) fails.push({ regla: 'vida', msg: `el relleno de la barra de Vida del trono ${suit} es liso en un ${(frac * 100).toFixed(1)} % (mínimo 90 %)`, ajeno: false });
+  }
+  return { fails, inmune, inmuneMarco, inmuneTinta, vida, nI, nV };
 }
 
 /**
@@ -1947,7 +2232,9 @@ async function caraLimpia(png: string): Promise<{ fails: Fail[]; min: number; n:
 async function main(): Promise<void> {
   ensureBuilt();
   const site = await serveWeb();
-  const browser = await chromium.launch();
+  // V12 · un solo hilo de trama: con varios, los bordes de las teselas con filtro SVG salían a ±1 de una
+  // pasada a otra (qa:determinista)
+  const browser = await chromium.launch({ args: ['--num-raster-threads=1', '--disable-lcd-text', '--disable-threaded-animation'] });
   let failed = 0;
   let foreign = 0;
   const errors: string[] = [];
@@ -1955,6 +2242,8 @@ async function main(): Promise<void> {
   const warns = new Set<string>();
   /** V11 · lo medido por «cara-limpia» (va al informe y a la bitácora). */
   const caras: string[] = [];
+  /** V12 · lo medido por «inmune» y «vida» en la captura (mínimos), para el informe y la bitácora. */
+  const medidas: string[] = [];
   console.log(`Pasada en ${LANG === 'en' ? 'inglés' : 'español'} · ${OUT}`);
   const report: { idioma?: string; cuando: string; ventanas: string[]; estados: string[]; total: number; propios: number; ajenos: number; porRegla: Record<string, number>; fallos: Record<string, Record<string, Fail[]>>; errores: string[] } = {
     idioma: LANG,
@@ -1972,6 +2261,10 @@ async function main(): Promise<void> {
     const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, locale: LANG === 'en' ? 'en-US' : 'es-ES', hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
     // tsx envuelve las funciones con un ayudante que la página no conoce
     await context.addInitScript({ content: NAME_SHIM });
+    // V12 · QA determinista: el azar del cliente sale de una semilla (mulberry32) que qa.ts vuelve a poner al
+    // empezar cada estado (__qaSemilla(nombre)); el reloj de pared queda fijo (Date.now, new Date)
+    await context.addInitScript({ content: AZAR_QA });
+    await context.clock.setFixedTime(new Date('2026-11-12T20:00:00Z'));
     const page = await context.newPage();
     page.on('pageerror', (e) => errors.push(`[${view.name}] ${e.message}`));
     page.on('console', (m) => m.type() === 'error' && !/WebSocket|favicon/.test(m.text()) && errors.push(`[${view.name}] consola: ${m.text()}`));
@@ -1979,16 +2272,22 @@ async function main(): Promise<void> {
     await page.waitForFunction(() => !!(window as unknown as { __qa?: unknown }).__qa);
     await page.evaluate((l) => (window as unknown as { __qa: { lang: (l: string) => string } }).__qa.lang(l), LANG);
     await page.evaluate(() => document.fonts.ready);
+    // V12: todas las fuentes de la hoja cargadas antes de la primera foto (no solo las que ya se usaron)
+    await page.evaluate(() => Promise.all([...document.fonts].map((f) => f.load().catch(() => null))));
     mkdirSync(join(OUT, view.name), { recursive: true });
     report.fallos[view.name] = {};
     /** V11 · ancho de un trono de la mesa de cuatro en esta ventana (regla «tronos»). */
     let ref4 = 0;
+    /** V12 · tamaño de letra de cada cifra marcada (data-cifra-k) en «mesa» (regla «compacto»). */
+    let refCifras: Record<string, number> | undefined;
+    const cifrasDe = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll<HTMLElement>('[data-cifra-k]')].reverse().map((e) => [e.dataset.cifraK, parseFloat(getComputedStyle(e).fontSize)])) as Record<string, number>);
     const anchoTrono = () => page.evaluate(() => (document.querySelector('.tower:not([hidden]):not(.aimed)') as HTMLElement | null)?.offsetWidth ?? 0);
     for (const state of STATES) {
-      if (!ref4 && (state === 'mesa-2tronos' || state === 'mesa-3tronos')) {
+      if ((!ref4 && (state === 'mesa-2tronos' || state === 'mesa-3tronos')) || (!refCifras && state === 'mesa-cifras')) {
         await page.evaluate(() => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go('mesa'));
         await page.waitForTimeout(300);
         ref4 = await anchoTrono();
+        refCifras = await cifrasDe();
       }
       const ok = await page.evaluate((s) => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go(s), state);
       if (!ok) {
@@ -2001,10 +2300,56 @@ async function main(): Promise<void> {
       await page.evaluate(() => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().iterations !== Infinity && a.finish()));
       await page.waitForTimeout(120);
       await page.evaluate(() => document.fonts.ready);
-      const all = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state), pendiente: ANIMA_PENDIENTE_JUICE, fuga: LANG === 'en' ? { re: RESTOS_ES.source, permitidos: PERMITIDOS_EN, pendiente: FUGA_PENDIENTE } : null, ref4 });
+      const all = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state), pendiente: ANIMA_PENDIENTE_JUICE, fuga: LANG === 'en' ? { re: RESTOS_ES.source, permitidos: PERMITIDOS_EN, pendiente: FUGA_PENDIENTE } : null, ref4, emblemas: { es: BRAND.es.emblema, en: BRAND.en.emblema }, refCifras });
       await page.evaluate(() => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().iterations !== Infinity && a.finish()));
-      const shot = await page.screenshot({ path: join(OUT, view.name, `${state}.png`) });
-      if (state === 'mesa') ref4 = await anchoTrono();
+      await page.evaluate(() => document.fonts.ready);
+      // V12 · la foto, quieta: lo infinito vuelve a su primer fotograma y sin cursor de texto; las animaciones
+      // SMIL de los SVG (el haz de la portada) no las para Playwright: se paran a mano en su segundo cero
+      await page.evaluate(() => document.querySelectorAll('svg').forEach((s) => (s.pauseAnimations(), s.setCurrentTime(0))));
+      // …y lo infinito del CSS (las figuras que respiran) se cancela y se espera a que el compositor vuelva a
+      // tramar esas capas a su escala de reposo: mientras se animan las trama a otra escala, y la foto salía
+      // con la trama de antes o la de después según el momento (qa:determinista)
+      await page.evaluate(async () => {
+        for (const a of document.getAnimations()) if (a.effect?.getComputedTiming().iterations === Infinity) a.cancel();
+        // will-change: transform deja la trama de la capa a la escala que tenía al nacer (a media entrada de la
+        // carta, según el momento): sin él, el compositor vuelve a tramarla a su escala de reposo
+        const quieto = document.createElement('style');
+        quieto.textContent = '*, *::before, *::after { will-change: auto !important; }';
+        document.head.append(quieto);
+        await new Promise((ok) => setTimeout(ok, 400));
+        // lo que haya echado a andar en esa espera (una transición de un piso, un retoque de la cuenta) se acaba
+        for (const a of document.getAnimations()) {
+          if (a.effect?.getComputedTiming().iterations === Infinity) a.cancel();
+          else a.finish();
+        }
+        await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+        await new Promise((ok) => setTimeout(ok, 100));
+        await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+      });
+      // y la foto se repite hasta que cuatro seguidas (600 ms) coinciden: la que se guarda es la de una pantalla ya
+      // quieta (el reparto escalonado, el lacre aún caliente y las capas que el compositor suelta al acabar)
+      let shot = await page.screenshot({ animations: 'disabled', caret: 'hide' });
+      let iguales = 0;
+      let intentos = 0;
+      while (iguales < 3 && intentos++ < 25) {
+        await page.waitForTimeout(200);
+        const otra = await page.screenshot({ animations: 'disabled', caret: 'hide' });
+        if (otra.equals(shot)) iguales++;
+        else iguales = 0;
+        shot = otra;
+      }
+      if (iguales < 3) console.log(`  ! ${view.name} ${state}: la pantalla no se queda quieta en 5 s (foto de la última)`);
+      else if (process.env.QA_QUIETO) console.log(`  · ${view.name} ${state}: quieta tras ${intentos} fotos`);
+      writeFileSync(join(OUT, view.name, `${state}.png`), shot);
+      if (state === 'mesa') {
+        ref4 = await anchoTrono();
+        refCifras = await cifrasDe();
+      }
+      if (['mesa', 'mesa-inmune', 'mesa-contraste', 'mesa-cifras', 'mesa-polvora'].includes(state)) {
+        const px = await page.evaluate(placasPx, shot.toString('base64'));
+        all.push(...px.fails);
+        medidas.push(`${view.name} ${state}: Inmune ${px.nI ? `marco de 4 px ${(px.inmune * 100).toFixed(1)} %, fondo de tinta ${(px.inmuneTinta * 100).toFixed(1)} %, placa y marco ${(px.inmuneMarco * 100).toFixed(1)} % en ${px.nI} placas` : '—'} · Vida lisa ${px.nV ? `${(px.vida * 100).toFixed(1)} % en ${px.nV} barras` : '—'}`);
+      }
       if (state === 'cartas-lamina' || state === 'mesa') {
         const cara = await page.evaluate(caraLimpia, shot.toString('base64'));
         all.push(...cara.fails);
@@ -2031,6 +2376,8 @@ async function main(): Promise<void> {
   for (const e of [...new Set(errors)]) console.log(`! ${e}`);
   for (const w of warns) console.log(`! aviso ${w}`);
   for (const c of caras) console.log(`· cara-limpia ${c}`);
+  for (const m of medidas) console.log(`· placas ${m}`);
+  (report as typeof report & { placas: string[] }).placas = medidas;
   (report as typeof report & { caraLimpia: string[] }).caraLimpia = caras;
   (report as typeof report & { avisos: string[] }).avisos = [...warns];
   report.total = failed + foreign;

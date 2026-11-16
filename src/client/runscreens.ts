@@ -15,6 +15,7 @@ import { causeHtml, causeText, validDeath } from './causa';
 import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
 import { burst, coins, dealIn, restart, revealOptions, stampOn } from './fx';
 import { glyphSvg } from './glyphs';
+import { cifraEl } from './cifra';
 import { lastGain } from './guild';
 import { sendMsg } from './net';
 import { setScreen } from './router';
@@ -114,7 +115,7 @@ export function renderRun(): void {
 const host = () => isRunHost();
 const waitNote = () => (host() ? '' : `<p class="wait">${L('ui.run.espera')}</p>`);
 function head(run: Run, h1: string, sub: string): string {
-  return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${run.daily ? L('ui.run.diaria', { d: run.daily }) : barN(run.deckId)} · ${L('ui.run.cabeza', { v: run.integrity, max: run.maxIntegrity, n: run.deck.length })}</p></div><div class="purse"><b id="purse-n">${run.gold}</b><span>${L('ui.run.de.oro')}</span></div></header>`;
+  return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${run.daily ? L('ui.run.diaria', { d: run.daily }) : barN(run.deckId)} · ${L('ui.run.cabeza', { v: run.integrity, max: run.maxIntegrity, n: run.deck.length })}</p></div><div class="purse">${cifraEl(run.gold, 'oro', 'b', 'id="purse-n"')}<span>${L('ui.run.de.oro')}</span></div></header>`;
 }
 /** Las Reliquias en las pantallas de campaña: aquí se reordenan con calma (y en la Taberna se venden). */
 function beltStrip(run: Run, sell = false): HTMLElement {
@@ -498,7 +499,7 @@ function actaScreen(run: Run): void {
   const depth = depthOf(run);
   const stats: [string, string][] = [
     [L('ui.acta.superados'), `${L('ui.acta.superados.v', { n: Math.min(cleared, LAST_STAGE), total: LAST_STAGE })}${depth ? L('ui.acta.superados.inf', { n: depth }) : ''}`],
-    [L('ui.acta.mayor'), String(run.stats.maxHit)],
+    [L('ui.acta.mayor'), cifraEl(run.stats.maxHit, 'record')],
     [L('ui.acta.guardias'), String(run.stats.floors)],
     [L('ui.acta.exactos'), String(run.stats.cleans)],
     [L('ui.acta.mvp'), mvp ? `${TOOL[mvp] ? relN(mvp) : mvp} · ${run.stats.toolUse[mvp]}` : '—'],
@@ -507,7 +508,7 @@ function actaScreen(run: Run): void {
     [L('ui.acta.sellos'), String(run.stats.forged)],
     [L('ui.acta.destruidas'), String(run.stats.burned)],
     [L('ui.acta.turnos'), String(run.stats.turns)],
-    [L('ui.acta.oro'), String(run.stats.gold)],
+    [L('ui.acta.oro'), cifraEl(run.stats.gold, 'oro')],
   ];
   // la causa de la derrota (si la campaña cayó en la mesa) y el enlace para jugar la misma
   const death = !won && validDeath(run.death) ? run.death : null;

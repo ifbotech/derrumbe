@@ -1598,3 +1598,89 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
   .tray .hudrow > #fatigue { padding-inline: 5px; }
   .tray :is(#powers, .powers) { column-gap: 4px; }
 }
+
+/* ═════════════ V12 · bloque A: deuda visual de la 11.0 ═════════════ */
+/* Latón ámbar para Golpear y para todo botón primario (tono 41°, tinta encima a 8,2:1, ΔE2000 43 frente al
+   ♥ #c8232c; en Alto contraste 37,6° y 11,7:1). El rojo de la mesa queda para el daño y el peligro: ningún
+   botón de navegación lleva el tono de Corazones (regla «golpear» y «rojo» de la QA). */
+:root { --laton: #d4a94c; --laton-hi: #e8c56f; --laton-off: #42361f; }
+:root.contraste { --laton: #f0b85a; --laton-hi: #ffd27a; --laton-off: #3b3020; }
+button.primary, .home-right button.primary { --bg: var(--laton); color: var(--ink); }
+button.primary:hover:not(:disabled), .home-right button.primary:hover:not(:disabled) { --bg: var(--laton-hi); color: var(--ink); }
+button.primary:disabled, .table-screen button.primary:disabled { --bg: var(--laton-off); color: var(--paper-2); }
+/* Placa «Inmune ♠»: tinta maciza con un marco de 4 px de la misma tinta, así nunca se lee sobre el grabado
+   de la carta ni sobre la trama del rótulo (regla «inmune»: el marco es ≥ 95 % tinta o texto) */
+.plate.iron, :root.contraste .plate.iron { background: var(--pit); color: var(--card-paper); border-color: var(--pit); border-radius: 2px; box-shadow: 0 0 0 4px var(--pit); }
+.plate.iron .glyph, :root.contraste .plate.iron .glyph { fill: var(--card-paper); }
+.plate.iron::after, :root.contraste .plate.iron::after { background: var(--red-lit); border-color: var(--pit); }
+/* Barras de Vida lisas: un solo rojo de tinta, sin trama (regla «vida»: ≥ 90 % del relleno a ΔE ≤ 6 de su media) */
+.hp-fill { background: var(--red); }
+/* Pólvora en la vista previa: los tronos al lado del apuntado enseñan «+n» en una placa de papel con el filo
+   de lacre, al pie de la carta del guardia (la del golpe va arriba, bajo las placas: no se pisan) */
+.floor-slot > .preview.polvora { top: auto; right: auto; left: -3px; bottom: calc(var(--storey-h) + 6px); transform: rotate(-2deg); background: var(--card-paper); color: var(--ink); border-color: var(--pit); box-shadow: inset 6px 0 0 var(--red), 0 3px 0 var(--pit); padding-left: 11px; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .floor-slot > .preview.polvora { top: auto; left: 2px; right: 2px; bottom: calc(var(--storey-h) + 4px); transform: none; max-width: none; padding-left: 8px; }
+  .towers[data-n='4'] .floor-slot > .preview.polvora { bottom: 2px; }
+}
+.marks .m.polvora { background: var(--card-paper); color: var(--ink); box-shadow: inset 4px 0 0 var(--red); }
+.brand-seal .seal-ribbon.largo { letter-spacing: 0.06em; }
+/* el tachón de la placa Inmune, en tinta con filo de papel (sobre la tinta de la placa se lee igual) */
+.plate.iron::after, :root.contraste .plate.iron::after { background: var(--pit); border: 1px solid var(--card-paper); }
+/* el total de Vida (cifra compacta) va en su <i>, sin cursiva */
+.hp small i { font-style: normal; }
+/* la cinta larga del emblema inglés: menos inclinada, para no montarse en el título */
+.brand-seal:has(.seal-ribbon.largo) { transform: rotate(-1deg); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* en el trono estrecho (mesa de cuatro) no cabe «168K/235K»: queda la Vida que queda; el total, en el aviso */
+  .towers[data-n='4'] .hp span.largo small { display: none; }
+  /* y la placa de la pólvora ocupa el sitio de la del golpe del trono de al lado (no caben las dos) */
+  .towers[data-n='4'] .tower.polvora-vecino .floor-slot > .preview:not(.polvora) { display: none; }
+  .towers[data-n='4'] .floor-slot > .preview.polvora { top: 22px; bottom: auto; }
+}
+/* la placa Inmune, de esquinas vivas y por encima del filete del rótulo: su marco de 4 px es tinta entera */
+.plate.iron, :root.contraste .plate.iron { border-radius: 0; z-index: 3; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* guardias que esperan con Vida compacta («235K»): su letra y su cifra, arrimadas a los bordes, no se tocan */
+  .towers[data-n='4'] .storey b { left: 1px; padding: 0 2px; }
+  .towers[data-n='4'] .storey span { right: 1px; padding: 0 2px; letter-spacing: -0.04em; }
+  .floor-slot > .preview.polvora { padding-left: 7px; padding-right: 2px; }
+  .floor-slot > .preview.polvora small::after { letter-spacing: 0; }
+}
+/* la placa del golpe baja 2 px: girada, su esquina ya no entra en el marco de tinta de la placa Inmune */
+@media (min-aspect-ratio: 1/1) and (min-width: 641px) {
+  .floor-slot > .preview:not(.polvora) { top: calc(var(--plate-h) + 7px); }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* en el trono estrecho la placa Inmune, sin filete (es de la misma tinta) y centrada: su marco de 4 px cabe
+     dentro del trono y no toca el contorno del vecino */
+  .towers[data-n='4'] .plate.iron { border-width: 0; padding-inline: 2px; }
+  .towers[data-n='4'] .floor-slot > .plates { justify-self: center; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* con cuatro tronos el palo ya lo dice el emblema del trono: la placa Inmune se queda en la palabra */
+  .towers[data-n='4'] .plate.iron > .glyph { display: none; }
+}
+/* el filete de tinta pasa medio píxel del marco medido: así el borde del marco nunca cae en un píxel a medias */
+.plate.iron, :root.contraste .plate.iron { box-shadow: 0 0 0 5px var(--pit); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* el aviso del golpe baja hasta dejar libre el marco de tinta de la placa (22 px de placa + 5 de filete) */
+  .floor-slot:has(> .plates .plate) > .preview:not(.polvora),
+  .towers[data-n='4'] .floor-slot:has(> .plates .plate) > .preview.polvora { top: calc(var(--plate-h) + 8px); }
+  /* y se aprieta (renglón justo, 1 px de relleno) para no llegar a las insignias de estado de la carta */
+  .floor-slot > .preview { line-height: 1; padding-block: 1px; }
+  .floor-slot > .preview small { line-height: 1; }
+  /* «Pólvora» en caja baja: en el trono estrecho la palabra entera cabe sin bajar de 13 px */
+  .floor-slot > .preview.polvora small::after { text-transform: none; }
+}
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* sin el palo, la tachadura de la placa Inmune caería sobre la palabra: en el trono estrecho se va con él */
+  .towers[data-n='4'] .plate.iron::after { display: none; }
+}
+/* el trono de al lado del golpe enseña la pólvora que le llega en el sitio del aviso de daño (el suyo propio es
+   de otro golpe y se aparta mientras tanto) */
+.tower.polvora-vecino .floor-slot > .preview:not(.polvora) { display: none; }
+@media (min-aspect-ratio: 1/1) and (min-width: 641px) {
+  .floor-slot > .preview.polvora { top: calc(var(--plate-h) + 7px); bottom: auto; left: auto; right: -3px; transform: rotate(2deg); }
+}
+/* la cifra compacta de la bolsa va en <i> dentro de la <b>: recta y con la letra de la bolsa (no la del rótulo) */
+.purse b i { font-style: normal; font-size: inherit; }

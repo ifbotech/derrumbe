@@ -8,6 +8,7 @@ import { Locale } from '../shared/brand';
 import { $, $$, S, app, cap, esc, modal } from './core';
 import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, savedCampaign, today } from './campaign';
 import { glyphSvg } from './glyphs';
+import { cifra, cifraEl } from './cifra';
 import { meta, openGuild } from './guild';
 import { L, Ln, acabN, asaltoN, barD, barN, getLang, logN, reinD, reinN, selloN, tiranoN } from './lengua';
 import { brandFor } from '../shared/brand';
@@ -31,8 +32,12 @@ export function brandLockup(face: Locale = getLang()): string {
   const other: Locale = face === 'es' ? 'en' : 'es';
   const [head, ...rest] = b.title.split(' ');
   const word = (w: string) => esc(w.length > 1 ? cap(w) : w);
+  // V12: la cinta lleva el emblema de la cara (brand.ts): en español, el sello suelto; en inglés, la frase
+  // «Original edition · SANGRE Y PALO», con el nombre español marcado en su idioma
+  const suelto = b.emblema === b.seal;
+  const cinta = suelto ? esc(b.seal) : esc(b.emblema).replace(esc(b.seal), `<span lang="${other}">${esc(b.seal)}</span>`);
   return `<h1 class="title" lang="${face}" aria-label="${esc(b.title)}"><span>${word(head)}</span>${rest.length ? `<span class="cut">${rest.map(word).join(' ')}</span>` : ''}</h1>
-      <p class="brand-seal" lang="${other}">${waxSeal('brand-wax')}<span class="seal-ribbon">${esc(b.seal)}</span></p>
+      <p class="brand-seal" lang="${suelto ? other : face}">${waxSeal('brand-wax')}<span class="seal-ribbon${suelto ? '' : ' largo'}">${cinta}</span></p>
       <p class="tagline" lang="${face}">${esc(b.subtitle)}</p>`;
 }
 
@@ -62,7 +67,7 @@ export function renderHome(face: Locale = getLang()): void {
   const [, month, day] = date.split('-');
   const MONTHS = L('ui.meses').split(',');
   const wonRun = saved?.run.phase === 'won';
-  const resumeSub = saved ? (wonRun ? L('ui.home.resume.ganada') : `${saved.run.daily ? L('ui.home.resume.diaria') : ''}${L('ui.home.resume.sub', { n: saved.run.stage, oro: saved.run.gold, baraja: barN(saved.run.deckId) })}`) : '';
+  const resumeSub = saved ? (wonRun ? L('ui.home.resume.ganada') : `${saved.run.daily ? L('ui.home.resume.diaria') : ''}${L('ui.home.resume.sub', { n: saved.run.stage, oro: cifra(saved.run.gold), baraja: barN(saved.run.deckId) })}`) : '';
   app.innerHTML = `
   <div class="home">
     <section class="home-left">
@@ -77,7 +82,7 @@ export function renderHome(face: Locale = getLang()): void {
         ${stamp('m-daily', 'diaria', L('ui.home.diaria'), `${L('ui.home.fecha', { dia: Number(day), mes: MONTHS[Number(month) - 1] })} · ${dailyOn ? L('ui.home.diaria.curso') : dailyDone ? (meta.daily.won ? L('ui.home.diaria.ganada') : L('ui.home.diaria.hoy', { n: meta.daily.cleared })) : L('ui.home.diaria.semilla')}`)}
         ${stamp('m-coop', 'cuadrilla', L('ui.home.coop'), L('ui.home.coop.sub'))}
         ${stamp('m-tuto', 'senal', L('ui.home.tuto'), L('ui.home.tuto.sub'))}
-        ${stamp('m-guild', 'engranaje', L('ui.home.orden'), L('ui.home.orden.sub', { coronas: meta.renown, hechos: done, total: ACHIEVEMENTS.length }))}
+        ${stamp('m-guild', 'engranaje', L('ui.home.orden'), L('ui.home.orden.sub', { coronas: cifra(meta.renown), hechos: done, total: ACHIEVEMENTS.length }))}
         ${stamp('m-rules', 'pergamino', L('ui.reglas'), L('ui.home.reglas.sub'))}
       </nav>
       <div class="row foot"><button class="ghost" id="m-set">${L('ui.ajustes')}</button><p class="conn"></p></div>
@@ -150,7 +155,7 @@ export function renderCamp(): void {
   const sello = (s: string) => (getLang() === 'es' ? selloN(s).replace('Sello de lacre ', '').replace('Sello ', '') : selloN(s).replace(/ (wax )?seal$/i, ''));
   app.innerHTML = `
   <div class="camp">
-    <header class="deck-head"><div><h1>${L('ui.camp.titulo')}</h1><p class="sub">${L('ui.camp.sub')}</p></div><div class="purse"><b>${meta.renown} ✦</b><span>${L('ui.camp.bolsa', { n: meta.best, total: LAST_STAGE })}</span></div></header>
+    <header class="deck-head"><div><h1>${L('ui.camp.titulo')}</h1><p class="sub">${L('ui.camp.sub')}</p></div><div class="purse"><b>${cifraEl(meta.renown, 'esquirlas', 'i')} ✦</b><span>${L('ui.camp.bolsa', { n: meta.best, total: LAST_STAGE })}</span></div></header>
     <div class="camp-grid">
       <section class="panel camp-run"><div class="scroll">
         <div class="route">${STAGES.map((s, i) => `<div class="stop ${i < meta.best ? 'done' : ''} ${s.boss ? 'boss' : ''} ${s.tirano ? 'tirano' : ''}" data-tip="<b>${asaltoN(i + 1)}</b>${L('ui.run.tronos', { n: s.thrones })}${Ln(s.floors.length, 'ui.camp.parada.1', 'ui.camp.parada.n')}${s.tirano ? L('ui.camp.parada.tirano', { x: tiranoN(null) }) : s.boss ? L('ui.camp.parada.monarca') : s.atajo ? L('ui.camp.parada.rutas') : L('ui.camp.parada.juramento')}"><b>${i + 1}</b><span>${asaltoN(i + 1)}</span></div>`).join('')}</div>
@@ -161,7 +166,7 @@ export function renderCamp(): void {
         <div class="seed-row seed-foot"><label for="seed">${L('ui.camp.semilla')}</label><input id="seed" maxlength="24" autocomplete="off" placeholder="${L('ui.camp.semilla.ph')}" aria-describedby="seed-note" value="${esc(prefs.seed)}" /><p class="note" id="seed-note">${L('ui.camp.semilla.nota')}</p></div>
         <div class="row">
           <button id="back">${L('ui.volver')}</button>
-          ${saved ? `<button class="primary big" id="resume">${L('ui.camp.continuar')}<small>${L('ui.camp.continuar.sub', { n: saved.run.stage, oro: saved.run.gold })}</small></button>` : ''}
+          ${saved ? `<button class="primary big" id="resume">${L('ui.camp.continuar')}<small>${L('ui.camp.continuar.sub', { n: saved.run.stage, oro: cifra(saved.run.gold) })}</small></button>` : ''}
           <button class="${saved ? '' : 'primary'} big" id="new">${L('ui.camp.nueva')}<small>${saved ? L('ui.camp.nueva.abandona') : barN(prefs.deck)}</small></button>
         </div>
       </section>

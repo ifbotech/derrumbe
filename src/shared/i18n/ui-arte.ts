@@ -348,6 +348,10 @@ export const UI_ARTE = {
   'ui.mesa.caen': ['caen {n}', '{n} fall'],
   'ui.mesa.caen.corto': ['cae {n}', 'fall {n}'],
   'ui.mesa.exacto': ['exacto', 'exact'],
+  // V12 · la vista previa del sello de pólvora en los tronos de al lado del apuntado
+  'ui.mesa.polvora': ['pólvora', 'powder'],
+  'ui.mesa.polvora.corto': ['pólvora', 'powder'],
+  'ui.mesa.polvora.tip': ['<b>Sello de pólvora</b>Este trono está al lado del que golpeas: recibe {n}.', '<b>Powder Seal</b>This throne is beside the one you strike: it takes {n}.'],
   'ui.mesa.asedio': ['Asedio', 'Siege'],
   'ui.mesa.asedio.en': ['Asedio en', 'Siege in'],
   'ui.og.sub': ['Cuatro tronos · doce guardias · tu Vida · de 1 a 4 jugadores', 'Four thrones · twelve guards · your Health · 1 to 4 players'],
@@ -435,6 +439,7 @@ export const UI_ARTE = {
   'ui.cuenta.escudo': ['Escudo +{n}', 'Shield +{n}'],
   'ui.cuenta.cura': ['Cura +{n}', 'Heal +{n}'],
   'ui.cuenta.oro': ['Oro +{n}', 'Gold +{n}'],
+  'ui.cuenta.polvora': ['Pólvora +{n} al lado', 'Powder +{n} beside'],
   'ui.cuenta.robas': ['Robas +{n}', 'Draw +{n}'],
   'ui.cuenta.aria': ['Golpe {t} contra la Casa de {palo}. {forma}: Daño {d} por Multi {m}. Abre la cuenta paso a paso.', 'Hit {t} against the House of {palo}. {forma}: Damage {d} times Mult {m}. Opens the step-by-step tally.'],
   'ui.cuenta.contra.vs': ['contra', 'vs'],

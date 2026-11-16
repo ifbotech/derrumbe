@@ -1,6 +1,6 @@
 // La mesa de combate: los cuatro tronos, tu Vida, las Reliquias, poderes de palo, marcador
 // Daño × Multi = Golpe, la Manga, mano y la cola de eventos que anima cada jugada paso a paso.
-import { Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, multiplier, previewStrike, threatOf } from '../rules/engine';
+import { Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, multiplier, previewStrike, threatOf, vecinosPresentes } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
 import { BALANCE } from '../rules/balance-config';
 import { BOSS, CONTRACT, LAST_STAGE, stageDef } from '../rules/run';
@@ -11,7 +11,7 @@ import { setPressure, setScene, sfx } from './audio';
 import { afterBatch, campaignAct, isRunHost, routeRun, runDo, stageIntro } from './campaign';
 import { backEl, cardEl, pipPath, setDeckBack, suitSvg } from './card';
 import { causeHtml } from './causa';
-import { liveHtml, Preview, closeReceipt, paintScore, previewHtml, stageOver } from './cuenta';
+import { liveHtml, Preview, closeReceipt, paintScore, polvoraDe, previewHtml, stageOver } from './cuenta';
 import { L, Ln, asaltoN, espN, formN, fxD, fxN, juraD, juraN, juraP, marca, monD, monDec, monN, paloN } from './lengua';
 import { $, $$, RUN_PLAYER, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
@@ -27,6 +27,7 @@ import { guidedStep, leaveTutorial, renderCoach, showTutorialEnd, tutorialAct } 
 import { voiceOn } from './voces';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
 import { tableWhispers, whisper } from './whispers';
+import { cifra, cifraEl, marcaCifra } from './cifra';
 import { noteAction, noteTurn } from './telemetry';
 
 /** Cartas de la mano y del andamio que están pintadas. */
@@ -67,7 +68,7 @@ export function buildTable(): void {
     <header class="bar">
       <div class="brand">${marca().title}</div>
       <div class="room" id="room"></div>
-      ${c ? `<div class="chip gold" id="gold-chip" data-tip="<b>${L('ui.mesa.oro')}</b>${L('ui.mesa.oro.tip')}"><span>${L('ui.mesa.oro')}</span><b id="gold-n">${c.run.gold}</b></div>` : ''}
+      ${c ? `<div class="chip gold" id="gold-chip" data-tip="<b>${L('ui.mesa.oro')}</b>${L('ui.mesa.oro.tip')}"><span>${L('ui.mesa.oro')}</span>${cifraEl(c.run.gold, 'oro', 'b', 'id="gold-n"')}</div>` : ''}
       <div class="obra-chips" id="obra"></div>
       <div class="players" id="players"></div>
       <button id="btn-deck" data-tip="${L('ui.mesa.mazo.tip')}">${L('ui.mesa.mazo')}${hint('deck')}</button>
@@ -299,7 +300,10 @@ export function renderHud(): void {
   if (!room) return;
   const c = S.campaign;
   room.textContent = S.tutorial ? L('ui.mesa.tutorial') : c ? `${L('ui.mesa.asalto', { n: c.run.stage })}${c.run.stage <= LAST_STAGE ? `/${LAST_STAGE}` : ''} · ${asaltoN(c.run.stage)}` : L('ui.mesa.sala', { sala: S.session?.room ?? '' });
-  if (c) setNum('#gold-n', String(c.run.gold));
+  if (c) {
+    setNum('#gold-n', cifra(c.run.gold));
+    marcaCifra($('#gold-n'), c.run.gold, 'oro');
+  }
   const obra = $('#obra');
   if (obra && c) {
     const boss = c.run.boss ? BOSS[c.run.boss] : null;
@@ -397,7 +401,7 @@ function renderTower(s: Suit): void {
     // los pisos que quedan debajo, en alzado
     $('.storeys', el).innerHTML = t.floors
       .slice(1)
-      .map((r) => `<div class="storey" data-tip="${L('ui.mesa.guardia.tip', { guardia: cap(GUARD(r)), casa: HOUSE(s), vida: cfg.floorHp[r], ataque: cfg.floorThreat[r] })}">${storeySvg(s, r)}<b>${FLOOR(r)}</b><span>${cfg.floorHp[r]}</span></div>`)
+      .map((r) => `<div class="storey" data-tip="${L('ui.mesa.guardia.tip', { guardia: cap(GUARD(r)), casa: HOUSE(s), vida: cfg.floorHp[r], ataque: cfg.floorThreat[r] })}">${storeySvg(s, r)}<b>${FLOOR(r)}</b>${cifraEl(cfg.floorHp[r], 'guardia')}</div>`)
       .join('');
   }
   // V11: dos estados, Expuesto y Aturdido; la insignia no se parte nunca y no lleva cifra
@@ -409,7 +413,8 @@ function renderTower(s: Suit): void {
     const level = String(Math.min(3, Math.ceil((3 * t.damage) / hp)));
     $('.hp-fill', el).style.transform = `scaleX(${left / hp})`;
     // la cifra que cuenta es la Vida que queda; el total va detrás, más pequeño
-    $('.hp span', el).innerHTML = `<b class="hp-n">${left}</b><small>/${hp}</small>`;
+    $('.hp span', el).innerHTML = `${cifraEl(left, 'vida', 'b', 'class="hp-n"')}<small>/${cifraEl(hp, 'vida-total', 'i')}</small>`;
+    $('.hp span', el).classList.toggle('largo', hp >= 1000);
     $('.cracks', el)?.setAttribute('data-level', level);
     $('.facade .storey-art', el)?.setAttribute('data-level', level);
     const threat = threatOf(v, t);
@@ -630,6 +635,7 @@ function renderScore(): void {
   }
   paintScore(el, tag + body, preview, v);
   renderPowers(cards, shown, shownTarget);
+  polvoraPreview(shown, shownTarget);
   if (shown?.clean) whisper('limpio');
   if (shownTarget && (v.config.ownMult ?? 0) === 0 && cards.some((c) => !c.sp && c.suit === shownTarget))
     whisper('inmune', { material: paloN(shownTarget).toLowerCase(), glyph: SUIT_GLYPH[shownTarget] });
@@ -640,6 +646,29 @@ function renderScore(): void {
   }
   const end = $('#btn-end', el);
   if (end) end.onclick = showEnd;
+}
+
+/**
+ * V12 · la vista previa del sello de pólvora: con el trono apuntado, los de su lado (`vecinosPresentes`: con 2
+ * tronos, el otro; con 3, uno o dos) enseñan «+n» en una placa de lacre propia, al pie de la carta del guardia.
+ */
+function polvoraPreview(r: StrikeResult | null, target: Suit | null): void {
+  $$('.preview.polvora').forEach((p) => p.remove());
+  for (const s of SUITS) towerEls[s]?.classList.remove('polvora-vecino');
+  const v = S.shown;
+  if (!v || !target || !r) return;
+  const n = polvoraDe(selCards(), r);
+  if (!n) return;
+  for (const s of vecinosPresentes(v.towers, target)) {
+    if (!v.towers[s].floors.length) continue;
+    // en el trono estrecho del móvil la placa ocupa el sitio de la del golpe (polvora-vecino la recoge)
+    towerEls[s].classList.add('polvora-vecino');
+    const tag = document.createElement('div');
+    tag.className = 'preview polvora';
+    tag.setAttribute('data-tip', L('ui.mesa.polvora.tip', { n }));
+    tag.innerHTML = `+${cifraEl(n, 'polvora')}<small data-short="${L('ui.mesa.polvora.corto')}">${L('ui.mesa.polvora')}</small>`;
+    ($('.floor-slot', towerEls[s]) ?? towerEls[s]).appendChild(tag);
+  }
 }
 
 /** Estado de turno, selección, previsualización de daño y botones. */
@@ -674,7 +703,7 @@ export function renderInteractive(): void {
         const short = fallen ? (fallen > 1 ? L('ui.mesa.caen.corto', { n: fallen }) : L('ui.mesa.cae')) : L('ui.mesa.exacto');
         // V10 · V7-2: con unidad; si el guardia no cae, «de Vida» dice qué se le quita
         const pie = extra.length ? extra.join(' · ') : L('ui.mesa.de.vida');
-        tag.innerHTML = `−${dealt}<small data-short="${extra.length ? short : pie}">${pie}</small>`;
+        tag.innerHTML = `−${cifraEl(dealt, 'aviso')}<small data-short="${extra.length ? short : pie}">${pie}</small>`;
         tag.classList.toggle('zero', dealt === 0);
         tag.classList.toggle('clean', mine);
       }

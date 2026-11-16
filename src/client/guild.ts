@@ -10,6 +10,7 @@ import { DICCIONARIOS } from '../shared/i18n';
 import { L, acabD, acabN, archN, asaltoN, barD, barN, espD, espN, formN, getLang, logD, logDes, logN, mejD, mejN, monD, monDec, monN, relD, relN, selloD, selloN } from './lengua';
 import type { Autopsy } from '../rules/autopsy';
 import { sfx } from './audio';
+import { cifraEl } from './cifra';
 import { ALL_CARDS, backEl, cardEl, ferreteroEl, portraitEl } from './card';
 import { masteryBadge } from './engraving';
 import { newCampaign, pickDeck, prefs, runOpts } from './campaign';
@@ -208,7 +209,7 @@ export function renderGuild(): void {
   app.innerHTML = `
   <div class="camp guild">
     <header class="deck-head"><div><h1>${L('ui.orden.titulo')}</h1><p class="sub">${L('ui.orden.sub')}</p></div>
-      <div class="purse"><b>${meta.renown} ✦</b><span>${L('ui.orden.bolsa', { n: meta.runs, g: meta.wins })}</span></div></header>
+      <div class="purse"><b>${cifraEl(meta.renown, 'esquirlas', 'i')} ✦</b><span>${L('ui.orden.bolsa', { n: meta.runs, g: meta.wins })}</span></div></header>
     <div class="guild-body">
       <div class="row tabs">
         <button data-tab="ups" class="${tab === 'ups' ? 'on' : ''}">${L('ui.orden.mejoras')}</button>
@@ -261,7 +262,7 @@ function archiveTab(list: HTMLElement): void {
     const d = new Date(iso);
     return Number.isNaN(d.getTime()) ? '' : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
-  list.innerHTML = `<p class="col-note">${L('ui.orden.archivo.cab', { n: archive.length, g: wins, m: Math.max(...archive.map((a) => a.maxHit)), r: wins ? L('ui.orden.turnos', { n: Math.min(...archive.filter((a) => a.won).map((a) => a.turns)) }) : '—' })}</p>
+  list.innerHTML = `<p class="col-note">${L('ui.orden.archivo.cab', { n: archive.length, g: wins, m: cifraEl(Math.max(...archive.map((a) => a.maxHit)), 'record'), r: wins ? L('ui.orden.turnos', { n: Math.min(...archive.filter((a) => a.won).map((a) => a.turns)) }) : '—' })}</p>
   <div class="actas">${archive
     .map((a, i) => {
       const where = a.won ? (a.depth ? L('ui.orden.vencida.inf', { n: a.depth }) : L('ui.fin.corte')) : `${donde(a)}${a.boss ? L('ui.orden.ante', { x: monarcaGuardado(a.boss) }) : ''}`;
@@ -275,7 +276,7 @@ function archiveTab(list: HTMLElement): void {
         <span class="acta-stamp">${a.won ? L('ui.fin.corte') : L('ui.acta.deshecha')}</span>
         <div class="acta-main">
           <b>${L('ui.orden.fila', { baraja: DECK[a.deck] ? barN(a.deck) : a.deck, n: a.level })}${a.daily ? L('ui.orden.diaria', { d: a.daily }) : ''}${a.online ? L('ui.orden.sala') : ''}</b>
-          <span>${L('ui.orden.linea', { dia: day(a.when), donde: where, t: a.turns, m: a.maxHit })}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
+          <span>${L('ui.orden.linea', { dia: day(a.when), donde: where, t: a.turns, m: cifraEl(a.maxHit, 'record') })}${a.gain ? ` · +${a.gain} ✦` : ''}</span>
           <span class="acta-tools">${a.tools.map((id) => glyphSvg(id, 'mini-ico')).join('') || `<em>${L('ui.orden.sin.reliquias')}</em>`}<em>${a.seed ? L('ui.orden.semilla', { s: a.seed }) : L('ui.orden.semilla.servidor')}</em></span>
           ${cause}
         </div>
