@@ -128,6 +128,29 @@ async function golpe(r: Rapido, { page }: Estado, how: 'ratón' | 'teclado' | 'm
   await velocidad(page, 1);
 }
 
+/** V16 · Steam Deck: con mando, la carta enfocada de la mano dice qué hace A (Elegir; ya elegida, Soltar). */
+async function v16_foco(r: Rapido, { page }: Estado): Promise<void> {
+  await go(page, 'mesa');
+  await page.evaluate(() => (window as unknown as W).__qaGamepad.connect());
+  await press(page, BTN.DOWN);
+  await page.waitForTimeout(120);
+  const lee = () =>
+    page.evaluate(() => {
+      const c = document.querySelector<HTMLElement>('#hand .card[data-foco]');
+      const h = document.querySelector<HTMLElement>('.focus-ring .pad-hint');
+      return { modo: document.documentElement.dataset.input, carta: !!c, elegida: !!c?.classList.contains('sel'), pista: h && !h.hidden ? (h.textContent ?? '').trim() : '' };
+    });
+  let v = await lee();
+  // el foco entra por la mano; si cayó en una carta ya elegida, la pista dice Soltar
+  const esperado = (x: { elegida: boolean }) => (x.elegida ? 'Soltar' : 'Elegir');
+  r.check(v.modo === 'pad' && v.carta && v.pista.includes(esperado(v)), `[v16] con mando, la carta enfocada lleva «A ${esperado(v)}» (pista: «${v.pista}»)`);
+  const antes = v.elegida;
+  await press(page, BTN.A);
+  await page.waitForTimeout(150);
+  v = await lee();
+  r.check(v.carta && v.elegida !== antes && v.pista.includes(esperado(v)), `[v16] tras pulsar A, la pista pasa a «A ${esperado(v)}» (pista: «${v.pista}»)`);
+}
+
 async function mejorGolpear(r: Rapido, { page }: Estado): Promise<void> {
   // Q elige la Mejor jugada en el mismo fotograma y no golpea; Espacio (Golpear) la confirma (a 8×: el golpe de la
   // Mejor jugada de la mesa de QA es una cadena larga que a 1× tarda ≈ 12 s en animarse)
@@ -278,6 +301,7 @@ export const COMPROBACIONES: Comprobacion[] = [
   { id: 'arbol-teclado', presupuesto: 3, fn: arbolTeclado },
   { id: 'idioma', presupuesto: 2, fn: idioma },
   { id: 'auto', presupuesto: 22, fn: autoAsalto },
+  { id: 'v16-foco', presupuesto: 3, fn: v16_foco },
   // ← aquí, la comprobación de lo que estrene cada versión: { id: 'v13-…', presupuesto: n, fn: v13_… },
   { id: 'consola', presupuesto: 1, fn: sinErrores },
 ];

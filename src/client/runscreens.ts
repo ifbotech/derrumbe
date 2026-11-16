@@ -302,7 +302,7 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
     desc = L('ui.run.pergamino.desc', { f: now.f, f2: now.f + FORM[f].lf, r: now.r });
   }
   const box = choice(el, title, desc, null, buy, o.sold ? 'sold hang' : 'hang');
-  box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `${cost} ${L('ui.run.de.oro')}`}</span>`);
+  box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `<b>${cost}</b> ${L('ui.run.de.oro')}`}</span>`);
   if (o.sold) stampOn(box, L('ui.run.vendido'), 's-skip');
   return box;
 }
