@@ -261,10 +261,12 @@ interface Forja {
   papel: string;
 }
 
-async function main(): Promise<void> {
+async function main(): Promise<number> {
   ensureBuilt();
   const site = await serveWeb();
   const browser = await chromium.launch();
+  // infra/rapido · navegador y servidor se cierran pase lo que pase (con tope: un cierre no cuelga la orden)
+  try {
   const context = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 1, locale: 'es-ES' });
   await context.addInitScript({ content: NAME_SHIM });
   const page = await context.newPage();
@@ -367,8 +369,6 @@ async function main(): Promise<void> {
     await banco.screenshot({ path: join(OUT, gris ? 'hoja-gris.png' : 'hoja.png'), animations: 'disabled' });
   }
   await page.evaluate(() => (window as unknown as { __forja: Forja }).__forja.limpiar());
-  await browser.close();
-  site.close();
 
   const fails = rows.flatMap((r) => r.fails.map((f) => `${r.grupo}/${r.id}: ${f}`));
   const warns = rows.flatMap((r) => r.warns.map((f) => `${r.grupo}/${r.id}: ${f}`));
@@ -389,7 +389,18 @@ async function main(): Promise<void> {
   for (const e of [...new Set(errors)]) console.log(`✗ error de página: ${e}`);
   console.log(`\n${rows.length} piezas × ${SIZES.length} tamaños en ${OUT} (hoja.png y hoja-gris.png para mirarlas juntas)`);
   console.log(fails.length || errors.length ? `${fails.length} fallos, ${warns.length} avisos` : `Forja limpia${warns.length ? ` (${warns.length} avisos para mirar)` : ''}.`);
-  process.exit(fails.length || errors.length ? 1 : 0);
+  return fails.length || errors.length ? 1 : 0;
+  } finally {
+    await Promise.race([browser.close(), new Promise((ok) => setTimeout(ok, 10_000).unref())]);
+    site.close();
+  }
 }
 
-void main();
+// infra/rapido · salida explícita siempre, también si main lanza
+main().then(
+  (c) => process.exit(c),
+  (e) => {
+    console.error(e instanceof Error ? (e.stack ?? e.message) : String(e));
+    process.exit(1);
+  },
+);

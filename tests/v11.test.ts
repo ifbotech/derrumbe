@@ -12,6 +12,7 @@ import { SPECIALS } from '../src/rules/specials';
 import { TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 import { ES } from '../src/shared/i18n/es';
 import { EN } from '../src/shared/i18n/en';
+import { muestra } from './muestra';
 
 /** Generador con semilla propia del test (el motor no usa Math.random; el test tampoco). */
 function lcg(seed: number) {
@@ -42,12 +43,12 @@ describe('V11 · Multi siempre entero', () => {
     for (const [id, n] of multis) expect(Number.isInteger(n), `${id} = ${n}`).toBe(true);
   });
 
-  it('5.000 golpes al azar con semilla fija: cada paso y cada impacto con Daño y Multi enteros, y Golpe = Daño × Multi', { timeout: 240_000 }, () => {
+  it('golpes al azar con semilla fija (5.000 en la pasada completa, 1.200 en la rápida): cada paso y cada impacto con Daño y Multi enteros, y Golpe = Daño × Multi', { timeout: 240_000 }, () => {
     const rnd = lcg(11);
     const players = [{ id: 'a', name: 'A' }];
     let golpes = 0;
     let pasos = 0;
-    for (let seed = 1; golpes < 5000; seed++) {
+    for (let seed = 1; golpes < muestra(5000, 1200); seed++) {
       if (seed > 4000) throw new Error(`solo ${golpes} golpes en 4000 asaltos`);
       const run = newRun({ up: {}, pool: SPECIALS.map((s) => s.id), ascension: rnd(8) }, seed * 104729);
       run.stage = 1 + rnd(8);
@@ -78,7 +79,7 @@ describe('V11 · Multi siempre entero', () => {
         state = res.state;
       }
     }
-    expect(golpes).toBeGreaterThanOrEqual(5000);
+    expect(golpes).toBeGreaterThanOrEqual(muestra(5000, 1200));
     expect(pasos).toBeGreaterThan(golpes);
   });
 });

@@ -1,5 +1,10 @@
 import { guardian } from './guardian';
-guardian('qa:smoke', 1500); // tope duro: ver scripts/guardian.ts
+// infra/rapido: `--fast` (humo rápido, < 60 s con la construcción) y `--solo=<sección>[,<sección>…]` (humo por
+// secciones: ninguna invocación pasa de 170 s; `npm run qa:smoke:todo` las lanza todas). Sin nada, todo de un tirón.
+const ARGS = process.argv.slice(2);
+const FAST = ARGS.includes('--fast');
+const SOLO = ARGS.find((a) => a.startsWith('--solo='))?.slice('--solo='.length).trim() ?? '';
+guardian('qa:smoke', FAST ? 150 : SOLO ? 170 : 1500); // tope duro: ver scripts/guardian.ts
 // Prueba de humo en el navegador: juega de verdad unos turnos sobre el juego construido
 // (dist/web) y falla si algo lanza un error. Cubre lo que las pruebas del motor no ven: la mesa,
 // La Manga, Rebobinar, la Lupa, el foco de teclado (papel y tinta, ≥ 6 px, < 50 ms), Mayús + flechas
@@ -10,13 +15,16 @@ guardian('qa:smoke', 1500); // tope duro: ver scripts/guardian.ts
 // música de cada escena, las monedas de La Taberna y una segunda pasada con «Reducir movimiento».
 // (La fluidez se mide aparte, con aceleración gráfica: npm run qa:fps.)
 //
-//   npm run qa:smoke          (construye antes; NO_BUILD=1 para saltarse la construcción)
+//   npm run qa:smoke          (construye antes; NO_BUILD=1 para saltarse la construcción; de un tirón, ≈ 16 min)
+//   npm run qa:smoke -- --fast           humo rápido (< 60 s, scripts/humo-rapido.ts): la puerta de cada vuelta
+//   npm run qa:smoke -- --solo=mando     una sección (≤ 170 s); --secciones las lista
+//   npm run qa:smoke:todo [-- --lang=en] todas las secciones, cada una en su invocación con tope (scripts/humo-todo.mjs)
 //   NO_PAD=1 se salta la parte del mando virtual · GPU=1 lanza Chromium con aceleración
 //   QA_DIR=dist/qa-<celda> construye aparte · QA_OUT=artifacts/visual-qa-<celda> guarda allí las capturas
 //   --lang=en (o QA_LANG=en): la pasada en inglés (locale en-US); las capturas van a artifacts/visual-qa-en/smoke
 // V10: en las dos pasadas, el interruptor ES | EN con teclado y con mando (Portada y Ajustes, sin recargar),
 // «Alto contraste», que el idioma se recuerda al recargar y la insignia Ⓐ de La Taberna con mando (SD5).
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
 import { campaignSuite } from './campana-qa';
@@ -28,13 +36,20 @@ import { feedbackButtonsSuite } from './feedback-qa';
 import { arbolSuite, autoDiariaSuite, autoPausaSuite, autoSuite, mejorSuite } from './v12-qa';
 import { caidaSuite, susurrosSuite, tiradaSuite } from './v12-sensacion';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
+import { humoRapido } from './humo-rapido';
 
 const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : LANG === 'en' ? 'artifacts/visual-qa-en/smoke' : 'artifacts/visual-qa/smoke');
 
 const problems: string[] = [];
+/** Comprobaciones hechas en esta invocación (el lanzador del humo por secciones las suma). */
+const cuenta = { ok: 0, ko: 0 };
 const check = (ok: unknown, what: string) => {
   console.log(`${ok ? '✓' : '✗'} ${what}`);
-  if (!ok) problems.push(what);
+  if (ok) cuenta.ok++;
+  else {
+    cuenta.ko++;
+    problems.push(what);
+  }
 };
 /** Lo que ha sonado (nombres de efecto; audio.ts lo deja a la vista con ?qa). */
 const sounds = (page: Page) => page.evaluate(() => [...(window as unknown as { __qaSounds: string[] }).__qaSounds]);
@@ -46,23 +61,123 @@ const count = (page: Page, sel: string) => page.locator(sel).count();
 /** Espera a que la mesa termine de animar y vuelva a dejar jugar. */
 const settled = (page: Page) => page.waitForFunction(() => !document.querySelector('.handrow.locked') || !!document.querySelector('.end, .run, .modal'), null, { timeout: 30_000 });
 
-async function main(): Promise<void> {
-  ensureBuilt();
-  const site = await serveWeb();
-  // GPU=1 usa Chromium completo con aceleración: es como de verdad se mide la fluidez. Sin ella, el
-  // navegador sin ventana lo pinta todo por CPU y los tiempos de fotograma solo son orientativos.
-  const gpu = !!process.env.GPU;
-  const browser = await chromium.launch(gpu ? { channel: 'chromium', args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-zero-copy'] } : {});
-  // La marca y el idioma salen de navigator.language: es-ES en la pasada española, en-US en la inglesa.
-  console.log(`Pasada en ${LANG === 'en' ? 'inglés' : 'español'} (${LOCALE})`);
+// GPU=1 usa Chromium completo con aceleración: es como de verdad se mide la fluidez. Sin ella, el
+// navegador sin ventana lo pinta todo por CPU y los tiempos de fotograma solo son orientativos.
+const gpu = !!process.env.GPU;
+
+// ───────────────────────── secciones del humo completo ─────────────────────────
+// Cada sección abre sus propias páginas sobre el navegador y el servidor de la invocación, y no depende de lo que
+// haya hecho otra (salvo los tramos de la campaña, que se pasan la partida por un archivo y van en orden).
+// `--solo=<id>` corre una; `--secciones` las lista (el lanzador scripts/humo-todo.mjs las lee de ahí).
+interface Sesion {
+  browser: Browser;
+  site: { url: string; close: () => void };
+}
+interface Seccion {
+  id: string;
+  que: string;
+  fn: (s: Sesion) => Promise<unknown>;
+  /** Si se corre (NO_PAD=1 se salta el mando; NO_V12=1, lo de la V12). */
+  si?: () => boolean;
+}
+const TRAMO = join(OUT, 'campana-tramo.json');
+const TRAMOS = 5;
+const SECCIONES: Seccion[] = [
+  { id: 'mesa', que: 'la mesa con ratón y teclado, susurro, insignias, sonidos, jugo V8, Ajustes, colección, idioma, red y campaña vieja', fn: seccionMesa },
+  { id: 'guia', que: 'la partida guiada con teclado y ratón, Inmune con teclado, la voz del monarca y un asalto a teclado', fn: seccionGuia },
+  ...Array.from({ length: TRAMOS }, (_, i): Seccion => ({
+    id: `campana-${i + 1}`,
+    que: `la campaña de cinco asaltos con el bot y el ratón a 1×: ${i + 1 < TRAMOS ? `asalto ${i + 1}` : 'asalto 5 y las comprobaciones de la campaña'}`,
+    fn: async ({ browser, site }) => {
+      console.log(`Campaña de cinco asaltos (tramo ${i + 1} de ${TRAMOS})`);
+      if (i === 0) rmSync(TRAMO, { force: true }); // nunca se sigue una campaña vieja
+      return campaignSuite(browser, site.url, check, problems, { n: i + 1, de: TRAMOS, archivo: TRAMO });
+    },
+  })),
+  { id: 'mando', que: 'la campaña jugada solo con el mando virtual: menú, asalto, Botín, La Taberna, Secreto, reliquias y partida guiada', fn: seccionMando, si: () => !process.env.NO_PAD },
+  { id: 'datos', que: 'los datos de prueba con la red bloqueada y el botón de feedback', fn: seccionDatos },
+  { id: 'v12-entrada', que: 'V12: Mejor jugada (ratón, teclado y mando), el Árbol con mando y teclado, AUTO en pausa y en el diario', fn: seccionEntrada, si: () => !process.env.NO_V12 },
+  { id: 'auto', que: 'V12: AUTO se apaga al instante (15 medidas) y juega la campaña entera a 8×', fn: seccionAuto, si: () => !process.env.NO_V12 },
+  { id: 'v12-sensacion', que: 'V12: lo que cae, la tirada de huesos y los Susurros nuevos', fn: seccionSensacion, si: () => !process.env.NO_V12 },
+  { id: 'calma', que: '«Reducir movimiento» y la copia de seguridad', fn: seccionCalma },
+];
+
+/** La página de las secciones «mesa» y «guia»: un perfil limpio, en ?qa, con los errores apuntados. */
+async function paginaPrincipal(browser: Browser, url: string): Promise<Page> {
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
   await context.addInitScript({ content: NAME_SHIM });
   const page = await context.newPage();
   page.on('pageerror', (e) => problems.push(`error de página: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && !/WebSocket|favicon/.test(m.text()) && problems.push(`consola: ${m.text()}`));
-  mkdirSync(OUT, { recursive: true });
-  await page.goto(`${site.url}?qa=1`);
+  await page.goto(`${url}?qa=1`);
   await page.waitForFunction(() => !!(window as unknown as { __qa?: unknown }).__qa);
+  return page;
+}
+
+const seg = (desde: number) => (Date.now() - desde) / 1000;
+/** Ninguna espera sin tope: lo que no acaba en `ms` se deja (cerrar el navegador, sobre todo). */
+const conTope = <T>(p: Promise<T> | undefined, ms: number) => Promise.race([p, new Promise<undefined>((r) => (setTimeout(r, ms) as unknown as { unref(): void }).unref())]);
+
+async function main(): Promise<number> {
+  if (ARGS.includes('--secciones')) {
+    console.log(SECCIONES.map((s) => s.id).join(' '));
+    return 0;
+  }
+  const pedidas = SOLO ? SOLO.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const raras = pedidas.filter((p) => !SECCIONES.some((s) => s.id === p));
+  if (raras.length) {
+    console.error(`Sección desconocida: ${raras.join(', ')}. Hay: ${SECCIONES.map((s) => s.id).join(' ')}`);
+    return 2;
+  }
+  const lista = pedidas.length ? SECCIONES.filter((s) => pedidas.includes(s.id)) : SECCIONES;
+  const t0 = Date.now();
+  ensureBuilt();
+  const build = seg(t0);
+  const site = await serveWeb();
+  let browser: Browser | undefined;
+  const hechas: { id: string; s: number; ok: number; ko: number }[] = [];
+  try {
+    browser = await chromium.launch(gpu ? { channel: 'chromium', args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-zero-copy'] } : {});
+    // La marca y el idioma salen de navigator.language: es-ES en la pasada española, en-US en la inglesa.
+    console.log(`Pasada en ${LANG === 'en' ? 'inglés' : 'español'} (${LOCALE})${FAST ? ' · humo rápido' : pedidas.length ? ` · ${pedidas.join(', ')}` : ''}`);
+    mkdirSync(OUT, { recursive: true });
+    if (FAST) await humoRapido({ browser, url: site.url, check, problems, out: OUT, build, t0 });
+    else
+      for (const s of lista) {
+        if (s.si && !s.si()) {
+          console.log(`(sección ${s.id} saltada)`);
+          continue;
+        }
+        const t = Date.now();
+        const [ok0, ko0] = [cuenta.ok, cuenta.ko];
+        console.log(`§ ${s.id} · ${s.que}`);
+        try {
+          await s.fn({ browser, site });
+        } catch (e) {
+          // una sección que se rompe no se lleva por delante a las demás (en la pasada de un tirón)
+          problems.push(`[${s.id}] la sección se cortó: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}`);
+          console.error(e);
+        }
+        hechas.push({ id: s.id, s: seg(t), ok: cuenta.ok - ok0, ko: cuenta.ko - ko0 });
+      }
+  } catch (e) {
+    problems.push(`la prueba se cortó: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}`);
+    console.error(e);
+  } finally {
+    await conTope(browser?.close().catch(() => undefined), 10_000);
+    site.close();
+  }
+  for (const p of [...new Set(problems)]) console.log(`! ${p}`);
+  if (hechas.length) console.log('');
+  for (const h of hechas) console.log(`HUMO · sección ${h.id}: ${h.ok} ✓ · ${h.ko} ✗ · ${h.s.toFixed(1)} s`);
+  console.log(`HUMO · total: ${cuenta.ok} ✓ · ${cuenta.ko} ✗ · ${seg(t0).toFixed(1)} s (construcción ${build.toFixed(1)} s)`);
+  console.log(problems.length ? `\n${new Set(problems).size} problemas` : '\nTodo en orden.');
+  return problems.length ? 1 : 0;
+}
+
+// ── sección «mesa» ──
+async function seccionMesa({ browser, site }: Sesion): Promise<void> {
+  const page = await paginaPrincipal(browser, site.url);
   check((await page.evaluate(() => document.documentElement.lang)) === LANG, `sin nada guardado, el idioma sale del navegador (${LOCALE} → <html lang="${LANG}">)`);
 
   // ── un golpe de verdad: el trío de sietes contra el trono apuntado ──
@@ -380,6 +495,28 @@ async function main(): Promise<void> {
     await ctx.close();
   }
 
+  await page.context().close();
+}
+
+// ── sección «guia» ──
+async function seccionGuia({ browser, site }: Sesion): Promise<void> {
+  const page = await paginaPrincipal(browser, site.url);
+  {
+    // lo que la sección «mesa» deja en los datos de prueba de este equipo y se comprueba al final de esta: un golpe,
+    // Rebobinar y La Manga en la mesa de QA (sin comprobaciones: esas son de «mesa»)
+    await go(page, 'mesa');
+    await page.mouse.click(700, 20);
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(300);
+    await settled(page);
+    await page.keyboard.press('z');
+    await page.waitForTimeout(300);
+    await settled(page);
+    await page.locator('#hand .card').first().click();
+    await page.keyboard.press('y');
+    await page.waitForTimeout(300);
+    await settled(page);
+  }
   // ── V7 · la partida guiada se juega entera: con el teclado (medida) y con el ratón ──
   console.log('Partida guiada');
   const shot = (p: Page, name: string) => p.screenshot({ path: join(OUT, `${name}.png`) });
@@ -475,58 +612,69 @@ async function main(): Promise<void> {
     check(log.some((r) => r.modo === 'guia' && r.guia === 'victoria') && log.some((r) => r.modo === 'guia' && r.guia === 'saltada'), 'la partida guiada queda apuntada: terminada y saltada');
   }
   await page.screenshot({ path: join(OUT, 'fin-de-asalto.png') });
+  await page.context().close();
+}
 
-  // ── V11 · la campaña de cinco asaltos entera, con el bot y el ratón a 1×: mide la jugada y los entreactos ──
-  console.log('Campaña de cinco asaltos');
-  await campaignSuite(browser, site.url, check, problems);
+// ── sección «mando»: la campaña jugada solo con un mando (virtual): menú, asalto entero, Botín y La Taberna ──
+async function seccionMando({ browser, site }: Sesion): Promise<void> {
+  console.log('Mando virtual');
+  await gamepadSuite(browser, site.url, check, problems, (p, name) => p.screenshot({ path: join(OUT, `${name}.png`) }));
+}
 
-  // ── la campaña jugada solo con un mando (virtual): menú, asalto entero, Botín y La Taberna ──
-  if (!process.env.NO_PAD) {
-    console.log('Mando virtual');
-    await gamepadSuite(browser, site.url, check, problems, (p, name) => p.screenshot({ path: join(OUT, `${name}.png`) }));
-  }
-
+// ── sección «datos» ──
+async function seccionDatos({ browser, site }: Sesion): Promise<void> {
   // ── V9 · datos de prueba con la red bloqueada: cero peticiones sin pulsar, una al pulsar ──
   console.log('Datos de prueba');
   await telemetrySuite(browser, site.url, check, problems);
   // arte-ui · el botón «Enviar Crónica / Feedback de Prueba» pulsado de verdad (ratón, teclado y mando)
   console.log('Botón de feedback');
   await feedbackButtonsSuite(browser, site.url, check, problems);
+}
 
-  // ── V12 · Mejor jugada (ratón y teclado; el mando, en su suite), AUTO y el Árbol con mando y teclado ──
-  if (!process.env.NO_V12) {
-    console.log('Mejor jugada');
-    {
-      const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
-      await ctx.addInitScript({ content: NAME_SHIM });
-      await ctx.addInitScript({ content: VIRTUAL_GAMEPAD });
-      const p = await ctx.newPage();
-      p.on('pageerror', (e) => problems.push(`[mejor] error de página: ${e.message}`));
-      await p.goto(`${site.url}?qa=1`);
-      await p.waitForFunction(() => !!(window as unknown as { __qaJuice?: unknown }).__qaJuice);
-      await p.evaluate(() => (window as unknown as { __qaGamepad: { connect(): void } }).__qaGamepad.connect());
-      await mejorSuite(p, 'mouse', check);
-      await mejorSuite(p, 'keys', check);
-      await mejorSuite(p, 'pad', check);
-      await ctx.close();
-    }
-    console.log('Árbol con mando y con teclado');
-    await arbolSuite(browser, site.url, 'pad', check, problems);
-    await arbolSuite(browser, site.url, 'keys', check, problems);
-    console.log('AUTO');
-    await autoPausaSuite(browser, site.url, check, problems);
-    await autoDiariaSuite(browser, site.url, check, problems);
-    await autoSuite(browser, site.url, check, problems);
-    // ── V12 · juice-ux B: lo que cae y el imán, la tirada de huesos animada y los seis Susurros nuevos ──
-    console.log('Lo que cae');
-    const caida = await caidaSuite(browser, site.url, check, problems);
-    console.log('Tirada de huesos');
-    const huesos = await tiradaSuite(browser, site.url, check, problems);
-    console.log(`  medidas para la duración (1×): tirada ${(huesos.mediana / 1000).toFixed(2)} s (mediana de ${huesos.medidas.length}) · jugada con lo que cae ${(caida.jugada / 1000).toFixed(1)} s (mediana de ${caida.jugadas.length})`);
-    console.log('Susurros nuevos');
-    await susurrosSuite(browser, site.url, check, problems);
+// ── sección «v12-entrada»: Mejor jugada (ratón, teclado y mando), el Árbol con mando y teclado, AUTO en pausa y en el diario ──
+async function seccionEntrada({ browser, site }: Sesion): Promise<void> {
+  console.log('Mejor jugada');
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
+    await ctx.addInitScript({ content: NAME_SHIM });
+    await ctx.addInitScript({ content: VIRTUAL_GAMEPAD });
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => problems.push(`[mejor] error de página: ${e.message}`));
+    await p.goto(`${site.url}?qa=1`);
+    await p.waitForFunction(() => !!(window as unknown as { __qaJuice?: unknown }).__qaJuice);
+    await p.evaluate(() => (window as unknown as { __qaGamepad: { connect(): void } }).__qaGamepad.connect());
+    await mejorSuite(p, 'mouse', check);
+    await mejorSuite(p, 'keys', check);
+    await mejorSuite(p, 'pad', check);
+    await ctx.close();
   }
+  console.log('Árbol con mando y con teclado');
+  await arbolSuite(browser, site.url, 'pad', check, problems);
+  await arbolSuite(browser, site.url, 'keys', check, problems);
+  console.log('AUTO');
+  await autoPausaSuite(browser, site.url, check, problems);
+  await autoDiariaSuite(browser, site.url, check, problems);
+}
 
+// ── sección «auto»: AUTO se apaga al instante y juega la campaña entera a 8× ──
+async function seccionAuto({ browser, site }: Sesion): Promise<void> {
+  console.log('AUTO · apagado y campaña a 8×');
+  await autoSuite(browser, site.url, check, problems);
+}
+
+// ── sección «v12-sensacion»: lo que cae y el imán, la tirada de huesos animada y los seis Susurros nuevos (juice-ux B) ──
+async function seccionSensacion({ browser, site }: Sesion): Promise<void> {
+  console.log('Lo que cae');
+  const caida = await caidaSuite(browser, site.url, check, problems);
+  console.log('Tirada de huesos');
+  const huesos = await tiradaSuite(browser, site.url, check, problems);
+  console.log(`  medidas para la duración (1×): tirada ${(huesos.mediana / 1000).toFixed(2)} s (mediana de ${huesos.medidas.length}) · jugada con lo que cae ${(caida.jugada / 1000).toFixed(1)} s (mediana de ${caida.jugadas.length})`);
+  console.log('Susurros nuevos');
+  await susurrosSuite(browser, site.url, check, problems);
+}
+
+// ── sección «calma» ──
+async function seccionCalma({ browser, site }: Sesion): Promise<void> {
   // ── V8 · una segunda pasada con «Reducir movimiento»: nada vuela ni tiembla ──
   console.log('Reducir movimiento');
   await calmPass(browser, site.url);
@@ -582,12 +730,6 @@ async function main(): Promise<void> {
     check((await p.evaluate(() => localStorage.getItem('derrumbe:name'))) === 'Conjurada QA', 'y el resto de lo guardado');
     await ctx.close();
   }
-
-  await browser.close();
-  site.close();
-  for (const p of [...new Set(problems)]) console.log(`! ${p}`);
-  console.log(problems.length ? `\n${new Set(problems).size} problemas` : '\nTodo en orden.');
-  process.exit(problems.length ? 1 : 0);
 }
 
 type Fx = Record<string, (...a: unknown[]) => unknown> & { settings: { speed: number; calm: boolean }; made(): number; exactChain(): number };
@@ -659,7 +801,8 @@ async function juiceChecks(page: Page): Promise<void> {
         anims = [...document.querySelectorAll('body > .esquirlas .esquirla')].flatMap((e) => e.getAnimations());
       }
       shards = Math.max(shards, document.querySelectorAll('body > .esquirlas .esquirla').length);
-      await Promise.all(anims.map((a) => a.finished.catch(() => undefined)));
+      // (con tope: una animación que no acabe nunca no deja la prueba esperando)
+      await Promise.race([Promise.all(anims.map((a) => a.finished.catch(() => undefined))), new Promise((r) => setTimeout(r, 4000))]);
       out[sp] = Math.round(performance.now() - t0);
       mo.disconnect();
       await new Promise((r) => setTimeout(r, 120));
@@ -800,4 +943,11 @@ async function calmPass(browser: Browser, url: string): Promise<void> {
   }
 }
 
-void main();
+// cierre garantizado: el código de salida es explícito (un zócalo o un intervalo vivo nunca deja a Node colgado)
+main().then(
+  (codigo) => process.exit(codigo),
+  (e) => {
+    console.error(e);
+    process.exit(1);
+  },
+);

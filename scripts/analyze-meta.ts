@@ -10,6 +10,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //   npm run analyze:meta -- regalos --piezas=clavos,ariete --n=600   unas pocas piezas, con muestra grande
 //   … --n=2000 cambia las campañas por celda; --barajas=corta,ases mide solo esas barajas.
 //   Solo el informe completo escribe meta-report.json.
+//   npm run analyze:meta -- --fast  certificación rápida del bucle (6.000 campañas, < 90 s; 0 s si la huella no cambió)
 //
 // Qué mide:
 //   · porcentaje de campañas ganadas por baraja y por Reinado, con el Árbol vacío y lleno
@@ -39,6 +40,11 @@ import { Log, Spec, fingerprint, playCampaign } from './lab';
 import { OBJETIVOS, avisos, noise, revisarClasica } from './objetivos';
 
 const args = process.argv.slice(2);
+// V12 · certificación rápida: 6.000 campañas en hilos de trabajo, o nada si la huella no cambió (scripts/lab-rapido.ts)
+if (args.includes('--fast')) {
+  const { rapido } = await import('./lab-rapido');
+  process.exit(await rapido(args));
+}
 const arg = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
 const mode = args.find((a) => !a.startsWith('--')) ?? 'todo';
 const quick = mode !== 'todo';

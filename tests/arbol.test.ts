@@ -12,6 +12,7 @@ import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
 import { DICCIONARIOS, tFor } from '../src/shared/i18n';
 import { playCampaign } from '../scripts/lab';
+import { muestra } from './muestra';
 
 const ORDEN_11 = ['caja_precision', 'caja_sismo', 'caja_alquimia', 'caja_limite', 'caja_trituradora', 'caja_aguante', 'tampones', 'bronce', 'vale', 'tienda', 'caja', 'rutas'];
 const INCREMENTALES = ARBOL.filter((n) => !n.combate);
@@ -223,14 +224,14 @@ describe('neutralidad del incremental (criterio 5)', () => {
     }
   });
 
-  it('≥ 300 campañas con semilla: mismos resultados de combate con los 17 nodos que no son del Arsenal al máximo y con el Árbol vacío', () => {
+  it('campañas con semilla (300 en la pasada completa, 36 en la rápida): mismos resultados de combate con los 17 nodos que no son del Arsenal al máximo y con el Árbol vacío', () => {
     const incr = arbolLleno('incremental');
     let distintas = 0;
     let n = 0;
     let ganadas = 0;
     let esqVacio = 0;
     let esqLleno = 0;
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < muestra(300, 36); i++) {
       // Reinado 8 (campañas más cortas) y Reinado 1, alternados, con la baraja de la conjura
       const spec = { seed: (i + 1) * 7919 + 31, deck: 'obra', ascension: i % 2 ? 7 : 0, full: false };
       const vacio = playCampaign(spec);
@@ -242,7 +243,7 @@ describe('neutralidad del incremental (criterio 5)', () => {
       esqVacio += vacio.run.esquirlas;
       esqLleno += conIncr.run.esquirlas;
     }
-    expect(n).toBeGreaterThanOrEqual(300);
+    expect(n).toBeGreaterThanOrEqual(muestra(300, 36));
     expect(distintas).toBe(0);
     expect(ganadas).toBeGreaterThan(0);
     // y los incrementales sí hacen algo: más esquirlas

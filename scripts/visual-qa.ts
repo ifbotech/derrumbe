@@ -1,5 +1,7 @@
 import { guardian } from './guardian';
-guardian('qa:visual', 1200); // tope duro: ver scripts/guardian.ts
+// infra/rapido · tope por modo: en paralelo (QA_HILOS > 1, lo de serie) ninguna invocación pasa de 170 s; con un
+// solo navegador, la pasada de siempre (~12 min)
+guardian('qa:visual', Number(process.env.QA_HILOS || 8) > 1 ? 170 : 1200); // tope duro: ver scripts/guardian.ts
 // Control de calidad visual: abre el juego construido (npm run build:web) en Chromium sin ventana,
 // monta estados fijos (src/client/qa.ts), comprueba el DOM y guarda una captura de cada uno en
 // artifacts/visual-qa/<ventana>/<estado>.png, más un resumen en artifacts/visual-qa/report.json.
@@ -10,6 +12,8 @@ guardian('qa:visual', 1200); // tope duro: ver scripts/guardian.ts
 //   QA_OUT=dist/capturas npm run …       capturas e informe en otra carpeta (bucle corto de una celda)
 //   npm run qa:visual -- --lang=en       la pasada en inglés (o QA_LANG=en): capturas e informe en
 //                                        artifacts/visual-qa-en/, nunca encima de las españolas
+//   npm run qa:visual -- --lang=en mesa  inglés solo de esos estados (el bucle: «las pantallas tocadas»)
+//   QA_HILOS=4 npm run qa:visual         navegadores a la vez (de serie 8); con 1, uno solo y en fila, como antes
 //
 // Reglas de imprenta que se comprueban (y que hacen fallar la orden):
 //   texto     ningún texto por debajo de 13 px efectivos (CSS × escala), tampoco los <text> de SVG ni
@@ -125,7 +129,7 @@ guardian('qa:visual', 1200); // tope duro: ver scripts/guardian.ts
 //   «trama» ya no se pide en el emblema de las numeradas, sí en tronos, figuras y poderes)
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { chromium } from 'playwright';
+import { type Browser, chromium } from 'playwright';
 import { PERMITIDOS_EN, RESTOS_ES } from '../src/shared/i18n';
 import { BRAND } from '../src/shared/brand';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
@@ -147,6 +151,8 @@ const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wan
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
 const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
 const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
+/** infra/rapido · navegadores a la vez (QA_HILOS); cada uno es un proceso de Chromium aparte con las banderas de siempre. */
+const HILOS = Math.max(1, Math.floor(Number(process.env.QA_HILOS || 8)) || 1);
 
 /**
  * V8 · regla «anima»: lo que se anima solo cambia transform y opacity. Los casos que viven en juice.css no
@@ -2518,36 +2524,64 @@ async function caraLimpia(png: string): Promise<{ fails: Fail[]; min: number; n:
   return { fails, min, n };
 }
 
-async function main(): Promise<void> {
-  ensureBuilt();
-  const site = await serveWeb();
-  // V12 · un solo hilo de trama: con varios, los bordes de las teselas con filtro SVG salían a ±1 de una
-  // pasada a otra (qa:determinista)
-  const browser = await chromium.launch({ args: ['--num-raster-threads=1', '--disable-lcd-text', '--disable-threaded-animation'] });
-  let failed = 0;
-  let foreign = 0;
-  const errors: string[] = [];
-  /** Avisos que no hacen fallar (ANIMA_PENDIENTE_JUICE), sin repetir entre ventanas. */
-  const warns = new Set<string>();
-  /** V11 · lo medido por «cara-limpia» (va al informe y a la bitácora). */
-  const caras: string[] = [];
-  /** V12 · lo medido por «inmune» y «vida» en la captura (mínimos), para el informe y la bitácora. */
-  const medidas: string[] = [];
-  console.log(`Pasada en ${LANG === 'en' ? 'inglés' : 'español'} · ${OUT}`);
-  const report: { idioma?: string; cuando: string; ventanas: string[]; estados: string[]; total: number; propios: number; ajenos: number; porRegla: Record<string, number>; fallos: Record<string, Record<string, Fail[]>>; errores: string[] } = {
-    idioma: LANG,
-    cuando: new Date().toISOString(),
-    ventanas: VIEWS.map((v) => v.name),
-    estados: STATES,
-    total: 0,
-    propios: 0,
-    ajenos: 0,
-    porRegla: {},
-    fallos: {},
-    errores: [],
-  };
+/** Un trozo de la pasada: una ventana y un tramo contiguo de estados, en el orden de siempre. */
+interface Trabajo {
+  view: (typeof VIEWS)[number];
+  states: string[];
+  /**
+   * Los estados que van antes del tramo en la pasada de un solo navegador. El juego guarda memoria de una pantalla a
+   * otra (logros ganados, kB de datos de prueba, la Orden): para que la captura sea la misma que en fila, la página
+   * los recorre primero, sin foto ni auditoría (el «prólogo»).
+   */
+  previos: string[];
+}
+
+/** Lo que deja cada estado (se junta al final en el orden canónico: ventana, estado). */
+interface Hecho {
+  fails: Fail[];
+  warns: string[];
+  caras: string[];
+  medidas: string[];
+  captura: boolean;
+}
+
+/**
+ * infra/rapido · reparto: cada ventana se parte en tramos contiguos de estados (el orden de siempre dentro del
+ * tramo) y los tramos van a una cola de la que tiran HILOS navegadores a la vez. Con un hilo, un tramo por
+ * ventana con todos los estados: la pasada de siempre. Con más, tramos de unos QA_TRAMO estados (de serie 10)
+ * que NO dependen del número de hilos: dónde empieza un tramo cambia la memoria que trae su prólogo, y así la
+ * misma pasada da las mismas capturas con 4, 8 o 12 navegadores.
+ */
+function reparto(): Trabajo[] {
+  if (HILOS <= 1) return VIEWS.map((view) => ({ view, states: STATES, previos: [] }));
+  const tam = Math.max(1, Number(process.env.QA_TRAMO || 10));
+  const out: Trabajo[] = [];
   for (const view of VIEWS) {
-    const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, locale: LANG === 'en' ? 'en-US' : 'es-ES', hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
+    const n = Math.max(1, Math.round(STATES.length / tam));
+    for (let i = 0; i < n; i++) {
+      const desde = Math.floor((i * STATES.length) / n);
+      const states = STATES.slice(desde, Math.floor(((i + 1) * STATES.length) / n));
+      if (states.length) out.push({ view, states, previos: STATES.slice(0, desde) });
+    }
+  }
+  return out;
+}
+
+/** Promesa con tope: ningún cierre ni espera de la QA puede colgar la orden. */
+const conTope = <T>(p: Promise<T>, ms: number, que: string): Promise<T | undefined> =>
+  Promise.race([p, new Promise<undefined>((ok) => setTimeout(() => (console.log(`  ! ${que}: pasó de ${ms / 1000} s, se sigue`), ok(undefined)), ms).unref())]);
+
+const BANDERAS = ['--num-raster-threads=1', '--disable-lcd-text', '--disable-threaded-animation', ...(process.env.QA_BANDERAS?.split(/\s+/).filter(Boolean) ?? [])];
+/** Espera (ms) para que el compositor vuelva a tramar las capas a su escala de reposo (QA_REPOSO; de serie 400). */
+const REPOSO = Number(process.env.QA_REPOSO || 400);
+
+/** Un tramo: contexto y página nuevos, el juego cargado con su azar y su reloj fijos, y sus estados en orden. */
+async function correTramo(browser: Browser, site: { url: string }, t: Trabajo, hechos: Map<string, Hecho>, errors: string[]): Promise<void> {
+  const { view } = t;
+  const context = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: 1, locale: LANG === 'en' ? 'en-US' : 'es-ES', hasTouch: !!view.mobile, isMobile: !!view.mobile, reducedMotion: 'no-preference' });
+  try {
+    // ningún paso de Playwright espera sin tope (infra/rapido): 30 s es diez veces lo que tarda el más lento
+    context.setDefaultTimeout(30_000);
     // tsx envuelve las funciones con un ayudante que la página no conoce
     await context.addInitScript({ content: NAME_SHIM });
     // V12 · QA determinista: el azar del cliente sale de una semilla (mulberry32) que qa.ts vuelve a poner al
@@ -2564,14 +2598,26 @@ async function main(): Promise<void> {
     // V12: todas las fuentes de la hoja cargadas antes de la primera foto (no solo las que ya se usaron)
     await page.evaluate(() => Promise.all([...document.fonts].map((f) => f.load().catch(() => null))));
     mkdirSync(join(OUT, view.name), { recursive: true });
-    report.fallos[view.name] = {};
     /** V11 · ancho de un trono de la mesa de cuatro en esta ventana (regla «tronos»). */
     let ref4 = 0;
     /** V12 · tamaño de letra de cada cifra marcada (data-cifra-k) en «mesa» (regla «compacto»). */
     let refCifras: Record<string, number> | undefined;
     const cifrasDe = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll<HTMLElement>('[data-cifra-k]')].reverse().map((e) => [e.dataset.cifraK, parseFloat(getComputedStyle(e).fontSize)])) as Record<string, number>);
     const anchoTrono = () => page.evaluate(() => (document.querySelector('.tower:not([hidden]):not(.aimed)') as HTMLElement | null)?.offsetWidth ?? 0);
-    for (const state of STATES) {
+    // el prólogo: la memoria que el juego habría ido juntando con los estados de antes, sin foto
+    const prologo = Number(process.env.QA_PROLOGO_MS ?? 0);
+    for (const state of t.previos) {
+      await page.evaluate((s) => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go(s), state);
+      if (prologo) await page.waitForTimeout(prologo);
+      if (state === 'mesa') {
+        await page.waitForTimeout(300);
+        ref4 = await anchoTrono();
+        refCifras = await cifrasDe();
+      }
+    }
+    for (const state of t.states) {
+      const hecho: Hecho = { fails: [], warns: [], caras: [], medidas: [], captura: false };
+      hechos.set(`${view.name}/${state}`, hecho);
       if ((!ref4 && (state === 'mesa-2tronos' || state === 'mesa-3tronos')) || (!refCifras && state === 'mesa-cifras')) {
         await page.evaluate(() => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go('mesa'));
         await page.waitForTimeout(300);
@@ -2581,8 +2627,7 @@ async function main(): Promise<void> {
       const ok = await page.evaluate((s) => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go(s), state);
       if (!ok) {
         console.log(`✗ ${view.name} ${state}: estado desconocido`);
-        failed++;
-        report.fallos[view.name][state] = [{ regla: 'maqueta', msg: 'estado desconocido', ajeno: false }];
+        hecho.fails.push({ regla: 'maqueta', msg: 'estado desconocido', ajeno: false });
         continue;
       }
       await page.waitForTimeout(450);
@@ -2598,14 +2643,14 @@ async function main(): Promise<void> {
       // …y lo infinito del CSS (las figuras que respiran) se cancela y se espera a que el compositor vuelva a
       // tramar esas capas a su escala de reposo: mientras se animan las trama a otra escala, y la foto salía
       // con la trama de antes o la de después según el momento (qa:determinista)
-      await page.evaluate(async () => {
+      await page.evaluate(async (reposo) => {
         for (const a of document.getAnimations()) if (a.effect?.getComputedTiming().iterations === Infinity) a.cancel();
         // will-change: transform deja la trama de la capa a la escala que tenía al nacer (a media entrada de la
         // carta, según el momento): sin él, el compositor vuelve a tramarla a su escala de reposo
         const quieto = document.createElement('style');
         quieto.textContent = '*, *::before, *::after { will-change: auto !important; }';
         document.head.append(quieto);
-        await new Promise((ok) => setTimeout(ok, 400));
+        await new Promise((ok) => setTimeout(ok, reposo));
         // lo que haya echado a andar en esa espera (una transición de un piso, un retoque de la cuenta) se acaba
         for (const a of document.getAnimations()) {
           if (a.effect?.getComputedTiming().iterations === Infinity) a.cancel();
@@ -2614,7 +2659,7 @@ async function main(): Promise<void> {
         await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
         await new Promise((ok) => setTimeout(ok, 100));
         await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
-      });
+      }, REPOSO);
       // y la foto se repite hasta que cuatro seguidas (600 ms) coinciden: la que se guarda es la de una pantalla ya
       // quieta (el reparto escalonado, el lacre aún caliente y las capas que el compositor suelta al acabar)
       let shot = await page.screenshot({ animations: 'disabled', caret: 'hide' });
@@ -2630,6 +2675,7 @@ async function main(): Promise<void> {
       if (iguales < 3) console.log(`  ! ${view.name} ${state}: la pantalla no se queda quieta en 5 s (foto de la última)`);
       else if (process.env.QA_QUIETO) console.log(`  · ${view.name} ${state}: quieta tras ${intentos} fotos`);
       writeFileSync(join(OUT, view.name, `${state}.png`), shot);
+      hecho.captura = true;
       if (state === 'mesa') {
         ref4 = await anchoTrono();
         refCifras = await cifrasDe();
@@ -2637,31 +2683,110 @@ async function main(): Promise<void> {
       if (['mesa', 'mesa-inmune', 'mesa-contraste', 'mesa-cifras', 'mesa-polvora'].includes(state)) {
         const px = await page.evaluate(placasPx, shot.toString('base64'));
         all.push(...px.fails);
-        medidas.push(`${view.name} ${state}: Inmune ${px.nI ? `marco de 4 px ${(px.inmune * 100).toFixed(1)} %, fondo de tinta ${(px.inmuneTinta * 100).toFixed(1)} %, placa y marco ${(px.inmuneMarco * 100).toFixed(1)} % en ${px.nI} placas` : '—'} · Vida lisa ${px.nV ? `${(px.vida * 100).toFixed(1)} % en ${px.nV} barras` : '—'}`);
+        hecho.medidas.push(`${view.name} ${state}: Inmune ${px.nI ? `marco de 4 px ${(px.inmune * 100).toFixed(1)} %, fondo de tinta ${(px.inmuneTinta * 100).toFixed(1)} %, placa y marco ${(px.inmuneMarco * 100).toFixed(1)} % en ${px.nI} placas` : '—'} · Vida lisa ${px.nV ? `${(px.vida * 100).toFixed(1)} % en ${px.nV} barras` : '—'}`);
       }
       if (state === 'cartas-lamina' || state === 'mesa') {
         const cara = await page.evaluate(caraLimpia, shot.toString('base64'));
         all.push(...cara.fails);
-        if (cara.n) caras.push(`${view.name} ${state}: ${cara.n} cartas, mínimo ${(cara.min * 100).toFixed(1)} % de marfil`);
+        if (cara.n) hecho.caras.push(`${view.name} ${state}: ${cara.n} cartas, mínimo ${(cara.min * 100).toFixed(1)} % de marfil`);
       }
-      const fails = all.filter((f) => !f.aviso);
-      for (const w of all.filter((f) => f.aviso)) warns.add(`[${w.regla}] ${w.msg}`);
-      report.fallos[view.name][state] = fails;
-      for (const f of fails) report.porRegla[f.regla] = (report.porRegla[f.regla] ?? 0) + 1;
-      const own = fails.filter((f) => !f.ajeno);
-      failed += own.length;
-      foreign += fails.length - own.length;
-      if (fails.length) {
-        console.log(`✗ ${view.name} ${state}${own.length ? '' : ' (solo en zonas de otra celda)'}`);
+      hecho.fails = all.filter((f) => !f.aviso);
+      hecho.warns = all.filter((f) => f.aviso).map((w) => `[${w.regla}] ${w.msg}`);
+      const own = hecho.fails.filter((f) => !f.ajeno);
+      if (hecho.fails.length) {
+        // las líneas de un estado salen juntas aunque otros navegadores escriban a la vez
         const max = Number(process.env.QA_MAX ?? 14);
-        for (const f of fails.slice(0, max)) console.log(`    · [${f.regla}${f.ajeno ? ' · ajeno' : ''}] ${f.msg}`);
-        if (fails.length > max) console.log(`    … y ${fails.length - max} más`);
+        const lineas = [`✗ ${view.name} ${state}${own.length ? '' : ' (solo en zonas de otra celda)'}`, ...hecho.fails.slice(0, max).map((f) => `    · [${f.regla}${f.ajeno ? ' · ajeno' : ''}] ${f.msg}`)];
+        if (hecho.fails.length > max) lineas.push(`    … y ${hecho.fails.length - max} más`);
+        console.log(lineas.join('\n'));
       } else console.log(`✓ ${view.name} ${state}`);
     }
-    await context.close();
+  } finally {
+    await conTope(context.close(), 10_000, `cerrar el contexto de ${view.name}`);
   }
-  await browser.close();
-  site.close();
+}
+
+async function main(): Promise<number> {
+  const t0 = Date.now();
+  ensureBuilt();
+  const tBuild = (Date.now() - t0) / 1000;
+  const site = await serveWeb();
+  const browsers: Browser[] = [];
+  const errors: string[] = [];
+  const hechos = new Map<string, Hecho>();
+  const trabajos = reparto();
+  const hilos = Math.min(HILOS, trabajos.length);
+  console.log(`Pasada en ${LANG === 'en' ? 'inglés' : 'español'} · ${OUT} · ${VIEWS.length * STATES.length} capturas en ${trabajos.length} tramos, ${hilos} ${hilos === 1 ? 'navegador' : 'navegadores a la vez'}`);
+  try {
+    // V12 · un solo hilo de trama: con varios, los bordes de las teselas con filtro SVG salían a ±1 de una
+    // pasada a otra (qa:determinista). infra/rapido: un navegador (proceso aparte) por hilo, con las mismas banderas
+    const cola = [...trabajos];
+    const errTramos: string[] = [];
+    await Promise.all(
+      Array.from({ length: hilos }, async () => {
+        const browser = await chromium.launch({ args: BANDERAS });
+        browsers.push(browser);
+        for (let t = cola.shift(); t; t = cola.shift()) {
+          try {
+            await correTramo(browser, site, t, hechos, errors);
+          } catch (e) {
+            // un tramo que se rompe no tumba a los demás: lo que no llegó a hacer sale como fallo
+            const msg = `[${t.view.name}] tramo ${t.states[0]} … ${t.states[t.states.length - 1]}: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}`;
+            errTramos.push(msg);
+            console.log(`✗ ${msg}`);
+          }
+        }
+      }),
+    );
+    errors.push(...errTramos);
+  } finally {
+    await conTope(Promise.all(browsers.map((b) => b.close())), 15_000, 'cerrar los navegadores');
+    site.close();
+  }
+  let failed = 0;
+  let foreign = 0;
+  let capturas = 0;
+  /** Avisos que no hacen fallar (ANIMA_PENDIENTE_JUICE), sin repetir entre ventanas. */
+  const warns = new Set<string>();
+  /** V11 · lo medido por «cara-limpia» (va al informe y a la bitácora). */
+  const caras: string[] = [];
+  /** V12 · lo medido por «inmune» y «vida» en la captura (mínimos), para el informe y la bitácora. */
+  const medidas: string[] = [];
+  const report: { idioma?: string; cuando: string; ventanas: string[]; estados: string[]; total: number; propios: number; ajenos: number; porRegla: Record<string, number>; fallos: Record<string, Record<string, Fail[]>>; errores: string[] } = {
+    idioma: LANG,
+    cuando: new Date().toISOString(),
+    ventanas: VIEWS.map((v) => v.name),
+    estados: STATES,
+    total: 0,
+    propios: 0,
+    ajenos: 0,
+    porRegla: {},
+    fallos: {},
+    errores: [],
+  };
+  // el informe, en el orden de siempre (ventana, estado), lo haya hecho el navegador que lo haya hecho
+  for (const view of VIEWS) {
+    report.fallos[view.name] = {};
+    for (const state of STATES) {
+      const h = hechos.get(`${view.name}/${state}`);
+      if (!h) {
+        // el tramo se rompió antes de llegar aquí: cuenta como fallo, nunca como «en su sitio»
+        report.fallos[view.name][state] = [{ regla: 'maqueta', msg: 'sin captura: el tramo se cortó antes', ajeno: false }];
+        report.porRegla.maqueta = (report.porRegla.maqueta ?? 0) + 1;
+        failed++;
+        continue;
+      }
+      if (h.captura) capturas++;
+      report.fallos[view.name][state] = h.fails;
+      for (const f of h.fails) report.porRegla[f.regla] = (report.porRegla[f.regla] ?? 0) + 1;
+      const own = h.fails.filter((f) => !f.ajeno).length;
+      failed += own;
+      foreign += h.fails.length - own;
+      for (const w of h.warns) warns.add(w);
+      caras.push(...h.caras);
+      medidas.push(...h.medidas);
+    }
+  }
   for (const e of [...new Set(errors)]) console.log(`! ${e}`);
   for (const w of warns) console.log(`! aviso ${w}`);
   for (const c of caras) console.log(`· cara-limpia ${c}`);
@@ -2673,12 +2798,21 @@ async function main(): Promise<void> {
   report.propios = failed;
   report.ajenos = foreign;
   report.errores = [...new Set(errors)];
+  const seg = (Date.now() - t0) / 1000;
+  (report as typeof report & { tiempo: unknown }).tiempo = { segundos: Math.round(seg * 10) / 10, construccion: Math.round(tBuild * 10) / 10, hilos, tramos: trabajos.length, capturas };
   mkdirSync(OUT, { recursive: true });
   writeFileSync(join(OUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`\n${VIEWS.length * STATES.length} capturas en ${OUT} · informe en ${join(OUT, 'report.json')}`);
+  console.log(`\n${capturas} de ${VIEWS.length * STATES.length} capturas en ${seg.toFixed(1)} s (construcción ${tBuild.toFixed(1)} s · ${hilos} ${hilos === 1 ? 'navegador' : 'navegadores'}) en ${OUT} · informe en ${join(OUT, 'report.json')}`);
   console.log(Object.entries(report.porRegla).map(([k, n]) => `${k} ${n}`).join(' · ') || 'sin fallos por regla');
   console.log(failed || foreign || errors.length ? `${failed} fallos propios, ${foreign} en zonas de otra celda, ${new Set(errors).size} errores de página` : 'Todo en su sitio.');
-  process.exit(failed || foreign || errors.length ? 1 : 0);
+  return failed || foreign || errors.length ? 1 : 0;
 }
 
-void main();
+// infra/rapido · salida explícita siempre: ningún zócalo ni temporizador que quede vivo en Windows deja a Node colgado
+main().then(
+  (codigo) => process.exit(codigo),
+  (e) => {
+    console.error(e instanceof Error ? (e.stack ?? e.message) : String(e));
+    process.exit(1);
+  },
+);

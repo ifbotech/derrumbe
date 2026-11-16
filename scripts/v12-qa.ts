@@ -53,8 +53,10 @@ async function padPage(browser: Browser, url: string, problems: string[], tag: s
 // ───────────────────────── Mejor jugada ─────────────────────────
 
 /** Mejor jugada con `how` en la mesa de QA: elige lo que dice el motor, apunta su trono y no golpea. */
-export async function mejorSuite(page: Page, how: 'keys' | 'mouse' | 'pad', check: Check): Promise<void> {
+export async function mejorSuite(page: Page, how: 'keys' | 'mouse' | 'pad', check: Check, speed?: 8): Promise<void> {
   await go(page, 'mesa');
+  // el humo rápido golpea a 8× (la Mejor jugada de la mesa de QA es una cadena larga que a 1× tarda ≈ 12 s en animarse)
+  if (speed) await page.evaluate((v) => (window as unknown as { __qaJuice: { autoOpts(o: { speed: number }): void } }).__qaJuice.autoOpts({ speed: v }), speed);
   await page.waitForTimeout(250);
   // se suelta la selección de la mesa de QA (el trío de sietes)
   if (how === 'pad') await press(page, BTN.B);
@@ -111,11 +113,14 @@ export async function mejorSuite(page: Page, how: 'keys' | 'mouse' | 'pad', chec
 
 // ───────────────────────── AUTO ─────────────────────────
 
-/** Cinco apagados de AUTO con un método; devuelve los tiempos (ms) del evento de entrada al botón apagado y pintado. */
-async function apagados(page: Page, how: 'clic' | 'tecla' | 'mando', check: Check): Promise<number[]> {
+/**
+ * Cinco apagados de AUTO con un método (`veces`: el humo rápido hace uno); devuelve los tiempos (ms) del evento de
+ * entrada al botón apagado y pintado.
+ */
+export async function apagados(page: Page, how: 'clic' | 'tecla' | 'mando', check: Check, veces = 5): Promise<number[]> {
   const out: number[] = [];
   let leftovers = 0;
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < veces; i++) {
     if (!(await juice(page, 'auto')).on) await page.keyboard.press('a');
     await page.waitForTimeout(260 + i * 90); // AUTO a mitad de lo suyo (pausa, cartas elegidas o mesa animando)
     const n0 = (await juice(page, 'auto')).apagados.length;
@@ -157,7 +162,7 @@ async function apagados(page: Page, how: 'clic' | 'tecla' | 'mando', check: Chec
     if (b.on || b.pasos !== pasos || (await page.locator('#btn-auto').getAttribute('aria-pressed')) !== 'false') leftovers++;
     out.push(dt);
   }
-  check(out.every((x) => x >= 0) && leftovers === 0, `AUTO se apaga con ${how === 'clic' ? 'un clic' : how === 'tecla' ? 'una tecla' : 'un botón del mando'} las 5 veces, y lo que tenía programado no sigue${leftovers ? ` (${leftovers} veces siguió)` : ''}`);
+  check(out.every((x) => x >= 0) && leftovers === 0, `AUTO se apaga con ${how === 'clic' ? 'un clic' : how === 'tecla' ? 'una tecla' : 'un botón del mando'} ${veces === 1 ? 'a la primera' : `las ${veces} veces`}, y lo que tenía programado no sigue${leftovers ? ` (${leftovers} veces siguió)` : ''}`);
   return out;
 }
 
@@ -215,7 +220,8 @@ export async function autoSuite(browser: Browser, url: string, check: Check, pro
   const fases: string[] = [];
   let desde = Date.now();
   let r = await run(page);
-  while (Date.now() - t0 < 9 * 60_000) {
+  // con tope por debajo del de la sección (170 s): la campaña a 8× tarda ≈ 85 s
+  while (Date.now() - t0 < 140_000) {
     await page.evaluate(() => (window as unknown as W).__qaJuice.heal());
     r = await run(page);
     const k = `${r?.phase}:${r?.stage}`;

@@ -379,7 +379,8 @@ async function main(): Promise<void> {
       await ctx.close();
     }
   } finally {
-    await browser?.close();
+    // cierre con tope (infra/rapido): un navegador que no contesta no deja la puerta esperando
+    await Promise.race([browser?.close().catch(() => undefined), new Promise((r) => (setTimeout(r, 10_000) as unknown as { unref(): void }).unref())]);
     site.close();
     clearTimeout(kill);
   }
@@ -394,4 +395,8 @@ async function main(): Promise<void> {
   process.exit(fails.length ? 1 : 0);
 }
 
-void main();
+// cierre garantizado: también si algo lanza, la salida es explícita (sin depender del guardián)
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

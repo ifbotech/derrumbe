@@ -95,7 +95,8 @@ if (env.FAT) {
 const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec[key] ?? 0) + 1);
 
 /** Archivos cuyas reglas decide el laboratorio: si cambian, el informe publicado deja de valer. */
-const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot'];
+// V12: también el Árbol, lo que cae y los huesos (mueven el oro y los nodos de combate de la campaña).
+const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos'];
 /** Y los números con que juegan: balance-config.json (sin espacios: solo cuentan sus valores). */
 const RULE_DATA = 'balance-config.json';
 /**

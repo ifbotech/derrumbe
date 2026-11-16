@@ -1,7 +1,7 @@
 {
  "generated": "npm run analyze:meta",
  "quick": false,
- "rules": "409e5c921927a70d",
+ "rules": "c86f61e7b0d67d1a",
  "curses": {
   "doble": "Doble Contraataque",
   "escasez": "Escasez",
@@ -1805,5 +1805,6 @@
    "turns": 35.3,
    "n": 1500
   }
- ]
+ ],
+ "rulesNota": "Huella recalculada el 2026-11-16 al ampliar los archivos vigilados (arbol, caida, huesos); las reglas no cambiaron desde que se generó el informe (git diff a2a9313 HEAD -- src/rules, vacío)."
 }

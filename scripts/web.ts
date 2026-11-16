@@ -26,7 +26,8 @@ const MIME: Record<string, string> = {
 /** Construye la versión estática (salvo con NO_BUILD=1) y comprueba que está. */
 export function ensureBuilt(): void {
   if (!process.env.NO_BUILD) {
-    const built = spawnSync(QA_DIR ? `npx vite build --mode web --outDir "${QA_DIR}"` : 'npm run build:web', { stdio: 'inherit', shell: true });
+    // con tope (infra/rapido): mientras dura spawnSync el reloj del guardián no puede saltar
+    const built = spawnSync(QA_DIR ? `npx vite build --mode web --outDir "${QA_DIR}"` : 'npm run build:web', { stdio: 'inherit', shell: true, timeout: 120_000 });
     if (built.status !== 0) process.exit(built.status ?? 1);
   }
   if (!existsSync(join(WEB_ROOT, 'index.html'))) throw new Error(`Falta ${QA_DIR || 'dist/web'}: ejecuta antes npm run build:web`);
