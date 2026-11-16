@@ -66,7 +66,7 @@ const feed = (page: Page, steps: Step[]) =>
 function buildWithUrl(): string {
   const dir = `${WEB_ROOT}-telemetria`;
   if (!process.env.NO_BUILD || !existsSync(join(dir, 'index.html'))) {
-    const built = spawnSync(`npx vite build --mode web --outDir "${dir}" --logLevel warn`, { stdio: 'inherit', shell: true, env: { ...process.env, VITE_TELEMETRY_URL: TEST_URL } });
+    const built = spawnSync(`npx vite build --mode web --outDir "${dir}" --logLevel warn`, { stdio: 'inherit', shell: true, timeout: 120_000, env: { ...process.env, VITE_TELEMETRY_URL: TEST_URL } });
     if (built.status !== 0) throw new Error('no se pudo construir la versión con VITE_TELEMETRY_URL');
   }
   return resolve(dir);

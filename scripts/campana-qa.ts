@@ -8,6 +8,7 @@
 //
 // Para que llegue siempre al final, antes de cada jugada se devuelve la Vida al tope (__qaJuice.heal, solo con
 // ?qa): el bot juega igual, nadie muere por el camino. La campaña no toca el guardado real.
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { Browser, Page } from 'playwright';
 import { LOCALE, T } from './gamepad-qa';
 import { NAME_SHIM } from './web';
@@ -50,7 +51,31 @@ const timed = (page: Page, sel: string) =>
     return performance.now() - t0;
   }, sel);
 
-export async function campaignSuite(browser: Browser, url: string, check: Check, problems: string[]): Promise<CampaignTimes> {
+/**
+ * Humo por secciones: la campaña entera a 1× pasa de 170 s (≈ 435 s), así que se juega en tramos de un asalto, cada
+ * uno en su propia invocación (`--solo=campana-<n>`). Al llegar al Mapa del asalto siguiente, el tramo deja en
+ * `archivo` lo guardado (con ?qa, el guardado de quita y pon) y lo medido; el siguiente lo carga, pulsa «Continuar» y
+ * sigue. Las comprobaciones salen todas en el último tramo, con lo medido en todos: las mismas que la campaña de un tirón.
+ */
+export interface Tramo {
+  /** Tramo de 1 a `de`: el tramo n juega el asalto n (el último, hasta el final de la campaña). */
+  n: number;
+  de: number;
+  archivo: string;
+}
+interface Arrastre {
+  guardado: Record<string, string>;
+  plays: number[];
+  stages: CampaignTimes['stages'];
+  between: number[];
+  phases: string[];
+  tirano: string;
+  total: number;
+  /** Segundos del entreacto que ya iban corridos al cortar el tramo (de la mesa levantada al Mapa). */
+  entreParcial: number | null;
+}
+
+export async function campaignSuite(browser: Browser, url: string, check: Check, problems: string[], tramo?: Tramo): Promise<CampaignTimes | null> {
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
   await context.addInitScript({ content: NAME_SHIM });
   const page = await context.newPage();
@@ -62,24 +87,55 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
   const run = () => page.evaluate(() => (window as unknown as CampWin).__qa.run());
   const has = async (sel: string) => (await page.locator(sel).count()) > 0;
 
-  // portada → preparación → nueva campaña; un perfil nuevo pasa por la partida guiada: se salta
-  await page.locator('#m-camp').click();
-  await page.locator('#new').click();
-  await page.waitForSelector('.table-screen');
-  await page.locator('#btn-leave').click();
-  await page.waitForSelector('.run');
+  let prev: Arrastre | null = null;
+  if (tramo && tramo.n > 1) {
+    prev = existsSync(tramo.archivo) ? (JSON.parse(readFileSync(tramo.archivo, 'utf8')) as Arrastre) : null;
+    if (!prev) {
+      check(false, `[campaña] el tramo ${tramo.n} encuentra la campaña que dejó el tramo ${tramo.n - 1} (${tramo.archivo})`);
+      await context.close();
+      return null;
+    }
+    // lo guardado del tramo anterior entra en el guardado de quita y pon, y la Portada lo ofrece con «Continuar»
+    await page.evaluate((g) => {
+      const p = (window as unknown as { __qaPlatform: () => { save(k: string, v: string): void } }).__qaPlatform();
+      for (const [k, v] of Object.entries(g)) p.save(k, v);
+    }, prev.guardado);
+    await page.evaluate(() => (window as unknown as { __qa: { go(s: string): Promise<boolean> } }).__qa.go('portada'));
+    await page.locator('#resume').click();
+    await page.waitForSelector('.run');
+  } else {
+    // portada → preparación → nueva campaña; un perfil nuevo pasa por la partida guiada: se salta
+    await page.locator('#m-camp').click();
+    await page.locator('#new').click();
+    await page.waitForSelector('.table-screen');
+    await page.locator('#btn-leave').click();
+    await page.waitForSelector('.run');
+  }
   const t0 = Date.now();
 
-  const plays: number[] = [];
-  const stages: CampaignTimes['stages'] = [];
-  const between: number[] = [];
-  const phases: string[] = [];
-  let leftTable = 0;
-  let tirano = '';
+  const plays: number[] = prev?.plays ?? [];
+  const stages: CampaignTimes['stages'] = prev?.stages ?? [];
+  const between: number[] = prev?.between ?? [];
+  const phases: string[] = prev?.phases ?? [];
+  let leftTable = prev?.entreParcial != null ? Date.now() - prev.entreParcial * 1000 : 0;
+  let tirano = prev?.tirano ?? '';
   let guard = 0;
   for (; guard < 400; guard++) {
     const r = await run();
     if (!r || r.phase === 'won' || r.phase === 'lost') break;
+    // fin del tramo: ya se ve el Mapa del asalto siguiente. Se deja lo guardado y lo medido para el tramo que sigue
+    if (tramo && tramo.n < tramo.de && r.phase === 'map' && r.stage > tramo.n) {
+      const guardado = await page.evaluate(() => {
+        const p = (window as unknown as { __qaPlatform: () => { load(k: string): string | null; keys(pre: string): string[] } }).__qaPlatform();
+        return Object.fromEntries(p.keys('derrumbe:').map((k) => [k, p.load(k) ?? '']));
+      });
+      const deja: Arrastre = { guardado, plays, stages, between, phases, tirano, total: (prev?.total ?? 0) + (Date.now() - t0) / 1000, entreParcial: leftTable ? (Date.now() - leftTable) / 1000 : null };
+      writeFileSync(tramo.archivo, JSON.stringify(deja));
+      const st = stages[stages.length - 1];
+      console.log(`  tramo ${tramo.n} de ${tramo.de}: ${st ? `asalto ${st.stage} (${st.thrones} tronos) ${st.turns} turnos en ${st.secs.toFixed(0)} s` : 'sin asalto'} · sigue en el Mapa del asalto ${r.stage}`);
+      await context.close();
+      return null;
+    }
     if (phases[phases.length - 1] !== `${r.phase}:${r.stage}`) phases.push(`${r.phase}:${r.stage}`);
     // una ventana encima (premio del Juramento, carta sellada, elegir cartas de un Secreto): se resuelve o se cierra
     if (await has('.modal')) {
@@ -153,7 +209,7 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
     await page.waitForTimeout(300);
   }
   const end = await run();
-  const total = (Date.now() - t0) / 1000;
+  const total = (prev?.total ?? 0) + (Date.now() - t0) / 1000;
   const won = end?.phase === 'won' || (await has('.end.won'));
   const st = new Map(stages.map((s) => [s.stage, s]));
   check(won && stages.length === 5, `[campaña] el bot juega los cinco asaltos con el ratón y gana la campaña (${stages.map((s) => `${s.stage}: ${s.turns} t`).join(' · ')}${won ? '' : ` — fase «${end?.phase}»`})`);
