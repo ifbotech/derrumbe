@@ -28,6 +28,11 @@
 #score .calc .fr b { font-family: var(--num); font-weight: 400; font-size: clamp(16px, 1.75vh, 20px); line-height: 1.2; padding: 0 6px; margin-left: 4px; letter-spacing: 0; }
 #score .calc .fr-f b { background: var(--red); color: var(--card-paper); }
 #score .calc .fr-r b { background: var(--blue); color: var(--card-paper); }
+/* V19 · la cuenta es una fórmula entera: «1.036 = Daño 148 × Multi ×7» (el signo igual abre la línea de la fórmula;
+   en el móvil esa línea ya va justa y se queda como estaba) */
+@media (min-width: 641px) {
+  #score .calc .fr::before { content: '='; font-family: var(--num); font-size: clamp(16px, 1.75vh, 20px); line-height: 1.2; color: var(--card-paper); }
+}
 .calc .abre { display: inline-flex; align-items: center; gap: 4px; font-style: normal; padding: 0 5px 0 6px; line-height: 1.25; border: 1.5px dashed var(--dim); color: var(--card-paper); }
 .calc .abre svg { width: 12px; height: 12px; flex: none; }
 #score.con-recibo .calc .abre { border-style: solid; border-color: var(--hazard); color: var(--hazard); }

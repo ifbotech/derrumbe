@@ -122,8 +122,7 @@ const padKey = (b: string) => `<kbd class="kh pd b-${b.toLowerCase()}">${b}</kbd
 /** La insignia de lo enfocado: vacía sin mando, fuera de La Taberna o con una ventana encima. */
 export function padPrompt(el: Element | null): string {
   if (mode !== 'pad' || !el || el.closest('.modal')) return '';
-  // V16 · Steam Deck: en la mesa, la carta enfocada dice qué hace A
-  if (el.matches('#hand .card, #reserve .card')) return `<b>${padKey('A')}${t(el.classList.contains('sel') ? 'ui.pad.soltar' : 'ui.pad.elegir')}</b>`;
+  // V19: la carta enfocada de la mano ya no lleva insignia (pegada a la carta se leía como «tapa la carta»)
   if (!el.closest('.run-body.shop')) return '';
   const hit = SHOP_VERBS.find(([sel]) => el.matches(sel));
   if (!hit) return '';

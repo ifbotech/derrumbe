@@ -2,6 +2,22 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 19.0.0 — 2026-11-16
+
+La cuenta que cuadra. El Golpe se escribe con todas sus cifras y la cuenta se lee como una fórmula; con mando, la carta enfocada es la más grande de la fila. Ninguna regla cambia. (La 17.0 y la 18.0 fueron candidatas que el panel rechazó; lo que funcionó de ellas está aquí.)
+
+### En la mesa
+- **Todas las cifras**: el Golpe, el Daño, el aviso rojo de cada trono y la pólvora se escriben enteros mientras sean menores que 100.000 («1.036», no «1K»). La bolsa, el Árbol y la Vida de los guardias siguen en notación corta.
+- **La cuenta es una fórmula**: «1.036 = Daño 148 × Multi ×7», con el signo igual entre el total y sus factores (en el móvil la línea ya iba justa y se queda sin el signo).
+
+### Con mando
+- **La carta enfocada de la mano crece** a 1,3 veces su tamaño, anclada abajo a la derecha: crece hacia arriba y hacia la izquierda y no tapa el índice de la carta siguiente (sí el borde derecho de la anterior mientras está enfocada). En el móvil no crece.
+- **Ya no lleva la etiqueta «A Elegir / A Soltar»** que estrenó la 16.0: pegada a la carta se leía como si la tapara. La Taberna conserva su «A Comprar».
+
+### Por dentro
+- La regla «compacto» de la QA visual exige la cuenta entera y lo demás compacto. El humo rápido comprueba el foco por escala (32 comprobaciones).
+- Sin cambios de reglas: misma huella de combate que la 12.0.
+
 ## 16.0.0 — 2026-11-16
 
 El foco del mando se ve. Jugando con mando (Steam Deck), lo enfocado lleva un marco claro más grueso con un halo de luz, la carta enfocada de la mano sube sobre la fila y dice qué hace el botón A. Ninguna regla cambia; con ratón, teclado y pantalla táctil el juego se ve igual que en la 12.0. (La 13.0, la 14.0 y la 15.0 fueron candidatas que el panel rechazó; no se publicaron.)

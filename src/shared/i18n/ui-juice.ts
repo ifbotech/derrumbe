@@ -53,7 +53,6 @@ export const UI_JUICE = {
   // ── SD5 · la insignia del foco con el mando en La Taberna (nav.ts) ──
   'ui.pad.comprar': ['Comprar', 'Buy'],
   'ui.pad.elegir': ['Elegir', 'Pick'],
-  'ui.pad.soltar': ['Soltar', 'Drop'],
   'ui.pad.mover': ['Mover', 'Move'],
   'ui.pad.curar': ['Curar', 'Heal'],
   'ui.pad.quemar': ['Quemar', 'Burn'],
