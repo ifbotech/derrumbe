@@ -2003,8 +2003,13 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         const n = Number(e.dataset.cifra);
         const k = e.dataset.cifraK ?? '?';
         const txt = (e.textContent ?? '').trim();
-        if (txt.replace(/^[−-]/, '').length > 5) fail('compacto', `la cifra «${txt}» (${k}) tiene más de 5 caracteres`, e);
-        if (Math.abs(n) >= 1000) {
+        // V18 · la cuenta que cuadra: golpe, daño, aviso y pólvora van con todas sus cifras por debajo de 100.000
+        const exacta = ['golpe', 'dano', 'aviso', 'polvora'].includes(k) && Math.abs(n) < 100_000;
+        if (exacta) {
+          if (txt.replace(/\D/g, '') !== String(Math.abs(Math.trunc(n)))) fail('compacto', `la cifra ${n} (${k}) de la cuenta no va entera: «${txt}»`, e);
+          if (txt.replace(/^[−-]/, '').length > 6) fail('compacto', `la cifra «${txt}» (${k}) tiene más de 6 caracteres`, e);
+        } else if (txt.replace(/^[−-]/, '').length > 5) fail('compacto', `la cifra «${txt}» (${k}) tiene más de 5 caracteres`, e);
+        if (!exacta && Math.abs(n) >= 1000) {
           if (!/[KMBT]$/.test(txt)) fail('compacto', `la cifra ${n} (${k}) no va en notación compacta: «${txt}»`, e);
           if ((e.getAttribute('aria-label') ?? '').replace(/\D/g, '') !== String(Math.abs(Math.trunc(n)))) fail('compacto', `la cifra «${txt}» (${k}) no lleva el número entero ${n} en aria-label`, e);
         }
