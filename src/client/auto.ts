@@ -52,7 +52,7 @@ export const autoQa = {
   rituales: 0,
   pausas: [] as string[],
   /** Del evento de entrada (su timeStamp) al botón apagado en el DOM, y al fotograma pintado después (ms). */
-  apagados: [] as { por: string; dom: number; visible: number }[],
+  apagados: [] as { por: string; dom: number; visible: number; en: number }[],
 };
 
 const ritmo = (ms: number) => ms / Math.max(1, settings.speed);
@@ -107,7 +107,7 @@ export function apagaAuto(por = 'código', desde?: number): void {
   }
   if (!estaba || desde === undefined) return;
   const dom = performance.now() - desde;
-  requestAnimationFrame(() => autoQa.apagados.push({ por, dom, visible: performance.now() - desde }));
+  requestAnimationFrame(() => autoQa.apagados.push({ por, dom, visible: performance.now() - desde, en: performance.now() }));
   if (!document.getElementById('btn-auto')) toast(t('ui.auto.off'));
 }
 

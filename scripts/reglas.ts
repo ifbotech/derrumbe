@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('docs', 120); // tope duro: ver scripts/guardian.ts
 // Genera REGLAS.md a partir de los datos del propio motor, para que el reglamento escrito
 // nunca se desincronice de lo que el juego hace de verdad:  npm run docs
 // De paso pone al día en README.md las tablas de balance (desde scripts/meta-report.json) y la de

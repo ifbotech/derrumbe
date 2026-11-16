@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('qa:determinista', 2400); // tope duro: ver scripts/guardian.ts
 // QA determinista (V12, SPECS/V12.md 1.13): la QA visual, dos veces seguidas sobre la misma construcción,
 // tiene que dar capturas idénticas byte a byte. Si una captura cambia entre pasadas, una prueba de píxeles
 // sobre ella no prueba nada (es azar, reloj, una fuente a medio cargar o una animación a medias).

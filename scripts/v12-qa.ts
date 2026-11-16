@@ -17,7 +17,7 @@ import { NAME_SHIM } from './web';
 
 type Check = (ok: unknown, what: string) => void;
 type Mejor = { cards: string[]; target: string; total: number; exacto: boolean } | null;
-type AutoQa = { on: boolean; saquear: boolean; taberna: boolean; speed: number; pasos: number; mesa: number; campana: number; rituales: number; pausas: string[]; apagados: { por: string; dom: number; visible: number }[] };
+type AutoQa = { on: boolean; saquear: boolean; taberna: boolean; speed: number; pasos: number; mesa: number; campana: number; rituales: number; pausas: string[]; apagados: { por: string; dom: number; visible: number; en: number }[] };
 interface W {
   __qa: { go(s: string): Promise<boolean>; seed(t: string): void; run(): { phase: string; stage: number; gold: number } | null };
   __qaJuice: { heal(): boolean; mejor(): Mejor; mesa(): { selected: string[]; turn: number; phase: string | null }; auto(): AutoQa; meta(): { renown: number; up: Record<string, number> }; arbol(): { zum: number; nivel: string } };
@@ -129,12 +129,17 @@ async function apagados(page: Page, how: 'clic' | 'tecla' | 'mando', check: Chec
         const g = (window as unknown as W).__qaGamepad;
         const frame = () => new Promise((r) => requestAnimationFrame(r));
         const btn = document.getElementById('btn-auto')!;
+        const n0 = (window as unknown as W).__qaJuice.auto().apagados.length;
         const t0 = performance.now();
         g.pad.buttons[13] = { pressed: true, touched: true, value: 1 };
         while (btn.getAttribute('aria-pressed') !== 'false' && performance.now() - t0 < 600) await frame();
         const off = btn.getAttribute('aria-pressed') === 'false';
         await frame(); // el fotograma en el que ya se ve apagado
-        const t = performance.now() - t0;
+        await frame();
+        // como el clic y la tecla: el registro del juego (el fotograma siguiente al cambio en el DOM), contado
+        // desde que la prueba pulsó el botón (incluye lo que tarda el juego en leer el mando)
+        const reg = (window as unknown as W).__qaJuice.auto().apagados;
+        const t = reg.length > n0 ? reg[reg.length - 1].en - t0 : performance.now() - t0;
         g.pad.buttons[13] = { pressed: false, touched: false, value: 0 };
         await frame();
         await frame();

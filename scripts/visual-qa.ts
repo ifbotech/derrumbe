@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('qa:visual', 1200); // tope duro: ver scripts/guardian.ts
 // Control de calidad visual: abre el juego construido (npm run build:web) en Chromium sin ventana,
 // monta estados fijos (src/client/qa.ts), comprueba el DOM y guarda una captura de cada uno en
 // artifacts/visual-qa/<ventana>/<estado>.png, más un resumen en artifacts/visual-qa/report.json.

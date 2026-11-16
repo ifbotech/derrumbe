@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('qa:fps', 300); // tope duro: ver scripts/guardian.ts
 // V8 · npm run qa:fps — 60 fotogramas por segundo, medidos con aceleración gráfica de verdad.
 // Lanza Chromium con los mismos argumentos que usaba GPU=1 en la prueba de humo y, si el renderizador de
 // WebGL es por software (SwiftShader, llvmpipe) o no hay WebGL, falla: la medida no valdría.

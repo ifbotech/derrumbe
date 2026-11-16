@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('ritmo-arbol', 900); // tope duro: ver scripts/guardian.ts
 // Ritmo del Árbol de la Conjura (SPECS/V12.md, apartado 1.5): cuántas campañas tarda un jugador en
 // comprar su primer rango, en llenar el Arsenal y en llenar el Árbol entero.
 //

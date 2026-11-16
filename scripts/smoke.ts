@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('qa:smoke', 1500); // tope duro: ver scripts/guardian.ts
 // Prueba de humo en el navegador: juega de verdad unos turnos sobre el juego construido
 // (dist/web) y falla si algo lanza un error. Cubre lo que las pruebas del motor no ven: la mesa,
 // La Manga, Rebobinar, la Lupa, el foco de teclado (papel y tinta, ≥ 6 px, < 50 ms), Mayús + flechas

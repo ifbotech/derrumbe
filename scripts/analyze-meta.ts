@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 // Laboratorio de balance: miles de campañas con semilla, repartidas entre los núcleos de la máquina,
 // y un informe con lo que hay que mirar antes de tocar un número.
 //

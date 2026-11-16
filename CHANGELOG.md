@@ -2,6 +2,56 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 12.0.0 — 2026-11-16
+
+Cimiento incremental y cero fricción. Una tecla que propone la mejor jugada, un AUTO que juega por ti, monedas, esquirlas y gotas de lacre que caen a la mesa y se recogen solas, una tirada de dados de hueso tras cada asalto y el **Árbol de la Conjura** en lugar de La Orden. Las reglas de combate de la 11.0 no cambian.
+
+### Si ya jugabas
+- **Tus Coronas son ahora Esquirlas de Corona** (1 Corona = 100 esquirlas) y **lo que compraste en La Orden sigue comprado**: está en la rama del Arsenal del Árbol. Un aviso te lo dice la primera vez.
+- **Una campaña a medias de la 11.0 se sigue jugando.**
+- **El mando cambia tres botones**: Rebobinar pasa a R3, reiniciar pide Select + Start a la vez y la pantalla completa está en Ajustes. LT es ahora Mejor jugada y Select, AUTO.
+- El cooperativo usa el protocolo 12: un cliente de la 11.0 no entra en una sala de la 12.0.
+
+### Jugar sin fricción
+- **Mejor jugada** (botón junto a Golpear, `Q`, LT): elige las cartas y el trono; tú confirmas con Golpear. Su regla: si puedes dar un Golpe exacto, lo elige; si no, tu Golpe más alto. No usa cartas especiales ni el Comodín.
+- **Marca de corona** en las cartas de la mano que pueden dar un Golpe exacto ya.
+- **AUTO** (conmutador junto a la velocidad, `A`, Select): juega el mismo bot que usa el laboratorio de balance. Apagado al abrir; cualquier clic, toque, tecla o botón te devuelve el control (mediana de 13–17 ms). **Auto-saquear** y **Auto-taberna** son dos opciones aparte en Ajustes. No existe en el Asalto diario ni en cooperativo.
+- **Velocidad 8×** (1× → 2× → 4× → 8×).
+
+### Lo que cae, los huesos y el Árbol
+- **Lo que cae a la mesa**: cada golpe suelta 1 esquirla; cada guardia abatido, 1 moneda y 2 esquirlas; cada Golpe exacto, 5 esquirlas y 1 gota de lacre; cada monarca vencido, 25 esquirlas. Se recoge pasando el cursor o el dedo, o solo a 1,0 s. Con mando y con AUTO, siempre solo. Ya está cobrado antes de recogerlo.
+- **La bolsa** de la barra cuenta monedas, esquirlas y gotas. Con **3 gotas de lacre**, la Mesa de lacre sella gratis.
+- **Tirada de huesos** tras cada asalto ganado: el Dado de oro (×1 o ×2) multiplica las monedas que cayeron y el Dado de la Corona (×1 a ×3 de serie) las esquirlas. Multiplicadores enteros, decididos por la semilla; se puede saltar sin perder nada.
+- **Árbol de la Conjura**: 30 nodos en cuatro ramas alrededor de «La corona quebrada». **El Arsenal** (13 nodos: las 12 mejoras de La Orden y el Ojo del tasador; la Bolsa de la conjura pasa a 5 rangos) es lo único que ayuda a ganar la campaña. **La Bolsa**, **Los Huesos** y **La Corona de hierro** dan más esquirlas, mejores dados y poder en el Trono infinito. Las esquirlas se cobran también al perder. Vista general con los 30 sellos y un panel con «Comprar»; se arrastra y se amplía con ratón, dedo, teclado y mando.
+
+### Deuda de la 11.0
+- **Golpear** es de latón (ya no choca con el carmesí de Corazones). La placa **«Inmune»** va sobre tinta maciza. Las **barras de Vida** son lisas.
+- **Cifras compactas**: 1,2K · 45K · 1,8M (en inglés, 1.2K), con el número entero para lectores de pantalla.
+- **Sello de pólvora**: alcanza a los tronos que tiene al lado en la mesa también con 2 y 3 tronos (antes, con tronos ausentes, no hacía nada), y la mesa lo enseña antes de golpear.
+- La cuenta dice el **Impulso** del Golpe exacto sobre el guardia siguiente («Impulso −58 al siguiente»): el aviso del trono y la cuenta ya suman lo mismo.
+- La portada inglesa dice **«Original edition · SANGRE Y PALO»**.
+- Toda descripción cabe en **100 caracteres** en los dos idiomas (antes 115).
+
+### Balance (laboratorio, 51.640 campañas, sin avisos)
+- Reinado 1: **30,2 %** con el Árbol vacío y **46,5 %** con el lleno. Reinado 8: 7,3 % y 14,8 %. Campaña estimada: **19,1 minutos**.
+- La línea «Asalto ganado» del Botín paga menos (0, 1, 2, 3 y 4 en los asaltos 1 a 5): ese oro llega ahora como monedas que caen y por el Dado de oro. Oro medio por campaña: +4,1 % sobre la 11.0.
+- La Bolsa de la conjura da 1 de oro inicial por rango (5 rangos). Llenar el Arsenal cuesta 11.500 esquirlas: una mediana de 7 campañas.
+- Una primera derrota deja unas 500 esquirlas entre el cobro y lo que cayó: compra varios rangos.
+
+### Por dentro
+- **QA visual reproducible**: dos corridas seguidas dan las mismas capturas byte a byte salvo 1 a 4 de 236 con un puñado de píxeles de borde (`npm run qa:determinista`).
+- 60 fps con 40 piezas en pantalla; sin fotograma en frío de más de 50 ms (el primer golpe del móvil baja de ~250 ms a 12 ms).
+- **Guardianes anti-cuelgue**: cada script de puertas tiene tope duro (`scripts/guardian.ts`) y cualquier orden se puede lanzar con `node scripts/con-tope.mjs <segundos> …`, que mata el árbol de procesos si se pasa.
+- 365 pruebas más 9 de cooperativo; humo en español y en inglés con una campaña entera jugada en AUTO.
+
+### Lo que no mejoró o quedó a medias
+- **«Buen ojo»** (Golpe exacto aunque te pases por 1 o 2) y **«Manga honda»** (2 cartas en La Manga) solo actúan en el **Trono infinito**: dentro de la campaña subían el Árbol lleno al 70 % de victorias (objetivo 42–48 %). Buen ojo solo, sobre el Árbol vacío, llevaba el Reinado 1 de 30,2 a 41,8 % y los Golpes exactos por asalto de 0,84 a 1,51: queda como candidato a regla base para una versión futura.
+- Los Golpes exactos por asalto siguen como en la 11.0 (0,82 con el Árbol vacío).
+- La Mejor jugada no sabe usar cartas especiales ni el Comodín.
+- En un navegador recién abierto, la primera mesa puede tardar unos 2 segundos en asentarse.
+- El Árbol tiene 14 nodos de cinco rangos; los otros 16 son llaves de uno a tres rangos.
+- Sigue sin probarse con personas ni en una Steam Deck física, y el inglés sin revisar por un hablante nativo.
+
 ## 11.0.0 — 2026-11-15
 
 Simplificación radical. Por primera vez desde la 6.0 cambian las reglas, y cambian para quitar cosas: Multi siempre entero, una sola regla de palos, dos estados, cartas numeradas de cara limpia con cuatro colores y una campaña de cinco asaltos. Motivo: siete versiones de interfaz con las reglas congeladas subieron la claridad (4,62 → 5,01) y no la aprobación (28,8 → 29,2 %, censos de 240). Encargo del usuario en `artifacts/mision/MISION-V11.md`; especificación y cierre en `SPECS/V11.md`; candidata `16fe20a`; puertas en `artifacts/mision/v11/puertas.md`.

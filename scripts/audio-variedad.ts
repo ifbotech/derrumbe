@@ -1,3 +1,5 @@
+import { guardian } from './guardian';
+guardian('qa:audio', 120); // tope duro: ver scripts/guardian.ts
 // V8 · npm run qa:audio — tres horas de música sin escucharlas. Solo CPU: importa el generador puro
 // (src/client/audio-frases.ts), que es la misma partitura que toca el WebAudio, y recorre un guion fijo de
 // 3 h × 3 semillas: seis campañas de ~30 min por semilla (portada, Mapa antes de cada asalto, La Taberna
