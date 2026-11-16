@@ -24,6 +24,8 @@ import { bakeGrain } from './engraving';
 import { bindLupa, closeLupa, lupaOpen, openLupa } from './lupa';
 import { activate, beltSlot, bindNav, enfoca, focused, keysInUse, moveFocus, onRightStick, padHeld, shiftBelt } from './nav';
 import { alternaAuto, bindAuto, entradaMando } from './auto';
+import { bindTirada, terminaTirada } from './tirada';
+import { whisper } from './whispers';
 import { arbolVista } from './arbol';
 import { connect } from './net';
 import { openSeedLink } from './lamina';
@@ -47,6 +49,9 @@ bindLupa();
 bindPings(() => !S.campaign || isRunHost());
 applySettings();
 bindAuto();
+bindTirada();
+// V12 · el primer uso de Mejor jugada con el ratón o el dedo (con Q y LT, en onKey): su Susurro
+document.addEventListener('click', (e) => (e.target as Element | null)?.closest?.('#btn-mejor') && setTimeout(() => S.selected.length && whisper('mejor')));
 addEventListener('pointerdown', startMusic, { once: true });
 addEventListener('keydown', startMusic, { once: true });
 
@@ -155,7 +160,10 @@ onRightStick((x, y, dt) => {
 /** Con la tirada a la vista: cualquier tecla (salvo moverse) la salta; Esc / B, en el resultado, sigue. */
 function ritualKey(key: string): boolean {
   const capa = document.getElementById('ritual');
-  if (!capa || key in ARROWS || topModal()) return false;
+  if (!capa || topModal()) return false;
+  // V12 · los dados rodando: cualquier tecla o botón (también moverse) los para en la cara que salió
+  if (terminaTirada()) return true;
+  if (key in ARROWS) return false;
   const saltar = capa.querySelector<HTMLElement>('#ritual-saltar');
   if (saltar) {
     // Enter / A sobre «Tirar» tira (es lo mismo: el resultado ya está decidido)
@@ -227,6 +235,7 @@ function onKey(key: string, e?: KeyboardEvent): boolean {
   if ((key === 'q' || key === 'Q') && S.screen === 'table' && !topModal() && !lupaOpen()) {
     const m = usarMejor();
     if (m) sfx.select(m.cards.length, true);
+    if (m) whisper('mejor');
     return true;
   }
   if (key === 'Enter') {

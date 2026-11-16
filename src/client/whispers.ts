@@ -20,7 +20,7 @@ import { hint } from './prompts';
 import { L, monN } from './lengua';
 import type { ClaveUi } from '../shared/i18n/es';
 
-export type WhisperId = 'inmune' | 'andamio' | 'limpio' | 'forja' | 'atajo' | 'jefe' | 'fatiga' | 'cantera' | 'ausente' | 'expuesto' | 'aturdido';
+export type WhisperId = 'inmune' | 'andamio' | 'limpio' | 'forja' | 'atajo' | 'jefe' | 'fatiga' | 'cantera' | 'ausente' | 'expuesto' | 'aturdido' | 'caida' | 'tirada' | 'arbol' | 'mejor' | 'auto' | 'gotas';
 
 /** El catálogo: una línea cada uno, por su clave (src/shared/i18n/ui-juice.ts). `{x}` se rellena con `vars`. */
 const TEXT: Record<WhisperId, ClaveUi> = {
@@ -35,9 +35,18 @@ const TEXT: Record<WhisperId, ClaveUi> = {
   ausente: 'ui.w.ausente',
   expuesto: 'ui.w.expuesto',
   aturdido: 'ui.w.aturdido',
+  // V12
+  caida: 'ui.w.caida',
+  tirada: 'ui.w.tirada',
+  arbol: 'ui.w.arbol',
+  mejor: 'ui.w.mejor',
+  auto: 'ui.w.auto',
+  gotas: 'ui.w.gotas',
 };
 /** Lo que se aprende en la primera campaña; el resto sale la primera vez que se ve, en cualquiera. */
 const BASIC = new Set<WhisperId>(['inmune', 'andamio', 'limpio']);
+/** V12: lo que cae, la tirada, el Árbol, Mejor jugada, AUTO y las gotas (en ?qa, solo si la prueba los fuerza). */
+const V12 = new Set<WhisperId>(['caida', 'tirada', 'arbol', 'mejor', 'auto', 'gotas']);
 /** Cuánto se queda a la vista (ms). Con el foco o el puntero encima, espera. */
 const SHOW_MS = 9000;
 
@@ -48,13 +57,14 @@ const seenSet = () => (seen ??= new Set<string>(loadJson<string[]>(SEEN_KEY) ?? 
 const isOff = () => loadJson<boolean>(OFF_KEY) === true;
 
 /** Con ?qa: la prueba puede forzar que salgan (true) o que no (false); null sigue la regla de QA. */
-let qaForce: boolean | null = null;
+let qaForce: boolean | null | Set<string> = null;
 const qa = new URLSearchParams(location.search).has('qa');
 
 function allowed(id: WhisperId): boolean {
   if (S.tutorial || isOff() || seenSet().has(id)) return false;
-  // en el control de calidad los estados se montan a mano: solo la mesa de «primera campaña» susurra
-  if (qa) return qaForce ?? (S.screen === 'table' && meta.runs === 0);
+  // en el control de calidad los estados se montan a mano: solo la mesa de «primera campaña» susurra (y nunca
+  // los de la V12, que saltan con cosas que las pruebas hacen a propósito: solo si la prueba los pide)
+  if (qa) return qaForce instanceof Set ? qaForce.has(id) : (qaForce ?? (S.screen === 'table' && meta.runs === 0 && !V12.has(id)));
   return BASIC.has(id) ? meta.runs === 0 : true;
 }
 
@@ -65,6 +75,22 @@ function place(id: WhisperId, el: HTMLElement): boolean {
     if (!box) return false;
     el.classList.add('inline');
     box.after(el);
+    return true;
+  }
+  // V12 · la tirada: dentro de su caja, debajo del título (la capa tapa la mesa)
+  if (id === 'tirada') {
+    const h = document.querySelector('#ritual .ritual-caja h2');
+    if (!h) return false;
+    el.classList.add('inline');
+    h.after(el);
+    return true;
+  }
+  // V12 · el Árbol: arriba en el pergamino, sobre las ramas (ni el panel ni «Comprar» quedan debajo)
+  if (id === 'arbol') {
+    const lienzo = document.querySelector('.arbol-lienzo');
+    if (!lienzo || topModal()) return false;
+    el.classList.add('sobre-arbol');
+    lienzo.appendChild(el);
     return true;
   }
   if (id === 'atajo') {
@@ -94,7 +120,7 @@ export function whisper(id: WhisperId, vars: Record<string, string> = {}): void 
   el.className = 'whisper';
   el.dataset.w = id;
   el.setAttribute('role', 'status');
-  el.innerHTML = `<p>${fill(L(TEXT[id]), { kh: hint('stash'), ...vars })}</p><button type="button" class="whisper-off">${L('ui.w.off')}</button>`;
+  el.innerHTML = `<p>${fill(L(TEXT[id]), { kh: hint(id === 'mejor' ? 'strike' : 'stash'), ...vars })}</p><button type="button" class="whisper-off">${L('ui.w.off')}</button>`;
   if (!place(id, el)) return;
   seenSet().add(id);
   saveJson(SEEN_KEY, [...seenSet()]);
@@ -165,7 +191,8 @@ export function whisperSetting(): [string, string, string, () => void] {
 if (qa)
   Object.assign(window, {
     __whispers: {
-      force: (on: boolean | null) => void (qaForce = on),
+      // con una lista, solo esos (V12: la prueba de cada Susurro nuevo sin que otro le quite el sitio)
+      force: (on: boolean | null | string[]) => void (qaForce = Array.isArray(on) ? new Set(on) : on),
       seen: () => [...seenSet()],
       off: isOff,
       reset: () => {

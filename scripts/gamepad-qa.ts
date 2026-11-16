@@ -1002,6 +1002,17 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
         await page.waitForSelector('#ritual #ritual-seguir', { timeout: 8_000 }).catch(() => undefined);
         const visto = await page.evaluate(() => ({ fase: document.getElementById('ritual')?.dataset.fase ?? 'sin capa', foco: document.activeElement?.id || document.activeElement?.className || '∅', capas: [...document.querySelectorAll('.modal, .end, .lupa, .whisper')].map((m) => m.className).join(' · ') }));
         check(visto.fase === 'final' || visto.fase === 'sin capa', `A tira los huesos y enseña lo que cae${visto.fase === 'antes' ? ` (sigue en «antes»; foco en ${visto.foco}; capas: ${visto.capas || 'ninguna'})` : ''}`);
+        // V12 · juice-ux B: los dados ruedan (unos 5 s a 1×) y B los para en la cara que salió; otra B sigue
+        if (tiradas === 1 && visto.fase === 'final') {
+          const rueda = await page.evaluate(() => document.getElementById('ritual')?.classList.contains('rodando') ?? false);
+          await B();
+          await page.waitForTimeout(80);
+          const parado = await page.evaluate(() => {
+            const capa = document.getElementById('ritual');
+            return !!capa && !capa.classList.contains('rodando') && [...capa.querySelectorAll<HTMLElement>('.hueso')].every((h) => h.querySelector('.hueso-cara')?.textContent === h.querySelector('.cara.sale')?.textContent);
+          });
+          check(rueda && parado, `A hace rodar los dados y B los para en la cara que salió, sin cerrar la tirada (${rueda ? 'rodaban' : 'no rodaban'})`);
+        }
       }
       await B();
       await page.waitForTimeout(300);

@@ -29,6 +29,7 @@ import { beltEl, deckModal, showRules, showSettings } from './widgets';
 import { tableWhispers, whisper } from './whispers';
 import { cifra, cifraEl, marcaCifra } from './cifra';
 import { bolsaHtml, capaCaida, recogerCaida } from './caida';
+import { caeDe, pintaBolsa } from './iman';
 import { ICONO_AUTO, ICONO_MEJOR, INSIGNIA_EXACTA } from './grabado12';
 import { MejorJugada, cartasConExacto, mejorJugada } from '../rules/mejor-jugada';
 import type { GameState } from '../rules/engine';
@@ -335,6 +336,7 @@ export function renderHud(): void {
       c.run.ascension ? `<div class="chip level-chip" data-tip="${L('ui.mesa.reinado.tip', { n: c.run.ascension + 1 })}"><span>${L('ui.mesa.reinado')}</span><b>${c.run.ascension + 1}</b></div>` : '',
     ].join('');
   }
+  pintaBolsa(); // juice-ux V12: la bolsa cuenta lo que ya llegó (lo que vuela sube al llegar)
   ajustaBarra();
 }
 
@@ -1244,7 +1246,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
     case 'gold':
       // en sala, el oro del asalto se va sumando aquí; al cerrar el asalto llega la cuenta buena del servidor
       if (S.campaign?.online && S.campaign.run.phase === 'battle') S.campaign.run.gold += ev.amount;
-      coins($('#stage').firstElementChild ?? $('#score'), $('#bolsa-oro')?.parentElement ?? $('#bolsa'), ev.amount);
+      if (!S.campaign) coins($('#stage').firstElementChild ?? $('#score'), $('#bolsa-oro')?.parentElement ?? $('#bolsa'), ev.amount); // juice-ux V12: en campaña, las monedas son lo que cae (iman.ts)
       sfx.coins(ev.amount);
       renderHud();
       logLine(L('ui.log.oro', { n: ev.amount }), 'yel');
@@ -1350,6 +1352,7 @@ export async function pump(): Promise<void> {
         try {
           voiceOn(ev); // juice-ux: la voz del monarca (Contraataque, caída)
           await animate(ev, batch.events);
+          caeDe(ev, batch.events); // juice-ux V12: las piezas que suelta este evento saltan y vuelan a la bolsa (iman.ts)
         } catch (err) {
           console.error(err);
         }

@@ -44,6 +44,20 @@ export function installQaJuice(): void {
       meta: () => ({ renown: meta.renown, up: { ...meta.up } }),
       /** V12: zum y nivel de detalle del Árbol. */
       arbol: () => ({ zum: arbolVista.zumActual, nivel: arbolVista.nivel }),
+      /** V12 · bloque B: el saldo de la campaña y lo que enseña la bolsa de la barra (para ver que sube al llegar). */
+      bolsa: () => {
+        const run = S.campaign?.run;
+        const txt = (sel: string) => document.querySelector(sel)?.textContent ?? '';
+        return { oro: run?.gold ?? -1, esquirlas: run?.esquirlas ?? -1, gotas: run?.gotas ?? -1, ve: { oro: txt('#bolsa-oro'), esquirlas: txt('#bolsa-esquirlas'), gotas: txt('#bolsa-gotas') } };
+      },
+      /** V12 · bloque B: un rango del Árbol en la campaña en curso (Piedra imán) y las gotas que lleva. */
+      campana: (o: { up?: Record<string, number>; gotas?: number }) => {
+        const run = S.campaign?.run;
+        if (!run) return false;
+        if (o.up) run.up = { ...run.up, ...o.up };
+        if (o.gotas !== undefined) run.gotas = o.gotas;
+        return true;
+      },
       /** V12: pone Auto-saquear, Auto-taberna y la velocidad (lo que el jugador haría en Ajustes y en la barra). */
       autoOpts: (o: { saquear?: boolean; taberna?: boolean; speed?: 1 | 2 | 4 | 8 }) => {
         if (o.saquear !== undefined) settings.autoSaquear = o.saquear;

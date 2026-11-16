@@ -20,9 +20,11 @@ import { sfx } from './audio';
 import { campaignAct, runDo } from './campaign';
 import { RUN_PLAYER, S, settings, toast } from './core';
 import { autoVetado, canAct, conmutaAuto, refreshAuto, renderInteractive } from './table';
+import { tiradaRodando } from './tirada';
+import { whisper } from './whispers';
 
 /** Pausa entre pasos a 1× (ms): en la mesa, de una jugada a la siguiente; fuera, de pantalla a pantalla. */
-const PAUSA = { mesa: 900, campana: 1100, ritual: 1400 } as const;
+const PAUSA = { mesa: 900, campana: 1100 } as const;
 /** Cada cuánto se vuelve a mirar si ya se puede dar el paso (la mesa animando, una pantalla entrando…). */
 const SONDEO = 120;
 /** Ventanas que abre el jugador: con ellas encima AUTO espera (y abrirlas ya lo apagó). */
@@ -156,6 +158,8 @@ function paso(): void {
   if (S.screen !== null && S.screen !== 'table' && S.screen !== 'run') return apagaAuto();
   // la tirada de huesos se tira sola, y su resultado se enseña un momento antes de seguir
   const ritual = document.getElementById('ritual');
+  // los dados rodando: se espera a que se paren (y se deja leer el resultado un momento)
+  if (ritual && tiradaRodando(ritmo(PAUSA.campana / 2))) return programa(SONDEO);
   if (ritual) {
     const tirar = ritual.querySelector<HTMLButtonElement>('#ritual-tirar');
     const seguir = ritual.querySelector<HTMLButtonElement>('#ritual-seguir');
@@ -164,7 +168,7 @@ function paso(): void {
       aviso(null);
       if (tirar) autoQa.rituales++;
       b.click();
-      return programa(ritmo(tirar ? PAUSA.ritual : PAUSA.campana / 2));
+      return programa(tirar ? SONDEO : ritmo(PAUSA.campana / 2));
     }
   }
   // lo que solo informa se cierra; lo que abrió el jugador, se espera
@@ -243,6 +247,7 @@ export function bindAuto(): void {
     if (!on) return apagaAuto();
     gen++;
     pausa = null;
+    whisper('auto');
     programa(ritmo(PAUSA.mesa / 3));
   });
   addEventListener('pointerdown', alEntrar, true);

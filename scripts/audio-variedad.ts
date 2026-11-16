@@ -13,7 +13,10 @@
 //   · un compás con monarca, o con presión > 0,6, sale sin tambores de guerra y metales;
 //   · la campana de 8 Golpes exactos seguidos no sube 7 semitonos, o no vuelve al tono base tras romperse la cadena;
 //   · suena una nota fuera de re menor (re eólico; el do♯ solo en las cadencias).
-import { MOTIVOS_ASALTO, RE_MENOR, SENSIBLE, campana, cadenaTras, compas, flujo, mezcla, variacion, type Compas, type Escena, type Evento } from '../src/client/audio-frases';
+// V12 (juice-ux B): la escala de lo que cae (cada pieza recogida seguida sube un peldaño, vuelve abajo tras una pausa,
+// todo en re menor, moneda / esquirla / gota en tres registros) y, en el registro de efectos, la recogida de cada
+// golpe y los botes de los dados de hueso (sin rachas de más de 8 iguales).
+import { ESCALA_RECOGIDA, MOTIVOS_ASALTO, OCTAVA_PIEZA, RECOGIDA_PAUSA_MS, RE_MENOR, SENSIBLE, campana, cadenaTras, compas, flujo, mezcla, notaRecogida, pasoRecogida, variacion, type Compas, type Escena, type Evento } from '../src/client/audio-frases';
 
 const T0 = Date.now();
 const LIMITE_MS = 120_000;
@@ -172,10 +175,22 @@ function efectos(semilla: number): { lista: Sonido[]; cadenas: number[] } {
       if (r() < 0.5) suena('slash');
       cadena = cadenaTras(cadena, false);
       cadenas.push(cadena);
+      // V12 · lo que cae: de 1 a 4 piezas por golpe, seguidas (la escala sube) y, tras la pausa, otra vez abajo
+      {
+        let paso = 0;
+        const piezas = 1 + Math.floor(r() * 4);
+        for (let k = 0; k < piezas; k++) {
+          const tipo = (['esquirla', 'esquirla', 'moneda', 'gota'] as const)[Math.floor(r() * 4)];
+          paso = pasoRecogida(paso, k ? 120 : RECOGIDA_PAUSA_MS + 1);
+          suena(`recoge-${tipo}`, notaRecogida(tipo, paso));
+        }
+      }
       if (r() < 0.4) suena('sirenBlocked');
       if (r() < 0.2) suena('stash');
     }
     if (b % 8 === 1 || b % 8 === 3 || b % 8 === 5) for (let k = 0; k < 6; k++) suena('coins');
+    // V12 · la tirada de huesos tras cada asalto ganado: dos dados, cuatro botes cada uno
+    for (let k = 0; k < 8; k++) suena('hueso');
   }
   return { lista, cadenas };
 }
@@ -216,6 +231,26 @@ console.log('qa:audio · 3 h simuladas × 3 semillas sobre el generador puro (sr
   const tras = campana((c = cadenaTras(c, true)));
   check(semis.slice(0, 8).join() === '0,1,2,3,4,5,6,7' && semis[8] === 7, `la campana de 8 Golpes exactos seguidos sube +1 por exacto hasta +7 (${semis.join(' ')})`);
   check(tras === 0, `y vuelve al tono base con el primer golpe que no es exacto (${tras})`);
+}
+
+// V12 · la escala de lo que cae
+{
+  const pasos: number[] = [];
+  let p = 0;
+  for (let k = 0; k < 14; k++) pasos.push((p = pasoRecogida(p, k ? 110 : RECOGIDA_PAUSA_MS + 1)));
+  const tras = pasoRecogida(p, RECOGIDA_PAUSA_MS + 200);
+  const sube = pasos.slice(0, ESCALA_RECOGIDA.length).every((x, i) => x === i) && pasos.slice(ESCALA_RECOGIDA.length).every((x) => x === ESCALA_RECOGIDA.length - 1);
+  check(sube, `lo que cae: cada pieza recogida seguida sube un peldaño de la escala y arriba se queda (${pasos.join(' ')})`);
+  check(tras === 0, `y tras ${RECOGIDA_PAUSA_MS + 200} ms sin recoger vuelve a la nota de abajo (${tras})`);
+  const fuera: string[] = [];
+  for (const tipo of ['moneda', 'esquirla', 'gota'] as const)
+    for (let k = 0; k < ESCALA_RECOGIDA.length; k++) {
+      const midi = 62 + notaRecogida(tipo, k);
+      if (!RE_MENOR.has(((midi % 12) + 12) % 12)) fuera.push(`${tipo} ${k}`);
+    }
+  check(fuera.length === 0, `todas las notas de la recogida en re menor (${3 * ESCALA_RECOGIDA.length} notas${fuera.length ? ` · fuera: ${fuera.join(', ')}` : ''})`);
+  const reg = Object.values(OCTAVA_PIEZA);
+  check(new Set(reg).size === 3, `moneda, esquirla y gota suenan en tres registros distintos (${Object.entries(OCTAVA_PIEZA).map(([k, v]) => `${k} ${v > 0 ? '+' : ''}${v}`).join(', ')} semitonos)`);
 }
 
 const resumen: string[] = [];

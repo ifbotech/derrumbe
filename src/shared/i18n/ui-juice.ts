@@ -75,6 +75,13 @@ export const UI_JUICE = {
   'ui.w.aturdido': ['<b>Aturdido {glyph}:</b> ese trono se salta su próximo Contraataque. Lo deja un golpe de tres palos.', '<b>Stunned {glyph}:</b> that throne skips its next Counterattack. A hit with three suits leaves it Stunned.'],
   // V11: el registro de la mesa, cuando el Contraataque saca el palo de un trono que no está en el asalto (table.ts)
   'ui.log.por.ausente': ['{casa} no está en este asalto', '{casa} is not in this assault'],
+  // V12: lo que cae, la tirada de huesos, el Árbol, Mejor jugada, AUTO y las 3 gotas, la primera vez
+  'ui.w.caida': ['<b>Lo que cae</b> vuela solo a tu bolsa: esquirlas, monedas y gotas. Pasa el cursor o el dedo para cogerlo antes.', '<b>Loot</b> flies to your purse by itself: shards, coins and drops. Sweep the cursor or a finger over it to grab it sooner.'],
+  'ui.w.tirada': ['<b>Tirada de huesos:</b> tras ganar un asalto, los dados multiplican lo que cayó. Cualquier tecla la salta.', '<b>Bone Roll:</b> after a win, dice multiply what dropped. Any key skips it.'],
+  'ui.w.arbol': ['<b>Árbol de la Conjura:</b> gasta esquirlas aquí para mejorar para siempre. Lo que puedes comprar lleva filete de latón.', '<b>Conspiracy Tree:</b> spend shards here to get better for good. What you can buy has a brass frame.'],
+  'ui.w.mejor': ['<b>Mejor jugada</b> elige por ti el mejor golpe. Tú confirmas con Golpear{kh}.', '<b>Best Play</b> picks the best strike for you. You confirm with Strike{kh}.'],
+  'ui.w.auto': ['<b>AUTO:</b> el juego juega solo. Cualquier tecla, clic o botón te devuelve el mando.', '<b>AUTO:</b> the game plays itself. Any key, click or button hands control back to you.'],
+  'ui.w.gotas': ['<b>{n} gotas de lacre:</b> la próxima Mesa de lacre te sella gratis.', '<b>{n} Wax Drops:</b> the next Wax Table seals for free.'],
   'ui.w.off': ['No mostrar más', 'Do not show again'],
   'ui.w.ajuste': ['Susurros', 'Whispers'],
   'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Asedio final…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Final Siege…).'],

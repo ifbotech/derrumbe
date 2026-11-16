@@ -25,6 +25,7 @@ import { deathIn, validDeath } from './causa';
 import { setScreen } from './router';
 import { choice, toolTile } from './widgets';
 import { platform } from './platform';
+import { whisper } from './whispers';
 
 const META_KEY = 'derrumbe:meta';
 const SETTLED_KEY = 'derrumbe:settled';
@@ -235,6 +236,7 @@ export function renderGuild(): void {
       }),
   );
   if (tab === 'ups') avisoMigracion(meta, saveMeta);
+  if (tab === 'ups') whisper('arbol'); // juice-ux V12: el Susurro del Árbol, la primera vez que se abre
 }
 
 /** Archivo de crónicas: cómo acabó cada una de las últimas campañas, con su semilla para volver a jugarla. */

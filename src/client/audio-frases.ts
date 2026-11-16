@@ -321,3 +321,18 @@ export function variacion(semilla: number, efecto: string, n: number): Variacion
 export const cadenaTras = (antes: number, exacto: boolean) => (exacto ? antes + 1 : 0);
 /** Semitonos de la campana para la cadena `n` (1 = el primer exacto, tono base): +1 por exacto, tope +7. */
 export const campana = (n: number) => (n <= 1 ? 0 : Math.min(7, n - 1));
+
+// ───────────────────────── V12 · lo que cae: la escala de la recogida ─────────────────────────
+
+/** Silencio (ms) que da la racha de recogida por terminada: la siguiente pieza vuelve a la nota de abajo. */
+export const RECOGIDA_PAUSA_MS = 700;
+/**
+ * La escala de la recogida, en semitonos sobre re: re eólico pentatónico (re fa sol la do) que sube dos octavas.
+ * Cada pieza recogida seguida sube un peldaño; arriba se queda en el último.
+ */
+export const ESCALA_RECOGIDA = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24] as const;
+/** El peldaño de la pieza que llega: el siguiente si la anterior llegó hace menos de `RECOGIDA_PAUSA_MS`; si no, el primero. */
+export const pasoRecogida = (antes: number, dtMs: number) => (dtMs < RECOGIDA_PAUSA_MS ? Math.min(ESCALA_RECOGIDA.length - 1, antes + 1) : 0);
+/** Semitonos sobre re de cada pieza: la moneda (campanilla) arriba, la esquirla (laúd de hierro) en medio, la gota (lacre) abajo. */
+export const OCTAVA_PIEZA = { moneda: 12, esquirla: 0, gota: -12 } as const;
+export const notaRecogida = (tipo: keyof typeof OCTAVA_PIEZA, paso: number) => OCTAVA_PIEZA[tipo] + ESCALA_RECOGIDA[Math.max(0, Math.min(ESCALA_RECOGIDA.length - 1, paso))];

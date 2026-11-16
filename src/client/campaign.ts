@@ -10,6 +10,7 @@ import { sfx } from './audio';
 import { cardEl, portraitEl } from './card';
 import { $, Campaign, RUN_PLAYER, S, loadJson, modal, toast } from './core';
 import { dealIn, ribbon } from './fx';
+import { caidaPendiente } from './caida';
 import { voiceEnter } from './voces';
 import { maybeSettle, meta, saveMeta, trackMeta } from './guild';
 import { sendMsg } from './net';
@@ -239,7 +240,7 @@ export function campaignAct(action: Action): void {
       c.undoRun = null;
     } else {
       if (action.type !== 'stash') c.undoRun = before ?? null;
-      trackEvents(c.run, res.events);
+      caidaPendiente.push(...trackEvents(c.run, res.events)); // juice-ux V12: lo que cae, para que la mesa lo haga volar (iman.ts)
       if (res.state.phase !== 'playing') finishBattle(c.run, res.state);
     }
     S.selected.length = 0;

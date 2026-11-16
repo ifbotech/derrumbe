@@ -10,6 +10,9 @@
 // antes una vez en frío (no cuenta, va a enFrio en el informe): en un perfil nuevo la GPU compila sus
 // sombreadores la primera vez que ve cada efecto, y eso no es lo que siente quien juega una partida.
 //
+// V12: un sexto escenario, «caida», solo en 1280×800 y 390×844: 40 piezas que saltan de los tronos, se posan, el
+// cursor las aspira y el imán se lleva el resto a la bolsa (iman.ts).
+//
 // V11: antes de todo, una pasada en frío que SÍ cuenta: navegador recién lanzado, contexto nuevo en
 // 1920×1080 y el primer sello de lacre de la sesión (con su lámina); falla si un fotograma pasa de 50 ms.
 //
@@ -98,7 +101,7 @@ type Q = { __qa: { go(s: string): Promise<boolean> }; __qaFx: Record<string, (..
 const go = (page: Page, s: string) => page.evaluate((x) => (window as unknown as Q).__qa.go(x), s);
 
 /** Los cinco escenarios: cada uno prepara su pantalla y dispara el efecto como lo dispara el juego. */
-const SCENARIOS: { name: string; label: string; prep: (p: Page) => Promise<unknown>; run: (p: Page) => Promise<{ deltas: number[]; reps: number; loaf?: unknown[] }> }[] = [
+const SCENARIOS: { name: string; label: string; views?: string[]; prep: (p: Page) => Promise<unknown>; run: (p: Page) => Promise<{ deltas: number[]; reps: number; loaf?: unknown[] }> }[] = [
   {
     name: 'tajo',
     label: 'golpe con tajo',
@@ -169,6 +172,34 @@ const SCENARIOS: { name: string; label: string; prep: (p: Page) => Promise<unkno
           w.__qaFx.coins('#npc', '.purse b', 8);
           w.__qaSfx.coins(8);
         }, 1000);
+      }),
+  },
+  {
+    // V12 · juice-ux B: lo que cae. 40 piezas saltan desde los tronos y se posan; el cursor pasa por encima de la mitad
+    // (las aspira) y el imán se lleva el resto al segundo. Solo transform y opacity, con el depósito de 40.
+    name: 'caida',
+    label: '40 piezas que caen y se aspiran',
+    views: ['1280x800', '390x844'],
+    prep: async (p) => {
+      await go(p, 'mesa');
+      await p.evaluate(() => document.querySelectorAll('.whisper').forEach((w) => w.remove()));
+    },
+    run: (p) =>
+      p.evaluate(() => {
+        const w = window as unknown as Q & { __qaIman: { soltar(n: number): number; quietas(): { x: number; y: number }[]; estado(): { vivas: number } } };
+        const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        return w.__fpsMeasure(async () => {
+          w.__qaIman.soltar(40);
+          // el cursor barre la mesa cuando ya hay piezas posadas: aspira las que pilla
+          await pausa(900);
+          const q = w.__qaIman.quietas().slice(0, 20);
+          for (const pt of q) {
+            dispatchEvent(new PointerEvent('pointermove', { clientX: pt.x + 6, clientY: pt.y + 4, pointerType: 'mouse', bubbles: true }));
+            await pausa(16);
+          }
+          const t0 = performance.now();
+          while (w.__qaIman.estado().vivas > 0 && performance.now() - t0 < 5000) await pausa(50);
+        }, 2000);
       }),
   },
   {
@@ -305,6 +336,7 @@ async function main(): Promise<void> {
       const out: Record<string, Medida> = {};
       const frio: Record<string, { max: number; largos: number; largosDetalle?: unknown[] }> = {};
       for (const sc of SCENARIOS) {
+        if (sc.views && !sc.views.includes(view.name)) continue;
         // una pasada en frío, que no cuenta: el perfil de Playwright es nuevo en cada lanzamiento y la GPU
         // compila sus sombreadores la primera vez que ve cada efecto (en un jugador, una vez y a disco)
         await sc.prep(page);

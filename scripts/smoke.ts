@@ -24,6 +24,7 @@ import { BRAND } from '../src/shared/brand';
 import { telemetrySuite } from './telemetry-qa';
 import { feedbackButtonsSuite } from './feedback-qa';
 import { arbolSuite, autoDiariaSuite, autoPausaSuite, autoSuite, mejorSuite } from './v12-qa';
+import { caidaSuite, susurrosSuite, tiradaSuite } from './v12-sensacion';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 
 const OUT = resolve(process.env.QA_OUT?.trim() ? join(process.env.QA_OUT.trim(), 'smoke') : LANG === 'en' ? 'artifacts/visual-qa-en/smoke' : 'artifacts/visual-qa/smoke');
@@ -514,6 +515,14 @@ async function main(): Promise<void> {
     await autoPausaSuite(browser, site.url, check, problems);
     await autoDiariaSuite(browser, site.url, check, problems);
     await autoSuite(browser, site.url, check, problems);
+    // ── V12 · juice-ux B: lo que cae y el imán, la tirada de huesos animada y los seis Susurros nuevos ──
+    console.log('Lo que cae');
+    const caida = await caidaSuite(browser, site.url, check, problems);
+    console.log('Tirada de huesos');
+    const huesos = await tiradaSuite(browser, site.url, check, problems);
+    console.log(`  medidas para la duración (1×): tirada ${(huesos.mediana / 1000).toFixed(2)} s (mediana de ${huesos.medidas.length}) · jugada con lo que cae ${(caida.jugada / 1000).toFixed(1)} s (mediana de ${caida.jugadas.length})`);
+    console.log('Susurros nuevos');
+    await susurrosSuite(browser, site.url, check, problems);
   }
 
   // ── V8 · una segunda pasada con «Reducir movimiento»: nada vuela ni tiembla ──
