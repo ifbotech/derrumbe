@@ -2,6 +2,13 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 20.0.0 — 2026-11-16
+
+La guía se escribe a tiza. La placa de cada paso de la Partida guiada deja de ser un rótulo amarillo de aviso y pasa a pizarra con letra de tiza, como los Susurros. Ninguna regla cambia.
+
+### Partida guiada
+- **La placa del paso**: fondo de pizarra, texto en tiza, un filete de tiza y la carta nombrada en papel. Mismo tamaño y mismo sitio. El aro que señala la carta o el trono del paso sigue en ámbar.
+
 ## 19.0.0 — 2026-11-16
 
 La cuenta que cuadra. El Golpe se escribe con todas sus cifras y la cuenta se lee como una fórmula; con mando, la carta enfocada es la más grande de la fila. Ninguna regla cambia. (La 17.0 y la 18.0 fueron candidatas que el panel rechazó; lo que funcionó de ellas está aquí.)
