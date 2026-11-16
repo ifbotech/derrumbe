@@ -125,7 +125,7 @@ describe('preparación', () => {
     expect(run.treats).toEqual(TREATMENTS);
     expect(run.pool.length).toBe(SPECIALS.length);
     expect(run.maxIntegrity).toBe(BALANCE.inicio.vida);
-    expect(run.gold).toBe(4 + 2 * BALANCE.orden.oroPorNivel);
+    expect(run.gold).toBe(4 + 5 * BALANCE.arbol.oroPorNivel);
     expect(cleanUp({ vale: 99, inventada: 3, caja: -1 })).toMatchObject({ vale: 2, caja: 0 });
   });
 
@@ -286,7 +286,9 @@ describe('cobro y selección', () => {
     const run = newRun({}, 11);
     win(run);
     expect(run.phase).toBe('reward');
-    expect(run.pay[0]).toEqual(['Asalto ganado', BALANCE.cobro.asalto + 1]);
+    // V12: «Asalto ganado» paga max(0, cobro.asalto + asalto) y ya no hay línea de Golpes exactos (son gotas de lacre)
+    expect(run.pay.find(([l]) => l === 'Asalto ganado')?.[1] ?? 0).toBe(Math.max(0, BALANCE.cobro.asalto + 1));
+    expect(run.pay.some(([l]) => l === 'Golpes exactos')).toBe(false);
     expect(run.integrity).toBe(BALANCE.inicio.vida);
     expect(run.draft.map((o) => o.kind)).toEqual(['special', 'special', 'card']);
     const card = run.draft[2];
@@ -649,14 +651,15 @@ describe('final, cimientos abisales y gremio', () => {
     const run = newRun({}, 13);
     run.stage = 4;
     run.phase = 'lost';
-    expect(settle(meta, run)).toBe(3);
-    expect(meta).toMatchObject({ renown: 3, runs: 1, best: 3, wins: 0 });
+    // V12: el cobro es en Esquirlas de Corona (3 Coronas × 100), y la Bolsa de la conjura cuesta 300
+    expect(settle(meta, run)).toBe(300);
+    expect(meta).toMatchObject({ renown: 300, runs: 1, best: 3, wins: 0 });
     expect(buyUpgrade(meta, 'caja')).toBe(true);
     expect(meta).toMatchObject({ renown: 0, up: { caja: 1 } });
     expect(buyUpgrade(meta, 'caja')).toBe(false);
     const old = { renown: 2, up: { cimientos: 2, seguro: 1 }, runs: 9, wins: 1, best: 8, ascMax: 1, ach: { madre: true }, stats: { floors: 80 }, seen: { relics: ['piqueta', 'inventada'], specials: ['bola'], bosses: [], forms: [] } };
     const migrated = loadMeta(old);
-    expect(migrated).toMatchObject({ v: META_VERSION, renown: 2 + 3 + 5 + 4, up: {}, runs: 9, best: LAST_STAGE, ach: { madre: true } });
+    expect(migrated).toMatchObject({ v: META_VERSION, renown: (2 + 3 + 5 + 4) * 100, up: {}, runs: 9, best: LAST_STAGE, ach: { madre: true } });
     expect(migrated.stats).toMatchObject({ floors: 80, forged: 0 });
     expect(migrated.seen.tools).toEqual(['piqueta']);
     expect(loadMeta(migrated).renown).toBe(migrated.renown); // migrar dos veces no regala nada

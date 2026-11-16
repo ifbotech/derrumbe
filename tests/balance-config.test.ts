@@ -84,11 +84,14 @@ describe('balance-config.json: esquema y rangos', () => {
       expect(r.weight).toBeGreaterThan(0);
     }
     for (const v of [t.reliquias, t.sobre, t.sobreCiego, t.mesaLacre, t.pergamino.base, t.pergamino.porNivel, t.hoguera.base, t.hoguera.paso, t.curar.base, t.curar.paso, t.curar.vida, t.renovar.base, t.renovar.paso]) expect(ent(v) && v >= 0).toBe(true);
-    for (const v of Object.values(RAW.cobro)) expect(ent(v) && v >= 0).toBe(true);
+    // V12: cobro.asalto puede ser negativo (la línea «Asalto ganado» nunca baja de 0); el resto, ≥ 0
+    for (const [k, v] of Object.entries(RAW.cobro)) expect(ent(v) && (k === 'asalto' || v >= 0), k).toBe(true);
     expect(RAW.cobro.vidaCada).toBeGreaterThan(0);
     expect(RAW.cobro.interesCada).toBeGreaterThan(0);
-    expect(Object.keys(RAW.orden.costes).sort()).toEqual(UPGRADES.map((u) => u.id).sort());
-    for (const cs of Object.values(RAW.orden.costes)) for (const c of cs) expect(ent(c) && c > 0).toBe(true);
+    // V12: el Árbol: costes de los nodos de combate y bases de los incrementales, enteros y > 0
+    expect([...Object.keys(RAW.arbol.costes), ...Object.keys(RAW.arbol.bases)].sort()).toEqual(UPGRADES.map((u) => u.id).sort());
+    for (const cs of Object.values(RAW.arbol.costes) as number[][]) for (const c of cs) expect(ent(c) && c > 0).toBe(true);
+    for (const c of Object.values(RAW.arbol.bases) as number[]) expect(ent(c) && c > 0).toBe(true);
     expect(RAW.inicio.vida).toBeGreaterThan(RAW.barajas.corta.vida + RAW.reinados.heridasViejas);
     for (const v of Object.values(RAW.inicio)) expect(ent(v) && v >= 0).toBe(true);
   });
@@ -170,7 +173,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(engine.DIFFICULTY.obra).toMatchObject(B.clasica.obra);
     expect(engine.DIFFICULTY.brutal).toMatchObject(B.clasica.brutal);
     for (const r of ['comun', 'oficio', 'capataz', 'reliquia'] as const) expect(tools.RARITY[r]).toMatchObject(B.taberna.rarezas[r]);
-    for (const u of run.UPGRADES) expect(u.costs, u.id).toEqual(B.orden.costes[u.id]);
+    for (const u of run.UPGRADES) if (u.combate) expect(u.costs, u.id).toEqual(B.arbol.costes[u.id]);
     for (const s of specials.SPECIALS) expect(s.fx, s.id).toEqual(B.especiales[s.id]);
     // y lo que se enseña sale de los mismos números
     for (const t of tools.TOOLS) for (const v of Object.values(B.reliquias[t.id] ?? {})) expect(t.desc, t.id).toContain(num(v));
@@ -189,7 +192,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const { B, run } = await patched();
     const r = run.newRun({ up: { caja: 1 } }, 5);
     expect(r.maxIntegrity).toBe(B.inicio.vida);
-    expect(r.gold).toBe(B.inicio.oro + B.orden.oroPorNivel);
+    expect(r.gold).toBe(B.inicio.oro + B.arbol.oroPorNivel);
     expect(r.interestCap).toBe(B.inicio.interesTope);
     expect(r.pack).toHaveLength(B.inicio.sobre);
     expect(run.newRun({ ascension: 5 }, 5).maxIntegrity).toBe(B.inicio.vida - B.reinados.heridasViejas);

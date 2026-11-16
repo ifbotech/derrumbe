@@ -131,6 +131,8 @@ export interface Config {
   ownMult?: number;
   /** Margen del golpe limpio: el piso cae y cuenta como limpio a ±cleanTol de su resistencia. */
   cleanTol?: number;
+  /** Gracia del Golpe exacto por arriba (V12, Buen ojo): también es exacto si el Daño se pasa por cleanTol + cleanOver o menos. */
+  cleanOver?: number;
   /** Todo golpe perfora, lleve o no picas. */
   alwaysPierce?: boolean;
   /** Niveles de plano por formación. */
@@ -514,7 +516,8 @@ function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean,
   out.events.push({ e: 'hit', tower: t.suit, amount, splash, damage: t.damage, hp: floorHp(t, cfg) });
   while (standing(t) && t.damage >= floorHp(t, cfg) - tol) {
     const hp = floorHp(t, cfg);
-    const clean = Math.abs(t.damage - hp) <= tol;
+    // exacto a ±cleanTol; por arriba, también hasta cleanTol + cleanOver (Buen ojo)
+    const clean = t.damage - hp >= -tol && t.damage - hp <= tol + (cfg.cleanOver ?? 0);
     const excess = clean ? 0 : t.damage - hp;
     const rank = t.floors.shift()!;
     out.fallenBy[t.suit] = (out.fallenBy[t.suit] ?? 0) + 1;

@@ -3,7 +3,7 @@
 import { Card, FORMATIONS, SEALS, TREATMENTS } from '../rules/engine';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteRun, unlocksOf } from '../rules/achievements';
 import { dondeActa } from '../rules/migracion';
-import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, UPGRADES, buyUpgrade, depthOf, loadMeta, settle, stagesCleared } from '../rules/run';
+import { BOSS, BOSSES, DECK, DECKS, LAST_STAGE, Meta, UPGRADES, buyUpgrade, cobroAbismo, depthOf, loadMeta, settle, stagesCleared } from '../rules/run';
 import { SPECIALS } from '../rules/specials';
 import { ARCH, Arch, TOOLS } from '../rules/tools';
 import { DICCIONARIOS } from '../shared/i18n';
@@ -111,10 +111,8 @@ export function maybeSettle(c: Campaign): void {
     fileActa(c, 0);
     return saveMeta();
   }
-  if (run.endless) {
-    lastGain = depthOf(run);
-    meta.renown += lastGain;
-  } else lastGain = settle(meta, run);
+  if (run.endless) lastGain = cobroAbismo(meta, run); // V12-B: provisional, lo rehace arte-ui (Tronos infinitos × 100 y esquirlas desde la corte)
+  else lastGain = settle(meta, run);
   fileActa(c, lastGain);
   saveMeta();
 }

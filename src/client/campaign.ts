@@ -2,8 +2,8 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { abonoCampanaVieja } from '../rules/migracion';
-import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
+import { ESQUIRLAS_POR_CORONA, abonoCampanaVieja } from '../rules/migracion';
+import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
 import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
 import { sfx } from './audio';
@@ -32,6 +32,7 @@ export function pickDeck(id: string): void {
 
 export function savedCampaign(): Campaign | null {
   const c = loadJson<Campaign>(RUN_KEY);
+  if (c?.run) c.run = cargaRun(c.run) ?? c.run; // V12-B: provisional, lo rehace arte-ui (la campaña de la 11.0 se pone al día y sigue)
   // descarta guardados de versiones anteriores del juego
   return c && c.run && c.key && c.run.v === RUN_VERSION && Array.isArray(c.run.tools) && c.run.node && c.run.stats?.toolUse ? c : null;
 }
@@ -53,7 +54,7 @@ export function retireOldSave(): void {
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
   if (old.run.phase === 'won' || old.run.phase === 'lost') return; // ya estaba cobrada
-  const gain = abonoCampanaVieja(old.run.stage); // lo superado, hasta los 8 asaltos de la 10.0 (src/rules/migracion.ts)
+  const gain = abonoCampanaVieja(old.run.stage) * ESQUIRLAS_POR_CORONA; // V12-B: provisional, lo rehace arte-ui (Coronas de lo superado en esquirlas)
   meta.renown += gain;
   saveMeta();
   setTimeout(() => toast(L('ui.camp.vieja', { n: gain })), 600);

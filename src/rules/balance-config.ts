@@ -78,9 +78,17 @@ export interface BalanceConfig {
     renovar: { base: number; paso: number };
   };
   /** Oro al ganar un asalto, y la Vida que se recupera después. */
-  cobro: { asalto: number; exactosTope: number; vidaCada: number; interesCada: number; curaTrasAsalto: number; sinSeleccion: number };
-  /** Mejoras de la Orden: Coronas de cada nivel, y oro inicial por nivel de la Bolsa. */
-  orden: { costes: Record<string, number[]>; oroPorNivel: number };
+  cobro: { asalto: number; vidaCada: number; interesCada: number; curaTrasAsalto: number; sinSeleccion: number };
+  /**
+   * Árbol de la Conjura (V12, sustituye a `orden`): esquirlas de cada rango de los nodos de combate (`costes`),
+   * base de coste de los incrementales (rango r: base × crece^(r−1), a dos cifras significativas), oro inicial
+   * por rango de la Bolsa de la conjura y la cifra por rango de cada nodo (`cifras`, ver `cifraDe` en arbol.ts).
+   */
+  arbol: { oroPorNivel: number; costes: Record<string, number[]>; bases: Record<string, number>; crece: number; cifras: Record<string, number> };
+  /** Lo que cae a la mesa (V12): esquirlas por golpe, guardia, Golpe exacto y monarca; moneda por guardia; gotas; imán. */
+  caida: { esquirlaGolpe: number; esquirlaGuardia: number; esquirlaExacto: number; esquirlaMonarca: number; oroGuardia: number; gotaExacto: number; gotasPorSello: number; formacionCartas: number; imanSegundos: number; maxPiezas: number };
+  /** Caras de los dados de hueso (enteras): el Dado de oro y el Dado de la Corona. */
+  huesos: { oro: number[]; corona: number[] };
   /** Lo que suma o quita cada baraja inicial. */
   barajas: {
     acero: { vida: number };

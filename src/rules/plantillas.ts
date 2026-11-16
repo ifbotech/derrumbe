@@ -119,4 +119,8 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'error.elige_dos': 'Elige dos cartas de baraja.',
   // el servidor de salas (src/server/index.ts): un cliente de otra versión del juego
   'error.version': 'Esta sala es de otra versión del juego.',
+  // V12 · la línea del Dado de oro en el cobro del asalto (run.ts, finishBattle)
+  'cuenta.dado': 'Dado de oro ×{n}',
+  // V12 · el aviso de la migración a la V12 (meta.aviso), que el Árbol enseña una vez
+  'arbol.aviso': 'Tus {coronas} Coronas son ahora {esquirlas} Esquirlas de Corona. Tus {rangos} mejoras siguen en el Arsenal.',
 };

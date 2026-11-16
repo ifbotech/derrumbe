@@ -3,6 +3,7 @@
 // en solitario y en sala online.
 import type { GameEvent } from './engine';
 import { BOSSES, DECKS, LAST_STAGE, Meta, Run, depthOf, stagesCleared } from './run';
+import { ESQUIRLAS_POR_CORONA } from './migracion';
 import { BASE_POOL, SPECIALS } from './specials';
 import { TOOL_SLOTS } from './tools';
 
@@ -10,7 +11,7 @@ export interface Achievement {
   id: string;
   name: string;
   desc: string;
-  /** Coronas que da al cumplirse (campo `renown`). */
+  /** Esquirlas de Corona que da al cumplirse (campo `renown`): desde la V12, las Coronas de la tabla × ESQUIRLAS_POR_CORONA. */
   renown: number;
   /** Progreso hacia la meta: [actual, objetivo]. */
   progress(meta: Meta): [number, number];
@@ -58,6 +59,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   ),
   { id: 'jefes', name: 'Ningún rey en pie', desc: `Vence a los ${BOSSES.length} monarcas.`, renown: 8, progress: count((m) => m.seen.bosses.length, BOSSES.length) },
 ];
+// V12: una sola moneda permanente. Cada logro da sus Coronas de siempre en Esquirlas de Corona (× 100).
+for (const a of ACHIEVEMENTS) a.renown *= ESQUIRLAS_POR_CORONA;
 
 /** Qué desbloquea cada logro, para mostrarlo. */
 export function unlocksOf(id: string): string | null {
