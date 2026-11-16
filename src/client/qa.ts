@@ -25,7 +25,7 @@ import { conmutaAuto, refreshSpeed, renderHud, usarMejor } from './table';
 import { congelaAuto } from './auto'; // juice-ux: AUTO encendido a la vista sin jugar (mesa-auto)
 
 import { openLupa } from './lupa';
-import { InputMode, setMode } from './nav';
+import { InputMode, moveFocus, setMode } from './nav';
 import { platform } from './platform';
 import { setScreen } from './router';
 import { renderRun } from './runscreens';
@@ -871,6 +871,12 @@ export function installQa(): void {
         return name in STATES;
       },
       settle,
+      /** Steam Deck: la pantalla tal como se ve con mando (modo mando y el foco donde lo pone la primera pulsación de la cruceta). */
+      mando: () => {
+        setMode('pad');
+        if (!document.querySelector('[data-foco]')) moveFocus(0, 1);
+        settle();
+      },
       /** V10: el idioma de la pasada (visual-qa --lang=en); no toca el guardado real (platform es de quita y pon). */
       lang: (l: string) => {
         if (isLang(l)) setLang(l);

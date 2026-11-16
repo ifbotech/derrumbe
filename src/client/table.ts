@@ -351,7 +351,7 @@ function ajustaBarra(): void {
   const players = bar?.querySelector<HTMLElement>('#players');
   if (!bar || !players) return;
   const sobra = () => players.scrollWidth > players.clientWidth + 1 || bar.scrollWidth > bar.clientWidth + 1;
-  const pasos = ['apretada', 'apretada2', 'apretada3', 'apretada4'];
+  const pasos = ['apretada', 'apretada2', 'apretada3', 'apretada4', 'apretada5'];
   bar.classList.remove(...pasos);
   for (const p of pasos) {
     if (!sobra()) return;
