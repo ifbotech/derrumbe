@@ -2,6 +2,11 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 20.0.1 — 2026-11-16
+
+- **Arreglo**: en inglés, con mando y un monarca en la mesa, la barra de arriba se pisaba 5 px a 1280 px (Steam Deck). Si no cabe, tu ficha se queda en la flecha del turno y las cartas que llevas.
+- **Por dentro**: la QA visual fotografía la ventana de 1280×800 como se ve en Steam Deck, jugando con mando (antes, con ratón salvo dos pantallas). Así se encontró el arreglo de arriba.
+
 ## 20.0.0 — 2026-11-16
 
 La guía se escribe a tiza. La placa de cada paso de la Partida guiada deja de ser un rótulo amarillo de aviso y pasa a pizarra con letra de tiza, como los Susurros. Ninguna regla cambia.

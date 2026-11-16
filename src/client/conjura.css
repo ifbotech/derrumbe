@@ -233,6 +233,8 @@
 .bar.apretada2 .obra-chips .chip > span { display: none; }
 .bar.apretada3 { gap: 8px; }
 .bar.apretada4 #btn-auto .lbl { display: none; }
+/* 20.0.1: y si aún no cabe (inglés, con mando y monarca, a 1280 px), tu ficha se queda en la flecha del turno y las cartas que llevas */
+.bar.apretada5 #players .chip.me > span { display: none; }
 /* el móvil conserva su barra del pulgar de cuatro (Mejor jugada no está en ella) y la mano rellena el hueco */
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .actions { grid-template-areas: 'strike stash discard undo'; }

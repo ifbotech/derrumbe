@@ -1298,8 +1298,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (px < needN - 0.05) fail('esquina', `la insignia de orden «${c.dataset.n}» mide ${px.toFixed(1)} px (mínimo ${needN})`, c);
       }
       const caja = ({ 1920: [129, 179], 1366: [84, 116], 1280: [75, 104], 390: [44, 62] } as Record<number, [number, number]>)[W];
+      // la medida es la de la primera carta en reposo; si lleva el foco del mando (crece, V19), no se mide
       const c0 = [...document.querySelectorAll('#hand .card')].find(visible);
-      if (caja && c0) {
+      if (caja && c0 && !c0.matches('[data-foco]')) {
         const r = c0.getBoundingClientRect();
         if (Math.abs(r.width - caja[0]) > 1.5 || Math.abs(r.height - caja[1]) > 1.5) fail('esquina', `la carta de la mano mide ${Math.round(r.width)}×${Math.round(r.height)} px (debe seguir en ${caja[0]}×${caja[1]} ± 1)`, c0);
       }
@@ -2463,7 +2464,7 @@ async function caraLimpia(png: string): Promise<{ fails: Fail[]; min: number; n:
   const fails: Fail[] = [];
   let min = 1;
   let n = 0;
-  const cards = [...document.querySelectorAll<HTMLElement>('.qa-limpias .card, #hand .card')].filter((c) => c.matches('.k-number, .k-ace') && ![...c.classList].some((k) => k.startsWith('t-')));
+  const cards = [...document.querySelectorAll<HTMLElement>('.qa-limpias .card, #hand .card:not([data-foco])')].filter((c) => c.matches('.k-number, .k-ace') && ![...c.classList].some((k) => k.startsWith('t-'))); // sin la enfocada con mando (crece y lleva el marco)
   for (const c of cards) {
     const paper = c.querySelector<HTMLElement>('.ly.paper');
     if (!paper) continue;
@@ -2635,6 +2636,8 @@ async function correTramo(browser: Browser, site: { url: string }, t: Trabajo, h
         hecho.fails.push({ regla: 'maqueta', msg: 'estado desconocido', ajeno: false });
         continue;
       }
+      // Steam Deck (1280×800): la foto se hace jugando con mando, como se ve en ese aparato (QA_DECK_RATON=1 la hace con ratón)
+      if (process.env.QA_DECK_RATON !== '1' && view.name === '1280x800' && !/-mando$/.test(state)) await page.evaluate(() => (window as unknown as { __qa: { mando: () => void } }).__qa.mando());
       await page.waitForTimeout(450);
       await page.evaluate(() => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().iterations !== Infinity && a.finish()));
       await page.waitForTimeout(120);
