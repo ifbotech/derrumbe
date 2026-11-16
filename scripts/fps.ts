@@ -52,6 +52,19 @@ const PROBE = `(() => {
     const t0 = performance.now();
     while (performance.now() - t0 < ms && document.getAnimations().some((a) => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming().endTime ?? Infinity))) await raf();
   };
+  // V12 · una mesa recién montada en un navegador nuevo sigue pintándose (la GPU compila sus sombreadores) aunque
+  // ya no haya nada animándose: la pasada en frío del sello medía a veces ese montaje y no el sello (1 de cada 4).
+  // Se espera a que lleve ms milisegundos seguidos pintando fotogramas de menos de 34 ms (por tiempo, no por número
+  // de fotogramas: la pantalla puede ir a 165 Hz), o al tope, y se devuelve cuánto tardó en EMPEZAR ese tramo quieto.
+  // Los 800 ms dejan terminar el calentamiento de los lacres del juego (warmSeals, que arranca a los 150 ms de
+  // quietud y dura 240 ms): nadie puede sellar una carta antes de un segundo con la mesa recién puesta.
+  window.__fpsQuieta = async (ms, tope) => {
+    const t0 = performance.now();
+    let last = await raf();
+    let desde = last;
+    while (last - desde < ms && performance.now() - t0 < tope) { const t = await raf(); if (t - last >= 34) desde = t; last = t; }
+    return Math.round(Math.max(0, desde - t0));
+  };
   window.__fpsMeasure = async (trigger, minMs, reset) => {
     const deltas = [];
     let reps = 0;
@@ -268,6 +281,10 @@ async function main(): Promise<void> {
       await go(page, 'mesa');
       await page.mouse.click(960, 12);
       await page.evaluate(() => (window as unknown as { __fpsSettle(ms: number): Promise<void> }).__fpsSettle(6000));
+      // el sello se mide con la mesa ya quieta: lo que tarda en asentarse el montaje en frío se informa aparte
+      const asentado = await page.evaluate(() => (window as unknown as { __fpsQuieta(ms: number, tope: number): Promise<number> }).__fpsQuieta(800, 6000));
+      report.frioMontajeAsentadoMs = asentado;
+      console.log(`  en frío (1920×1080): la mesa recién montada queda quieta ${asentado} ms después del reparto; el sello se mide desde ahí`);
       const cold = await page.evaluate(async () => {
         const w = window as unknown as Q & { __fpsLoaf: unknown[] };
         const raf = () => new Promise<number>((r) => requestAnimationFrame(r));
