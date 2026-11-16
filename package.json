@@ -20,6 +20,7 @@
     "docs": "tsx scripts/reglas.ts",
     "analyze:meta": "tsx scripts/analyze-meta.ts",
     "balance:tune": "tsx scripts/auto-balance.ts",
+    "i18n:check": "tsx scripts/i18n-check.ts",
     "qa:visual": "tsx scripts/visual-qa.ts",
     "qa:determinista": "tsx scripts/qa-determinista.ts",
     "qa:smoke": "tsx scripts/smoke.ts",
