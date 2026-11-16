@@ -149,3 +149,11 @@ html[data-guia] .table-screen #coach { display: none !important; }
   .mon-pareja .monarca.mini { width: 28px; height: 28px; }
   .mon-ficha .mon-who { font-size: 14px; }
 }
+
+/* ───── V20 · la guía se escribe a tiza ─────
+   La placa del paso guiado era un rótulo amarillo de aviso sobre la mesa oscura («rompe la estética», P0 del auditor
+   en PC y el mismo voto en contra tres corridas seguidas). Ahora es pizarra con letra de tiza, como los Susurros: el
+   fondo de la pizarra, el texto en tiza, un filete de tiza y la carta nombrada en papel. El aro que señala la carta
+   sigue en ámbar: es lo único que tiene que saltar a la vista. Mismo tamaño, mismo sitio. */
+.guia-placa { background: #14120f; color: #f0e4c8; border: 2px solid #f0e4c8; box-shadow: 0 0 0 3px var(--pit), 0 6px 0 var(--pit); font-weight: 600; }
+.guia-placa b { background: var(--card-paper); color: var(--ink); }
