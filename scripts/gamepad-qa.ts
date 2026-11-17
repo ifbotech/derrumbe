@@ -320,7 +320,7 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
   check((await heardSince(mark)).includes('edge') && (await tools()).join() === start.join(), 'en el último hueco, RB solo da el toque de tope');
   check((await active(page, slot(last, start[last]))) && (await count(page, '.deck-modal, .lupa')) === 0, 'y no mueve el foco ni abre la lupa');
 
-  // el orden manda en la cuenta: el ×M de la derecha, llevado a la izquierda, multiplica menos
+  // V31 · el orden no cambia la cuenta: el ×M de la derecha, llevado a la izquierda, da lo mismo
   const xm = start[last];
   let changed = '';
   for (let i = 0; i < last; i++) {
@@ -332,7 +332,7 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
   now = await tools();
   check(now[0] === xm && now.slice(1).join() === start.slice(0, last).join(), `LB repetido lleva la reliquia de la derecha hasta el primer hueco (${now.join(', ')})`);
   check(await active(page, slot(0, xm)), 'y el foco la acompaña todo el camino');
-  check(!!changed, `la previsualización del golpe usa el orden nuevo (${p0} → ${changed || 'igual'})`);
+  check(!changed, `mover una Reliquia no cambia la cuenta del golpe (${p0}${changed ? ` → ${changed}` : ''})`);
   for (let i = 0; i < last; i++) {
     await press(page, BTN.RB);
     await page.waitForTimeout(220);

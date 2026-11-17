@@ -74,16 +74,12 @@ Todo golpe se calcula igual:
 
 > **Golpe = Daño × Multi** (los dos, siempre números enteros)
 
-Se resuelve de izquierda a derecha, y cada paso se ve en la mesa:
+**El orden no importa.** La mesa hace la cuenta y te la enseña antes de golpear:
 
-1. **La formación** pone la base de Daño y de Multi.
-2. **Lo que arrastra la mesa**: la Racha de Golpes exactos, el Daño cargado y el Asedio final.
-3. **Cada carta**, en el orden en que la elegiste, suma su número como Daño (0 contra el trono de su palo: es **Inmune**). Enseguida actúan su **acabado** y su **sello de lacre**.
-4. **Las cartas especiales** que acompañan al golpe (hasta ${MAX_SPECIALS}).
-5. **Tus reliquias**, hueco a hueco.
-6. **${TOWER_FX.fractura.name}**: si el trono lo estaba, el Daño de todo lo anterior se multiplica ×${BALANCE.golpe.expuesto}.
+1. **Daño**: se suma todo. La base de la formación, el número de cada carta (0 contra el trono de su palo: es **Inmune**), el Daño cargado, el Asedio final y lo que añadan acabados, cartas especiales (hasta ${MAX_SPECIALS} por golpe) y reliquias. Si el trono está **${TOWER_FX.fractura.name}**, ese Daño vale ×${BALANCE.golpe.expuesto}.
+2. **Multi**: se suma todo (la base de la formación, la Racha de Golpes exactos y lo que añadan acabados, especiales y reliquias) y, al final, se aplican los multiplicadores (×2, ×3…).
 
-Lo que **suma** cuenta donde está. Lo que **multiplica** el Multi multiplica todo lo acumulado hasta ese momento: conviene sumar primero y multiplicar al final. El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).
+El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).
 
 ${table(['Formación', 'Cartas', 'Daño base', 'Multi', 'Por nivel de Pergamino'], FORMATIONS.map((f) => [FORMATION_NAME[f], FORM_CARDS[f], `+${FORM[f].f}`, `×${FORM[f].r}`, `+${FORM[f].lf} de Daño`]))}
 
@@ -196,7 +192,7 @@ ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), 
 
 ## Reliquias
 
-Llevas hasta **${TOOL_SLOTS} reliquias**, y se activan **de izquierda a derecha**. Cada reliquia nueva se coloca sola en su sitio recomendado: primero las que suman Daño, luego las que suman Multi y al final las que multiplican. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en pleno asalto. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Árbol.
+Llevas hasta **${TOOL_SLOTS} reliquias**. **Su orden no cambia la cuenta**: primero se suma todo y al final se multiplica. Puedes moverlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—; solo le importa al Espejo de mano, que copia la de su derecha. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Árbol.
 
 ${(Object.keys(ARCH) as Arch[])
   .map((a) => `### ${ARCH[a]}\n\n${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.filter((t) => t.arch === a).map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Árbol' : 'de salida']))}`)

@@ -50,7 +50,8 @@ function golpes4(): string[] {
 }
 
 describe('sello de pólvora', () => {
-  it('con 4 tronos, 2.000 golpes dan exactamente lo mismo que con la regla de la 11.0', () => {
+  // La referencia se volvió a grabar con la 31.0 (GRABAR_POLVORA=1): los multiplicadores se aplican al final de la cuenta.
+  it('con 4 tronos, 2.000 golpes dan exactamente lo mismo que la referencia grabada', () => {
     const ahora = golpes4();
     if (process.env.GRABAR_POLVORA) writeFileSync(FIXTURE, `${JSON.stringify(ahora)}\n`);
     const antes = JSON.parse(readFileSync(FIXTURE, 'utf8')) as string[];

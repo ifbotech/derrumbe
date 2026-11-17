@@ -136,12 +136,8 @@ function beltStrip(run: Run, sell = false): HTMLElement {
     }),
   );
   wrap.insertAdjacentHTML('beforeend', `<button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button>`);
-  // V27: cada Reliquia nueva se coloca sola en su sitio recomendado; un aviso breve dice cuál y en qué hueco quedó
-  if (nuevas.length) {
-    const id = nuevas[nuevas.length - 1];
-    for (const n of nuevas) wrap.querySelector(`.belt-slot[data-id="${CSS.escape(n)}"]`)?.classList.add('recien');
-    $('.belt-label', wrap).insertAdjacentHTML('beforeend', ` <b class="belt-aviso" role="status">${L('ui.run.reliquias.sola', { x: relN(id), n: ids.indexOf(id) + 1 })}</b>`);
-  }
+  // la Reliquia recién llegada lleva un filete de latón (V31: su hueco ya no cambia la cuenta, así que no se anuncia)
+  for (const n of nuevas) wrap.querySelector(`.belt-slot[data-id="${CSS.escape(n)}"]`)?.classList.add('recien');
   return wrap;
 }
 function confirmSell(run: Run, i: number): void {

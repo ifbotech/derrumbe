@@ -554,6 +554,8 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     const proc: { proc?: Proc } = cur.loud && d.df ? { proc: { what: 'fuerza', n: d.df } } : {};
     tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: cur.label, ...d, fuerza: x.fuerza, res: x.res, ...proc });
   };
+  /** V31 · los multiplicadores de Multi (×2, ×3…) del golpe, en el orden en que aparecieron: se aplican al final. */
+  const porMultiplicar: { cur: typeof cur; n: number }[] = [];
   const x: Strike = {
     env,
     cfg,
@@ -590,8 +592,9 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     },
     X(n) {
       if (n === 1) return;
-      x.res *= n;
-      emit({ mr: n });
+      // V31 · el orden no importa: un multiplicador no actúa donde está; se guarda y se aplica al final, cuando ya se
+      // sumó todo el Multi (lo mismo que antes daba el mejor orden posible)
+      porMultiplicar.push({ cur, n });
     },
     note(text) {
       tally.events.push({ e: 'step', src: cur.src, id: cur.id, slot: cur.slot, label: `${cur.label}: ${text}`, fuerza: x.fuerza, res: x.res });
@@ -711,6 +714,13 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     cur = { src: 'tool', id: t.id, slot, label: def.name, loud: def.loud };
     def.strike?.(x, t);
   });
+
+  // 5 bis · V31: ahora sí, los multiplicadores de Multi, sobre todo el Multi ya sumado
+  for (const m of porMultiplicar) {
+    cur = m.cur;
+    x.res *= m.n;
+    emit({ mr: m.n });
+  }
 
   // 6 · Expuesto, al final de la columna de Daño: el golpe hace ×n de Daño (se suma otro tanto)
   if (standing(tower) && tower.fx.fractura) {

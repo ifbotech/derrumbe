@@ -39,7 +39,7 @@ export const UI_JUICE = {
   'ui.ctl.mazo': ['Ver el Mazo y el Descarte', 'See the Deck and the Discard'],
   'ui.ctl.lupa': ['Lupa', 'Loupe'],
   'ui.ctl.lupa.k': ['{k} · clic derecho · pulsación larga', '{k} · right click · long press'],
-  'ui.ctl.reliquias': ['Reordenar las reliquias', 'Reorder your Relics'],
+  'ui.ctl.reliquias': ['Mover las reliquias', 'Move your Relics'],
   'ui.ctl.reliquias.k': ['Arrastrar · {mayus} + flechas', 'Drag · {mayus} + arrow keys'],
   'ui.ctl.reliquias.p': ['{a} / {b} con el foco en la reliquia', '{a} / {b} with the focus on a relic'],
   'ui.ctl.velocidad': ['Cambiar la velocidad (1× → 2× → 4× → 8×)', 'Change the speed (1× → 2× → 4× → 8×)'],

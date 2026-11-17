@@ -115,12 +115,17 @@ describe('Daño × Multi', () => {
   });
 });
 
-describe('cinturón: el orden importa', () => {
+describe('cinturón: el orden no cambia la cuenta (V31)', () => {
   const run = cards('S5', 'S6', 'S7'); // escalera de color contra ♦: 10 + 18 de Daño, ×3
 
-  it('lo que suma Multi cuenta donde está; lo que multiplica, multiplica todo lo de su izquierda', () => {
+  it('primero se suma todo el Multi y al final se multiplica, vayan como vayan las Reliquias', () => {
     expect(strike(env(['prisma', 'plano_maestro']), run, 'D')).toMatchObject({ fuerza: 28, res: 10, total: 280 }); // (3 + 2) × 2
-    expect(strike(env(['plano_maestro', 'prisma']), run, 'D')).toMatchObject({ fuerza: 28, res: 8, total: 224 }); // 3 × 2 + 2
+    expect(strike(env(['plano_maestro', 'prisma']), run, 'D')).toMatchObject({ fuerza: 28, res: 10, total: 280 }); // lo mismo
+    // en la cuenta, los pasos que multiplican van siempre después de los que suman
+    const pasos = of(strike(env(['plano_maestro', 'prisma']), run, 'D').events, 'step');
+    const ultimoQueSuma = pasos.map((p) => p.dr !== undefined || p.df !== undefined).lastIndexOf(true);
+    const primeroQueMultiplica = pasos.findIndex((p) => p.mr !== undefined);
+    expect(primeroQueMultiplica).toBeGreaterThan(ultimoQueSuma);
   });
 
   it('el Diapasón copia la herramienta de su derecha', () => {
@@ -296,11 +301,11 @@ describe('tratamientos', () => {
     expect(strike(env(), [card('S7', { tr: 'agrietado' })], 'D')).toMatchObject({ res: 3, total: 21 });
   });
 
-  it('el orden de las cartas decide: sumar antes de multiplicar rinde más', () => {
+  it('V31 · el orden de las cartas no cambia la cuenta: se suma todo y luego se multiplica', () => {
     const a = card('S7', { tr: 'templado' });
     const b = card('H7', { tr: 'policromado' });
     expect(strike(env(), [a, b], 'D').res).toBe(6); // (2 + 1) × 2
-    expect(strike(env(), [b, a], 'D').res).toBe(5); // 2 × 2 + 1
+    expect(strike(env(), [b, a], 'D').res).toBe(6); // lo mismo
   });
 
   it('agrietado se hace añicos 1 de cada 4 veces, según la semilla; al previsualizar, nunca', () => {

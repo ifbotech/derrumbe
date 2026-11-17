@@ -82,12 +82,10 @@ function rulesEs(cfg: Config): string {
   </ul>
 
   <h3>Daño × Multi = Golpe</h3>
-  <p>Cada jugada se cuenta igual: <b>Golpe = Daño × Multi</b>, y el Multi siempre es entero. Se resuelve de izquierda a derecha y cada paso se ve en la mesa:</p>
+  <p>Cada jugada se cuenta igual: <b>Golpe = Daño × Multi</b>, y el Multi siempre es entero. <b>El orden no importa</b>: la mesa hace la cuenta y te la enseña antes de golpear.</p>
   <ul>
-    <li><b>La formación</b> pone la base de Daño y de Multi.</li>
-    <li><b>Cada carta</b> suma su número como Daño, en el orden en que la elegiste. El <b>As</b> vale <b>11</b> y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).</li>
-    <li>Después actúan sus <b>acabados</b> y <b>sellos de lacre</b>, las <b>cartas especiales</b> que la acompañan y, por último, tus <b>Reliquias</b>.</li>
-    <li>Lo que <b>suma</b> cuenta donde está. Lo que <b>multiplica</b> el Multi multiplica todo lo de antes: primero suma, al final multiplica.</li>
+    <li><b>Daño</b>: se suma todo. La base de la formación, el número de cada carta, el Asedio final y lo que añadan <b>acabados</b>, <b>cartas especiales</b> y <b>Reliquias</b>. El <b>As</b> vale <b>11</b> y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).</li>
+    <li><b>Multi</b>: se suma todo (la formación, la Racha y lo que añadan acabados, especiales y Reliquias) y, al final, se aplican los multiplicadores (×2, ×3…).</li>
   </ul>
   <table>
     <tr><th>Formación</th><th>Cartas</th><th>Daño</th><th>Multi</th></tr>
@@ -155,7 +153,7 @@ function rulesEs(cfg: Config): string {
   </table>
 
   <h3>Reliquias</h3>
-  <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>, y se activan <b>de izquierda a derecha</b>. Cada reliquia nueva se coloca sola en su sitio recomendado: primero las que suman Daño, luego las que suman Multi y al final las que multiplican. Puedes reordenarlas cuando quieras (arrastrando, o pulsando una y luego su hueco), incluso en pleno asalto.
+  <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>. <b>Su orden no cambia la cuenta</b>: primero se suma todo y al final se multiplica. Puedes moverlas cuando quieras (arrastrando, o pulsando una y luego su hueco); solo le importa al Espejo de mano, que copia la de su derecha.
   Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a la de su derecha y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
 
   <h3>Sellos de lacre y acabados</h3>
@@ -234,12 +232,10 @@ function rulesEn(cfg: Config): string {
   </ul>
 
   <h3>Damage × Mult = Hit</h3>
-  <p>Every play is counted the same way: <b>Hit = Damage × Mult</b>, and Mult is always a whole number. It resolves left to right and the table shows each step:</p>
+  <p>Every play is counted the same way: <b>Hit = Damage × Mult</b>, and Mult is always a whole number. <b>Order does not matter</b>: the table does the count and shows it before you strike.</p>
   <ul>
-    <li><b>The formation</b> sets the base Damage and Mult.</li>
-    <li><b>Each card</b> adds its number as Damage, in the order you picked it. The <b>Ace</b> is worth <b>11</b> and links straights at the bottom (A-2-3) and at the top (9-10-A).</li>
-    <li>Then its <b>finishes</b> and <b>wax seals</b> act, then the <b>special cards</b> that go along with it and, last, your <b>Relics</b>.</li>
-    <li>What <b>adds</b> counts where it sits. What <b>multiplies</b> Mult multiplies everything before it: add first, multiply at the end.</li>
+    <li><b>Damage</b>: everything is added up. The formation’s base, the number on each card, the Final Siege and whatever <b>finishes</b>, <b>special cards</b> and <b>Relics</b> add. The <b>Ace</b> is worth <b>11</b> and links straights at the bottom (A-2-3) and at the top (9-10-A).</li>
+    <li><b>Mult</b>: everything is added up (the formation, the Streak and whatever finishes, specials and Relics add) and, at the end, the multipliers apply (×2, ×3…).</li>
   </ul>
   <table>
     <tr><th>Formation</th><th>Cards</th><th>Damage</th><th>Mult</th></tr>
@@ -307,7 +303,7 @@ function rulesEn(cfg: Config): string {
   </table>
 
   <h3>Relics</h3>
-  <p>You carry up to <b>${TOOL_SLOTS} relics</b>, and they trigger <b>left to right</b>. Each new relic slots itself into its recommended place: first those that add Damage, then those that add Mult, and last those that multiply. You can reorder them whenever you like (by dragging, or by pressing one and then its slot), even mid-assault.
+  <p>You carry up to <b>${TOOL_SLOTS} relics</b>. <b>Their order does not change the count</b>: everything is added first and multiplied at the end. You can move them whenever you like (by dragging, or by pressing one and then its slot); it only matters to the Hand Mirror, which copies the one on its right.
   Each one says what it does: <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far, <b>⇉</b> copies the one to its right and <b>•</b> is passive. Golden rule: what adds first, what multiplies at the end.</p>
 
   <h3>Wax Seals and Finishes</h3>

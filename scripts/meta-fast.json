@@ -1,14 +1,14 @@
 {
-  "generated": "2026-11-17T17:53:19.314Z",
-  "rules": "a850422b9cebd99f",
+  "generated": "2026-11-17T18:12:08.384Z",
+  "rules": "c5e7e41567ed5110",
   "campaigns": 6000,
   "hilos": 12,
-  "segundos": 80.9,
+  "segundos": 81.8,
   "ok": true,
   "checks": [
     {
       "id": "reinado1.vacio",
-      "valor": 31.7,
+      "valor": 31.5,
       "lo": 26,
       "hi": 32,
       "margen": 4.4,
@@ -17,7 +17,7 @@
     },
     {
       "id": "reinado1.lleno",
-      "valor": 48.7,
+      "valor": 47.5,
       "lo": 42,
       "hi": 48,
       "margen": 4.7,
@@ -26,25 +26,25 @@
     },
     {
       "id": "reinado8.vacio",
-      "valor": 11.6,
+      "valor": 10.4,
       "lo": 6,
       "hi": 10,
-      "margen": 4.3,
+      "margen": 4.1,
       "n": 500,
       "pasa": true
     },
     {
       "id": "reinado8.lleno",
-      "valor": 16.4,
+      "valor": 16,
       "lo": 12,
       "hi": 18,
-      "margen": 5,
+      "margen": 4.9,
       "n": 500,
       "pasa": true
     },
     {
       "id": "baraja.acero.vacio",
-      "valor": 38,
+      "valor": 37,
       "lo": 23,
       "hi": 34,
       "margen": 8.4,
@@ -53,7 +53,7 @@
     },
     {
       "id": "baraja.acero.lleno",
-      "valor": 48.3,
+      "valor": 50,
       "lo": 40,
       "hi": 50,
       "margen": 8.7,
@@ -62,16 +62,16 @@
     },
     {
       "id": "baraja.prestamista.vacio",
-      "valor": 34.7,
+      "valor": 36.3,
       "lo": 23,
       "hi": 34,
-      "margen": 8.2,
+      "margen": 8.3,
       "n": 300,
       "pasa": true
     },
     {
       "id": "baraja.prestamista.lleno",
-      "valor": 47.3,
+      "valor": 47,
       "lo": 40,
       "hi": 50,
       "margen": 8.6,
@@ -80,25 +80,25 @@
     },
     {
       "id": "baraja.ases.vacio",
-      "valor": 37.7,
+      "valor": 39.7,
       "lo": 23,
       "hi": 34,
-      "margen": 8.4,
+      "margen": 8.5,
       "n": 300,
       "pasa": true
     },
     {
       "id": "baraja.ases.lleno",
-      "valor": 54.7,
+      "valor": 48.3,
       "lo": 40,
       "hi": 50,
-      "margen": 8.6,
+      "margen": 8.7,
       "n": 300,
       "pasa": true
     },
     {
       "id": "baraja.corta.vacio",
-      "valor": 31.7,
+      "valor": 32.3,
       "lo": 23,
       "hi": 34,
       "margen": 8.1,
@@ -107,7 +107,7 @@
     },
     {
       "id": "baraja.corta.lleno",
-      "valor": 51.3,
+      "valor": 52.3,
       "lo": 40,
       "hi": 50,
       "margen": 8.7,
@@ -116,16 +116,16 @@
     },
     {
       "id": "baraja.caos.vacio",
-      "valor": 29,
+      "valor": 27.7,
       "lo": 23,
       "hi": 34,
-      "margen": 7.9,
+      "margen": 7.8,
       "n": 300,
       "pasa": true
     },
     {
       "id": "baraja.caos.lleno",
-      "valor": 55,
+      "valor": 57.3,
       "lo": 40,
       "hi": 50,
       "margen": 8.6,
@@ -134,7 +134,7 @@
     },
     {
       "id": "arbol.suma",
-      "valor": 17,
+      "valor": 16,
       "lo": 0,
       "margen": 0,
       "n": 2000,
@@ -142,7 +142,7 @@
     },
     {
       "id": "reinados.bajan",
-      "valor": 20.1,
+      "valor": 21.1,
       "lo": 0,
       "margen": 0,
       "n": 1500,
@@ -169,7 +169,7 @@
       "valor": 12,
       "hi": 13,
       "margen": 1,
-      "n": 4978,
+      "n": 4979,
       "pasa": true
     },
     {
@@ -177,7 +177,7 @@
       "valor": 14,
       "hi": 15,
       "margen": 1,
-      "n": 4931,
+      "n": 4932,
       "pasa": true
     },
     {

@@ -35,16 +35,12 @@ Todo golpe se calcula igual:
 
 > **Golpe = Daño × Multi** (los dos, siempre números enteros)
 
-Se resuelve de izquierda a derecha, y cada paso se ve en la mesa:
+**El orden no importa.** La mesa hace la cuenta y te la enseña antes de golpear:
 
-1. **La formación** pone la base de Daño y de Multi.
-2. **Lo que arrastra la mesa**: la Racha de Golpes exactos, el Daño cargado y el Asedio final.
-3. **Cada carta**, en el orden en que la elegiste, suma su número como Daño (0 contra el trono de su palo: es **Inmune**). Enseguida actúan su **acabado** y su **sello de lacre**.
-4. **Las cartas especiales** que acompañan al golpe (hasta 2).
-5. **Tus reliquias**, hueco a hueco.
-6. **Expuesto**: si el trono lo estaba, el Daño de todo lo anterior se multiplica ×2.
+1. **Daño**: se suma todo. La base de la formación, el número de cada carta (0 contra el trono de su palo: es **Inmune**), el Daño cargado, el Asedio final y lo que añadan acabados, cartas especiales (hasta 2 por golpe) y reliquias. Si el trono está **Expuesto**, ese Daño vale ×2.
+2. **Multi**: se suma todo (la base de la formación, la Racha de Golpes exactos y lo que añadan acabados, especiales y reliquias) y, al final, se aplican los multiplicadores (×2, ×3…).
 
-Lo que **suma** cuenta donde está. Lo que **multiplica** el Multi multiplica todo lo acumulado hasta ese momento: conviene sumar primero y multiplicar al final. El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).
+El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).
 
 | Formación | Cartas | Daño base | Multi | Por nivel de Pergamino |
 |---|---|---|---|---|
@@ -222,7 +218,7 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
 
 ## Reliquias
 
-Llevas hasta **6 reliquias**, y se activan **de izquierda a derecha**. Cada reliquia nueva se coloca sola en su sitio recomendado: primero las que suman Daño, luego las que suman Multi y al final las que multiplican. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en pleno asalto. Hay 52: 28 en el surtido de salida y 24 más en los arcones del Árbol.
+Llevas hasta **6 reliquias**. **Su orden no cambia la cuenta**: primero se suma todo y al final se multiplica. Puedes moverlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—; solo le importa al Espejo de mano, que copia la de su derecha. Hay 52: 28 en el surtido de salida y 24 más en los arcones del Árbol.
 
 ### El Arsenal
 
@@ -519,7 +515,7 @@ El juego usa solo seis palabras con significado propio. Todo lo demás se dice c
 | Saltar la partida guiada (sin nada elegido) | Esc | B |
 | Ver el Mazo y el Descarte | Tab | LB |
 | Lupa | L · clic derecho · pulsación larga | RB |
-| Reordenar las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |
+| Mover las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |
 | Cambiar la velocidad (1× → 2× → 4× → 8×) | botón de la barra | RT |
 | AUTO: encender o apagar | A | Select |
 | Saltar la tirada de huesos | Cualquier tecla | Cualquier botón |

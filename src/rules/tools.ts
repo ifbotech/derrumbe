@@ -1,6 +1,6 @@
-// Reliquias (en el código, «herramientas» del cinturón). Cada una ocupa un hueco y se evalúa de izquierda a
-// derecha: las que suman Daño o Multi actúan donde están, y las que multiplican (×Multi) multiplican todo
-// lo acumulado a su izquierda. Por eso el orden importa y se puede cambiar.
+// Reliquias (en el código, «herramientas» del cinturón). Cada una ocupa un hueco. Desde la 31.0 su orden no cambia
+// la cuenta: primero se suma todo el Daño y todo el Multi, y al final se aplican los multiplicadores (×Multi). El
+// orden solo le importa al Espejo de mano, que copia la de su derecha; por eso se sigue pudiendo mover.
 //
 // Cinco arquetipos se cruzan entre sí:
 //   precision    golpes limpios y rachas

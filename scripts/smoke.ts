@@ -873,14 +873,11 @@ async function juiceChecks(page: Page): Promise<void> {
   } else console.log('  (La Taberna de QA no tiene nada que se pueda comprar)');
   await page.keyboard.press('Escape');
 
-  // ── V27 · una Reliquia que llega se coloca sola en su sitio recomendado, y la tira dice cuál y en qué hueco ──
+  // ── la Reliquia que llega queda marcada en la tira (V31: su hueco ya no cambia la cuenta y no se anuncia) ──
   await go(page, 'ferreteria');
   const llega = await page.evaluate(() => (window as unknown as { __qa: { llega(): { id: string; hueco: number } | null } }).__qa.llega());
-  const tira = await page.evaluate(() => ({
-    texto: document.querySelector('.run-belt .belt-aviso')?.textContent ?? '',
-    marcadas: [...document.querySelectorAll<HTMLElement>('.run-belt .belt-slot.recien')].map((e) => `${e.dataset.id}@${Number(e.dataset.slot) + 1}`),
-  }));
-  check(!!llega && tira.marcadas.join() === `${llega.id}@${llega.hueco}` && tira.texto.includes(String(llega.hueco)), `una Reliquia que llega se coloca sola y la tira lo dice («${tira.texto}»; marcada ${tira.marcadas.join() || 'ninguna'})`);
+  const marcadas = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.run-belt .belt-slot.recien')].map((e) => `${e.dataset.id}@${Number(e.dataset.slot) + 1}`));
+  check(!!llega && marcadas.join() === `${llega.id}@${llega.hueco}`, `la Reliquia que llega queda marcada en la tira (${marcadas.join() || 'ninguna'})`);
 }
 
 /** V8 · «Reducir movimiento»: un contexto aparte con reducedMotion 'reduce'. Caída del trono, tajo y monedas sin nada en vuelo. */
