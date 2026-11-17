@@ -1,4 +1,4 @@
-# Informe evolutivo final · de la 10.0 a la 23.0
+# Informe evolutivo final · de la 10.0 a la 24.0
 
 **SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-16. Campeón publicado: **20.0** (`v20.0.1` en `origin/main`; la 20.0.1 solo arregla la barra en inglés con mando), jugable en <https://ifbotech.github.io/derrumbe/>.
 
@@ -10,7 +10,7 @@
 - **El efecto más firme de la misión es la cuenta entera** («1.036 = Daño 148 × Multi ×7» en vez de «1K»): sube la claridad unas seis décimas en dos corridas seguidas (p ≈ 0,05–0,08).
 - **El instrumento tiene más ruido que casi todos los cambios**: con 24 personas, una corrida se mueve ±10–15 puntos de F sin que cambie nada. Dos de las tres aceptaciones recientes (16.0 y 20.0) dependen de un solo voto de Steam Deck; en la 20.0 ese voto es ajeno al cambio.
 - **Al final se corrigió el instrumento y se volvió a medir al Campeón: 140,36** (su corrida original dio 162,28). El mismo juego, 22 puntos de diferencia: el 162 fue suerte y ninguna decisión de la 13.0 a la 20.0 queda demostrada por F.
-- **Después se limpió el instrumento (un pedido a la vez, dos semillas por candidata) y se midieron tres candidatas más: 21.0, 22.0 y 23.0, las tres rechazadas.** Con el instrumento limpio el Campeón 20.0 da F 142,7 de media, y las personas que no ven un cambio responden letra por letra lo mismo. Las tres candidatas arreglan justo lo que citan las reseñas del móvil y de Steam Deck; lo arreglado desaparece de la auditoría, el auditor pone otro problema grave en su lugar y el voto no se mueve.
+- **Después se limpió el instrumento (un pedido a la vez, dos semillas por candidata) y se midieron cuatro candidatas más: 21.0, 22.0, 23.0 y 24.0, las cuatro rechazadas.** Con el instrumento limpio el Campeón 20.0 da F 142,7 de media, y las personas que no ven un cambio responden letra por letra lo mismo. Las cuatro arreglan justo lo que citan las reseñas del móvil y de Steam Deck; lo arreglado desaparece de la auditoría, el auditor pone otro problema grave en su lugar y el voto no se mueve.
 - **No se corrió la réplica en inglés ni el `rapido-60` ni el censo de 240**: estaban reservados para cuando una corrida pasara los seis objetivos.
 
 ## 1. Trayectoria
@@ -57,6 +57,7 @@ Todas las filas son del panel simulado (`..\panelAgentesGaming`). Las cifras de 
 | 21.0 | rechazada | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,52 | 6,96 | 142,25 (151,82 · 132,67) |
 | 22.0 | rechazada | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,38 | 7,17 | 142,43 (152,15 · 132,70) |
 | 23.0 | rechazada | 50,0 | 25,0 | 43,8 | 0,0 | 58,3 | 6,58 | 7,06 | 134,84 (136,11 · 133,56) |
+| 24.0 | rechazada | 47,9 | 25,0 | 31,2 | 12,5 | 41,7 | 6,46 | 6,96 | 137,71 (146,06 · 129,36) |
 
 En este bloque Steam Deck son 8 votos (4 personas × 2 semillas) y el Campeón tiene 1.
 
@@ -78,7 +79,7 @@ Notas de lectura:
 | **19.0** | La cuenta con todas sus cifras y con signo igual; con mando, la carta enfocada crece 1,3× sin etiqueta encima | F 146,58 → 151,55; claridad 5,88 → 6,50 (p = 0,053) | **El más firme**: la 18.0 ya había dado 6,46 con la misma cuenta, y F se había predicho en 151 antes de medir |
 | **20.0** | La placa de la Partida guiada pasa de amarillo a pizarra con tiza | F 151,55 → 162,28 | **No atribuible al cambio**: quita un P0 del auditor, pero los dos votos que cambian son de personas que vieron lo mismo que en la 19.0 |
 
-### Lo que se revirtió (ocho candidatas rechazadas, cada una en su rama `rechazado/vN-20261116`)
+### Lo que se revirtió (nueve candidatas rechazadas, cada una en su rama `rechazado/vN-…`)
 
 | Versión | Hipótesis | Resultado | Por qué falló |
 |---|---|---|---|
@@ -91,6 +92,8 @@ Notas de lectura:
 | **21.0** | En el móvil, La Taberna es una lista de renglones enteros con Curar, Hoguera, Renovar y el botón de seguir fijos abajo (antes, una rejilla de 3 columnas cortada a media carta) | F 142,25 frente a 142,74 | El P0 «La Taberna cortada» desaparece de la auditoría y de las seis reseñas, pero las mismas personas citan entonces el otro P0 de su escena («Descartar pegado al borde») y en cada semilla una sube y otra baja. Arregla un fallo real y no hace daño: queda guardada |
 | **22.0** | Steam Deck con mando: monedero sobre papel, cada acción con su insignia arriba y su rótulo debajo, aviso de cada trono a 20 px | F 142,43 frente a 142,74 | Las tres quejas que citaban las ocho reseñas desaparecen; el auditor escribe otras tres y ningún voto cambia. La diversión sube (p = 0,03) y la claridad baja |
 | **23.0** | La 22.0 más las quejas nuevas: «Golpe» junto a la cifra de la cuenta y rótulos de la leyenda a 15 px | F 134,84 frente a 142,74 | 9 de 12 capturas nuevas siguen con un P0, por motivos nuevos otra vez. La única persona de Steam Deck que aprobaba baja: cada cambio en esas capturas vuelve a tirar su dado |
+
+| **24.0** | El móvil a una mano: la 21.0 más la fila del pulgar con rótulos que caben (Deshacer, un botón con flecha), 18 px hasta el borde y la cifra de la cuenta en tiza | F 137,71 frente a 142,74 | La mesa y La Taberna del móvil quedan sin ningún P0, y aun así las tres personas de esa escena votan igual. Otra persona de móvil, que aprobaba, baja en las dos semillas citando un P1 que ahora se repite en sus tres capturas |
 
 También se descartó por el camino, sin llegar a medirse: atenuar las cartas no enfocadas (baja su contraste de 4,5:1) y agrandar el monedero de la barra con mando (en inglés no cabe a 1280 px y esconde el rótulo de AUTO).
 
