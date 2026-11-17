@@ -59,7 +59,8 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | 26.0 rehecha sobre la 24.0 (i4) | rechazada | 50,0 | — | 31,2 | 5,98 | 7,21 | 43,8 | 25,0 | 58,3 | 146,93 (160,62 · 133,24) | `pulso-24-20261117-094448` · `pulso-24-20261117-094953` |
 | **24.0 con el instrumento i5** (temperatura 0, auditor con medidas, 60 personas, una pasada) | Campeón de partida del ciclo V27 → V40 | 60,0 | — | 25,0 | 6,15 | 7,57 | 42,9 | 55,6 | 73,3 | 166,20 | `pulso-60-20261117-105559` |
 | 27.0 (i5) | aceptada (`v27.0.0`) | 61,7 | — | 20,0 | 6,15 | 7,58 | 47,6 | 55,6 | 73,3 | 168,30 | `pulso-60-20261117-115529` |
-| **28.0 (i5)** | **aceptada, Campeón y listón vigente** (`v28.0.0`) | 78,3 | — | 65,0 | 6,58 | 7,73 | 61,9 | 88,9 | 73,3 | **213,38** | `pulso-60-20261117-132424` |
+| 28.0 (i5, con la frase de la mano equivocada) | aceptada (`v28.0.0`) | 78,3 | — | 65,0 | 6,58 | 7,73 | 61,9 | 88,9 | 73,3 | 213,38 | `pulso-60-20261117-132424` |
+| **28.0 (i5.1, frase de la mano corregida)** | **Campeón y listón vigente** (`v28.0.0`) | 73,3 | — | 65,0 | 6,58 | 7,72 | 61,9 | 66,7 | 73,3 | **208,33** | `pulso-60-20261117-135942` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -286,3 +287,11 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **Metas**: se cumplen tres de las seis (aprobación, críticos, Steam Deck y móvil). Faltan claridad (6,58 de 7,60), diversión (7,73 de 8,00) e impulsivos (61,9 % de 65: un voto).
 - **Lectura honesta**: cambian todas las capturas, así que el pedido de las 60 personas es nuevo; no hay 40 reseñas idénticas como en la 27.0 y el salto no se puede repartir persona a persona. Lo que sí se sabe: es el primer cambio con p < 0,05 en votos y en claridad, va en la dirección que predecían las reseñas, y lo que cambió es una medida del juego (el tamaño real del texto), no la descripción.
 - **Lección**: el instrumento con medidas reales convierte una queja difusa («la UI es ilegible») en un número que el juego puede mover. Lo siguiente son las dos metas que no son de pantalla: claridad de reglas y diversión.
+
+### Instrumento i5.1 · la frase de la mano decía un solape que no existe (2026-11-17) — corrección; la 28.0 se vuelve a medir
+
+- **El error (mío)**: la línea de medidas que recibe el auditor decía de la mano «N cartas, montadas a propósito: cada una deja a la vista una franja de al menos X px» en todas las capturas. La QA no medía si se montaban: daba el ancho a la vista. Medido ahora, **las cartas no se montan en ninguna de las cuatro ventanas** (van separadas, en el móvil en dos filas).
+- **El efecto**: el auditor escribía «cartas solapadas» en 36 de 104 capturas y era la queja de interfaz más repetida en las reseñas en contra de la 28.0. Corregida la frase («separadas entre sí (ninguna tapa a otra); la más estrecha mide X px de ancho»), queda en 7.
+- **La 28.0 con la frase corregida**: **F 208,33** (`pulso-60-20261117-135942`; con la frase equivocada, 213,38). Aprobación 73,3 % (44 de 60), críticos 65,0 %, claridad 6,58, diversión 7,72, impulsivos 61,9 %, Steam Deck 66,7 % (6 de 9), móvil 73,3 %. Es el listón vigente. Frente a la 27.0 (168,30, medida con la frase equivocada) siguen siendo unos +40.
+- **Lo que enseña**: el juego no cambió y, al cambiar una frase del pedido, 13 de 60 votos cambian (5 suben, 8 bajan; p = 0,58) y F se mueve 5 puntos. Con temperatura 0 no hay ruido de semilla, pero sí esta sensibilidad a la redacción: una diferencia de menos de unos 5 puntos de F entre dos versiones que tocan muchas capturas no dice nada.
+- **Qué citan ahora los votos en contra** (16): la barra de arriba (iconos de oro, esquirlas y lacre chicos y parecidos), «Mejor» frente a «Golpear», las Reliquias chicas y juntas en escritorio, Vida y Escudo con poco contraste, la cuenta («ver el 1.036 sin entender de dónde salió») y el Asedio en las escenas de derrota.
