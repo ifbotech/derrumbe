@@ -26,7 +26,7 @@
 .arbol-barra { flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .arbol-barra button { min-width: 48px; min-height: 44px; padding: 0 12px; font-family: var(--mono); font-weight: 800; font-size: 18px; line-height: 1; }
 .arbol-barra #arbol-centro { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
-.arbol-ayuda { flex: 1 1 120px; min-width: 0; font-family: var(--mono); font-weight: 700; font-size: 13px; line-height: 1.25; color: var(--ink); }
+.arbol-ayuda { flex: 1 1 120px; min-width: 0; font-family: var(--mono); font-weight: 700; font-size: 14px; line-height: 1.25; color: var(--ink); }
 .arbol-lado { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .arbol-lado .arbol-detalle { flex: 1 1 auto; }
 
@@ -34,7 +34,7 @@
 .arbol .nodo {
   display: flex; flex-direction: column; align-items: stretch; gap: 5px; padding: 8px 10px 9px;
   text-align: left; text-transform: none; letter-spacing: 0; white-space: normal; overflow: hidden;
-  font-family: var(--mono); font-weight: 500; font-size: 13px; line-height: 1.22; color: var(--ink);
+  font-family: var(--mono); font-weight: 500; font-size: 14px; line-height: 1.22; color: var(--ink);
   --bg: #f3ead6; --bd: var(--ink); --bw: 3px; --sh: 3px 4px 0 rgba(24, 22, 20, 0.5); cursor: pointer;
 }
 .arbol .nodo:hover { --bg: #f8e3b4; }
@@ -57,7 +57,7 @@
 .nodo-rango, .nodo-coste { font-family: var(--display); font-weight: 400; font-size: 14px; line-height: 1; padding: 3px 6px 2px; font-variant-numeric: tabular-nums; background: var(--ink); color: var(--card-paper); white-space: nowrap; }
 .nodo.es-comprable .nodo-coste { background: var(--laton); color: var(--ink); box-shadow: inset 0 0 0 2px #7a5410; }
 .nodo.es-tope .nodo-coste { background: #1d544b; color: var(--card-paper); }
-.nodo-motivo { font-family: var(--mono); font-weight: 800; font-size: 13px; line-height: 1.15; color: #7d1d15; }
+.nodo-motivo { font-family: var(--mono); font-weight: 800; font-size: 14px; line-height: 1.15; color: #7d1d15; }
 .nodo.es-padre .nodo-motivo { color: var(--ink); }
 
 /* nivel «sello» (la vista general): emblema y rango; el estado por la forma */
@@ -67,7 +67,7 @@
 .arbol-vista[data-lod='sello'] .nodo-sello { width: 28px; height: 28px; border-width: 1.5px; box-shadow: none; }
 .arbol-vista[data-lod='sello'] .nodo-sello .nodo-glifo { width: 21px; height: 21px; }
 .arbol-vista[data-lod='sello'] .nodo-pie { justify-content: center; }
-.arbol-vista[data-lod='sello'] .nodo-rango { font-size: 13px; padding: 2px 4px 1px; }
+.arbol-vista[data-lod='sello'] .nodo-rango { font-size: 14px; padding: 2px 4px 1px; }
 .arbol-vista[data-lod='sello'] .nodo.es-comprable .nodo-rango { background: var(--laton); color: var(--ink); }
 .arbol-vista[data-lod='sello'] .nodo.es-tope .nodo-rango { background: #9c2a20; color: var(--card-paper); }
 .arbol-vista[data-lod='sello'] .nodo-sello .candado { right: -9px; bottom: -4px; width: 16px; height: 16px; }
@@ -78,9 +78,9 @@
 .arbol-vista[data-lod='nombre'] .nodo-cab { flex-direction: column; gap: 3px; min-height: 0; flex: 1 1 auto; }
 .arbol-vista[data-lod='nombre'] .nodo-sello { width: 32px; height: 32px; }
 .arbol-vista[data-lod='nombre'] .nodo-sello .nodo-glifo { width: 23px; height: 23px; }
-.arbol-vista[data-lod='nombre'] .nodo-nombre { font-family: var(--mono); font-weight: 800; font-size: 13px; line-height: 1.1; text-transform: none; }
+.arbol-vista[data-lod='nombre'] .nodo-nombre { font-family: var(--mono); font-weight: 800; font-size: 14px; line-height: 1.1; text-transform: none; }
 .arbol-vista[data-lod='nombre'] .nodo-pie { align-self: stretch; }
-.arbol-vista[data-lod='nombre'] .nodo-rango, .arbol-vista[data-lod='nombre'] .nodo-coste { font-size: 13px; padding: 2px 4px 1px; }
+.arbol-vista[data-lod='nombre'] .nodo-rango, .arbol-vista[data-lod='nombre'] .nodo-coste { font-size: 14px; padding: 2px 4px 1px; }
 
 /* la raíz: la corona quebrada con el saldo de esquirlas */
 .arbol-raiz { display: grid; justify-items: center; align-content: center; gap: 4px; padding: 6px; text-align: center; color: var(--card-paper); --bg: #1e1b18; --bd: var(--laton); --bw: 3px; cursor: pointer; overflow: hidden; }
@@ -90,7 +90,7 @@
 .raiz-saldo { display: inline-flex; align-items: baseline; gap: 6px; background: var(--pit); padding: 2px 10px; }
 .raiz-saldo b { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.05; color: var(--laton-hi); font-variant-numeric: tabular-nums; }
 .raiz-saldo i { font-style: normal; font-size: 20px; color: var(--laton-hi); }
-.raiz-desc { font-family: var(--mono); font-weight: 700; font-size: 13px; line-height: 1.2; color: var(--card-paper); }
+.raiz-desc { font-family: var(--mono); font-weight: 700; font-size: 14px; line-height: 1.2; color: var(--card-paper); }
 .arbol-vista:not([data-lod='tarjeta']) .arbol-raiz :is(.raiz-desc) { display: none; }
 .arbol-vista[data-lod='sello'] .arbol-raiz { padding: 2px; }
 .arbol-vista[data-lod='sello'] .arbol-raiz :is(.raiz-nombre, .raiz-saldo) { display: none; }
@@ -105,7 +105,7 @@
 .estandarte .estandarte-pano { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
 .estandarte b, .estandarte span { position: relative; z-index: 1; justify-self: start; background-color: var(--pano); }
 .estandarte b { font-family: 'Corona Talla', var(--title); font-weight: 900; font-size: 14px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.03em; padding: 0 2px; }
-.estandarte span { font-family: var(--mono); font-weight: 700; font-size: 13px; line-height: 1.2; padding: 0 2px; }
+.estandarte span { font-family: var(--mono); font-weight: 700; font-size: 14px; line-height: 1.2; padding: 0 2px; }
 .arbol-vista:not([data-lod='tarjeta']) .estandarte span { display: none; }
 .estandarte .corto { display: none; }
 .arbol-vista[data-lod='tarjeta'] .estandarte { align-content: start; padding: 22px 16px 0; }
@@ -125,9 +125,9 @@
 .det-sello .det-glifo { width: 36px; height: 36px; }
 .det-cab > div { display: grid; gap: 2px; min-width: 0; }
 .det-nombre { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: 1.1; text-transform: uppercase; overflow-wrap: anywhere; }
-.det-rama { font-family: var(--mono); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #5e4a2c; }
+.det-rama { font-family: var(--mono); font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; color: #5e4a2c; }
 .det-efecto { margin: 0; font-family: var(--mono); font-weight: 600; font-size: 15px; line-height: 1.35; }
-.det-cifras { display: flex; flex-wrap: wrap; gap: 8px 16px; font-family: var(--mono); font-weight: 800; font-size: 13px; text-transform: uppercase; align-items: center; }
+.det-cifras { display: flex; flex-wrap: wrap; gap: 8px 16px; font-family: var(--mono); font-weight: 800; font-size: 14px; text-transform: uppercase; align-items: center; }
 .det-cifras b { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: 1; padding: 3px 7px 2px; background: var(--ink); color: var(--card-paper); font-variant-numeric: tabular-nums; text-transform: none; }
 .det-motivo { margin: 0; font-family: var(--mono); font-weight: 800; font-size: 14px; line-height: 1.25; color: #7d1d15; }
 #arbol-comprar { min-height: 48px; font-size: 16px; margin-top: auto; }
@@ -147,7 +147,7 @@
   .guild.con-arbol .deck-head .purse span { display: none; }
   .guild.con-arbol .deck-head .purse b { font-size: 22px; }
   .guild.con-arbol .row.tabs { display: grid; grid-template-columns: repeat(3, auto); gap: 8px; margin-top: 0; }
-  .guild.con-arbol .row.tabs button { min-height: 44px; padding: 0 4px; font-size: 13px; }
+  .guild.con-arbol .row.tabs button { min-height: 44px; padding: 0 4px; font-size: 14px; }
   .arbol { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
   .arbol .nodo { --sh: 2px 3px 0 rgba(24, 22, 20, 0.5); }
   .guild.con-arbol .guild-panel.arbol-panel { padding: 4px; }
@@ -159,7 +159,7 @@
   .arbol-vista[data-lod='sello'] .estandarte { padding: 2px 12px 2px 5px; }
   .arbol-vista[data-lod='sello'] .estandarte .largo { display: none; }
   .arbol-vista[data-lod='sello'] .estandarte .corto { display: block; }
-  .estandarte b { font-size: 13px; letter-spacing: 0; line-height: 1.05; }
+  .estandarte b { font-size: 14px; letter-spacing: 0; line-height: 1.05; }
   .arbol-detalle { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; padding: 8px 10px; overflow: visible; }
   .arbol-detalle .det-cab { grid-column: 1 / -1; }
   .det-sello { width: 40px; height: 40px; }
@@ -220,7 +220,7 @@
   /* Mejor jugada baja a la columna de La Manga, encima de Golpear: la barra del pulgar no encoge */
   .hand, .is-run .hand { grid-row: span 2; }
   .handrow > #btn-mejor { grid-column: 1; align-self: end; justify-self: stretch; min-width: 48px; min-height: 48px; padding: 2px; flex-direction: column; gap: 1px; font-family: var(--mono); font-weight: 700; }
-  .handrow > #btn-mejor .lbl { font-size: 13px; line-height: 1; }
+  .handrow > #btn-mejor .lbl { font-size: 14px; line-height: 1; }
 }
 
 /* barra de escritorio estrecha (1280, 1366): el nombre del asalto se recoge para que quepan la bolsa y AUTO */
@@ -261,10 +261,10 @@
 /* la cara que salió, tallada en la cara de arriba del cubo de hueso: tinta parda sobre el marfil viejo (la cara lisa
    del dado es su placa; contraste ≈ 12:1), con un filo claro debajo como el corte del buril */
 .hueso-cara { position: absolute; left: 50%; top: 43%; transform: translate(-50%, -50%); font-family: var(--num); font-weight: 400; font-size: 36px; line-height: 1; color: #3a2a18; text-shadow: 0 1px 0 rgba(255, 250, 235, 0.85), 0 -1px 0 rgba(58, 42, 24, 0.35); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
-.hueso-nombre { min-height: 2.5em; display: flex; align-items: center; font-family: var(--mono); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--card-paper); }
+.hueso-nombre { min-height: 2.5em; display: flex; align-items: center; font-family: var(--mono); font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--card-paper); }
 /* sus seis caras, en pequeño: cajitas de hueso; la que salió, en tinta con marco de latón (forma, no solo color) */
 .hueso-caras { display: grid; grid-template-columns: repeat(3, auto); gap: 4px; justify-content: center; }
-.hueso-caras .cara { min-width: 30px; padding: 2px 4px 1px; font-family: var(--mono); font-weight: 800; font-size: 13px; line-height: 1.2; color: #3a2a18; background: #e6d8b4; border: 1px solid #7d6b45; font-variant-numeric: tabular-nums; text-align: center; }
+.hueso-caras .cara { min-width: 30px; padding: 2px 4px 1px; font-family: var(--mono); font-weight: 800; font-size: 14px; line-height: 1.2; color: #3a2a18; background: #e6d8b4; border: 1px solid #7d6b45; font-variant-numeric: tabular-nums; text-align: center; }
 .hueso-caras .cara.sale { color: var(--laton-hi); background: var(--ink); border: 2px solid var(--laton); padding: 1px 3px 0; box-shadow: 0 0 0 1px var(--ink); }
 .ritual-desc { margin: 0; font-family: var(--mono); font-weight: 600; font-size: 15px; line-height: 1.35; color: var(--card-paper); }
 .ritual-total { margin: 0; display: flex; flex-direction: column; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; font-family: var(--display); font-weight: 400; font-size: clamp(20px, 2.6vh, 26px); line-height: 1.2; font-variant-numeric: tabular-nums; }

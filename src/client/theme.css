@@ -154,12 +154,12 @@ input::placeholder { color: #8a7f6d; }
 .log p.red { color: var(--red-lit); }
 
 /* globos de ayuda con palabras clave encadenadas */
-.tip { background: var(--pit); border: 1px solid var(--table-4); border-left: 5px solid var(--hazard); box-shadow: 0 6px 0 rgba(10, 9, 8, 0.5); font-size: clamp(13px, 1.6vh, 15px); max-width: min(330px, 88vw); }
+.tip { background: var(--pit); border: 1px solid var(--table-4); border-left: 5px solid var(--hazard); box-shadow: 0 6px 0 rgba(10, 9, 8, 0.5); font-size: clamp(14px, 1.6vh, 15px); max-width: min(330px, 88vw); }
 .tip b { font-size: 0.95em; }
-.tip small { font-size: max(13px, 0.88em); }
+.tip small { font-size: max(14px, 0.88em); }
 .tip b.kw { display: inline; font-family: inherit; font-weight: 700; text-transform: none; letter-spacing: 0; font-size: inherit; margin: 0; color: var(--hazard); border-bottom: 0; }
 .tip .chain { margin-top: 7px; padding-top: 6px; border-top: 1px dashed #6b6456; display: grid; gap: 5px; }
-.tip .kwdef { font-size: max(13px, 0.92em); opacity: 0.92; padding-left: 8px; border-left: 2px solid var(--table-4); }
+.tip .kwdef { font-size: max(14px, 0.92em); opacity: 0.92; padding-left: 8px; border-left: 2px solid var(--table-4); }
 .tip .kwdef b { margin-bottom: 0; }
 
 /* ───────────── MESA ───────────── */
@@ -191,7 +191,7 @@ input::placeholder { color: #8a7f6d; }
 .tower-tag { background: var(--pit); color: var(--card-paper); border-bottom: 3px solid var(--tc); justify-content: flex-start; gap: 0.35em; margin: calc(-1 * clamp(3px, 0.6vh, 6px)) calc(-1 * clamp(3px, 0.6vh, 6px)) 0; padding: 3px 8px 4px; font-size: clamp(16px, 2.6vh, 28px); }
 .tower-tag .glyph, .tower[data-suit='H'] .tower-tag .glyph, .tower[data-suit='D'] .tower-tag .glyph { fill: var(--tc); font-size: 0.9em; }
 /* la amenaza va en el rótulo, a la derecha */
-.threat { position: absolute; z-index: 2; top: 0; right: 0; height: clamp(22px, 3.6vh, 38px); padding: 0 8px; align-self: auto; display: flex; align-items: center; gap: 6px; color: var(--dim); font-size: clamp(13px, 1.3vh, 14px); }
+.threat { position: absolute; z-index: 2; top: 0; right: 0; height: clamp(22px, 3.6vh, 38px); padding: 0 8px; align-self: auto; display: flex; align-items: center; gap: 6px; color: var(--dim); font-size: 14px; }
 .threat b { font-family: var(--display); font-weight: 400; font-size: clamp(14px, 2vh, 20px); letter-spacing: 0; color: var(--red-lit); }
 .threat b.off, .tower.disarmed .threat b { color: var(--dim); text-decoration: line-through; }
 .tower.fallen { --bg: transparent; --bd: var(--line); --bs: dashed; --sh: none; }
@@ -216,7 +216,7 @@ input::placeholder { color: #8a7f6d; }
 /* placas del piso: hierro tallado = inmune; latón = débil */
 .plates { display: flex; gap: 5px; justify-content: flex-start; justify-self: start; height: var(--plate-h); }
 .plate { display: inline-flex; align-items: center; gap: 3px; padding: 0 7px 0 5px; font-style: normal; border: 2px solid var(--pit); box-shadow: inset 0 2px 0 rgba(255, 243, 214, 0.16), inset 0 -3px 0 rgba(10, 9, 8, 0.34); white-space: nowrap; }
-.plate b { font-family: var(--display); font-weight: 400; font-size: clamp(13px, 1.6vh, 16px); line-height: 1; }
+.plate b { font-family: var(--display); font-weight: 400; font-size: clamp(14px, 1.6vh, 16px); line-height: 1; }
 .plate .glyph { width: clamp(13px, 1.9vh, 19px); height: clamp(13px, 1.9vh, 19px); }
 .plate.iron { background: #45423d; color: #d9cfbb; }
 .plate.iron .glyph { fill: #d9cfbb; }
@@ -238,7 +238,7 @@ input::placeholder { color: #8a7f6d; }
 .storeys { align-self: stretch; display: grid; gap: 2px; }
 .storey { position: relative; height: var(--storey-h); }
 .storey .storey-art { opacity: 0.6; }
-.storey b, .storey span { position: absolute; top: 50%; transform: translateY(-50%); font-family: var(--display); font-weight: 400; font-size: clamp(13px, 1.6vh, 16px); line-height: 1.25; padding: 0 6px; }
+.storey b, .storey span { position: absolute; top: 50%; transform: translateY(-50%); font-family: var(--display); font-weight: 400; font-size: clamp(14px, 1.6vh, 16px); line-height: 1.25; padding: 0 6px; }
 .storey b { left: 5px; background: var(--card-paper); color: var(--ink); }
 .storey span { right: 5px; background: var(--pit); color: var(--card-paper); }
 .footing { align-self: stretch; height: clamp(4px, 0.8vh, 8px); background: repeating-linear-gradient(90deg, var(--pit) 0 14px, var(--table-4) 14px 16px); }
@@ -287,7 +287,7 @@ input::placeholder { color: #8a7f6d; }
 .hudrow { display: flex; max-width: 100%; align-items: center; justify-content: center; gap: clamp(8px, 1.8vw, 32px); flex-wrap: wrap; min-width: 0; }
 .beltbar { grid-column: auto; }
 .powers { display: flex; gap: clamp(3px, 0.4vw, 6px); flex-wrap: wrap; justify-content: center; }
-.power { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 2px solid var(--pit); background: var(--table-3); color: var(--dim); font-size: clamp(13px, 1.35vh, 14px); font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.power { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 2px solid var(--pit); background: var(--table-3); color: var(--dim); font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
 .power b { font-weight: 700; }
 .power .glyph { width: 1.15em; height: 1.15em; }
 .power.s-S .glyph { fill: var(--suitd-S); }
@@ -306,7 +306,7 @@ input::placeholder { color: #8a7f6d; }
 .status .hint { color: var(--dim); }
 .calc b { border-color: var(--pit); }
 .calc b.t { background: var(--pit); color: var(--hazard); }
-.calc .vs { color: var(--dim); font-size: max(13px, 0.42em); }
+.calc .vs { color: var(--dim); font-size: max(14px, 0.42em); }
 .marks .m { border-color: var(--pit); background: var(--paper-2); color: var(--ink); }
 .marks .m.gold { background: var(--hazard); }
 .marks .m.red { background: var(--red); color: var(--card-paper); }
@@ -336,10 +336,10 @@ input::placeholder { color: #8a7f6d; }
 .handrow { display: flex; align-items: flex-end; justify-content: center; gap: clamp(8px, 1.3vw, 22px); min-width: 0; --rw: calc(var(--hand-h) * 0.62 / 1.4); --gap: clamp(4px, 0.7vw, 10px); }
 .reserve { position: relative; flex: none; display: flex; align-items: flex-end; gap: 6px; padding: clamp(16px, 2.2vh, 22px) 7px 6px; border: 2px solid var(--table-4); border-top: 4px solid var(--hazard); background-color: rgba(13, 12, 11, 0.5); background-image: repeating-linear-gradient(135deg, rgba(224, 155, 61, 0.1) 0 6px, transparent 6px 14px); }
 .reserve[hidden] { display: none; }
-.reserve-label { position: absolute; left: 7px; top: 2px; font-family: var(--display); font-size: 13px; line-height: 1.2; letter-spacing: 0.05em; color: var(--hazard); }
+.reserve-label { position: absolute; left: 7px; top: 2px; font-family: var(--display); font-size: 14px; line-height: 1.2; letter-spacing: 0.05em; color: var(--hazard); }
 .reserve-slot { width: var(--rw); aspect-ratio: 5 / 7; display: grid; place-items: center; outline: none; }
 .reserve-slot.empty { border: 2px dashed var(--dim); color: var(--dim); cursor: pointer; }
-.reserve-slot.empty i { font-style: normal; font-family: var(--display); font-size: clamp(13px, 1.8vh, 18px); border: 2px solid currentColor; padding: 0 7px; line-height: 1.5; }
+.reserve-slot.empty i { font-style: normal; font-family: var(--display); font-size: clamp(14px, 1.8vh, 18px); border: 2px solid currentColor; padding: 0 7px; line-height: 1.5; }
 .reserve-slot.empty:hover { border-color: var(--hazard); color: var(--hazard); }
 .reserve.used .reserve-slot.empty { cursor: not-allowed; opacity: 0.5; }
 .reserve .card { --w: var(--rw); cursor: pointer; transition: transform 0.16s ease; }
@@ -378,30 +378,30 @@ input::placeholder { color: #8a7f6d; }
 .hold-ring .prog { fill: none; stroke: var(--red-lit); stroke-width: 7; transform-box: fill-box; transform-origin: 50% 50%; animation: holdfill 0.7s linear forwards; }
 @keyframes holdfill { from { transform: scale(0.15); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
 .hold-ring b { position: relative; font-family: var(--num); font-size: clamp(44px, 9vh, 84px); line-height: 1; margin-top: -0.2em; }
-.hold-ring span { position: absolute; bottom: 21%; font-family: var(--cap); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; white-space: nowrap; }
+.hold-ring span { position: absolute; bottom: 21%; font-family: var(--cap); font-weight: 700; font-size: 14px; letter-spacing: 0.06em; white-space: nowrap; }
 
 /* ───────────── Lupa de grabador ───────────── */
 .lupa { position: fixed; inset: 0; z-index: 95; background: rgba(13, 12, 11, 0.92); display: grid; place-items: center; padding: clamp(10px, 3vh, 40px) clamp(10px, 3vw, 48px); cursor: zoom-out; animation: tipin 0.14s ease both; text-transform: none; }
 .lupa-box { display: grid; grid-template-columns: auto minmax(0, 480px); gap: clamp(16px, 3.4vw, 56px); align-items: center; max-height: 100%; min-height: 0; cursor: default; }
 .lupa-art .card { --w: clamp(170px, min(32vw, 54vh), 430px); }
 .lupa-sheet { position: relative; background-color: var(--card-paper); background-image: var(--grain-paper, none); color: var(--ink); border: 3px solid var(--pit); box-shadow: 0 8px 0 var(--pit); padding: clamp(12px, 2.4vh, 26px) clamp(14px, 2vw, 28px); display: grid; gap: clamp(6px, 1.2vh, 12px); max-height: min(88vh, 100%); overflow-y: auto; }
-.lupa-kicker { font-family: var(--cap); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--red); }
+.lupa-kicker { font-family: var(--cap); font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--red); }
 .lupa-sheet h2 { font-family: var(--title); font-weight: 700; font-size: clamp(30px, 5.6vh, 58px); line-height: 1; display: flex; align-items: center; gap: 12px; }
 .lupa-epi { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: clamp(14px, 2vh, 19px); line-height: 1.35; color: #5a4a36; border-left: 3px solid var(--ochre); padding-left: 10px; }
 .lupa-rules { font-size: clamp(14px, 2vh, 19px); font-weight: 700; line-height: 1.4; }
-.lupa-math { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 14px; font-size: clamp(13px, 1.65vh, 16px); line-height: 1.4; border-top: 2px solid var(--ink); padding-top: 8px; align-items: baseline; }
-.lupa-math dt { font-family: var(--display); text-transform: uppercase; font-size: max(13px, 0.82em); letter-spacing: 0.03em; }
+.lupa-math { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 14px; font-size: clamp(14px, 1.65vh, 16px); line-height: 1.4; border-top: 2px solid var(--ink); padding-top: 8px; align-items: baseline; }
+.lupa-math dt { font-family: var(--display); text-transform: uppercase; font-size: max(14px, 0.82em); letter-spacing: 0.03em; }
 .lupa-math .vs-t { display: inline-flex; align-items: center; gap: 4px; margin: 0 6px 4px 0; padding: 1px 7px; border: 2px solid var(--ink); }
 .lupa-math .vs-t b { font-family: var(--display); font-weight: 400; }
-.lupa-math .vs-t small { font-size: 13px; opacity: 0.75; }
+.lupa-math .vs-t small { font-size: 14px; opacity: 0.75; }
 .lupa-math .vs-t.zero { opacity: 0.5; border-style: dashed; }
 .lupa-math .vs-t.doble { background: var(--hazard); }
-.lupa-chain { display: grid; gap: 5px; border-top: 1px dashed var(--ink); padding-top: 8px; font-size: clamp(13px, 1.5vh, 14px); line-height: 1.35; }
-.lupa-chain .kwdef b { display: block; font-family: var(--display); font-weight: 400; text-transform: uppercase; font-size: 13px; letter-spacing: 0.04em; color: var(--red); }
+.lupa-chain { display: grid; gap: 5px; border-top: 1px dashed var(--ink); padding-top: 8px; font-size: 14px; line-height: 1.35; }
+.lupa-chain .kwdef b { display: block; font-family: var(--display); font-weight: 400; text-transform: uppercase; font-size: 14px; letter-spacing: 0.04em; color: var(--red); }
 .lupa-close { justify-self: end; }
 
 /* sellos de maestría: un remache de bronce, hierro u oro */
-.mastery { display: inline-grid; place-items: center; flex: none; width: 1.8em; height: 1.8em; border-radius: 50%; font-size: clamp(13px, 1.7vh, 17px); border: 2px solid var(--pit); box-shadow: inset 0 2px 0 rgba(255, 243, 214, 0.38), inset 0 -3px 0 rgba(10, 9, 8, 0.32), 0 2px 0 var(--pit); vertical-align: middle; cursor: help; }
+.mastery { display: inline-grid; place-items: center; flex: none; width: 1.8em; height: 1.8em; border-radius: 50%; font-size: clamp(14px, 1.7vh, 17px); border: 2px solid var(--pit); box-shadow: inset 0 2px 0 rgba(255, 243, 214, 0.38), inset 0 -3px 0 rgba(10, 9, 8, 0.32), 0 2px 0 var(--pit); vertical-align: middle; cursor: help; }
 .mastery i { font-style: normal; font-family: var(--display); line-height: 1; color: #1a1612; }
 .mastery.m-bronce { background: #a8652f; }
 .mastery.m-hierro { background: #86837c; }
@@ -411,11 +411,11 @@ input::placeholder { color: #8a7f6d; }
 
 /* ───────────── Preparación: niveles de obra ───────────── */
 .levels { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
-.level { display: grid; align-content: center; justify-items: center; gap: 1px; padding: 3px 2px; height: clamp(44px, 7.4vh, 70px); min-width: 0; font-family: var(--mono); }
+.level { display: grid; align-content: center; justify-items: center; gap: 1px; padding: 3px 2px; height: clamp(48px, 8.2vh, 72px); min-width: 0; font-family: var(--mono); }
 .level b { font-family: var(--display); font-weight: 400; font-size: clamp(15px, 2.3vh, 24px); line-height: 1; }
-.level span { font-size: 13px; font-weight: 700; line-height: 1.05; text-transform: none; letter-spacing: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: center; }
+.level span { font-size: 14px; font-weight: 700; line-height: 1.05; text-transform: none; letter-spacing: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: center; }
 .level.in:not(.on) { --bg: var(--paper-3); }
-.level-twists { list-style: none; display: grid; gap: 2px; font-size: clamp(13px, 1.5vh, 15px); line-height: 1.3; text-transform: none; }
+.level-twists { list-style: none; display: grid; gap: 2px; font-size: clamp(14px, 1.5vh, 15px); line-height: 1.3; text-transform: none; }
 .level-twists li b { font-family: var(--display); font-weight: 400; margin-right: 6px; }
 .stop.boss { --bg: var(--red); color: var(--card-paper); }
 .stop.done { --bg: var(--ink); color: var(--hazard); }
@@ -433,22 +433,22 @@ input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
 input[type='range']::-moz-range-track { height: 8px; background: var(--ink); }
 input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius: 0; background: var(--red); border: 2px solid var(--ink); }
 .server-edit { display: flex; gap: 6px; align-items: stretch; }
-.server-edit input { width: clamp(150px, 22vw, 240px); font-family: var(--mono); font-size: 13px; text-transform: none; padding: 6px 8px; }
+.server-edit input { width: clamp(150px, 22vw, 240px); font-family: var(--mono); font-size: 14px; text-transform: none; padding: 6px 8px; }
 .set .server-edit button { min-width: 0; }
-.keys { font-size: 13px; }
+.keys { font-size: 14px; }
 .keys td, .keys th { padding: 3px 8px; border-width: 1.5px; }
 
 /* ───────────── Estrecho y vertical (móvil) ───────────── */
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   :root { --storey-h: 13px; --plate-h: 20px; }
   .bar { padding: 4px 6px; gap: 4px; }
-  .bar button { min-height: 44px; min-width: 44px; padding: 0 8px; font-size: 13px; }
+  .bar button { min-height: 44px; min-width: 44px; padding: 0 8px; font-size: 14px; }
   .bar .players { order: 9; flex: 1 1 100%; }
-  .chip, .room { font-size: 13px; padding: 1px 6px; }
+  .chip, .room { font-size: 14px; padding: 1px 6px; }
   .field { padding: 5px; gap: 5px; grid-template-rows: auto auto; align-content: start; }
   .towers { width: 100%; gap: 5px; }
   .tower { padding: 3px; gap: 3px; }
-  .tower-tag { margin: -3px -3px 0; padding: 2px 4px 3px; font-size: clamp(13px, 3.6vw, 20px); }
+  .tower-tag { margin: -3px -3px 0; padding: 2px 4px 3px; font-size: clamp(14px, 3.6vw, 20px); }
   .tower-tag .glyph { display: inline-block; }
   .threat { height: 22px; padding: 0 4px; }
   .threat span { display: none; }
@@ -456,21 +456,21 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   .floor-slot .card { --w: 92cqw; }
   .rubble { width: 80cqw; }
   .plate { padding: 0 3px; gap: 1px; }
-  .plate b { font-size: 13px; }
+  .plate b { font-size: 14px; }
   .plate .glyph { width: 12px; height: 12px; }
-  .storey b, .storey span { font-size: 13px; line-height: 1.05; padding: 0 3px; }
-  .fx { font-size: 13px; padding: 0 3px; border-width: 1px; }
+  .storey b, .storey span { font-size: 14px; line-height: 1.05; padding: 0 3px; }
+  .fx { font-size: 14px; padding: 0 3px; border-width: 1px; }
   .hp { height: 16px; }
-  .hp span { font-size: 13px; }
+  .hp span { font-size: 14px; }
   .preview { font-size: 15px; top: 22px; }
   .side { flex-direction: row; max-width: none; padding: 0; }
   .log { display: none; }
   .bunker { flex: 1; display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; column-gap: 12px; }
   .bunker h3, .bunker .blocks, .bunker-art { display: none; }
   .bunker .stat { flex-direction: row; align-items: baseline; gap: 6px; margin: 0; }
-  .bunker .stat span { font-size: 13px; }
+  .bunker .stat span { font-size: 14px; }
   .bunker .piles { display: flex; justify-content: flex-end; gap: 8px; margin: 0; grid-column: 3; grid-row: 1; }
-  .pile { font-size: 13px; display: flex; align-items: center; gap: 4px; }
+  .pile { font-size: 14px; display: flex; align-items: center; gap: 4px; }
   .pile .slot { width: 30px; height: 40px; margin: 0; }
   .pile .card { --w: 24px; }
   .pile .count { font-size: 15px; }
@@ -481,10 +481,10 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   .beltbar { gap: 4px; justify-content: center; }
   .belt-slot { width: 42px; margin: 1px; border-width: 2px; }
   .carries { display: none; }
-  .power { padding: 2px 6px; font-size: 13px; }
+  .power { padding: 2px 6px; font-size: 14px; }
   .status.score { justify-content: center; min-height: 0; }
   .status .hint { display: none; }
-  .marks .m { font-size: 13px; }
+  .marks .m { font-size: 14px; }
   .handrow { display: contents; }
   .hand, .is-run .hand { grid-column: 1 / -1; height: auto; flex-wrap: wrap; justify-content: center; row-gap: 6px; padding: 4px 0 0; --gap: 6px; }
   .hand .card, .is-run .hand .card { --w: min(calc((100vw - 12px - 4 * 6px) / 5), 11.5vh); }
@@ -494,8 +494,8 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   .reserve-slot { width: 44px; }
   .reserve .card { --w: 44px; }
   .actions { grid-column: 2; display: flex; flex-direction: row; align-items: stretch; gap: 5px; min-width: 0; align-self: stretch; }
-  .actions button { flex: 1; min-width: 44px; min-height: 44px; padding: 0 4px; font-size: 13px; }
-  .coach { font-size: 13px; }
+  .actions button { flex: 1; min-width: 44px; min-height: 44px; padding: 0 4px; font-size: 14px; }
+  .coach { font-size: 14px; }
   button, .stamp-btn { min-height: 44px; }
   .choice.pick { min-height: 44px; }
   .lupa-box { grid-template-columns: minmax(0, 1fr); justify-items: center; overflow-y: auto; align-content: start; }
@@ -551,7 +551,7 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
   /* la previsualización va al pie de la torre, sobre los pisos que esperan: no tapa ni la carta ni las placas */
   .preview { top: auto; bottom: 3px; left: 3px; right: 3px; transform: none; text-align: center; font-size: 15px; padding: 2px 2px 3px; }
   .preview small { display: inline; margin: 0 0 0 4px; font-size: 0; }
-  .preview small::after { content: attr(data-short); font-size: 13px; }
+  .preview small::after { content: attr(data-short); font-size: 14px; }
   .actions button { white-space: nowrap; letter-spacing: 0; }
   #btn-discard { flex: 1.7; }
   .run-belt > button { min-height: 44px; }
@@ -596,7 +596,7 @@ input[type='range']::-moz-range-thumb { width: 14px; height: 26px; border-radius
 }
 
 /* ───────────── 4.0 · indicaciones de control: tecla o botón, según con qué se juegue ───────────── */
-.kh { display: none; flex: none; margin-left: 6px; min-width: 1.7em; height: 1.7em; padding: 0 5px; place-items: center; font-family: var(--display); font-weight: 400; font-size: 13px; line-height: 1; letter-spacing: 0; text-transform: none; border: 1.5px solid var(--pit); vertical-align: middle; }
+.kh { display: none; flex: none; margin-left: 6px; min-width: 1.7em; height: 1.7em; padding: 0 5px; place-items: center; font-family: var(--display); font-weight: 400; font-size: 14px; line-height: 1; letter-spacing: 0; text-transform: none; border: 1.5px solid var(--pit); vertical-align: middle; }
 html[data-input='keys'] .kb { display: inline-grid; background: var(--card-paper); color: var(--ink); box-shadow: 0 2px 0 var(--pit); }
 html[data-input='pad'] .pd { display: inline-grid; border-radius: 999px; background: var(--pit); color: var(--paper-2); box-shadow: inset 0 0 0 1.5px currentColor; }
 .pd.b-a { color: #62a898; }
@@ -629,13 +629,13 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 /* ───────────── 4.0 · archivo de actas ───────────── */
 .actas { display: grid; gap: clamp(6px, 1.1vh, 12px); }
 .acta-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(8px, 1.2vw, 18px); align-items: center; border-bottom: 1.5px dashed rgba(24, 22, 20, 0.45); padding-bottom: clamp(6px, 1.1vh, 12px); text-transform: none; }
-.acta-stamp { font-family: var(--display); text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(13px, 1.5vh, 15px); line-height: 1; padding: 4px 8px 5px; border: 3px double currentColor; transform: rotate(-6deg); color: var(--ink); white-space: nowrap; }
+.acta-stamp { font-family: var(--display); text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(14px, 1.5vh, 15px); line-height: 1; padding: 4px 8px 5px; border: 3px double currentColor; transform: rotate(-6deg); color: var(--ink); white-space: nowrap; }
 .acta-row.won .acta-stamp { color: var(--red); }
 .acta-main { display: grid; gap: 2px; min-width: 0; }
-.acta-main b { text-transform: uppercase; font-size: clamp(13px, 1.6vh, 16px); }
-.acta-main span { font-size: clamp(13px, 1.45vh, 14px); line-height: 1.3; }
+.acta-main b { text-transform: uppercase; font-size: clamp(14px, 1.6vh, 16px); }
+.acta-main span { font-size: 14px; line-height: 1.3; }
 .acta-tools { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.acta-tools em { font-style: normal; font-family: var(--cap); font-weight: 700; font-size: 13px; opacity: 0.75; margin-left: 6px; }
+.acta-tools em { font-style: normal; font-family: var(--cap); font-weight: 700; font-size: 14px; opacity: 0.75; margin-left: 6px; }
 .mini-ico { width: clamp(20px, 2.8vh, 28px); height: clamp(20px, 2.8vh, 28px); flex: none; background: var(--paper-2); border: 1.5px solid var(--pit); padding: 1px; }
 .acta-btns { display: grid; gap: 6px; }
 .acta-btns button { white-space: nowrap; }
@@ -688,10 +688,10 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 
 /* ── cartas: índice con placa de papel, palo con contorno de tinta, letra del arte solo si se lee ── */
 /* V11: el índice de la esquina crece un 40 % (0,2 → 0,28 del ancho de la carta); la carta no cambia de tamaño */
-.corner { font-size: max(13px, calc(var(--w) * 0.28)); letter-spacing: -0.04em; }
+.corner { font-size: max(14px, calc(var(--w) * 0.28)); letter-spacing: -0.04em; }
 .corner b { background: var(--card-paper); padding: 0.05em 0.07em 0.02em; line-height: 0.92; }
-.corner.wide b { font-size: max(13px, 1em); letter-spacing: -0.15em; }
-.star-mini { font-size: max(13px, 0.7em); }
+.corner.wide b { font-size: max(14px, 1em); letter-spacing: -0.15em; }
+.star-mini { font-size: max(14px, 0.7em); }
 .corner .glyph { stroke: var(--ink); stroke-width: 1.3; paint-order: stroke; overflow: visible; }
 .corner .glyph.s-S { stroke: var(--card-paper); stroke-width: 0.9; paint-order: normal; }
 /* V10 P0-1: el palo de la esquina de la mano y de La Manga no baja de 14 px (10 en el móvil); la carta no cambia */
@@ -699,18 +699,19 @@ html[data-input='keys'] .reserve-slot .plus, html[data-input='pad'] .reserve-slo
 svg.ly.weave { width: 100%; height: 100%; opacity: 0.62; }
 /* el texto del grabado (nombres en la banda, «SOTA · ACERO» al canto) se retira en las cartas pequeñas:
    tamaño en pantalla = cuerpo × ancho de la carta / 250 × 0,987; por debajo de 13 px vale 0 */
-.art .banner-txt { font-size: clamp(0px, (var(--w, 0px) - 131px) * 1000, 25px); letter-spacing: 0.5px; }
+/* V28: 26,6 unidades (14 px desde una carta de 133,5 px de ancho, con la gubia del filtro); por debajo el nombre se retira */
+.art .banner-txt { font-size: clamp(0px, (var(--w, 0px) - 133.5px) * 1000, 26.6px); letter-spacing: 0.4px; }
 .art .banner-txt.npc-name { font-size: clamp(0px, (var(--w, 0px) - 164px) * 1000, 20px); }
 .art .cap { font-size: clamp(0px, (var(--w, 0px) - 300px) * 1000, 11px); letter-spacing: 1px; }
-.sp-desc { font-size: max(13px, calc(var(--w) * 0.053)); }
+.sp-desc { font-size: max(14px, calc(var(--w) * 0.053)); }
 
 /* ── torres: amenaza y pisos con placa, rótulo con la trama del material ── */
 .tower-tag { position: relative; border-bottom: 0; padding-bottom: 9px; }
 .tag-weave { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 7px; border-top: 2px solid var(--pit); }
 .threat { background: var(--pit); color: var(--paper-3); }
 .threat b { color: #ec8a7b; }
-.hp span { font-size: max(13px, 1.4vh); }
-.fx { font-size: 13px; }
+.hp span { font-size: max(14px, 1.4vh); }
+.fx { font-size: 14px; }
 .tower .fx { white-space: nowrap; }
 .wn .wt { stroke: var(--pit); stroke-width: 1.2; }
 .belt { gap: 8px; }
@@ -719,24 +720,24 @@ svg.ly.weave { width: 100%; height: 100%; opacity: 0.62; }
 /* ── barra de arriba, cinturón, poderes y búnker: nada por debajo de 13 px y cifras con placa ── */
 .bar { padding-left: 10px; padding-right: 10px; }
 .bar button { min-height: 44px; padding-top: 0; padding-bottom: 0; }
-.bar .chip, .bar .room, .obra-chips > *, .players > * { font-size: max(13px, 1.35vh); }
-.belt-label, .belt-label small { font-size: max(13px, 1.4vh); }
-.belt-slot .kind, .belt-slot .cnt { font-size: 13px; line-height: 1.2; padding: 0 4px; }
+.bar .chip, .bar .room, .obra-chips > *, .players > * { font-size: max(14px, 1.35vh); }
+.belt-label, .belt-label small { font-size: max(14px, 1.4vh); }
+.belt-slot .kind, .belt-slot .cnt { font-size: 14px; line-height: 1.2; padding: 0 4px; }
 .belt-slot .kind { left: -7px; top: -10px; background: var(--pit); color: var(--card-paper); border: 1.5px solid var(--card-paper); }
 .belt-slot .cnt { right: -8px; bottom: -9px; background: var(--hazard); color: var(--ink); border: 1.5px solid var(--pit); }
-.carry, .power, .stepchip.note { font-size: max(13px, 1.35vh); }
-.pile, .stat span, .reserve-label { font-size: max(13px, 1.3vh); }
+.carry, .power, .stepchip.note { font-size: max(14px, 1.35vh); }
+.pile, .stat span, .reserve-label { font-size: max(14px, 1.3vh); }
 .blocks i { border-color: #c9b994; background: #c9b994; }
 .blocks i.off { border-color: var(--paper-3); opacity: 0.55; }
 .blocks.wall i { background: #f0ae4f; border-color: #f0ae4f; }
-.log { font-size: max(13px, 1.3vh); }
-.tip, .tip small, .tip .kwdef { font-size: max(13px, 1.5vh); }
-.inkstamp { font-size: max(13px, 1.8vh); }
+.log { font-size: max(14px, 1.3vh); }
+.tip, .tip small, .tip .kwdef { font-size: max(14px, 1.5vh); }
+.inkstamp { font-size: max(14px, 1.8vh); }
 
 /* ── índices de la mano: placa de tinta con número en papel, legibles sobre corazones ── */
 .hand .card[data-n]::after, .reserve .card[data-n]::after { font-size: max(16px, 1.6vh); background: var(--pit); color: var(--card-paper); border: 2px solid var(--card-paper); }
 .hand .card.sel[data-n]::after, .reserve .card.sel[data-n]::after { background: var(--red); border-color: var(--pit); }
-.hand .card[data-key]:not([data-key=''])::before { font-size: 13px; }
+.hand .card[data-key]:not([data-key=''])::before { font-size: 14px; }
 
 /* ── dianas: todo lo pulsable mide al menos 44 × 44 px ── */
 button, #app button, .modal button, .lupa button { min-height: 44px; min-width: 44px; }
@@ -754,7 +755,7 @@ button.primary:disabled { --bg: #6d4a45; color: var(--paper-2); }
 #btn-undo { grid-area: undo; }
 #btn-discard { grid-area: discard; }
 #btn-clear { grid-area: clear; }
-.actions button { min-height: 44px; padding: 2px 6px; font-size: max(13px, 1.45vh); line-height: 1.1; letter-spacing: 0.01em; white-space: normal; }
+.actions button { min-height: 44px; padding: 2px 6px; font-size: max(14px, 1.45vh); line-height: 1.1; letter-spacing: 0.01em; white-space: normal; }
 #btn-strike { font-size: max(15px, 1.9vh); min-height: 48px; }
 .hand .card, .is-run .hand .card { --w: min(calc(var(--hand-h) * 0.84 / 1.4), calc((100vw - clamp(220px, 17vw, 300px) - var(--rs, 0) * (var(--rw) + 12px) - 130px - (var(--n, 8) - 1) * var(--gap)) / var(--n, 8))); }
 .handrow { --gap: clamp(12px, 0.9vw, 16px); }
@@ -790,7 +791,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 
 /* ── contraste de lo atenuado: se baja el tono, no la opacidad ── */
 .lupa-math .vs-t.zero { opacity: 1; color: #5e564a; }
-.lupa-math .vs-t small { opacity: 1; font-size: max(13px, 0.9em); }
+.lupa-math .vs-t small { opacity: 1; font-size: max(14px, 0.9em); }
 .bp-node em.plain { opacity: 1; }
 .form-chip { opacity: 1; color: #5e564a; }
 .unknown h4, .unknown p, .choice.unknown h4, .choice.unknown p { opacity: 1; color: #5e564a; }
@@ -802,7 +803,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
   .corner.wide b { font-size: max(14px, 0.74em); }
   .corner b, .threat b, .plate b, .storey b, .storey span, .hp span, .chip b, .pile b, .pile .count, .power em, .preview, .belt-slot .kind, .belt-slot .cnt, .stat b, .price-tag, .purse b, .level b, .bp-n, .pay td, .hand .card[data-n]::after, .reserve .card[data-n]::after { font-size: max(14px, 1em); }
   .choice p, .lead, .note, .col-note, .stamp-btn small, .up span, .ach span, .kit li span, .acta-main span, .set span, .deck-opt span, .lupa-rules, .lupa-math dd, .say, .coach p { font-size: max(14px, 1em); }
-  .stat span { font-size: 13px; }
+  .stat span { font-size: 14px; }
   .pile { font-size: 0; }
   /* el andamio a la izquierda de la mano; abajo, la barra del pulgar: Golpear, Andamio, Descartar y Tiza a 48 px */
   .tray { grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; padding-left: 8px; padding-right: 8px; }
@@ -831,7 +832,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
   /* barra de arriba: fichas en una fila, los cinco botones en otra, con 8 px de aire */
   .bar { padding: 4px 8px; column-gap: 6px; row-gap: 6px; }
   .bar button + button { margin-left: 2px; }
-  .bar button { padding: 0 2px; letter-spacing: 0; font-family: var(--mono); font-weight: 700; font-size: 13px; }
+  .bar button { padding: 0 2px; letter-spacing: 0; font-family: var(--mono); font-weight: 700; font-size: 14px; }
   .lupa-math .vs-t small { font-size: 14px; }
 }
 
@@ -847,7 +848,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 .stop span { text-transform: none; }
 .mastery.m-bronce { background: #c07a3c; }
 .mastery.m-hierro { background: #9a978f; }
-.stamp-btn small { font-size: max(13px, 1.35vh); }
+.stamp-btn small { font-size: max(14px, 1.35vh); }
 .acta-btns { gap: 8px; }
 .server-edit, .set .row, .set-row { gap: 8px; }
 .card-back text { font-size: clamp(0px, (var(--w, 0px) - 34px) * 1000, 96px); }
@@ -887,7 +888,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
   .preview { top: 40%; }
   .tower .fx { white-space: normal; }
   /* rótulo de la torre: el nombre entero junto a la amenaza («Hormigón» no se esconde tras el ▲ 8) */
-  .tower-tag { font-size: clamp(13px, 3.4vw, 20px); padding-left: 3px; padding-right: 3px; }
+  .tower-tag { font-size: clamp(14px, 3.4vw, 20px); padding-left: 3px; padding-right: 3px; }
   .threat { padding: 0 3px; }
   .threat b::before { margin-right: 1px; }
 }
@@ -1005,7 +1006,7 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   /* en el trono estrecho del móvil no caben nombre y Ataque: manda el palo, grande y con su contorno */
-  .tower-tag { font-size: clamp(13px, 3.3vw, 18px); letter-spacing: 0; min-height: 30px; }
+  .tower-tag { font-size: clamp(14px, 3.3vw, 18px); letter-spacing: 0; min-height: 30px; }
   .tower-tag > span { display: none; }
   .tower-tag .glyph, .tower[data-suit] .tower-tag .glyph { display: block; width: 22px; height: 22px; stroke: var(--pit); stroke-width: 1.2; paint-order: stroke; }
   .threat b { font-size: 15px; padding: 0 3px; }
@@ -1161,16 +1162,16 @@ html[data-input='keys'] .actions button:not(#btn-strike):not(#btn-pass) .kb { ba
 .fb .fb-send { --bg: var(--hazard); color: var(--ink); font-size: clamp(15px, 2vh, 18px); font-weight: 800; letter-spacing: 0.01em; line-height: 1.15; padding: 8px 14px; white-space: normal; }
 .fb .fb-send:hover:not(:disabled) { --bg: var(--ink); color: var(--hazard); }
 .fb .fb-send[aria-busy='true'] { opacity: 0.7; }
-.fb .fb-issue { font-size: clamp(13px, 1.6vh, 15px); min-width: 44px; }
-.fb .fb-estado { grid-column: 1 / -1; margin: 0; font-family: var(--mono); font-weight: 700; font-size: clamp(13px, 1.6vh, 15px); line-height: 1.3; color: var(--ink); }
+.fb .fb-issue { font-size: clamp(14px, 1.6vh, 15px); min-width: 44px; }
+.fb .fb-estado { grid-column: 1 / -1; margin: 0; font-family: var(--mono); font-weight: 700; font-size: clamp(14px, 1.6vh, 15px); line-height: 1.3; color: var(--ink); }
 .fb[data-hecho] .fb-estado { padding-left: 10px; border-left: 5px solid var(--ink); }
 .fb[data-hecho='enviado'] .fb-estado, .fb[data-hecho='compartido'] .fb-estado, .fb[data-hecho='copiado'] .fb-estado, .fb[data-hecho='descargado'] .fb-estado { border-left-color: var(--hazard); }
 .acta-sheet .fb { margin: 2px 0 0; }
 .fb-datos > div > span { display: block; }
 .fb-datos .fb-llana { font-weight: 700; }
 .fb-ver { max-width: 760px; text-transform: none; }
-.fb-ver p { margin: 0 0 8px; font-size: clamp(13px, 1.6vh, 15px); }
-.fb-ver textarea { display: block; width: 100%; min-height: min(56vh, 520px); padding: 8px 10px; resize: vertical; font-family: var(--mono); font-size: 13px; line-height: 1.35; color: var(--ink); background: var(--card-paper); border: 2px solid var(--ink); }
+.fb-ver p { margin: 0 0 8px; font-size: clamp(14px, 1.6vh, 15px); }
+.fb-ver textarea { display: block; width: 100%; min-height: min(56vh, 520px); padding: 8px 10px; resize: vertical; font-family: var(--mono); font-size: 14px; line-height: 1.35; color: var(--ink); background: var(--card-paper); border: 2px solid var(--ink); }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .fb { grid-template-columns: minmax(0, 1fr); padding: 8px; }
   .fb .fb-send { font-size: 16px; min-height: 52px; }
@@ -1330,7 +1331,7 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
 }
 /* V10 · V7-5: las insignias de estado del trono van en un renglón, también en la torre estrecha del móvil */
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
-  .tower .fx { white-space: nowrap; overflow-wrap: normal; hyphens: manual; font-size: 13px; letter-spacing: -0.03em; padding-left: 2px; padding-right: 2px; }
+  .tower .fx { white-space: nowrap; overflow-wrap: normal; hyphens: manual; font-size: 14px; letter-spacing: -0.03em; padding-left: 2px; padding-right: 2px; }
 }
 /* V10 · V7-3 y V7-4: índices de la mano ≥ 15 px en el móvil; cifras de la barra de arriba ≥ 16 px fuera de él */
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
@@ -1470,9 +1471,9 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
 .calm .tower { transition: none; }
 
 /* ── cifras del trono +35 %: la Vida que queda manda; el «/ total», pequeño ── */
-.tower .hp span { font-size: 13px; padding: 1px 6px; display: flex; align-items: baseline; gap: 1px; }
+.tower .hp span { font-size: 14px; padding: 1px 6px; display: flex; align-items: baseline; gap: 1px; }
 .tower .hp span .hp-n { font-size: clamp(21px, 2.7vh, 28px); line-height: 1; font-weight: 400; }
-.tower .hp span small { font-size: 13px; line-height: 1; opacity: 1; color: #4a4339; }
+.tower .hp span small { font-size: 14px; line-height: 1; opacity: 1; color: #4a4339; }
 .threat b { font-size: clamp(20px, 3.4vh, 30px); line-height: 1; padding: 1px 0.24em; }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {
   .tower .hp span { font-size: 14px; padding: 1px 3px; }

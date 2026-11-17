@@ -723,7 +723,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       eff = px * Math.min(Math.hypot(m.a, m.b), Math.hypot(m.c, m.d));
     } else eff = px * scaleOf(el);
     const crit = opts.mobile && !inSvg && el.closest(CRIT);
-    const min = crit ? 14 : 13;
+    const min = 14; // V28: ningún texto por debajo de 14 px, en ninguna ventana (antes 13, y 14 solo lo crítico del móvil)
+    void crit;
     const id = path(el);
     if (eff < min - 0.06 && (sizes.get(id) ?? 99) > eff) {
       sizes.set(id, eff);
@@ -757,7 +758,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       const cs = getComputedStyle(el, pseudo);
       if (!cs.content || cs.content === 'none' || cs.content === 'normal' || cs.content === '""' || cs.display === 'none' || Number(cs.opacity) < 0.05) continue;
       const eff = parseFloat(cs.fontSize) * scaleOf(el);
-      const min = opts.mobile && el.matches('[data-n]') ? 14 : 13;
+      const min = 14;
       if (eff >= 1 && eff < min - 0.06) fail('texto', `texto de ${eff.toFixed(1)} px (mínimo ${min}): ${name(el)}${pseudo}`, el);
       if (/\d/.test(cs.content) && GOTHIC.test(first(cs.fontFamily))) fail('gotica', `cifra en gótica: ${name(el)}${pseudo}`, el);
     }
@@ -1330,7 +1331,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     else {
       if (norm(ribbon.textContent) !== want[1]) fail('marca', `la cinta dice «${norm(ribbon.textContent)}» y debía decir «${want[1]}»`, ribbon);
       const px = parseFloat(getComputedStyle(ribbon).fontSize) * scaleOf(ribbon);
-      if (px < (opts.mobile ? 13.95 : 12.95)) fail('marca', `la cinta mide ${px.toFixed(1)} px`, ribbon);
+      if (px < 13.95) fail('marca', `la cinta mide ${px.toFixed(1)} px`, ribbon);
       for (const el of [title, ribbon, wax]) {
         if (!el) continue;
         const r = el.getBoundingClientRect();
@@ -1510,7 +1511,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (!n) fail('vida', `la Vida del trono ${suit} no separa la Vida que queda (.hp-n)`, s);
         else if (px < needVida - 0.05) fail('vida', `la Vida que queda del trono ${suit} mide ${px.toFixed(2)} px (mínimo ${needVida})`, n);
         const tot = s.querySelector<HTMLElement>('small');
-        if (tot && visible(tot) && parseFloat(getComputedStyle(tot).fontSize) < (opts.mobile ? 13.95 : 12.95)) fail('vida', `el total de Vida del trono ${suit} mide ${getComputedStyle(tot).fontSize} (mínimo ${opts.mobile ? 14 : 13})`, tot);
+        if (tot && visible(tot) && parseFloat(getComputedStyle(tot).fontSize) < 13.95) fail('vida', `el total de Vida del trono ${suit} mide ${getComputedStyle(tot).fontSize} (mínimo 14)`, tot);
         if ((rgb(getComputedStyle(s).backgroundColor)?.a ?? 0) < 0.9) fail('vida', `la Vida del trono ${suit} no tiene placa propia`, s);
         const bar = s.closest('.hp')!;
         if (parseFloat(getComputedStyle(bar).borderTopWidth) < 1.95) fail('vida', `la barra de Vida del trono ${suit} no lleva borde de tinta de 2 px`, s);
@@ -2270,7 +2271,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (!/^\d+\/\d+$/.test(rango?.textContent?.trim() ?? '')) fail('arbol', `el nodo ${id} no enseña su rango «r/n»`, n);
         if (rango && dentro(r)) {
           const fs = parseFloat(getComputedStyle(rango).fontSize);
-          if (fs < (opts.mobile ? 13.95 : 12.95)) fail('arbol', `el rango del nodo ${id} mide ${fs} px (mínimo ${opts.mobile ? 14 : 13})`, rango);
+          if (fs < 13.95) fail('arbol', `el rango del nodo ${id} mide ${fs} px (mínimo 14)`, rango);
         }
         if (!n.querySelector('.nodo-sello svg')) fail('arbol', `el nodo ${id} no lleva su emblema`, n);
         if (n.matches('.es-padre') && !n.querySelector('.candado')) fail('arbol', `el nodo ${id} espera a su anterior y no lleva candado`, n);
@@ -2422,7 +2423,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
           fail('ritual', `el dado ${d.dataset.i} enseña ${caras.length} caras (deben verse sus 6)`, d);
         for (const c of caras) {
           const fs = parseFloat(getComputedStyle(c).fontSize);
-          if (fs < 13) fail('ritual', `la cara pequeña «${c.textContent}» mide ${fs} px (mínimo 13)`, c);
+          if (fs < 14) fail('ritual', `la cara pequeña «${c.textContent}» mide ${fs} px (mínimo 14)`, c);
           if (!visible(c)) fail('ritual', `la cara pequeña «${c.textContent}» del dado ${d.dataset.i} no se ve`, c);
         }
         const sale = caras.filter((c) => c.classList.contains('sale'));

@@ -1,0 +1,31 @@
+/* V28 · Legibilidad medida. Dos reglas de imprenta nuevas para todo el juego:
+   1. ningún texto por debajo de 14 px (el suelo de 13 px de los demás estilos sube a 14; lo exige la QA visual);
+   2. en escritorio, portátil y Steam Deck, 12 px como mínimo entre dos objetivos vecinos (antes 8). El móvil conserva
+      sus 8 px: ahí mandan la barra del pulgar y el ancho de 390 px.
+   Aquí van los huecos; los tamaños de letra se cambiaron en cada hoja. */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .row { gap: 12px; }
+  .grid2 { gap: 12px; }
+  .deck-opts { gap: 12px; }
+  .levels { gap: 12px; }
+  .menu { gap: clamp(13px, 1.6vh, 14px); }
+  .reserve { gap: 12px; }
+  .arbol-barra { gap: 12px; }
+  /* la barra de arriba: 12 px entre botones también cuando va apretada (los pasos siguientes recogen rótulos) */
+  html .bar, html[data-input='keys'] .bar, html[data-input='pad'] .bar { column-gap: clamp(12px, 0.9vw, 14px); }
+  html .bar.apretada3, html[data-input='keys'] .bar.apretada3, html[data-input='pad'] .bar.apretada3 { column-gap: 12px; }
+  /* último recurso (inglés con mando y monarca a 1280 px): si ni recogiendo rótulos cabe, el aire vuelve a 8 px */
+  html .bar.apretada6, html[data-input='keys'] .bar.apretada6, html[data-input='pad'] .bar.apretada6 { column-gap: 8px; }
+  /* …y, con mando, Ajustes se queda en su insignia (Start), que ya es su icono */
+  html[data-input='pad'] .bar.apretada6 #btn-set { font-size: 0; }
+  html[data-input='pad'] .bar.apretada6 #btn-set .kh { font-size: 14px; margin: 0; }
+}
+
+/* Ajustes, con sus textos a 14 px, sigue entrando entero en una ventana de 768 px de alto (también en inglés):
+   el renglón de cada explicación, algo más prieto */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
+  .settings .set > div > span, .settings .set > div > b { line-height: 1.2; }
+}
+
+/* en inglés el rótulo del trono es más largo: su palo se acerca 2 px al nombre y la placa del Ataque no lo roza */
+html[lang='en'] .tower-tag { gap: 0.26em; }

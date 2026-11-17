@@ -17,6 +17,7 @@ import './acta.css';
 import './conjura.css';
 import './taberna.css';
 import './movil.css';
+import './legible.css';
 import './tinta';
 import { sfx, startMusic } from './audio';
 import { canRestart, isRunHost, restartCampaign, retireOldSave } from './campaign';

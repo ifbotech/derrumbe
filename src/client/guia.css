@@ -31,7 +31,7 @@
 
 /* ───────────── placa del decreto e iconos de la maldición ───────────── */
 .curse-ico { display: block; flex: none; width: 1.3em; height: 1.3em; }
-.curse-plate { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 8px 2px 5px; background: var(--curse); color: var(--card-paper); border: 2px solid var(--pit); box-shadow: 0 2px 0 var(--pit); font-family: var(--mono); font-weight: 700; font-size: max(13px, 1.45vh); line-height: 1.2; letter-spacing: 0; text-transform: none; }
+.curse-plate { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 8px 2px 5px; background: var(--curse); color: var(--card-paper); border: 2px solid var(--pit); box-shadow: 0 2px 0 var(--pit); font-family: var(--mono); font-weight: 700; font-size: max(14px, 1.45vh); line-height: 1.2; letter-spacing: 0; text-transform: none; }
 .curse-plate b { font-weight: 700; min-width: 0; }
 
 /* ───────────── el monarca en el lateral de la mesa ───────────── */
@@ -46,7 +46,7 @@
   .table-screen:has(#monarch:not([hidden])) .bunker-art { display: none; }
 }
 @media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 900px) {
-  #monarch .curse-plate { font-size: 13px; padding-right: 6px; gap: 4px; }
+  #monarch .curse-plate { font-size: 14px; padding-right: 6px; gap: 4px; }
   .table-screen:has(#monarch:not([hidden])) .bunker h3:has(#collapses:empty) { display: none; }
   .table-screen:has(#monarch:not([hidden])) .pile .card { --w: clamp(26px, 4.6vh, 48px); }
   #monarch .mon-port { width: clamp(40px, 5.8vh, 60px); }
@@ -55,7 +55,7 @@
 html[data-guia] .table-screen #coach { display: none !important; }
 
 /* ───────────── la mesa marcada con la tinta de la maldición ───────────── */
-.curse-tag { display: inline-flex; align-items: center; gap: 3px; padding: 0 5px 0 3px; background: var(--curse); color: var(--card-paper); border: 1.5px solid var(--pit); font-style: normal; font-family: var(--num); font-weight: 400; font-size: 13px; line-height: 1.35; letter-spacing: 0; white-space: nowrap; }
+.curse-tag { display: inline-flex; align-items: center; gap: 3px; padding: 0 5px 0 3px; background: var(--curse); color: var(--card-paper); border: 1.5px solid var(--pit); font-style: normal; font-family: var(--num); font-weight: 400; font-size: 14px; line-height: 1.35; letter-spacing: 0; white-space: nowrap; }
 .curse-tag .curse-ico { width: 14px; height: 14px; }
 .curse-tag.mini .curse-ico { display: none; }
 .pile:has(> .curse-tag) { position: relative; }
@@ -121,7 +121,7 @@ html[data-guia] .table-screen #coach { display: none !important; }
   #monarch .mon-port { width: 28px; }
   #monarch .curse-plate { padding-top: 1px; padding-bottom: 1px; }
   #monarch .mon-txt { display: contents; }
-  #monarch .mon-who { font-size: 13px; letter-spacing: 0.02em; }
+  #monarch .mon-who { font-size: 14px; letter-spacing: 0.02em; }
   #monarch .curse-plate { justify-self: end; }
   .threat .curse-tag { margin-left: 2px; padding: 0 2px; }
 }
