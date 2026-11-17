@@ -1,9 +1,9 @@
 {
-  "generated": "2026-11-17T17:17:37.208Z",
-  "rules": "c51d30a665af89c2",
+  "generated": "2026-11-17T17:53:19.314Z",
+  "rules": "a850422b9cebd99f",
   "campaigns": 6000,
   "hilos": 12,
-  "segundos": 81.3,
+  "segundos": 80.9,
   "ok": true,
   "checks": [
     {

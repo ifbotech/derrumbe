@@ -86,6 +86,34 @@ describe('autopsia de la derrota (contrato C1)', () => {
     expect(out.state.phase).toBe('playing');
   });
 
+  it('V30 · la derrota tras agotar el Mazo se explica: dice que fue al agotarlo y cuánto puso el Asedio final', () => {
+    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 3, 12: 3, 13: 6 } });
+    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 5, wall: 2 });
+    s.towers.C.floors = [13];
+    s.discard = s.deck.filter((c) => c.suit === 'S' || c.suit === 'X');
+    s.deck = [];
+    const { a, events } = lose(s, { type: 'discard', cards: ['H2'] });
+    const golpe = events.find((e) => e.e === 'siren')!;
+    expect(golpe).toMatchObject({ cerco: true, asedio: cfg.collapseSiege, threat: 6 + cfg.collapseSiege });
+    expect(a.kind).toBe('sirena');
+    expect(a.title).toBe(`Contraataque de TRÉBOLES tras agotar el Mazo: Ataque ${6 + cfg.collapseSiege} contra Escudo 2 → entran ${4 + cfg.collapseSiege}`);
+    expect(a.detail).toContain('Te quedaban 5 de Vida');
+    expect(a.detail).toContain(`${cfg.collapseSiege} del Ataque eran del Asedio final`);
+    fits(a);
+    // el caso más largo que puede salir (palo de nueve letras y cifras de tres) sigue entrando en sus dos líneas
+    fits({ title: 'Contraataque de DIAMANTES tras agotar el Mazo: Ataque 148 contra Escudo 12 → entran 136', detail: 'Te quedaban 21 de Vida. 120 del Ataque eran del Asedio final. Faltaron 116 de Escudo (♣) o un Golpe exacto.' });
+  });
+
+  it('V30 · sin Mazo agotado ni Asedio, la causa es la de siempre', () => {
+    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 6, 12: 6, 13: 6 } });
+    const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 3, wall: 1 });
+    const { a, events } = lose(s, { type: 'discard', cards: ['H2'] });
+    const golpe = events.find((e) => e.e === 'siren')!;
+    expect(golpe.e === 'siren' && golpe.asedio).toBeUndefined();
+    expect(a.title).toBe('Contraataque de PICAS: Ataque 6 contra Escudo 1 → entran 5');
+    expect(a.detail).not.toContain('Asedio');
+  });
+
   it('V27 · el cerco: tras un Mazo agotado, el Contraataque lo da el trono en pie con más Ataque, salga el palo que salga', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 1, 12: 3, 13: 5 } });
     // arriba del Descarte que se va a barajar solo hay comodines y picas; el trono más fuerte es el primero con Rey delante

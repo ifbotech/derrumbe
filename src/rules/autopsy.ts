@@ -107,14 +107,18 @@ export function autopsyWith(tx: TextosAutopsia, events: GameEvent[], cfg: Config
       const from = tower ? tx.t('causa.desde', { palo: tx.palo(tower) }) : tx.t('causa.desde.sin');
       const need = ev.taken - before + 1;
       const wall = tx.t(need === 1 ? 'causa.falta.1' : 'causa.falta.n', { n: need });
-      const golpe = { desde: from, ataque: ev.threat, frena: ev.blocked, entra: ev.taken };
+      // V30: la causa dice si el golpe vino de agotar el Mazo (lo da el trono más fuerte) y cuánto puso el Asedio final
+      const golpe = { desde: ev.cerco ? tx.t('causa.desde.mazo', { desde: from }) : from, ataque: ev.threat, frena: ev.blocked, entra: ev.taken };
+      const asedio = Math.min(ev.asedio ?? 0, ev.threat);
       return {
         kind: 'sirena',
         title: ev.blocked > 0 ? tx.t('causa.sirena.titulo', golpe) : tx.t('causa.sirena.titulo.sin', golpe),
         detail:
           earlier > 0
             ? tx.t('causa.sirena.detalle.otra', { k: earlier + 1, queda: left(tx, before), falta: wall })
-            : tx.t('causa.sirena.detalle', { queda: left(tx, before), falta: wall }),
+            : asedio > 0
+              ? tx.t('causa.sirena.detalle.asedio', { queda: left(tx, before), n: asedio, falta: wall })
+              : tx.t('causa.sirena.detalle', { queda: left(tx, before), falta: wall }),
         before,
         threat: ev.threat,
         blocked: ev.blocked,

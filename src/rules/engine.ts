@@ -300,7 +300,7 @@ export type GameEvent =
   | { e: 'hurt'; amount: number; integrity: number }
   | { e: 'gold'; amount: number }
   | { e: 'burn'; card: Card }
-  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty'; /** V27: lo dio el trono más fuerte por un Mazo agotado, no el palo de la carta. */ cerco?: true }
+  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty'; /** V27: lo dio el trono más fuerte por un Mazo agotado, no el palo de la carta. */ cerco?: true; /** V30: nivel de Asedio final que llevaba ese Ataque (si lo había). */ asedio?: number }
   /** Mazo agotado: el Descarte se barajó. `sube`: niveles de Asedio final que sumó (0 si salió gratis: entonces tampoco hay cerco); `asedio`: el nivel que queda. */
   | { e: 'collapse'; sube: number; asedio: number }
   | { e: 'draw'; player: string; count: number; cards?: Card[] }
@@ -959,7 +959,7 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   state.wall -= blocked;
   const taken = threat - blocked;
   state.integrity -= taken;
-  events.push({ e: 'siren', card, tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike', ...(cerco ? { cerco: true as const } : {}) });
+  events.push({ e: 'siren', card, tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike', ...(cerco ? { cerco: true as const } : {}), ...((state.fatigue ?? 0) > 0 ? { asedio: state.fatigue } : {}) });
   state.tools.forEach((tool, slot) => TOOL[tool.id]?.siren?.(hookFor(turn, slot), tool, { tower: t.suit, threat, blocked, taken }));
 }
 
