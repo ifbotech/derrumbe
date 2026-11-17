@@ -103,7 +103,7 @@ export function previewHtml(p: Preview, tail = ''): string {
   return `<div class="calc" tabindex="0" role="button" aria-expanded="${open}" aria-controls="recibo" aria-label="${L('ui.cuenta.aria', { t: r.total, palo: mat, forma: formN(p.formation), d: r.fuerza, m: r.res })}">
       ${cifraEl(r.total, 'golpe', 'b', 'class="t"')}
       <span class="calc-txt">
-        <span class="vs"><span class="forma">${formN(p.formation)}</span><span>${L('ui.cuenta.contra.vs')}</span><strong>${palo(target)}</strong>${hint('strike')}</span>
+        <span class="vs" data-golpe="${L('ui.cuenta.golpe')}"><span class="forma">${formN(p.formation)}</span><span>${L('ui.cuenta.contra.vs')}</span><strong>${palo(target)}</strong>${hint('strike')}</span>
         <span class="fr"><span class="fr-f"><i class="lg">${L('ui.cuenta.dano')}</i><i class="sh">${L('ui.cuenta.dano.corto')}</i>${cifraEl(r.fuerza, 'dano', 'b')}</span><i class="por" aria-hidden="true">×</i><span class="fr-r"><i class="lg">${L('ui.cuenta.multi')}</i><i class="sh">${L('ui.cuenta.multi.corto')}</i><b>×${numL(r.res)}</b></span><em class="abre">${L('ui.cuenta.abre')}${CHEVRON}</em></span>
       </span>
     </div>

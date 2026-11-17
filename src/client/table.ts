@@ -47,6 +47,8 @@ let stepN = 0;
 let lastEvents: GameEvent[] = [];
 
 const FLOOR = (r: number) => RANK_LABEL[r];
+/** El rótulo de Deshacer con su flecha en una etiqueta propia: con mando no se enseña (V23; la insignia R3 es el icono). */
+const rotuloDeshacer = (k: 'ui.mesa.deshacer' | 'ui.mesa.deshacer.no'): string => L(k).replace(/^↩\s*/, '<i class="lbl-ico">↩</i> ');
 /** El Multi que suma la Racha de Golpes exactos (entero, con su tope). */
 const racha = (chain: number) => BALANCE.golpe.racha * Math.min(chain, BALANCE.golpe.rachaTope);
 /** Nombre del guardia con su artículo: «la Sota», «la Reina», «el Rey». */
@@ -123,7 +125,7 @@ export function buildTable(): void {
         <button id="btn-strike" class="primary" data-tip="${L('ui.mesa.golpear.tip')}"><span class="lbl">${L('ui.mesa.golpear')}</span>${hint('strike')}</button>
         <button id="btn-mejor" class="secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span>${hint('best')}</button>
         <button id="btn-stash" data-tip="${L('ui.mesa.manga.tip')}"><span class="lbl">${L('ui.mesa.manga')}</span>${hint('stash')}</button>
-        <button id="btn-undo" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${L('ui.mesa.deshacer')}</span>${hint('undo')}</button>
+        <button id="btn-undo" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${rotuloDeshacer('ui.mesa.deshacer')}</span>${hint('undo')}</button>
         <button id="btn-discard"><span class="lbl">${L('ui.mesa.descartar')}</span><b class="sel-n" id="discard-n" hidden></b>${hint('discard')}</button>
         <button id="btn-clear">${L('ui.mesa.soltar')}${hint('back')}</button>
         <button id="btn-pass" hidden>${L('ui.mesa.pasar')}${hint('strike')}</button>
@@ -783,7 +785,8 @@ export function renderInteractive(): void {
   const undoBtn = $<HTMLButtonElement>('#btn-undo');
   undoBtn.hidden = !(S.campaign && v.players.length === 1);
   undoBtn.disabled = !can || !v.canUndo;
-  $('.lbl', undoBtn).textContent = v.chalk > 0 ? L('ui.mesa.deshacer') : L('ui.mesa.deshacer.no');
+  const rotulo = rotuloDeshacer(v.chalk > 0 ? 'ui.mesa.deshacer' : 'ui.mesa.deshacer.no');
+  if ($('.lbl', undoBtn).innerHTML !== rotulo) $('.lbl', undoBtn).innerHTML = rotulo;
   const guide = can ? guidedStep() : null;
   for (const [id, el] of cardEls) el.classList.toggle('hint', !!guide && guide.cards!.includes(id) && !S.selected.includes(id));
   const ready = !!guide && cards.length === guide.cards!.length;

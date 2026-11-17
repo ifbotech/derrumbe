@@ -2,6 +2,15 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 23.0.0 — 2026-11-17
+
+La mesa con mando, de una vez. Sobre la 22.0, la cifra de la cuenta lleva su nombre y los rótulos de la leyenda crecen. Ninguna regla cambia.
+
+### Con mando
+- **«Golpe» junto a la cifra de la cuenta**: el renglón de al lado de la cifra empieza por su nombre, y debajo sigue la fórmula («= Daño 148 × Multi ×7»). La cuenta no se ensancha.
+- **Los rótulos de la leyenda** suben a 15 px («Golpear», a 17) donde la ventana tiene 800 px de alto. En un portátil de 768 px con mando conservan su tamaño.
+- **«Deshacer» va sin flecha**: la insignia R3 ya es su icono. Con ratón y en el móvil no cambia.
+
 ## 22.0.0 — 2026-11-17
 
 Steam Deck con mando, a 40 cm. Jugando con mando en apaisado, la barra de arriba y la fila de acciones se leen de lejos. Ninguna regla cambia. (La 21.0 fue una candidata que el panel rechazó.)

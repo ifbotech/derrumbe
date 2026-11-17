@@ -400,3 +400,18 @@ html[data-input='pad'] .run .deck-head .sub { font-size: 15px; }
   html[data-input='pad'] .actions button { min-height: 48px; }
   html[data-input='pad'] .actions #btn-strike, html[data-input='pad'] .actions #btn-mejor { min-height: 56px; }
 }
+/* V23 · tres cosas más de la mesa con mando:
+   4. la cifra de la cuenta lleva su nombre en el renglón de al lado («1.036 · Golpe contra Corazones / = Daño 148 ×
+      Multi ×7»): es el resultado; el renglón de la fórmula es más largo, así que la cuenta no se ensancha;
+   5. los rótulos de la leyenda suben a 15 px (Golpear, 17) y «Deshacer» va sin flecha: R3 ya es su icono. */
+.lbl-ico { font-style: normal; }
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  html[data-input='pad'] #score .calc .vs[data-golpe]::before { content: attr(data-golpe); }
+  html[data-input='pad'] .actions .lbl-ico { display: none; }
+}
+/* los rótulos de 15 y 17 px de la leyenda, solo donde caben sin subir la bandeja (800 px de alto) */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (min-height: 780px) {
+  html[data-input='pad'] .actions button .lbl, html[data-input='pad'] .actions #btn-mejor .lbl { font-size: 15px; line-height: 1; }
+  html[data-input='pad'] .actions #btn-strike .lbl { font-size: 17px; line-height: 1; }
+  html[data-input='pad'] .actions #btn-clear { font-size: 15px; }
+}
