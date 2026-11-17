@@ -1,18 +1,20 @@
 # Informe evolutivo final · de la 10.0 a la 26.0
 
-**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-16. Campeón publicado: **20.0** (`v20.0.1` en `origin/main`; la 20.0.1 solo arregla la barra en inglés con mando), jugable en <https://ifbotech.github.io/derrumbe/>.
+**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-17. Campeón publicado: **24.0** (`v24.0.0` en `origin/main`), jugable en <https://ifbotech.github.io/derrumbe/>.
 
 ## En corto
 
-- **La misión llegó a su tope (v26) sin cumplir ningún objetivo norte, y el motivo no es el juego.** Con el instrumento limpio se midieron seis candidatas (21.0 a 26.0), todas rechazadas. En las 14 corridas, 277 de los 288 votos de las candidatas son idénticos al voto que esa misma persona dio al Campeón con la misma semilla: el pulgar lo deciden la persona y la semilla, no la versión. Es el primer campo de la respuesta que se le pide a cada persona, y lo escribe antes de valorar nada.
+- **El Campeón publicado es la 24.0.** El 2026-11-17 el dueño adoptó el pulgar al final de la reseña como instrumento, y con él se volvieron a medir el Campeón 20.0 y las seis candidatas. Por la regla entraron tres: la 22.0 y la 23.0 (Steam Deck con mando) y la 24.0 (el móvil a una mano, con La Taberna en lista), rehecha sobre la 23.0. La 21.0 quedó dentro de la 24.0. La 25.0 y la 26.0 (rehecha sobre la 24.0) se rechazaron, y con la 26.0 la misión llega a su tope.
+- **Ninguna de las tres aceptaciones se distingue del azar.** Con el pulgar al final el voto ya no está fijo, pero se mueve igual por cambiar la semilla que por cambiar el juego: con el mismo pedido y otra semilla difieren 9 de 24 votos, y la 25.0, que cambia el texto que leen las 24 personas, mueve 17 de 48 (9 suben y 8 bajan). Las pruebas del propio panel no encuentran diferencia significativa de votos, claridad ni diversión. Lo publicado son arreglos reales que pasan sus puertas; que suban la nota no está demostrado.
+- **Con el pulgar delante (hasta el 2026-11-17), el voto no miraba la versión.** Con el instrumento limpio se midieron seis candidatas (21.0 a 26.0), todas rechazadas. En las 14 corridas, 277 de los 288 votos de las candidatas son idénticos al voto que esa misma persona dio al Campeón con la misma semilla: el pulgar lo deciden la persona y la semilla, no la versión. Es el primer campo de la respuesta que se le pide a cada persona, y lo escribe antes de valorar nada.
 
-- **Ninguno de los seis objetivos norte se cumple todavía.** El Campeón queda en 54,2 % de aprobación (objetivo 75), 37,5 % de críticos duros (45), claridad 6,38 (7,60), diversión 7,21 (8,00), 37,5 % de impulsivos (65), 50 % en Steam Deck y 66,7 % en móvil (70 cada uno).
+- **Ninguno de los seis objetivos norte se cumple todavía.** El Campeón 24.0 queda, de media en dos semillas, en 54,2 % de aprobación (objetivo 75), 37,5 % de críticos duros (45), claridad 6,35 (7,60), diversión 7,35 (8,00), 43,8 % de impulsivos (65), 37,5 % en Steam Deck y 58,3 % en móvil (70 cada uno). En una de las dos semillas pasa el de críticos (50 %).
 - **Sí hay mejora medida desde la 11.0**: con las mismas 24 personas y las mismas preguntas, la aprobación en español pasa de 37,5 % a 54,2 %, la claridad de 5,67 a 6,38 y la diversión de 6,71 a 7,21.
 - **De la 12.0 a la 20.0 se construyeron nueve versiones**: cuatro publicadas (12.0, 16.0, 19.0, 20.0) y cinco rechazadas y guardadas en ramas (13.0, 14.0, 15.0, 17.0, 18.0).
 - **El efecto más firme de la misión es la cuenta entera** («1.036 = Daño 148 × Multi ×7» en vez de «1K»): sube la claridad unas seis décimas en dos corridas seguidas (p ≈ 0,05–0,08).
 - **El instrumento tiene más ruido que casi todos los cambios**: con 24 personas, una corrida se mueve ±10–15 puntos de F sin que cambie nada. Dos de las tres aceptaciones recientes (16.0 y 20.0) dependen de un solo voto de Steam Deck; en la 20.0 ese voto es ajeno al cambio.
 - **Al final se corrigió el instrumento y se volvió a medir al Campeón: 140,36** (su corrida original dio 162,28). El mismo juego, 22 puntos de diferencia: el 162 fue suerte y ninguna decisión de la 13.0 a la 20.0 queda demostrada por F.
-- **Después se limpió el instrumento (un pedido a la vez, dos semillas por candidata) y se midieron seis candidatas más, de la 21.0 a la 26.0, las seis rechazadas.** Con el instrumento limpio el Campeón 20.0 da F 142,7 de media, y las personas que no ven un cambio responden letra por letra lo mismo. Las cuatro primeras arreglan justo lo que citan las reseñas del móvil y de Steam Deck; lo arreglado desaparece de la auditoría, el auditor pone otro problema grave en su lugar y el voto no se mueve.
+- **Después se limpió el instrumento (un pedido a la vez, dos semillas por candidata) y se midieron seis candidatas más, de la 21.0 a la 26.0, las seis rechazadas con ese instrumento.** Con el instrumento limpio el Campeón 20.0 da F 142,7 de media, y las personas que no ven un cambio responden letra por letra lo mismo. Las cuatro primeras arreglan justo lo que citan las reseñas del móvil y de Steam Deck; lo arreglado desaparece de la auditoría, el auditor pone otro problema grave en su lugar y el voto no se mueve.
 - **No se corrió la réplica en inglés ni el `rapido-60` ni el censo de 240**: estaban reservados para cuando una corrida pasara los seis objetivos.
 
 ## 1. Trayectoria
@@ -55,7 +57,7 @@ Todas las filas son del panel simulado (`..\panelAgentesGaming`). Las cifras de 
 
 | Versión | Decisión | Aprob. ES | Críticos | Casual | Deck | Móvil | Claridad | Diversión | F medio (semilla 1 · semilla 2) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **20.0** (`v20.0.1`) | **Campeón, listón vigente** | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,56 | 7,00 | **142,74** (152,12 · 133,36) |
+| **20.0** (`v20.0.1`) | Campeón y listón hasta el cambio de instrumento | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,56 | 7,00 | **142,74** (152,12 · 133,36) |
 | 21.0 | rechazada | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,52 | 6,96 | 142,25 (151,82 · 132,67) |
 | 22.0 | rechazada | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,38 | 7,17 | 142,43 (152,15 · 132,70) |
 | 23.0 | rechazada | 50,0 | 25,0 | 43,8 | 0,0 | 58,3 | 6,58 | 7,06 | 134,84 (136,11 · 133,56) |
@@ -64,6 +66,22 @@ Todas las filas son del panel simulado (`..\panelAgentesGaming`). Las cifras de 
 | 26.0 | rechazada | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,54 | 7,00 | 142,59 (150,70 · 134,48) |
 
 En este bloque Steam Deck son 8 votos (4 personas × 2 semillas) y el Campeón tiene 1.
+
+### Instrumento `pulso-24` con el pulgar al final (desde el 2026-11-17), media de dos semillas por versión
+
+| Versión | Decisión | Aprob. ES | Críticos | Casual | Deck | Móvil | Claridad | Diversión | F medio (semilla 1 · semilla 2) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 20.0 (`v20.0.1`) | Campeón de partida | 47,9 | 31,2 | 25,0 | 25,0 | 41,7 | 6,42 | 7,42 | 145,37 (153,76 · 136,98) |
+| 21.0 | rechazada; lo suyo entra con la 24.0 | 47,9 | 31,2 | 31,2 | 25,0 | 41,7 | 6,29 | 7,35 | 145,34 (144,19 · 146,49) |
+| **22.0** | **aceptada** (`v22.0.0`) | 50,0 | 43,8 | 25,0 | 37,5 | 41,7 | 6,31 | 7,46 | 150,99 (178,02 · 123,95) |
+| **23.0** | **aceptada** (`v23.0.0`) | 50,0 | 37,5 | 25,0 | 37,5 | 41,7 | 6,48 | 7,44 | 152,50 (169,49 · 135,52) |
+| 24.0, sobre la 20.0 | no parte del Campeón: se rehízo | 52,1 | 31,2 | 43,8 | 25,0 | 58,3 | 6,29 | 7,33 | 151,55 (157,08 · 146,01) |
+| 25.0 | rechazada | 50,0 | 18,8 | 31,2 | 37,5 | 66,7 | 6,29 | 7,23 | 143,89 (135,18 · 152,60) |
+| 26.0, sobre la 20.0 | no parte del Campeón: se rehízo | 50,0 | 43,8 | 25,0 | 50,0 | 41,7 | 6,38 | 7,38 | 154,07 (171,67 · 136,48) |
+| **24.0**, rehecha sobre la 23.0 | **aceptada: Campeón y listón vigente** (`v24.0.0`) | 54,2 | 37,5 | 43,8 | 37,5 | 58,3 | 6,35 | 7,35 | **162,81** (181,06 · 144,55) |
+| 26.0, rehecha sobre la 24.0 | rechazada | 50,0 | 31,2 | 43,8 | 25,0 | 58,3 | 5,98 | 7,21 | 146,93 (160,62 · 133,24) |
+
+Las cifras de este bloque no se comparan con las de los anteriores: cambia el orden en que cada persona escribe su reseña. La misma versión da 178 y 124 según la semilla (22.0), o 181 y 145 (24.0).
 
 Notas de lectura:
 
@@ -82,8 +100,11 @@ Notas de lectura:
 | **16.0** | Con mando, marco del foco más grueso con halo; La Taberna con mando con precios y botones más grandes | F 138,18 → 146,58; Steam Deck de 0 a 1 de 4 | Un voto; no significativo |
 | **19.0** | La cuenta con todas sus cifras y con signo igual; con mando, la carta enfocada crece 1,3× sin etiqueta encima | F 146,58 → 151,55; claridad 5,88 → 6,50 (p = 0,053) | **El más firme**: la 18.0 ya había dado 6,46 con la misma cuenta, y F se había predicho en 151 antes de medir |
 | **20.0** | La placa de la Partida guiada pasa de amarillo a pizarra con tiza | F 151,55 → 162,28 | **No atribuible al cambio**: quita un P0 del auditor, pero los dos votos que cambian son de personas que vieron lo mismo que en la 19.0 |
+| **22.0** | Con mando: monedero sobre papel, cada acción con su insignia arriba y su rótulo debajo, aviso de cada trono a 20 px | F 145,37 → 150,99 (con el pulgar al final); Steam Deck de 2 a 3 votos de 8 | Dentro del ruido: suben 2 votos y baja 1 (p = 1,0) |
+| **23.0** | La 22.0 más «Golpe» junto a la cifra de la cuenta, rótulos de la leyenda a 15 px y «Deshacer» sin flecha con mando | F 150,99 → 152,50 | Dentro del ruido: frente a la 22.0 sube un voto y baja otro |
+| **24.0** | En el móvil: La Taberna en lista con los servicios fijos abajo, fila del pulgar con rótulos que caben y cifra de la cuenta en letra clara | F 152,50 → 162,81; móvil de 5 a 7 votos de 12; el piso sube de 25,0 a 37,5 % | Dentro del ruido: suben 3 votos y baja 1 (p = 0,62) |
 
-### Lo que se revirtió (once candidatas rechazadas, cada una en su rama `rechazado/vN-…`)
+### Lo que se revirtió (candidatas rechazadas con el instrumento de su momento, cada una en su rama `rechazado/vN-…`)
 
 | Versión | Hipótesis | Resultado | Por qué falló |
 |---|---|---|---|
@@ -101,6 +122,8 @@ Notas de lectura:
 
 | **25.0** | El reglamento dice arriba que la mesa hace la cuenta («No hay que calcular nada»), con un ejemplo resuelto y un caso de Inmune | F 139,69 frente a 142,74 | La claridad no se mueve (6,53 frente a 6,56) y «calcular a mano» sigue en 15 de 48 reseñas. Con el pedido de las 24 personas cambiado, solo 4 votos de 47 son distintos |
 | **26.0** | Cada Reliquia nueva se coloca sola en su sitio recomendado del cinturón; reordenar a mano pasa a ser opcional | F 142,59 frente a 142,74 | La queja de reordenar desaparece de las siete reseñas afectadas y ningún voto cambia |
+
+**Con el pulgar al final (2026-11-17)** la 22.0, la 23.0 y la 24.0 se volvieron a medir y entraron (tabla de arriba). Siguen fuera la 25.0 (F 143,89 frente a 145,37) y la 26.0: sobre la 20.0 dio 154,07, pero rehecha sobre el Campeón 24.0 dio 146,93 frente a 162,81. Las siete personas que leen la frase nueva vuelven a tirar su dado: suben 2 votos, bajan 4 y la claridad cae de 6,35 a 5,98 sin que ninguna cite las Reliquias.
 
 También se descartó por el camino, sin llegar a medirse: atenuar las cartas no enfocadas (baja su contraste de 4,5:1) y agrandar el monedero de la barra con mando (en inglés no cabe a 1280 px y esconde el rótulo de AUTO).
 
@@ -123,23 +146,27 @@ También se descartó por el camino, sin llegar a medirse: atenuar las cartas no
 
 11. **Probado: con el pulgar al final, el voto sí responde.** Con una opción aparte (apagada de serie) que pide `steam_thumb` como último campo, el Campeón da el mismo nivel (F medio 145,4 frente a 142,7) y la 22.0 de Steam Deck pasa a 151,0 de media: en una semilla las dos críticas duras de Steam Deck votan a favor por primera vez (F 178,0, Steam Deck 3 de 4, críticos 62,5 %) y en la otra baja una persona (F 124,0). La 24.0 del móvil sube 3,3 en la única semilla medida. Sigue habiendo ruido de semilla, pero 3 de 8 votos de Steam Deck se mueven con el cambio; con el pulgar delante no se movía ninguno.
 
+12. **Con el pulgar al final el voto se mueve, pero casi todo lo que se mueve es azar.** Con el mismo pedido y otra semilla difieren 9 de 24 votos. Una versión que cambia el pedido de todos (25.0) mueve 17 de 48: 9 suben y 8 bajan. Frente al Campeón 20.0, ninguna de las seis candidatas da una diferencia significativa de votos (McNemar p entre 0,62 y 1,0), de claridad ni de diversión. Un voto de Steam Deck puede valer hasta 21,7 puntos de F en una corrida; las tres aceptaciones ganaron por 5,6, 1,5 y 10,3.
+
+13. **El listón del Campeón lleva suerte dentro.** El Campeón se queda con su mejor tirada. La candidata siguiente, si toca los mismos pedidos, vuelve a tirar esos dados y cae hacia la media: la 26.0 rehecha perdió 15,9 puntos con un cambio que, medido sobre la 20.0, había dado +8,7.
+
 ### Qué haría falta para acercarse a los objetivos
 
 - **Medir mejor antes de cambiar más**: dos o tres corridas por candidata (o el `rapido-60`) para decidir, y volver a medir el Campeón con cada corrección del instrumento. Con una sola corrida, la mitad de las decisiones son suerte.
-- **Los frentes con más votos en contra hoy** (11 de 24 en la última corrida): portátil (3 de 6 a favor: puntería con trackpad en la zona de acción), los primeros minutos y la primera derrota (el mazo que se agota quita Vida «sin entender por qué»), la cuenta en pantalla chica (Steam Deck: «la fórmula está apretada contra el total») y La Taberna del móvil (la segunda fila queda cortada sin señal de que se desliza).
+- **Los frentes con más votos en contra** (medidos en la 20.0): portátil (puntería con trackpad en la zona de acción), los primeros minutos y la primera derrota (el mazo que se agota quita Vida «sin entender por qué») y la cuenta en pantalla chica (Steam Deck: «la fórmula está apretada contra el total»). La Taberna del móvil, que estaba en esta lista, quedó arreglada en la 24.0. En las cuatro corridas de la 23.0 y de la 24.0, seis personas votan siempre en contra: las dos de la primera derrota (Steam Deck y portátil), la del trono Inmune (PC), la del orden de las Reliquias (portátil), una de la mesa de Steam Deck y una del móvil. Tres de las seis son críticas duras.
 - **Decidir qué se hace con el pedido del auditor para Steam Deck y portátil.** Mientras presuponga el problema, el objetivo de 70 % en Steam Deck no depende del juego. Reescribirlo con criterios medibles, como el del móvil, es cambiar la vara de medir: es decisión del dueño del panel, no del estudio.
-- **Antes de otra versión, decidir qué se hace con el orden de la reseña del panel.** Mientras el pulgar sea lo primero que escribe cada persona, la aprobación de estas 24 personas con estas semillas es 54 % y 50 % haga lo que haga el juego. Pasarlo al final no le dice a nadie qué votar; hace que el voto llegue después de la valoración. Obliga a medir de nuevo al Campeón, y las cifras anteriores dejan de ser comparables.
-- **Hay mejoras construidas que el panel mide neutras** y que arreglan fallos reales: La Taberna del móvil en lista (21.0), Steam Deck con mando (22.0) y las Reliquias que se colocan solas (26.0). La regla de la misión las deja fuera porque no suben F; publicarlas es decisión del dueño del juego.
-- **La distancia a los objetivos es grande**: 21 puntos de aprobación, 1,2 de claridad y 0,8 de diversión. Los retoques de interfaz de esta misión movieron décimas; lo único que movió más fue cambiar reglas (11.0) y la cuenta (19.0).
+- **Más semillas por versión antes de seguir.** Dos versiones que el panel no distingue difieren por azar unos 14 puntos de F en cada semilla (la 21.0 dio −9,6 y +9,5 frente al Campeón; la 25.0, −18,6 y +15,6). Para distinguir 10 puntos harían falta unas ocho semillas por versión (unos 40 minutos), y unas treinta para distinguir 5, o el `rapido-60`. Es decisión del dueño del panel: multiplica el tiempo de cada versión.
+- **Queda una mejora construida fuera**: las Reliquias que se colocan solas (26.0, rama `rechazado/v26r-20261117`, sobre la 24.0 y con sus puertas rápidas pasadas). Cambia una regla de campaña y solo tiene la certificación rápida del laboratorio. Publicarla aunque el panel la rechace es decisión del dueño del juego.
+- **La distancia a los objetivos es grande**: 21 puntos de aprobación, 1,25 de claridad y 0,65 de diversión. Los retoques de interfaz de esta misión movieron décimas; lo único que movió más fue cambiar reglas (11.0) y la cuenta (19.0).
 
 ## 3. Lista de prueba para amigos y familia
 
-Enlace: <https://ifbotech.github.io/derrumbe/> (versión 20.0). Unos 25 minutos por persona. Lo ideal: no explicar nada, mirar y apuntar dónde se traban.
+Enlace: <https://ifbotech.github.io/derrumbe/> (versión 24.0). Unos 25 minutos por persona. Lo ideal: no explicar nada, mirar y apuntar dónde se traban.
 
 **Antes de empezar**
 
 - [ ] Abre el enlace en el dispositivo que uses a diario (PC, portátil, móvil en vertical o Steam Deck). Apunta cuál.
-- [ ] Si la página ofrece una versión guardada antigua, recarga una vez. En Ajustes debe verse la versión 20.0.
+- [ ] Si la página ofrece una versión guardada antigua, recarga una vez. En Ajustes debe verse la versión 24.0.
 
 **Primeros tres minutos (la Partida guiada)**
 
@@ -158,7 +185,7 @@ Enlace: <https://ifbotech.github.io/derrumbe/> (versión 20.0). Unos 25 minutos 
 **La Taberna y las Reliquias**
 
 - [ ] Compra una Reliquia. ¿Leíste bien los precios?
-- [ ] **En móvil**: ¿te diste cuenta de que hay más ofertas deslizando hacia abajo?
+- [ ] **En móvil**: ¿te diste cuenta de que la lista de ofertas sigue deslizando hacia abajo? ¿Viste siempre Curar, Hoguera, Renovar y el botón de seguir?
 - [ ] Cambia el orden de dos Reliquias. ¿Cómo lo hiciste (arrastrando, con dos toques o con teclas)? ¿Sabías que el orden importa?
 
 **AUTO y el Árbol**
@@ -168,7 +195,7 @@ Enlace: <https://ifbotech.github.io/derrumbe/> (versión 20.0). Unos 25 minutos 
 
 **Según tu dispositivo**
 
-- [ ] **Steam Deck o mando**: ¿sabes siempre qué carta o botón está enfocado? ¿La carta que crece te tapa algo que necesitas ver?
+- [ ] **Steam Deck o mando**: ¿lees el monedero y el rótulo de cada botón sin acercarte? ¿Sabes siempre qué carta o botón está enfocado? ¿La carta que crece te tapa algo que necesitas ver?
 - [ ] **Portátil con trackpad**: ¿fallaste algún clic entre Golpear, Mejor, Deshacer y Soltar? ¿Cuántas veces?
 - [ ] **Móvil**: ¿llegas con el pulgar a Golpear y a Descartar sin cambiar el agarre? ¿Algún toque cayó en el botón de al lado?
 - [ ] **Inglés**: juega cinco minutos en inglés y apunta cualquier texto raro o en español. (Ningún hablante nativo ha revisado los textos.)
@@ -186,5 +213,5 @@ Con ocho o diez personas reales, esas tres respuestas dicen más que otra vuelta
 - **Bitácora completa de hipótesis, medidas y lecciones**: [MEMORIA_EVOLUTIVA.md](MEMORIA_EVOLUTIVA.md).
 - **Cambios por versión para quien juega**: [CHANGELOG.md](CHANGELOG.md).
 - **Historia anterior**: [EVOLUCION_V4_V10.md](EVOLUCION_V4_V10.md) y [EVOLUCION_V11.md](EVOLUCION_V11.md).
-- **Candidatas rechazadas**: ramas locales `rechazado/v13-20261116`, `v14`, `v15`, `v17` y `v18` (no están en GitHub).
-- **Pendiente de la coronación completa del Campeón**: la pasada bilingüe entera de QA visual y de humo, `test:full` y el laboratorio completo de 55.000 campañas. La 20.0 pasó las puertas rápidas (365 + 9 pruebas, QA visual de 236 capturas en español y las pantallas tocadas en inglés, humo rápido de 32 comprobaciones); las reglas de combate no cambian desde la 12.0, que sí pasó el laboratorio completo.
+- **Candidatas rechazadas**: ramas locales `rechazado/v13-20261116`, `v14`, `v15`, `v17`, `v18`, de la `v21` a la `v26` y `v26r-20261117` (la 26.0 rehecha sobre la 24.0); no están en GitHub. Las ramas `v22`, `v23` y `v24` guardan esas candidatas como se midieron la primera vez; lo publicado está en `main`.
+- **Pendiente de la coronación completa del Campeón**: la pasada bilingüe entera de QA visual y de humo, `test:full` y el laboratorio completo de 55.000 campañas. La 24.0 pasó las puertas rápidas (365 + 9 pruebas, QA visual de 236 capturas en español y las pantallas tocadas en inglés, humo rápido de 32 comprobaciones); las reglas de combate no cambian desde la 12.0, que sí pasó el laboratorio completo.
