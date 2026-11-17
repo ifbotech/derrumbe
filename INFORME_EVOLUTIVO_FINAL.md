@@ -1,14 +1,18 @@
-# Informe evolutivo final · de la 10.0 a la 26.0
+# Informe evolutivo · de la 10.0 a la 31.0 (ciclo V27 → V40 en curso)
 
-**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-17. Campeón publicado: **24.0** (`v24.0.0` en `origin/main`), jugable en <https://ifbotech.github.io/derrumbe/>.
+**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-17. Campeón publicado: **31.0** (`v31.0.0` en `origin/main`), jugable en <https://ifbotech.github.io/derrumbe/>.
 
 ## En corto
 
-- **El Campeón publicado es la 24.0.** El 2026-11-17 el dueño adoptó el pulgar al final de la reseña como instrumento, y con él se volvieron a medir el Campeón 20.0 y las seis candidatas. Por la regla entraron tres: la 22.0 y la 23.0 (Steam Deck con mando) y la 24.0 (el móvil a una mano, con La Taberna en lista), rehecha sobre la 23.0. La 21.0 quedó dentro de la 24.0. La 25.0 y la 26.0 (rehecha sobre la 24.0) se rechazaron, y con la 26.0 la misión llega a su tope.
+- **El Campeón publicado es la 31.0 y cumple cuatro de las seis metas en el pulso de 60 personas.** Con el instrumento determinista del ciclo V27 → V40 (mandato del dueño del 2026-11-17: temperatura 0, auditor con criterios medibles y medidas reales de cada pantalla, 60 personas fijas, una sola pasada) da F 234,30: aprobación 85,0 % (meta 75), críticos duros 70,0 % (45), impulsivos 81,0 % (65), Steam Deck 88,9 % y móvil 80,0 % (70 cada uno). **Faltan la claridad media (7,05 de 7,60) y la diversión media (7,80 de 8,00).**
+- **Cinco versiones seguidas aceptadas, de la 27.0 a la 31.0**: el Mazo agotado ya no quita Vida y las Reliquias se colocan solas (27.0); ningún texto por debajo de 14 px (28.0, el salto mayor: +40 de F); el Don de la Conjura al abrir la campaña (29.0); la causa de la derrota nombra el Asedio y el Mazo agotado (30.0); y el orden deja de importar en la cuenta (31.0, que sube la claridad de 6,72 a 7,05 con p = 0,02).
+- **Lo que este instrumento distingue y lo que no.** La misma versión da reseñas idénticas letra por letra, así que no hay ruido de semilla. Un cambio que toca una sola escena se lee entero (cinco personas cambian, las demás repiten). Un cambio que toca todas las capturas o el reglamento mueve el pedido de las 60 y lleva una sensibilidad a la redacción de unos ±5 puntos de F (medida al corregir una frase del propio instrumento).
+- **No se ha medido todavía** en inglés ni con el censo de 240, y no se ha corrido la coronación completa: quedan para cuando el pulso cumpla las seis metas.
+- **Hasta el 2026-11-17 por la mañana el Campeón era la 24.0.** El 2026-11-17 el dueño adoptó el pulgar al final de la reseña como instrumento, y con él se volvieron a medir el Campeón 20.0 y las seis candidatas. Por la regla entraron tres: la 22.0 y la 23.0 (Steam Deck con mando) y la 24.0 (el móvil a una mano, con La Taberna en lista), rehecha sobre la 23.0. La 21.0 quedó dentro de la 24.0. La 25.0 y la 26.0 (rehecha sobre la 24.0) se rechazaron, y con la 26.0 la misión llega a su tope.
 - **Ninguna de las tres aceptaciones se distingue del azar.** Con el pulgar al final el voto ya no está fijo, pero se mueve igual por cambiar la semilla que por cambiar el juego: con el mismo pedido y otra semilla difieren 9 de 24 votos, y la 25.0, que cambia el texto que leen las 24 personas, mueve 17 de 48 (9 suben y 8 bajan). Las pruebas del propio panel no encuentran diferencia significativa de votos, claridad ni diversión. Lo publicado son arreglos reales que pasan sus puertas; que suban la nota no está demostrado.
 - **Con el pulgar delante (hasta el 2026-11-17), el voto no miraba la versión.** Con el instrumento limpio se midieron seis candidatas (21.0 a 26.0), todas rechazadas. En las 14 corridas, 277 de los 288 votos de las candidatas son idénticos al voto que esa misma persona dio al Campeón con la misma semilla: el pulgar lo deciden la persona y la semilla, no la versión. Es el primer campo de la respuesta que se le pide a cada persona, y lo escribe antes de valorar nada.
 
-- **Ninguno de los seis objetivos norte se cumple todavía.** El Campeón 24.0 queda, de media en dos semillas, en 54,2 % de aprobación (objetivo 75), 37,5 % de críticos duros (45), claridad 6,35 (7,60), diversión 7,35 (8,00), 43,8 % de impulsivos (65), 37,5 % en Steam Deck y 58,3 % en móvil (70 cada uno). En una de las dos semillas pasa el de críticos (50 %).
+- **Con el instrumento anterior (pulgar al final, dos semillas) no se cumplía ninguno de los seis objetivos.** El Campeón 24.0 quedaba, de media en dos semillas, en 54,2 % de aprobación (objetivo 75), 37,5 % de críticos duros (45), claridad 6,35 (7,60), diversión 7,35 (8,00), 43,8 % de impulsivos (65), 37,5 % en Steam Deck y 58,3 % en móvil (70 cada uno). En una de las dos semillas pasa el de críticos (50 %).
 - **Sí hay mejora medida desde la 11.0**: con las mismas 24 personas y las mismas preguntas, la aprobación en español pasa de 37,5 % a 54,2 %, la claridad de 5,67 a 6,38 y la diversión de 6,71 a 7,21.
 - **De la 12.0 a la 20.0 se construyeron nueve versiones**: cuatro publicadas (12.0, 16.0, 19.0, 20.0) y cinco rechazadas y guardadas en ramas (13.0, 14.0, 15.0, 17.0, 18.0).
 - **El efecto más firme de la misión es la cuenta entera** («1.036 = Daño 148 × Multi ×7» en vez de «1K»): sube la claridad unas seis décimas en dos corridas seguidas (p ≈ 0,05–0,08).
@@ -83,6 +87,20 @@ En este bloque Steam Deck son 8 votos (4 personas × 2 semillas) y el Campeón t
 
 Las cifras de este bloque no se comparan con las de los anteriores: cambia el orden en que cada persona escribe su reseña. La misma versión da 178 y 124 según la semilla (22.0), o 181 y 145 (24.0).
 
+### Instrumento determinista `pulso-60` (ciclo V27 → V40, desde el 2026-11-17): 60 personas, temperatura 0, una pasada
+
+| Versión | Decisión | Aprob. ES | Críticos | Casual | Deck | Móvil | Claridad | Diversión | F |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 24.0 (`v24.0.0`) | línea base del ciclo | 60,0 | 25,0 | 42,9 | 55,6 | 73,3 | 6,15 | 7,57 | 166,20 |
+| **27.0** | **aceptada** (`v27.0.0`) | 61,7 | 20,0 | 47,6 | 55,6 | 73,3 | 6,15 | 7,58 | 168,30 |
+| **28.0** | **aceptada** (`v28.0.0`) | 78,3 | 65,0 | 61,9 | 88,9 | 73,3 | 6,58 | 7,73 | 213,38 |
+| 28.0, con la frase de la mano del instrumento corregida | misma versión, vuelta a medir | 73,3 | 65,0 | 61,9 | 66,7 | 73,3 | 6,58 | 7,72 | 208,33 |
+| **29.0** | **aceptada** (`v29.0.0`) | 75,0 | 70,0 | 66,7 | 66,7 | 73,3 | 6,65 | 7,72 | 214,85 |
+| **30.0** | **aceptada** (`v30.0.0`) | 78,3 | 70,0 | 76,2 | 77,8 | 73,3 | 6,72 | 7,72 | 221,87 |
+| **31.0** | **aceptada: Campeón y listón vigente** (`v31.0.0`) | 85,0 | 70,0 | 81,0 | 88,9 | 80,0 | 7,05 | 7,80 | **234,30** |
+
+En este bloque hay 20 críticos duros, 21 impulsivos, 9 personas de Steam Deck y 15 de móvil: un voto vale 1,7 puntos de aprobación. Las cifras no se comparan con las de los bloques anteriores: cambian la temperatura, el pedido del auditor (ahora con las medidas reales de cada pantalla) y la cohorte. Al corregir una frase del instrumento (decía que las cartas de la mano van montadas, y no se montan) la 28.0 pasó de 213,38 a 208,33 sin cambiar el juego: esa es la sensibilidad a la redacción.
+
 Notas de lectura:
 
 - **Inglés**: desde la 13.0 no se midió (una sola corrida española por versión). El último dato inglés es el de la 12.0: 33,3 %.
@@ -103,6 +121,11 @@ Notas de lectura:
 | **22.0** | Con mando: monedero sobre papel, cada acción con su insignia arriba y su rótulo debajo, aviso de cada trono a 20 px | F 145,37 → 150,99 (con el pulgar al final); Steam Deck de 2 a 3 votos de 8 | Dentro del ruido: suben 2 votos y baja 1 (p = 1,0) |
 | **23.0** | La 22.0 más «Golpe» junto a la cifra de la cuenta, rótulos de la leyenda a 15 px y «Deshacer» sin flecha con mando | F 150,99 → 152,50 | Dentro del ruido: frente a la 22.0 sube un voto y baja otro |
 | **24.0** | En el móvil: La Taberna en lista con los servicios fijos abajo, fila del pulgar con rótulos que caben y cifra de la cuenta en letra clara | F 152,50 → 162,81; móvil de 5 a 7 votos de 12; el piso sube de 25,0 a 37,5 % | Dentro del ruido: suben 3 votos y baja 1 (p = 0,62) |
+| **27.0** | El Mazo agotado no quita Vida (sube el Asedio 2 niveles y contraataca el trono más fuerte); cada Reliquia nueva se coloca sola | F 166,20 → 168,30 (instrumento determinista) | Solo cambian las 20 personas de cuatro escenas: suben 3 votos y bajan 2 |
+| **28.0** | Ningún texto por debajo de 14 px; 12 px entre botones vecinos en escritorio, portátil y Steam Deck | F 168,30 → 213,38 (208,33 con el instrumento corregido); aprobación 61,7 → 78,3 % | **Significativo**: suben 14 votos y bajan 4 (p = 0,03); claridad +0,43 (p = 0,015) |
+| **29.0** | El Don de la Conjura: al abrir la campaña se elige uno de tres regalos | F 208,33 → 214,85 | Limpio: 55 reseñas idénticas; de las cinco de los primeros minutos sube 1 voto y no baja ninguno |
+| **30.0** | La causa de la derrota nombra el Asedio final y el Mazo agotado | F 214,85 → 221,87 | Limpio: 54 reseñas idénticas; suben 2 votos de la primera derrota y no baja ninguno |
+| **31.0** | El orden no importa: en la cuenta primero se suma todo y al final se multiplica | F 221,87 → 234,30; claridad 6,72 → 7,05 | **Significativo en claridad** (p = 0,019); suben 9 votos y bajan 5 |
 
 ### Lo que se revirtió (candidatas rechazadas con el instrumento de su momento, cada una en su rama `rechazado/vN-…`)
 
@@ -161,12 +184,12 @@ También se descartó por el camino, sin llegar a medirse: atenuar las cartas no
 
 ## 3. Lista de prueba para amigos y familia
 
-Enlace: <https://ifbotech.github.io/derrumbe/> (versión 24.0). Unos 25 minutos por persona. Lo ideal: no explicar nada, mirar y apuntar dónde se traban.
+Enlace: <https://ifbotech.github.io/derrumbe/> (versión 31.0). Unos 25 minutos por persona. Lo ideal: no explicar nada, mirar y apuntar dónde se traban.
 
 **Antes de empezar**
 
 - [ ] Abre el enlace en el dispositivo que uses a diario (PC, portátil, móvil en vertical o Steam Deck). Apunta cuál.
-- [ ] Si la página ofrece una versión guardada antigua, recarga una vez. En Ajustes debe verse la versión 24.0.
+- [ ] Si la página ofrece una versión guardada antigua, recarga una vez. En Ajustes debe verse la versión 31.0.
 
 **Primeros tres minutos (la Partida guiada)**
 
@@ -180,13 +203,14 @@ Enlace: <https://ifbotech.github.io/derrumbe/> (versión 24.0). Unos 25 minutos 
 - [ ] Antes de golpear, ¿ves cuánta Vida le quitarás al guardia y si caerá?
 - [ ] Prueba **Mejor** una vez. ¿Entiendes por qué propuso esa jugada?
 - [ ] Guarda una carta en **La Manga** y úsala después. ¿Te salió a la primera?
-- [ ] Si pierdes: ¿la pantalla de derrota te dice por qué? En especial si fue por quedarte sin mazo.
+- [ ] Si pierdes: ¿el recuadro «Causa de la derrota» te dice por qué? Agotar el Mazo ya no quita Vida: sube el Asedio y contraataca el trono más fuerte. ¿Se entendió en la mesa?
 
 **La Taberna y las Reliquias**
 
+- [ ] Al abrir la campaña, elige tu Don de la Conjura. ¿Entendiste qué te daba cada uno de los tres?
 - [ ] Compra una Reliquia. ¿Leíste bien los precios?
 - [ ] **En móvil**: ¿te diste cuenta de que la lista de ofertas sigue deslizando hacia abajo? ¿Viste siempre Curar, Hoguera, Renovar y el botón de seguir?
-- [ ] Cambia el orden de dos Reliquias. ¿Cómo lo hiciste (arrastrando, con dos toques o con teclas)? ¿Sabías que el orden importa?
+- [ ] Mira la cuenta con dos Reliquias, una que suma y otra que multiplica. ¿Entiendes que el orden no importa (primero se suma todo y al final se multiplica)?
 
 **AUTO y el Árbol**
 
