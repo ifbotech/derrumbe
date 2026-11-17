@@ -124,7 +124,7 @@ function rulesEs(cfg: Config): string {
   <ul>
     <li><b>Comodín · Motín</b>: se juega solo sobre un trono. Ese trono queda <b>Aturdido</b> (se salta su próximo Contraataque) y este turno no hay Contraataque. El Comodín sale del asalto.</li>
     <li><b>Asedio final</b>: ningún asedio dura para siempre. ${cfg.fatigueStart === undefined ? `En campaña, desde el turno ${FATIGUE.start + 1}` : `Desde el turno ${cfg.fatigueStart + 1}`} y cada ${cfg.fatigueEvery ?? FATIGUE.every} turnos sube un nivel: <b>+${n(cfg.fatigueDano ?? FATIGUE.dano)} de Daño</b> a todos los Golpes y <b>+1 de Ataque</b> a todos los tronos. La mesa avisa tres turnos antes.</li>
-    <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo. <b>No pierdes Vida</b>: el <b>Asedio final</b> sube ${cfg.collapseSiege} nivel (todos los tronos ganan +1 de Ataque y tus golpes más Daño), a la vista en cada trono.</li>
+    <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo. <b>Barajar no te quita Vida</b>: el <b>Asedio final</b> sube ${cfg.collapseSiege} niveles (+${cfg.collapseSiege} de Ataque en cada trono, más Daño en tus golpes) y el siguiente Contraataque lo da el trono en pie con más Ataque, salga el palo que salga. El Escudo lo frena como siempre.</li>
     <li><b>As cómplice</b>: un As forma jugada con <b>cualquier otra carta</b> (×${n(FORM.compania.r)}) y aporta el poder de su palo.</li>
     <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardas una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
     <li><b>Rebobinar</b> ↩ (campaña en solitario): una vez por asalto deshaces tu última jugada. El Mazo se baraja de nuevo. En sala toda jugada es definitiva.</li>
@@ -155,7 +155,7 @@ function rulesEs(cfg: Config): string {
   </table>
 
   <h3>Reliquias</h3>
-  <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>, y se activan <b>de izquierda a derecha</b>. Puedes reordenarlas cuando quieras (arrastrando, o pulsando una y luego su hueco), incluso en pleno asalto.
+  <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>, y se activan <b>de izquierda a derecha</b>. Cada reliquia nueva se coloca sola en su sitio recomendado: primero las que suman Daño, luego las que suman Multi y al final las que multiplican. Puedes reordenarlas cuando quieras (arrastrando, o pulsando una y luego su hueco), incluso en pleno asalto.
   Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a la de su derecha y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
 
   <h3>Sellos de lacre y acabados</h3>
@@ -276,7 +276,7 @@ function rulesEn(cfg: Config): string {
   <ul>
     <li><b>Joker · Mutiny</b>: played alone on a throne. That throne is <b>Stunned</b> (it skips its next Counterattack) and there is no Counterattack this turn. The Joker leaves the assault.</li>
     <li><b>Final Siege</b>: no siege lasts forever. ${cfg.fatigueStart === undefined ? `In a campaign, from turn ${FATIGUE.start + 1}` : `From turn ${cfg.fatigueStart + 1}`} and every ${cfg.fatigueEvery ?? FATIGUE.every} turns it goes up a level: <b>+${x(cfg.fatigueDano ?? FATIGUE.dano)} Damage</b> to every Hit and <b>+1 Attack</b> to every throne. The table warns you three turns ahead.</li>
-    <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again. <b>You lose no Health</b>: the <b>Final Siege</b> rises ${cfg.collapseSiege} level (every throne gains +1 Attack and your strikes more Damage), shown on each throne.</li>
+    <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again. <b>Shuffling costs no Health</b>: the <b>Final Siege</b> rises ${cfg.collapseSiege} levels (+${cfg.collapseSiege} Attack on every throne, more Damage on your strikes) and the next Counterattack comes from the standing throne with the most Attack, whatever suit is drawn. Shield stops it as usual.</li>
     <li><b>Accomplice Ace</b>: an Ace makes a play with <b>any other card</b> (×${x(FORM.compania.r)}) and brings the power of its suit.</li>
     <li><b>Up the Sleeve</b>: once per turn, without spending it, you keep a card from your hand Up the Sleeve. It does not count towards hand size and is played from there. If the sleeve is full, the stored card goes back to your hand.</li>
     <li><b>Rewind</b> ↩ (solo campaign): once per assault you undo your last play. The Deck is shuffled again. In a room every play is final.</li>
@@ -307,7 +307,7 @@ function rulesEn(cfg: Config): string {
   </table>
 
   <h3>Relics</h3>
-  <p>You carry up to <b>${TOOL_SLOTS} relics</b>, and they trigger <b>left to right</b>. You can reorder them whenever you like (by dragging, or by pressing one and then its slot), even mid-assault.
+  <p>You carry up to <b>${TOOL_SLOTS} relics</b>, and they trigger <b>left to right</b>. Each new relic slots itself into its recommended place: first those that add Damage, then those that add Mult, and last those that multiply. You can reorder them whenever you like (by dragging, or by pressing one and then its slot), even mid-assault.
   Each one says what it does: <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far, <b>⇉</b> copies the one to its right and <b>•</b> is passive. Golden rule: what adds first, what multiplies at the end.</p>
 
   <h3>Wax Seals and Finishes</h3>

@@ -95,14 +95,13 @@ Los dos desaparecen si cae el guardia.
 
 - **Comodín · Motín**: se juega solo sobre un trono. Ese trono queda **Aturdido** y este turno no hay Contraataque. El comodín no vuelve en este asalto.
 - **Asedio final**: ningún asalto dura para siempre. En campaña, desde el turno 10 de cada asalto y cada 2 turnos, el asedio sube un nivel; cada nivel da **+40 de Daño** a todos los golpes y **+1 de Ataque** a todos los tronos. El asalto se acelera en los dos sentidos: pegas más y te pegan más. La mesa avisa tres turnos antes. En conjura de varios empieza más tarde, en proporción a lo que aguantan los guardias; en el Asalto único, en el turno 30 y cada 3 turnos.
-- **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo, pero pierdes **5** de Vida (el Escudo no lo frena). Cada vuelta completa de la conjura al Mazo lo encarece en 1: los asaltos no se pueden estirar sin fin.
+- **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no te quita Vida**: el **Asedio final** sube 2 niveles (+2 de Ataque en cada trono, más Daño en tus golpes) y el siguiente Contraataque lo da el trono en pie con más Ataque, salga el palo que salga. El Escudo lo frena como siempre: los asaltos no se pueden estirar sin fin.
 - **As cómplice**: un As forma jugada con **cualquier otra carta** (×2 de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar Escudo, uno de ♥ para curar, uno de ♠ para perforar.
 - **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *Manga doble* añade un segundo hueco. La partida guiada te enseña a usarla en su tercer paso.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
 - **Victoria** (*Corte vencida*): todos los tronos caídos (en los primeros asaltos de la campaña hay menos de cuatro). **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
-- Modo **BRUTAL** (Asalto único): 16 de Vida y el Mazo agotado quita 6.
-- **Asalto único en conjura de varios**: lo que quita el Mazo agotado se ajusta a cuántos jugáis, porque con más manos el Mazo se acaba antes: 4 con 1, 5 con 2, 5 con 3, 3 con 4.
+- Modo **BRUTAL** (Asalto único): 16 de Vida y cada Mazo agotado sube el Asedio final 3 niveles.
 
 ## Campaña
 
@@ -223,7 +222,7 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
 
 ## Reliquias
 
-Llevas hasta **6 reliquias**, y se activan **de izquierda a derecha**. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en pleno asalto. Hay 52: 28 en el surtido de salida y 24 más en los arcones del Árbol.
+Llevas hasta **6 reliquias**, y se activan **de izquierda a derecha**. Cada reliquia nueva se coloca sola en su sitio recomendado: primero las que suman Daño, luego las que suman Multi y al final las que multiplican. Puedes reordenarlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—, incluso en pleno asalto. Hay 52: 28 en el surtido de salida y 24 más en los arcones del Árbol.
 
 ### El Arsenal
 
@@ -240,7 +239,7 @@ Llevas hasta **6 reliquias**, y se activan **de izquierda a derecha**. Puedes re
 | Bálsamo | Común | • pasiva | Cada ♥ cura +1 más. | de salida |
 | Broquel | Común | • pasiva | Cada guardia abatido: +2 de Escudo. | de salida |
 | Yelmo | Común | • pasiva | Cada guardia abatido: +1 de Vida. | de salida |
-| Baraja de reserva | Común | • pasiva | Cuando se agota el Mazo, pierdes 3 de Vida menos. | de salida |
+| Baraja de reserva | Común | • pasiva | 1 Mazo agotado por asalto no sube el Asedio final ni cambia quién contraataca. | de salida |
 | Bolsa de monedas | Común | • pasiva | +4 de oro al terminar cada asalto. | de salida |
 | Lanza | Rara | • pasiva | Todos tus golpes Perforan, lleven o no ♠. | de salida |
 | Estandarte | Rara | +M suma Multi | +2 de Multi con color o escalera de color. | de salida |

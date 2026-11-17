@@ -86,6 +86,36 @@ describe('autopsia de la derrota (contrato C1)', () => {
     expect(out.state.phase).toBe('playing');
   });
 
+  it('V27 · el cerco: tras un Mazo agotado, el Contraataque lo da el trono en pie con más Ataque, salga el palo que salga', () => {
+    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 1, 12: 3, 13: 5 } });
+    // arriba del Descarte que se va a barajar solo hay comodines y picas; el trono más fuerte es el primero con Rey delante
+    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 20, wall: 2 });
+    s.towers.C.floors = [13];
+    s.discard = s.deck.filter((c) => c.suit === 'S' || c.suit === 'X');
+    s.deck = [];
+    const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
+    const golpe = out.events.find((e) => e.e === 'siren')!;
+    expect(golpe).toMatchObject({ e: 'siren', reason: 'strike', tower: 'C', cerco: true, threat: 5 + cfg.collapseSiege, blocked: 2 });
+    expect(out.state.integrity).toBe(20 - (5 + cfg.collapseSiege - 2));
+    expect(out.state.cerco).toBe(false);
+    // el Contraataque siguiente vuelve a ir por el palo de la carta
+    const otra = applyAction(out.state, 'a', { type: 'discard', cards: ['H3'] });
+    const segundo = otra.events.find((e) => e.e === 'siren')!;
+    expect(segundo.e === 'siren' && segundo.cerco).toBeFalsy();
+  });
+
+  it('V27 · con la Baraja de reserva, el primer Mazo agotado del asalto no sube el Asedio ni echa el cerco', () => {
+    const cfg = cfgWith({ floorHp: TOUGH });
+    const s = table(cfg, [card('H2'), card('H3')], [], ['puntales'], { integrity: 20 });
+    s.discard = s.deck;
+    s.deck = [];
+    const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
+    expect(out.events.find((e) => e.e === 'collapse')).toMatchObject({ sube: 0, asedio: 0 });
+    expect(out.state.fatigue ?? 0).toBe(0);
+    expect(out.state.cerco ?? false).toBe(false);
+    expect(out.state.collapses).toBe(1);
+  });
+
   it('V27 · cada Mazo agotado del asalto sube otro nivel, y el Ataque de los tronos sube con él', () => {
     const cfg = cfgWith({ floorHp: TOUGH });
     const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 20, collapses: 1 });

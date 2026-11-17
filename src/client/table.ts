@@ -1294,7 +1294,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
         v.integrity = ev.integrity;
         v.wall = ev.wall;
         renderBunker();
-        logLine(`${L('ui.log.contra', { g: glyph, casa: LA_HOUSE(ev.tower), n: ev.threat })}${ev.blocked ? L('ui.log.contra.frena', { n: ev.blocked }) : ''} → ${ev.taken ? L('ui.log.contra.vida', { n: ev.taken }) : L('ui.log.contra.salvo')}`, ev.taken ? 'red' : 'dim');
+        logLine(`${L('ui.log.contra', { g: glyph, casa: LA_HOUSE(ev.tower), n: ev.threat })}${ev.blocked ? L('ui.log.contra.frena', { n: ev.blocked }) : ''} → ${ev.taken ? L('ui.log.contra.vida', { n: ev.taken }) : L('ui.log.contra.salvo')}${ev.cerco ? ` · ${L('ui.log.contra.cerco')}` : ''}`, ev.taken ? 'red' : 'dim');
         await wait(650);
       } else {
         const why = ev.reason === 'joker' ? L('ui.log.por.joker') : ev.reason === 'ruin' ? L(v.towers[ev.tower!].away ? 'ui.log.por.ausente' : 'ui.log.por.ruin', { casa: LA_HOUSE(ev.tower!) }) : L('ui.log.por.sobrecarga', { casa: LA_HOUSE(ev.tower!) }); // V11 (juice-ux): el trono que no está en el asalto

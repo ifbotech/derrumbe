@@ -231,6 +231,8 @@ export interface GameState {
   turn: number;
   turnCount: number;
   collapses: number;
+  /** V27 · el cerco: el Mazo se agotó y el siguiente Contraataque lo da el trono en pie con más Ataque. */
+  cerco?: boolean;
   phase: Phase;
   lastSiren: Card | null;
   /** Cinturón de herramientas, de izquierda a derecha (campaña). */
@@ -298,8 +300,8 @@ export type GameEvent =
   | { e: 'hurt'; amount: number; integrity: number }
   | { e: 'gold'; amount: number }
   | { e: 'burn'; card: Card }
-  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty' }
-  /** Mazo agotado: el Descarte se barajó. `sube`: niveles de Asedio final que sumó (0 si salió gratis); `asedio`: el nivel que queda. */
+  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty'; /** V27: lo dio el trono más fuerte por un Mazo agotado, no el palo de la carta. */ cerco?: true }
+  /** Mazo agotado: el Descarte se barajó. `sube`: niveles de Asedio final que sumó (0 si salió gratis: entonces tampoco hay cerco); `asedio`: el nivel que queda. */
   | { e: 'collapse'; sube: number; asedio: number }
   | { e: 'draw'; player: string; count: number; cards?: Card[] }
   | { e: 'turn'; player: string }
@@ -896,6 +898,16 @@ export function siegeLevel(env: { config: Config; collapses: number; turnCount: 
   return fatigueAt(env.config, env.turnCount) + deckSiege(env);
 }
 
+/** El trono en pie con más Ataque (a igualdad, el primero en el orden de los palos); null si no queda ninguno. */
+export function strongest(env: { config: Config; fatigue?: number; towers: Record<Suit, Tower> }): Tower | null {
+  let best: Tower | null = null;
+  for (const s of SUITS) {
+    const t = env.towers[s];
+    if (standing(t) && (!best || threatOf(env, t) > threatOf(env, best))) best = t;
+  }
+  return best;
+}
+
 function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   if (state.deck.length > 0 || state.discard.length === 0) return;
   state.deck = state.discard;
@@ -906,6 +918,9 @@ function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   // V27: barajar el Descarte no quita Vida; sube el Asedio final, a la vista en cada trono
   events.push({ e: 'collapse', sube, asedio: siegeLevel(state) });
   if (sube > 0) {
+    // …y el siguiente Contraataque lo da el trono en pie con más Ataque, salga el palo que salga: un asalto no se
+    // puede estirar sin fin barajando (antes lo impedía la Vida que quitaba cada Mazo agotado)
+    state.cerco = true;
     state.fatigue = siegeLevel(state);
     events.push({ e: 'fatigue', level: state.fatigue });
   }
@@ -928,8 +943,11 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   if (!card) return say(null, null, 'empty');
   state.discard.push(card);
   state.lastSiren = card;
-  if (card.suit === 'X') return say(card, null, 'joker');
-  const t = state.towers[card.suit];
+  // V27 · el cerco: tras un Mazo agotado, este Contraataque lo da el trono en pie con más Ataque
+  const cerco = state.cerco ? strongest(state) : null;
+  state.cerco = false;
+  if (!cerco && card.suit === 'X') return say(card, null, 'joker');
+  const t = cerco ?? state.towers[card.suit as Suit];
   if (!standing(t)) return say(card, t.suit, 'ruin');
   if (t.fx.sobrecarga) {
     t.fx.sobrecarga = false;
@@ -941,7 +959,7 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   state.wall -= blocked;
   const taken = threat - blocked;
   state.integrity -= taken;
-  events.push({ e: 'siren', card, tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike' });
+  events.push({ e: 'siren', card, tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike', ...(cerco ? { cerco: true as const } : {}) });
   state.tools.forEach((tool, slot) => TOOL[tool.id]?.siren?.(hookFor(turn, slot), tool, { tower: t.suit, threat, blocked, taken }));
 }
 
@@ -1157,6 +1175,8 @@ export interface PlayerView extends StrikeEnv {
   turnPlayer: string;
   turnCount: number;
   collapses: number;
+  /** V27 · el cerco está echado: el siguiente Contraataque lo da el trono en pie con más Ataque. */
+  cerco: boolean;
   phase: Phase;
   /** Lo que aún no has visto (cantera y manos ajenas), ordenado: no revela el orden de robo. */
   unseen: Card[];
@@ -1192,6 +1212,7 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     turnPlayer: currentPlayer(state).id,
     turnCount: state.turnCount,
     collapses: state.collapses,
+    cerco: !!state.cerco,
     phase: state.phase,
     unseen: sortCards([...state.deck, ...state.players.filter((p) => p.id !== playerId).flatMap((p) => [...p.hand, ...p.reserve])]),
     discard: sortCards(state.discard),

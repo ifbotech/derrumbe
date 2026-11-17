@@ -118,10 +118,15 @@ const waitNote = () => (host() ? '' : `<p class="wait">${L('ui.run.espera')}</p>
 function head(run: Run, h1: string, sub: string): string {
   return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${run.daily ? L('ui.run.diaria', { d: run.daily }) : barN(run.deckId)} · ${L('ui.run.cabeza', { v: run.integrity, max: run.maxIntegrity, n: run.deck.length })}</p></div><div class="purse">${cifraEl(run.gold, 'oro', 'b', 'id="purse-n"')}<span>${L('ui.run.de.oro')}</span></div></header>`;
 }
+/** V27 · las Reliquias que había la última vez que se pintó la tira: la que llega nueva se marca y se dice dónde se colocó. */
+let beltAntes: string[] | null = null;
 /** Las Reliquias en las pantallas de campaña: aquí se reordenan con calma (y en la Taberna se venden). */
 function beltStrip(run: Run, sell = false): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'run-belt';
+  const ids = run.tools.map((t) => t.id);
+  const nuevas = beltAntes ? ids.filter((id) => !beltAntes!.includes(id)) : [];
+  beltAntes = ids;
   wrap.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')} <small>${L('ui.run.reliquias.orden', { n: run.tools.length, total: TOOL_SLOTS })}</small></span>`;
   wrap.appendChild(
     beltEl(run.tools, {
@@ -131,6 +136,12 @@ function beltStrip(run: Run, sell = false): HTMLElement {
     }),
   );
   wrap.insertAdjacentHTML('beforeend', `<button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button>`);
+  // V27: cada Reliquia nueva se coloca sola en su sitio recomendado; un aviso breve dice cuál y en qué hueco quedó
+  if (nuevas.length) {
+    const id = nuevas[nuevas.length - 1];
+    for (const n of nuevas) wrap.querySelector(`.belt-slot[data-id="${CSS.escape(n)}"]`)?.classList.add('recien');
+    $('.belt-label', wrap).insertAdjacentHTML('beforeend', ` <b class="belt-aviso" role="status">${L('ui.run.reliquias.sola', { x: relN(id), n: ids.indexOf(id) + 1 })}</b>`);
+  }
   return wrap;
 }
 function confirmSell(run: Run, i: number): void {

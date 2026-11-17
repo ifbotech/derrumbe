@@ -16,7 +16,7 @@ import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, RUN_11, migraMeta11, migraRu
 import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
-import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool } from './tools';
+import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool } from './tools';
 
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
@@ -614,7 +614,7 @@ function grantTool(run: Run, rarities: Rarity[]): boolean {
   if (run.tools.length >= TOOL_SLOTS) return false;
   const id = rollTool(run, rarities) ?? rollTool(run, ALL_RARITIES);
   if (!id) return false;
-  run.tools.push({ id, n: 0 });
+  placeTool(run.tools, { id, n: 0 });
   return true;
 }
 /** Sella n cartas de baraja al azar (de las que aún no llevan sello) y las devuelve. */
@@ -1128,7 +1128,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       if (a.id !== null) {
         if (!run.loot.includes(a.id)) return 'Esa reliquia no está en el botín.';
         if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias.`;
-        run.tools.push({ id: a.id, n: 0 });
+        placeTool(run.tools, { id: a.id, n: 0 });
       }
       run.looted = true;
       if (run.drafted) openShop(run);
@@ -1146,7 +1146,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       }
       if (o.kind === 'tool') {
         if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias. Vende una antes.`;
-        run.tools.push({ id: o.id!, n: 0 });
+        placeTool(run.tools, { id: o.id!, n: 0 });
       } else if (o.kind === 'sobre') run.sobre = rollSpecials(run, 3);
       else if (o.kind === 'clandestino') addSpecial(run, rollSpecials(run, 1)[0]);
       else run.levels[o.form!]++;

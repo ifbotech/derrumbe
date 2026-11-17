@@ -7,7 +7,7 @@ import { chooseAction } from '../rules/bot';
 import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, previewStrike, viewFor } from '../rules/engine';
 import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
 import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../rules/tutorial';
-import { TOOLS } from '../rules/tools';
+import { TOOLS, placeTool } from '../rules/tools';
 import { hero } from './art';
 import { prefs } from './campaign';
 import { cardEl } from './card';
@@ -899,6 +899,16 @@ export function installQa(): void {
         for (const id of ['piqueta', 'gemelos']) if (run.tools.length < 2 && !run.tools.some((t) => t.id === id)) run.tools.push({ id, n: 0 });
         renderRun();
         return true;
+      },
+      /** V27 · en una pantalla de campaña: quita la última Reliquia, pinta, y la hace llegar de nuevo: se coloca sola (para comprobar su aviso). */
+      llega: () => {
+        const run = S.campaign?.run;
+        const fuera = run?.tools.pop();
+        if (!run || !fuera) return null;
+        renderRun();
+        const hueco = placeTool(run.tools, { id: fuera.id, n: 0 }) + 1;
+        renderRun();
+        return { id: fuera.id, hueco };
       },
     },
   });

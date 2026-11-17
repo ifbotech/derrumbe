@@ -9,7 +9,7 @@
 //                         src/rules/textos.ts. Las plantillas españolas son las de src/rules/plantillas.ts
 //                         (`causa.*`, `aviso.*`), letra por letra los textos de siempre.
 import { fill } from './balance-config';
-import { CRUMBLE_LABEL, Card, Config, GameEvent, MATERIAL, PlayerView, SUITS, Suit, nextCollapse, standing, threatOf } from './engine';
+import { CRUMBLE_LABEL, Card, Config, GameEvent, MATERIAL, PlayerView, SUITS, Suit, nextCollapse, standing, strongest, threatOf } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { SPECIAL } from './specials';
 import { TOOL } from './tools';
@@ -171,15 +171,20 @@ export function omenWith(tx: TextosAutopsia, v: PlayerView): Omen | null {
   // V27: con el Mazo vacío, el próximo Contraataque baraja antes el Descarte y el Asedio final ya ha subido:
   // el aviso cuenta el Ataque que de verdad va a llegar
   const env = v.deckCount === 0 ? { config: v.config, fatigue: (v.fatigue ?? 0) + nextCollapse(v) } : v;
+  // …y con el cerco echado (o a punto: Mazo vacío y el barajado no sale gratis) el golpe lo da el trono en pie con
+  // más Ataque, salga el palo que salga
+  const cerco = v.cerco || (v.deckCount === 0 && nextCollapse(v) > 0);
   // Contraataque: el mayor Ataque en pie que de verdad puede salir (trono armado y con cartas de su palo por salir)
   const pool: Card[] = v.deckCount > 0 ? v.unseen : [...v.discard, ...v.hand, ...v.reserve];
   let worst: Suit | null = null;
   for (const s of SUITS) {
     const t = v.towers[s];
     if (!standing(t) || t.fx.sobrecarga) continue;
-    if (!pool.some((c) => c.suit === s)) continue;
+    if (!cerco && !pool.some((c) => c.suit === s)) continue;
     if (worst === null || threatOf(env, t) > threatOf(env, v.towers[worst])) worst = s;
   }
+  // con cerco, si el más fuerte está Aturdido se salta el golpe: no hay peligro
+  if (cerco && strongest({ ...env, towers: v.towers })?.fx.sobrecarga) worst = null;
   if (worst === null) return null;
   const threat = threatOf(env, v.towers[worst]);
   if (threat < v.integrity + v.wall) return null;

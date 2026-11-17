@@ -69,8 +69,8 @@ export const UI_JUICE = {
   'ui.w.jefe': ['<b>Monarca:</b> {who} impone un decreto en este asalto. Su ficha de la barra te lo recuerda.', '<b>Monarch:</b> {who} imposes a decree on this assault. The token on the top bar reminds you.'],
   'ui.w.fatiga': ['<b>Asedio final:</b> desde ahora tus golpes suman más Daño cada turno, pero los Contraataques pegan más fuerte.', '<b>Final Siege:</b> from now on your strikes add more Damage each turn, but Counterattacks hit harder.'],
   'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte. No pierdes Vida: {efecto}.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back in. You lose no Health: {efecto}.'],
-  'ui.w.cantera.sube': ['el Asedio final sube {n} (⚔ +{n} en cada trono y más Daño en tus golpes)', 'the Final Siege rises {n} (⚔ +{n} on every throne and more Damage on your strikes)'],
-  'ui.w.cantera.gratis': ['esta vez el Asedio final no sube', 'the Final Siege does not rise this time'],
+  'ui.w.cantera.sube': ['el Asedio final sube {n} (⚔ +{n} en cada trono) y el siguiente Contraataque lo da el trono más fuerte', 'the Final Siege rises {n} (⚔ +{n} on every throne) and the strongest throne gives the next Counterattack'],
+  'ui.w.cantera.gratis': ['esta vez no pasa nada más', 'nothing else happens this time'],
   // V11: la mesa de dos o tres tronos y los dos estados, la primera vez que se ven
   'ui.w.ausente': ['<b>En este asalto hay {n} tronos:</b> si el Contraataque saca el palo de uno que no está, no pasa nada.', '<b>This assault has {n} thrones:</b> if the Counterattack draws the suit of one that is not here, nothing happens.'],
   'ui.w.expuesto': ['<b>Expuesto {glyph}:</b> el próximo golpe contra ese trono hace ×{n} de Daño. Lo deja un golpe de 2 cartas o más de un solo palo.', '<b>Exposed {glyph}:</b> the next hit against that throne deals ×{n} Damage. A hit of 2+ cards of one suit leaves it Exposed.'],

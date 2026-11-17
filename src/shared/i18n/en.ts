@@ -39,7 +39,7 @@ const RELIQUIAS: Record<string, [string, string]> = {
   botiquin: ['Balm', 'Each ♥ heals +{vida} more.'],
   encofrado: ['Buckler', 'Each guard defeated: +{escudo} Shield.'],
   casco: ['Helm', 'Each guard defeated: +{vida} Health.'],
-  puntales: ['False Bottom', '{gratis} Deck run-out per assault does not raise the Final Siege.'],
+  puntales: ['False Bottom', '{gratis} Deck run-out per assault neither raises the Final Siege nor changes who strikes back.'],
   hucha: ['Coin Purse', '+{oro} gold at the end of each assault.'],
   taladro: ['Lance', 'All your hits Pierce, with or without ♠.'],
   estandarte: ['Banner', '+{multi} Mult with a flush or straight flush.'],

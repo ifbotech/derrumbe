@@ -118,7 +118,7 @@
   "mesa": {
     "maxIntegrity": 20,
     "wallCap": 8,
-    "collapseSiege": 1,
+    "collapseSiege": 2,
     "escudoPorCarta": 2,
     "curaPorCarta": 2,
     "salpicaPorCarta": 2,
@@ -138,7 +138,7 @@
       "fatigueEvery": 3,
       "fatigueDano": 4
     },
-    "brutal": { "maxIntegrity": 16, "collapseSiege": 2 }
+    "brutal": { "maxIntegrity": 16, "collapseSiege": 3 }
   },
   "reliquias": {
     "piqueta": { "dano": 3 },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameEvent, GameState, StrikeEnv, Suit, applyAction, classify, createGame, currentPlayer, eventsFor, newTowers, previewStrike, reorder, seedFrom, sortCards, strike, viewFor } from '../src/rules/engine';
 import { chooseAction, formations } from '../src/rules/bot';
-import { ARCH, RARITY, TOOL, TOOLS, bestOrder, toolPool } from '../src/rules/tools';
+import { ARCH, RARITY, TOOL, TOOLS, bestOrder, placeTool, toolPool } from '../src/rules/tools';
 import { muestra } from './muestra';
 
 const card = (id: string, extra: Partial<Card> = {}): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0, ...extra } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)), ...extra });
@@ -143,6 +143,26 @@ describe('cinturón: el orden importa', () => {
     expect(bestOrder(belt).map((i) => belt[i].id)).toEqual(['sacos', 'piqueta', 'prisma', 'plano_maestro']);
     const withCopy = ['diapason', 'piqueta', 'ultimo'].map((id) => ({ id, n: 0 }));
     expect(bestOrder(withCopy).map((i) => withCopy[i].id)).toEqual(['piqueta', 'diapason', 'ultimo']);
+  });
+
+  it('V26 · una Reliquia nueva se coloca sola en su sitio recomendado, sin mover las que ya estaban', () => {
+    // cinturón en orden recomendado: pasiva, +Daño, +Multi, ×Multi
+    const belt = ['sacos', 'piqueta', 'prisma', 'plano_maestro'].map((id) => ({ id, n: 0 }));
+    const recomendado = (b: { id: string }[]) => bestOrder(b.map((t) => ({ id: t.id, n: 0 }))).map((i) => b[i].id);
+    expect(recomendado(belt)).toEqual(belt.map((t) => t.id));
+    // una que suma Daño entra con las que suman Daño, antes de lo que suma o multiplica el Multi
+    const k = placeTool(belt, { id: 'maza', n: 0 });
+    expect(belt.map((t) => t.id)).toEqual(['sacos', 'piqueta', 'maza', 'prisma', 'plano_maestro']);
+    expect(k).toBe(2);
+    expect(recomendado(belt)).toEqual(belt.map((t) => t.id));
+    // una pasiva entra con las pasivas, y el orden sigue siendo el recomendado
+    placeTool(belt, { id: 'casco', n: 0 });
+    expect(recomendado(belt)).toEqual(belt.map((t) => t.id));
+    expect(belt).toHaveLength(6);
+    // con un orden puesto a mano no se toca lo que ya estaba: solo entra la nueva
+    const mano = ['plano_maestro', 'piqueta'].map((id) => ({ id, n: 0 }));
+    placeTool(mano, { id: 'sacos', n: 0 });
+    expect(mano.filter((t) => t.id !== 'sacos').map((t) => t.id)).toEqual(['plano_maestro', 'piqueta']);
   });
 
   it('hay al menos 36 herramientas, de 4 rarezas y 5 arquetipos, todas bien definidas', () => {
@@ -422,9 +442,10 @@ describe('turno: sirena, muro, descartes, huelga y colapso', () => {
     const s = game(cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'));
     s.discard = s.deck.splice(0);
     const { state, events } = applyAction(s, 'a', { type: 'discard', cards: ['S2'] });
-    expect(of(events, 'collapse')[0]).toMatchObject({ sube: 1, asedio: 1 });
+    const sube = s.config.collapseSiege;
+    expect(of(events, 'collapse')[0]).toMatchObject({ sube, asedio: sube });
     expect(state.collapses).toBe(1);
-    expect(state.fatigue).toBe(1);
+    expect(state.fatigue).toBe(sube);
     // la Vida solo baja por el Contraataque que sigue, nunca por barajar
     expect(s.integrity - state.integrity).toBe(of(events, 'siren')[0]?.taken ?? 0);
   });

@@ -92,7 +92,7 @@ export const TOOLS: ToolDef[] = [
   { id: 'botiquin', name: 'Bálsamo', desc: 'Cada ♥ cura +{vida} más.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.curaPorCarta += V.botiquin.vida) },
   { id: 'encofrado', name: 'Broquel', desc: 'Cada guardia abatido: +{escudo} de Escudo.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.wall += V.encofrado.escudo * r.fallen) && x.note(`+${V.encofrado.escudo * r.fallen} de Escudo`) },
   { id: 'casco', name: 'Yelmo', desc: 'Cada guardia abatido: +{vida} de Vida.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.heal += V.casco.vida * r.fallen) && x.note(`+${V.casco.vida * r.fallen} de Vida`) },
-  { id: 'puntales', name: 'Baraja de reserva', desc: '{gratis} Mazo agotado por asalto no sube el Asedio final.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.collapseFree = (c.collapseFree ?? 0) + V.puntales.gratis) },
+  { id: 'puntales', name: 'Baraja de reserva', desc: '{gratis} Mazo agotado por asalto no sube el Asedio final ni cambia quién contraataca.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.collapseFree = (c.collapseFree ?? 0) + V.puntales.gratis) },
   { id: 'hucha', name: 'Bolsa de monedas', desc: '+{oro} de oro al terminar cada asalto.', rarity: 'comun', arch: 'base', kind: 'p' },
   { id: 'taladro', name: 'Lanza', desc: 'Todos tus golpes Perforan, lleven o no ♠.', rarity: 'oficio', arch: 'base', kind: 'p', cfg: (c) => void (c.alwaysPierce = true) },
   { id: 'estandarte', name: 'Estandarte', desc: '+{multi} de Multi con color o escalera de color.', rarity: 'oficio', arch: 'base', kind: 'r', strike: (x) => (x.formation === 'color' || x.formation === 'escaleracolor') && x.R(V.estandarte.multi) },
@@ -274,4 +274,16 @@ export function bestOrder(tools: ToolInst[]): number[] {
     }
   }
   return order;
+}
+
+/**
+ * V26 · Coloca una Reliquia nueva en el cinturón en su sitio recomendado, sin mover las que ya estaban: el puesto
+ * que le daría `bestOrder` (primero lo que suma Daño, luego lo que suma Multi y al final lo que multiplica) con el
+ * cinturón tal como lo tiene el jugador. Devuelve el hueco en el que queda. Reordenar a mano sigue siendo posible.
+ */
+export function placeTool(tools: ToolInst[], nueva: ToolInst): number {
+  const todas = [...tools, nueva];
+  const k = bestOrder(todas).indexOf(todas.length - 1);
+  tools.splice(k, 0, nueva);
+  return k;
 }
