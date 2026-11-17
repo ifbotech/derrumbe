@@ -14,11 +14,11 @@
   /* la barra de arriba: 12 px entre botones también cuando va apretada (los pasos siguientes recogen rótulos) */
   html .bar, html[data-input='keys'] .bar, html[data-input='pad'] .bar { column-gap: clamp(12px, 0.9vw, 14px); }
   html .bar.apretada3, html[data-input='keys'] .bar.apretada3, html[data-input='pad'] .bar.apretada3 { column-gap: 12px; }
-  /* último recurso (inglés con mando y monarca a 1280 px): si ni recogiendo rótulos cabe, el aire vuelve a 8 px */
-  html .bar.apretada6, html[data-input='keys'] .bar.apretada6, html[data-input='pad'] .bar.apretada6 { column-gap: 8px; }
-  /* …y, con mando, Ajustes se queda en su insignia (Start), que ya es su icono */
+  /* si ni recogiendo rótulos cabe (con mando y monarca a 1280 px), Ajustes se queda en su insignia (Start), que ya es su icono… */
   html[data-input='pad'] .bar.apretada6 #btn-set { font-size: 0; }
   html[data-input='pad'] .bar.apretada6 #btn-set .kh { font-size: 14px; margin: 0; }
+  /* …y, como último recurso, el aire vuelve a 8 px */
+  html .bar.apretada7, html[data-input='keys'] .bar.apretada7, html[data-input='pad'] .bar.apretada7 { column-gap: 8px; }
 }
 
 /* Ajustes, con sus textos a 14 px, sigue entrando entero en una ventana de 768 px de alto (también en inglés):

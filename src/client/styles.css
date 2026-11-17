@@ -403,7 +403,7 @@ html, body { height: 100%; overflow: hidden; }
 
 .table-screen { height: 100dvh; min-height: 0; overflow: hidden; }
 .field { padding: clamp(6px, 1.4vh, 14px); gap: clamp(8px, 1vw, 14px); grid-template-columns: minmax(0, 1fr) clamp(190px, 21vw, 300px); }
-.towers { gap: clamp(6px, 0.95vw, 12px); }
+.towers { gap: clamp(6px, 0.9vw, 12px); }
 .tower { padding: clamp(4px, 0.9vh, 8px); gap: clamp(2px, 0.7vh, 6px); }
 .tower-tag { margin: calc(-1 * clamp(4px, 0.9vh, 8px)) calc(-1 * clamp(4px, 0.9vh, 8px)) 0; }
 .strip { margin: calc(-1 * clamp(2px, 0.7vh, 6px)) calc(-1 * clamp(4px, 0.9vh, 8px)) 0; width: calc(100% + 2 * clamp(4px, 0.9vh, 8px)); }

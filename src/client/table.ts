@@ -353,7 +353,7 @@ function ajustaBarra(): void {
   const players = bar?.querySelector<HTMLElement>('#players');
   if (!bar || !players) return;
   const sobra = () => players.scrollWidth > players.clientWidth + 1 || bar.scrollWidth > bar.clientWidth + 1;
-  const pasos = ['apretada', 'apretada2', 'apretada3', 'apretada4', 'apretada5', 'apretada6']; // V28: el último recoge el aire a 8 px
+  const pasos = ['apretada', 'apretada2', 'apretada3', 'apretada4', 'apretada5', 'apretada6', 'apretada7']; // V28: con mando, Ajustes se queda en su insignia; el último recoge el aire a 8 px
   bar.classList.remove(...pasos);
   for (const p of pasos) {
     if (!sobra()) return;
