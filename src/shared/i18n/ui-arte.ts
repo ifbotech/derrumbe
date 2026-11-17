@@ -103,9 +103,6 @@ export const UI_ARTE = {
   'ui.rel.copia': ['Copia a su derecha', 'Copies its right'],
   'ui.rel.pasiva': ['Pasiva', 'Passive'],
   'ui.rel.vender': ['Pulsa dos veces para venderla por {n} de oro.', 'Press twice to sell it for {n} gold.'],
-  'ui.rel.orden': ['El orden no cambia la cuenta. Para moverla: arrástrala, o púlsala y luego pulsa otro hueco (con teclado: Mayús + flechas; con mando: LB / RB).', 'Order does not change the count. To move it: drag it, or press it and then another slot (keyboard: Shift + arrows; controller: LB / RB).'],
-  'ui.rel.hueco.1': ['Hueco {n} de {total}: se activa la primera.', 'Slot {n} of {total}: it triggers first.'],
-  'ui.rel.hueco.n': ['Hueco {n} de {total}: se activa después de {antes}.', 'Slot {n} of {total}: it triggers after {antes}.'],
   'ui.mazo.especiales': ['Comodines y especiales', 'Jokers and specials'],
   'ui.mazo.vacio': ['Vacío.', 'Empty.'],
   // ajustes
@@ -220,7 +217,6 @@ export const UI_ARTE = {
   'ui.lupa.carta.texto': ['Carta de {palo}: hace su número de Daño, y 0 contra su propio trono (Inmune).', 'A {palo} card: it deals its number as Damage, and 0 against its own throne (Immune).'],
   'ui.lupa.que': ['Qué hace', 'What it does'],
   'ui.lupa.rareza': ['Rareza', 'Rarity'],
-  'ui.lupa.en.reliquias': ['En tus Reliquias', 'In your Relics'],
   'ui.lupa.acumulado': ['Acumulado', 'Stored'],
   'ui.lupa.campana': ['En esta campaña', 'In this campaign'],
   'ui.lupa.activada': ['Activada <b>{n}</b> veces', 'Triggered <b>{n}</b> times'],

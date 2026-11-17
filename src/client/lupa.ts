@@ -93,7 +93,6 @@ function toolSheet(id: string): Sheet | null {
   const slot = tools.findIndex((t) => t.id === id);
   const rows: [string, string][] = [row(L('ui.lupa.que'), kindName(def.kind)), row(L('ui.lupa.rareza'), `${rarN(def.rarity)} · ${archN(def.arch)}`)];
   if (slot >= 0) {
-    rows.push(row(L('ui.lupa.en.reliquias'), slot === 0 ? L('ui.rel.hueco.1', { n: slot + 1, total: TOOL_SLOTS }) : L('ui.rel.hueco.n', { n: slot + 1, total: TOOL_SLOTS, antes: slot })));
     const count = def.count?.(tools[slot]);
     if (count !== undefined && count !== '') rows.push(row(L('ui.lupa.acumulado'), `<b>${count}</b>`));
   }

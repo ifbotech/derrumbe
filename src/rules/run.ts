@@ -13,7 +13,7 @@ import { ARBOL, Nodo, cifraDe, cleanUp as limpiaArbol, comprarNodo, rangoDe } fr
 import { Caida, Pieza, caidaDe, caidaVacia, sumaPiezas } from './caida';
 import { Tirada, multiplicadores, tirarHuesos } from './huesos';
 import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, RUN_11, migraMeta11, migraRun11, recortaMeta10 } from './migracion';
-import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
+import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool } from './tools';
@@ -483,7 +483,6 @@ export type RunAction =
   | { t: 'next' }
   | { t: 'event'; i: number }
   /** Cinturón: nuevo orden de las herramientas (permutación de índices). */
-  | { t: 'reorder'; order: number[] }
   /** Tras el asalto 5: seguir en el Trono infinito. */
   | { t: 'endless' };
 
@@ -1118,12 +1117,6 @@ export function finishBattle(run: Run, state: GameState): void {
 
 /** Aplica una decisión de campaña. Devuelve un mensaje de error legible, o null si se aplicó. */
 export function runAction(run: Run, a: RunAction): string | null {
-  if (a.t === 'reorder') {
-    const next = reorder(run.tools, a.order);
-    if (!next) return 'Ese orden no es válido.';
-    run.tools = next;
-    return null;
-  }
   if (run.pending && a.t !== 'target' && a.t !== 'cancel') return 'Antes elige las cartas pendientes.';
   switch (a.t) {
     case 'begin':
@@ -1377,14 +1370,6 @@ export function cargaRun(raw: unknown): Run | null {
   if (!r || typeof r !== 'object' || !r.stats) return null;
   if (r.v === RUN_11) migraRun11(r, RUN_VERSION);
   return r.v === RUN_VERSION ? r : null;
-}
-
-/** Reordena el cinturón de la campaña y, si hay obra en curso, el de la mesa (misma permutación). */
-export function reorderBelt(run: Run, state: GameState | null, order: number[]): string | null {
-  const err = runAction(run, { t: 'reorder', order });
-  if (err) return err;
-  if (state && state.phase === 'playing') state.tools = reorder(state.tools, order) ?? state.tools;
-  return null;
 }
 
 /**

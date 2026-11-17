@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer, seedFrom } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
-import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FATIGUE } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FATIGUE } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
@@ -533,17 +533,12 @@ describe('V29 · el Don de la Conjura', () => {
 });
 
 describe('cinturón', () => {
-  it('se reordena con una permutación; en plena obra, la mesa sigue el mismo orden', () => {
+  it('V34 · las Reliquias no se ordenan: no existe la acción; en pleno asalto tampoco se venden', () => {
     const run = newRun({}, 4);
     run.tools = ['piqueta', 'prisma', 'ultimo'].map((id) => ({ id, n: 0 }));
-    act(run, { t: 'reorder', order: [2, 0, 1] });
-    expect(run.tools.map((t) => t.id)).toEqual(['ultimo', 'piqueta', 'prisma']);
-    expect(runAction(run, { t: 'reorder', order: [0, 0, 1] })).toMatch(/no es válido/);
-    const state = enter(run);
-    state.tools[0].n = 3;
-    expect(reorderBelt(run, state, [1, 2, 0])).toBeNull();
+    expect(runAction(run, { t: 'reorder', order: [2, 0, 1] } as unknown as RunAction)).not.toBeNull();
     expect(run.tools.map((t) => t.id)).toEqual(['piqueta', 'prisma', 'ultimo']);
-    expect(state.tools).toEqual([{ id: 'piqueta', n: 0 }, { id: 'prisma', n: 0 }, { id: 'ultimo', n: 3 }]);
+    enter(run);
     expect(runAction(run, { t: 'sell', i: 0 })).toMatch(/pleno asalto/);
   });
 

@@ -9,7 +9,7 @@
 // las filas de la tabla salen de las claves `ui.tecla.*` y `ui.ctl.*` (src/shared/i18n/ui-juice.ts).
 import { getLang, tFor, type Lang } from '../shared/i18n';
 
-export type Act = 'choose' | 'strike' | 'stash' | 'undo' | 'back' | 'deck' | 'lupa' | 'speed' | 'settings' | 'discard' | 'restart' | 'beltLeft' | 'beltRight' | 'fullscreen' | 'best' | 'auto' | 'zoomIn' | 'zoomOut';
+export type Act = 'choose' | 'strike' | 'stash' | 'undo' | 'back' | 'deck' | 'lupa' | 'speed' | 'settings' | 'discard' | 'restart' | 'fullscreen' | 'best' | 'auto' | 'zoomIn' | 'zoomOut';
 
 /** [tecla, botón del mando] (la tecla con su nombre español). Vacío: esa acción no tiene atajo ahí. */
 export const CONTROLS: Record<Act, [string, string]> = {
@@ -28,8 +28,6 @@ export const CONTROLS: Record<Act, [string, string]> = {
   // V12: dos botones a la vez (Select a solas es AUTO: tocar y mantener un mismo botón no hacen cosas distintas)
   restart: ['R', 'Select + Start'],
   // con el foco en una reliquia; fuera de ellas, LB abre el mazo y RB la lupa
-  beltLeft: ['Mayús ←', 'LB'],
-  beltRight: ['Mayús →', 'RB'],
   // V12: con el mando, desde Ajustes (Start), como con el ratón
   fullscreen: ['F', 'Start'],
   // V12 · Mejor jugada: elige las cartas y el trono; no golpea
@@ -76,7 +74,6 @@ export function controlRows(lang: Lang, kbd = false): [string, string, string][]
     [T('ui.ctl.saltar'), key('back'), pad('back')],
     [T('ui.ctl.mazo'), key('deck'), pad('deck')],
     [T('ui.ctl.lupa'), T('ui.ctl.lupa.k', { k: key('lupa') }), pad('lupa')],
-    [T('ui.ctl.reliquias'), T('ui.ctl.reliquias.k', { mayus: box(T('ui.tecla.mayus')) }), T('ui.ctl.reliquias.p', { a: pad('beltLeft'), b: pad('beltRight') })],
     [T('ui.ctl.velocidad'), T('ui.ctl.barra'), pad('speed')],
     [T('ui.ctl.auto'), key('auto'), pad('auto')],
     [T('ui.ctl.ritual'), T('ui.ctl.ritual.k'), T('ui.ctl.ritual.p')],

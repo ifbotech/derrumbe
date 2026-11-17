@@ -132,7 +132,6 @@ function beltStrip(run: Run, sell = false): HTMLElement {
   wrap.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')} <small>${L('ui.run.reliquias.orden', { n: run.tools.length, total: TOOL_SLOTS })}</small></span>`;
   wrap.appendChild(
     beltEl(run.tools, {
-      onReorder: host() && run.tools.length > 1 ? (order) => runDo({ t: 'reorder', order }) : undefined,
       onSell: sell && host() ? (i) => confirmSell(run, i) : undefined,
       sellValue,
     }),

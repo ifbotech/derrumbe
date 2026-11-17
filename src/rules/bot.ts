@@ -5,7 +5,7 @@
 import { Action, Card, Config, GameState, SUITS, StrikeEnv, Suit, Tower, cardValue, classify, currentPlayer, standing, strike, threatOf } from './engine';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';
-import { RARITY, TOOL, TOOL_SLOTS, bestOrder } from './tools';
+import { RARITY, TOOL, TOOL_SLOTS } from './tools';
 
 // ───────────────────────── La obra ─────────────────────────
 
@@ -238,8 +238,6 @@ function pendingTarget(run: Run): RunAction {
 
 function shopAction(run: Run): RunAction {
   if (run.sobre) return { t: 'open', i: run.sobre.reduce((best, id, i) => (specialValue(id) > specialValue(run.sobre![best]) ? i : best), 0) };
-  const order = bestOrder(run.tools);
-  if (order.some((slot, i) => slot !== i)) return { t: 'reorder', order };
   if (run.integrity <= run.maxIntegrity * 0.6 && run.gold >= healCost(run)) return { t: 'heal' };
 
   const open = run.shop.map((o, i) => ({ o, i, cost: offerCost(run, o) })).filter((x) => !x.o.sold && x.cost <= run.gold);

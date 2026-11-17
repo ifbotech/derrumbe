@@ -153,7 +153,7 @@ function rulesEs(cfg: Config): string {
   </table>
 
   <h3>Reliquias</h3>
-  <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>. <b>Su orden no cambia la cuenta</b>: primero se suma todo y al final se multiplica. Puedes moverlas cuando quieras (arrastrando, o pulsando una y luego su hueco); solo le importa al Espejo de mano, que copia la de su derecha.
+  <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>. <b>No se ordenan</b>: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica.
   Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a la de su derecha y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
 
   <h3>Sellos de lacre y acabados</h3>
@@ -303,7 +303,7 @@ function rulesEn(cfg: Config): string {
   </table>
 
   <h3>Relics</h3>
-  <p>You carry up to <b>${TOOL_SLOTS} relics</b>. <b>Their order does not change the count</b>: everything is added first and multiplied at the end. You can move them whenever you like (by dragging, or by pressing one and then its slot); it only matters to the Hand Mirror, which copies the one on its right.
+  <p>You carry up to <b>${TOOL_SLOTS} relics</b>. <b>You never sort them</b>: each new one goes to the end of the row and none depends on its slot. In the count everything is added first and multiplied at the end.
   Each one says what it does: <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far, <b>⇉</b> copies the one to its right and <b>•</b> is passive. Golden rule: what adds first, what multiplies at the end.</p>
 
   <h3>Wax Seals and Finishes</h3>

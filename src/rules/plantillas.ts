@@ -76,7 +76,6 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'error.pasar': 'Solo puedes pasar con la mano vacía.',
   'error.accion': 'Acción desconocida.',
   'error.rebobinar': 'No te quedan rebobinados.',
-  'error.orden': 'Ese orden no es válido.',
   'error.pendientes': 'Antes elige las cartas pendientes.',
   'error.empezada': 'La campaña ya empezó.',
   'error.no_mapa': 'No estás en el Mapa del castillo.',

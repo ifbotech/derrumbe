@@ -3,10 +3,10 @@
 // mira qué se puede pulsar y dónde está.
 //
 //   Teclado   flechas · Enter elegir · Espacio golpear · Y La Manga · Z Rebobinar · Supr descartar · L lupa
-//             Tab mazo · Esc atrás · F pantalla completa · Mayús + flechas reordena las reliquias
+//             Tab mazo · Esc atrás · F pantalla completa
 //             · Q Mejor jugada · A AUTO · mantener R reinicia la campaña
 //   Mando     cruceta o palanca · A elegir · X golpear · Y La Manga · B atrás · L3 descartar · LB mazo
-//             · RB lupa (con el foco en una reliquia, LB / RB la mueven a izquierda y derecha)
+//             · RB lupa
 //             · LT Mejor jugada · RT velocidad · R3 Rebobinar · Start ajustes · Select AUTO
 //             · mantener Select + Start reinicia
 //   Árbol     cruceta por los nodos · A elige y lleva a «Comprar» · B vuelve al nodo y otra B sale
@@ -126,9 +126,7 @@ export function padPrompt(el: Element | null): string {
   if (!el.closest('.run-body.shop')) return '';
   const hit = SHOP_VERBS.find(([sel]) => el.matches(sel));
   if (!hit) return '';
-  const a = `<b>${padKey('A')}${t(hit[1])}</b>`;
-  // sobre una reliquia, LB / RB la mueven (beltLeft / beltRight de prompts.ts)
-  return el.matches('.belt-slot.tool') && el.closest('.belt.can-order') ? `${a}<b>${padKey('LB')}${padKey('RB')}${t('ui.pad.mover')}</b>` : a;
+  return `<b>${padKey('A')}${t(hit[1])}</b>`;
 }
 let hintNow = '';
 function paintPrompt(el: Element | null): void {
@@ -351,34 +349,6 @@ export function enfoca(el: HTMLElement): void {
   reveal(el);
 }
 
-// ───────────────────────── Reliquias (el cinturón, .belt) ─────────────────────────
-
-/** La reliquia que tiene el foco (o que es el destino de una tecla), si la hay. */
-export function beltSlot(el: Element | null): HTMLElement | null {
-  return el instanceof HTMLElement ? el.closest<HTMLElement>('.belt-slot.tool') : null;
-}
-
-/**
- * Mueve la herramienta enfocada un hueco a la izquierda (−1) o a la derecha (+1). El cinturón
- * (widgets.ts) ya sabe moverla con Mayús + flechas: se le manda esa misma tecla y el foco viaja con la
- * herramienta a su hueco nuevo. Con el mando es LB / RB; con el teclado, Mayús + flechas.
- */
-export function shiftBelt(slot: HTMLElement, dir: -1 | 1, viaKeyboard = false): void {
-  const belt = slot.closest('.belt');
-  const from = Number(slot.dataset.slot);
-  const tools = belt ? belt.querySelectorAll('.belt-slot.tool').length : 0;
-  const to = from + dir;
-  if (!belt?.classList.contains('can-order') || to < 0 || to >= tools) {
-    sfx.edge();
-    showRing(slot, true);
-    return;
-  }
-  const host = slot.closest('#beltbar') ? '#beltbar' : slot.closest('.run-belt') ? '.run-belt' : '';
-  expectFocus(`${host} .belt-slot[data-slot="${to}"][data-id="${CSS.escape(slot.dataset.id ?? '')}"]`.trim());
-  // con el teclado, el propio cinturón ya ha recibido la tecla: solo queda seguir a la herramienta
-  if (!viaKeyboard) slot.dispatchEvent(new KeyboardEvent('keydown', { key: dir < 0 ? 'ArrowLeft' : 'ArrowRight', shiftKey: true, bubbles: true, cancelable: true }));
-}
-
 // ───────────────────────── Mando ─────────────────────────
 
 type Handler = (key: string) => void;
@@ -398,10 +368,7 @@ let lastPoll = 0;
 
 /** Zona muerta de la palanca, primera repetición al mantener y ritmo de las siguientes (ms). */
 export const PAD = { deadzone: 0.28, first: 320, repeat: 110 };
-/**
- * Botones del mando estándar (W3C) y la tecla a la que equivalen. LB y RB llegan como Tab y l: sobre
- * una herramienta del cinturón main.ts los convierte en «moverla» (beltLeft / beltRight de prompts.ts).
- */
+/** Botones del mando estándar (W3C) y la tecla a la que equivalen. LB y RB llegan como Tab y l (Mazo y Lupa). */
 const BUTTONS: [number, string][] = [
   [12, 'ArrowUp'],
   [13, 'ArrowDown'],
@@ -473,15 +440,6 @@ export function bindNav(onKey: Handler, onKeyUp: Handler = () => undefined): voi
     showRing(el);
   });
   document.addEventListener('focusout', () => showRing(null));
-  // Mayús + flechas sobre el cinturón: el cinturón mueve la herramienta y aquí el foco se va con ella
-  addEventListener(
-    'keydown',
-    (e) => {
-      const slot = e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ? beltSlot(e.target as Element) : null;
-      if (slot) shiftBelt(slot, e.key === 'ArrowLeft' ? -1 : 1, true);
-    },
-    true,
-  );
   document.addEventListener('pointerdown', () => {
     setMode('pointer');
     last = null;

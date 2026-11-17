@@ -277,18 +277,15 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
   check((await count(page, '.deck-modal')) === 1, 'Tab abre el mazo');
   await page.keyboard.press('Escape');
 
-  // ── Mayús + flechas mueven la reliquia enfocada, y el foco va con ella ──
+  // ── V34 · las Reliquias no se ordenan: ni Mayús + flechas ni arrastrarlas las mueven ──
   {
     const before = await runTools(page);
     await page.locator('#beltbar .belt-slot[data-slot="0"]').focus();
     await page.keyboard.press('Shift+ArrowRight');
     await page.waitForTimeout(250);
-    const after = await runTools(page);
-    check(after[0] === before[1] && after[1] === before[0], 'Mayús + → mueve la reliquia a la derecha');
-    check(await page.evaluate((id) => !!document.activeElement?.matches(`#beltbar .belt-slot[data-slot="1"][data-id="${id}"]`), before[0]), 'y el foco viaja con ella');
-    await page.keyboard.press('Shift+ArrowLeft');
-    await page.waitForTimeout(250);
-    check((await runTools(page)).join() === before.join(), 'Mayús + ← la devuelve');
+    check((await runTools(page)).join() === before.join(), 'Mayús + → sobre una reliquia no la mueve: las Reliquias no se ordenan');
+    const arrastrable = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('#beltbar .belt-slot.tool')].some((e) => e.draggable));
+    check(!arrastrable, 'y ninguna reliquia se puede arrastrar');
   }
   await page.keyboard.press('Escape');
   await page.keyboard.press('Delete');
@@ -415,11 +412,11 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
   const pads = await page.locator('.keys tr td:nth-child(3)').allTextContents();
   const rows = await page.locator('.keys tr td:nth-child(1)').allTextContents();
   check(pads.length >= 12 && !pads.some((t) => t.trim() === '—' || t.trim() === ''), 'en la tabla de controles ninguna acción se queda sin mando');
-  check(pads.some((t) => t.includes('L3')) && pads.some((t) => t.includes('R3')) && pads.some((t) => t.includes('LB / RB')), 'la tabla enseña L3 (descartar), R3 (Rebobinar) y LB / RB (reliquias)');
+  check(pads.some((t) => t.includes('L3')) && pads.some((t) => t.includes('R3')) && !pads.some((t) => t.includes('LB / RB')), 'la tabla enseña L3 (descartar) y R3 (Rebobinar), y ya no LB / RB para las reliquias');
   check(pads.some((t) => t.trim() === 'LT') && pads.some((t) => t.trim() === 'Select') && pads.some((t) => t.includes('Select + Start')), 'V12: la tabla enseña LT (Mejor jugada), Select (AUTO) y Select + Start (reiniciar)');
   check(['ui.ctl.mejor', 'ui.ctl.auto', 'ui.ctl.ritual', 'ui.ctl.arbol.comprar', 'ui.ctl.arbol.zum', 'ui.ctl.arbol.mover'].every((k) => rows.includes(T(k))), 'V12: y las filas de Mejor jugada, AUTO, la tirada de huesos y el Árbol');
   const want = controlRows(LANG).map((r) => r.map((c) => c.replace(/<[^>]+>/g, '')));
-  check(['ui.ctl.manga', 'ui.ctl.rebobinar', 'ui.ctl.reliquias', 'ui.ctl.golpear'].every((k) => rows.includes(T(k))), 'la tabla de controles habla de La Manga, Rebobinar, reliquias y tronos');
+  check(['ui.ctl.manga', 'ui.ctl.rebobinar', 'ui.ctl.golpear'].every((k) => rows.includes(T(k))), 'la tabla de controles habla de La Manga, Rebobinar y tronos');
   const shown = await page.locator('.keys tr').evaluateAll((trs) => trs.slice(1).map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent ?? '')));
   check(JSON.stringify(shown) === JSON.stringify(want), `la tabla de Ajustes es la de prompts.ts en el idioma de la mesa (${shown.length} filas)`);
   check(await page.evaluate(() => [...document.querySelectorAll('.keys td kbd')].every((k) => k.classList.contains('kt')) && document.querySelectorAll('.keys td kbd').length >= 15), 'cada tecla y botón de la tabla va en su <kbd>');
