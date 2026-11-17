@@ -1,0 +1,32 @@
+/* V21 · La Taberna en el móvil (≤ 640 px): una lista de renglones enteros y los servicios fijos abajo.
+   Antes era una rejilla de 3 columnas (cada descripción partida en renglones de 12 letras) que la ventana cortaba a
+   media carta, y Curar, Hoguera, Renovar y el botón de seguir quedaban 900 px más abajo.
+   Portátil, Steam Deck y escritorio no cambian: todo va dentro de la consulta de ancho. */
+@media (max-width: 640px) {
+  /* cabecera: en una tienda, el oro es la cifra de la pantalla */
+  .run:has(.run-body.shop) .deck-head h1 { font-size: 32px; }
+  .run:has(.run-body.shop) .deck-head .purse b { font-size: 32px; }
+  /* el Tratante cabe en una línea */
+  .run-body.shop .keeper { gap: 8px; }
+  .run-body.shop .keeper .card { --w: 48px; }
+  /* el cuerpo se desliza y la fila de servicios se queda en el borde de abajo */
+  .run-body.shop { gap: 8px; padding-bottom: 0; }
+  .run-body.shop .shop-side { display: contents; }
+  .run-body.shop .grid2 { position: sticky; bottom: 0; z-index: 6; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-inline: -2px; padding: 10px 2px 6px; background: var(--table); border-top: 2px solid var(--table-4); box-shadow: 0 -14px 14px -6px var(--pit); }
+  /* el aviso de «hay más abajo» lo pinta esa fila encima de sí (como el pie de la Crónica): la máscara del cuerpo la borraría a ella */
+  .run-body.shop .grid2::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 26px; margin-bottom: 2px; background: linear-gradient(to top, var(--table), transparent); pointer-events: none; }
+  .run-body.shop[data-mas] { -webkit-mask-image: none; mask-image: none; }
+  #app .run-body.shop .grid2 > button { height: auto; min-height: 48px; font-size: 14px; letter-spacing: 0; padding-inline: 2px; }
+  #app .run-body.shop .grid2 > #go { grid-column: 1 / -1; min-height: 52px; font-size: 16px; }
+  /* las ofertas: un renglón por oferta (dibujo, nombre, precio y la descripción a todo el ancho) */
+  .run-body.shop .rail { display: none; }
+  .run-body.shop .hangers { display: flex; flex-direction: column; gap: 8px; padding-top: 0; }
+  .run-body.shop .choice.hang { width: auto; display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; grid-template-rows: auto 1fr; grid-template-areas: 'arte nombre precio' 'arte texto texto'; column-gap: 10px; row-gap: 2px; align-items: start; padding: 8px 2px 0; border-top: 2px solid var(--table-4); container-type: normal; }
+  .run-body.shop .choice.hang::before { content: none; }
+  .run-body.shop .choice.hang > .card { grid-area: arte; --w: 48px; }
+  .run-body.shop .choice.hang > h4 { grid-area: nombre; align-self: center; min-height: 0; margin: 0; font-size: 16px; line-height: 1.15; }
+  .run-body.shop .choice.hang > p { grid-area: texto; min-height: 0; font-size: 14px; line-height: 1.3; }
+  .run-body.shop .choice.hang > .price-tag { grid-area: precio; position: static; transform: none; align-self: center; white-space: nowrap; }
+  .run-body.shop .choice.hang > .price-tag b { font-size: 18px; }
+  .run-body.shop .choice.hang p small { display: inline; margin: 0 0 0 6px; }
+}

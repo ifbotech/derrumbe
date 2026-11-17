@@ -1,0 +1,19 @@
+/* V24 · La mesa del móvil a una mano (≤ 640 px). Portátil, Steam Deck y escritorio no cambian.
+   1. La fila del pulgar: 48 px de alto, 10 px entre botones y 18 px hasta el borde de abajo (más la zona segura;
+      es lo que cabe sin quitarle alto a los tronos, también en inglés).
+      Deshacer es un botón cuadrado con su flecha: su rótulo no cabía y se salía del botón, igual que el de
+      Descartar, que ahora tiene sitio.
+   2. La cuenta: la cifra va en tiza sobre pizarra con su filete (el bloque de papel se quedaba corto para cinco
+      cifras y la última pisaba el rótulo de al lado).
+   3. «Mejor» se lee a 16 px. */
+@media (max-width: 640px) {
+  .table-screen .tray { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+  /* el alto sale del aire entre las Reliquias y los poderes (de 10 a 6 px), no de los tronos ni de la mano */
+  .table-screen .hudrow { row-gap: 6px; }
+  .table-screen .actions { grid-template-columns: 1.22fr 1fr 1.3fr 48px; gap: 10px; }
+  .table-screen #btn-undo { padding: 0; }
+  .table-screen #btn-undo .lbl { font-size: 0; }
+  .table-screen #btn-undo .lbl::before { content: '↩'; font-size: 24px; line-height: 1; }
+  #score:not(.live) .calc b.t { flex: none; padding-inline: 0.2em; background: var(--pit); color: var(--card-paper); box-shadow: inset 0 -5px 0 var(--red), inset 0 0 0 2px var(--card-paper); }
+  .handrow > #btn-mejor .lbl, #btn-mejor .lbl { font-size: 16px; }
+}

@@ -605,6 +605,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (d < 7.5) fail('aire', `diana a ${Math.max(0, Math.round(d))} px del borde de la pantalla (mínimo 8): ${path(el)}`, el);
     }
   }
+  /** Los hijos de caja de `p`: los suyos y, en lugar de cada hijo con display: contents, los de ese hijo (V21). */
+  const hijosDeCaja = (p: Element): Element[] => [...p.children].flatMap((c) => (getComputedStyle(c).display === 'contents' ? hijosDeCaja(c) : [c]));
   /** La parte de una diana que se ve: su caja recortada por las cajas con desplazamiento que la contienen. */
   const shown = (el: Element): DOMRect => {
     let { left, top, right, bottom } = el.getBoundingClientRect();
@@ -618,7 +620,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       bottom = Math.min(bottom, pr.bottom);
       // V10 P0-5: un pie (o una cabecera) pegado con sticky dentro de esa caja tapa lo que se desplaza por
       // debajo: esa parte tampoco se ve ni se pulsa (el pie de la Crónica)
-      for (const c of p.children) {
+      for (const c of hijosDeCaja(p)) {
         if (c.contains(el)) continue;
         const ccs = getComputedStyle(c);
         if (ccs.position !== 'sticky') continue;
@@ -873,6 +875,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
   }
 
   // ───────── tinta: las zonas con desplazamiento avisan mientras quede contenido ─────────
+  /** Hijos de caja (los de un hijo con display: contents cuentan como propios): V21, la fila fija de La Taberna. */
+  const hijosDe = (p: Element): Element[] => [...p.children].flatMap((c) => (getComputedStyle(c).display === 'contents' ? hijosDe(c) : [c]));
   for (const s of new Set([...scrollers, ...scope.querySelectorAll<HTMLElement>('[data-mas]')])) {
     if (!visible(s)) continue;
     const more = s.dataset.mas ?? '';
@@ -881,7 +885,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const cs = getComputedStyle(s);
     const drawn = (cs.maskImage && cs.maskImage !== 'none') || (cs.webkitMaskImage && cs.webkitMaskImage !== 'none') || getComputedStyle(s, '::after').content !== 'none' || getComputedStyle(s, '::before').content !== 'none'
       // V10 P0-5: o un pie pegado (sticky) que pinta la tinta encima de sí con su ::before (la Crónica)
-      || [...s.children].some((c) => getComputedStyle(c).position === 'sticky' && getComputedStyle(c, '::before').content !== 'none');
+      || hijosDe(s).some((c) => getComputedStyle(c).position === 'sticky' && getComputedStyle(c, '::before').content !== 'none');
     if (opts.noScroll && down && !s.matches('.log, .lupa-sheet, .lupa-box')) fail('maqueta', `esta pantalla no se desplaza, pero ${name(s)} esconde contenido (${s.scrollHeight} > ${s.clientHeight})`, s);
     if (down && !/abajo/.test(more)) fail('tinta', `${name(s)} esconde contenido abajo y no lo avisa (data-mas="${more}")`, s);
     if (up && !/arriba/.test(more)) fail('tinta', `${name(s)} esconde contenido arriba y no lo avisa (data-mas="${more}")`, s);
