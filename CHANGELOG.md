@@ -2,6 +2,25 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 28.0.0 — 2026-11-17
+
+Legibilidad medida. Ningún texto del juego mide menos de 14 px y los botones tienen más aire entre sí. Ninguna regla cambia.
+
+### En todas las pantallas
+- **Texto de 14 px como mínimo**: el suelo de 13 px sube a 14 en escritorio, portátil, Steam Deck y móvil. Lo comprueba la QA visual en las 236 capturas.
+- **Nombres de las cartas especiales y de las fichas**: el rótulo crece para leerse a 14 px desde una carta de 134 px de ancho.
+
+### En escritorio, portátil y Steam Deck
+- **12 px entre botones vecinos** (antes 8) en la barra de arriba, la portada, la preparación de campaña, La Taberna y el Árbol.
+- **La barra de arriba**: si no cabe, recoge rótulos por pasos. Con mando, como último recurso, Ajustes se queda en su insignia.
+- **Preparación de campaña**: las fichas de Reinado son más altas y su nombre ya no se corta.
+
+### En el móvil
+- La fila de botones de la barra reparte su ancho según lo que mide cada palabra. En inglés, «Achievements» parte en dos renglones dentro de su pestaña.
+
+### Por dentro
+- La QA visual exige 14 px a todo texto (antes 13, y 14 solo a lo crítico del móvil).
+
 ## 27.0.0 — 2026-11-17
 
 Sin muertes opacas. El Mazo agotado ya no quita Vida y las Reliquias se colocan solas. Cambian dos reglas. (La 25.0 y la 26.0 fueron candidatas que el panel rechazó; lo de la 26.0 entra aquí.)
