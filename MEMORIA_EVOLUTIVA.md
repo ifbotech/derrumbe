@@ -60,7 +60,8 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | **24.0 con el instrumento i5** (temperatura 0, auditor con medidas, 60 personas, una pasada) | Campeón de partida del ciclo V27 → V40 | 60,0 | — | 25,0 | 6,15 | 7,57 | 42,9 | 55,6 | 73,3 | 166,20 | `pulso-60-20261117-105559` |
 | 27.0 (i5) | aceptada (`v27.0.0`) | 61,7 | — | 20,0 | 6,15 | 7,58 | 47,6 | 55,6 | 73,3 | 168,30 | `pulso-60-20261117-115529` |
 | 28.0 (i5, con la frase de la mano equivocada) | aceptada (`v28.0.0`) | 78,3 | — | 65,0 | 6,58 | 7,73 | 61,9 | 88,9 | 73,3 | 213,38 | `pulso-60-20261117-132424` |
-| **28.0 (i5.1, frase de la mano corregida)** | **Campeón y listón vigente** (`v28.0.0`) | 73,3 | — | 65,0 | 6,58 | 7,72 | 61,9 | 66,7 | 73,3 | **208,33** | `pulso-60-20261117-135942` |
+| 28.0 (i5.1, frase de la mano corregida) | aceptada (`v28.0.0`) | 73,3 | — | 65,0 | 6,58 | 7,72 | 61,9 | 66,7 | 73,3 | 208,33 | `pulso-60-20261117-135942` |
+| **29.0 (i5.1)** | **aceptada, Campeón y listón vigente** (`v29.0.0`) | 75,0 | — | 70,0 | 6,65 | 7,72 | 66,7 | 66,7 | 73,3 | **214,85** | `pulso-60-20261117-143718` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -295,3 +296,13 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **La 28.0 con la frase corregida**: **F 208,33** (`pulso-60-20261117-135942`; con la frase equivocada, 213,38). Aprobación 73,3 % (44 de 60), críticos 65,0 %, claridad 6,58, diversión 7,72, impulsivos 61,9 %, Steam Deck 66,7 % (6 de 9), móvil 73,3 %. Es el listón vigente. Frente a la 27.0 (168,30, medida con la frase equivocada) siguen siendo unos +40.
 - **Lo que enseña**: el juego no cambió y, al cambiar una frase del pedido, 13 de 60 votos cambian (5 suben, 8 bajan; p = 0,58) y F se mueve 5 puntos. Con temperatura 0 no hay ruido de semilla, pero sí esta sensibilidad a la redacción: una diferencia de menos de unos 5 puntos de F entre dos versiones que tocan muchas capturas no dice nada.
 - **Qué citan ahora los votos en contra** (16): la barra de arriba (iconos de oro, esquirlas y lacre chicos y parecidos), «Mejor» frente a «Golpear», las Reliquias chicas y juntas en escritorio, Vida y Escudo con poco contraste, la cuenta («ver el 1.036 sin entender de dónde salió») y el Asedio en las escenas de derrota.
+
+### V29 · El Don de la Conjura — **aceptada** (`v29.0.0`, Campeón)
+
+- **Hipótesis** (pedido del usuario): que el Asalto 1 no empiece con las manos vacías. Un regalo elegido con un clic al abrir la campaña cambia los primeros minutos, que es donde se decide el voto de quien no lee tutoriales.
+- **Qué se hizo**: al abrir la campaña, la pantalla del Sobre enseña tres regalos (siempre una Reliquia común, un sello de lacre sobre una carta numerada y una bolsa de 5 de oro) y se elige uno; el primero viene marcado y «Al mapa» empieza con él. Los tres se sortean con la semilla de la campaña en un generador aparte, así que ningún otro sorteo cambia. Estado nuevo en la QA (`don`, 60 por ventana) y, en el móvil, el Don y «Al mapa» antes que las cartas del Sobre.
+- **Balance** (laboratorio rápido, el bot elige la Reliquia, certificado): Reinado 1, 31,7 % y 48,7 %: una Reliquia común de salida no mueve la dificultad.
+- **Puertas**: 364 + 9 pruebas, QA visual sin fallos en las cuatro ventanas (y en inglés en Steam Deck y móvil), humo rápido. La sección «mando» del humo trae un fallo que ya estaba en la 28.0 («RB repetido la devuelve a su sitio»); queda para arreglar antes de la coronación.
+- **Medida**: **F 214,85 frente a 208,33 (+6,52)**, corrida `pulso-60-20261117-143718`. 55 reseñas idénticas y 5 distintas, las de la escena de los primeros tres minutos: sube 1 voto (una crítica dura e impulsiva de escritorio) y no baja ninguno; la claridad de esas cinco sube en tres. Aprobación 75,0 % (45 de 60), críticos 70,0 % (14 de 20), impulsivos 66,7 % (14 de 21): **las tres cumplen**. Móvil 73,3 % cumple; Steam Deck 66,7 % (6 de 9) se queda a un voto.
+- **Faltan**: claridad 6,65 (7,60), diversión 7,72 (8,00) y un voto de Steam Deck.
+- **Lección**: un cambio de reglas que solo toca una escena se lee entero: cinco personas, un voto, sin ambigüedad. Es la forma de trabajar que este instrumento sí distingue.

@@ -2,6 +2,22 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 29.0.0 — 2026-11-17
+
+El Don de la Conjura. La campaña ya no empieza con las manos vacías: al abrirla eliges uno de tres regalos y te acompaña desde el primer Golpe.
+
+### Campaña
+- **El Don de la Conjura**: en la pantalla del Sobre lacrado, debajo de tus tres cartas especiales, hay tres regalos a la vista. Siempre son una Reliquia común, un sello de lacre sobre una carta numerada de tu Mazo y una bolsa de 5 de oro. Eliges uno con un clic; el primero viene marcado y «Al mapa» empieza la campaña con el marcado.
+- La misma semilla ofrece siempre los mismos tres regalos (también en el Asalto diario).
+- En el móvil, el Don y «Al mapa» van arriba y las cartas del Sobre quedan debajo.
+- AUTO se queda con la Reliquia.
+
+### Balance
+- Laboratorio rápido (6.000 campañas, con el bot eligiendo la Reliquia): en el Reinado 1 se gana el 31,7 % de las campañas con el Árbol vacío y el 48,7 % con el Árbol lleno, como antes.
+
+### Por dentro
+- La QA visual fotografía la pantalla del Don (60 estados por ventana) y dice si las cartas de la mano se montan: no se montan en ninguna.
+
 ## 28.0.0 — 2026-11-17
 
 Legibilidad medida. Ningún texto del juego mide menos de 14 px y los botones tienen más aire entre sí. Ninguna regla cambia.
