@@ -1,4 +1,4 @@
-# Informe evolutivo final · de la 10.0 a la 20.0
+# Informe evolutivo final · de la 10.0 a la 23.0
 
 **SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-16. Campeón publicado: **20.0** (`v20.0.1` en `origin/main`; la 20.0.1 solo arregla la barra en inglés con mando), jugable en <https://ifbotech.github.io/derrumbe/>.
 
@@ -10,6 +10,7 @@
 - **El efecto más firme de la misión es la cuenta entera** («1.036 = Daño 148 × Multi ×7» en vez de «1K»): sube la claridad unas seis décimas en dos corridas seguidas (p ≈ 0,05–0,08).
 - **El instrumento tiene más ruido que casi todos los cambios**: con 24 personas, una corrida se mueve ±10–15 puntos de F sin que cambie nada. Dos de las tres aceptaciones recientes (16.0 y 20.0) dependen de un solo voto de Steam Deck; en la 20.0 ese voto es ajeno al cambio.
 - **Al final se corrigió el instrumento y se volvió a medir al Campeón: 140,36** (su corrida original dio 162,28). El mismo juego, 22 puntos de diferencia: el 162 fue suerte y ninguna decisión de la 13.0 a la 20.0 queda demostrada por F.
+- **Después se limpió el instrumento (un pedido a la vez, dos semillas por candidata) y se midieron tres candidatas más: 21.0, 22.0 y 23.0, las tres rechazadas.** Con el instrumento limpio el Campeón 20.0 da F 142,7 de media, y las personas que no ven un cambio responden letra por letra lo mismo. Las tres candidatas arreglan justo lo que citan las reseñas del móvil y de Steam Deck; lo arreglado desaparece de la auditoría, el auditor pone otro problema grave en su lugar y el voto no se mueve.
 - **No se corrió la réplica en inglés ni el `rapido-60` ni el censo de 240**: estaban reservados para cuando una corrida pasara los seis objetivos.
 
 ## 1. Trayectoria
@@ -48,6 +49,17 @@ Todas las filas son del panel simulado (`..\panelAgentesGaming`). Las cifras de 
 | **20.0** | **publicada (Campeón)** | 54,2 | 37,5 | 37,5 | 50,0 | 66,7 | 6,38 | 7,21 | **162,28** | 5,25 |
 | 20.0, remedida con el instrumento corregido | Campeón (listón vigente) | 45,8 | 25,0 | 37,5 | 25,0 | 50,0 | 6,21 | 6,96 | **140,36** | — |
 
+### Instrumento `pulso-24` limpio (un pedido a la vez), media de dos semillas por versión (desde la 21.0)
+
+| Versión | Decisión | Aprob. ES | Críticos | Casual | Deck | Móvil | Claridad | Diversión | F medio (semilla 1 · semilla 2) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **20.0** (`v20.0.1`) | **Campeón, listón vigente** | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,56 | 7,00 | **142,74** (152,12 · 133,36) |
+| 21.0 | rechazada | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,52 | 6,96 | 142,25 (151,82 · 132,67) |
+| 22.0 | rechazada | 52,1 | 25,0 | 43,8 | 12,5 | 58,3 | 6,38 | 7,17 | 142,43 (152,15 · 132,70) |
+| 23.0 | rechazada | 50,0 | 25,0 | 43,8 | 0,0 | 58,3 | 6,58 | 7,06 | 134,84 (136,11 · 133,56) |
+
+En este bloque Steam Deck son 8 votos (4 personas × 2 semillas) y el Campeón tiene 1.
+
 Notas de lectura:
 
 - **Inglés**: desde la 13.0 no se midió (una sola corrida española por versión). El último dato inglés es el de la 12.0: 33,3 %.
@@ -66,7 +78,7 @@ Notas de lectura:
 | **19.0** | La cuenta con todas sus cifras y con signo igual; con mando, la carta enfocada crece 1,3× sin etiqueta encima | F 146,58 → 151,55; claridad 5,88 → 6,50 (p = 0,053) | **El más firme**: la 18.0 ya había dado 6,46 con la misma cuenta, y F se había predicho en 151 antes de medir |
 | **20.0** | La placa de la Partida guiada pasa de amarillo a pizarra con tiza | F 151,55 → 162,28 | **No atribuible al cambio**: quita un P0 del auditor, pero los dos votos que cambian son de personas que vieron lo mismo que en la 19.0 |
 
-### Lo que se revirtió (cinco candidatas rechazadas, cada una en su rama `rechazado/vN-20261116`)
+### Lo que se revirtió (ocho candidatas rechazadas, cada una en su rama `rechazado/vN-20261116`)
 
 | Versión | Hipótesis | Resultado | Por qué falló |
 |---|---|---|---|
@@ -75,6 +87,10 @@ Notas de lectura:
 | **15.0** | El Golpe exacto perdona pasarse por 1 (más exactos, más diversión) | F 124,21; diversión 7,04 → 6,75 | El exacto vale porque es exacto: ablandarlo confunde («la tolerancia de +1 es confusa») y no divierte más |
 | **17.0** | Con mando, la carta enfocada crece (con la etiqueta «A Elegir» encima) | F 121,17 frente a 146,58 | El auditor cambió su P0 de «el marco se pierde» a «la etiqueta tapa la carta». De los tres votos perdidos, dos eran de personas que vieron lo mismo que en la 16.0 (ruido) |
 | **18.0** | La cuenta con todas sus cifras | F 134,36 frente a 146,58 | La predicción se cumplió (claridad 6,46, diversión y móvil arriba), pero Steam Deck volvió a 0 de 4 y eso solo cuesta 16,7 puntos de F. Sus ingredientes entraron en la 19.0 |
+
+| **21.0** | En el móvil, La Taberna es una lista de renglones enteros con Curar, Hoguera, Renovar y el botón de seguir fijos abajo (antes, una rejilla de 3 columnas cortada a media carta) | F 142,25 frente a 142,74 | El P0 «La Taberna cortada» desaparece de la auditoría y de las seis reseñas, pero las mismas personas citan entonces el otro P0 de su escena («Descartar pegado al borde») y en cada semilla una sube y otra baja. Arregla un fallo real y no hace daño: queda guardada |
+| **22.0** | Steam Deck con mando: monedero sobre papel, cada acción con su insignia arriba y su rótulo debajo, aviso de cada trono a 20 px | F 142,43 frente a 142,74 | Las tres quejas que citaban las ocho reseñas desaparecen; el auditor escribe otras tres y ningún voto cambia. La diversión sube (p = 0,03) y la claridad baja |
+| **23.0** | La 22.0 más las quejas nuevas: «Golpe» junto a la cifra de la cuenta y rótulos de la leyenda a 15 px | F 134,84 frente a 142,74 | 9 de 12 capturas nuevas siguen con un P0, por motivos nuevos otra vez. La única persona de Steam Deck que aprobaba baja: cada cambio en esas capturas vuelve a tirar su dado |
 
 También se descartó por el camino, sin llegar a medirse: atenuar las cartas no enfocadas (baja su contraste de 4,5:1) y agrandar el monedero de la barra con mando (en inglés no cabe a 1280 px y esconde el rótulo de AUTO).
 
@@ -89,10 +105,15 @@ También se descartó por el camino, sin llegar a medirse: atenuar las cartas no
 **La remedida del Campeón con las dos correcciones dio F 140,36 frente a 162,28**: no subieron la nota (Steam Deck sigue en 1 de 4) y dejaron medido el ruido. Es el dato más útil del final de la misión: dos corridas del mismo juego difieren en 22 puntos de F.
 6. **Lo que funcionó como método**: leer primero qué capturas ve el estrato que hace de piso; cambiar solo lo que se ve con `data-input=pad` para no tocar las capturas de los demás; recombinar lo que subió en candidatas rechazadas; y escribir la predicción de F antes de medir.
 
+7. **El ruido de 22 puntos venía de mandar dos pedidos a la vez.** El panel es determinista (misma foto y misma semilla, 24 reseñas idénticas), pero con dos pedidos en paralelo cada reseña dependía de su vecina: entre dos versiones cambiaban 22 de 24 aunque 16 personas recibían el mismo pedido. Con un pedido a la vez, esas 16 salen idénticas. Desde la 21.0 se mide así y con dos semillas: un delta solo puede venir de quien ve algo distinto, y una hipótesis estrecha se lee entera en diez minutos.
+8. **El auditor marca un problema grave según el aparato que le dicen, no según la captura.** P0 en 21 de 26 capturas de Steam Deck y en 19 de 26 de portátil; en 4 de 26 de escritorio (la misma maqueta) y en 6 de 26 de móvil. Su pedido para Steam Deck dice «a 40 cm, solo con mando: el foco tiene que verse siempre» y para portátil «poco alto útil y clics imprecisos»; para el móvil da criterios que se pueden cumplir («objetivos ≥ 44 px, texto ≥ 14 px, sin scroll»).
+9. **Arreglar lo que citan las reseñas no mueve el voto** (medido en la 20.0, la 21.0, la 22.0 y la 23.0): la queja desaparece, entra otra y la persona vota igual. En Steam Deck, además, cada cambio arriesga el único voto a favor.
+
 ### Qué haría falta para acercarse a los objetivos
 
 - **Medir mejor antes de cambiar más**: dos o tres corridas por candidata (o el `rapido-60`) para decidir, y volver a medir el Campeón con cada corrección del instrumento. Con una sola corrida, la mitad de las decisiones son suerte.
 - **Los frentes con más votos en contra hoy** (11 de 24 en la última corrida): portátil (3 de 6 a favor: puntería con trackpad en la zona de acción), los primeros minutos y la primera derrota (el mazo que se agota quita Vida «sin entender por qué»), la cuenta en pantalla chica (Steam Deck: «la fórmula está apretada contra el total») y La Taberna del móvil (la segunda fila queda cortada sin señal de que se desliza).
+- **Decidir qué se hace con el pedido del auditor para Steam Deck y portátil.** Mientras presuponga el problema, el objetivo de 70 % en Steam Deck no depende del juego. Reescribirlo con criterios medibles, como el del móvil, es cambiar la vara de medir: es decisión del dueño del panel, no del estudio.
 - **La distancia a los objetivos es grande**: 21 puntos de aprobación, 1,2 de claridad y 0,8 de diversión. Los retoques de interfaz de esta misión movieron décimas; lo único que movió más fue cambiar reglas (11.0) y la cuenta (19.0).
 
 ## 3. Lista de prueba para amigos y familia
