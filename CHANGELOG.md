@@ -2,6 +2,14 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 30.0.0 — 2026-11-17
+
+La derrota se explica. El recuadro «Causa de la derrota» de la Crónica dice ahora de dónde salió el golpe final. Ninguna regla cambia.
+
+### Crónica
+- **El Asedio final, con su cifra**: si el Ataque que acabó contigo llevaba niveles de Asedio final, el segundo renglón dice cuántos («2 del Ataque eran del Asedio final»).
+- **El Mazo agotado, por su nombre**: si el golpe final fue el Contraataque que sigue a un Mazo agotado (el del trono con más Ataque), el primer renglón lo dice («Contraataque de PICAS tras agotar el Mazo: …»).
+
 ## 29.0.0 — 2026-11-17
 
 El Don de la Conjura. La campaña ya no empieza con las manos vacías: al abrirla eliges uno de tres regalos y te acompaña desde el primer Golpe.

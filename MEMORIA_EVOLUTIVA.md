@@ -61,7 +61,8 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | 27.0 (i5) | aceptada (`v27.0.0`) | 61,7 | — | 20,0 | 6,15 | 7,58 | 47,6 | 55,6 | 73,3 | 168,30 | `pulso-60-20261117-115529` |
 | 28.0 (i5, con la frase de la mano equivocada) | aceptada (`v28.0.0`) | 78,3 | — | 65,0 | 6,58 | 7,73 | 61,9 | 88,9 | 73,3 | 213,38 | `pulso-60-20261117-132424` |
 | 28.0 (i5.1, frase de la mano corregida) | aceptada (`v28.0.0`) | 73,3 | — | 65,0 | 6,58 | 7,72 | 61,9 | 66,7 | 73,3 | 208,33 | `pulso-60-20261117-135942` |
-| **29.0 (i5.1)** | **aceptada, Campeón y listón vigente** (`v29.0.0`) | 75,0 | — | 70,0 | 6,65 | 7,72 | 66,7 | 66,7 | 73,3 | **214,85** | `pulso-60-20261117-143718` |
+| 29.0 (i5.1) | aceptada (`v29.0.0`) | 75,0 | — | 70,0 | 6,65 | 7,72 | 66,7 | 66,7 | 73,3 | 214,85 | `pulso-60-20261117-143718` |
+| **30.0 (i5.1)** | **aceptada, Campeón y listón vigente** (`v30.0.0`) | 78,3 | — | 70,0 | 6,72 | 7,72 | 76,2 | 77,8 | 73,3 | **221,87** | `pulso-60-20261117-145647` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -306,3 +307,12 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **Medida**: **F 214,85 frente a 208,33 (+6,52)**, corrida `pulso-60-20261117-143718`. 55 reseñas idénticas y 5 distintas, las de la escena de los primeros tres minutos: sube 1 voto (una crítica dura e impulsiva de escritorio) y no baja ninguno; la claridad de esas cinco sube en tres. Aprobación 75,0 % (45 de 60), críticos 70,0 % (14 de 20), impulsivos 66,7 % (14 de 21): **las tres cumplen**. Móvil 73,3 % cumple; Steam Deck 66,7 % (6 de 9) se queda a un voto.
 - **Faltan**: claridad 6,65 (7,60), diversión 7,72 (8,00) y un voto de Steam Deck.
 - **Lección**: un cambio de reglas que solo toca una escena se lee entero: cinco personas, un voto, sin ambigüedad. Es la forma de trabajar que este instrumento sí distingue.
+
+### V30 · La derrota se explica — **aceptada** (`v30.0.0`, Campeón): cuatro de las seis metas
+
+- **Hipótesis**: las cinco personas de la primera derrota (todas impulsivas) siguen en contra citando el Asedio y «el trono más fuerte». El juego ya explica cada derrota en la Crónica desde la 8.0, pero no decía nada del Asedio ni del Mazo agotado, y la escena solo contaba que «aparece la Crónica con el resumen».
+- **Qué se hizo**: el recuadro «Causa de la derrota» dice cuántos puntos del Ataque final eran del Asedio final y, si el golpe fue el Contraataque que sigue a un Mazo agotado, lo nombra. El motor anota el nivel de Asedio en cada Contraataque. La escena c03 describe el recuadro con las cifras de la propia escena y el aviso de «Último turno».
+- **Puertas**: 366 + 9 pruebas, certificación rápida del laboratorio (Reinado 1, 31,7 % y 48,7 %), QA visual sin fallos en portátil y móvil (ninguna pantalla cambia), humo rápido.
+- **Medida**: **F 221,87 frente a 214,85 (+7,02)**, corrida `pulso-60-20261117-145647`. 54 reseñas idénticas y 6 distintas (las cinco de la primera derrota y una de Steam Deck que no cambia de voto): suben 2 votos, uno de portátil y uno de Steam Deck, y no baja ninguno. La claridad de dos de las cinco sube de 5 a 7 y a 8; la de otras dos baja de 5 a 4.
+- **Metas**: **se cumplen cuatro de seis** en el pulso de 60: aprobación 78,3 % (47 de 60), críticos 70,0 %, impulsivos 76,2 % (16 de 21), Steam Deck 77,8 % (7 de 9) y móvil 73,3 % (11 de 15). Faltan la claridad media (6,72 de 7,60) y la diversión media (7,72 de 8,00).
+- **Lo que sigue en contra en la primera derrota**: dos personas de escritorio, con claridad 4: «el Asedio aparece de la nada». El recuadro explica la derrota después; no avisa antes.
