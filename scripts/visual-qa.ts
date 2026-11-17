@@ -2610,12 +2610,17 @@ async function correTramo(browser: Browser, site: { url: string }, t: Trabajo, h
     let refCifras: Record<string, number> | undefined;
     const cifrasDe = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll<HTMLElement>('[data-cifra-k]')].reverse().map((e) => [e.dataset.cifraK, parseFloat(getComputedStyle(e).fontSize)])) as Record<string, number>);
     const anchoTrono = () => page.evaluate(() => (document.querySelector('.tower:not([hidden]):not(.aimed)') as HTMLElement | null)?.offsetWidth ?? 0);
+    // V22 · Steam Deck (1280×800): también la mesa de referencia se mide jugando con mando, como se fotografía
+    const conMando = async (): Promise<void> => {
+      if (process.env.QA_DECK_RATON !== '1' && view.name === '1280x800') await page.evaluate(() => (window as unknown as { __qa: { mando: () => void } }).__qa.mando());
+    };
     // el prólogo: la memoria que el juego habría ido juntando con los estados de antes, sin foto
     const prologo = Number(process.env.QA_PROLOGO_MS ?? 0);
     for (const state of t.previos) {
       await page.evaluate((s) => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go(s), state);
       if (prologo) await page.waitForTimeout(prologo);
       if (state === 'mesa') {
+        await conMando();
         await page.waitForTimeout(300);
         ref4 = await anchoTrono();
         refCifras = await cifrasDe();
@@ -2626,6 +2631,7 @@ async function correTramo(browser: Browser, site: { url: string }, t: Trabajo, h
       hechos.set(`${view.name}/${state}`, hecho);
       if ((!ref4 && (state === 'mesa-2tronos' || state === 'mesa-3tronos')) || (!refCifras && state === 'mesa-cifras')) {
         await page.evaluate(() => (window as unknown as { __qa: { go: (s: string) => Promise<boolean> } }).__qa.go('mesa'));
+        await conMando();
         await page.waitForTimeout(300);
         ref4 = await anchoTrono();
         refCifras = await cifrasDe();

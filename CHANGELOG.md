@@ -2,6 +2,18 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 22.0.0 — 2026-11-17
+
+Steam Deck con mando, a 40 cm. Jugando con mando en apaisado, la barra de arriba y la fila de acciones se leen de lejos. Ninguna regla cambia. (La 21.0 fue una candidata que el panel rechazó.)
+
+### Con mando
+- **El monedero**: cada pieza va con su cifra sobre papel, con el icono a 22 px y la cifra a 17 px, sin ensanchar la barra. La esquirla, gris sobre la barra oscura, no se veía.
+- **Las acciones son una leyenda del mando**: en cada botón, la insignia del mando arriba y el rótulo debajo, centrados. Nada se monta sobre el marco ni sobre el botón de al lado. «Mejor» ya no lleva el rayo: la insignia es su icono.
+- **El aviso rojo de cada trono** (−1.036) sube a 20 px sin ensanchar su placa.
+
+### Por dentro
+- La QA visual mide también la mesa de referencia de 1280×800 jugando con mando, como se fotografía.
+
 ## 20.0.1 — 2026-11-16
 
 - **Arreglo**: en inglés, con mando y un monarca en la mesa, la barra de arriba se pisaba 5 px a 1280 px (Steam Deck). Si no cabe, tu ficha se queda en la flecha del turno y las cartas que llevas.

@@ -374,3 +374,29 @@ html[data-input='pad'] .focus-ring i { inset: -3px; border-width: 6px; border-ra
 }
 html[data-input='pad'] .shop-side .grid2 > button { font-size: 16px; min-height: 56px; padding-block: 8px; }
 html[data-input='pad'] .run .deck-head .sub { font-size: 15px; }
+
+/* V22 · Steam Deck a 40 cm. Solo con mando y en apaisado (≥ 641 px):
+   1. el monedero: cada pieza con su cifra sobre papel (la esquirla, gris sobre la barra oscura, no se veía) y
+      algo más grande, sin ensanchar la barra;
+   2. las acciones son una leyenda del mando: en cada botón, su insignia arriba y su rótulo debajo, centrados;
+      nada se monta sobre el marco ni sobre el botón de al lado (el rayo de «Mejor» sobra: la insignia es el icono);
+   3. el aviso rojo de cada trono (−1.036) sube a 20 px sin ensanchar su placa. */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  html[data-input='pad'] .bar .chip.bolsa { gap: 5px; padding: 2px 4px; }
+  html[data-input='pad'] .bar .bolsa-c { gap: 3px; padding: 1px 3px; background: var(--card-paper); }
+  html[data-input='pad'] .bar .bolsa-svg { width: 22px; height: 22px; }
+  html[data-input='pad'] .bar .chip.bolsa b { font-size: 17px; padding: 0 2px; }
+  html[data-input='pad'] .actions { grid-template-columns: 1.12fr 1fr; }
+  html[data-input='pad'] .actions button { flex-direction: column; gap: 1px; padding: 2px 2px 3px; white-space: nowrap; letter-spacing: 0; }
+  html[data-input='pad'] .actions button .kh.pd,
+  html[data-input='pad'] .actions button:not(#btn-strike):not(#btn-pass) .kh.pd { position: static; order: -1; margin: 0; height: 20px; min-width: 20px; }
+  html[data-input='pad'] .actions #btn-mejor > svg { display: none; }
+  /* la cifra crece y el margen de la placa encoge: la placa mide casi lo mismo y no tapa el índice de la figura (J, Q, K) */
+  html[data-input='pad'] .floor-slot > .preview:not(.polvora) { font-size: 20px; padding-inline: 5px; }
+}
+/* la leyenda ocupa lo mismo que ocupaban los botones: 56 y 48 px de alto con 800 px de ventana; con menos alto
+   (portátil de 768 con mando) cada fila conserva la altura que ya tenía */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (min-height: 780px) {
+  html[data-input='pad'] .actions button { min-height: 48px; }
+  html[data-input='pad'] .actions #btn-strike, html[data-input='pad'] .actions #btn-mejor { min-height: 56px; }
+}
