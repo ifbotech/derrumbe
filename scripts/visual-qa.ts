@@ -200,6 +200,193 @@ const AZAR_QA = `(() => {
 })();`;
 
 /** Lo que se comprueba dentro de la página. Devuelve la lista de fallos, cada uno con su regla. */
+/**
+ * Instrumento i5 del panel (2026-11-17): las medidas reales del DOM de la pantalla tal como se fotografía. Se guardan
+ * junto a cada captura (`<estado>.medidas.json`) y el auditor visual del panel las recibe como hechos: así un
+ * problema de tamaño, separación, solape, recorte o foco sale de una medida y no del aparato que se le nombra.
+ * Mide lo mismo que la auditoría de arriba (mismas dianas, misma parte a la vista, misma escala efectiva del texto).
+ */
+interface Medidas {
+  /** Dianas a la vista, sin las cartas de la mano: cuántas, la más chica, el hueco más chico entre vecinas y las que se pisan. */
+  dianas: { n: number; minW: number; minH: number; minQue: string; separacionMin: number | null; solapes: number };
+  /** Cartas de la mano: cuántas y la franja pulsable más estrecha que deja una (se montan a propósito). */
+  mano: { n: number; franjaMin: number } | null;
+  /** Textos a la vista: cuántos, el más chico (px efectivos) y cuántos miden menos de 14 px. */
+  texto: { n: number; minPx: number; minQue: string; bajo14: number };
+  /** Textos o dianas recortados: los fallos de la regla «recorte» de la auditoría (lo rellena quien llama). */
+  recortes: number;
+  /** Con mando: el marco de foco (px macizos: borde de papel más filetes de tinta), si lleva halo, qué rodea y a qué escala está lo enfocado. */
+  foco: { borde: number; halo: boolean; que: string; escala: number } | null;
+}
+
+async function medirDom(): Promise<Medidas> {
+  const W = innerWidth;
+  const H = innerHeight;
+  const alphaCache = new WeakMap<Element, number>();
+  const alpha = (el: Element): number => {
+    const hit = alphaCache.get(el);
+    if (hit !== undefined) return hit;
+    const cs = getComputedStyle(el);
+    let a = cs.display === 'none' ? 0 : Number(cs.opacity);
+    if (a > 0 && el.parentElement) a *= alpha(el.parentElement);
+    alphaCache.set(el, a);
+    return a;
+  };
+  const visible = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return false;
+    if (getComputedStyle(el).visibility === 'hidden' || alpha(el) <= 0.05) return false;
+    const face = el.closest('.card-front, .card-back');
+    if (face && face.classList.contains('card-front') === !!face.closest('.card')?.classList.contains('flipped')) return false;
+    return true;
+  };
+  const scaleOf = (el: Element): number => {
+    let s = 1;
+    for (let p: Element | null = el; p && p !== document.documentElement; p = p.parentElement) {
+      if (p.closest('.card-in')) p = p.closest('.card')!;
+      const cs = getComputedStyle(p);
+      if (cs.transform && cs.transform !== 'none') {
+        const m = new DOMMatrixReadOnly(cs.transform);
+        s *= Math.min(Math.hypot(m.a, m.b), Math.hypot(m.c, m.d));
+      }
+      if (cs.scale && cs.scale !== 'none') s *= Math.min(...cs.scale.split(' ').map(Number).filter((n) => n > 0));
+    }
+    return s;
+  };
+  const layers = [...document.querySelectorAll<HTMLElement>('.modal, .lupa')];
+  const scope: HTMLElement = layers[layers.length - 1] ?? document.getElementById('app')!;
+  const inView = (r: DOMRect) => r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
+  const corto = (s: string, n: number) => s.replace(/\s+/g, ' ').trim().slice(0, n);
+  /** El nombre con que se lee una diana: su aria-label, su rótulo o su título; si no, su texto sin las insignias de tecla y de mando. */
+  const queEs = (el: Element): string => {
+    const aria = el.getAttribute('aria-label');
+    if (aria) return corto(aria, 28);
+    const titulo = el.querySelector('.lbl, h2, h3, h4, .name, .nombre');
+    const limpio = (titulo ?? el).cloneNode(true) as Element;
+    limpio.querySelectorAll('.kh, .pad-hint, svg, .sel-n, [aria-hidden="true"]').forEach((x) => x.remove());
+    const t = corto(limpio.textContent ?? '', 28) || (el as HTMLElement).id || el.tagName.toLowerCase();
+    return el.matches('.card') ? `carta ${t}` : t;
+  };
+  const hijosDeCaja = (p: Element): Element[] => [...p.children].flatMap((c) => (getComputedStyle(c).display === 'contents' ? hijosDeCaja(c) : [c]));
+  /** La parte de una diana que se ve: recortada por las cajas con desplazamiento y por los pies fijos (sticky) que la tapan. */
+  const shown = (el: Element): DOMRect => {
+    let { left, top, right, bottom } = el.getBoundingClientRect();
+    for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+      const pr = p.getBoundingClientRect();
+      left = Math.max(left, pr.left);
+      top = Math.max(top, pr.top);
+      right = Math.min(right, pr.right);
+      bottom = Math.min(bottom, pr.bottom);
+      for (const c of hijosDeCaja(p)) {
+        if (c.contains(el)) continue;
+        const ccs = getComputedStyle(c);
+        if (ccs.position !== 'sticky') continue;
+        const cr = c.getBoundingClientRect();
+        if (Math.min(right, cr.right) - Math.max(left, cr.left) <= 0) continue;
+        if (ccs.bottom !== 'auto' && cr.top < bottom && cr.bottom >= top) bottom = Math.max(top, Math.min(bottom, cr.top));
+        else if (ccs.top !== 'auto' && cr.bottom > top && cr.top <= bottom) top = Math.min(bottom, Math.max(top, cr.bottom));
+      }
+    }
+    return new DOMRect(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
+  };
+
+  // dianas: las mismas que audita la regla «diana», a la vista y sin las cartas de la mano
+  const TARGETS = 'button, input:not([type="hidden"]):not([type="file"]), select, [tabindex="0"], .choice.pick';
+  const targets = [...scope.querySelectorAll<HTMLElement>(TARGETS)].filter((el) => visible(el) && !(el as HTMLButtonElement).disabled && !el.closest('.focus-ring'));
+  const near = targets.filter((el) => !el.matches('#hand .card') && inView(el.getBoundingClientRect()) && shown(el).height >= 4);
+  let min: { w: number; h: number; que: string } | null = null;
+  for (const el of near) {
+    const r = el.getBoundingClientRect();
+    if (!min || Math.min(r.width, r.height) < Math.min(min.w, min.h)) min = { w: r.width, h: r.height, que: queEs(el) };
+  }
+  let separacionMin: number | null = null;
+  let solapes = 0;
+  for (let i = 0; i < near.length; i++) {
+    for (let j = i + 1; j < near.length; j++) {
+      const A = near[i];
+      const B = near[j];
+      if (A.contains(B) || B.contains(A)) continue;
+      const a = shown(A);
+      const b = shown(B);
+      const gx = Math.max(a.left - b.right, b.left - a.right);
+      const gy = Math.max(a.top - b.bottom, b.top - a.bottom);
+      const ovx = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const ovy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      let g: number | null = null;
+      if (ovx > 3 && ovy > 3) solapes++;
+      else if (ovy > 0.4 * Math.min(a.height, b.height) && gx >= 0) g = gx;
+      else if (ovx > 0.4 * Math.min(a.width, b.width) && gy >= 0) g = gy;
+      if (g !== null && (separacionMin === null || g < separacionMin)) separacionMin = g;
+    }
+  }
+
+  // la mano: la franja pulsable más estrecha (lo que cada carta deja a la vista de la siguiente)
+  const hand = [...document.querySelectorAll<HTMLElement>('#hand .card')].filter((c) => visible(c) && scope.contains(c)).map((c) => c.getBoundingClientRect());
+  const rows = new Map<number, DOMRect[]>();
+  for (const r of hand) {
+    const key = [...rows.keys()].find((k) => Math.abs(k - r.top) < r.height * 0.5) ?? r.top;
+    rows.set(key, [...(rows.get(key) ?? []), r]);
+  }
+  let franjaMin = Infinity;
+  for (const row of rows.values()) {
+    row.sort((a, b) => a.left - b.left);
+    for (let i = 0; i < row.length; i++) franjaMin = Math.min(franjaMin, row[i + 1] ? Math.min(row[i].width, row[i + 1].left - row[i].left) : row[i].width);
+  }
+
+  // textos: cada nodo de texto a la vista, con su tamaño efectivo (con la escala de sus transformaciones)
+  let nTexto = 0;
+  let bajo14 = 0;
+  let minPx = Infinity;
+  let minQue = '';
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const el = node.parentElement;
+    if (!el || !node.textContent?.trim() || el.closest('script, style, .tip, .hero-art') || !visible(el) || !inView(el.getBoundingClientRect())) continue;
+    const px = parseFloat(getComputedStyle(el).fontSize);
+    if (px < 1) continue;
+    let eff = px * scaleOf(el);
+    if (el instanceof SVGElement) {
+      const m = (el as unknown as SVGGraphicsElement).getScreenCTM?.();
+      if (!m) continue;
+      eff = px * Math.min(Math.hypot(m.a, m.b), Math.hypot(m.c, m.d));
+    }
+    nTexto++;
+    if (eff < 13.95) bajo14++;
+    if (eff < minPx - 0.05) {
+      minPx = eff;
+      minQue = corto(node.textContent, 22);
+    }
+  }
+
+  // el foco del mando: el marco (.focus-ring) y lo que lleva data-foco
+  let foco: Medidas['foco'] = null;
+  if (document.documentElement.dataset.input === 'pad') {
+    const ring = document.querySelector<HTMLElement>('.focus-ring.on i');
+    const enfocado = scope.querySelector<HTMLElement>('[data-foco]');
+    if (ring && visible(ring)) {
+      const cs = getComputedStyle(ring);
+      // borde de papel más los filetes de tinta macizos de la sombra (desenfoque 0); el halo es la sombra difusa
+      const spreads = [...cs.boxShadow.matchAll(/(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px/g)].map((m) => ({ difusa: Number(m[3]) > 0, grosor: Math.max(0, Number(m[4])) }));
+      const macizo = parseFloat(cs.borderTopWidth) + spreads.filter((x) => !x.difusa).reduce((a, x) => a + x.grosor, 0);
+      foco = { borde: Math.round(macizo), halo: spreads.some((x) => x.difusa), que: enfocado ? queEs(enfocado) : '', escala: enfocado ? Math.round(scaleOf(enfocado) * 100) / 100 : 1 };
+    } else if (enfocado && visible(enfocado)) {
+      const cs = getComputedStyle(enfocado);
+      foco = { borde: Math.round(parseFloat(cs.outlineWidth) || 0), halo: false, que: queEs(enfocado), escala: Math.round(scaleOf(enfocado) * 100) / 100 };
+    }
+  }
+
+  const r1 = (x: number) => Math.round(x * 10) / 10;
+  return {
+    dianas: { n: near.length, minW: min ? Math.round(min.w) : 0, minH: min ? Math.round(min.h) : 0, minQue: min?.que ?? '', separacionMin: separacionMin === null ? null : Math.round(separacionMin), solapes },
+    mano: hand.length ? { n: hand.length, franjaMin: Math.round(franjaMin) } : null,
+    texto: { n: nTexto, minPx: Number.isFinite(minPx) ? r1(minPx) : 0, minQue, bajo14 },
+    recortes: 0,
+    foco,
+  };
+}
+
 async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; pendiente: string[]; fuga: { re: string; permitidos: string[]; pendiente: string[] } | null; ref4?: number; emblemas?: Record<string, string>; refCifras?: Record<string, number> }): Promise<Fail[]> {
   const out: Fail[] = [];
   const seen = new Set<string>();
@@ -2653,6 +2840,7 @@ async function correTramo(browser: Browser, site: { url: string }, t: Trabajo, h
       await page.waitForTimeout(120);
       await page.evaluate(() => document.fonts.ready);
       const all = await page.evaluate(audit, { state, mobile: !!view.mobile, noScroll: noScroll(state), pendiente: ANIMA_PENDIENTE_JUICE, fuga: LANG === 'en' ? { re: RESTOS_ES.source, permitidos: PERMITIDOS_EN, pendiente: FUGA_PENDIENTE } : null, ref4, emblemas: { es: BRAND.es.emblema, en: BRAND.en.emblema }, refCifras });
+      const medidasDom = await page.evaluate(medirDom);
       await page.evaluate(() => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().iterations !== Infinity && a.finish()));
       await page.evaluate(() => document.fonts.ready);
       // V12 · la foto, quieta: lo infinito vuelve a su primer fotograma y sin cursor de texto; las animaciones
@@ -2709,6 +2897,12 @@ async function correTramo(browser: Browser, site: { url: string }, t: Trabajo, h
         if (cara.n) hecho.caras.push(`${view.name} ${state}: ${cara.n} cartas, mínimo ${(cara.min * 100).toFixed(1)} % de marfil`);
       }
       hecho.fails = all.filter((f) => !f.aviso);
+      // instrumento i5 del panel: las medidas reales del DOM de esta pantalla, junto a su captura
+      if (hecho.captura) {
+        medidasDom.recortes = hecho.fails.filter((f) => f.regla === 'recorte').length;
+        writeFileSync(join(OUT, view.name, `${state}.medidas.json`), `${JSON.stringify(medidasDom)}
+`);
+      }
       hecho.warns = all.filter((f) => f.aviso).map((w) => `[${w.regla}] ${w.msg}`);
       const own = hecho.fails.filter((f) => !f.ajeno);
       if (hecho.fails.length) {
