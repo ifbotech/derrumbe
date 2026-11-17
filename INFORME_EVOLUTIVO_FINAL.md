@@ -121,6 +121,8 @@ También se descartó por el camino, sin llegar a medirse: atenuar las cartas no
 
 10. **El voto no mira la versión.** En las 14 corridas limpias (Campeón y seis candidatas, dos semillas), 277 de 288 votos de candidata repiten el del Campeón para esa persona y esa semilla. Siete personas votan siempre en contra (cinco son críticas duras), seis siempre a favor, y otras cinco votan una cosa con una semilla y la contraria con la otra, en las siete versiones. La causa más probable está en el esquema de la reseña: `steam_thumb` es el primer campo, así que el modelo vota antes de escribir qué le gustó, qué le confundió y cuánto se divirtió. Lo que sí responde al contenido son las quejas citadas y, algo, la claridad y la diversión, que van al final.
 
+11. **Probado: con el pulgar al final, el voto sí responde.** Con una opción aparte (apagada de serie) que pide `steam_thumb` como último campo, el Campeón da el mismo nivel (F medio 145,4 frente a 142,7) y la 22.0 de Steam Deck pasa a 151,0 de media: en una semilla las dos críticas duras de Steam Deck votan a favor por primera vez (F 178,0, Steam Deck 3 de 4, críticos 62,5 %) y en la otra baja una persona (F 124,0). La 24.0 del móvil sube 3,3 en la única semilla medida. Sigue habiendo ruido de semilla, pero 3 de 8 votos de Steam Deck se mueven con el cambio; con el pulgar delante no se movía ninguno.
+
 ### Qué haría falta para acercarse a los objetivos
 
 - **Medir mejor antes de cambiar más**: dos o tres corridas por candidata (o el `rapido-60`) para decidir, y volver a medir el Campeón con cada corrección del instrumento. Con una sola corrida, la mitad de las decisiones son suerte.
