@@ -25,7 +25,7 @@ import { bindEyes, ensureDefs } from './card';
 import { S, applySettings, bindClacks, bindTips, closeModal, cycleSpeed, speedLabel, toast, topModal } from './core';
 import { bakeGrain } from './engraving';
 import { bindLupa, closeLupa, lupaOpen, openLupa } from './lupa';
-import { activate, beltSlot, bindNav, enfoca, focused, keysInUse, moveFocus, onRightStick, padHeld, shiftBelt } from './nav';
+import { activate, bindNav, enfoca, focused, keysInUse, moveFocus, onRightStick, padHeld } from './nav';
 import { alternaAuto, bindAuto, entradaMando } from './auto';
 import { bindTirada, terminaTirada } from './tirada';
 import { whisper } from './whispers';
@@ -198,19 +198,12 @@ function onKey(key: string, e?: KeyboardEvent): boolean {
   if (ritualKey(key)) return true;
   if (arbolKey(key, e)) return true;
   if (key in ARROWS) {
-    if (e?.shiftKey) return false; // Mayús + flechas reordena el cinturón
     // con el teclado, izquierda y derecha dentro de un campo son del campo; el mando no escribe, así que mueve (o ajusta el deslizador)
     if (e && typing(target) && (key === 'ArrowLeft' || key === 'ArrowRight')) return false;
     moveFocus(...ARROWS[key]);
     return true;
   }
   if (key === 'Escape') return back();
-  // LB / RB sobre una herramienta del cinturón: moverla. Fuera de él siguen siendo mazo y lupa
-  const slot = !e && (key === 'Tab' || key === 'l') ? beltSlot(target) : null;
-  if (slot) {
-    shiftBelt(slot, key === 'Tab' ? -1 : 1);
-    return true;
-  }
   if (e && typing(target)) return false;
   if (key === 'Speed') {
     // gatillo derecho: 1× → 2× → 4× → 8×

@@ -192,7 +192,7 @@ ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), 
 
 ## Reliquias
 
-Llevas hasta **${TOOL_SLOTS} reliquias**. **Su orden no cambia la cuenta**: primero se suma todo y al final se multiplica. Puedes moverlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—; solo le importa al Espejo de mano, que copia la de su derecha. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Árbol.
+Llevas hasta **${TOOL_SLOTS} reliquias**. **No se ordenan**: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Árbol.
 
 ${(Object.keys(ARCH) as Arch[])
   .map((a) => `### ${ARCH[a]}\n\n${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.filter((t) => t.arch === a).map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Árbol' : 'de salida']))}`)

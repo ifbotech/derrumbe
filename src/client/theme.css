@@ -328,7 +328,6 @@ input::placeholder { color: #8a7f6d; }
 .belt-slot .kind { left: -5px; top: -7px; border: 1px solid var(--pit); }
 .belt-slot .cnt { border-color: var(--pit); }
 .belt-slot.picked { outline: 3px solid var(--hazard); outline-offset: 3px; }
-.belt-slot.over { outline: 3px dashed var(--red-lit); outline-offset: 3px; }
 .belt-slot.pop { animation: beltpop2 0.3s ease; }
 @keyframes beltpop2 { 35% { transform: scale(1.2) rotate(-4deg); } }
 

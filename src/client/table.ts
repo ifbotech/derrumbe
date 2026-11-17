@@ -376,9 +376,8 @@ export function renderBelt(): void {
   bar.hidden = !S.campaign && tools.length === 0;
   if (bar.hidden) return;
   hideTip();
-  const canOrder = !!S.campaign && isRunHost() && !S.busy && !S.waiting && S.queue.length === 0 && tools.length > 1;
   bar.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')}</span>`;
-  bar.appendChild(beltEl(tools, { onReorder: canOrder ? (order) => runDo({ t: 'reorder', order }) : undefined }));
+  bar.appendChild(beltEl(tools));
   const carry: string[] = [];
   if (v?.chain) carry.push(`<em class="carry chain" data-tip="${Ln(v.chain, 'ui.mesa.racha.tip.1', 'ui.mesa.racha.tip.n', { m: racha(v.chain) })}">${L('ui.mesa.racha', { m: racha(v.chain) })}</em>`);
   if (v?.charge) carry.push(`<em class="carry charge" data-tip="${L('ui.mesa.carga.tip')}">${L('ui.mesa.carga', { n: v.charge })}</em>`);

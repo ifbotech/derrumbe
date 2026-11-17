@@ -39,9 +39,6 @@ export const UI_JUICE = {
   'ui.ctl.mazo': ['Ver el Mazo y el Descarte', 'See the Deck and the Discard'],
   'ui.ctl.lupa': ['Lupa', 'Loupe'],
   'ui.ctl.lupa.k': ['{k} · clic derecho · pulsación larga', '{k} · right click · long press'],
-  'ui.ctl.reliquias': ['Mover las reliquias', 'Move your Relics'],
-  'ui.ctl.reliquias.k': ['Arrastrar · {mayus} + flechas', 'Drag · {mayus} + arrow keys'],
-  'ui.ctl.reliquias.p': ['{a} / {b} con el foco en la reliquia', '{a} / {b} with the focus on a relic'],
   'ui.ctl.velocidad': ['Cambiar la velocidad (1× → 2× → 4× → 8×)', 'Change the speed (1× → 2× → 4× → 8×)'],
   'ui.ctl.barra': ['botón de la barra', 'button on the top bar'],
   'ui.ctl.pantalla': ['Pantalla completa', 'Full screen'],
@@ -53,7 +50,6 @@ export const UI_JUICE = {
   // ── SD5 · la insignia del foco con el mando en La Taberna (nav.ts) ──
   'ui.pad.comprar': ['Comprar', 'Buy'],
   'ui.pad.elegir': ['Elegir', 'Pick'],
-  'ui.pad.mover': ['Mover', 'Move'],
   'ui.pad.curar': ['Curar', 'Heal'],
   'ui.pad.quemar': ['Quemar', 'Burn'],
   'ui.pad.renovar': ['Renovar', 'Refresh'],

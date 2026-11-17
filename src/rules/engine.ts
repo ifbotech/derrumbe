@@ -11,7 +11,7 @@
 // Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
 import { BALANCE, fill } from './balance-config';
 import { MAX_SPECIALS, SPECIAL } from './specials';
-import { TOOL } from './tools';
+import { TOOL, espejada } from './tools';
 import type { ToolInst } from './tools';
 
 // ───────────────────────── Cartas ─────────────────────────
@@ -704,9 +704,10 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     const def = TOOL[t.id];
     if (!def) return;
     if (def.kind === 'copy') {
-      const next = env.tools[slot + 1];
+      // V34: copia la Reliquia más reciente que no sea pasiva (antes, la de su derecha): el hueco ya no cuenta
+      const next = espejada(env.tools);
       const copied = next && TOOL[next.id];
-      if (!copied?.strike) return;
+      if (!next || !copied?.strike) return;
       cur = { src: 'tool', id: t.id, slot, label: `${def.name} → ${copied.name}`, loud: copied.loud };
       copied.strike(x, next);
       return;
@@ -1155,12 +1156,6 @@ function rewind(prev: GameState): { state: GameState; events: GameEvent[] } {
   state.rng = (prev.rng ^ 0x2545f491) | 0;
   shuffle(state.deck, state);
   return { state, events: [{ e: 'undo', chalk: state.chalk }] };
-}
-
-/** Reordena una lista con una permutación de sus índices; null si la permutación no es válida. */
-export function reorder<T>(items: T[], order: number[]): T[] | null {
-  if (!Array.isArray(order) || order.length !== items.length || new Set(order).size !== items.length || order.some((i) => !Number.isInteger(i) || i < 0 || i >= items.length)) return null;
-  return order.map((i) => items[i]);
 }
 
 // ───────────────────────── Vista por jugador (información oculta) ─────────────────────────

@@ -110,11 +110,8 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .belt-slot.k-x .kind, .belt-slot.k-copy .kind { background: var(--hazard); color: var(--ink); }
 .belt-slot .cnt { position: absolute; right: -5px; bottom: -6px; font-family: var(--display); font-size: 14px; line-height: 1.25; padding: 0 3px; background: var(--hazard); color: var(--ink); border: 1.5px solid var(--ink); }
 .belt-slot .pos { display: none; }
-.belt.can-order .belt-slot.tool { cursor: grab; }
-.belt.can-order .belt-slot.tool:hover, .belt-slot.tool:focus-visible { transform: translateY(-4px) rotate(-2deg); }
+.belt-slot.tool:hover, .belt-slot.tool:focus-visible { transform: translateY(-4px) rotate(-2deg); }
 .belt-slot.picked { transform: translateY(-6px); outline: 4px solid var(--hazard); outline-offset: 1px; }
-.belt-slot.over { outline: 4px dashed var(--red); outline-offset: 1px; }
-.belt-slot.dragging { opacity: 0.4; }
 .belt-slot.pop { animation: beltpop 0.3s ease; z-index: 4; }
 @keyframes beltpop { 35% { transform: scale(1.22) rotate(-4deg); } }
 .carries { display: inline-flex; gap: 4px; flex-wrap: wrap; }

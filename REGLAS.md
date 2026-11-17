@@ -218,7 +218,7 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
 
 ## Reliquias
 
-Llevas hasta **6 reliquias**. **Su orden no cambia la cuenta**: primero se suma todo y al final se multiplica. Puedes moverlas cuando quieras —arrastrando, o pulsando una y luego su hueco de destino—; solo le importa al Espejo de mano, que copia la de su derecha. Hay 52: 28 en el surtido de salida y 24 más en los arcones del Árbol.
+Llevas hasta **6 reliquias**. **No se ordenan**: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay 52: 28 en el surtido de salida y 24 más en los arcones del Árbol.
 
 ### El Arsenal
 
@@ -265,7 +265,7 @@ Llevas hasta **6 reliquias**. **Su orden no cambia la cuenta**: primero se suma 
 | Collar roto | Rara | • pasiva | Cada ♦ salpica +1 más a los otros tronos. | de salida |
 | Campana | Rara | +D suma Daño | Vuelve a activar la primera carta del golpe. | de salida |
 | Cuerno de guerra | Noble | ×M multiplica | ×2 de Multi si juegas 4 cartas o más. | de salida |
-| Espejo de mano | Rara | ⇉ copia | Copia la reliquia que tenga a su derecha. | arcón del Árbol |
+| Espejo de mano | Rara | ⇉ copia | Copia tu última reliquia que no sea pasiva. | arcón del Árbol |
 | Tambor de guerra | Rara | • pasiva | Con grupo, doble par, full o póker, la mitad del Golpe salpica a los otros tronos. | arcón del Árbol |
 | Anillo de sello | Regia | • pasiva | Al empezar cada asalto, sella 1 carta de tu Mazo al azar. Los sellos se activan dos veces. | arcón del Árbol |
 
@@ -515,7 +515,6 @@ El juego usa solo seis palabras con significado propio. Todo lo demás se dice c
 | Saltar la partida guiada (sin nada elegido) | Esc | B |
 | Ver el Mazo y el Descarte | Tab | LB |
 | Lupa | L · clic derecho · pulsación larga | RB |
-| Mover las reliquias | Arrastrar · Mayús + flechas | LB / RB con el foco en la reliquia |
 | Cambiar la velocidad (1× → 2× → 4× → 8×) | botón de la barra | RT |
 | AUTO: encender o apagar | A | Select |
 | Saltar la tirada de huesos | Cualquier tecla | Cualquier botón |

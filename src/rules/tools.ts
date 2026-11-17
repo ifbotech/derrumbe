@@ -1,6 +1,6 @@
 // Reliquias (en el código, «herramientas» del cinturón). Cada una ocupa un hueco. Desde la 31.0 su orden no cambia
-// la cuenta: primero se suma todo el Daño y todo el Multi, y al final se aplican los multiplicadores (×Multi). El
-// orden solo le importa al Espejo de mano, que copia la de su derecha; por eso se sigue pudiendo mover.
+// la cuenta: primero se suma todo el Daño y todo el Multi, y al final se aplican los multiplicadores (×Multi). Desde
+// la 34.0 no se ordenan: cada Reliquia nueva va al final de la tira y el Espejo de mano copia la más reciente.
 //
 // Cinco arquetipos se cruzan entre sí:
 //   precision    golpes limpios y rachas
@@ -151,7 +151,7 @@ export const TOOLS: ToolDef[] = [
   { id: 'metralla', name: 'Collar roto', desc: 'Cada ♦ salpica +{dano} más a los otros tronos.', rarity: 'oficio', arch: 'sismo', kind: 'p', cfg: (c) => void (c.salpicaPorCarta += V.metralla.dano) },
   { id: 'percutor', name: 'Campana', desc: 'Vuelve a activar la primera carta del golpe.', rarity: 'oficio', arch: 'sismo', kind: 'f', strike: (x) => x.F(x.impacts[0] ?? 0) },
   { id: 'resonador', name: 'Cuerno de guerra', desc: '×{multi} de Multi si juegas {cartas} cartas o más.', rarity: 'capataz', arch: 'sismo', kind: 'x', strike: (x) => x.cards.length >= V.resonador.cartas && x.X(V.resonador.multi) },
-  { id: 'diapason', name: 'Espejo de mano', desc: 'Copia la reliquia que tenga a su derecha.', rarity: 'oficio', arch: 'sismo', box: 'sismo', kind: 'copy' },
+  { id: 'diapason', name: 'Espejo de mano', desc: 'Copia tu última reliquia que no sea pasiva.', rarity: 'oficio', arch: 'sismo', box: 'sismo', kind: 'copy' },
   {
     id: 'vibrador',
     name: 'Tambor de guerra',
@@ -258,32 +258,23 @@ export const TOOL_SLOTS = 6;
 /** Herramientas que entran en el surtido según las cajas del gremio abiertas. */
 export const toolPool = (boxes: Arch[]): string[] => TOOLS.filter((t) => !t.box || boxes.includes(t.box)).map((t) => t.id);
 
-/** Orden recomendado del cinturón: primero lo que suma Fuerza, luego lo que suma Resonancia y al final lo que multiplica. */
-export function bestOrder(tools: ToolInst[]): number[] {
-  const rank = { p: 0, f: 1, r: 2, x: 3, copy: 3 } as const;
-  const order = tools.map((_, i) => i).sort((a, b) => rank[TOOL[tools[a].id]?.kind ?? 'p'] - rank[TOOL[tools[b].id]?.kind ?? 'p'] || a - b);
-  // el Diapasón rinde más justo a la izquierda del mejor multiplicador
-  const copy = order.findIndex((i) => TOOL[tools[i].id]?.kind === 'copy');
-  if (copy >= 0) {
-    const [c] = order.splice(copy, 1);
-    const target = order.findIndex((i) => TOOL[tools[i].id]?.kind === 'x');
-    if (target >= 0) order.splice(target, 0, c);
-    else {
-      const anyStrike = order.findIndex((i) => TOOL[tools[i].id]?.strike);
-      order.splice(anyStrike >= 0 ? anyStrike : order.length, 0, c);
-    }
+/**
+ * V34 · La Reliquia que copia el Espejo de mano: la más reciente de la tira que no sea pasiva ni otro Espejo.
+ * undefined si no hay ninguna.
+ */
+export function espejada(tools: ToolInst[]): ToolInst | undefined {
+  for (let i = tools.length - 1; i >= 0; i--) {
+    const d = TOOL[tools[i].id];
+    if (d && d.kind !== 'copy' && d.kind !== 'p' && d.strike) return tools[i];
   }
-  return order;
+  return undefined;
 }
 
 /**
- * V26 · Coloca una Reliquia nueva en el cinturón en su sitio recomendado, sin mover las que ya estaban: el puesto
- * que le daría `bestOrder` (primero lo que suma Daño, luego lo que suma Multi y al final lo que multiplica) con el
- * cinturón tal como lo tiene el jugador. Devuelve el hueco en el que queda. Reordenar a mano sigue siendo posible.
+ * V34 · Una Reliquia nueva va al final de la tira y ahí se queda: las Reliquias no se ordenan (ninguna depende de su
+ * hueco; el Espejo de mano copia la más reciente). Devuelve el hueco en el que queda.
  */
 export function placeTool(tools: ToolInst[], nueva: ToolInst): number {
-  const todas = [...tools, nueva];
-  const k = bestOrder(todas).indexOf(todas.length - 1);
-  tools.splice(k, 0, nueva);
-  return k;
+  tools.push(nueva);
+  return tools.length - 1;
 }
