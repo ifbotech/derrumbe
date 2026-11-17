@@ -2,6 +2,28 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 27.0.0 — 2026-11-17
+
+Sin muertes opacas. El Mazo agotado ya no quita Vida y las Reliquias se colocan solas. Cambian dos reglas. (La 25.0 y la 26.0 fueron candidatas que el panel rechazó; lo de la 26.0 entra aquí.)
+
+### Reglas
+- **Mazo agotado**: cuando el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no quita Vida** (antes quitaba 5 que el Escudo no frenaba, y 1 más cada vez). El Asedio final sube 2 niveles (+2 de Ataque en cada trono, a la vista, y más Daño en tus golpes) y el siguiente Contraataque lo da el trono en pie con más Ataque. El Escudo lo frena como cualquier otro.
+- **Las Reliquias se colocan solas**: cada Reliquia nueva entra en su sitio recomendado (primero las que suman Daño, luego las que suman Multi y al final las que multiplican), sin mover las demás. Reordenar a mano sigue siendo posible.
+- **Baraja de reserva** cambia con la regla: un Mazo agotado por asalto no sube el Asedio final ni cambia quién contraataca.
+- **BRUTAL**: cada Mazo agotado sube el Asedio final 3 niveles.
+
+### En pantalla
+- Al barajar, el cartel dice «Mazo agotado · Asedio +2: ⚔ +2 en cada trono · contraataca el más fuerte». El Susurro del Mazo bajo lo avisa antes.
+- El aviso de «Último turno» cuenta ya el Ataque que llegará después de barajar.
+- La tira de Reliquias dice cuál llegó y en qué hueco quedó, y marca su hueco.
+
+### Balance
+- Laboratorio rápido (6.000 campañas): en el Reinado 1 se gana el 31,6 % de las campañas con el Árbol vacío y el 48,3 % con el Árbol lleno; en el Reinado 8, el 7,2 % y el 18 %. En el asalto 1 no muere ninguna campaña.
+
+### Por dentro
+- Las Crónicas guardadas con una derrota por Mazo agotado se siguen leyendo.
+- La QA visual guarda junto a cada captura las medidas reales de la pantalla (dianas, separación, texto, foco).
+
 ## 24.0.0 — 2026-11-17
 
 El móvil a una mano. En el móvil, La Taberna es una lista y la fila del pulgar cabe entera. Ninguna regla cambia.
