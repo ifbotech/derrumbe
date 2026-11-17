@@ -418,12 +418,15 @@ describe('turno: sirena, muro, descartes, huelga y colapso', () => {
     expect(state.towers.H.damage).toBe(8);
   });
 
-  it('cuando la cantera se agota hay colapso', () => {
+  it('cuando el Mazo se agota se baraja el Descarte: no quita Vida y el Asedio final sube 1 (V27)', () => {
     const s = game(cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'));
     s.discard = s.deck.splice(0);
     const { state, events } = applyAction(s, 'a', { type: 'discard', cards: ['S2'] });
-    expect(of(events, 'collapse')[0].loss).toBe(5);
+    expect(of(events, 'collapse')[0]).toMatchObject({ sube: 1, asedio: 1 });
     expect(state.collapses).toBe(1);
+    expect(state.fatigue).toBe(1);
+    // la Vida solo baja por el Contraataque que sigue, nunca por barajar
+    expect(s.integrity - state.integrity).toBe(of(events, 'siren')[0]?.taken ?? 0);
   });
 
   it('rechaza jugadas ilegales sin tocar el estado', () => {

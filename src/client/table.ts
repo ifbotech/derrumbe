@@ -1304,15 +1304,14 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       break;
     }
     case 'collapse':
-      banner(L('ui.log.agotado'), 'red', L('ui.log.agotado.sub', { n: ev.loss }));
-      sfx.crash();
-      quake(0.8);
-      v.integrity = ev.integrity;
+      // V27: barajar el Descarte ya no quita Vida; sube el Asedio final (el evento 'fatigue' que sigue lo pinta en los tronos)
+      banner(L('ui.log.agotado'), ev.sube > 0 ? 'red' : '', ev.sube > 0 ? L('ui.log.agotado.sub', { n: ev.sube }) : L('ui.log.agotado.sub.gratis'));
+      if (ev.sube > 0) sfx.crash();
       v.deckCount = v.discardCount;
       v.discardCount = 0;
       v.collapses += 1;
       renderBunker();
-      logLine(L('ui.log.agotado.texto', { n: ev.loss }), 'red');
+      logLine(ev.sube > 0 ? L('ui.log.agotado.texto', { n: ev.sube }) : L('ui.log.agotado.texto.gratis'), ev.sube > 0 ? 'red' : '');
       await wait(1000);
       break;
     case 'draw':

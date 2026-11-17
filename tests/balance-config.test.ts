@@ -45,10 +45,10 @@ describe('balance-config.json: esquema y rangos', () => {
       }
       for (const p of ['1', '2', '3', '4']) expect(m.handSize[p]).toBeGreaterThanOrEqual(3);
     }
-    for (const k of ['maxIntegrity', 'wallCap', 'collapseLoss', 'escudoPorCarta', 'curaPorCarta', 'salpicaPorCarta'] as const) expect(RAW.mesa[k], k).toBeGreaterThanOrEqual(1);
+    for (const k of ['maxIntegrity', 'wallCap', 'collapseSiege', 'escudoPorCarta', 'curaPorCarta', 'salpicaPorCarta'] as const) expect(RAW.mesa[k], k).toBeGreaterThanOrEqual(1);
     for (const k of ['escudoPorCarta', 'curaPorCarta', 'salpicaPorCarta'] as const) expect(ent(RAW.mesa[k]), k).toBe(true);
     expect(RAW.clasica.brutal.maxIntegrity).toBeGreaterThan(0);
-    expect(RAW.clasica.obra.collapseRelief).toHaveLength(4);
+    expect(RAW.clasica.brutal.collapseSiege).toBeGreaterThan(RAW.mesa.collapseSiege);
   });
 
   it('cuadrilla, Reinados, Asedio final, Puertas selladas y Anillo de sello', () => {
@@ -272,7 +272,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const sacos = env(['sacos']).config;
     expect(sacos.wallCap).toBe(B.mesa.wallCap + V.sacos.tope);
     expect(env(['sordina']).config.floorThreat[12]).toBe(Math.max(1, B.mesa.floorThreat[12] - V.sordina.ataque));
-    expect(env(['puntales']).config.collapseLoss).toBe(Math.max(0, B.mesa.collapseLoss - V.puntales.vida));
+    expect(env(['puntales']).config.collapseFree).toBe(V.puntales.gratis);
     // acabados y especiales
     const forjado = engine.strike(env(), [card('S7', { tr: 'forjado' })], 'D').fuerza - engine.strike(env(), [card('S7')], 'D').fuerza;
     expect(forjado).toBe(B.acabados.forjado);

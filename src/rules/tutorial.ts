@@ -18,7 +18,6 @@ export const TUTORIAL_PLAYER = 'tu';
 
 export const TUTORIAL_CONFIG: Config = {
   ...DEFAULT_CONFIG,
-  collapseLoss: 2,
   floorHp: { 11: 13, 12: 9, 13: 20 },
   floorThreat: { 11: 1, 12: 1, 13: 2 },
   reserveSize: 1,

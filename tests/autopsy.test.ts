@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Autopsy, autopsy, omen } from '../src/rules/autopsy';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
-import { Action, Card, Config, DEFAULT_CONFIG, GameEvent, GameState, MATERIAL, Suit, applyAction, createGame, currentPlayer, newTowers, viewFor } from '../src/rules/engine';
+import { Action, Card, Config, DEFAULT_CONFIG, GameEvent, GameState, MATERIAL, Suit, applyAction, createGame, currentPlayer, newTowers, threatOf, viewFor } from '../src/rules/engine';
 import { BOSS, Run, finishBattle, newRun, runAction, startStage, trackEvents } from '../src/rules/run';
 import { SPECIAL } from '../src/rules/specials';
 import { TOOL } from '../src/rules/tools';
@@ -69,31 +69,34 @@ describe('autopsia de la derrota (contrato C1)', () => {
     fits(a);
   });
 
-  it('colapso de cantera: el muro no lo frena, dice cuánto quitó y que cada colapso quita 1 más', () => {
-    const cfg = cfgWith({ floorHp: TOUGH });
-    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 4, wall: 8 });
-    // cantera vacía y escombrera llena: la sirena tiene que barajar, y eso es un colapso
+  it('V27 · el Mazo agotado no quita Vida ni mata: baraja el Descarte y sube el Asedio final 1 nivel', () => {
+    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 1, 12: 1, 13: 1 } });
+    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 1, wall: 8 });
+    // Mazo vacío y Descarte lleno: el Contraataque tiene que barajar
     s.discard = s.deck;
     s.deck = [];
-    const { a, events } = lose(s, { type: 'discard', cards: ['H2'] });
-    const loss = events.find((e) => e.e === 'collapse');
-    expect(loss && loss.e === 'collapse' ? loss.loss : 0).toBe(cfg.collapseLoss);
-    expect(a).toMatchObject({ kind: 'colapso', before: 4, threat: cfg.collapseLoss, blocked: 0, taken: cfg.collapseLoss });
-    expect(a.tower).toBeUndefined();
-    expect(a.title).toBe(`Mazo agotado: pierdes ${cfg.collapseLoss} de Vida; el Escudo no lo frena`);
-    expect(a.detail).toContain('quedaban 4');
-    expect(a.detail).toContain('pierdes 1 más');
-    fits(a);
+    const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
+    const ev = out.events.find((e) => e.e === 'collapse');
+    expect(ev).toMatchObject({ e: 'collapse', sube: cfg.collapseSiege, asedio: cfg.collapseSiege });
+    expect(out.events.some((e) => e.e === 'fatigue' && e.level === cfg.collapseSiege)).toBe(true);
+    expect(out.state.collapses).toBe(1);
+    expect(out.state.fatigue).toBe(cfg.collapseSiege);
+    // con 1 de Vida y 8 de Escudo, el barajado no le quita nada: sigue en pie
+    expect(out.state.integrity).toBe(1);
+    expect(out.state.phase).toBe('playing');
   });
 
-  it('el segundo colapso de la obra quita 1 más, y la autopsia da ese número', () => {
+  it('V27 · cada Mazo agotado del asalto sube otro nivel, y el Ataque de los tronos sube con él', () => {
     const cfg = cfgWith({ floorHp: TOUGH });
-    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 6, collapses: 1 });
+    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 20, collapses: 1 });
+    s.fatigue = cfg.collapseSiege;
+    const antes = threatOf(s, s.towers.S);
     s.discard = s.deck;
     s.deck = [];
-    const { a } = lose(s, { type: 'discard', cards: ['H2'] });
-    expect(a).toMatchObject({ kind: 'colapso', before: 6, taken: cfg.collapseLoss + 1 });
-    expect(a.title).toContain(`pierdes ${cfg.collapseLoss + 1} de Vida`);
+    const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
+    expect(out.state.collapses).toBe(2);
+    expect(out.state.fatigue).toBe(2 * cfg.collapseSiege);
+    expect(threatOf(out.state, out.state.towers.S)).toBe(antes + cfg.collapseSiege);
   });
 
   it('herida propia: Corazón de la torre cobra su punto cuando el golpe no tira nada', () => {
@@ -254,8 +257,6 @@ describe('aviso de último turno', () => {
     // las cifras también van en campos propios (el aviso de un renglón del móvil las lee de ahí)
     expect(o).toMatchObject({ threat: 6, shield: 2, life: 4 });
     expect(o.title).toContain(MATERIAL[o.tower!]);
-    expect(o.loss).toBeUndefined();
-    expect(o.deck).toBeUndefined();
     fits(o);
     // un punto más de muro y ya no es el último turno
     expect(omen(view({ ...s, wall: 3 }))).toBeNull();
@@ -277,27 +278,20 @@ describe('aviso de último turno', () => {
     expect(omen(view(noHearts))).toBeNull();
   });
 
-  it('avisa del colapso cuando a la cantera le quedan 2 cartas o menos y el siguiente tira el búnker', () => {
-    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 1, 12: 1, 13: 1 } });
-    const s = table(cfg, [card('H2')], [], [], { integrity: 5, wall: 8 });
-    s.discard = s.deck.slice(2);
-    s.deck = s.deck.slice(0, 2);
-    const o = omen(view(s))!;
-    expect(o.kind).toBe('colapso');
-    expect(o.title).toBe(`Último turno: quedan 2 cartas en el Mazo y agotarlo quita ${cfg.collapseLoss} de Vida`);
-    expect(o.detail).toContain('el Escudo no frena el Mazo agotado');
-    expect(o).toMatchObject({ loss: cfg.collapseLoss, deck: 2, life: 5 });
-    expect(o.threat).toBeUndefined();
-    expect(o.tower).toBeUndefined();
-    expect(o.shield).toBeUndefined();
+  it('V27 · con el Mazo vacío, el aviso cuenta el Ataque que llegará después de barajar (Asedio +1)', () => {
+    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 5, 12: 5, 13: 5 } });
+    // 4 de Vida y 2 de Escudo: un Ataque de 5 se aguanta; con el Asedio un nivel más (⚔ 6), no
+    const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 4, wall: 2 });
+    expect(omen(view(s))).toBeNull();
+    const vacio = { ...s, discard: s.deck, deck: [] };
+    const o = omen(view(vacio))!;
+    expect(o.kind).toBe('sirena');
+    expect(o).toMatchObject({ threat: 5 + cfg.collapseSiege, shield: 2, life: 4 });
     fits(o);
-    // con 3 cartas en la cantera, o con un punto más de búnker, todavía no
-    expect(omen(view({ ...s, deck: [...s.deck, card('S2')] }))).toBeNull();
-    expect(omen(view({ ...s, integrity: 6 }))).toBeNull();
-    // los Puntales lo abaratan: mismo búnker, sin aviso
-    const braced = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 1, 12: 1, 13: 1 } });
-    TOOL.puntales.cfg!(braced);
-    expect(omen(view({ ...s, config: braced }))).toBeNull();
+    // la Baraja de reserva: el primer Mazo agotado del asalto no sube el Asedio, así que no hay aviso
+    const reserva = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 5, 12: 5, 13: 5 } });
+    TOOL.puntales.cfg!(reserva);
+    expect(omen(view({ ...vacio, config: reserva }))).toBeNull();
   });
 
   it('con la partida terminada no avisa de nada', () => {

@@ -175,7 +175,7 @@ export function tableWhispers(): void {
   const boss = S.campaign?.run.boss ? BOSS[S.campaign.run.boss] : null;
   if (boss) whisper('jefe', { who: monN(boss.id) });
   if ((v.fatigue ?? 0) > 0) whisper('fatiga');
-  if (v.deckCount <= 3 && v.turnPlayer === v.you) whisper('cantera', { n: String(v.deckCount), loss: String(nextCollapse(v, v.players.length)) });
+  if (v.deckCount <= 3 && v.turnPlayer === v.you) whisper('cantera', { n: String(v.deckCount), efecto: nextCollapse(v) > 0 ? L('ui.w.cantera.sube', { n: nextCollapse(v) }) : L('ui.w.cantera.gratis') });
 }
 
 /** La fila de Ajustes: [nombre, explicación, valor, cambiar]. Encenderlos de nuevo no repite los ya leídos. */

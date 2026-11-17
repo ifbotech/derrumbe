@@ -479,7 +479,6 @@ export function renderOmen(v: PlayerView | null): void {
 function omenShort(o: Omen, life: number): string {
   // las cifras vienen del motor en campos propios (autopsy.ts): no se leen de la frase
   const vida = o.life ?? life;
-  if (o.kind === 'colapso') return `${L('ui.cuenta.ultimo.agotado')}${o.loss !== undefined ? ` −${o.loss}` : ''}${L('ui.cuenta.ultimo.vida', { n: vida })}`;
   return `${L('ui.cuenta.ultimo.contra')}${o.threat !== undefined ? ` ⚔ ${o.threat}` : ''}${L('ui.cuenta.ultimo.vida', { n: vida })}`;
 }
 

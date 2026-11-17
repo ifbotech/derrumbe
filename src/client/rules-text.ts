@@ -124,13 +124,13 @@ function rulesEs(cfg: Config): string {
   <ul>
     <li><b>Comodín · Motín</b>: se juega solo sobre un trono. Ese trono queda <b>Aturdido</b> (se salta su próximo Contraataque) y este turno no hay Contraataque. El Comodín sale del asalto.</li>
     <li><b>Asedio final</b>: ningún asedio dura para siempre. ${cfg.fatigueStart === undefined ? `En campaña, desde el turno ${FATIGUE.start + 1}` : `Desde el turno ${cfg.fatigueStart + 1}`} y cada ${cfg.fatigueEvery ?? FATIGUE.every} turnos sube un nivel: <b>+${n(cfg.fatigueDano ?? FATIGUE.dano)} de Daño</b> a todos los Golpes y <b>+1 de Ataque</b> a todos los tronos. La mesa avisa tres turnos antes.</li>
-    <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo, pero pierdes <b>${cfg.collapseLoss} de Vida</b> (el Escudo no lo frena). Cada vez cuesta 1 más.</li>
+    <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo. <b>No pierdes Vida</b>: el <b>Asedio final</b> sube ${cfg.collapseSiege} nivel (todos los tronos ganan +1 de Ataque y tus golpes más Daño), a la vista en cada trono.</li>
     <li><b>As cómplice</b>: un As forma jugada con <b>cualquier otra carta</b> (×${n(FORM.compania.r)}) y aporta el poder de su palo.</li>
     <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardas una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
     <li><b>Rebobinar</b> ↩ (campaña en solitario): una vez por asalto deshaces tu última jugada. El Mazo se baraja de nuevo. En sala toda jugada es definitiva.</li>
     <li>Solo se puede <b>pasar</b> con la mano vacía.</li>
     <li><b>Victoria</b>: caen todos los tronos (<b>Corte vencida</b>). <b>Derrota</b>: tu Vida llega a 0 (<b>Conjura deshecha</b>).</li>
-    <li>Modo <b>BRUTAL</b> (Asalto único): ${DIFFICULTY.brutal.maxIntegrity} de Vida y el Mazo agotado cuesta ${DIFFICULTY.brutal.collapseLoss}.</li>
+    <li>Modo <b>BRUTAL</b> (Asalto único): ${DIFFICULTY.brutal.maxIntegrity} de Vida y cada Mazo agotado sube el Asedio final ${DIFFICULTY.brutal.collapseSiege} niveles.</li>
   </ul>
 
   <h3>Campaña</h3>
@@ -276,13 +276,13 @@ function rulesEn(cfg: Config): string {
   <ul>
     <li><b>Joker · Mutiny</b>: played alone on a throne. That throne is <b>Stunned</b> (it skips its next Counterattack) and there is no Counterattack this turn. The Joker leaves the assault.</li>
     <li><b>Final Siege</b>: no siege lasts forever. ${cfg.fatigueStart === undefined ? `In a campaign, from turn ${FATIGUE.start + 1}` : `From turn ${cfg.fatigueStart + 1}`} and every ${cfg.fatigueEvery ?? FATIGUE.every} turns it goes up a level: <b>+${x(cfg.fatigueDano ?? FATIGUE.dano)} Damage</b> to every Hit and <b>+1 Attack</b> to every throne. The table warns you three turns ahead.</li>
-    <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again, but you lose <b>${cfg.collapseLoss} Health</b> (Shield does not stop it). Each time it costs 1 more.</li>
+    <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again. <b>You lose no Health</b>: the <b>Final Siege</b> rises ${cfg.collapseSiege} level (every throne gains +1 Attack and your strikes more Damage), shown on each throne.</li>
     <li><b>Accomplice Ace</b>: an Ace makes a play with <b>any other card</b> (×${x(FORM.compania.r)}) and brings the power of its suit.</li>
     <li><b>Up the Sleeve</b>: once per turn, without spending it, you keep a card from your hand Up the Sleeve. It does not count towards hand size and is played from there. If the sleeve is full, the stored card goes back to your hand.</li>
     <li><b>Rewind</b> ↩ (solo campaign): once per assault you undo your last play. The Deck is shuffled again. In a room every play is final.</li>
     <li>You can only <b>pass</b> with an empty hand.</li>
     <li><b>Victory</b>: every throne falls (<b>Court Defeated</b>). <b>Defeat</b>: your Health reaches 0 (<b>Conspiracy Undone</b>).</li>
-    <li><b>BRUTAL</b> mode (Single Assault): ${DIFFICULTY.brutal.maxIntegrity} Health and running out of Deck costs ${DIFFICULTY.brutal.collapseLoss}.</li>
+    <li><b>BRUTAL</b> mode (Single Assault): ${DIFFICULTY.brutal.maxIntegrity} Health and each time the Deck runs out the Final Siege rises ${DIFFICULTY.brutal.collapseSiege} levels.</li>
   </ul>
 
   <h3>Campaign</h3>

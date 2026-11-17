@@ -99,15 +99,15 @@ export interface BalanceConfig {
   };
   formaciones: Record<string, FormBase>;
   /** La mesa por defecto (DEFAULT_CONFIG del motor). */
-  mesa: { maxIntegrity: number; wallCap: number; collapseLoss: number; escudoPorCarta: number; curaPorCarta: number; salpicaPorCarta: number; floorHp: PorClave; floorThreat: PorClave; handSize: PorClave };
+  mesa: { maxIntegrity: number; wallCap: number; collapseSiege: number; escudoPorCarta: number; curaPorCarta: number; salpicaPorCarta: number; floorHp: PorClave; floorThreat: PorClave; handSize: PorClave };
   /** Racha de Golpes exactos (Multi por eslabón y tope de eslabones), Expuesto (×Daño), onda del Golpe exacto y su oro. */
   golpe: { racha: number; rachaTope: number; expuesto: number; onda: number; oroExacto: number };
   acabados: { forjado: number; templado: number; policromado: number; agrietado: number; agrietadoRompe: number };
   sellos: { jornal: number };
   /** Asalto único (partida clásica): lo que cambia sobre la mesa por defecto. */
   clasica: {
-    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; fatigueStart: number; fatigueEvery: number; fatigueDano: number; collapseRelief: number[] };
-    brutal: { maxIntegrity: number; collapseLoss: number };
+    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; fatigueStart: number; fatigueEvery: number; fatigueDano: number };
+    brutal: { maxIntegrity: number; collapseSiege: number };
   };
   /** Cifras de cada reliquia, por `id`. */
   reliquias: Record<string, Record<string, number>>;

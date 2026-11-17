@@ -154,8 +154,8 @@ describe('jefes de la 4.0', () => {
 });
 
 describe('partida clásica en cuadrilla', () => {
-  it('el colapso se ajusta al número de jugadores', () => {
-    const loss = (n: number) => {
+  it('V27 · el Mazo agotado sube el Asedio final 1 nivel, jueguen los que jueguen, y no quita Vida', () => {
+    const sube = (n: number) => {
       const players = Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}` }));
       const s = createGame(players, 5, DIFFICULTY.obra);
       s.discard = s.deck;
@@ -164,10 +164,12 @@ describe('partida clásica en cuadrilla', () => {
       const hand = s.players[0].hand;
       const out = applyAction(s, 'p0', { type: 'discard', cards: [hand[0].id] });
       const ev = out.events.find((e) => e.e === 'collapse');
-      return ev && ev.e === 'collapse' ? ev.loss : before - out.state.integrity;
+      // la Vida solo puede bajar por el Contraataque que sigue, nunca por barajar
+      const golpe = out.events.find((e) => e.e === 'siren');
+      expect(before - out.state.integrity).toBe(golpe && golpe.e === 'siren' ? golpe.taken : 0);
+      return ev && ev.e === 'collapse' ? ev.sube : -1;
     };
-    expect(loss(1)).toBe(DIFFICULTY.obra.collapseLoss! - (DIFFICULTY.obra.collapseRelief?.[0] ?? 0));
-    expect(loss(4)).toBeLessThan(loss(1));
-    expect(loss(2)).toBeGreaterThanOrEqual(loss(3));
+    for (const n of [1, 2, 3, 4]) expect(sube(n)).toBe(DIFFICULTY.obra.collapseSiege);
+    expect(DIFFICULTY.brutal.collapseSiege).toBeGreaterThan(DIFFICULTY.obra.collapseSiege);
   });
 });

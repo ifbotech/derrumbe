@@ -116,8 +116,13 @@ export function classify(all: Card[]): Formation | null {
 export interface Config {
   maxIntegrity: number;
   wallCap: number;
-  /** Lo que quita el primer colapso; después sube 1 por cada tanda de colapsos (uno por jugador). */
-  collapseLoss: number;
+  /**
+   * V27 · Mazo agotado: el Descarte se baraja sin quitar Vida y el Asedio final sube estos niveles
+   * (cada nivel, +1 de Ataque a todos los tronos y más Daño a tus golpes: se ve en la mesa).
+   */
+  collapseSiege: number;
+  /** Mazos agotados por asalto que no suben el Asedio (Baraja de reserva). */
+  collapseFree?: number;
   /** Poderes de palo, por carta (sea cual sea su rango): Escudo por cada ♣, Cura por cada ♥ y Salpica por cada ♦. */
   escudoPorCarta: number;
   curaPorCarta: number;
@@ -163,8 +168,6 @@ export interface Config {
   overhealCharge?: number;
   /** Puntos de muro sobrante (por encima del tope) que hacen falta para reparar 1 de integridad. */
   overwallRepair?: number;
-  /** Partida clásica: lo que se le perdona (o se le carga, si es negativo) a cada colapso según jueguen 1, 2, 3 o 4. */
-  collapseRelief?: number[];
 }
 
 /** Nivel de fatiga de cimientos que corresponde a un turno de la obra. */
@@ -296,7 +299,8 @@ export type GameEvent =
   | { e: 'gold'; amount: number }
   | { e: 'burn'; card: Card }
   | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty' }
-  | { e: 'collapse'; loss: number; integrity: number }
+  /** Mazo agotado: el Descarte se barajó. `sube`: niveles de Asedio final que sumó (0 si salió gratis); `asedio`: el nivel que queda. */
+  | { e: 'collapse'; sube: number; asedio: number }
   | { e: 'draw'; player: string; count: number; cards?: Card[] }
   | { e: 'turn'; player: string }
   /** `was`: integridad del búnker al empezar la jugada que cerró la obra (para la autopsia de la derrota). */
@@ -877,13 +881,19 @@ function destroy(turn: Turn, card: Card): boolean {
   return true;
 }
 
-/**
- * Lo que quitará el próximo colapso de cantera. Cada vuelta completa de la cuadrilla a la cantera lo
- * encarece en 1; en cuadrilla hay más cartas en las manos y la cantera se agota antes: cada colapso pesa menos.
- */
-export function nextCollapse(env: { config: Config; collapses: number }, players: number): number {
-  const crowd = env.config.collapseRelief?.[Math.min(players, 4) - 1] ?? 0;
-  return Math.max(1, env.config.collapseLoss - crowd) + Math.floor(env.collapses / Math.max(1, players));
+/** V27 · Niveles de Asedio final que deben los Mazos agotados de este asalto (los gratis no cuentan). */
+export function deckSiege(env: { config: Config; collapses: number }): number {
+  return Math.max(0, env.collapses - (env.config.collapseFree ?? 0)) * env.config.collapseSiege;
+}
+
+/** Niveles de Asedio final que subirá el próximo Mazo agotado (0 si sale gratis). Ya no quita Vida. */
+export function nextCollapse(env: { config: Config; collapses: number }): number {
+  return deckSiege({ config: env.config, collapses: env.collapses + 1 }) - deckSiege(env);
+}
+
+/** Nivel de Asedio final: el que toca por turno más el de los Mazos agotados. */
+export function siegeLevel(env: { config: Config; collapses: number; turnCount: number }): number {
+  return fatigueAt(env.config, env.turnCount) + deckSiege(env);
 }
 
 function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
@@ -891,10 +901,14 @@ function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   state.deck = state.discard;
   state.discard = [];
   shuffle(state.deck, state);
-  const loss = nextCollapse(state, state.players.length);
+  const sube = nextCollapse(state);
   state.collapses++;
-  state.integrity -= loss;
-  events.push({ e: 'collapse', loss, integrity: Math.max(0, state.integrity) });
+  // V27: barajar el Descarte no quita Vida; sube el Asedio final, a la vista en cada trono
+  events.push({ e: 'collapse', sube, asedio: siegeLevel(state) });
+  if (sube > 0) {
+    state.fatigue = siegeLevel(state);
+    events.push({ e: 'fatigue', level: state.fatigue });
+  }
 }
 
 function drawOne(state: GameState, events: GameEvent[]): Card | null {
@@ -911,11 +925,6 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   };
   if (skip) return say(null, null, skip);
   const card = drawOne(state, events);
-  if (state.integrity <= 0) {
-    // el colapso fue mortal: la carta no llega a sonar, pero tampoco se pierde
-    if (card) state.discard.push(card);
-    return;
-  }
   if (!card) return say(null, null, 'empty');
   state.discard.push(card);
   state.lastSiren = card;
@@ -1097,7 +1106,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   state.turn = (state.turn + 1) % state.players.length;
   state.turnCount++;
   state.stashed = false;
-  const fatigue = fatigueAt(state.config, state.turnCount);
+  const fatigue = siegeLevel(state);
   if (fatigue !== (state.fatigue ?? 0)) {
     state.fatigue = fatigue;
     events.push({ e: 'fatigue', level: fatigue });

@@ -35,6 +35,7 @@ export const TEXTOS_ES: TextosAutopsia = {
   arena: () => CRUMBLE_LABEL,
 };
 
+/** 'colapso' queda solo para las Crónicas guardadas antes de la 27.0: desde entonces el Mazo agotado no quita Vida. */
 export type DeathKind = 'sirena' | 'colapso' | 'herida' | 'sin_cartas';
 
 export interface Autopsy {
@@ -91,8 +92,8 @@ export function autopsyWith(tx: TextosAutopsia, events: GameEvent[], cfg: Config
       hp = ev.total;
       continue;
     }
-    const amount = ev.e === 'siren' ? ev.taken : ev.e === 'collapse' ? ev.loss : ev.e === 'hurt' ? ev.amount : 0;
-    if (amount <= 0 || (ev.e !== 'siren' && ev.e !== 'collapse' && ev.e !== 'hurt')) continue;
+    const amount = ev.e === 'siren' ? ev.taken : ev.e === 'hurt' ? ev.amount : 0;
+    if (amount <= 0 || (ev.e !== 'siren' && ev.e !== 'hurt')) continue;
     if (ev.integrity > 0) {
       // un golpe que se aguantó
       hp = ev.integrity;
@@ -121,17 +122,6 @@ export function autopsyWith(tx: TextosAutopsia, events: GameEvent[], cfg: Config
         tower,
       };
     }
-    if (ev.e === 'collapse') {
-      return {
-        kind: 'colapso',
-        title: tx.t('causa.colapso.titulo', { n: ev.loss }),
-        detail: tx.t('causa.colapso.detalle', { queda: left(tx, before) }),
-        before,
-        threat: ev.loss,
-        blocked: 0,
-        taken: ev.loss,
-      };
-    }
     const who = list(tx, hurtSources(tx, events.slice(0, i))) || tx.t('causa.herida.propia');
     return {
       kind: 'herida',
@@ -156,9 +146,9 @@ export function autopsyWith(tx: TextosAutopsia, events: GameEvent[], cfg: Config
   };
 }
 
-/** Aviso de último turno: lo que puede acabar con tu Vida en el próximo Contraataque o al agotarse el Mazo. null si no hay peligro inmediato. */
+/** Aviso de último turno: lo que puede acabar con tu Vida en el próximo Contraataque. null si no hay peligro inmediato. */
 export interface Omen {
-  kind: 'sirena' | 'colapso';
+  kind: 'sirena';
   title: string;
   detail: string;
   /** Tu Vida ahora mismo (los dos casos). */
@@ -169,10 +159,6 @@ export interface Omen {
   tower?: Suit;
   /** 'sirena': tu Escudo ahora mismo. */
   shield?: number;
-  /** 'colapso': la Vida que quita el Mazo agotado. */
-  loss?: number;
-  /** 'colapso': cartas que quedan en el Mazo (0, 1 o 2). */
-  deck?: number;
 }
 
 export function omen(v: PlayerView): Omen | null {
@@ -182,19 +168,9 @@ export function omen(v: PlayerView): Omen | null {
 /** `omen` con los textos de un idioma. */
 export function omenWith(tx: TextosAutopsia, v: PlayerView): Omen | null {
   if (v.phase !== 'playing' || v.integrity <= 0) return null;
-  // Mazo agotado: le quedan 2 cartas o menos y el rebarajado se lleva la Vida que queda
-  const loss = nextCollapse(v, v.players.length);
-  if (v.deckCount <= 2 && loss >= v.integrity) {
-    const deck = tx.t(v.deckCount === 0 ? 'aviso.mazo.0' : v.deckCount === 1 ? 'aviso.mazo.1' : 'aviso.mazo.n', { n: v.deckCount });
-    return {
-      kind: 'colapso',
-      title: tx.t('aviso.colapso.titulo', { mazo: deck, n: loss }),
-      detail: tx.t(v.integrity === 1 ? 'aviso.colapso.detalle.1' : 'aviso.colapso.detalle.n', { vida: v.integrity }),
-      life: v.integrity,
-      loss,
-      deck: v.deckCount,
-    };
-  }
+  // V27: con el Mazo vacío, el próximo Contraataque baraja antes el Descarte y el Asedio final ya ha subido:
+  // el aviso cuenta el Ataque que de verdad va a llegar
+  const env = v.deckCount === 0 ? { config: v.config, fatigue: (v.fatigue ?? 0) + nextCollapse(v) } : v;
   // Contraataque: el mayor Ataque en pie que de verdad puede salir (trono armado y con cartas de su palo por salir)
   const pool: Card[] = v.deckCount > 0 ? v.unseen : [...v.discard, ...v.hand, ...v.reserve];
   let worst: Suit | null = null;
@@ -202,10 +178,10 @@ export function omenWith(tx: TextosAutopsia, v: PlayerView): Omen | null {
     const t = v.towers[s];
     if (!standing(t) || t.fx.sobrecarga) continue;
     if (!pool.some((c) => c.suit === s)) continue;
-    if (worst === null || threatOf(v, t) > threatOf(v, v.towers[worst])) worst = s;
+    if (worst === null || threatOf(env, t) > threatOf(env, v.towers[worst])) worst = s;
   }
   if (worst === null) return null;
-  const threat = threatOf(v, v.towers[worst]);
+  const threat = threatOf(env, v.towers[worst]);
   if (threat < v.integrity + v.wall) return null;
   return {
     kind: 'sirena',

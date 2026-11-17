@@ -914,7 +914,6 @@ export function trackEvents(run: Run, events: GameEvent[]): Pieza[] {
         run.stats.cleans++;
       }
     } else if (ev.e === 'siren') run.battle.taken += ev.taken;
-    else if (ev.e === 'collapse') run.battle.taken += ev.loss;
     else if (ev.e === 'hurt') run.battle.taken += ev.amount;
     else if (ev.e === 'joker') run.battle.jokers++;
     else if (ev.e === 'play') run.battle.forms.includes(ev.formation) || run.battle.forms.push(ev.formation);

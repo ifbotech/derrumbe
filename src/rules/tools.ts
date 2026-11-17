@@ -92,7 +92,7 @@ export const TOOLS: ToolDef[] = [
   { id: 'botiquin', name: 'Bálsamo', desc: 'Cada ♥ cura +{vida} más.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.curaPorCarta += V.botiquin.vida) },
   { id: 'encofrado', name: 'Broquel', desc: 'Cada guardia abatido: +{escudo} de Escudo.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.wall += V.encofrado.escudo * r.fallen) && x.note(`+${V.encofrado.escudo * r.fallen} de Escudo`) },
   { id: 'casco', name: 'Yelmo', desc: 'Cada guardia abatido: +{vida} de Vida.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.heal += V.casco.vida * r.fallen) && x.note(`+${V.casco.vida * r.fallen} de Vida`) },
-  { id: 'puntales', name: 'Baraja de reserva', desc: 'Cuando se agota el Mazo, pierdes {vida} de Vida menos.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.collapseLoss = Math.max(0, c.collapseLoss - V.puntales.vida)) },
+  { id: 'puntales', name: 'Baraja de reserva', desc: '{gratis} Mazo agotado por asalto no sube el Asedio final.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.collapseFree = (c.collapseFree ?? 0) + V.puntales.gratis) },
   { id: 'hucha', name: 'Bolsa de monedas', desc: '+{oro} de oro al terminar cada asalto.', rarity: 'comun', arch: 'base', kind: 'p' },
   { id: 'taladro', name: 'Lanza', desc: 'Todos tus golpes Perforan, lleven o no ♠.', rarity: 'oficio', arch: 'base', kind: 'p', cfg: (c) => void (c.alwaysPierce = true) },
   { id: 'estandarte', name: 'Estandarte', desc: '+{multi} de Multi con color o escalera de color.', rarity: 'oficio', arch: 'base', kind: 'r', strike: (x) => (x.formation === 'color' || x.formation === 'escaleracolor') && x.R(V.estandarte.multi) },

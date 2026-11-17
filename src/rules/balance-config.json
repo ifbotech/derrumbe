@@ -118,7 +118,7 @@
   "mesa": {
     "maxIntegrity": 20,
     "wallCap": 8,
-    "collapseLoss": 5,
+    "collapseSiege": 1,
     "escudoPorCarta": 2,
     "curaPorCarta": 2,
     "salpicaPorCarta": 2,
@@ -136,10 +136,9 @@
       "handSize": { "1": 6, "2": 6, "3": 6, "4": 6 },
       "fatigueStart": 29,
       "fatigueEvery": 3,
-      "fatigueDano": 4,
-      "collapseRelief": [1, 0, 0, 2]
+      "fatigueDano": 4
     },
-    "brutal": { "maxIntegrity": 16, "collapseLoss": 6 }
+    "brutal": { "maxIntegrity": 16, "collapseSiege": 2 }
   },
   "reliquias": {
     "piqueta": { "dano": 3 },
@@ -155,7 +154,7 @@
     "dinamita": { "dano": 6 },
     "encofrado": { "escudo": 2 },
     "casco": { "vida": 1 },
-    "puntales": { "vida": 3 },
+    "puntales": { "gratis": 1 },
     "hucha": { "oro": 4 },
     "estandarte": { "multi": 2 },
     "dados": { "multi": 1 },
