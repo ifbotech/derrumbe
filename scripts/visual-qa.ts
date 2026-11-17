@@ -209,8 +209,8 @@ const AZAR_QA = `(() => {
 interface Medidas {
   /** Dianas a la vista, sin las cartas de la mano: cuántas, la más chica, el hueco más chico entre vecinas y las que se pisan. */
   dianas: { n: number; minW: number; minH: number; minQue: string; separacionMin: number | null; solapes: number };
-  /** Cartas de la mano: cuántas y la franja pulsable más estrecha que deja una (se montan a propósito). */
-  mano: { n: number; franjaMin: number } | null;
+  /** Cartas de la mano: cuántas, si alguna se monta sobre la siguiente y la franja a la vista más estrecha (el ancho entero de la carta si no se montan). */
+  mano: { n: number; franjaMin: number; montadas: boolean } | null;
   /** Textos a la vista: cuántos, el más chico (px efectivos) y cuántos miden menos de 14 px. */
   texto: { n: number; minPx: number; minQue: string; bajo14: number };
   /** Textos o dianas recortados: los fallos de la regla «recorte» de la auditoría (lo rellena quien llama). */
@@ -330,9 +330,13 @@ async function medirDom(): Promise<Medidas> {
     rows.set(key, [...(rows.get(key) ?? []), r]);
   }
   let franjaMin = Infinity;
+  let montadas = false;
   for (const row of rows.values()) {
     row.sort((a, b) => a.left - b.left);
-    for (let i = 0; i < row.length; i++) franjaMin = Math.min(franjaMin, row[i + 1] ? Math.min(row[i].width, row[i + 1].left - row[i].left) : row[i].width);
+    for (let i = 0; i < row.length; i++) {
+      franjaMin = Math.min(franjaMin, row[i + 1] ? Math.min(row[i].width, row[i + 1].left - row[i].left) : row[i].width);
+      if (row[i + 1] && row[i + 1].left < row[i].right - 1) montadas = true;
+    }
   }
 
   // textos: cada nodo de texto a la vista, con su tamaño efectivo (con la escala de sus transformaciones)
@@ -380,7 +384,7 @@ async function medirDom(): Promise<Medidas> {
   const r1 = (x: number) => Math.round(x * 10) / 10;
   return {
     dianas: { n: near.length, minW: min ? Math.round(min.w) : 0, minH: min ? Math.round(min.h) : 0, minQue: min?.que ?? '', separacionMin: separacionMin === null ? null : Math.round(separacionMin), solapes },
-    mano: hand.length ? { n: hand.length, franjaMin: Math.round(franjaMin) } : null,
+    mano: hand.length ? { n: hand.length, franjaMin: Math.round(franjaMin), montadas } : null,
     texto: { n: nTexto, minPx: Number.isFinite(minPx) ? r1(minPx) : 0, minQue, bajo14 },
     recortes: 0,
     foco,
