@@ -62,7 +62,8 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | 28.0 (i5, con la frase de la mano equivocada) | aceptada (`v28.0.0`) | 78,3 | — | 65,0 | 6,58 | 7,73 | 61,9 | 88,9 | 73,3 | 213,38 | `pulso-60-20261117-132424` |
 | 28.0 (i5.1, frase de la mano corregida) | aceptada (`v28.0.0`) | 73,3 | — | 65,0 | 6,58 | 7,72 | 61,9 | 66,7 | 73,3 | 208,33 | `pulso-60-20261117-135942` |
 | 29.0 (i5.1) | aceptada (`v29.0.0`) | 75,0 | — | 70,0 | 6,65 | 7,72 | 66,7 | 66,7 | 73,3 | 214,85 | `pulso-60-20261117-143718` |
-| **30.0 (i5.1)** | **aceptada, Campeón y listón vigente** (`v30.0.0`) | 78,3 | — | 70,0 | 6,72 | 7,72 | 76,2 | 77,8 | 73,3 | **221,87** | `pulso-60-20261117-145647` |
+| 30.0 (i5.1) | aceptada (`v30.0.0`) | 78,3 | — | 70,0 | 6,72 | 7,72 | 76,2 | 77,8 | 73,3 | 221,87 | `pulso-60-20261117-145647` |
+| **31.0 (i5.1)** | **aceptada, Campeón y listón vigente** (`v31.0.0`) | 85,0 | — | 70,0 | 7,05 | 7,80 | 81,0 | 88,9 | 80,0 | **234,30** | `pulso-60-20261117-153035` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -316,3 +317,14 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **Medida**: **F 221,87 frente a 214,85 (+7,02)**, corrida `pulso-60-20261117-145647`. 54 reseñas idénticas y 6 distintas (las cinco de la primera derrota y una de Steam Deck que no cambia de voto): suben 2 votos, uno de portátil y uno de Steam Deck, y no baja ninguno. La claridad de dos de las cinco sube de 5 a 7 y a 8; la de otras dos baja de 5 a 4.
 - **Metas**: **se cumplen cuatro de seis** en el pulso de 60: aprobación 78,3 % (47 de 60), críticos 70,0 %, impulsivos 76,2 % (16 de 21), Steam Deck 77,8 % (7 de 9) y móvil 73,3 % (11 de 15). Faltan la claridad media (6,72 de 7,60) y la diversión media (7,72 de 8,00).
 - **Lo que sigue en contra en la primera derrota**: dos personas de escritorio, con claridad 4: «el Asedio aparece de la nada». El recuadro explica la derrota después; no avisa antes.
+
+### V31 · El orden no importa — **aceptada** (`v31.0.0`, Campeón): la claridad sube de forma significativa
+
+- **Hipótesis**: de las 132 frases de «qué te confunde» de la 28.0, 53 son de la cuenta (Daño frente a Multi, qué va antes) y 10 del orden de las Reliquias. Mientras el orden importe, el reglamento necesita seis pasos y la frase «conviene sumar primero y multiplicar al final». Si el orden deja de importar, la regla cabe en dos líneas.
+- **Qué se hizo**: en el motor, un multiplicador de Multi ya no actúa donde está: se guarda y se aplica al final, cuando ya se sumó todo (es lo que antes daba el mejor orden). Vale para Reliquias, acabados y cartas especiales. El reglamento y las reglas del juego pasan a «El orden no importa: Daño, se suma todo; Multi, se suma todo y al final se multiplica». Las Reliquias se siguen pudiendo mover (le importa al Espejo de mano). Se quita el aviso de colocación de la 27.0.
+- **Balance** (laboratorio rápido, certificado): Reinado 1, 31,5 % y 47,5 %. El bot ya ordenaba bien: la dificultad no se mueve.
+- **Puertas**: 366 + 9 pruebas, QA visual sin fallos en las cuatro ventanas en español y en tres en inglés, humo rápido (32) y sección «mesa» (82). Comprobado en la página: mover el multiplicador por los seis huecos no cambia la cuenta. La sección «mando» del humo sigue con dos comprobaciones de la cuenta en rojo que no son del orden (ya fallaba antes).
+- **Medida**: **F 234,30 frente a 221,87 (+12,43)**, corrida `pulso-60-20261117-153035`. Cambia el extracto del reglamento de las 60 personas, así que es una medida de todo el panel: claridad 6,72 → **7,05** (t = 2,42, p = 0,019), diversión 7,72 → 7,80, aprobación 78,3 → 85,0 % (51 de 60; suben 9 votos y bajan 5), impulsivos 81,0 %, Steam Deck 88,9 %, móvil 80,0 %, críticos 70,0 %.
+- **Metas**: siguen cumpliéndose cuatro de seis. Faltan la claridad (7,05 de 7,60: 33 puntos entre 60 personas) y la diversión (7,80 de 8,00: 12 puntos).
+- **Dónde queda la claridad baja**: 26 personas siguen en 6. Por escena: la primera derrota (5,4), familia de aguante (5,5), la Mesa de lacre, el Asedio y el monarca del asalto 3 (6,0), las Reliquias (6,4) y el final (6,6). Las de dispositivo están en 8 y 9.
+- **Lección**: quitar una regla sube más la claridad que explicarla mejor. Es la segunda vez que se mide (la primera fue la 11.0).

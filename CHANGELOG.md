@@ -2,6 +2,22 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 31.0.0 — 2026-11-17
+
+El orden no importa. La cuenta de un golpe se simplifica: primero se suma todo y al final se multiplica. Cambia una regla.
+
+### Reglas
+- **Golpe = Daño × Multi, sin orden**: en cada golpe se suma todo el Daño y todo el Multi y, al final, se aplican los multiplicadores (×2, ×3…). Da igual en qué hueco esté cada Reliquia y en qué orden elijas las cartas. Antes, lo que multiplicaba solo multiplicaba lo acumulado a su izquierda; el resultado de ahora es el que daba el mejor orden.
+- **Las Reliquias se siguen pudiendo mover**, pero solo le importa a una: el Espejo de mano, que copia la que tenga a su derecha.
+- El reglamento pasa de seis pasos a dos en la sección «Daño × Multi».
+
+### En pantalla
+- En la cuenta paso a paso, los multiplicadores van siempre después de todo lo que suma.
+- La tira de Reliquias dice «el orden no cambia la cuenta». El aviso «se colocó sola en el hueco…» de la 27.0 desaparece: ya no tenía motivo.
+
+### Balance
+- Laboratorio rápido (6.000 campañas): en el Reinado 1 se gana el 31,5 % de las campañas con el Árbol vacío y el 47,5 % con el Árbol lleno.
+
 ## 30.0.0 — 2026-11-17
 
 La derrota se explica. El recuadro «Causa de la derrota» de la Crónica dice ahora de dónde salió el golpe final. Ninguna regla cambia.
