@@ -2,6 +2,18 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 24.0.0 — 2026-11-17
+
+El móvil a una mano. En el móvil, La Taberna es una lista y la fila del pulgar cabe entera. Ninguna regla cambia.
+
+### En el móvil
+- **La Taberna en lista**: cada oferta es un renglón entero con su dibujo, su nombre, su precio y la descripción a todo el ancho (antes, una rejilla de tres columnas cortada a media carta). La lista se desliza con el dedo. Curar, Hoguera, Renovar y el botón de seguir quedan fijos abajo, siempre a la vista.
+- **La fila del pulgar**: cuatro botones de 48 px con 10 px entre ellos, a 18 px del borde de abajo. Los rótulos de Golpear, Manga y Descartar caben dentro de su botón, y Deshacer pasa a ser un botón cuadrado con una flecha.
+- **La cifra de la cuenta** va en letra clara sobre fondo oscuro, con un filete claro alrededor. «Mejor» sube a 16 px.
+
+### Por dentro
+- La QA visual entiende una fila fija que cuelga de un contenedor sin caja propia (`display: contents`) en las reglas «aire» y «tinta».
+
 ## 23.0.0 — 2026-11-17
 
 La mesa con mando, de una vez. Sobre la 22.0, la cifra de la cuenta lleva su nombre y los rótulos de la leyenda crecen. Ninguna regla cambia.
