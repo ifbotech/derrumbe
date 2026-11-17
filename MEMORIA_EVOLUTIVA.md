@@ -65,7 +65,10 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | 30.0 (i5.1) | aceptada (`v30.0.0`) | 78,3 | — | 70,0 | 6,72 | 7,72 | 76,2 | 77,8 | 73,3 | 221,87 | `pulso-60-20261117-145647` |
 | 31.0 (i5.1) | aceptada (`v31.0.0`) | 85,0 | — | 70,0 | 7,05 | 7,80 | 81,0 | 88,9 | 80,0 | 234,30 | `pulso-60-20261117-153035` |
 | 32.0 (i5.1) | rechazada (rama `candidata/v32`) | 75,0 | — | 50,0 | 6,98 | 7,75 | 47,6 | 66,7 | 80,0 | 199,43 | `pulso-60-20261117-161058` |
-| **33.0 (i5.1)** | **aceptada, Campeón y listón vigente** (`v33.0.0`) | 85,0 | — | 70,0 | 7,10 | 7,82 | 81,0 | 88,9 | 80,0 | **234,70** | `pulso-60-20261117-165355` |
+| 33.0 (i5.1) | aceptada (`v33.0.0`) | 85,0 | — | 70,0 | 7,10 | 7,82 | 81,0 | 88,9 | 80,0 | 234,70 | `pulso-60-20261117-165355` |
+| **33.0 (i5.2)** | **Campeón y listón vigente** (misma versión, escena de la derrota corregida) | 85,0 | — | 70,0 | 7,08 | 7,83 | 81,0 | 88,9 | 80,0 | **234,63** | `pulso-60-20261117-171718` |
+| 34.0 (i5.2) | rechazada (rama `candidata/v34`) | 83,3 | — | 65,0 | 7,00 | 7,87 | 71,4 | 88,9 | 73,3 | 226,35 | `pulso-60-20261117-182933` |
+| 33.0 con placebo (i5.2) | control: tres palabras cambiadas sin tocar el sentido | 83,3 | — | 65,0 | 7,07 | 7,83 | 81,0 | 77,8 | 80,0 | 229,77 | `pulso-60-20261117-184146` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -350,3 +353,31 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **Metas**: cuatro de seis. Faltan la claridad (7,10 de 7,60: 30 puntos entre 60 personas) y la diversión (7,82 de 8,00: 11 puntos).
 - **Lección**: es una mejora real y pequeña para el panel. Confirma que los cambios de una o dos escenas se leen sin ruido y que así el listón no retrocede.
 - **Hallazgo para lo que sigue**: la claridad baja la ponen las personas «cero tutorial»: 6,19 de media entre 21, frente a 7,95 de las 21 analíticas. La escena de la primera derrota conserva un título de la 10.0, «La primera derrota sin entender por qué», que afirma lo que el panel debería juzgar; desde la 30.0 la Crónica dice la causa. Corregirlo es un arreglo del instrumento y se mide aparte, sobre el Campeón.
+
+### Instrumento i5.2 · la escena de la primera derrota, sin sesgo y con su pantalla — listón 234,63
+
+- **Qué estaba mal**: (1) el título de la escena, de la 10.0, decía «La primera derrota sin entender por qué»: afirmaba lo que la persona tiene que juzgar, y desde la 30.0 la Crónica dice la causa; (2) la escena pedía la pantalla `acta`, que el pulso no audita (audita `acta-derrota`), así que esas cinco personas nunca recibían lo que el auditor vio en la Crónica. Lo mismo le pasa a la escena del final con la Crónica de la victoria (no corregido: el pulso no la audita).
+- **Arreglo** (`escenas_v30.py`, vale para la 30.0 en adelante): título «La primera derrota» y pantalla `acta-derrota`.
+- **Medido aparte sobre el Campeón 33.0**, sin tocar el juego: **F 234,63 frente a 234,70 (−0,07)**, corrida `pulso-60-20261117-171718`, snapshot `20261117-171656`. 55 reseñas idénticas; de las cinco de la primera derrota no cambia ningún voto, la claridad baja 1 punto (6, 4, 6, 6, 6 → 6, 5, 5, 6, 5) y la diversión sube 1.
+- **Lección**: el título no era la causa. Esas cinco personas siguen en claridad 5–6 y lo que citan es el Asedio final («sube y no entiendo por qué me pega más fuerte», «afecta mi daño y el suyo a la vez», «me mata sin avisar») y la secuencia de descartar buscando escaleras hasta agotar el Mazo.
+
+### Instrumento i5.3 · caché de respuestas deterministas
+
+- A temperatura 0 el mismo pedido da la misma reseña letra por letra, así que volver a pedirla solo gasta tiempo. `cache_respuestas.py` guarda la respuesta cruda de Ollama por la huella del pedido entero (modelo y su `digest`, mensajes, esquema y opciones) y la devuelve tal cual. Solo para pedidos de texto con temperatura 0; un pedido que cambia en una coma se pide de verdad. Se apaga con `PANEL_SIN_CACHE_RESPUESTAS=1`.
+- **No cambia ningún resultado**, solo el tiempo: una medida que reescribe 15 reseñas pasó de unos 17 minutos a 158 segundos. Seis pruebas nuevas en el panel.
+- Pendiente: con el equipo cargado (otro programa ocupaba CPU y GPU toda la tarde) fallan de forma alterna dos pruebas de tiempos del panel (`test_comparar_con_entre_dos_pulso_24`, `test_run_tope_sale_con_124_y_resume_sin_repetir`); cada una pasa sola. Repetir la batería con el equipo libre.
+
+### V34 · Las Reliquias no se ordenan — **rechazada** (F 226,35 frente a 234,63)
+
+- **Hipótesis**: desde la 31.0 el orden de las Reliquias no cambia la cuenta y solo le importaba al Espejo de mano (copiaba la de su derecha). Por esa única Reliquia seguían existiendo el arrastre, los dos clics, Mayús + flechas y LB / RB, que las reseñas citan como molestia («mover Reliquias con dos clics es un error de diseño», «tercer fallo al arrastrar Reliquia con trackpad»). Si el Espejo copia la última Reliquia que no sea pasiva, no queda nada que ordenar.
+- **Qué se hizo**: el Espejo copia la más reciente; cada Reliquia nueva va al final de la tira; desaparecen la acción de reordenar (reglas, bot y servidor), el arrastre y los atajos; LB / RB con el foco en una Reliquia vuelven a ser el Mazo y la Lupa. 87 líneas añadidas y 306 borradas.
+- **Puertas**: 369 + 9 pruebas, laboratorio rápido certificado (Reinado 1, 31,5 % y 46,3 %; Reinado 8, 10,4 % y 16,2 %; percentil 95 de 14 turnos), QA visual sin fallos en español (cuatro ventanas) y en inglés (tres), humo rápido (32), «mesa» (83 de 83) y **«mando» (126 de 126: pasa entero por primera vez desde antes de la 29.0, porque lo que fallaba era mover Reliquias con LB / RB)**.
+- **Medida**: **F 226,35 (−8,28)**, corrida `pulso-60-20261117-182933`. Cambian 15 reseñas (Reliquias, Steam Deck y portátil) y 45 son idénticas. Sube 1 voto y bajan 2; los dos que bajan citan la barra del móvil y los botones pegados del portátil, no las Reliquias. Claridad 7,08 → 7,00, diversión 7,83 → 7,87.
+- **Decisión**: rechazada por la regla (F baja). Queda entera en la rama `candidata/v34`, con sus puertas pasadas.
+
+### Placebo sobre el Campeón — el ruido ya decide
+
+- **Qué se midió**: el snapshot del Campeón 33.0 con tres palabras cambiadas sin tocar el sentido, una en cada escena que tocaba la 34.0 («Tenés» por «Llevás», «asalto entero» por «asalto completo», «Pantalla baja de 768 px» por «Pantalla de 768 px de alto»). Ninguna regla, ninguna captura, ningún dato distinto.
+- **Resultado**: **F 229,77 frente a 234,63 (−4,86)**, corrida `pulso-60-20261117-184146`. Las 15 reseñas de esas escenas se reescriben; baja 1 voto y no sube ninguno; la claridad pierde 1 punto.
+- **Qué significa**: con 85 % de aprobación, de cada 15 personas a las que se les cambia el pedido 13 solo pueden bajar. Reescribir 15 reseñas cuesta de media unos 5 puntos de F **aunque el juego sea el mismo**. La 34.0 (−8,28) no se distingue del placebo (−4,86): la diferencia es un voto.
+- **Consecuencia para la regla «si F sube, se acepta»**: en este punto la regla rechaza también un cambio nulo. Solo pasa lo que toca muy pocas personas (la 33.0: 10 reseñas, ningún voto movido, +0,40) o lo que mejora de verdad a varias a la vez. Las tres salidas posibles: (a) seguir igual y aceptar que casi todo se rechaza; (b) comparar cada candidata con un placebo de sus mismas escenas en vez de con el Campeón congelado (con la caché cuesta 3 a 5 minutos más por versión y quita el sesgo, no la varianza); (c) decidir con una cohorte mayor (120 o 240 personas), que baja la varianza a costa de una primera corrida larga. Es una decisión del dueño del panel.

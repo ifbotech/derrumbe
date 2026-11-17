@@ -1,12 +1,15 @@
-# Informe evolutivo · de la 10.0 a la 31.0 (ciclo V27 → V40 en curso)
+# Informe evolutivo · de la 10.0 a la 33.0 (ciclo V27 → V40 en curso)
 
-**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-17. Campeón publicado: **31.0** (`v31.0.0` en `origin/main`), jugable en <https://ifbotech.github.io/derrumbe/>.
+**SANGRE Y PALO · BLOOD & SUITS.** Estado al 2026-11-17. Campeón publicado: **33.0** (`v33.0.0` en `origin/main`), jugable en <https://ifbotech.github.io/derrumbe/>.
 
 ## En corto
 
-- **El Campeón publicado es la 31.0 y cumple cuatro de las seis metas en el pulso de 60 personas.** Con el instrumento determinista del ciclo V27 → V40 (mandato del dueño del 2026-11-17: temperatura 0, auditor con criterios medibles y medidas reales de cada pantalla, 60 personas fijas, una sola pasada) da F 234,30: aprobación 85,0 % (meta 75), críticos duros 70,0 % (45), impulsivos 81,0 % (65), Steam Deck 88,9 % y móvil 80,0 % (70 cada uno). **Faltan la claridad media (7,05 de 7,60) y la diversión media (7,80 de 8,00).**
+- **El Campeón publicado es la 33.0 (F 234,63) y cumple cuatro de las seis metas.** Sobre la 31.0 añade el paso del cobro al Árbol en un clic: la Crónica dice qué mejora te alcanza y lleva el botón «Mejorar el Árbol». Faltan la claridad (7,08 de 7,60) y la diversión (7,83 de 8,00).
+- **El bucle ha llegado al techo de lo que este instrumento distingue.** Un placebo (el mismo Campeón con tres palabras cambiadas sin tocar el sentido) da F 229,77: 4,86 puntos menos y un voto perdido, sin cambiar nada del juego. Con 85 % de aprobación, a quien se le reescribe la reseña casi solo le queda bajar. La regla «si F sube, se acepta» rechaza ahora también un cambio nulo. La 32.0 (Asedio simétrico, −34,87) y la 34.0 (las Reliquias no se ordenan, −8,28) se rechazaron así; la 34.0 no se distingue del placebo. **Hace falta decidir cómo se sigue midiendo** (apartado «Qué haría falta»).
+- **Lo medido hasta la 31.0**: el Campeón 31.0 cumplía cuatro de las seis metas en el pulso de 60 personas. Con el instrumento determinista del ciclo V27 → V40 (mandato del dueño del 2026-11-17: temperatura 0, auditor con criterios medibles y medidas reales de cada pantalla, 60 personas fijas, una sola pasada) da F 234,30: aprobación 85,0 % (meta 75), críticos duros 70,0 % (45), impulsivos 81,0 % (65), Steam Deck 88,9 % y móvil 80,0 % (70 cada uno). **Faltan la claridad media (7,05 de 7,60) y la diversión media (7,80 de 8,00).**
 - **Cinco versiones seguidas aceptadas, de la 27.0 a la 31.0**: el Mazo agotado ya no quita Vida y las Reliquias se colocan solas (27.0); ningún texto por debajo de 14 px (28.0, el salto mayor: +40 de F); el Don de la Conjura al abrir la campaña (29.0); la causa de la derrota nombra el Asedio y el Mazo agotado (30.0); y el orden deja de importar en la cuenta (31.0, que sube la claridad de 6,72 a 7,05 con p = 0,02).
 - **Lo que este instrumento distingue y lo que no.** La misma versión da reseñas idénticas letra por letra, así que no hay ruido de semilla. Un cambio que toca una sola escena se lee entero (cinco personas cambian, las demás repiten). Un cambio que toca todas las capturas o el reglamento mueve el pedido de las 60 y lleva una sensibilidad a la redacción de unos ±5 puntos de F (medida al corregir una frase del propio instrumento).
+- **El panel mide ahora mucho más rápido**: una caché de respuestas deterministas (a temperatura 0 el mismo pedido da la misma reseña) evita volver a pedir las reseñas que no cambian. Una medida que reescribe 15 reseñas pasó de 17 minutos a menos de 3. No cambia ningún resultado.
 - **No se ha medido todavía** en inglés ni con el censo de 240, y no se ha corrido la coronación completa: quedan para cuando el pulso cumpla las seis metas.
 - **Hasta el 2026-11-17 por la mañana el Campeón era la 24.0.** El 2026-11-17 el dueño adoptó el pulgar al final de la reseña como instrumento, y con él se volvieron a medir el Campeón 20.0 y las seis candidatas. Por la regla entraron tres: la 22.0 y la 23.0 (Steam Deck con mando) y la 24.0 (el móvil a una mano, con La Taberna en lista), rehecha sobre la 23.0. La 21.0 quedó dentro de la 24.0. La 25.0 y la 26.0 (rehecha sobre la 24.0) se rechazaron, y con la 26.0 la misión llega a su tope.
 - **Ninguna de las tres aceptaciones se distingue del azar.** Con el pulgar al final el voto ya no está fijo, pero se mueve igual por cambiar la semilla que por cambiar el juego: con el mismo pedido y otra semilla difieren 9 de 24 votos, y la 25.0, que cambia el texto que leen las 24 personas, mueve 17 de 48 (9 suben y 8 bajan). Las pruebas del propio panel no encuentran diferencia significativa de votos, claridad ni diversión. Lo publicado son arreglos reales que pasan sus puertas; que suban la nota no está demostrado.
@@ -97,7 +100,12 @@ Las cifras de este bloque no se comparan con las de los anteriores: cambia el or
 | 28.0, con la frase de la mano del instrumento corregida | misma versión, vuelta a medir | 73,3 | 65,0 | 61,9 | 66,7 | 73,3 | 6,58 | 7,72 | 208,33 |
 | **29.0** | **aceptada** (`v29.0.0`) | 75,0 | 70,0 | 66,7 | 66,7 | 73,3 | 6,65 | 7,72 | 214,85 |
 | **30.0** | **aceptada** (`v30.0.0`) | 78,3 | 70,0 | 76,2 | 77,8 | 73,3 | 6,72 | 7,72 | 221,87 |
-| **31.0** | **aceptada: Campeón y listón vigente** (`v31.0.0`) | 85,0 | 70,0 | 81,0 | 88,9 | 80,0 | 7,05 | 7,80 | **234,30** |
+| **31.0** | **aceptada** (`v31.0.0`) | 85,0 | 70,0 | 81,0 | 88,9 | 80,0 | 7,05 | 7,80 | 234,30 |
+| 32.0 | rechazada (rama `candidata/v32`) | 75,0 | 50,0 | 47,6 | 66,7 | 80,0 | 6,98 | 7,75 | 199,43 |
+| **33.0** | **aceptada** (`v33.0.0`) | 85,0 | 70,0 | 81,0 | 88,9 | 80,0 | 7,10 | 7,82 | 234,70 |
+| **33.0**, con la escena de la primera derrota corregida | **Campeón y listón vigente** | 85,0 | 70,0 | 81,0 | 88,9 | 80,0 | 7,08 | 7,83 | **234,63** |
+| 34.0 | rechazada (rama `candidata/v34`) | 83,3 | 65,0 | 71,4 | 88,9 | 73,3 | 7,00 | 7,87 | 226,35 |
+| 33.0 con placebo | control: tres palabras cambiadas sin tocar el sentido | 83,3 | 65,0 | 81,0 | 77,8 | 80,0 | 7,07 | 7,83 | 229,77 |
 
 En este bloque hay 20 críticos duros, 21 impulsivos, 9 personas de Steam Deck y 15 de móvil: un voto vale 1,7 puntos de aprobación. Las cifras no se comparan con las de los bloques anteriores: cambian la temperatura, el pedido del auditor (ahora con las medidas reales de cada pantalla) y la cohorte. Al corregir una frase del instrumento (decía que las cartas de la mano van montadas, y no se montan) la 28.0 pasó de 213,38 a 208,33 sin cambiar el juego: esa es la sensibilidad a la redacción.
 
@@ -126,11 +134,14 @@ Notas de lectura:
 | **29.0** | El Don de la Conjura: al abrir la campaña se elige uno de tres regalos | F 208,33 → 214,85 | Limpio: 55 reseñas idénticas; de las cinco de los primeros minutos sube 1 voto y no baja ninguno |
 | **30.0** | La causa de la derrota nombra el Asedio final y el Mazo agotado | F 214,85 → 221,87 | Limpio: 54 reseñas idénticas; suben 2 votos de la primera derrota y no baja ninguno |
 | **31.0** | El orden no importa: en la cuenta primero se suma todo y al final se multiplica | F 221,87 → 234,30; claridad 6,72 → 7,05 | **Significativo en claridad** (p = 0,019); suben 9 votos y bajan 5 |
+| **33.0** | Del cobro al Árbol en un clic: la Crónica dice qué mejora te alcanza y lleva el botón «Mejorar el Árbol» | F 234,30 → 234,70 | Limpio: 49 reseñas idénticas; ningún voto cambia; claridad +3 puntos y diversión +1 |
 
 ### Lo que se revirtió (candidatas rechazadas con el instrumento de su momento, cada una en su rama `rechazado/vN-…`)
 
 | Versión | Hipótesis | Resultado | Por qué falló |
 |---|---|---|---|
+| **34.0** | Las Reliquias no se ordenan: el Espejo de mano copia la última que no sea pasiva; fuera el arrastre y los atajos para moverlas (306 líneas menos) | F 226,35 frente a 234,63 | No se distingue del placebo (229,77): de las 15 reseñas que cambian sube 1 voto y bajan 2, y ninguna de las dos cita las Reliquias. Queda en `candidata/v34` con todas sus puertas pasadas, incluido el humo con mando entero |
+| **32.0** | Asedio simétrico: cada nivel da +1 de Multi a quien juega (en vez de +40 de Daño) y +1 de Ataque a cada trono | F 199,43 frente a 234,30 | La escena del Asedio mejoró, pero la mesa de la QA está en Asedio 1: cambiaron las 14 capturas de la mesa en las cuatro ventanas y 59 de las 60 reseñas se reescribieron; suben 3 votos y bajan 9 |
 | **13.0** | Inmune sin excepciones (el poder del palo tampoco actúa) y Vida 22, más varios retoques de claridad | F 132,74 frente a 138,18 | Muchos cambios chicos a la vez: ninguno supera el ruido y cada captura tocada re-sortea la lista de problemas del auditor. Una primera medida se anuló porque las escenas contaban «qué cambió» en vez del estado del juego |
 | **14.0** | «Bolsillo primero»: zona de acción rehecha, fila del pulgar en móvil, foco del mando en latón | F 119,54 | Tocar toda la mesa re-sortea unas 50 auditorías; el latón no contrasta con cartas de marfil; el P0 de «botones chicos» en portátil no depende de la maqueta (sale en 11 de 11 auditorías en todas las versiones, y en 0 de 11 en PC con la misma maqueta a escala) |
 | **15.0** | El Golpe exacto perdona pasarse por 1 (más exactos, más diversión) | F 124,21; diversión 7,04 → 6,75 | El exacto vale porque es exacto: ablandarlo confunde («la tolerancia de +1 es confusa») y no divierte más |
@@ -175,6 +186,8 @@ También se descartó por el camino, sin llegar a medirse: atenuar las cartas no
 
 ### Qué haría falta para acercarse a los objetivos
 
+- **Decidir la regla de aceptación ahora que el ruido decide** (hallazgo del 2026-11-17 con el placebo). Tres salidas: (a) seguir con «F de la candidata mayor que F del Campeón» y asumir que casi todo se rechaza; (b) comparar cada candidata con un placebo de sus mismas escenas, que sufre el mismo desgaste por reescribir reseñas (3 a 5 minutos más por versión con la caché); (c) decidir con 120 o 240 personas. La (b) quita el sesgo y la (c) la varianza; se pueden combinar.
+- **Hay una versión construida y sin publicar que simplifica el juego**: la 34.0 (rama `candidata/v34`). Quita el orden de las Reliquias, 306 líneas y la única parte del humo con mando que fallaba. El panel no la distingue de un cambio nulo. Publicarla o no es una decisión de diseño, no de medida.
 - **Medir mejor antes de cambiar más**: dos o tres corridas por candidata (o el `rapido-60`) para decidir, y volver a medir el Campeón con cada corrección del instrumento. Con una sola corrida, la mitad de las decisiones son suerte.
 - **Los frentes con más votos en contra** (medidos en la 20.0): portátil (puntería con trackpad en la zona de acción), los primeros minutos y la primera derrota (el mazo que se agota quita Vida «sin entender por qué») y la cuenta en pantalla chica (Steam Deck: «la fórmula está apretada contra el total»). La Taberna del móvil, que estaba en esta lista, quedó arreglada en la 24.0. En las cuatro corridas de la 23.0 y de la 24.0, seis personas votan siempre en contra: las dos de la primera derrota (Steam Deck y portátil), la del trono Inmune (PC), la del orden de las Reliquias (portátil), una de la mesa de Steam Deck y una del móvil. Tres de las seis son críticas duras.
 - **Decidir qué se hace con el pedido del auditor para Steam Deck y portátil.** Mientras presuponga el problema, el objetivo de 70 % en Steam Deck no depende del juego. Reescribirlo con criterios medibles, como el del móvil, es cambiar la vara de medir: es decisión del dueño del panel, no del estudio.
@@ -184,12 +197,12 @@ También se descartó por el camino, sin llegar a medirse: atenuar las cartas no
 
 ## 3. Lista de prueba para amigos y familia
 
-Enlace: <https://ifbotech.github.io/derrumbe/> (versión 31.0). Unos 25 minutos por persona. Lo ideal: no explicar nada, mirar y apuntar dónde se traban.
+Enlace: <https://ifbotech.github.io/derrumbe/> (versión 33.0). Unos 25 minutos por persona. Lo ideal: no explicar nada, mirar y apuntar dónde se traban.
 
 **Antes de empezar**
 
 - [ ] Abre el enlace en el dispositivo que uses a diario (PC, portátil, móvil en vertical o Steam Deck). Apunta cuál.
-- [ ] Si la página ofrece una versión guardada antigua, recarga una vez. En Ajustes debe verse la versión 31.0.
+- [ ] Si la página ofrece una versión guardada antigua, recarga una vez. En Ajustes debe verse la versión 33.0.
 
 **Primeros tres minutos (la Partida guiada)**
 
@@ -203,6 +216,7 @@ Enlace: <https://ifbotech.github.io/derrumbe/> (versión 31.0). Unos 25 minutos 
 - [ ] Antes de golpear, ¿ves cuánta Vida le quitarás al guardia y si caerá?
 - [ ] Prueba **Mejor** una vez. ¿Entiendes por qué propuso esa jugada?
 - [ ] Guarda una carta en **La Manga** y úsala después. ¿Te salió a la primera?
+- [ ] Al terminar una campaña (ganes o pierdas): ¿viste cuántas esquirlas tienes y qué mejora te alcanza? ¿Pulsaste «Mejorar el Árbol»? ¿Te llevó a la mejora lista para comprar?
 - [ ] Si pierdes: ¿el recuadro «Causa de la derrota» te dice por qué? Agotar el Mazo ya no quita Vida: sube el Asedio y contraataca el trono más fuerte. ¿Se entendió en la mesa?
 
 **La Taberna y las Reliquias**
