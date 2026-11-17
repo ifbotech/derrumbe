@@ -489,6 +489,49 @@ describe('ferretería', () => {
   });
 });
 
+describe('V29 · el Don de la Conjura', () => {
+  it('cada campaña ofrece tres Dones (Reliquia común, sello de lacre, oro) y la misma semilla ofrece los mismos', () => {
+    const a = newRun({}, 77);
+    const b = newRun({}, 77);
+    expect(a.don).toEqual(b.don);
+    expect(a.don!.map((d) => d.kind)).toEqual(['tool', 'sello', 'oro']);
+    const [rel, sello, oro] = a.don!;
+    expect(rel.kind === 'tool' && TOOL[rel.id].rarity).toBe('comun');
+    expect(sello.kind === 'sello' && a.seals.includes(sello.seal) && a.deck.some((c) => c.id === sello.card && !c.sp)).toBe(true);
+    expect(oro).toEqual({ kind: 'oro', n: BALANCE.inicio.donOro });
+    // sortear el Don no mueve ningún otro sorteo de la campaña
+    expect(newRun({}, 78).don).not.toEqual(a.don);
+    expect(a.rng).toBe(b.rng);
+  });
+
+  it('se elige uno al empezar, se aplica una sola vez y llega al primer asalto', () => {
+    const conReliquia = newRun({}, 77);
+    const don = conReliquia.don![0];
+    expect(runAction(conReliquia, { t: 'begin', don: 0 })).toBeNull();
+    expect(conReliquia.tools.map((t) => t.id)).toEqual([don.kind === 'tool' ? don.id : '']);
+    expect(conReliquia.donTaken).toBe(0);
+
+    const conSello = newRun({}, 77);
+    const s = conSello.don![1];
+    runAction(conSello, { t: 'begin', don: 1 });
+    expect(s.kind === 'sello' && conSello.deck.find((c) => c.id === s.card)?.seal).toBe(s.kind === 'sello' ? s.seal : '');
+    expect(conSello.tools).toEqual([]);
+
+    const conOro = newRun({}, 77);
+    const antes = conOro.gold;
+    runAction(conOro, { t: 'begin', don: 2 });
+    expect(conOro.gold).toBe(antes + BALANCE.inicio.donOro);
+
+    // sin elegir (campañas de pruebas y guardadas de antes de la 29.0) no hay regalo
+    const sin = newRun({}, 77);
+    runAction(sin, { t: 'begin' });
+    expect(sin.tools).toEqual([]);
+    expect(sin.donTaken).toBeUndefined();
+    // el bot se queda con la Reliquia
+    expect(chooseRunAction(newRun({}, 77))).toEqual({ t: 'begin', don: 0 });
+  });
+});
+
 describe('cinturón', () => {
   it('se reordena con una permutación; en plena obra, la mesa sigue el mismo orden', () => {
     const run = newRun({}, 4);

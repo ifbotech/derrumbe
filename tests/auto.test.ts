@@ -59,7 +59,7 @@ describe('pasoAuto', () => {
     expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: true, coop: false }, o)).toEqual({ t: 'pausa', motivo: 'diaria' });
     expect(pasoAuto({ run: newRun({ daily: '2026-11-15' }, 1), state: null, playerId: 'p0', diaria: false, coop: false }, o)).toEqual({ t: 'pausa', motivo: 'diaria' });
     expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: false, coop: true }, o)).toEqual({ t: 'pausa', motivo: 'coop' });
-    expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: false, coop: false }, o)).toEqual({ t: 'campana', action: { t: 'begin' } });
+    expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: false, coop: false }, o)).toEqual({ t: 'campana', action: { t: 'begin', don: 0 } }); // V29: AUTO se queda con el primer Don de la Conjura
     run.phase = 'lost';
     expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: false, coop: false }, o)).toEqual({ t: 'pausa', motivo: 'fin' });
   });

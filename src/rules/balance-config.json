@@ -1,5 +1,5 @@
 {
-  "inicio": { "vida": 21, "oro": 4, "interesTope": 3, "sobre": 3 },
+  "inicio": { "vida": 21, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
   "asaltos": [
     { "hp": 7.5, "threat": 2 },
     { "hp": 5.6, "threat": 2 },

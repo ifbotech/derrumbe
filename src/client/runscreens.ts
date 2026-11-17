@@ -2,7 +2,7 @@
 // clandestino, los Secretos de la cripta y la Crónica final.
 import { whisper } from './whispers';
 import { Card, FORM } from '../rules/engine';
-import { BOSS, CONTRACT, DraftOpt, EVENT, EVENT_AFTER, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
+import { BOSS, CONTRACT, Don, DraftOpt, EVENT, EVENT_AFTER, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
 import { BALANCE } from '../rules/balance-config';
 import { TOOL, TOOL_SLOTS } from '../rules/tools';
 import { cobroFor } from '../rules/textos';
@@ -158,17 +158,50 @@ function confirmSell(run: Run, i: number): void {
 
 // ───────────────────────── Sobre lacrado inicial ─────────────────────────
 
+/** V29 · El Don de la Conjura: cómo se llama y qué hace cada uno de los tres regalos de la campaña. */
+function donTexto(run: Run, d: Don): { glifo: string; nombre: string; desc: string } {
+  if (d.kind === 'tool') return { glifo: d.id, nombre: relN(d.id), desc: relD(d.id) };
+  if (d.kind === 'oro') return { glifo: 'oro', nombre: L('ui.run.don.oro', { n: d.n }), desc: L('ui.run.don.oro.desc') };
+  const carta = run.deck.find((c) => c.id === d.card);
+  return { glifo: 'sello', nombre: L('ui.run.don.sello', { sello: selloN(d.seal), carta: carta ? cartaN(carta) : '' }), desc: selloD(d.seal) };
+}
+
 function packScreen(run: Run): void {
+  const dones = run.don ?? [];
+  let elegido = 0;
   app.innerHTML = `<div class="run">${head(run, L('ui.run.sobre.titulo'), `${L('ui.run.sobre.sub', { n: run.ascension + 1 })}${run.seedText && !run.daily ? L('ui.run.sobre.semilla', { s: run.seedText }) : ''}`)}
     <div class="run-body"><p class="lead">${L('ui.run.sobre.texto')}</p>
-    <div class="choices" id="picks"></div>${waitNote()}
+    <div class="choices" id="picks"></div>
+    ${dones.length ? `<section class="don"><h3 class="sec">${L('ui.run.don.titulo')}</h3><p class="don-sub">${L('ui.run.don.texto')}</p><div class="don-opts" id="don-opts" role="radiogroup" aria-label="${L('ui.run.don.titulo')}"></div></section>` : ''}${waitNote()}
     <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button><button class="primary big" id="go" ${host() ? '' : 'disabled'}>${L('ui.run.al.mapa')}<small>${asaltoN(1)}</small></button></div></div></div>`;
   run.pack.forEach((id, i) => {
     const el = cardEl(spCard(id));
     dealIn(el, 200 + i * 220);
     $('#picks').appendChild(choice(el, espN(id), espD(id), null, null));
   });
-  $('#go').onclick = () => runDo({ t: 'begin' });
+  // el Don: tres botones, uno marcado (el primero de salida); «Al mapa» empieza la campaña con el marcado
+  const marca = (): void => {
+    document.querySelectorAll<HTMLElement>('#don-opts .don-opt').forEach((b, i) => {
+      b.classList.toggle('on', i === elegido);
+      b.setAttribute('aria-checked', String(i === elegido));
+    });
+  };
+  dones.forEach((d, i) => {
+    const tx = donTexto(run, d);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'stamp-btn don-opt';
+    b.setAttribute('role', 'radio');
+    b.disabled = !host();
+    b.innerHTML = `${glyphSvg(tx.glifo, 'stamp-ico')}<span><b>${tx.nombre}</b><small>${tx.desc}</small></span>`;
+    b.onclick = () => {
+      elegido = i;
+      marca();
+    };
+    $('#don-opts').appendChild(b);
+  });
+  marca();
+  $('#go').onclick = () => runDo(dones.length ? { t: 'begin', don: elegido } : { t: 'begin' });
 }
 
 // ───────────────────────── Mapa del castillo ─────────────────────────

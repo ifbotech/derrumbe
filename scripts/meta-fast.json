@@ -1,14 +1,14 @@
 {
-  "generated": "2026-11-17T14:26:45.899Z",
-  "rules": "6c429ad431ebfaca",
+  "generated": "2026-11-17T17:17:37.208Z",
+  "rules": "c51d30a665af89c2",
   "campaigns": 6000,
   "hilos": 12,
-  "segundos": 81.4,
+  "segundos": 81.3,
   "ok": true,
   "checks": [
     {
       "id": "reinado1.vacio",
-      "valor": 31.6,
+      "valor": 31.7,
       "lo": 26,
       "hi": 32,
       "margen": 4.4,
@@ -17,7 +17,7 @@
     },
     {
       "id": "reinado1.lleno",
-      "valor": 48.3,
+      "valor": 48.7,
       "lo": 42,
       "hi": 48,
       "margen": 4.7,
@@ -26,70 +26,34 @@
     },
     {
       "id": "reinado8.vacio",
-      "valor": 7.2,
+      "valor": 11.6,
       "lo": 6,
       "hi": 10,
-      "margen": 3.5,
+      "margen": 4.3,
       "n": 500,
       "pasa": true
     },
     {
       "id": "reinado8.lleno",
-      "valor": 18,
+      "valor": 16.4,
       "lo": 12,
       "hi": 18,
-      "margen": 5.2,
+      "margen": 5,
       "n": 500,
       "pasa": true
     },
     {
       "id": "baraja.acero.vacio",
-      "valor": 35.3,
+      "valor": 38,
       "lo": 23,
       "hi": 34,
-      "margen": 8.3,
+      "margen": 8.4,
       "n": 300,
       "pasa": true
     },
     {
       "id": "baraja.acero.lleno",
-      "valor": 43.7,
-      "lo": 40,
-      "hi": 50,
-      "margen": 8.6,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.prestamista.vacio",
-      "valor": 32.3,
-      "lo": 23,
-      "hi": 34,
-      "margen": 8.1,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.prestamista.lleno",
-      "valor": 41.7,
-      "lo": 40,
-      "hi": 50,
-      "margen": 8.5,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.ases.vacio",
-      "valor": 33,
-      "lo": 23,
-      "hi": 34,
-      "margen": 8.1,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.ases.lleno",
-      "valor": 47.7,
+      "valor": 48.3,
       "lo": 40,
       "hi": 50,
       "margen": 8.7,
@@ -97,17 +61,17 @@
       "pasa": true
     },
     {
-      "id": "baraja.corta.vacio",
-      "valor": 31.3,
+      "id": "baraja.prestamista.vacio",
+      "valor": 34.7,
       "lo": 23,
       "hi": 34,
-      "margen": 8,
+      "margen": 8.2,
       "n": 300,
       "pasa": true
     },
     {
-      "id": "baraja.corta.lleno",
-      "valor": 44.3,
+      "id": "baraja.prestamista.lleno",
+      "valor": 47.3,
       "lo": 40,
       "hi": 50,
       "margen": 8.6,
@@ -115,8 +79,44 @@
       "pasa": true
     },
     {
+      "id": "baraja.ases.vacio",
+      "valor": 37.7,
+      "lo": 23,
+      "hi": 34,
+      "margen": 8.4,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.ases.lleno",
+      "valor": 54.7,
+      "lo": 40,
+      "hi": 50,
+      "margen": 8.6,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.corta.vacio",
+      "valor": 31.7,
+      "lo": 23,
+      "hi": 34,
+      "margen": 8.1,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.corta.lleno",
+      "valor": 51.3,
+      "lo": 40,
+      "hi": 50,
+      "margen": 8.7,
+      "n": 300,
+      "pasa": true
+    },
+    {
       "id": "baraja.caos.vacio",
-      "valor": 30,
+      "valor": 29,
       "lo": 23,
       "hi": 34,
       "margen": 7.9,
@@ -125,16 +125,16 @@
     },
     {
       "id": "baraja.caos.lleno",
-      "valor": 52.3,
+      "valor": 55,
       "lo": 40,
       "hi": 50,
-      "margen": 8.7,
+      "margen": 8.6,
       "n": 300,
       "pasa": true
     },
     {
       "id": "arbol.suma",
-      "valor": 16.7,
+      "valor": 17,
       "lo": 0,
       "margen": 0,
       "n": 2000,
@@ -142,7 +142,7 @@
     },
     {
       "id": "reinados.bajan",
-      "valor": 24.4,
+      "valor": 20.1,
       "lo": 0,
       "margen": 0,
       "n": 1500,
@@ -166,10 +166,10 @@
     },
     {
       "id": "ritmo.3.p95",
-      "valor": 13,
+      "valor": 12,
       "hi": 13,
       "margen": 1,
-      "n": 4982,
+      "n": 4978,
       "pasa": true
     },
     {
@@ -177,7 +177,7 @@
       "valor": 14,
       "hi": 15,
       "margen": 1,
-      "n": 4936,
+      "n": 4931,
       "pasa": true
     },
     {
@@ -185,7 +185,7 @@
       "valor": 15,
       "hi": 15,
       "margen": 1,
-      "n": 3221,
+      "n": 3309,
       "pasa": true
     },
     {

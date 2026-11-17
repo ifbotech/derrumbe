@@ -292,7 +292,7 @@ export function chooseRunAction(run: Run, policy: RunPolicy = {}): RunAction | n
   if (run.pending) return pendingTarget(run);
   switch (run.phase) {
     case 'pack':
-      return { t: 'begin' };
+      return { t: 'begin', don: 0 }; // V29: el bot se queda con la Reliquia del Don de la Conjura
     case 'map': {
       if (stageDef(run.stage).boss) return { t: 'route', i: 0 };
       if (run.node.tag && policy.skip?.includes(run.node.tag)) return { t: 'skip' };

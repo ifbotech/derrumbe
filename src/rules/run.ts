@@ -453,8 +453,16 @@ export interface MapNode {
   tag: string | null;
 }
 
+/**
+ * V29 · El Don de la Conjura: lo que se elige (uno de tres) al abrir la campaña. Una Reliquia común, un sello de lacre
+ * sobre una carta numerada del Mazo o una bolsa de oro. Se sortea con la semilla de la campaña, aparte del resto
+ * (no mueve ningún otro sorteo), así que la misma semilla ofrece siempre los mismos tres.
+ */
+export type Don = { kind: 'tool'; id: string } | { kind: 'sello'; seal: Seal; card: string } | { kind: 'oro'; n: number };
+
 export type RunAction =
-  | { t: 'begin' }
+  /** Sobre: empezar la campaña con el Don i (sin `don`, sin regalo: la pantalla siempre manda uno). */
+  | { t: 'begin'; don?: number }
   /** Plano: tomar la ruta i (su contrato) y entrar a la obra. */
   | { t: 'route'; i: number }
   /** Plano: saltar la obra a cambio de la etiqueta. */
@@ -533,6 +541,10 @@ export interface Run {
   curse: boolean;
   freeShop: boolean;
   pack: string[];
+  /** V29 · los tres Dones que ofrece la conjura al abrir la campaña (una campaña guardada antes de la 29.0 no los trae). */
+  don?: Don[];
+  /** El Don elegido (su índice), ya aplicado. */
+  donTaken?: number;
   pay: [string, number][];
   draft: DraftOpt[];
   drafted: boolean;
@@ -733,6 +745,35 @@ export const DECK: Record<string, DeckDef> = Object.fromEntries(DECKS.map((d) =>
 /** Semilla de la Obra diaria: la misma para todo el mundo ese día. */
 export const dailySeed = (date: string) => seedFrom(`derrumbe-diaria-${date}`);
 
+/** Los tres Dones de una campaña: sorteo propio (un generador aparte sembrado con la semilla), sin tocar `run.rng`. */
+function rollDon(run: Run): Don[] {
+  let s = (run.id ^ 0x9e3779b9) >>> 0;
+  const azar = (n: number): number => {
+    s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x6d2b79f5) >>> 0;
+    return ((s ^ (s >>> 13)) >>> 0) % n;
+  };
+  const comunes = run.toolPool.filter((id) => TOOL[id]?.rarity === 'comun');
+  const numeradas = run.deck.filter((c) => !c.sp && c.suit !== 'X' && !c.seal);
+  const don: Don[] = [];
+  if (comunes.length) don.push({ kind: 'tool', id: comunes[azar(comunes.length)] });
+  if (numeradas.length && run.seals.length) don.push({ kind: 'sello', seal: run.seals[azar(run.seals.length)], card: numeradas[azar(numeradas.length)].id });
+  don.push({ kind: 'oro', n: BALANCE.inicio.donOro });
+  return don;
+}
+
+/** Aplica el Don i (una sola vez por campaña). */
+function takeDon(run: Run, i: number): void {
+  const d = run.don?.[i];
+  if (!d || run.donTaken !== undefined) return;
+  run.donTaken = i;
+  if (d.kind === 'tool') placeTool(run.tools, { id: d.id, n: 0 });
+  else if (d.kind === 'oro') run.gold += d.n;
+  else {
+    const c = run.deck.find((x) => x.id === d.card);
+    if (c) c.seal = d.seal;
+  }
+}
+
 export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   const daily = typeof opts.daily === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(opts.daily) ? opts.daily : null;
   const seedText = daily ?? (typeof opts.seedText === 'string' && opts.seedText.trim() ? opts.seedText.trim().slice(0, 24).toUpperCase() : '');
@@ -804,6 +845,7 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   };
   run.pack = rollSpecials(run, BALANCE.inicio.sobre);
   for (const id of run.pack) addSpecial(run, id);
+  run.don = rollDon(run);
   if (run.ascension >= 5) run.maxIntegrity -= REIN.heridasViejas;
   run.integrity = Math.min(run.integrity, run.maxIntegrity);
   DECK[run.deckId].build(run);
@@ -1086,6 +1128,7 @@ export function runAction(run: Run, a: RunAction): string | null {
   switch (a.t) {
     case 'begin':
       if (run.phase !== 'pack') return 'La campaña ya empezó.';
+      if (a.don !== undefined) takeDon(run, a.don);
       toMap(run);
       return null;
     case 'route': {

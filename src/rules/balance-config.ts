@@ -41,7 +41,7 @@ export interface FxConfig {
 
 export interface BalanceConfig {
   /** Campaña nueva: Vida máxima, oro, tope de interés y cartas del Sobre lacrado inicial. */
-  inicio: { vida: number; oro: number; interesTope: number; sobre: number };
+  inicio: { vida: number; oro: number; interesTope: number; sobre: number; donOro: number };
   /** Los cinco asaltos: multiplicador de la Vida de los guardias (redondeada a 5) y Ataque que se suma al base. */
   asaltos: { hp: number; threat: number }[];
   /** Trono infinito: la Vida crece ×hpCrece por cada asalto más allá del quinto. */

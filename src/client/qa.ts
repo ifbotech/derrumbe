@@ -417,6 +417,11 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(run);
     setScreen('run');
   },
+  // V29 · la primera pantalla de una campaña nueva: el Sobre con sus tres cartas y el Don de la Conjura
+  don: () => {
+    show(newRun({ seedText: 'QA-CORONA', deck: 'obra', ascension: 0 }, 7));
+    setScreen('run');
+  },
   hallazgo: () => {
     const run = baseRun(2);
     toShop(run);

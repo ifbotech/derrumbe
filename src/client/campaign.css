@@ -337,3 +337,24 @@ h3.sec, .camp-run h3.sec, .col-sec h3.sec { line-height: 1.22; }
    tira dice cuál es y en qué hueco quedó (aviso breve: se va al volver a pintar la tira) */
 .run-belt .belt-slot.recien { box-shadow: 0 0 0 3px var(--laton); }
 .belt-aviso { font-family: var(--mono); font-weight: 700; text-transform: none; letter-spacing: 0; font-size: 14px; margin-left: 6px; padding: 1px 6px; border-radius: 3px; background: var(--card-paper); color: var(--ink); }
+
+/* V29 · El Don de la Conjura, en la pantalla del Sobre: tres regalos en fila (uno debajo de otro en el móvil). El
+   marcado lleva filete de latón; «Al mapa» empieza la campaña con él */
+.don { display: grid; gap: clamp(4px, 0.8vh, 8px); }
+.don .don-sub { font-size: clamp(14px, 1.7vh, 17px); text-transform: none; }
+.don-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.don-opt { min-height: 64px; }
+.don-opt small { display: block; font-size: 14px; text-transform: none; letter-spacing: 0; line-height: 1.25; }
+.don-opt.on { box-shadow: 0 0 0 3px var(--laton), 0 4px 0 3px var(--pit); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .don-opts { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+/* con el Don en la pantalla, las tres cartas del Sobre se pintan algo más chicas para que todo entre sin desplazar.
+   En el móvil no cabe: el Don y «Al mapa» van primero y las cartas del Sobre quedan debajo, para quien quiera leerlas */
+.run-body:has(.don) .choices { --cw: clamp(84px, min(8.6vw, 14.5vh), 150px); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .run-body:has(.don) .don { order: 1; }
+  .run-body:has(.don) .end-row { order: 2; margin-top: 0; }
+  .run-body:has(.don) .end-row button { flex: 1 1 0; min-width: 0; }
+  .run-body:has(.don) .lead, .run-body:has(.don) .choices, .run-body:has(.don) .wait-note { order: 3; }
+}
