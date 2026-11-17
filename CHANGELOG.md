@@ -2,6 +2,23 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 33.0.0 — 2026-11-17
+
+Del cobro al Árbol en un clic. La Crónica que cierra la campaña dice qué mejora te alcanza y te lleva a comprarla. No cambia ninguna regla de combate.
+
+### En pantalla
+- **La Crónica propone la siguiente mejora**: debajo de lo cobrado dice cuántas esquirlas tienes y para qué mejora del Árbol te alcanza, con su efecto. Ejemplo: «Tienes 340 ✦. Te alcanza para «Bolsa de la conjura» (300 ✦): +1 de oro inicial por rango.».
+- **Si no te alcanza para ninguna**, dice cuántas esquirlas te faltan para la más barata y lo marca en una barra.
+- **Botón «Mejorar el Árbol · tienes N ✦»** en la propia Crónica, al ganar y al perder: abre el Árbol con esa mejora ya elegida y el botón «Comprar» listo. Antes había que volver a la portada y buscarla.
+- La mejora que se propone es la más barata que ya puedes pagar. Si puedes pagar varias, va primero la de El Arsenal, la rama que ayuda a ganar la campaña.
+- En conjura de varios la Crónica no cambia: se vuelve a la sala.
+
+### Balance
+- Sin cambios de reglas. Laboratorio rápido (6.000 campañas): en el Reinado 1 se gana el 31,5 % de las campañas con el Árbol vacío y el 47,5 % con el Árbol lleno.
+
+### No publicada
+- La 32.0 (cada nivel del Asedio final daba +1 de Multi en vez de +40 de Daño) se midió y se descartó: bajaba la aprobación del panel. El Asedio final sigue como en la 31.0.
+
 ## 31.0.0 — 2026-11-17
 
 El orden no importa. La cuenta de un golpe se simplifica: primero se suma todo y al final se multiplica. Cambia una regla.
