@@ -490,6 +490,21 @@ export function avisoMigracion(meta: Meta, guarda: () => void): void {
   el.querySelector<HTMLButtonElement>('#arbol-aviso-ok')?.focus({ preventScroll: true });
 }
 
+/** V33 · El Árbol se abre entero con este nodo elegido (la mejora que propone la Crónica). */
+export function abrirEn(id: string): void {
+  vista.lista = true;
+  vista.z = 1;
+  vista.x = 0;
+  vista.y = 0;
+  vista.elegido = id;
+}
+
+/** V33 · El efecto del rango siguiente de un nodo, para proponerlo fuera del Árbol. */
+export function efectoSiguiente(meta: Pick<Meta, 'up'>, id: string): string {
+  const n = nodo(id);
+  return n ? efecto(n, rangoDe(meta.up, id)) : '';
+}
+
 /** Para la QA: la vista vuelve a empezar (el próximo pintado enseña el árbol entero con el más barato elegido). */
 export function vistaNueva(): void {
   vista.lista = false;

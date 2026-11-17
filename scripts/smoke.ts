@@ -878,6 +878,23 @@ async function juiceChecks(page: Page): Promise<void> {
   const llega = await page.evaluate(() => (window as unknown as { __qa: { llega(): { id: string; hueco: number } | null } }).__qa.llega());
   const marcadas = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.run-belt .belt-slot.recien')].map((e) => `${e.dataset.id}@${Number(e.dataset.slot) + 1}`));
   check(!!llega && marcadas.join() === `${llega.id}@${llega.hueco}`, `la Reliquia que llega queda marcada en la tira (${marcadas.join() || 'ninguna'})`);
+
+  // ── V33: del cobro al Árbol en un clic ──
+  await go(page, 'acta-derrota');
+  const cobro = await page.evaluate(() => ({
+    linea: document.querySelector('.acta-cobro .cobro-sig')?.textContent ?? '',
+    boton: document.querySelector('#c-arbol')?.textContent ?? '',
+    primario: !!document.querySelector('#c-arbol.primary'),
+  }));
+  check(/340/.test(cobro.linea) && /340/.test(cobro.boton) && cobro.primario, `la Crónica dice cuántas esquirlas hay y qué mejora alcanza (${cobro.linea.slice(0, 60)}…)`);
+  await page.click('#c-arbol');
+  await page.waitForSelector('.arbol .nodo[aria-current="true"]');
+  const elegido = await page.evaluate(() => ({
+    nodo: document.querySelector<HTMLElement>('.arbol .nodo[aria-current="true"]')?.dataset.nodo ?? '',
+    comprable: !!document.querySelector('.arbol .nodo[aria-current="true"].es-comprable'),
+    comprar: document.querySelector('#arbol-comprar')?.getAttribute('aria-disabled') !== 'true',
+  }));
+  check(!!elegido.nodo && elegido.comprable && elegido.comprar, `«Mejorar el Árbol» abre el Árbol con la mejora propuesta elegida y lista para comprar (${elegido.nodo})`);
 }
 
 /** V8 · «Reducir movimiento»: un contexto aparte con reducedMotion 'reduce'. Caída del trono, tajo y monedas sin nada en vuelo. */

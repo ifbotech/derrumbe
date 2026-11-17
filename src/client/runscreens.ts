@@ -15,12 +15,14 @@ import { causeHtml, causeText, validDeath } from './causa';
 import { copyLamina, downloadLamina, laminaOf, seedLink } from './lamina';
 import { burst, coins, dealIn, restart, revealOptions, stampOn } from './fx';
 import { glyphSvg } from './glyphs';
-import { cifraEl } from './cifra';
-import { lastGain } from './guild';
+import { cifra, cifraEl } from './cifra';
+import { lastGain, meta, openGuild } from './guild';
+import { abrirEn, efectoSiguiente } from './arbol';
+import { siguienteMejora } from '../rules/arbol';
 import { sendMsg } from './net';
 import { setScreen } from './router';
 import { renderPings } from './pings';
-import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
+import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, mejN, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
 import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
 import { ritualDelBotin } from './ritual';
 
@@ -557,6 +559,8 @@ function actaScreen(run: Run): void {
   const death = !won && validDeath(run.death) ? run.death : null;
   const link = seedLink(run, c.online);
   const seed = run.daily ? L('ui.acta.diaria', { d: run.daily }) : run.seedText || (c.online ? L('ui.acta.servidor') : '—');
+  // V33: del cobro al Árbol en un clic (en solitario: en conjura de varios se vuelve a la sala)
+  const sig = c.online ? null : siguienteMejora(meta);
   app.innerHTML = `<div class="end ${won ? 'won' : 'lost'} in-page acta">
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
     <div class="acta-sheet">
@@ -566,8 +570,8 @@ function actaScreen(run: Run): void {
         <div class="acta-izq">
           <p>${won ? L('ui.acta.ganada') : depth ? L('ui.acta.infinito', { n: depth + 1 }) : L('ui.acta.perdida', { n: run.stage, nombre: asaltoN(run.stage) })}</p>
           ${death ? causeHtml(death) : ''}
+          ${cobroHtml(run, won, sig)}
           <p class="acta-semilla"><span>${L('ui.acta.semilla')}</span><b>${esc(seed)}</b>${link ? `<small>${L('ui.acta.semilla.nota')}</small>` : ''}</p>
-          <p class="gain">${L('ui.acta.coronas', { n: lastGain })}${won && !run.endless && run.ascension < 7 ? L('ui.acta.desbloqueado', { n: run.ascension + 2 }) : ''}</p>
         </div>
         <table class="acta-stats">${stats.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
       </div>
@@ -577,7 +581,7 @@ function actaScreen(run: Run): void {
         <button class="tinta" id="lamina-copy">${L('ui.acta.copiar.lamina')}</button>
         <button class="tinta" id="copy">${L('ui.acta.copiar')}</button>
         ${won && canBack ? `<button id="deeper">${L('ui.acta.infinito.btn')}<small>${L('ui.acta.infinito.sub')}</small></button>` : ''}
-        ${c.online ? (canBack ? `<button class="primary" id="c-room">${L('ui.acta.sala')}</button>` : `<button disabled>${L('ui.fin.esperando')}</button>`) : `<button class="primary" id="c-hub">${L('ui.acta.portada')}</button>`}
+        ${c.online ? (canBack ? `<button class="primary" id="c-room">${L('ui.acta.sala')}</button>` : `<button disabled>${L('ui.fin.esperando')}</button>`) : `<button class="${sig && !sig.falta ? 'tinta' : 'primary'}" id="c-hub">${L('ui.acta.portada')}</button>`}
       </div>
     </div>
   </div>`;
@@ -609,6 +613,31 @@ function actaScreen(run: Run): void {
     };
   const room = $('#c-room');
   if (room) room.onclick = () => sendMsg({ t: 'lobby' });
+  const arbol = $('#c-arbol');
+  if (arbol && sig)
+    arbol.onclick = () => {
+      S.campaign = null;
+      abrirEn(sig.id);
+      openGuild('ups');
+    };
+}
+
+/**
+ * V33 · El cobro de la campaña y lo que se puede hacer con él: cuántas esquirlas hay, qué mejora del Árbol se propone
+ * (la más barata que ya se puede pagar; si no alcanza para ninguna, la más barata abierta y cuánto falta) y el botón que
+ * abre el Árbol con esa mejora elegida.
+ */
+function cobroHtml(run: Run, won: boolean, sig: ReturnType<typeof siguienteMejora>): string {
+  const gain = `<p class="gain">${L('ui.acta.coronas', { n: lastGain })}${won && !run.endless && run.ascension < 7 ? L('ui.acta.desbloqueado', { n: run.ascension + 2 }) : ''}</p>`;
+  if (!sig) return gain;
+  const datos = { s: cifra(meta.renown), x: mejN(sig.id), n: cifra(sig.coste), f: cifra(sig.falta), e: efectoSiguiente(meta, sig.id) };
+  const pct = Math.round((100 * Math.min(meta.renown, sig.coste)) / Math.max(1, sig.coste));
+  return `<div class="acta-cobro${sig.falta ? '' : ' alcanza'}">
+            ${gain}
+            <p class="cobro-sig">${L(sig.falta ? 'ui.acta.arbol.falta' : 'ui.acta.arbol.alcanza', datos)}</p>
+            ${sig.falta ? `<i class="cobro-barra" aria-hidden="true" style="--p:${pct}%"></i>` : ''}
+            <button id="c-arbol" class="${sig.falta ? 'tinta' : 'primary'}">${L(sig.falta ? 'ui.acta.arbol.ver' : 'ui.acta.arbol.btn')}<small>${L('ui.acta.arbol.sub', { s: datos.s })}</small></button>
+          </div>`;
 }
 
 function fallbackCopy(text: string, done: () => void): void {
