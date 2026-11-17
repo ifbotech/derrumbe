@@ -3,7 +3,7 @@
 // honda y Buen ojo solo actúan en el Trono infinito; los otros 15 no cambian ningún combate).
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from '../src/rules/achievements';
-import { ARBOL, RAIZ, RAMAS, arbolLleno, cifraDe, comprarNodo, costeDe, dosCifras, imanDe, nodo, puedeComprar } from '../src/rules/arbol';
+import { ARBOL, RAIZ, RAMAS, arbolLleno, cifraDe, comprarNodo, costeDe, dosCifras, imanDe, mejorasAlAlcance, nodo, puedeComprar, siguienteMejora } from '../src/rules/arbol';
 import { BALANCE, fill, fillFor } from '../src/rules/balance-config';
 import { BOSSES, CONTRACTS, EVENTS, TAGS, UPGRADES, buyUpgrade, cleanUp, newMeta, newRun, stageConfig, startStage } from '../src/rules/run';
 import { newTowers, previewStrike } from '../src/rules/engine';
@@ -163,6 +163,53 @@ describe('comprar', () => {
   it('cleanUp recorta a los rangos nuevos (la Bolsa, hasta 5)', () => {
     expect(cleanUp({ caja: 9, vale: 99, gracia: 2, inventada: 3, pendon: -1 })).toMatchObject({ caja: 5, vale: 2, gracia: 2, pendon: 0 });
     expect(Object.keys(cleanUp({})).length).toBe(30);
+  });
+});
+
+describe('V33 · la mejora que se propone al cerrar la campaña', () => {
+  it('sin saldo: la más barata de las abiertas, con lo que falta; primero El Arsenal', () => {
+    const meta = newMeta();
+    meta.renown = 40;
+    const sig = siguienteMejora(meta)!;
+    expect(nodo(sig.id)!.rama).toBe('arsenal');
+    expect(sig.id).toBe('caja');
+    expect(sig.coste).toBe(costeDe(meta, 'caja'));
+    expect(sig.falta).toBe(sig.coste - 40);
+    expect(mejorasAlAlcance(meta)).toBe(0);
+  });
+
+  it('si alcanza para algo, se propone eso antes que una del Arsenal que no alcanza', () => {
+    const meta = newMeta();
+    meta.renown = costeDe(meta, 'piedra_iman')!;
+    expect(meta.renown).toBeLessThan(costeDe(meta, 'caja')!);
+    const sig = siguienteMejora(meta)!;
+    expect(sig.falta).toBe(0);
+    expect(puedeComprar(meta, sig.id)).toBeNull();
+    expect(nodo(sig.id)!.rama).not.toBe('arsenal');
+    expect(mejorasAlAlcance(meta)).toBeGreaterThan(0);
+  });
+
+  it('con saldo para varias, la más barata del Arsenal; nunca una con el padre sin comprar', () => {
+    const meta = newMeta();
+    meta.renown = 340;
+    const sig = siguienteMejora(meta)!;
+    expect(sig).toEqual({ id: 'caja', coste: costeDe(meta, 'caja'), falta: 0 });
+    for (let i = 0; i < 200; i++) {
+      const s2 = siguienteMejora(meta);
+      if (!s2) break;
+      const padre = nodo(s2.id)!.padre;
+      expect(!padre || (meta.up[padre] ?? 0) >= 1).toBe(true);
+      meta.renown = Math.max(meta.renown, s2.coste);
+      expect(comprarNodo(meta, s2.id)).toBe(true);
+    }
+  });
+
+  it('con el Árbol lleno no propone nada', () => {
+    const meta = newMeta();
+    meta.up = arbolLleno();
+    meta.renown = 999999;
+    expect(siguienteMejora(meta)).toBeNull();
+    expect(mejorasAlAlcance(meta)).toBe(0);
   });
 });
 

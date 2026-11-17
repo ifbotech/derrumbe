@@ -36,6 +36,8 @@ saveMeta(); // deja guardada la migración, si la hubo
 
 /** Esquirlas que dio la última campaña cerrada (para la crónica). */
 export let lastGain = 0;
+/** Para la QA: lo cobrado por la campaña que enseña la Crónica de prueba. */
+export const qaCobro = (n: number): void => void (lastGain = n);
 
 // ── archivo de crónicas: las 25 últimas campañas terminadas ──
 const ARCHIVE_KEY = 'derrumbe:actas';

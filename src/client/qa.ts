@@ -16,7 +16,7 @@ import { RUN_PLAYER, S, app, applySettings, settings } from './core';
 import { getLang, isLang, setLang } from '../shared/i18n';
 import { L, acabN } from './lengua';
 import { brandLockup, renderHome } from './home';
-import { archive, meta, openGuild } from './guild';
+import { archive, meta, openGuild, qaCobro } from './guild';
 import { arbolVista, vistaNueva } from './arbol';
 import { colocarCaida, recogerCaida } from './caida';
 import { pintarRitual, ritualNuevo } from './ritual';
@@ -232,6 +232,12 @@ function winStage(run: Run): void {
 function logged(run: Run): void {
   setMode('pointer');
   noteRun(run);
+}
+
+/** V33: la Crónica de prueba cobra como una de verdad (100 por asalto superado y lo recogido en la mesa) y el perfil queda con eso. */
+function cobra(n: number): void {
+  qaCobro(n);
+  meta.renown = n;
 }
 
 /** La campaña perdida de acta-derrota (y de acta-feedback): causa de la derrota y semilla con enlace. */
@@ -488,6 +494,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     run.stats.contracts = 2;
     logged(run);
     show(run);
+    cobra(340);
     setScreen('run');
   },
   // V9: con al menos una campaña en los datos de prueba (la de acta-derrota si aún no hay ninguna)
@@ -615,6 +622,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     const run = derrota();
     logged(run);
     show(run);
+    cobra(340);
     setScreen('run');
   },
   // la crónica de una campaña ganada: sello «Corte vencida», el más ancho, junto a la ficha de la baraja y el Reinado
@@ -627,6 +635,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     run.stats.contracts = 2;
     logged(run);
     show(run);
+    cobra(640);
     setScreen('run');
   },
   // ── arte-ui V7: partida guiada, monarcas y su maldición ──
@@ -799,6 +808,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     const run = derrota();
     logged(run);
     show(run);
+    cobra(340);
     setScreen('run');
     feedbackShow(app, 'copiado');
     // en el móvil el bloque queda bajo la tabla: la hoja se desplaza hasta él, como tras pulsarlo

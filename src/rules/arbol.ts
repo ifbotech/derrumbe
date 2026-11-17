@@ -189,6 +189,33 @@ export function comprarNodo(meta: Pick<Meta, 'up' | 'renown'>, id: string): bool
   return true;
 }
 
+/**
+ * V33 · La mejora que se propone al cerrar una campaña: el rango más barato que ya se puede pagar o, si no alcanza
+ * para ninguno, el más barato de los que están abiertos (con su padre comprado). A igual condición va primero
+ * El Arsenal, la rama que ayuda a ganar. `falta` es 0 cuando alcanza. null con el Árbol lleno.
+ */
+export function siguienteMejora(meta: Pick<Meta, 'up' | 'renown'>): { id: string; coste: number; falta: number } | null {
+  let mejor: { id: string; coste: number; falta: number; arsenal: boolean } | null = null;
+  for (const n of ARBOL) {
+    const por = puedeComprar(meta, n.id);
+    if (por !== null && por !== 'saldo') continue;
+    const coste = costeDe(meta, n.id)!;
+    const c = { id: n.id, coste, falta: Math.max(0, coste - meta.renown), arsenal: n.rama === 'arsenal' };
+    let gana: boolean;
+    if (!mejor) gana = true;
+    else if ((c.falta === 0) !== (mejor.falta === 0)) gana = c.falta === 0;
+    else if (c.arsenal !== mejor.arsenal) gana = c.arsenal;
+    else gana = c.coste < mejor.coste;
+    if (gana) mejor = c;
+  }
+  return mejor && { id: mejor.id, coste: mejor.coste, falta: mejor.falta };
+}
+
+/** Rangos que se pueden pagar ahora mismo. */
+export function mejorasAlAlcance(meta: Pick<Meta, 'up' | 'renown'>): number {
+  return ARBOL.filter((n) => puedeComprar(meta, n.id) === null).length;
+}
+
 /** Rangos válidos de cada nodo (lo que llega de un cliente o de un guardado se recorta a su tope). */
 export function cleanUp(up: unknown): Record<string, number> {
   const src = (up && typeof up === 'object' ? up : {}) as Record<string, unknown>;
