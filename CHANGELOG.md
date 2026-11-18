@@ -2,6 +2,18 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 37.0.0 — 2026-11-18
+
+Se empieza antes. La partida guiada pasa de cinco jugadas a tres y la línea del Multi dice cuánto suma al final. No cambia ninguna regla de la campaña.
+
+### En pantalla
+- **Partida guiada en 3 jugadas**: 1 «Palo e Inmune» (el 6♣ contra PICAS, que es Inmune a ♠; el ♣ da Escudo), 2 «La cuenta» (la pareja de 7 abate a la Sota y su 7♦ salpica a CORAZONES, que espera en la fila) y 3 «Golpe exacto» (el 9♦ a CORAZONES: 9 justos). La Manga ya no tiene paso propio: la ayuda de su hueco lo explica.
+- **La línea del Multi termina en su total**: con dos piezas o más acaba en el Multi de la cuenta, por ejemplo «Multi: Grupo 2 · Racha +1 · Dagas gemelas +1 = ×4».
+- Las tablas de controles de REGLAS.md y del README dicen «Golpear al enemigo activo».
+
+### Pruebas
+- 385 + 9 pruebas (la partida guiada se juega entera en tres acciones y se gana), QA visual sin fallos en español y en inglés con el estado nuevo `guia-cuenta`, humo entero y construcción web. El humo de la mesa comprueba que la línea del Multi acaba en el mismo Multi que la cuenta.
+
 ## 36.0.0 — 2026-11-18
 
 La cuenta dice quién aporta. Cada carta elegida lleva encima lo que suma al golpe, y la cuenta enseña de dónde sale el Multi y qué Contraataque vas a recibir de verdad. No cambia ninguna regla.

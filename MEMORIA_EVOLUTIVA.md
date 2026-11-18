@@ -71,7 +71,9 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | 33.0 con placebo (i5.2) | control: tres palabras cambiadas sin tocar el sentido | 83,3 | — | 65,0 | 7,07 | 7,83 | 81,0 | 77,8 | 80,0 | 229,77 | `pulso-60-20261117-184146` |
 | **35.0 (i5.2, escenas de la 35.0)** | línea base del ciclo V35 → V60 (`v35.0.0`) | 86,7 | — | 70,0 | 6,73 | 7,82 | 81,0 | 77,8 | 93,3 | **233,08** | `pulso-60-20261118-025554` |
 | 35.0 con placebo de las escenas que toca la 36.0 | control: 15 escenas con una palabra cambiada | 80,0 | — | 60,0 | 6,77 | 7,83 | 71,4 | 77,8 | 80,0 | 219,47 | `pulso-60-20261118-041002` |
-| **36.0 (i5.2)** | **aceptada, Campeón** (`v36.0.0`; +16,78 contra su placebo) | 88,3 | — | 75,0 | 6,75 | 7,87 | 76,2 | 100,0 | 86,7 | **236,25** | `pulso-60-20261118-035957` |
+| 36.0 (i5.2) | aceptada (`v36.0.0`; +16,78 contra su placebo) | 88,3 | — | 75,0 | 6,75 | 7,87 | 76,2 | 100,0 | 86,7 | 236,25 | `pulso-60-20261118-035957` |
+| 36.0 con placebo de las escenas que toca la 37.0 | control: 15 escenas con una palabra cambiada | 83,3 | — | 55,0 | 6,90 | 7,87 | 66,7 | 88,9 | 86,7 | 219,40 | `pulso-60-20261118-050629` |
+| **37.0 (i5.2)** | **aceptada, Campeón** (`v37.0.0`; +5,75 contra su placebo) | 83,3 | — | 70,0 | 6,90 | 7,82 | 81,0 | 66,7 | 86,7 | **225,15** | `pulso-60-20261118-045837` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -403,3 +405,11 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **Regla corregida**: el primer `veredicto` también exigía no bajar la claridad, y rechazó la 36.0 por −0,017. Esa condición es de la vía del duelo AB/BA en el mandato, no de la del placebo; se quitó y ahora la claridad y los pulgares se informan sin decidir.
 - **Lección**: el placebo de 15 escenas bajó F 13,6 puntos frente a la línea base (más que el −4,86 de la 33.0): cuantas más escenas se tocan, más deriva, y medir contra el Campeón congelado habría dado solo +3,17.
 - **Siguiente**: la claridad sigue siendo el objetivo más lejano. Quejas que quedan: entender la Furia, contraste y cansancio del texto, y el Steam Deck.
+
+### V37 · La partida guiada en 3 jugadas y el Multi con su total — aceptada (`v37.0.0`)
+
+- **Hipótesis**: cuatro reseñas de la 36.0 llaman «lentos y repetitivos» a los 5 pasos de la guía, y un veterano no cuadraba la línea del Multi con la cuenta. Tres jugadas y un total al final de la línea deberían subir impulsivos y claridad.
+- **Qué cambia**: la guía enseña palo e Inmune, la cuenta y el Golpe exacto en 3 jugadas (Sota de 20 y Reina de 11, que la salpicadura del 7♦ deja en 9). La Manga se queda sin paso propio. La línea «Multi: …» acaba en «= ×N». Ninguna regla de campaña.
+- **Medida**: contra su placebo, +5,75 de F con pulgares netos 0 y claridad igual (6,90 en las dos). Críticos 70 % contra 55 %, impulsivos 81 % contra 66,7 % y Steam Deck 66,7 % contra 88,9 % (2 personas de 9). En cifra absoluta F es 225,15, 11,1 menos que la 36.0, y el placebo baja 16,85: la deriva de reescribir 15 escenas pesa más que el cambio.
+- **Ojo**: los tres pulgares abajo del Deck hablan de letra chica, contraste y «CAEN 2 cortado». La captura de 1280×800 lo enseña entero, así que la queja es de tamaño y densidad, no un recorte.
+- **Siguiente**: legibilidad en el Steam Deck y en el portátil (letra y contraste de la cuenta y de la fila); la diversión sigue en 7,8.
