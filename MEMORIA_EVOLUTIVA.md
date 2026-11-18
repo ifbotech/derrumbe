@@ -73,7 +73,9 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | 35.0 con placebo de las escenas que toca la 36.0 | control: 15 escenas con una palabra cambiada | 80,0 | — | 60,0 | 6,77 | 7,83 | 71,4 | 77,8 | 80,0 | 219,47 | `pulso-60-20261118-041002` |
 | 36.0 (i5.2) | aceptada (`v36.0.0`; +16,78 contra su placebo) | 88,3 | — | 75,0 | 6,75 | 7,87 | 76,2 | 100,0 | 86,7 | 236,25 | `pulso-60-20261118-035957` |
 | 36.0 con placebo de las escenas que toca la 37.0 | control: 15 escenas con una palabra cambiada | 83,3 | — | 55,0 | 6,90 | 7,87 | 66,7 | 88,9 | 86,7 | 219,40 | `pulso-60-20261118-050629` |
-| **37.0 (i5.2)** | **aceptada, Campeón** (`v37.0.0`; +5,75 contra su placebo) | 83,3 | — | 70,0 | 6,90 | 7,82 | 81,0 | 66,7 | 86,7 | **225,15** | `pulso-60-20261118-045837` |
+| 37.0 (i5.2) | aceptada (`v37.0.0`; +5,75 contra su placebo; con la regla endurecida habría sido rechazada) | 83,3 | — | 70,0 | 6,90 | 7,82 | 81,0 | 66,7 | 86,7 | 225,15 | `pulso-60-20261118-045837` |
+| 37.0 con placebo de las escenas que toca la 38.0 | control: 19 escenas con una palabra cambiada | 80,0 | — | 60,0 | 6,98 | 7,83 | 71,4 | 77,8 | 86,7 | 220,73 | `pulso-60-20261118-105522` |
+| **38.0 (i5.2, V38e)** | **aceptada por dirección, Campeón** (`v38.0.0`; +7,44 contra su placebo; V38c, mismo código, +8,14) | 85,0 | — | 70,0 | 6,72 | 7,83 | 71,4 | 100,0 | 86,7 | **228,17** | `pulso-60-20261118-123303` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -438,3 +440,11 @@ Cinco variantes, todas sin reglas nuevas, con QA visual ES/EN sin fallos, humo, 
 - **Lo que se aprende**: lo de V38b–V38c recupera el Deck (100 %, 9 de 9) y bate a su placebo por +7 a +8 en dos medidas; las fichas del Multi (V38d) restan. La claridad baja contra el placebo en las cinco (−0,12 a −0,47), también con las escenas mínimas: la pantalla más cargada de cajas pesa en la nota de claridad.
 - **Por qué no entra**: el listón es una medida suelta de la 36.0. El mismo código de la 36.0 con una palabra cambiada en 15 escenas midió 219,40 (−16,85). A temperatura 0 otra semilla no cambia ninguna reseña, así que no hay réplicas baratas; el único ruido es el de reescribir el pedido, y es de ±8 o más. Con el margen de 5 contra una tirada alta, una candidata necesita también una tirada alta.
 - **Pendiente**: decisión del usuario sobre cómo medir el listón (ver la conversación del 2026-11-18).
+
+### V38 · aceptada por decisión de dirección (`v38.0.0`, Campeón)
+
+- **Decisión del usuario (2026-11-18)**: la V38c / V38e es una mejora clara (Steam Deck 100 %, aprobación 85 %, +7,44 / +8,14 contra su placebo y por encima de la 37.0) y no se descarta por el pico aislado de 236,25 de la 36.0. Se publica el código de V38c (`8828fa8`) con las escenas mínimas de V38e.
+- **El sesgo de la tirada única**: el panel corre a temperatura 0, así que una medida solo cambia si cambia el pedido, y reescribir 15–19 escenas mueve F ±8 o más. La 36.0 midió 236,25 una vez; su mismo código con una palabra cambiada en 15 escenas midió 219,40. Comparar contra la tirada más alta del ciclo exige a la candidata otra tirada igual de alta: mide la suerte, no el juego.
+- **Listón desde ahora (regla del listón promediado)**: el F del Campeón y sus pisos son la **media de su medida y de sus placebos nulos** (el Campeón con un cambio nulo de redacción en las escenas que tocan las candidatas). Al coronar una versión, su placebo de la candidata ya cuenta como medida nula del Campeón anterior; para el nuevo Campeón se suman 2 o 3 placebos nulos con sinónimos distintos antes de juzgar la siguiente. El margen de F sigue en 5,0 y los pisos, con sus mismos topes. `veredicto --campeon` acepta varias corridas y las promedia.
+- Verde de ♣ `#005442` también en `SPECS/V11.md`, `SPECS/V6-normas-y-glosario.md`, el agente arte-ui y las skills brutalist-print-ui y engraving-svg-forge.
+- **Siguiente**: pausa para el UAT del usuario en la web; después, V39 (sellos S/A/B y de sinergia) y V40 (rasgos que escalan) con sus observaciones.
