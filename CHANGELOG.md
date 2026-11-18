@@ -2,6 +2,20 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 36.0.0 — 2026-11-18
+
+La cuenta dice quién aporta. Cada carta elegida lleva encima lo que suma al golpe, y la cuenta enseña de dónde sale el Multi y qué Contraataque vas a recibir de verdad. No cambia ninguna regla.
+
+### En pantalla
+- **Una placa sobre cada carta elegida** con lo que aporta: «+7» si suma 7 de Daño, «0» tachado si el enemigo es Inmune a su palo y «Multi +1» si su acabado sube el Multi.
+- **De dónde sale el Multi**: en pantallas anchas, junto a la cuenta, una línea lo desglosa pieza por pieza (por ejemplo «Multi: Grupo 2 · Racha +1 · Dagas gemelas +1»). En el móvil y con el aviso de «Último turno» no se muestra, para que la cuenta no crezca.
+- **El Contraataque previsto es el del enemigo que queda activo** tras el golpe: si abates la Casa, el de la Casa siguiente; si lo dejas Aturdido, la cuenta dice «Sin Contraataque».
+- **Un Susurro explica el duelo** la primera vez que un asalto tiene varias Casas: se asaltan de una en una, solo golpeas al del centro y solo él te contraataca.
+- Fuera los textos de ayuda de la mesa vieja de cuatro tronos: el botón Golpear, la regla de Golpear y los Susurros de Inmune, Expuesto, Aturdido y monarca hablan del enemigo activo.
+
+### Pruebas
+- 385 + 9 pruebas, QA visual sin fallos en español y en inglés (cuatro ventanas), humo entero en español e inglés y construcción web. El humo de la mesa comprueba la placa de cada carta elegida y la línea del Multi.
+
 ## 35.0.0 — 2026-11-18
 
 Un enemigo a la vez. La mesa deja las cuatro columnas de tronos y pone en el centro un solo enemigo grande; las Reliquias se agrupan en cinco rasgos con bonos a 2, 4 y 6; el monarca tiene una Furia que se ve y suelta un Cofre al caer; entre asaltos aparecen santuarios de azar. Cambian varias reglas. Incluye la 34.0 (las Reliquias no se ordenan).
