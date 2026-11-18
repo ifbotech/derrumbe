@@ -1,6 +1,6 @@
 // Arranque del cliente (el título vive en shared/brand.ts). Cada pantalla vive en su módulo:
 //   core (estado y ajustes) · platform (guardado, pantalla, vibración) · net (servidor de salas)
-//   router · home · lobby · guild · campaign · runscreens · table (mesa de combate) · tutorial-ui
+//   router · home · lobby · guild · campaign · runscreens · table (mesa de combate)
 //   widgets · lupa · pings · nav (teclado y mando) · fx · card / art / glyphs / engraving · audio
 import '@fontsource/archivo-black';
 import '@fontsource/unifrakturcook/700.css';

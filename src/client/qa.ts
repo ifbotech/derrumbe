@@ -4,9 +4,8 @@
 import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
-import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, ordenDe, previewStrike, viewFor } from '../rules/engine';
+import { CABALLO, Card, GameState, MAX_NUM, REY, SOTA, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, ordenDe, previewStrike, viewFor } from '../rules/engine';
 import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
-import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../rules/tutorial';
 import { TOOLS, placeTool } from '../rules/tools';
 import { hero } from './art';
 import { prefs } from './campaign';
@@ -30,7 +29,9 @@ import { platform } from './platform';
 import { setScreen } from './router';
 import { renderRun } from './runscreens';
 import { pump, renderInteractive, toggleInspector } from './table';
-import { hideBark, monarchGallery, showBark, spotlight } from './guia';
+import { hideBark, monarchGallery, showBark } from './guia';
+import { bufonSays } from './whispers';
+import type { ConsejoBufon } from '../rules/bufon';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import { feedbackShow, showRules, showSettings } from './widgets';
 import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
@@ -73,7 +74,6 @@ function clean(): void {
   recogerCaida();
   ritualNuevo();
   document.querySelectorAll('.modal, .lupa, .end:not(.in-page), .toast, .ach-stack, .tip, .ribbon, .banner, body > .pieza, body > .esquirlas').forEach((n) => n.remove());
-  S.tutorial = null;
   S.session = null;
   S.lobby = null;
   S.shown = null;
@@ -177,25 +177,11 @@ async function mesaMonarca(boss: string): Promise<void> {
   if (id) showBark(id.barks.entrada);
 }
 
-/** V7 · la partida guiada en el paso n (0-2), con los pasos anteriores ya jugados y su foco encendido. */
-async function guia(step: number): Promise<void> {
-  clean();
-  setMode('pointer');
-  meta.runs = Math.max(1, meta.runs);
-  let state = createTutorial();
-  for (let i = 0; i < step; i++) {
-    const a = stepAction(TUTORIAL_STEPS[i]);
-    if (a) state = applyAction(state, TUTORIAL_PLAYER, a).state;
-  }
-  S.tutorial = { state, step, mode: 'do' };
-  S.campaign = null;
-  S.queue.push({ view: viewFor(state, TUTORIAL_PLAYER), events: [] });
-  setScreen('table');
-  await pump();
-  document.querySelectorAll('.modal').forEach((m) => m.remove());
-  renderInteractive();
-  const s = TUTORIAL_STEPS[step];
-  spotlight(s.focus, s.line);
+/** V40 · la mesa de la primera campaña con la frase n del Bufón (palo, cuenta o Golpe exacto) a la vista. */
+async function bufonEn(id: ConsejoBufon): Promise<void> {
+  await STATES.mesa();
+  document.querySelector('.whisper')?.remove();
+  bufonSays(id);
 }
 
 /** Da por ganado el asalto en curso y deja la campaña en el Botín. */
@@ -248,7 +234,7 @@ function derrota(): Run {
   run.stats.turns = 41;
   run.stats.gold = 103;
   run.stats.contracts = 2;
-  run.death = { kind: 'sirena', title: 'Contraataque de PICAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Un ♣ más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+  run.death = { kind: 'sirena', title: 'Contraataque de ESPADAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Una carta de Bastos más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
   return run;
 }
 
@@ -575,7 +561,6 @@ const STATES: Record<string, () => void | Promise<void>> = {
       seed,
       deck,
       level,
-      daily: null,
       online: false,
       gain: won ? 13 : stage - 1,
       text: `${FULL_TITLE} · Crónica`,
@@ -585,8 +570,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
       sample(0, true, 5, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
       sample(1, false, 4, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
         kind: 'sirena',
-        title: 'Contraataque de TRÉBOLES: ⚔ 18 contra Escudo 4 → entran 14',
-        detail: 'Te quedaba 11 de Vida. Un ♣ más o un Golpe exacto lo evitaban.',
+        title: 'Contraataque de BASTOS: ⚔ 18 contra Escudo 4 → entran 14',
+        detail: 'Te quedaba 11 de Vida. Una carta de Bastos más o un Golpe exacto lo evitaban.',
         before: 11,
         threat: 18,
         blocked: 4,
@@ -652,9 +637,9 @@ const STATES: Record<string, () => void | Promise<void>> = {
   },
   // ── arte-ui V7: partida guiada, monarcas y su maldición ──
   // el foco de los pasos 1 (el poder del palo), 3 (La Manga) y 5 (el Golpe exacto)
-  'guia-palo': () => guia(0),
-  'guia-cuenta': () => guia(1),
-  'guia-exacto': () => guia(2),
+  'bufon-palo': () => bufonEn('palo'),
+  'bufon-cuenta': () => bufonEn('cuenta'),
+  'bufon-exacto': () => bufonEn('exacto'),
   // un asalto con La Dama del Cáliz: su retrato, la placa «Tus ♥ no curan», el cáliz tachado en cada ♥ y su bocadillo
   'mesa-monarca': () => mesaMonarca('sequia'),
   // el mismo asalto con cada monarca (mesa-monarca-doble, …-escasez…): la QA los corre a demanda
@@ -759,11 +744,11 @@ const STATES: Record<string, () => void | Promise<void>> = {
     S.campaign = null;
     setMode('pointer');
     app.innerHTML = `<div class="run"><div class="run-head"><h1>${L('ui.qa.laminas')}</h1></div><div class="qa-limpias"></div><div class="qa-laminas"></div></div>`;
-    // V11: las cuarenta numeradas de cara limpia, del As al 10 de cada palo (las mide la regla «cara-limpia»)
+    // V40: las treinta y seis numeradas de cara limpia, del As al 9 de cada palo (las mide la regla «cara-limpia»)
     const sheet = app.querySelector('.qa-limpias')!;
-    for (const suit of ['S', 'H', 'D', 'C'] as Suit[]) for (let rank = 1; rank <= 10; rank++) sheet.appendChild(cardEl({ id: `lim-${suit}${rank}`, suit, rank }, { tilt: false }));
+    for (const suit of ['S', 'H', 'D', 'C'] as Suit[]) for (let rank = 1; rank <= MAX_NUM; rank++) sheet.appendChild(cardEl({ id: `lim-${suit}${rank}`, suit, rank }, { tilt: false }));
     const host = app.querySelector('.qa-laminas')!;
-    ([['forjado', 'C', 9, 52], ['templado', 'D', 10, 78], ['policromado', 'H', 7, 104], ['agrietado', 'S', 4, 64]] as [Treatment, Suit, number, number][]).forEach(([tr, suit, rank, at]) => {
+    ([['forjado', 'C', 9, 52], ['templado', 'D', 8, 78], ['policromado', 'H', 7, 104], ['agrietado', 'S', 4, 64]] as [Treatment, Suit, number, number][]).forEach(([tr, suit, rank, at]) => {
       const fig = document.createElement('figure');
       const c = cardEl({ id: `lam-${tr}`, suit, rank, tr }, { tilt: false });
       const band = c.querySelector<HTMLElement>('.foil-band');
@@ -773,10 +758,10 @@ const STATES: Record<string, () => void | Promise<void>> = {
       fig.insertAdjacentHTML('beforeend', `<figcaption>${acabN(tr)}</figcaption>`);
       host.appendChild(fig);
     });
-    // y una figura junto a las numeradas: la Reina conserva su grabado
+    // y una figura junto a las numeradas: el Caballo conserva su grabado
     const fig = document.createElement('figure');
-    fig.append(cardEl({ id: 'lam-figura', suit: 'H', rank: 12 }, { tilt: false }));
-    fig.insertAdjacentHTML('beforeend', `<figcaption>${L('ui.carta.reina')}</figcaption>`);
+    fig.append(cardEl({ id: 'lam-figura', suit: 'H', rank: CABALLO }, { tilt: false }));
+    fig.insertAdjacentHTML('beforeend', `<figcaption>${L('ui.carta.caballo')}</figcaption>`);
     host.appendChild(fig);
   },
   // la Taberna con el oro en vuelo: seis monedas grabadas entre la primera oferta y la bolsa
@@ -866,7 +851,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     // V10: en el idioma de la mesa (scripts/og-card.ts hace una por idioma; og-card.png es la española)
     app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt">${brandLockup(getLang())}<small>${L('ui.og.sub')}</small></div><div class="og-cards"></div></div>`;
     const fan = app.querySelector('.og-cards')!;
-    ([['S', 13], ['D', 12], ['H', 11], ['C', 13]] as [Suit, number][]).forEach(([suit, rank], i) => {
+    ([['S', REY], ['D', CABALLO], ['H', SOTA], ['C', REY]] as [Suit, number][]).forEach(([suit, rank], i) => {
       const c = cardEl({ id: `og-${suit}`, suit, rank }, { tilt: false });
       c.style.setProperty('--r', `${(i - 1.5) * 9}deg`);
       c.style.setProperty('--y', `${Math.abs(i - 1.5) * 16}px`);

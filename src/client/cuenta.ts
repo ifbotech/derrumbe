@@ -32,7 +32,7 @@ export interface Preview {
 const CHEVRON = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5,7.8 L6,4.2 L9.5,7.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg>';
 const CROSS = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg>';
 /** Guardia por rango, para el recibo. */
-const GUARD_NAME = (r: number): string | undefined => (r === 11 ? L('ui.cuenta.sota') : r === 12 ? L('ui.cuenta.reina') : r === 13 ? L('ui.cuenta.rey') : undefined);
+const GUARD_NAME = (r: number): string | undefined => (r === 10 ? L('ui.cuenta.sota') : r === 11 ? L('ui.cuenta.caballo') : r === 12 ? L('ui.cuenta.rey') : undefined);
 const WARN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,2.5 L22.5,21 H1.5 Z" fill="currentColor"/><path d="M12,9 V15 M12,17.6 V18.4" fill="none" stroke="var(--hazard)" stroke-width="2.6" stroke-linecap="square"/></svg>';
 
 const signed = (n: number, text = String(n)) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${text.replace('-', '')}`;

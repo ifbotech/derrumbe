@@ -51,10 +51,19 @@ function rehacer(lang: Lang, prefijo: string, texto: string, traducir: (campo: s
   return null;
 }
 
-/** Un nombre propio en `lang` («Broquel» → «Buckler»); las etiquetas de carta (7♠, A♦) no cambian. */
+/** V40 · la etiqueta de una carta («7 de Espadas», «Comodín») en `lang` («7 of Swords», «Joker»); null si no lo es. */
+export function cartaEn(lang: Lang, es: string): string | null {
+  if (es === 'Comodín') return tFor(lang, 'carta.comodin');
+  const m = /^(\d{1,2}) de (\p{L}+)$/u.exec(es);
+  if (!m) return null;
+  for (const s of ['S', 'D', 'H', 'C']) if (tFor('es', `palo.${s}.nombre`) === m[2]) return tFor(lang, 'carta.etiqueta', { n: m[1], palo: tFor(lang, `palo.${s}.nombre`) });
+  return null;
+}
+
+/** Un nombre propio en `lang` («Broquel» → «Buckler»; «7 de Espadas» → «7 of Swords»). */
 function nombreEn(lang: Lang, es: string): string {
   const k = nombres().get(es);
-  return k ? tFor(lang, k) : es;
+  return k ? tFor(lang, k) : (cartaEn(lang, es) ?? es);
 }
 
 /** Cabecera de un paso: nombres separados por « · » (carta y su acabado) o « → » (Espejo de mano y lo que copia). */
@@ -64,7 +73,7 @@ const cabecera = (lang: Lang, es: string) =>
     .map((a) => a.split(' · ').map((b) => nombreEn(lang, b)).join(' · '))
     .join(' → ');
 
-/** El nombre del palo en mayúsculas («PICAS» → «SPADES»). */
+/** El nombre del palo en mayúsculas («ESPADAS» → «SWORDS»). */
 function paloEn(lang: Lang, es: string): string {
   for (const s of ['S', 'D', 'H', 'C']) if (tFor('es', `palo.${s}`) === es) return tFor(lang, `palo.${s}`);
   return es;

@@ -68,7 +68,7 @@ describe('la maldición a la vista', () => {
     expect(cfg('intemperie').wallCap).toBe(Number(BOSS.intemperie.curse.badge.match(/\d+/)![0]));
     expect(cfg('blindaje').noFx).toBe('sobrecarga');
     expect(BOSS.blindaje.curse.badge).toBe('Sin Aturdido');
-    expect(cfg('furia').floorThreat[11] - DEFAULT_CONFIG.floorThreat[11]).toBe(Number(BOSS.furia.curse.badge.match(/\d+/)![0]));
+    expect(cfg('furia').floorThreat[10] - DEFAULT_CONFIG.floorThreat[10]).toBe(Number(BOSS.furia.curse.badge.match(/\d+/)![0]));
     expect(cfg('inestable').furiaInicial).toBe(Number(BOSS.inestable.curse.badge.match(/\d+/)![0]));
   });
 

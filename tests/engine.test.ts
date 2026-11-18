@@ -9,13 +9,13 @@ const cards = (...ids: string[]) => ids.map((id) => card(id));
 const special = (sp: string): Card => ({ id: `sp-${sp}`, suit: 'X', rank: 0, sp });
 
 /** Mesa de prueba con Vidas fijas (J 20 · Q 30 · K 40), aparte de las de la campaña: aquí se mide la mecánica. */
-const MESA: Partial<Config> = { floorHp: { 11: 20, 12: 30, 13: 40 } };
+const MESA: Partial<Config> = { floorHp: { 10: 20, 11: 30, 12: 40 } };
 
 /** Mesa suelta para probar golpes: pisos J 20 · Q 30 · K 40. */
 function env(tools: string[] = [], cfg: Partial<Config> = {}): StrikeEnv {
   const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA, ...cfg };
   for (const id of tools) TOOL[id].cfg?.(config);
-  return { config, towers: newTowers([11, 12, 13], config), tools: tools.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
+  return { config, towers: newTowers([10, 11, 12], config), tools: tools.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
 }
 
 /**
@@ -43,8 +43,8 @@ describe('formaciones', () => {
     expect(classify(cards('H5', 'C5', 'D5', 'S9', 'H9'))).toBe('full');
     expect(classify(cards('S3', 'H4', 'D5'))).toBe('escalera');
     expect(classify(cards('D3', 'D4', 'D5'))).toBe('escaleracolor');
-    expect(classify(cards('S2', 'S4', 'S6', 'S8', 'S10'))).toBe('color');
-    expect(classify(cards('S9', 'H10', 'D1'))).toBe('escalera'); // el As enlaza por arriba
+    expect(classify(cards('S2', 'S4', 'S6', 'S8', 'S9'))).toBe('color');
+    expect(classify(cards('S8', 'H9', 'D1'))).toBe('escalera'); // el As enlaza por arriba (V40: 8-9-1, no hay diez)
     expect(classify(cards('S1', 'H2', 'D3'))).toBe('escalera'); // y por abajo
     expect(classify(cards('S1', 'H9'))).toBe('compania'); // un As acompaña a cualquier carta
     expect(classify(cards('S1', 'H1'))).toBe('grupo'); // dos ases son un grupo
@@ -60,7 +60,7 @@ describe('formaciones', () => {
   });
 
   it('el bot encuentra todas las formaciones de una mano', () => {
-    const found = formations(cards('S9', 'H10', 'D1', 'C1', 'S1')).map((f) => classify(f));
+    const found = formations(cards('S8', 'H9', 'D1', 'C1', 'S1')).map((f) => classify(f));
     expect(found).toContain('escalera');
     expect(found).toContain('grupo');
   });
@@ -82,7 +82,7 @@ describe('Daño × Multi', () => {
     // As cómplice: el As suma sus 11 y el poder de su palo (aquí, Perfora)
     expect(hit(['H7', 'S1'], 'D')).toMatchObject({ formation: 'compania', fuerza: 18, res: 2, total: 36, repair: 2 });
     expect(hit(['S4', 'H4', 'D9', 'C9'], 'H')).toMatchObject({ fuerza: 28, res: 2, total: 56 });
-    expect(hit(['S2', 'S4', 'S6', 'S8', 'S10'], 'D')).toMatchObject({ fuerza: 38, res: 3, total: 114 });
+    expect(hit(['S2', 'S4', 'S6', 'S8', 'S9'], 'D')).toMatchObject({ fuerza: 37, res: 3, total: 111 });
     expect(hit(['H5', 'C5', 'D5', 'S9', 'H9'], 'D')).toMatchObject({ fuerza: 38, res: 3, total: 114 });
     expect(hit(['D3', 'D4', 'D5'], 'H')).toMatchObject({ fuerza: 22, res: 3, total: 66 });
     expect(hit(['S7', 'D7', 'H7', 'C7'], 'C')).toMatchObject({ fuerza: 35, res: 4, total: 140 });
@@ -179,7 +179,7 @@ describe('herramientas con sinergia', () => {
     expect(res.clean).toBe(true);
     expect(e.tools[1].n).toBe(1);
     // Impulso (un cuarto de 30 = 8) + Tijeras (la mitad = 15)
-    expect(e.towers.D).toMatchObject({ floors: [12, 13], damage: 23 });
+    expect(e.towers.D).toMatchObject({ floors: [11, 12], damage: 23 });
     expect(strike(e, cards('H2'), 'S').fuerza).toBe(2 + 2); // el Compás ya suma +2 de Daño
   });
 
@@ -191,7 +191,7 @@ describe('herramientas con sinergia', () => {
   });
 
   it('alquimia: un solo palo deja Expuesto, tres palos Aturdido y la Piedra filosofal cobra cada trono con estado', () => {
-    const e = env(['catalizador'], { floorHp: { 11: 500, 12: 500, 13: 500 } });
+    const e = env(['catalizador'], { floorHp: { 10: 500, 11: 500, 12: 500 } });
     strike(e, cards('S2', 'S3', 'S4'), 'D');
     expect(e.towers.D.fx.fractura).toBe(true);
     strike(e, cards('S3', 'H4', 'D5'), 'C');
@@ -201,7 +201,7 @@ describe('herramientas con sinergia', () => {
     expect(res).toMatchObject({ fuerza: 10, res: 3, total: 30 });
     expect(of(res.events, 'step').find((s) => s.id === 'fractura')).toMatchObject({ label: 'Expuesto ×2', df: 5 });
     expect(e.towers.D.fx.fractura).toBe(false);
-    const crisol = env(['crisol'], { floorHp: { 11: 500, 12: 500, 13: 500 } });
+    const crisol = env(['crisol'], { floorHp: { 10: 500, 11: 500, 12: 500 } });
     strike(crisol, cards('S3', 'H4', 'D5'), 'C');
     expect(crisol.towers.C.fx).toMatchObject({ fractura: true, sobrecarga: true });
     expect(strike(crisol, cards('H5'), 'C')).toMatchObject({ fuerza: 15, res: 1, total: 15 }); // el Caldero: ×3
@@ -213,7 +213,7 @@ describe('herramientas con sinergia', () => {
     const res = strike(e, cards('S5'), 'D');
     expect(res).toMatchObject({ fuerza: 17, res: 4, total: 68, hurt: 0 }); // (5 + 12) × 2 × 2; abate al guardia: el Corazón no cobra
     // si el golpe no derriba nada, el Corazón le cuesta 1 al búnker
-    const hard = env(['corazon'], { floorHp: { 11: 500, 12: 500, 13: 500 } });
+    const hard = env(['corazon'], { floorHp: { 10: 500, 11: 500, 12: 500 } });
     expect(strike(hard, cards('S5'), 'D').hurt).toBe(1);
   });
 
@@ -321,9 +321,9 @@ describe('golpe limpio y estados de las torres', () => {
   it('Golpe exacto: calla el Contraataque, paga 1 de oro, lanza el Impulso y abre una Racha', () => {
     const s = game(cards('S4', 'H4', 'S5', 'C2', 'C3', 'C5', 'C6'));
     const { state, events } = applyAction(s, 'a', { type: 'attack', cards: ['S4', 'H4'], target: 'D' }); // (2 + 4 + 4) × 2 = 20
-    expect(of(events, 'floorDown')[0]).toMatchObject({ tower: 'D', rank: 11, clean: true });
+    expect(of(events, 'floorDown')[0]).toMatchObject({ tower: 'D', rank: 10, clean: true });
     expect(of(events, 'onda')[0]).toMatchObject({ tower: 'D', amount: 8 }); // un cuarto de 30
-    expect(state.towers.D).toMatchObject({ floors: [12, 13], damage: 8 });
+    expect(state.towers.D).toMatchObject({ floors: [11, 12], damage: 8 });
     expect(of(events, 'gold')[0].amount).toBe(1);
     expect(of(events, 'siren')[0]).toMatchObject({ reason: 'clean', taken: 0 });
     expect(state.chain).toBe(1);
@@ -350,14 +350,14 @@ describe('golpe limpio y estados de las torres', () => {
   it('las picas perforan: el exceso pasa al piso siguiente; sin picas se pierde', () => {
     const pierce = env();
     strike(pierce, cards('S1', 'C1'), 'D'); // (2 + 11 + 11) × 2 = 48
-    expect(pierce.towers.D).toMatchObject({ floors: [12, 13], damage: 28 });
+    expect(pierce.towers.D).toMatchObject({ floors: [11, 12], damage: 28 });
     const blunt = env();
     strike(blunt, cards('H1', 'C1'), 'S'); // (2 + 11 + 11) × 2 = 48
-    expect(blunt.towers.S).toMatchObject({ floors: [12, 13], damage: 0 });
+    expect(blunt.towers.S).toMatchObject({ floors: [11, 12], damage: 0 });
   });
 
   it('Expuesto: el siguiente golpe hace ×2 de Daño, al final de la columna, y se gasta', () => {
-    const e = env([], { floorHp: { 11: 500, 12: 500, 13: 500 } });
+    const e = env([], { floorHp: { 10: 500, 11: 500, 12: 500 } });
     const first = strike(e, cards('S2', 'S3', 'S4'), 'D');
     expect(of(first.events, 'state')).toEqual([{ e: 'state', tower: 'D', fx: 'fractura', on: true }]);
     expect(strike(e, cards('S5'), 'D')).toMatchObject({ fuerza: 10, res: 1, total: 10 });
@@ -634,7 +634,7 @@ describe('fuzz: 500 partidas con semilla', () => {
         const action = chooseAction(state);
         log.push([player, action]);
         state = applyAction(state, player, action).state;
-        if (count(state) !== 42) throw new Error(`se perdieron cartas, semilla ${seed}`);
+        if (count(state) !== 38) throw new Error(`se perdieron cartas, semilla ${seed}`);
         if (state.wall < 0 || state.wall > state.config.wallCap || state.integrity > state.config.maxIntegrity) throw new Error(`búnker fuera de rango, semilla ${seed}`);
         for (const t of Object.values(state.towers)) if (t.floors.length && (t.damage < 0 || t.damage >= state.config.floorHp[t.floors[0]])) throw new Error(`piso mal cerrado, semilla ${seed}`);
         for (const p of state.players) if (p.reserve.length > 1) throw new Error(`andamio desbordado, semilla ${seed}`);

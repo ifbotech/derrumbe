@@ -95,20 +95,20 @@ const V = BALANCE.reliquias;
 
 export const TOOLS: ToolDef[] = ([
   // ───────── obra general ─────────
-  { id: 'piqueta', name: 'Daga de Picas', desc: '+{dano} de Daño por cada ♠ que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('S', V.piqueta.dano) },
-  { id: 'cortavidrios', name: 'Anillo de Diamantes', desc: '+{dano} de Daño por cada ♦ que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('D', V.cortavidrios.dano) },
-  { id: 'paleta', name: 'Cáliz de Corazones', desc: '+{dano} de Daño por cada ♥ que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('H', V.paleta.dano) },
-  { id: 'maza', name: 'Maza de Tréboles', desc: '+{dano} de Daño por cada ♣ que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('C', V.maza.dano) },
+  { id: 'piqueta', name: 'Daga de Espadas', desc: '+{dano} de Daño por cada carta de Espadas que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('S', V.piqueta.dano) },
+  { id: 'cortavidrios', name: 'Anillo de Oros', desc: '+{dano} de Daño por cada carta de Oros que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('D', V.cortavidrios.dano) },
+  { id: 'paleta', name: 'Cáliz de Copas', desc: '+{dano} de Daño por cada carta de Copas que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('H', V.paleta.dano) },
+  { id: 'maza', name: 'Maza de Bastos', desc: '+{dano} de Daño por cada carta de Bastos que juegues.', rarity: 'comun', arch: 'base', kind: 'f', strike: perSuit('C', V.maza.dano) },
   { id: 'cincel', name: 'Estilete', desc: '+{dano} de Daño si juegas una carta sola.', rarity: 'comun', arch: 'base', kind: 'f', strike: (x) => x.cards.length === 1 && x.F(V.cincel.dano) },
   { id: 'gemelos', name: 'Dagas gemelas', desc: '+{multi} de Multi con grupo, doble par, full o póker.', rarity: 'comun', arch: 'base', kind: 'r', strike: (x) => GROUPS.includes(x.formation) && x.R(V.gemelos.multi) },
   { id: 'cinta', name: 'Escalinata', desc: '+{multi} de Multi con escalera o escalera de color.', rarity: 'comun', arch: 'base', kind: 'r', strike: (x) => RUNS.includes(x.formation) && x.R(V.cinta.multi) },
-  { id: 'sacos', name: 'Pavés', desc: 'Cada ♣ da +{escudo} de Escudo más, y el tope del Escudo sube +{tope}.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void ((c.escudoPorCarta += V.sacos.escudo), (c.wallCap += V.sacos.tope)) },
-  { id: 'botiquin', name: 'Bálsamo', desc: 'Cada ♥ cura +{vida} más.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.curaPorCarta += V.botiquin.vida) },
+  { id: 'sacos', name: 'Pavés', desc: 'Cada carta de Bastos da +{escudo} de Escudo más, y el tope del Escudo sube +{tope}.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void ((c.escudoPorCarta += V.sacos.escudo), (c.wallCap += V.sacos.tope)) },
+  { id: 'botiquin', name: 'Bálsamo', desc: 'Cada carta de Copas cura +{vida} más.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.curaPorCarta += V.botiquin.vida) },
   { id: 'encofrado', name: 'Broquel', desc: 'Cada guardia abatido: +{escudo} de Escudo.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.wall += V.encofrado.escudo * r.fallen) && x.note(`+${V.encofrado.escudo * r.fallen} de Escudo`) },
   { id: 'casco', name: 'Yelmo', desc: 'Cada guardia abatido: +{vida} de Vida.', rarity: 'comun', arch: 'base', kind: 'p', after: (x, _, r) => r.fallen > 0 && (x.heal += V.casco.vida * r.fallen) && x.note(`+${V.casco.vida * r.fallen} de Vida`) },
   { id: 'puntales', name: 'Baraja de reserva', desc: '{gratis} Mazo agotado por asalto no sube la Furia.', rarity: 'comun', arch: 'base', kind: 'p', cfg: (c) => void (c.collapseFree = (c.collapseFree ?? 0) + V.puntales.gratis) },
   { id: 'hucha', name: 'Bolsa de monedas', desc: '+{oro} de oro al terminar cada asalto.', rarity: 'comun', arch: 'base', kind: 'p' },
-  { id: 'taladro', name: 'Lanza', desc: 'Todos tus golpes Perforan, lleven o no ♠.', rarity: 'oficio', arch: 'base', kind: 'p', cfg: (c) => void (c.alwaysPierce = true) },
+  { id: 'taladro', name: 'Lanza', desc: 'Todos tus golpes Perforan, lleven o no Espadas.', rarity: 'oficio', arch: 'base', kind: 'p', cfg: (c) => void (c.alwaysPierce = true) },
   { id: 'estandarte', name: 'Estandarte', desc: '+{multi} de Multi con color o escalera de color.', rarity: 'oficio', arch: 'base', kind: 'r', strike: (x) => (x.formation === 'color' || x.formation === 'escaleracolor') && x.R(V.estandarte.multi) },
   { id: 'dados', name: 'Dados cargados', desc: '+{multi} de Multi con doble par o full.', rarity: 'oficio', arch: 'base', kind: 'r', strike: (x) => (x.formation === 'doblepar' || x.formation === 'full') && x.R(V.dados.multi) },
   {
@@ -128,7 +128,7 @@ export const TOOLS: ToolDef[] = ([
   { id: 'andamio', name: 'Guantelete', desc: '+{cartas} carta en la mano.', rarity: 'capataz', arch: 'base', box: 'aguante', kind: 'p', cfg: (c) => hand(c, V.andamio.cartas) },
   { id: 'pasarela', name: 'Manga doble', desc: '+1 hueco en La Manga: guardas dos cartas aparte de la mano.', rarity: 'capataz', arch: 'base', kind: 'p', cfg: (c) => void (c.reserveSize = (c.reserveSize ?? 1) + 1) },
   { id: 'contrapeso', name: 'Máscara de traidor', desc: 'Inmune se invierte: contra el trono de su palo, tus cartas hacen el doble de Daño.', rarity: 'reliquia', arch: 'base', kind: 'p', cfg: (c) => void (c.ownMult = 2) },
-  { id: 'sordina', name: 'Pócima de sueño', desc: 'El Ataque de todos los guardias baja {ataque}.', rarity: 'capataz', arch: 'base', box: 'limite', kind: 'p', cfg: (c) => void [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] - V.sordina.ataque))) },
+  { id: 'sordina', name: 'Pócima de sueño', desc: 'El Ataque de todos los guardias baja {ataque}.', rarity: 'capataz', arch: 'base', box: 'limite', kind: 'p', cfg: (c) => void Object.keys(c.floorThreat).forEach((r) => (c.floorThreat[+r] = Math.max(1, c.floorThreat[+r] - V.sordina.ataque))) },
   { id: 'plano_maestro', name: 'Llave maestra', desc: '×{multi} de Multi en el primer golpe contra cada guardia.', rarity: 'reliquia', arch: 'base', box: 'precision', kind: 'x', strike: (x) => x.env.towers[x.target].damage === 0 && x.X(V.plano_maestro.multi) },
 
   // ───────── precisión quirúrgica ─────────
@@ -162,7 +162,7 @@ export const TOOLS: ToolDef[] = ([
   },
 
   // ───────── sismo y vibración ─────────
-  { id: 'metralla', name: 'Collar roto', desc: 'Cada ♦ salpica +{dano} más a los otros tronos.', rarity: 'oficio', arch: 'sismo', kind: 'p', cfg: (c) => void (c.salpicaPorCarta += V.metralla.dano) },
+  { id: 'metralla', name: 'Collar roto', desc: 'Cada carta de Oros salpica +{dano} más a los otros tronos.', rarity: 'oficio', arch: 'sismo', kind: 'p', cfg: (c) => void (c.salpicaPorCarta += V.metralla.dano) },
   { id: 'percutor', name: 'Campana', desc: 'Vuelve a activar la primera carta del golpe.', rarity: 'oficio', arch: 'sismo', kind: 'f', strike: (x) => x.F(x.impacts[0] ?? 0) },
   { id: 'resonador', name: 'Cuerno de guerra', desc: '×{multi} de Multi si juegas {cartas} cartas o más.', rarity: 'capataz', arch: 'sismo', kind: 'x', strike: (x) => x.cards.length >= V.resonador.cartas && x.X(V.resonador.multi) },
   { id: 'diapason', name: 'Espejo de mano', desc: 'Copia tu última reliquia que no sea pasiva.', rarity: 'oficio', arch: 'sismo', box: 'sismo', kind: 'copy' },

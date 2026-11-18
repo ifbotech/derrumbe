@@ -1,6 +1,6 @@
 // La mesa de combate: los cuatro tronos, tu Vida, las Reliquias, poderes de palo, marcador
 // Daño × Multi = Golpe, la Manga, mano y la cola de eventos que anima cada jugada paso a paso.
-import { Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, activo, cardLabel, cardValue, classify, esJefe, floorHp, multiplier, ordenDe, previewStrike, threatOf, vecinosPresentes } from '../rules/engine';
+import { CABALLO, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, REY, SOTA, SUITS, StrikeResult, Suit, TOWER_FX, TowerFx, activo, cardLabel, cardValue, classify, esJefe, floorHp, multiplier, ordenDe, previewStrike, threatOf, vecinosPresentes } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
 import { BALANCE } from '../rules/balance-config';
 import { BOSS, CONTRACT, FURIA, LAST_STAGE, stageDef } from '../rules/run';
@@ -24,7 +24,6 @@ import { platform } from './platform';
 import { hint } from './prompts';
 import { setScreen } from './router';
 import { paintMonarch } from './guia';
-import { guidedStep, leaveTutorial, renderCoach, showTutorialEnd, tutorialAct } from './tutorial-ui';
 import { voiceOn } from './voces';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
 import { tableWhispers, whisper } from './whispers';
@@ -53,11 +52,11 @@ const FLOOR = (r: number) => RANK_LABEL[r];
 const rotuloDeshacer = (k: 'ui.mesa.deshacer' | 'ui.mesa.deshacer.no'): string => L(k).replace(/^↩\s*/, '<i class="lbl-ico">↩</i> ');
 /** El Multi que suma la Racha de Golpes exactos (entero, con su tope). */
 const racha = (chain: number) => BALANCE.golpe.racha * Math.min(chain, BALANCE.golpe.rachaTope);
-/** Nombre del guardia con su artículo: «la Sota», «la Reina», «el Rey». */
-const GUARD = (r: number) => (r === 11 ? L('ui.mesa.la.sota') : r === 12 ? L('ui.mesa.la.reina') : r === 13 ? L('ui.mesa.el.rey') : L('ui.mesa.el.x', { x: FLOOR(r) }));
+/** Nombre del guardia con su artículo: «la Sota», «el Caballo», «el Rey». */
+const GUARD = (r: number) => (r === SOTA ? L('ui.mesa.la.sota') : r === CABALLO ? L('ui.mesa.el.caballo') : r === REY ? L('ui.mesa.el.rey') : L('ui.mesa.el.x', { x: FLOOR(r) }));
 /** «Casa de Picas»: el trono de un palo, como se lee en pantalla. */
 const HOUSE = (s: Suit) => L('ui.mesa.casa', { palo: paloN(s) });
-/** «la Casa de Picas», con su artículo (en inglés, «the House of Spades»). */
+/** «la Casa de Espadas», con su artículo (en inglés, «the House of Swords»). */
 const LA_HOUSE = (s: Suit) => L('ui.mesa.la.casa', { palo: paloN(s) });
 const fmt = (cards: Card[]) => cards.map((c) => (c.sp ? `[${espN(c.sp)}]` : cardLabel(c))).join(' ');
 const POWER = (s: Suit): [string, string] =>
@@ -67,9 +66,8 @@ const POWER = (s: Suit): [string, string] =>
 
 export function buildTable(): void {
   const c = S.campaign;
-  const t = S.tutorial;
   setDeckBack(c?.run.deckId ?? 'obra');
-  setScene('battle', c ? Math.min(c.run.stage, LAST_STAGE) : t ? 1 : 3, !!c?.run.boss);
+  setScene('battle', c ? Math.min(c.run.stage, LAST_STAGE) : 3, !!c?.run.boss);
   cardEls.clear();
   S.selected.length = 0;
   aim = null;
@@ -83,7 +81,7 @@ export function buildTable(): void {
       <div class="players" id="players"></div>
       <button id="btn-deck" data-tip="${L('ui.mesa.mazo.tip')}">${L('ui.mesa.mazo')}${hint('deck')}</button>
       <button id="btn-speed" class="ritmo" data-tip="${L('ui.mesa.velocidad.tip')}"></button>
-      ${t ? '' : `<button id="btn-auto" class="ritmo" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span>${hint('auto')}</button>`}
+      ${`<button id="btn-auto" class="ritmo" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span>${hint('auto')}</button>`}
       <button id="btn-set">${L('ui.ajustes')}${hint('settings')}</button>
       <button id="btn-rules">${L('ui.reglas')}</button>
       <button id="btn-leave">${L('ui.salir')}</button>
@@ -177,11 +175,9 @@ export function buildTable(): void {
   $('#deck-slot').onclick = toggleInspector;
   $('#disc-slot').onclick = toggleInspector;
   const leave = $('#btn-leave');
-  if (t) leave.innerHTML = `${L('ui.mesa.saltar')}${hint('back')}`; // juice-ux: la partida guiada se salta siempre de un toque (Esc / B)
   leave.onclick = () => {
     if (c && !c.online) return setScreen('home'); // la campaña queda guardada
-    if (t) return leaveTutorial();
-    if (leave.dataset.sure) return t ? forget() : sendMsg({ t: 'leave' });
+    if (leave.dataset.sure) return sendMsg({ t: 'leave' });
     leave.dataset.sure = '1';
     leave.textContent = L('ui.mesa.seguro');
     setTimeout(() => {
@@ -207,8 +203,7 @@ export function buildTable(): void {
 
 export const canAct = () => {
   const v = S.shown;
-  const t = S.tutorial;
-  return !!v && !S.busy && !S.waiting && S.queue.length === 0 && v.phase === 'playing' && v.turnPlayer === v.you && (!t || t.mode === 'do' || t.mode === 'free');
+  return !!v && !S.busy && !S.waiting && S.queue.length === 0 && v.phase === 'playing' && v.turnPlayer === v.you;
 };
 /** Lo que se tiene a mano: la mano y el andamio. */
 const held = (): Card[] => (S.shown ? [...S.shown.hand, ...S.shown.reserve] : []);
@@ -221,7 +216,6 @@ const isJoker = (cards: Card[]) => cards.length === 1 && cards[0].suit === 'X' &
 
 function act(msg: ClientMsg): void {
   if (msg.t !== 'action') return;
-  if (S.tutorial) return tutorialAct(msg.action);
   if (S.campaign) noteAction(msg.action.type); // juice-ux: datos de prueba (duda, La Manga, Rebobinar)
   if (S.campaign && !S.campaign.online) return campaignAct(msg.action);
   S.waiting = true;
@@ -237,7 +231,6 @@ function clearSelection(): void {
 
 function discardSelection(): void {
   if (!canAct() || S.selected.length === 0) return sfx.deny();
-  if (guidedStep()) return toast(L('ui.mesa.toast.tutorial'));
   act({ t: 'action', action: { type: 'discard', cards: [...S.selected] } });
 }
 
@@ -246,8 +239,6 @@ function stash(id?: string): void {
   const v = S.shown;
   if (!canAct() || !v) return;
   if (!v.reserveSize) return;
-  const step = guidedStep(); // juice-ux: en el paso «manga» se guarda su carta; en los demás, La Manga espera
-  if (step && (step.id !== 'manga' || !step.cards?.includes(id ?? S.selected[0] ?? ''))) return toast(step.id === 'manga' ? L('ui.mesa.toast.marcada') : L('ui.mesa.toast.tutorial'));
   if (v.stashed) return toast(L('ui.mesa.toast.manga.usada'));
   const pick = id ?? (S.selected.length === 1 ? S.selected[0] : undefined);
   const card = v.hand.find((c) => c.id === pick);
@@ -269,11 +260,6 @@ function onTower(s: Suit, ping = false): void {
   // V35 · solo se golpea al enemigo que tienes delante; los demás esperan en la fila
   if (activo(v)?.suit !== s) return toast(L('ui.mesa.toast.frente'));
   const cards = selCards();
-  const step = guidedStep();
-  if (step) {
-    const ok = step.target === s && cards.length === step.cards!.length && cards.every((c) => step.cards!.includes(c.id));
-    if (!ok) return toast(cards.length === step.cards!.length ? L('ui.mesa.toast.casi') : L('ui.mesa.toast.marcadas'));
-  }
   if (isJoker(cards)) return act({ t: 'action', action: { type: 'joker', card: cards[0].id, target: s } });
   if (!classify(cards)) return sfx.deny();
   act({ t: 'action', action: { type: 'attack', cards: cards.map((c) => c.id), target: s } });
@@ -281,8 +267,6 @@ function onTower(s: Suit, ping = false): void {
 
 function toggleCard(id: string): void {
   if (!canAct()) return;
-  const step = guidedStep();
-  if (step && !step.cards!.includes(id)) return toast(L('ui.mesa.toast.paso'));
   const at = S.selected.indexOf(id);
   if (at >= 0) S.selected.splice(at, 1);
   else S.selected.push(id);
@@ -317,7 +301,7 @@ export function renderHud(): void {
   if (!room) return;
   const c = S.campaign;
   // V12: el nombre del asalto cede su sitio en la barra estrecha a la bolsa y a AUTO (va entero en el aviso)
-  room.innerHTML = S.tutorial ? L('ui.mesa.tutorial') : c ? `${L('ui.mesa.asalto', { n: c.run.stage })}${c.run.stage <= LAST_STAGE ? `/${LAST_STAGE}` : ''}<span class="room-nombre"> · ${asaltoN(c.run.stage)}</span>` : L('ui.mesa.sala', { sala: S.session?.room ?? '' });
+  room.innerHTML = c ? `${L('ui.mesa.asalto', { n: c.run.stage })}${c.run.stage <= LAST_STAGE ? `/${LAST_STAGE}` : ''}<span class="room-nombre"> · ${asaltoN(c.run.stage)}</span>` : L('ui.mesa.sala', { sala: S.session?.room ?? '' });
   if (c) {
     setNum('#bolsa-oro', cifra(c.run.gold));
     marcaCifra($('#bolsa-oro'), c.run.gold, 'oro');
@@ -405,7 +389,7 @@ function renderPlayers(): void {
 function plates(s: Suit): string {
   const own = S.shown!.config.ownMult ?? 0;
   return own === 0
-    ? `<i class="plate iron" data-tip="${L('ui.mesa.inmune.tip', { g: SUIT_GLYPH[s], palo: paloN(s).toLowerCase() })}">${suitSvg(s)}<b>${L('ui.mesa.inmune')}</b></i>`
+    ? `<i class="plate iron" data-tip="${L('ui.mesa.inmune.tip', { g: paloN(s), palo: paloN(s) })}">${suitSvg(s)}<b>${L('ui.mesa.inmune')}</b></i>`
     : `<i class="plate ${own > 1 ? 'brass' : 'open'}" data-tip="${L('ui.mesa.sininmune.tip', { palo: paloN(s).toLowerCase(), n: own })}">${suitSvg(s)}<b>×${own}</b></i>`;
 }
 
@@ -665,7 +649,7 @@ function renderPowers(cards: Card[], r: StrikeResult | null, target: Suit | null
   const part: Record<Suit, string> = { S: '', D: `${cfg.salpicaPorCarta}`, H: cfg.curaPorCarta === 0 ? L('ui.mesa.anulado') : `${cfg.curaPorCarta}`, C: `${cfg.escudoPorCarta}` }; // lo que da cada carta de ese palo en esta mesa
   el.innerHTML = SUITS.map(
     (s) =>
-      `<span class="power s-${s} ${value[s] ? 'on' : ''}" data-tip="<b>${SUIT_GLYPH[s]} ${POWER(s)[0]}</b>${POWER(s)[1]}${part[s] ? L('ui.mesa.poder.ahora', { x: part[s] }) : ''}${L('ui.mesa.poder.nota')}">${suitSvg(s)}<b>${POWER(s)[0]}</b>${value[s] ? `<em>${value[s]}</em>` : ''}</span>`,
+      `<span class="power s-${s} ${value[s] ? 'on' : ''}" data-tip="<b>${paloN(s)} · ${POWER(s)[0]}</b>${POWER(s)[1]}${part[s] ? L('ui.mesa.poder.ahora', { x: part[s] }) : ''}${L('ui.mesa.poder.nota')}">${suitSvg(s)}<b>${POWER(s)[0]}</b>${value[s] ? `<em>${value[s]}</em>` : ''}</span>`,
   ).join('');
 }
 
@@ -725,7 +709,7 @@ function renderScore(): void {
   polvoraPreview(shown, shownTarget);
   if (shown?.clean) whisper('limpio');
   if (shownTarget && (v.config.ownMult ?? 0) === 0 && cards.some((c) => !c.sp && c.suit === shownTarget))
-    whisper('inmune', { material: paloN(shownTarget).toLowerCase(), glyph: SUIT_GLYPH[shownTarget] });
+    whisper('inmune', { material: paloN(shownTarget), glyph: paloN(shownTarget) });
   // antes de un sirenazo serio con el andamio sin usar: todavía se está a tiempo de guardar una carta
   if (preview && shown && shownTarget && !shown.clean && !shown.noSiren && v.reserveSize > 0 && v.reserve.length === 0) {
     const incoming = (contraataqueTras(preview) ?? 0) - v.wall - Math.max(0, Math.min(shown.wallGain, v.config.wallCap - v.wall));
@@ -764,7 +748,7 @@ export function renderInteractive(): void {
   if (!v || S.screen !== 'table') return;
   renderHand();
   const can = canAct();
-  if (can && S.campaign && !S.tutorial) noteTurn(v); // juice-ux: la duda del turno empieza a contar
+  if (can && S.campaign) noteTurn(v); // juice-ux: la duda del turno empieza a contar
   const cards = selCards();
   const joker = isJoker(cards);
   const formation = classify(cards);
@@ -815,16 +799,9 @@ export function renderInteractive(): void {
   undoBtn.disabled = !can || !v.canUndo;
   const rotulo = rotuloDeshacer(v.chalk > 0 ? 'ui.mesa.deshacer' : 'ui.mesa.deshacer.no');
   if ($('.lbl', undoBtn).innerHTML !== rotulo) $('.lbl', undoBtn).innerHTML = rotulo;
-  const guide = can ? guidedStep() : null;
-  for (const [id, el] of cardEls) el.classList.toggle('hint', !!guide && guide.cards!.includes(id) && !S.selected.includes(id));
-  const ready = !!guide && cards.length === guide.cards!.length;
-  for (const s of SUITS) towerEls[s].classList.toggle('hint-target', ready && guide!.target === s);
-  // el trono del paso, aunque aún no estén elegidas sus cartas: lo que alumbra el foco de la guía (guia.ts)
-  for (const s of SUITS) towerEls[s].classList.toggle('guia-target', !!guide && guide.target === s);
   tableWhispers(); // susurros que dependen del estado de la mesa: jefe, fatiga, cantera baja
   // V7: el monarca del asalto, su placa y la parte de la mesa que castiga su maldición (guia.ts)
   paintMonarch(S.campaign?.run.boss ?? null, v);
-  renderCoach(); // juice-ux: el foco de la partida guiada se repinta con la mesa
 }
 
 export function renderAll(): void {
@@ -906,7 +883,6 @@ matchMedia(MOVIL).addEventListener('change', colocaMejor);
 /** Por qué no hay AUTO en esta mesa (`null`: sí hay). */
 export function autoVetado(): string | null {
   const c = S.campaign;
-  if (c?.run.daily) return tx('auto.pausa.diaria');
   if (!c || c.online) return tx('auto.pausa.coop');
   return null;
 }
@@ -1004,7 +980,7 @@ export function onTableKey(key: string, target: HTMLElement | null): boolean {
   }
   if (key === 'Escape') {
     if (closeReceipt()) return true; // el recibo de la cuenta se repliega antes de soltar la selección
-    if (!S.selected.length) return S.tutorial ? (leaveTutorial(), true) : false; // juice-ux: Esc / B salta la partida guiada
+    if (!S.selected.length) return false;
     clearSelection();
     return true;
   }
@@ -1404,14 +1380,13 @@ export async function pump(): Promise<void> {
     if (first) lastEvents = [];
     S.shown = batch.view;
     const c = S.campaign;
-    if (first) logLine(S.tutorial ? L('ui.log.practicas') : c ? L('ui.log.asalto', { n: c.run.stage, nombre: asaltoN(c.run.stage) }) : L('ui.log.empieza', { sala: S.session?.room ?? '' }), 'yel');
+    if (first) logLine(c ? L('ui.log.asalto', { n: c.run.stage, nombre: asaltoN(c.run.stage) }) : L('ui.log.empieza', { sala: S.session?.room ?? '' }), 'yel');
     const res = $('#reserve');
     if (res) res.dataset.key = '';
     renderAll();
   }
   S.busy = false;
   if (!S.shown || S.screen !== 'table') return;
-  renderCoach();
   renderBelt();
   renderInteractive();
   const c = S.campaign;
@@ -1432,7 +1407,6 @@ export async function pump(): Promise<void> {
 function showEnd(): void {
   const v = S.shown;
   if (!v || document.querySelector('.end')) return;
-  if (S.tutorial) return showTutorialEnd();
   if (S.campaign || S.lobby?.mode === 'campana') return; // en campaña el final lo pinta el acta
   const won = v.phase === 'won';
   won ? sfx.win() : sfx.lose();

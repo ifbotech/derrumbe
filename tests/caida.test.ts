@@ -16,7 +16,7 @@ const golpe = (cartas: number, extra: GameEvent[] = []): GameEvent[] => [
   ...extra,
   { e: 'impact', tower: 'S', fuerza: 5, res: 1, total: 5 },
 ];
-const guardia = (clean: boolean): GameEvent => ({ e: 'floorDown', tower: 'S', rank: 11, clean, towerDown: false, damage: 0 });
+const guardia = (clean: boolean): GameEvent => ({ e: 'floorDown', tower: 'S', rank: 10, clean, towerDown: false, damage: 0 });
 
 describe('la tabla del apartado 1.3, con números', () => {
   it('Árbol vacío: golpe 1 esquirla; guardia 1 moneda y 2; exacto +5 y 1 gota; oro tal cual; monarca 25', () => {

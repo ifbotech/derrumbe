@@ -24,7 +24,7 @@ export type Treatment = 'forjado' | 'templado' | 'policromado' | 'agrietado';
 export interface Card {
   id: string;
   suit: CardSuit;
-  rank: number; // 0 comodín / especial · 1-10 numerales · 11-13 figuras (J, Q, K)
+  rank: number; // 0 comodín / especial · 1-9 numerales (baraja española, sin 10) · 10-12 figuras (Sota, Caballo, Rey)
   /** Carta especial (campaña): id en SPECIAL. */
   sp?: string;
   /** Sello de obra estampado en la carta. */
@@ -34,10 +34,32 @@ export interface Card {
 }
 
 export const SUITS: Suit[] = ['S', 'D', 'H', 'C'];
-/** Nombre del palo en mayúsculas, tal como se escribe en la mesa («Contraataque de PICAS»). */
-export const MATERIAL: Record<Suit, string> = { S: 'PICAS', D: 'DIAMANTES', H: 'CORAZONES', C: 'TRÉBOLES' };
-export const SUIT_GLYPH: Record<CardSuit, string> = { S: '♠', D: '♦', H: '♥', C: '♣', X: '★' };
-export const RANK_LABEL = ['★', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+/**
+ * V40 · baraja española. Los códigos internos de palo no cambian: S = Espadas, C = Bastos, D = Oros y H = Copas,
+ * con sus mismos poderes. Este es el único sitio donde las reglas escriben el nombre de un palo; la interfaz lo pide
+ * con `paloNombre` (o la clave `palo.<S|C|D|H>` del diccionario) y pinta la pinta (el dibujo del palo) por su cuenta.
+ */
+export const PALO_NOMBRE: Record<Suit, string> = { S: 'Espadas', D: 'Oros', H: 'Copas', C: 'Bastos' };
+/** Nombre del palo en mayúsculas, tal como se escribe en la mesa («Contraataque de ESPADAS»). */
+export const MATERIAL: Record<Suit, string> = { S: 'ESPADAS', D: 'OROS', H: 'COPAS', C: 'BASTOS' };
+/** El nombre de un palo para leer («Espadas»); con `mayus`, como en la mesa («ESPADAS»). */
+export const paloNombre = (s: Suit, mayus = false): string => (mayus ? MATERIAL[s] : PALO_NOMBRE[s]);
+
+/** V40 · las cartas jugables van del 1 (el As) al 9: la baraja española de 36 más los Comodines, sin 10 numerado. */
+export const MAX_NUM = 9;
+/** V40 · las figuras de la Corte, que son los enemigos: 10 Sota, 11 Caballo y 12 Rey (también por dentro). */
+export const SOTA = 10;
+export const CABALLO = 11;
+export const REY = 12;
+export const FIGURAS: readonly number[] = [SOTA, CABALLO, REY];
+/** ¿Es una figura de la Corte (un enemigo) y no una carta jugable? */
+export const esFigura = (rank: number): boolean => rank >= SOTA;
+/** Dónde se pone el As cuando enlaza por arriba en una escalera (8-9-1): justo detrás del 9. */
+export const AS_ALTO = MAX_NUM + 1;
+/** Índice de cada rango tal como se lee: ★ el Comodín, 1 a 9 las numeradas y 10, 11 y 12 las figuras. */
+export const RANK_LABEL = ['★', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+/** Nombre de cada figura de la Corte. */
+export const FIGURA_NOMBRE: Record<number, string> = { [SOTA]: 'Sota', [CABALLO]: 'Caballo', [REY]: 'Rey' };
 
 export const SEALS: Seal[] = ['dinamita', 'eco', 'jornal', 'sindical'];
 export const SEAL: Record<Seal, { name: string; desc: string }> = {
@@ -54,9 +76,10 @@ export const TREATMENT: Record<Treatment, { name: string; desc: string }> = {
   agrietado: { name: 'Cristal maldito', desc: fill('×{n} de Multi, pero 1 de cada {cada} veces la carta se hace añicos.', { n: BALANCE.acabados.agrietado, cada: 1 / BALANCE.acabados.agrietadoRompe }) },
 };
 
-/** Valor de una carta para el Daño y los poderes. El As es la carta fuerte: vale 11. */
+/** Valor de una carta para el Daño y los poderes. El As es la carta fuerte: vale 11 (más que el 9, la más alta). */
 export const cardValue = (c: Card): number => (c.rank === 1 ? 11 : c.rank);
-export const cardLabel = (c: Card): string => (c.sp ? (SPECIAL[c.sp]?.name ?? '?') : `${RANK_LABEL[c.rank]}${SUIT_GLYPH[c.suit]}`);
+/** Etiqueta de una carta en la cuenta: «7 de Espadas», «Comodín» o el nombre de la especial. */
+export const cardLabel = (c: Card): string => (c.sp ? (SPECIAL[c.sp]?.name ?? '?') : c.suit === 'X' ? 'Comodín' : `${RANK_LABEL[c.rank]} de ${PALO_NOMBRE[c.suit]}`);
 /** Orden estable de lectura (palo y número): sirve para mostrar montones sin revelar su orden real. */
 export function sortCards(cards: Card[]): Card[] {
   const suit = 'SDHCX';
@@ -86,7 +109,7 @@ export const FORM: Record<Formation, { f: number; r: number; lf: number }> = BAL
  *  solo · as de compañía (un As con cualquier otra carta) · grupo (2-3 iguales) · póker (4 iguales)
  *  doble par · full (trío + par)
  *  escalera (3+ seguidas) · escalera de color (3+ seguidas del mismo palo) · color (5+ del mismo palo)
- * El As enlaza por abajo (A-2-3) y por arriba (9-10-A). Las cartas especiales no cuentan para la
+ * El As enlaza por abajo (1-2-3) y por arriba (8-9-1). Las cartas especiales no cuentan para la
  * formación: acompañan al golpe (hasta MAX_SPECIALS) o se juegan solas.
  */
 export function classify(all: Card[]): Formation | null {
@@ -102,7 +125,7 @@ export function classify(all: Card[]): Formation | null {
   if (n === 2 && cards.some((c) => c.rank === 1)) return 'compania';
   const ranks = cards.map((c) => c.rank).sort((a, b) => a - b);
   const seq = (rs: number[]) => rs.every((r, i) => i === 0 || r === rs[i - 1] + 1);
-  const high = cards.map((c) => (c.rank === 1 ? 11 : c.rank)).sort((a, b) => a - b);
+  const high = cards.map((c) => (c.rank === 1 ? AS_ALTO : c.rank)).sort((a, b) => a - b);
   if (n >= 3 && (seq(ranks) || seq(high))) return sameSuit ? 'escaleracolor' : 'escalera';
   const counts = [...new Set(ranks)].map((r) => ranks.filter((x) => x === r).length).sort();
   if (n === 4 && counts.join() === '2,2') return 'doblepar';
@@ -135,7 +158,7 @@ export interface Config {
   ejecutaExacta?: boolean;
   /** V35 · Rasgo Bastión: Escudo con el que empieza el asalto. */
   wallStart?: number;
-  /** Poderes de palo, por carta (sea cual sea su rango): Escudo por cada ♣, Cura por cada ♥ y Salpica por cada ♦. */
+  /** Poderes de palo, por carta (sea cual sea su rango): Escudo por cada Basto, Cura por cada Copa y Salpica por cada Oro. */
   escudoPorCarta: number;
   curaPorCarta: number;
   salpicaPorCarta: number;
@@ -150,7 +173,7 @@ export interface Config {
   cleanTol?: number;
   /** Gracia del Golpe exacto por arriba (V12, Buen ojo): también es exacto si el Daño se pasa por cleanTol + cleanOver o menos. */
   cleanOver?: number;
-  /** Todo golpe perfora, lleve o no picas. */
+  /** Todo golpe perfora, lleve o no Espadas. */
   alwaysPierce?: boolean;
   /** Niveles de plano por formación. */
   formLevel?: Partial<Record<Formation, number>>;
@@ -176,7 +199,7 @@ export interface Config {
   crumbleHurt?: number;
   /** V35 · Asalto único: la Vida de los guardias ×cuadrilla[jugadores − 1] (redondeada a 5: el Golpe exacto vive de esas cifras). */
   cuadrilla?: number[];
-  /** V35 · Cáliz envenenado: lo que te quita cada ♥ del golpe. */
+  /** V35 · Cáliz envenenado: lo que te quita cada Copa del golpe. */
   veneno?: number;
   /** Fuerza que se guarda para el próximo golpe por cada punto reparado de más con el búnker lleno. */
   overhealCharge?: number;
@@ -354,7 +377,7 @@ export function seedFrom(text: string): number {
 
 export function standardDeck(): Card[] {
   const deck: Card[] = [];
-  for (const s of SUITS) for (let r = 1; r <= 10; r++) deck.push({ id: `${s}${r}`, suit: s, rank: r });
+  for (const s of SUITS) for (let r = 1; r <= MAX_NUM; r++) deck.push({ id: `${s}${r}`, suit: s, rank: r });
   deck.push({ id: 'X1', suit: 'X', rank: 0 }, { id: 'X2', suit: 'X', rank: 0 });
   return deck;
 }
@@ -376,7 +399,7 @@ export function createGame(players: { id: string; name: string }[], seed: number
     players: players.map((p) => ({ id: p.id, name: p.name, hand: [], reserve: [] })),
     deck: standardDeck(),
     discard: [],
-    towers: newTowers([11, 12, 13], config),
+    towers: newTowers([...FIGURAS], config),
     integrity: config.maxIntegrity,
     wall: 0,
     turn: 0,
@@ -414,7 +437,7 @@ export function standing(t: Tower): boolean {
 }
 
 /**
- * Los tronos al lado de `target` en la mesa (V12): el de su izquierda y el de su derecha en la fila ♠ ♦ ♥ ♣,
+ * Los tronos al lado de `target` en la mesa (V12): el de su izquierda y el de su derecha en la fila S D H C (Espadas, Oros, Copas, Bastos),
  * saltándose los que no están en el asalto (`away`). Un trono ya caído sigue en la mesa y cuenta. Con 4
  * tronos son los vecinos de siempre; con 2, el otro; con 3, uno o dos. Lo usa el sello de pólvora.
  */
@@ -825,7 +848,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     x.hurt += cfg.crumbleHurt * rough;
     x.note(`pierdes ${cfg.crumbleHurt * rough} de Vida`);
   }
-  // V35 · Cáliz envenenado: cada ♥ del golpe te quita Vida
+  // V35 · Cáliz envenenado: cada Copa del golpe te quita Vida
   if (cfg.veneno && power.H) {
     cur = { src: 'state', id: 'veneno', label: VENENO_LABEL };
     x.hurt += cfg.veneno * power.H;

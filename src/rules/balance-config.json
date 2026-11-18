@@ -1,5 +1,5 @@
 {
-  "inicio": { "vida": 21, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
+  "inicio": { "vida": 19, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
   "asaltos": [
     { "hp": 5.9, "threat": 1 },
     { "hp": 4.4, "threat": 1 },
@@ -124,8 +124,8 @@
     "escudoPorCarta": 2,
     "curaPorCarta": 2,
     "salpicaPorCarta": 2,
-    "floorHp": { "11": 25, "12": 35, "13": 45 },
-    "floorThreat": { "11": 3, "12": 4, "13": 6 },
+    "floorHp": { "10": 25, "11": 35, "12": 45 },
+    "floorThreat": { "10": 3, "11": 4, "12": 6 },
     "handSize": { "1": 7, "2": 6, "3": 6, "4": 6 }
   },
   "golpe": { "racha": 1, "rachaTope": 3, "expuesto": 2, "onda": 0.25, "oroExacto": 1 },
@@ -140,10 +140,10 @@
   },
   "clasica": {
     "obra": {
-      "floorHp": { "11": 130, "12": 185, "13": 240 },
-      "floorThreat": { "11": 3, "12": 5, "13": 7 },
+      "floorHp": { "10": 155, "11": 220, "12": 285 },
+      "floorThreat": { "10": 3, "11": 5, "12": 7 },
       "collapseSiege": 0,
-      "cuadrilla": [1, 1.05, 1.06, 1.095],
+      "cuadrilla": [1, 1.03, 1.06, 1.11],
       "handSize": { "1": 6, "2": 6, "3": 6, "4": 6 },
       "fatigueStart": 29,
       "fatigueEvery": 3

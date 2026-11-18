@@ -6,7 +6,7 @@
 // enseña en mesa: reliquias, acabados, sellos, Expuesto y Racha incluidos). No golpea: la interfaz
 // selecciona las cartas y el trono y el jugador confirma con Golpear.
 //
-// Desempates, por orden: Golpe más alto; menos cartas; trono en el orden ♠ ♦ ♥ ♣; `id` de las cartas.
+// Desempates, por orden: Golpe más alto; menos cartas; trono en el orden S D H C (Espadas, Oros, Copas, Bastos); `id` de las cartas.
 import { arrange } from './bot';
 import { Card, GameState, Player, SUITS, Suit, activo, classify, currentPlayer, previewStrike } from './engine';
 
@@ -44,7 +44,7 @@ export function formacionesLegales(cartas: Card[]): Card[][] {
 /** Clave de desempate por `id`: los de la jugada, ordenados. */
 const claveIds = (ids: string[]) => [...ids].sort().join('|');
 
-/** ¿Gana `a` a `b`? Golpe más alto, menos cartas, trono ♠ ♦ ♥ ♣, `id` de cartas. */
+/** ¿Gana `a` a `b`? Golpe más alto, menos cartas, trono S D H C, `id` de cartas. */
 function mejorQue(a: MejorJugada, b: MejorJugada): boolean {
   if (a.total !== b.total) return a.total > b.total;
   if (a.cards.length !== b.cards.length) return a.cards.length < b.cards.length;

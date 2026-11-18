@@ -39,7 +39,7 @@ describe('balance-config.json: esquema y rangos', () => {
 
   it('mesa: Vida y Ataque de los guardias positivos, poderes por carta enteros ≥ 1, manos ≥ 3', () => {
     for (const m of [RAW.mesa, { ...RAW.mesa, ...RAW.clasica.obra }]) {
-      for (const r of ['11', '12', '13']) {
+      for (const r of ['10', '11', '12']) {
         expect(m.floorHp[r]).toBeGreaterThan(0);
         expect(m.floorThreat[r]).toBeGreaterThanOrEqual(1);
       }
@@ -208,16 +208,16 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const c = run.stageConfig(r, 1);
     // V11: la Vida final se redondea al múltiplo de 5 más cercano (mínimo 5)
     const r5 = (x: number) => Math.max(5, Math.round(x / 5) * 5);
-    expect(c.floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[0])));
-    expect(c.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.asaltos[0].threat);
+    expect(c.floorHp[10]).toBe(r5(B.mesa.floorHp[10] * (B.asaltos[0].hp * 1 * B.cuadrilla[0])));
+    expect(c.floorThreat[10]).toBe(B.mesa.floorThreat[10] + B.asaltos[0].threat);
     expect(c.fatigueStart).toBeUndefined();
     expect(c.collapseSiege).toBe(B.furia.mazo);
-    expect(run.stageConfig(r, 2).floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[1])));
+    expect(run.stageConfig(r, 2).floorHp[10]).toBe(r5(B.mesa.floorHp[10] * (B.asaltos[0].hp * 1 * B.cuadrilla[1])));
     const a = run.newRun({ ascension: 6 }, 5);
     const ca = run.stageConfig(a, 1);
-    expect(ca.floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * B.reinados.corazas * B.cuadrilla[0])));
-    expect(ca.floorThreat[13]).toBe(B.mesa.floorThreat[13] + B.asaltos[0].threat + B.reinados.reyColerico);
-    expect(ca.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.asaltos[0].threat + B.reinados.guardiaNoche);
+    expect(ca.floorHp[10]).toBe(r5(B.mesa.floorHp[10] * (B.asaltos[0].hp * B.reinados.corazas * B.cuadrilla[0])));
+    expect(ca.floorThreat[12]).toBe(B.mesa.floorThreat[12] + B.asaltos[0].threat + B.reinados.reyColerico);
+    expect(ca.floorThreat[10]).toBe(B.mesa.floorThreat[10] + B.asaltos[0].threat + B.reinados.guardiaNoche);
   });
 
   it('decretos de los monarcas', async () => {
@@ -225,14 +225,14 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const base = () => structuredClone(engine.DEFAULT_CONFIG);
     const furia = base();
     run.BOSS.furia.apply(furia);
-    expect(furia.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.monarcas.furia.ataque);
+    expect(furia.floorThreat[10]).toBe(B.mesa.floorThreat[10] + B.monarcas.furia.ataque);
     const helada = base();
     run.BOSS.intemperie.apply(helada);
     expect(helada.wallCap).toBe(Math.min(B.mesa.wallCap, B.monarcas.intemperie.escudoTope));
     const doble = base();
     run.BOSS.doble.apply(doble);
     expect(doble.sirenCount).toBe(B.monarcas.doble.contraataques);
-    expect(doble.floorThreat[13]).toBe(Math.max(1, Math.ceil(B.mesa.floorThreat[13] * B.monarcas.doble.ataque)));
+    expect(doble.floorThreat[12]).toBe(Math.max(1, Math.ceil(B.mesa.floorThreat[12] * B.monarcas.doble.ataque)));
     const usurero = base();
     run.BOSS.escasez.apply(usurero);
     expect(usurero.handSize[2]).toBe(B.mesa.handSize[2] - B.monarcas.escasez.cartas);
@@ -240,7 +240,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     run.BOSS.blindaje.apply(inq);
     expect(inq.noFx).toBe('sobrecarga');
     // V35: el Inquisidor quita el Aturdido y, a cambio, sus guardias pegan menos
-    for (const r of [11, 12, 13] as const) expect(inq.floorThreat[r]).toBe(Math.max(1, B.mesa.floorThreat[r] - B.monarcas.blindaje.ataque));
+    for (const r of [10, 11, 12] as const) expect(inq.floorThreat[r]).toBe(Math.max(1, B.mesa.floorThreat[r] - B.monarcas.blindaje.ataque));
     const rel = base();
     run.BOSS.inestable.apply(rel);
     expect(rel.furiaInicial).toBe(B.monarcas.inestable.furia);
@@ -254,7 +254,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const env = (ids: string[] = [], over: Partial<{ integrity: number; wall: number; scrap: number }> = {}) => {
       const config = structuredClone(engine.DEFAULT_CONFIG);
       for (const id of ids) tools.TOOL[id].cfg?.(config);
-      return { config, towers: engine.newTowers([11, 12, 13], config), tools: ids.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0, ...over };
+      return { config, towers: engine.newTowers([10, 11, 12], config), tools: ids.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0, ...over };
     };
     const hit = (ids: string[], cs: Card[], over = {}) => engine.strike(env(ids, over), cs, 'D');
     const df = (id: string, cs: Card[], over = {}) => hit([id], cs, over).fuerza - hit([], cs, over).fuerza;
@@ -275,7 +275,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(rx('ultimo', [card('S7')], { integrity: 5 })).toBe(V.ultimo.multi);
     const sacos = env(['sacos']).config;
     expect(sacos.wallCap).toBe(B.mesa.wallCap + V.sacos.tope);
-    expect(env(['sordina']).config.floorThreat[12]).toBe(Math.max(1, B.mesa.floorThreat[12] - V.sordina.ataque));
+    expect(env(['sordina']).config.floorThreat[11]).toBe(Math.max(1, B.mesa.floorThreat[11] - V.sordina.ataque));
     expect(env(['puntales']).config.collapseFree).toBe(V.puntales.gratis);
     // acabados y especiales
     const forjado = engine.strike(env(), [card('S7', { tr: 'forjado' })], 'D').fuerza - engine.strike(env(), [card('S7')], 'D').fuerza;

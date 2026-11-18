@@ -2,7 +2,7 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { ESQUIRLAS_POR_CORONA, abonoCampanaVieja } from '../rules/migracion';
+import { ESQUIRLAS_POR_CORONA, abonoCampanaVieja, abonoFrancesa, campanaFrancesa } from '../rules/migracion';
 import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
 import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
@@ -33,7 +33,7 @@ export function pickDeck(id: string): void {
 
 export function savedCampaign(): Campaign | null {
   const c = loadJson<Campaign>(RUN_KEY);
-  // V12: una campaña guardada con la 11.0 se pone al día (esquirlas, gotas, lo que cae) y sigue donde estaba
+  // V40: solo se sigue una campaña de esta versión (las de antes eran de la baraja francesa: ver retireOldSave)
   if (c?.run) c.run = cargaRun(c.run) ?? c.run;
   // descarta guardados de versiones anteriores del juego
   return c && c.run && c.key && c.run.v === RUN_VERSION && Array.isArray(c.run.tools) && c.run.node && c.run.stats?.toolUse ? c : null;
@@ -48,13 +48,23 @@ export function saveCampaign(): void {
 export const forgetSaved = () => platform.remove(RUN_KEY);
 
 /**
- * Una campaña guardada con las reglas de la versión anterior no se puede continuar:
- * se da por cerrada y se cobra el renombre de las obras que llevaba superadas.
+ * Una campaña guardada con las reglas de una versión anterior no se puede continuar. V40: si era de la baraja
+ * francesa (12.0 a 38.0), se descarta con un aviso corto y se abonan las esquirlas que ya llevaba juntadas; si era de
+ * la 10.0 o anterior, se da por cerrada y se cobra lo superado, como siempre. Ajustes y Altar no se tocan.
  */
 export function retireOldSave(): void {
-  const old = loadJson<{ run?: { stage?: number; phase?: string } }>(RUN_KEY);
+  const old = loadJson<{ run?: { stage?: number; phase?: string; v?: number } }>(RUN_KEY);
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
+  if (campanaFrancesa(old.run, RUN_VERSION) && (old.run.v ?? 0) > 3) {
+    const abono = abonoFrancesa(old.run);
+    if (abono > 0) {
+      meta.renown += abono;
+      saveMeta();
+    }
+    setTimeout(() => toast(abono > 0 ? L('ui.camp.francesa.abono', { n: abono }) : L('ui.camp.francesa')), 600);
+    return;
+  }
   if (old.run.phase === 'won' || old.run.phase === 'lost') return; // ya estaba cobrada
   // lo superado se cobra en esquirlas, al cambio de la V12 (cada Corona de antes vale ESQUIRLAS_POR_CORONA)
   const gain = abonoCampanaVieja(old.run.stage) * ESQUIRLAS_POR_CORONA;
@@ -64,11 +74,6 @@ export function retireOldSave(): void {
 }
 export const isRunHost = () => !!S.campaign && (!S.campaign.online || S.lobby?.host === S.session?.playerId);
 export const runOpts = (): RunOpts => ({ up: meta.up, ascension: Math.min(prefs.ascension, meta.ascMax), deck: deckUnlocked(meta, prefs.deck) ? prefs.deck : 'obra', pool: unlockedPool(meta), seedText: prefs.seed.trim() || undefined });
-/** La fecha local de hoy (AAAA-MM-DD): la semilla del Asalto diario. */
-export function today(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 /** Empieza una campaña local. Si había otra a medias, se abandona y cobra el renombre de lo ya superado. */
 export function newCampaign(opts: RunOpts): void {
@@ -81,7 +86,7 @@ export function newCampaign(opts: RunOpts): void {
 }
 function begin(opts: RunOpts): void {
   const run = newRun(opts, (Math.random() * 2 ** 31) | 0);
-  S.campaign = { run, online: false, state: null, key: run.daily ? `diaria:${run.daily}` : `local:${Date.now()}` };
+  S.campaign = { run, online: false, state: null, key: `local:${Date.now()}` };
   S.shown = null;
   S.queue.length = 0;
   S.screen = null;
@@ -89,12 +94,12 @@ function begin(opts: RunOpts): void {
   setScreen('run');
 }
 
-/** Se puede reiniciar: campaña local en marcha (ni sala, ni tutorial, ni acta). */
+/** Se puede reiniciar: campaña local en marcha (ni sala ni acta). */
 export const canRestart = () => !!S.campaign && !S.campaign.online && S.campaign.run.phase !== 'won' && S.campaign.run.phase !== 'lost';
 
 /**
  * Reinicio rápido (mantener R): la campaña empieza de cero con la misma baraja y el mismo nivel de
- * obra, y con una semilla nueva (la diaria repite la del día). La que se deja no cuenta como
+ * obra, y con una semilla nueva. La que se deja no cuenta como
  * derrota ni cobra renombre: es borrón y cuenta nueva.
  */
 export function restartCampaign(): void {
@@ -102,7 +107,7 @@ export function restartCampaign(): void {
   if (!c || !canRestart()) return;
   const { run } = c;
   document.querySelectorAll('.modal, .end:not(.in-page)').forEach((m) => m.remove());
-  begin(run.daily ? { daily: run.daily } : { ...runOpts(), ascension: run.ascension, deck: run.deckId, seedText: undefined });
+  begin({ ...runOpts(), ascension: run.ascension, deck: run.deckId, seedText: undefined });
   toast(L('ui.camp.reiniciada'));
 }
 
@@ -211,7 +216,6 @@ export function enterStage(fresh: boolean): void {
   }
   lastRouted = structuredClone(c.run);
   saveCampaign();
-  S.tutorial = null;
   S.session = null;
   S.lobby = null;
   S.shown = null;

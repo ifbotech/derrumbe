@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer, seedFrom } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
-import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FURIA, rasgoMayor } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FURIA, rasgoMayor } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
@@ -78,16 +78,6 @@ describe('semillas', () => {
     expect(newRun({ seedText: '#ABCDEFGH' }, 3).id).toBe(seedFrom('#ABCDEFGH'));
   });
 
-  it('la Obra diaria usa la semilla de la fecha, la baraja de obra y ninguna mejora del gremio', () => {
-    const a = newRun({ daily: '2026-11-11', up: fullGuild(), deck: 'ases', ascension: 5, pool: ['j-furia'] }, 1);
-    const b = newRun({ daily: '2026-11-11' }, 2);
-    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
-    expect(a).toMatchObject({ daily: '2026-11-11', id: dailySeed('2026-11-11'), deckId: 'obra', ascension: 0 });
-    expect(Object.values(a.up).every((n) => n === 0)).toBe(true);
-    expect(a.pool).toEqual(BASE_POOL);
-    expect(newRun({ daily: '2026-11-12' }, 1).id).not.toBe(a.id);
-    expect(newRun({ daily: 'mañana' }, 7).daily).toBeNull();
-  });
 
   it('una campaña entera jugada por el bot es reproducible paso a paso', () => {
     const a = botRun(newRun({ seedText: 'DERRUMBE' }));
@@ -103,7 +93,7 @@ describe('preparación', () => {
     const run = newRun({}, 7);
     expect(run).toMatchObject({ phase: 'pack', stage: 1, gold: 4, integrity: BALANCE.inicio.vida, maxIntegrity: BALANCE.inicio.vida, tools: [] });
     expect(run.pack.length).toBe(3);
-    expect(run.deck.length).toBe(45);
+    expect(run.deck.length).toBe(41); // V40: 36 de número, 2 Comodines y las 3 especiales del sobre
     expect(run.deck.filter((c) => c.sp).map((c) => c.sp)).toEqual(run.pack);
     const bossStages = STAGES.flatMap((s, i) => (s.boss ? [i + 1] : []));
     expect(Object.keys(run.bosses).map(Number)).toEqual(bossStages);
@@ -256,7 +246,7 @@ describe('contratos', () => {
     act(run, { t: 'begin' });
     run.node.routes[0] = 'limpios';
     enter(run);
-    trackEvents(run, Array.from({ length: 3 }, () => ({ e: 'floorDown' as const, tower: 'S' as const, rank: 11, clean: true, towerDown: false, damage: 0 })));
+    trackEvents(run, Array.from({ length: 3 }, () => ({ e: 'floorDown' as const, tower: 'S' as const, rank: 10, clean: true, towerDown: false, damage: 0 })));
     expect(run.battle.cleans).toBe(3);
     expect(CONTRACT.limpios.done!(run.battle, startStage(run, P), run)).toBe(true);
     trackEvents(run, [{ e: 'play', player: 'a', cards: [], target: 'S', formation: 'full' }]);
@@ -269,9 +259,9 @@ describe('contratos', () => {
     const run = newRun({}, 5);
     act(run, { t: 'begin' });
     run.node.routes[1] = 'horas';
-    const base = stageConfig(run).floorThreat[11];
+    const base = stageConfig(run).floorThreat[10];
     act(run, { t: 'route', i: 1 });
-    expect(stageConfig(run).floorThreat[11]).toBe(base + 1);
+    expect(stageConfig(run).floorThreat[10]).toBe(base + 1);
     const state = startStage(run, P);
     for (const t of Object.values(state.towers)) t.floors = [];
     state.phase = 'won';
@@ -611,11 +601,11 @@ describe('hallazgos en los cimientos', () => {
   it('el contrato maldito paga ahora y cobra en la obra siguiente', () => {
     const run = newRun({}, 31);
     run.stage = 3;
-    const threat = stageConfig({ ...run, stage: 4 }).floorThreat[13];
+    const threat = stageConfig({ ...run, stage: 4 }).floorThreat[12];
     Object.assign(run, { phase: 'event', event: 'contrato' });
     act(run, { t: 'event', i: 0 });
     expect(run).toMatchObject({ gold: 24, curse: true, stage: 4 });
-    expect(stageConfig(run).floorThreat[13]).toBe(threat + 1);
+    expect(stageConfig(run).floorThreat[12]).toBe(threat + 1);
     win(run);
     expect(run.curse).toBe(false);
   });
@@ -640,11 +630,11 @@ describe('final, cimientos abisales y gremio', () => {
     act(run, { t: 'draft', i: null });
     act(run, { t: 'next' });
     expect(run).toMatchObject({ phase: 'map', stage: 6 });
-    expect(stageDef(6)).toMatchObject({ name: 'Trono infinito 1', boss: true, thrones: 4, atajo: false, floors: [11, 12, 13] });
+    expect(stageDef(6)).toMatchObject({ name: 'Trono infinito 1', boss: true, thrones: 4, atajo: false, floors: [10, 11, 12] });
     expect(stageDef(7).hp).toBeGreaterThan(stageDef(6).hp);
     expect(stageDef(6).hp).toBeGreaterThan(STAGES[4].hp);
     // el Trono infinito también redondea la Vida a múltiplos de 5
-    for (const r of [11, 12, 13]) expect(stageConfig(run).floorHp[r] % 5).toBe(0);
+    for (const r of [10, 11, 12]) expect(stageConfig(run).floorHp[r] % 5).toBe(0);
     win(run);
     expect(run.phase).toBe('reward'); // ya no hay final: solo más hondo
     expect(depthOf(run)).toBe(1);
@@ -653,9 +643,9 @@ describe('final, cimientos abisales y gremio', () => {
 
   it('en cuadrilla y en ascenso las obras aguantan más', () => {
     const run = newRun({}, 13);
-    const solo = stageConfig(run, 1).floorHp[11];
-    expect(stageConfig(run, 3).floorHp[11]).toBeGreaterThan(solo);
-    expect(stageConfig(newRun({ ascension: 2 }, 13), 1).floorHp[11]).toBeGreaterThan(solo);
+    const solo = stageConfig(run, 1).floorHp[10];
+    expect(stageConfig(run, 3).floorHp[10]).toBeGreaterThan(solo);
+    expect(stageConfig(newRun({ ascension: 2 }, 13), 1).floorHp[10]).toBeGreaterThan(solo);
     // V35 · la campaña no tiene reloj de turnos: la Furia sube con cada Mazo agotado
     expect(stageConfig(run, 1).fatigueStart).toBeUndefined();
     expect(stageConfig(run, 4).collapseSiege).toBe(FURIA.mazo);
@@ -708,15 +698,6 @@ describe('final, cimientos abisales y gremio', () => {
     expect(loadMeta(null)).toEqual(newMeta());
   });
 
-  it('la Obra diaria deja su marca en el gremio', () => {
-    const meta = newMeta();
-    const run = newRun({ daily: '2026-11-11' }, 1);
-    run.stage = 6;
-    run.phase = 'lost';
-    settle(meta, run);
-    expect(meta.daily).toEqual({ date: '2026-11-11', cleared: 5, won: false });
-    expect(meta.stats.dailies).toBe(1);
-  });
 
   it('los logros se cumplen jugando, dan renombre y abren barajas y cartas legendarias', () => {
     const meta = newMeta();
@@ -727,7 +708,7 @@ describe('final, cimientos abisales y gremio', () => {
     run.tools = [{ id: 'piqueta', n: 0 }];
     run.stats.forged = 4;
     win(run);
-    noteEvents(meta, [{ e: 'impact', tower: 'S', fuerza: 60, res: 2, total: 120 }, { e: 'floorDown', tower: 'S', rank: 11, clean: true, towerDown: false, damage: 0 }]);
+    noteEvents(meta, [{ e: 'impact', tower: 'S', fuerza: 60, res: 2, total: 120 }, { e: 'floorDown', tower: 'S', rank: 10, clean: true, towerDown: false, damage: 0 }]);
     noteRun(meta, run);
     noteRun(meta, run); // llamarlo dos veces no duplica lo acumulado
     settle(meta, run);
@@ -752,32 +733,32 @@ describe('niveles de obra y maestría', () => {
     expect(MAX_ASCENSION).toBe(7);
     expect(newRun({ ascension: 99 }, 1).ascension).toBe(7);
     const base = stageConfig(at(0, 3));
-    const harder = stageConfig(at(1, 3)).floorHp[13] / base.floorHp[13]; // 2 · corazas finas: +15 % (con el redondeo a 5)
+    const harder = stageConfig(at(1, 3)).floorHp[12] / base.floorHp[12]; // 2 · corazas finas: +15 % (con el redondeo a 5)
     expect(harder).toBeGreaterThan(BALANCE.reinados.corazas - 0.06);
     expect(harder).toBeLessThan(BALANCE.reinados.corazas + 0.06);
     // 4 · reyes acorazados: los Reyes con más Vida, pero solo en los asaltos con monarca (el 4 lo es; el 3 no)
-    expect(stageConfig(at(3, 4)).floorHp[13]).toBeGreaterThan(stageConfig(at(2, 4)).floorHp[13]);
-    expect(stageConfig(at(3, 3)).floorHp[13]).toBe(stageConfig(at(2, 3)).floorHp[13]);
-    expect(stageConfig(at(3, 4)).floorHp[11]).toBe(stageConfig(at(2, 4)).floorHp[11]);
+    expect(stageConfig(at(3, 4)).floorHp[12]).toBeGreaterThan(stageConfig(at(2, 4)).floorHp[12]);
+    expect(stageConfig(at(3, 3)).floorHp[12]).toBe(stageConfig(at(2, 3)).floorHp[12]);
+    expect(stageConfig(at(3, 4)).floorHp[10]).toBe(stageConfig(at(2, 4)).floorHp[10]);
     // 5 · sirena afinada: solo las K
-    expect(stageConfig(at(3, 3)).floorThreat[13]).toBe(base.floorThreat[13]);
-    expect(stageConfig(at(4, 3)).floorThreat[13]).toBe(base.floorThreat[13] + BALANCE.reinados.reyColerico);
-    expect(stageConfig(at(4, 3)).floorThreat[11]).toBe(base.floorThreat[11]);
+    expect(stageConfig(at(3, 3)).floorThreat[12]).toBe(base.floorThreat[12]);
+    expect(stageConfig(at(4, 3)).floorThreat[12]).toBe(base.floorThreat[12] + BALANCE.reinados.reyColerico);
+    expect(stageConfig(at(4, 3)).floorThreat[10]).toBe(base.floorThreat[10]);
     // 6 · heridas viejas: menos Vida máxima
     expect(at(4).maxIntegrity - at(5).maxIntegrity).toBe(BALANCE.reinados.heridasViejas);
     // 7 · turno de noche: J y Q, no las K
+    expect(stageConfig(at(6, 3)).floorThreat[10]).toBe(base.floorThreat[10] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
-    expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + 1);
-    expect(stageConfig(at(6, 3)).floorThreat[13]).toBe(base.floorThreat[13] + BALANCE.reinados.reyColerico);
+    expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + BALANCE.reinados.reyColerico);
     // 8 · clausura: +1 de Ataque en todos los tronos, solo en el asalto 5 (ni en el 4 ni en los otros con monarca)
-    for (const r of [11, 12, 13]) expect(stageConfig(at(7, 5)).floorThreat[r]).toBe(stageConfig(at(6, 5)).floorThreat[r] + 1);
-    expect(stageConfig(at(7, 4)).floorThreat[11]).toBe(stageConfig(at(6, 4)).floorThreat[11]);
-    expect(stageConfig(at(7, 2)).floorThreat[11]).toBe(stageConfig(at(6, 2)).floorThreat[11]);
-    expect(stageConfig(at(7, 3)).floorThreat[11]).toBe(stageConfig(at(6, 3)).floorThreat[11]);
+    for (const r of [10, 11, 12]) expect(stageConfig(at(7, 5)).floorThreat[r]).toBe(stageConfig(at(6, 5)).floorThreat[r] + 1);
+    expect(stageConfig(at(7, 4)).floorThreat[10]).toBe(stageConfig(at(6, 4)).floorThreat[10]);
+    expect(stageConfig(at(7, 2)).floorThreat[10]).toBe(stageConfig(at(6, 2)).floorThreat[10]);
+    expect(stageConfig(at(7, 3)).floorThreat[10]).toBe(stageConfig(at(6, 3)).floorThreat[10]);
     // en los asaltos con monarca solo alargan las corazas y los Reyes acorazados (V11), con la Vida redondeada a 5
     const R = BALANCE.reinados;
-    expect(stageConfig(at(7, 4)).floorHp[13]).toBe(roundHp(BALANCE.mesa.floorHp[13] * STAGES[3].hp * R.corazas * R.reyesAcorazados));
-    expect(stageConfig(at(7, 4)).floorHp[11]).toBe(stageConfig(at(1, 4)).floorHp[11]);
+    expect(stageConfig(at(7, 4)).floorHp[12]).toBe(roundHp(BALANCE.mesa.floorHp[12] * STAGES[3].hp * R.corazas * R.reyesAcorazados));
+    expect(stageConfig(at(7, 4)).floorHp[10]).toBe(stageConfig(at(1, 4)).floorHp[10]);
   });
 
   it('3 · Corte airada (V35): cada Mazo agotado sube la Furia más; La Taberna no cambia de precio; al terminar un asalto curas 4', () => {

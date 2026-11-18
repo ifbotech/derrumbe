@@ -16,7 +16,7 @@ function juega(run: Run, opts: AutoOpts): { run: Run; pausa: string | null } {
   let state: GameState | null = null;
   for (let guard = 0; guard < 20_000; guard++) {
     if (run.phase === 'battle' && !state) state = startStage(run, P);
-    const paso = pasoAuto({ run, state, playerId: 'p0', diaria: false, coop: false }, opts);
+    const paso = pasoAuto({ run, state, playerId: 'p0', coop: false }, opts);
     if (paso === null) {
       finishBattle(run, state!);
       state = null;
@@ -53,19 +53,17 @@ describe('pasoAuto', () => {
     expect(r1.run.stats.stageTurns.length).toBeGreaterThan(0);
   });
 
-  it('el Asalto diario y el cooperativo: pausa; la campaña terminada: fin', () => {
+  it('el cooperativo: pausa; la campaña terminada: fin', () => {
     const run = newRun({}, 1);
     const o = { saquear: true, taberna: true };
-    expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: true, coop: false }, o)).toEqual({ t: 'pausa', motivo: 'diaria' });
-    expect(pasoAuto({ run: newRun({ daily: '2026-11-15' }, 1), state: null, playerId: 'p0', diaria: false, coop: false }, o)).toEqual({ t: 'pausa', motivo: 'diaria' });
-    expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: false, coop: true }, o)).toEqual({ t: 'pausa', motivo: 'coop' });
-    expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: false, coop: false }, o)).toEqual({ t: 'campana', action: { t: 'begin', don: 0 } }); // V29: AUTO se queda con el primer Don de la Conjura
+    expect(pasoAuto({ run, state: null, playerId: 'p0', coop: true }, o)).toEqual({ t: 'pausa', motivo: 'coop' });
+    expect(pasoAuto({ run, state: null, playerId: 'p0', coop: false }, o)).toEqual({ t: 'campana', action: { t: 'begin', don: 0 } }); // V29: AUTO se queda con el primer Don de la Conjura
     run.phase = 'lost';
-    expect(pasoAuto({ run, state: null, playerId: 'p0', diaria: false, coop: false }, o)).toEqual({ t: 'pausa', motivo: 'fin' });
+    expect(pasoAuto({ run, state: null, playerId: 'p0', coop: false }, o)).toEqual({ t: 'pausa', motivo: 'fin' });
   });
 
   it('cada pausa tiene su aviso de una línea en los dos idiomas', () => {
-    for (const m of ['botin', 'taberna', 'mapa', 'secreto', 'fin', 'diaria', 'coop'] as const)
+    for (const m of ['botin', 'taberna', 'mapa', 'secreto', 'fin', 'coop'] as const)
       for (const lang of ['es', 'en'] as const) {
         const t = DICCIONARIOS[lang][avisoPausa(m)];
         expect(t, `${lang} ${m}`).toBeTruthy();

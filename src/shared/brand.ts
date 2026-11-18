@@ -19,14 +19,14 @@ export const BRAND: Record<Locale, { title: string; seal: string; subtitle: stri
     title: 'SANGRE Y PALO',
     seal: 'BLOOD & SUITS',
     subtitle: 'La conjura de los naipes',
-    tagline: 'Roguelike de conjura con baraja francesa',
+    tagline: 'Roguelike de conjura con baraja española',
     emblema: 'BLOOD & SUITS',
   },
   en: {
     title: 'BLOOD & SUITS',
     seal: 'SANGRE Y PALO',
     subtitle: 'A card conspiracy against the court',
-    tagline: 'A conspiracy roguelike played with a standard 52-card deck',
+    tagline: 'A conspiracy roguelike played with a Spanish deck',
     emblema: 'Original edition · SANGRE Y PALO',
   },
 };

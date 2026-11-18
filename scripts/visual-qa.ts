@@ -143,13 +143,13 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-cuenta', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
 const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-cuenta', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
 const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
 /** infra/rapido · navegadores a la vez (QA_HILOS); cada uno es un proceso de Chromium aparte con las banderas de siempre. */
 const HILOS = Math.max(1, Math.floor(Number(process.env.QA_HILOS || 8)) || 1);
@@ -1656,34 +1656,20 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const handZone = union('#hand .card, #reserve .card, #reserve .reserve-slot');
     const scoreZone = union('#score > *');
     const inside = (r: DOMRect) => r.left >= -1 && r.top >= -1 && r.right <= W + 1 && r.bottom <= H + 1;
-    // guía: placa de una línea ≥ 14 px (15 en móvil) que no pisa la mano ni la cuenta; velo y aro a la vista
-    if (opts.state.startsWith('guia-')) {
-      const placa = document.querySelector<HTMLElement>('#guia .guia-placa');
-      if (!placa || !visible(placa) || !placa.textContent?.trim()) fail('guia', 'no se ve la placa de la guía');
+    // V40 · el Bufón: su frase en el hueco de los Susurros, ≥ 13 px, sin pisar la mano ni la cuenta, sin ventana ni velo
+    if (opts.state.startsWith('bufon-')) {
+      const b = document.querySelector<HTMLElement>('.whisper.bufon');
+      if (!b || !visible(b) || !b.textContent?.trim()) fail('bufon', 'no se ve la frase del Bufón');
       else {
-        const r = placa.getBoundingClientRect();
-        const px = pxOf(placa);
-        if (px < (opts.mobile ? 14.95 : 13.95)) fail('guia', `la placa de la guía mide ${px.toFixed(1)} px`, placa);
-        if (!opts.mobile && r.height > px * 1.25 * 1.6 + 26) fail('guia', `la placa de la guía no cabe en una línea (${Math.round(r.height)} px de alto)`, placa);
-        if (over(r, handZone)) fail('guia', 'la placa de la guía pisa la mano', placa);
-        if (over(r, scoreZone)) fail('guia', 'la placa de la guía pisa la cuenta', placa);
-        if (!inside(r)) fail('guia', 'la placa de la guía se sale de la ventana', placa);
-        if (/[<>]/.test(placa.textContent)) fail('guia', 'la placa de la guía enseña etiquetas HTML en crudo', placa);
+        const r = b.getBoundingClientRect();
+        const px = pxOf(b.querySelector('p') ?? b);
+        if (px < 12.95) fail('bufon', `la frase del Bufón mide ${px.toFixed(1)} px`, b);
+        if (over(r, handZone)) fail('bufon', 'la frase del Bufón pisa la mano', b);
+        if (over(r, scoreZone)) fail('bufon', 'la frase del Bufón pisa la cuenta', b);
+        if (!inside(r)) fail('bufon', 'la frase del Bufón se sale de la ventana', b);
+        if (/[<>{}]/.test(b.textContent)) fail('bufon', 'la frase del Bufón enseña etiquetas o huecos en crudo', b);
       }
-      const hueco = document.querySelector<HTMLElement>('#guia .guia-hueco');
-      const aro = document.querySelector<HTMLElement>('#guia .guia-aro');
-      if (!hueco || alpha(hueco) < 0.5) fail('guia', 'la mesa no se vela alrededor del foco');
-      if (!aro || !visible(aro)) fail('guia', 'no hay aro de foco a la vista');
-      else if (!inside(aro.getBoundingClientRect())) fail('guia', 'el aro de foco se sale de la ventana', aro);
-      // lo que señala cada paso: la carta del paso, la cuenta y el trono del Golpe exacto
-      const want: Record<string, string> = { 'guia-palo': '#hand .card[data-id="C6"]', 'guia-cuenta': '#score', 'guia-exacto': '.tower[data-suit="H"]' };
-      const t = want[opts.state] ? document.querySelector(want[opts.state]) : null;
-      if (want[opts.state] && !t) fail('guia', `no está en la mesa lo que señala el paso (${want[opts.state]})`);
-      if (t && aro) {
-        const a = aro.getBoundingClientRect();
-        const b = t.getBoundingClientRect();
-        if (!(b.left >= a.left - 2 && b.right <= a.right + 2 && b.top >= a.top - 2 && b.bottom <= a.bottom + 2)) fail('guia', `el aro no rodea ${want[opts.state]}`, aro);
-      }
+      if (document.querySelector('.modal, #guia:not([hidden])')) fail('bufon', 'el Bufón no debe abrir ventana ni velar la mesa');
     }
     // monarca en la mesa: retrato, nombre y placa del decreto; la maldición marcada; bocadillo ≥ 14 px sin pisar mano ni cuenta
     if (opts.state === 'mesa-monarca' || opts.state.startsWith('mesa-monarca-')) {
@@ -1919,6 +1905,28 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     vieja(`el texto de ${path(el)}`, node.textContent, el);
   }
   for (const el of document.querySelectorAll('[data-tip], [aria-label], [title]')) for (const attr of ['data-tip', 'aria-label', 'title']) if (el.hasAttribute(attr)) vieja(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
+
+  // ── baraja (V40): la española. Ni los palos franceses ni sus signos, ni la Taberna ni el Árbol, en lo que se lee ──
+  const FRANCESA = /(?<![\p{L}])(?:[Pp]icas?|[Cc]orazon(?:es)?|[Dd]iamantes?|[Tt]r[ée]bol(?:es)?|PICAS|CORAZONES|DIAMANTES|TR[ÉE]BOLES|[Ss]pades?|[Hh]earts?|[Dd]iamonds?|SPADES|HEARTS|DIAMONDS|[Tt]abernas?|TABERNA|[Tt]averns?|TAVERN|Árbol|ÁRBOL|Conspiracy Tree)(?![\p{L}])|[♠♥♦♣♤♡♢♧]/u;
+  const francesa = (where: string, text: string | null | undefined, el: Element | null) => {
+    if (!text) return;
+    const m = text.replace(/<[^>]+>/g, ' ').match(FRANCESA);
+    if (m) fail('baraja', `«${m[0]}» en ${where} (desde la V40: Espadas, Bastos, Oros y Copas; La Pulpería; el Altar)`, el);
+  };
+  const fw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = fw.nextNode(); node; node = fw.nextNode()) {
+    const el = node.parentElement;
+    if (!el || !node.textContent?.trim() || el.closest('script, style, template') || !visible(el)) continue;
+    francesa(`el texto de ${path(el)}`, node.textContent, el);
+  }
+  for (const el of document.querySelectorAll('[data-tip], [aria-label], [title], [alt]')) for (const attr of ['data-tip', 'aria-label', 'title', 'alt']) if (el.hasAttribute(attr)) francesa(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
+  for (const el of document.body.querySelectorAll('*')) {
+    if (!visible(el)) continue;
+    for (const pseudo of ['::before', '::after']) {
+      const c = getComputedStyle(el, pseudo).content;
+      if (c && c !== 'none' && c !== 'normal') francesa(`el ${pseudo} de ${path(el)}`, c, el);
+    }
+  }
 
   // ── fuga (V10, pasada inglesa): ningún resto de español en lo que lee una persona ──
   if (opts.fuga) {

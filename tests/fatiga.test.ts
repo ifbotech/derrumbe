@@ -11,7 +11,7 @@ const cfgWith = (extra: Partial<Config> = {}): Config => ({ ...structuredClone(D
 /** Una mesa mínima para probar golpes: cuatro torres de un piso (J) y lo que se le añada. */
 function table(config: Config, tools: string[] = [], extra: Partial<GameState> = {}): GameState {
   for (const id of tools) TOOL[id].cfg?.(config);
-  return { ...createGame([{ id: 'a', name: 'A' }], 7, config), towers: newTowers([11, 12], config), tools: tools.map((id) => ({ id, n: 0 })), ...extra };
+  return { ...createGame([{ id: 'a', name: 'A' }], 7, config), towers: newTowers([10, 11], config), tools: tools.map((id) => ({ id, n: 0 })), ...extra };
 }
 
 describe('fatiga de cimientos', () => {
@@ -32,7 +32,7 @@ describe('fatiga de cimientos', () => {
   });
 
   it('el motor la sube sola al pasar los turnos, avisa con un evento y la enseña en la vista', () => {
-    let state = createGame([{ id: 'a', name: 'A' }], 11, cfgWith({ fatigueStart: 2, fatigueEvery: 1, floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 0, 12: 0, 13: 0 } }));
+    let state = createGame([{ id: 'a', name: 'A' }], 11, cfgWith({ fatigueStart: 2, fatigueEvery: 1, floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 0, 11: 0, 12: 0 } }));
     const seen: number[] = [];
     for (let i = 0; i < 4 && state.phase === 'playing'; i++) {
       const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
@@ -54,10 +54,10 @@ describe('fatiga de cimientos', () => {
   });
 
   it('V35 · Furia del Rey: cada turno que el monarca sigue de enemigo activo, la Furia sube; su Vida va multiplicada', () => {
-    const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 1, 12: 1, 13: 2 }, jefe: { suit: 'S', vida: 2, furia: 1 } });
+    const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 1, 11: 1, 12: 2 }, jefe: { suit: 'S', vida: 2, furia: 1 } });
     const s = table(cfg, [], { integrity: 20 });
     // PICAS es la Casa activa y le queda un solo guardia (el Rey): es el monarca
-    s.towers.S.floors = [13];
+    s.towers.S.floors = [12];
     expect(esJefe(cfg, s.towers.S)).toBe(true);
     expect(floorHp(s.towers.S, cfg)).toBe(1800);
     expect(esJefe(cfg, s.towers.D)).toBe(false);
@@ -111,7 +111,7 @@ describe('aguante: la defensa se cobra en daño', () => {
 
   it('Contragolpe devuelve el triple de lo que el muro frena entero, y nada si la sirena pasa', () => {
     const play = (wall: number) => {
-      const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 } });
+      const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 } });
       const s = table(cfg, ['contragolpe'], { wall });
       // contraataca el enemigo activo: la Sota de PICAS (Ataque 3)
       s.players[0].hand = [card('S2'), card('S3')];
@@ -124,7 +124,7 @@ describe('aguante: la defensa se cobra en daño', () => {
 
   it('Rebosadero: el muro que sobra repara, y lo que sobra de reparar carga Fuerza', () => {
     // guardias que no pegan: lo que se mide es lo que rebosa
-    const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 0, 12: 0, 13: 0 } });
+    const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 0, 11: 0, 12: 0 } });
     const s = table(cfg, ['rebosadero'], { wall: cfg.wallCap - 1, integrity: cfg.maxIntegrity - 1 });
     s.players[0].hand = [card('C8'), card('C9'), card('C10')];
     // escalera de tréboles: tres ♣, +6 de Escudo; cabe 1 y sobran 5 → cura 2; cabe 1 y sobra 1 → +3 de Daño cargado
@@ -156,12 +156,12 @@ describe('jefes de la 4.0', () => {
   it('El Relojero: cada guardia abatido sin Golpe exacto te quita Vida, y el asalto empieza con Furia', () => {
     const cfg = boss('inestable');
     expect(cfg.furiaInicial).toBe(BALANCE.monarcas.inestable.furia);
-    const s = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
+    const s = table(cfgWith({ ...cfg, floorHp: { 10: 20, 11: 30, 12: 40 } }));
     const rough = strike(s, [card('C10'), card('H10')], 'D'); // pareja sin picas: tira la J con daño de sobra y no perfora
     expect(rough.fallen).toBeGreaterThan(0);
     expect(rough.clean).toBe(false);
     expect(rough.hurt).toBe(rough.fallen);
-    const exact = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
+    const exact = table(cfgWith({ ...cfg, floorHp: { 10: 20, 11: 30, 12: 40 } }));
     const clean = strike(exact, [card('S4'), card('H4')], 'D'); // (2 + 4 + 4) × 2 = 20: Golpe exacto
     expect(clean.clean).toBe(true);
     expect(clean.hurt).toBe(0);

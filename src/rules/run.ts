@@ -12,8 +12,8 @@ import { BALANCE, fill } from './balance-config';
 import { ARBOL, Nodo, cifraDe, cleanUp as limpiaArbol, comprarNodo, rangoDe } from './arbol';
 import { Caida, Pieza, caidaDe, caidaVacia, sumaPiezas } from './caida';
 import { Tirada, multiplicadores, tirarHuesos } from './huesos';
-import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, RUN_11, migraMeta11, migraRun11, recortaMeta10 } from './migracion';
-import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
+import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, META_38, RUN_11, migraMeta11, migraMeta38, migraRun11, recortaMeta10 } from './migracion';
+import { CABALLO, Card, Config, DEFAULT_CONFIG, FIGURAS, FORM, FORMATIONS, Formation, GameEvent, GameState, MAX_NUM, REY, SEALS, SOTA, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, RASGOS, Rarity, Rasgo, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool, rasgosCfg, rasgosDe } from './tools';
@@ -21,10 +21,11 @@ import { Arch, BOXES, RARITY, RASGOS, Rarity, Rasgo, TOOL, TOOL_SLOTS, ToolInst,
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
 /**
- * Versión del formato de campaña guardada. 5 desde la V12 (esquirlas, gotas, lo que cae y la tirada): una de la
- * 11.0 (4) se pone al día con `cargaRun` y se sigue jugando; una más vieja no se puede continuar.
+ * Versión del formato de campaña guardada. 6 desde la V40 (baraja española: 1 a 9 y figuras 10, 11 y 12). Una
+ * campaña de antes (5, o la 4 de la 11.0) se jugaba con la baraja francesa: no se puede continuar y se descarta
+ * con un aviso (`campanaFrancesa` en migracion.ts).
  */
-export const RUN_VERSION = 5;
+export const RUN_VERSION = 6;
 
 /**
  * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
@@ -43,7 +44,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tu Vida máxima baja {heridas}.' },
-  { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y las Reinas sube {noche}.' },
+  { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y los Caballos sube {noche}.' },
   { name: 'Puertas selladas', desc: 'Solo en el asalto {asaltos}, el Ataque de los cuatro tronos sube {clausura}.' },
 ];
 export const MAX_ASCENSION = ASCENSIONS.length - 1;
@@ -70,11 +71,11 @@ export interface StageDef {
  * Trono, con su Rey Tirano. La Vida y el Ataque de cada uno salen de `asaltos` en balance-config.json.
  */
 const STAGE_DEFS: Omit<StageDef, 'hp' | 'threat'>[] = [
-  { name: 'El Puente levadizo', floors: [11], thrones: 2, atajo: false, boss: false },
-  { name: 'El Patio de armas', floors: [11, 12], thrones: 3, atajo: false, boss: true },
-  { name: 'La Cripta', floors: [11, 12], thrones: 4, atajo: true, boss: false },
-  { name: 'La Galería real', floors: [11, 12, 13], thrones: 4, atajo: false, boss: true },
-  { name: 'El Salón del Trono', floors: [11, 12, 13], thrones: 4, atajo: false, boss: true, tirano: true },
+  { name: 'El Puente levadizo', floors: [SOTA], thrones: 2, atajo: false, boss: false },
+  { name: 'El Patio de armas', floors: [SOTA, CABALLO], thrones: 3, atajo: false, boss: true },
+  { name: 'La Cripta', floors: [SOTA, CABALLO], thrones: 4, atajo: true, boss: false },
+  { name: 'La Galería real', floors: [...FIGURAS], thrones: 4, atajo: false, boss: true },
+  { name: 'El Salón del Trono', floors: [...FIGURAS], thrones: 4, atajo: false, boss: true, tirano: true },
 ];
 /** Los cinco asaltos: su Vida (`hp`) y su Ataque (`threat`) salen de `asaltos` en balance-config.json. */
 export const STAGES: StageDef[] = STAGE_DEFS.map((s, i) => {
@@ -85,7 +86,7 @@ export const STAGES: StageDef[] = STAGE_DEFS.map((s, i) => {
 export function stageDef(n: number): StageDef {
   if (n <= LAST_STAGE) return STAGES[n - 1];
   const depth = n - LAST_STAGE;
-  return { name: `Trono infinito ${depth}`, floors: [11, 12, 13], thrones: 4, atajo: false, hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
+  return { name: `Trono infinito ${depth}`, floors: [...FIGURAS], thrones: 4, atajo: false, hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
 }
 /** Tras estos asaltos (los de los dos primeros monarcas) aparece un Secreto de la cripta. */
 export const EVENT_AFTER = [2, 4];
@@ -125,7 +126,7 @@ export interface BossCurse {
   badge: string;
 }
 const eachHand = (c: Config, n: number) => void (c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, Math.max(3, v + n)])));
-const eachThreat = (c: Config, n: number) => void [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + n)));
+const eachThreat = (c: Config, n: number) => void FIGURAS.forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + n)));
 /** Cifras de los decretos (`monarcas` de balance-config.json). */
 const MON = BALANCE.monarcas;
 export const BOSSES: Boss[] = [
@@ -136,7 +137,7 @@ export const BOSSES: Boss[] = [
     desc: 'Hay {contraataques} Contraataques cada turno, pero cada uno ataca un {pct} % menos.',
     barks: { entrada: '¿Envido? Tengo dos caras y canto con las dos.', contraataque: '¡Retruco! Y cuando te des vuelta, retruco otra vez.', caida: 'Se me dio vuelta el naipe... y por los dos lados.' },
     curse: { mark: 'contraataque', badge: '{contraataques} Contraataques por turno' },
-    apply: (c) => void ((c.sirenCount = MON.doble.contraataques), [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * MON.doble.ataque))))),
+    apply: (c) => void ((c.sirenCount = MON.doble.contraataques), FIGURAS.forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * MON.doble.ataque))))),
   },
   {
     id: 'escasez',
@@ -152,9 +153,9 @@ export const BOSSES: Boss[] = [
     who: 'La Dama del Cáliz',
     fem: true,
     name: 'Cáliz envenenado',
-    desc: 'Tus ♥ no curan: cada una que juegas te quita {veneno} de Vida.',
+    desc: 'Tus Copas no curan: cada una que juegas te quita {veneno} de Vida.',
     barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
-    curse: { mark: 'corazones', badge: 'Tus ♥ te quitan {veneno}' },
+    curse: { mark: 'corazones', badge: 'Tus Copas te quitan {veneno}' },
     // se aplica después de las reliquias: con el Bálsamo, tampoco curan
     apply: (c) => void ((c.curaPorCarta = 0), (c.veneno = MON.sequia.veneno)),
   },
@@ -264,7 +265,7 @@ export interface Tag {
   apply(run: Run): void;
 }
 export const TAGS: Tag[] = [
-  { id: 'vale', name: 'Llave de la Taberna', desc: 'En la próxima Taberna, reliquias, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
+  { id: 'vale', name: 'Llave de la Pulpería', desc: 'En la próxima Pulpería, reliquias, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
   { id: 'envio', name: 'Contrabando', desc: 'Recibes ya una reliquia Noble o Regia.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
   { id: 'molde', name: 'Molde de cera', desc: 'Duplicas la carta de tu Mazo que elijas.', apply: (run) => void (run.pending = { kind: 'dup' }) },
   { id: 'liquidacion', name: 'Botín escondido', desc: '+15 de oro.', apply: (run) => void (run.gold += 15) },
@@ -458,20 +459,21 @@ export interface Meta {
   /** Logros conseguidos. */
   ach: Record<string, boolean>;
   /** Contadores acumulados entre campañas. */
-  stats: { floors: number; cleans: number; maxHit: number; maxGold: number; reach: number; winAsc: number; intact: number; depth: number; forged: number; contracts: number; skips: number; maxTools: number; dailies: number };
+  stats: { floors: number; cleans: number; maxHit: number; maxGold: number; reach: number; winAsc: number; intact: number; depth: number; forged: number; contracts: number; skips: number; maxTools: number };
   /** Colección: lo que alguna vez pasó por tus manos. */
   seen: { tools: string[]; specials: string[]; bosses: string[]; forms: string[] };
   /** Para no contar dos veces lo que acumula una campaña en curso. */
   last: { id: number; forged: number; contracts: number; skips: number };
   /** Sellos de maestría: el nivel de obra más alto ganado con cada herramienta en el cinturón y con cada baraja. */
   mastery: { tools: Record<string, number>; decks: Record<string, number> };
-  /** Mejor resultado en la Obra diaria. */
-  daily: { date: string; cleared: number; won: boolean };
   /** Aviso de la migración a la V12 (Coronas → Esquirlas): el Árbol lo enseña una vez y lo borra. */
   aviso?: AvisoArbol;
 }
-/** 4 desde la V12 (Árbol de la Conjura, `renown` en Esquirlas de Corona). Ver `loadMeta` y src/rules/migracion.ts. */
-export const META_VERSION = 4;
+/**
+ * 5 desde la V40 (sin Asalto diario: se van `daily` y `stats.dailies`); 4 desde la V12 (Árbol de la Conjura, `renown`
+ * en Esquirlas de Corona). Ver `loadMeta` y src/rules/migracion.ts.
+ */
+export const META_VERSION = 5;
 export const newMeta = (): Meta => ({
   v: META_VERSION,
   renown: 0,
@@ -481,19 +483,18 @@ export const newMeta = (): Meta => ({
   best: 0,
   ascMax: 0,
   ach: {},
-  stats: { floors: 0, cleans: 0, maxHit: 0, maxGold: 0, reach: 0, winAsc: -1, intact: 0, depth: 0, forged: 0, contracts: 0, skips: 0, maxTools: 0, dailies: 0 },
+  stats: { floors: 0, cleans: 0, maxHit: 0, maxGold: 0, reach: 0, winAsc: -1, intact: 0, depth: 0, forged: 0, contracts: 0, skips: 0, maxTools: 0 },
   seen: { tools: [], specials: [], bosses: [], forms: [] },
   last: { id: 0, forged: 0, contracts: 0, skips: 0 },
   mastery: { tools: {}, decks: {} },
-  daily: { date: '', cleared: 0, won: false },
 });
 
 /** Carga un gremio guardado (de esta versión o de una anterior) sobre uno nuevo. */
 export function loadMeta(saved: unknown): Meta {
   const base = newMeta();
   if (!saved || typeof saved !== 'object') return base;
-  const old = saved as Partial<Meta> & { seen?: { relics?: string[] } & Partial<Meta['seen']> };
-  const meta: Meta = { ...base, ...old, ach: { ...old.ach }, stats: { ...base.stats, ...old.stats }, seen: { ...base.seen, ...old.seen }, last: { ...base.last, ...old.last }, daily: { ...base.daily, ...old.daily }, up: { ...old.up }, mastery: { tools: { ...old.mastery?.tools }, decks: { ...old.mastery?.decks } } };
+  const old = saved as Partial<Meta> & { seen?: { relics?: string[] } & Partial<Meta['seen']>; daily?: { date: string; cleared: number; won: boolean } };
+  const meta: Meta = { ...base, ...old, ach: { ...old.ach }, stats: { ...base.stats, ...old.stats }, seen: { ...base.seen, ...old.seen }, last: { ...base.last, ...old.last }, up: { ...old.up }, mastery: { tools: { ...old.mastery?.tools }, decks: { ...old.mastery?.decks } } };
   meta.ascMax = Math.max(0, Math.min(MAX_ASCENSION, meta.ascMax));
   const v = Number(old.v ?? 1) || 1;
   if (v < 2) {
@@ -506,6 +507,8 @@ export function loadMeta(saved: unknown): Meta {
   if (v < 3) recortaMeta10(meta, LAST_STAGE);
   // perfiles de la 11.0 (y anteriores): Coronas × 100 y las mejoras de La Orden, tal cual, en el Arsenal
   if (v <= META_11) migraMeta11(meta, Object.fromEntries(ARBOL.map((n) => [n.id, n.rangos])));
+  // perfiles de la 38.0 (y anteriores): fuera el Asalto diario; el Altar, los logros y la Colección siguen
+  if (v <= META_38) migraMeta38(meta);
   meta.v = META_VERSION;
   delete (meta.seen as { relics?: unknown }).relics;
   return meta;
@@ -586,8 +589,6 @@ export interface RunOpts {
   /** Semilla numérica, o un texto del que sacarla. */
   seed?: number;
   seedText?: string;
-  /** Obra diaria (AAAA-MM-DD): misma semilla para todos, sin mejoras del gremio. */
-  daily?: string;
 }
 
 export interface Run {
@@ -596,7 +597,6 @@ export interface Run {
   id: number;
   /** La semilla, tal como se muestra y se comparte. */
   seedText: string;
-  daily: string | null;
   rng: number;
   ascension: number;
   deckId: string;
@@ -801,11 +801,11 @@ const copyOf = (c: Card): Card => ({ ...c, id: `${c.id}b` });
 /** Cifras de cada baraja (`barajas` de balance-config.json). */
 const BAR = BALANCE.barajas;
 export const DECKS: DeckDef[] = [
-  { id: 'obra', name: 'Baraja de la conjura', desc: 'La de siempre: 40 cartas, 2 Comodines y un Sobre lacrado de {sobre} especiales.', unlock: null, build: () => {} },
+  { id: 'obra', name: 'Baraja de la conjura', desc: 'La española de siempre: 36 cartas del 1 al 9, 2 Comodines y un Sobre lacrado de {sobre} especiales.', unlock: null, build: () => {} },
   {
     id: 'acero',
     name: 'Baraja negra',
-    desc: 'Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +{vida} de Vida (+Baluarte con su arcón).',
+    desc: 'Solo Espadas y Bastos, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +{vida} de Vida (+Baluarte con su arcón).',
     unlock: 'capataz',
     build: (run) => {
       const black = run.deck.filter((c) => c.suit === 'S' || c.suit === 'C');
@@ -871,8 +871,6 @@ const DECK_NUMS: Record<string, Record<string, number>> = { ...BAR, obra: { sobr
 for (const d of DECKS) d.desc = fill(d.desc, DECK_NUMS[d.id] ?? {});
 export const DECK: Record<string, DeckDef> = Object.fromEntries(DECKS.map((d) => [d.id, d]));
 
-/** Semilla de la Obra diaria: la misma para todo el mundo ese día. */
-export const dailySeed = (date: string) => seedFrom(`derrumbe-diaria-${date}`);
 
 /** Los tres Dones de una campaña: sorteo propio (un generador aparte sembrado con la semilla), sin tocar `run.rng`. */
 function rollDon(run: Run): Don[] {
@@ -904,23 +902,21 @@ function takeDon(run: Run, i: number): void {
 }
 
 export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
-  const daily = typeof opts.daily === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(opts.daily) ? opts.daily : null;
-  const seedText = daily ?? (typeof opts.seedText === 'string' && opts.seedText.trim() ? opts.seedText.trim().slice(0, 24).toUpperCase() : '');
+  const seedText = typeof opts.seedText === 'string' && opts.seedText.trim() ? opts.seedText.trim().slice(0, 24).toUpperCase() : '';
   // «#K3F9QZ» es una semilla al azar tal como se enseña (base 36): se lee tal cual, sin hash, para que se repita
-  const seed = daily ? dailySeed(daily) : /^#[0-9A-Z]{1,7}$/.test(seedText) ? parseInt(seedText.slice(1), 36) | 0 : seedText ? seedFrom(seedText) : ((Number.isFinite(opts.seed) ? Number(opts.seed) : fallbackSeed) | 0);
-  const up = daily ? cleanUp({}) : cleanUp(opts.up);
+  const seed = /^#[0-9A-Z]{1,7}$/.test(seedText) ? parseInt(seedText.slice(1), 36) | 0 : seedText ? seedFrom(seedText) : ((Number.isFinite(opts.seed) ? Number(opts.seed) : fallbackSeed) | 0);
+  const up = cleanUp(opts.up);
   const boxes = BOXES.filter((b) => up[`caja_${b}`]);
   const maxIntegrity = BALANCE.inicio.vida;
   const run: Run = {
     v: RUN_VERSION,
     id: seed,
     seedText: seedText || `#${(seed >>> 0).toString(36).toUpperCase()}`,
-    daily,
     rng: seed,
-    ascension: daily ? 0 : Math.max(0, Math.min(MAX_ASCENSION, Math.floor(opts.ascension ?? 0) || 0)),
-    deckId: !daily && DECK[opts.deck ?? ''] ? opts.deck! : 'obra',
+    ascension: Math.max(0, Math.min(MAX_ASCENSION, Math.floor(opts.ascension ?? 0) || 0)),
+    deckId: DECK[opts.deck ?? ''] ? opts.deck! : 'obra',
     up,
-    pool: [...new Set([...BASE_POOL, ...(!daily && Array.isArray(opts.pool) ? opts.pool.filter((id) => typeof id === 'string' && SPECIAL[id]) : [])])],
+    pool: [...new Set([...BASE_POOL, ...(Array.isArray(opts.pool) ? opts.pool.filter((id) => typeof id === 'string' && SPECIAL[id]) : [])])],
     toolPool: toolPool(boxes),
     seals: up.tampones ? [...SEALS] : ['eco', 'jornal'],
     treats: up.bronce ? [...TREATMENTS] : ['forjado', 'templado'],
@@ -997,7 +993,7 @@ export const FURIA: { mazo: number; rey: number; jefeVida: number } = BALANCE.fu
 
 /**
  * V35 · El orden en que se asaltan las Casas de un asalto: los tronos presentes, empezando por uno que depende de la
- * campaña y del asalto (así no se abre siempre por Picas). El monarca, si lo hay, es el último guardia de la última.
+ * campaña y del asalto (así no se abre siempre por Espadas). El monarca, si lo hay, es el último guardia de la última.
  */
 export function ordenCasas(run: Pick<Run, 'id' | 'stage' | 'palos'>): Suit[] {
   const presentes = run.palos?.[run.stage] ?? [...SUITS];
@@ -1020,12 +1016,12 @@ export function stageConfig(run: Run, players = 1): Config {
   // en cuadrilla hay más manos entre las que elegir: las obras aguantan más
   const a = run.ascension;
   const scale = st.hp * (a >= 1 ? REIN.corazas : 1) * COOP_HP[Math.min(players, 4) - 1];
-  for (const r of [11, 12, 13]) {
+  for (const r of FIGURAS) {
     // Reinado 4 «Reyes acorazados»: en los asaltos con monarca, los Reyes tienen más Vida
-    const reyes = a >= 3 && st.boss && r === 13 ? REIN.reyesAcorazados : 1;
+    const reyes = a >= 3 && st.boss && r === REY ? REIN.reyesAcorazados : 1;
     // la Vida final, redondeada al múltiplo de 5 más cercano (asalto, Reinado y conjura ya aplicados)
     cfg.floorHp[r] = roundHp(DEFAULT_CONFIG.floorHp[r] * scale * reyes);
-    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? REIN.reyColerico : 0) + (a >= 6 && r !== 13 ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
+    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === REY ? REIN.reyColerico : 0) + (a >= 6 && r !== REY ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
   }
   // V35 · duelo Casa por Casa: se combate la primera en pie de `orden`. Sin reloj de turnos: la Furia sube con cada
   // Mazo agotado y, contra el monarca (el último guardia del asalto), con cada turno
@@ -1194,7 +1190,7 @@ function advance(run: Run): void {
 
 function draftOptions(run: Run): DraftOpt[] {
   const specials = rollSpecials(run, 2).map((id): DraftOpt => ({ kind: 'special', id }));
-  const card: Card = { id: `c-${++run.serial}`, suit: pick<Suit>(run, SUITS, 1)[0], rank: pick(run, [1, 6, 7, 8, 9, 10], 1)[0] };
+  const card: Card = { id: `c-${++run.serial}`, suit: pick<Suit>(run, SUITS, 1)[0], rank: pick(run, [1, 6, 7, 8, MAX_NUM], 1)[0] };
   if (roll(run, 2)) card.seal = pick(run, run.seals, 1)[0];
   else card.tr = pick(run, run.treats, 1)[0];
   return [...specials, { kind: 'card', card }];
@@ -1349,7 +1345,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       if (run.phase === 'event') advance(run);
       return null;
     case 'burn': {
-      if (run.phase !== 'shop') return 'Solo se queman cartas en la hoguera de la Taberna.';
+      if (run.phase !== 'shop') return 'Solo se queman cartas en la hoguera de la Pulpería.';
       if (run.gold < removeCost(run)) return 'No te alcanza el oro.';
       if (run.deck.length <= MIN_DECK) return `El mazo no puede bajar de ${MIN_DECK} cartas.`;
       const i = run.deck.findIndex((c) => c.id === a.card);
@@ -1362,7 +1358,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'heal':
-      if (run.phase !== 'shop') return 'Solo en la Taberna.';
+      if (run.phase !== 'shop') return 'Solo en la Pulpería.';
       if (run.integrity >= run.maxIntegrity) return 'Tu Vida ya está al máximo.';
       if (run.gold < healCost(run)) return 'No te alcanza el oro.';
       run.gold -= healCost(run);
@@ -1378,7 +1374,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'reroll':
-      if (run.phase !== 'shop') return 'Solo en la Taberna.';
+      if (run.phase !== 'shop') return 'Solo en la Pulpería.';
       if (run.sobre) return 'Antes elige una carta del sobre abierto.';
       if (run.gold < rerollCost(run)) return 'No te alcanza el oro.';
       run.gold -= rerollCost(run);
@@ -1490,11 +1486,6 @@ export function settle(meta: Meta, run: Run): number {
     for (const t of run.tools) meta.mastery.tools[t.id] = Math.max(meta.mastery.tools[t.id] ?? 0, level);
     meta.mastery.decks[run.deckId] = Math.max(meta.mastery.decks[run.deckId] ?? 0, level);
   }
-  if (run.daily) {
-    const cleared = stagesCleared(run);
-    if (meta.daily.date !== run.daily || cleared > meta.daily.cleared) meta.daily = { date: run.daily, cleared, won: run.conquered };
-    meta.stats.dailies++;
-  }
   return gained;
 }
 
@@ -1508,11 +1499,13 @@ export function cobroAbismo(meta: Meta, run: Run): number {
   return gained;
 }
 
-/** Una campaña guardada lista para seguir: la de esta versión tal cual, la de la 11.0 puesta al día; si no, null. */
+/**
+ * Una campaña guardada lista para seguir: la de esta versión tal cual; si no, null. Las de antes de la V40 (la 11.0
+ * y la 12.0 a la 38.0) eran de la baraja francesa: no se continúan (el cliente las retira con `campanaFrancesa`).
+ */
 export function cargaRun(raw: unknown): Run | null {
   const r = raw as Run | null;
   if (!r || typeof r !== 'object' || !r.stats) return null;
-  if (r.v === RUN_11) migraRun11(r, RUN_VERSION);
   return r.v === RUN_VERSION ? r : null;
 }
 

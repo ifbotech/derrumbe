@@ -33,7 +33,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'asc3', name: 'Gran conspirador', desc: 'Gana una campaña en el Reinado 4 o superior.', renown: 8, progress: count((m) => m.stats.winAsc + 1, 4) },
   { id: 'abismo', name: 'Más allá del trono', desc: 'Supera un Trono infinito.', renown: 4, progress: count((m) => m.stats.depth, 1) },
   { id: 'abismo3', name: 'Sin fin', desc: 'Supera tres Tronos infinitos en una campaña.', renown: 8, progress: count((m) => m.stats.depth, 3) },
-  { id: 'diaria', name: 'Ronda diaria', desc: 'Termina un Asalto diario.', renown: 2, progress: count((m) => m.stats.dailies, 1) },
   { id: 'doblepar', name: 'Dos y dos', desc: 'Juega un doble par.', renown: 1, progress: flag((m) => has(m.seen.forms, 'doblepar')) },
   { id: 'color', name: 'Todo al mismo palo', desc: 'Juega un color.', renown: 1, progress: flag((m) => has(m.seen.forms, 'color')) },
   { id: 'full', name: 'Casa llena', desc: 'Juega un full.', renown: 2, progress: flag((m) => has(m.seen.forms, 'full')) },

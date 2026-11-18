@@ -28,20 +28,20 @@ const f = (tpl: string, v: Record<string, number | string> = {}) => fillFor('en'
 
 /** Relics: [name, description template]. */
 const RELIQUIAS: Record<string, [string, string]> = {
-  piqueta: ['Spade Dagger', '+{dano} Damage for each ♠ you play.'],
-  cortavidrios: ['Diamond Ring', '+{dano} Damage for each ♦ you play.'],
-  paleta: ['Heart Chalice', '+{dano} Damage for each ♥ you play.'],
-  maza: ['Club Mace', '+{dano} Damage for each ♣ you play.'],
+  piqueta: ['Sword Dagger', '+{dano} Damage for each Swords card you play.'],
+  cortavidrios: ['Coin Ring', '+{dano} Damage for each Coins card you play.'],
+  paleta: ['Chalice of Cups', '+{dano} Damage for each Cups card you play.'],
+  maza: ['Club Mace', '+{dano} Damage for each Clubs card you play.'],
   cincel: ['Stiletto', '+{dano} Damage if you play a single card.'],
   gemelos: ['Twin Daggers', '+{multi} Mult with a group, two pair, full house or four of a kind.'],
   cinta: ['Royal Straight', '+{multi} Mult with a straight or straight flush.'],
-  sacos: ['Great Shield', 'Each ♣ gives +{escudo} more Shield, and the Shield cap rises +{tope}.'],
-  botiquin: ['Balm', 'Each ♥ heals +{vida} more.'],
+  sacos: ['Great Shield', 'Each Clubs card gives +{escudo} more Shield, and the Shield cap rises +{tope}.'],
+  botiquin: ['Balm', 'Each Cups card heals +{vida} more.'],
   encofrado: ['Buckler', 'Each guard defeated: +{escudo} Shield.'],
   casco: ['Helm', 'Each guard defeated: +{vida} Health.'],
   puntales: ['False Bottom', '{gratis} Deck run-out per assault does not raise the Fury.'],
   hucha: ['Coin Purse', '+{oro} gold at the end of each assault.'],
-  taladro: ['Lance', 'All your hits Pierce, with or without ♠.'],
+  taladro: ['Lance', 'All your hits Pierce, with or without Swords.'],
   estandarte: ['Banner', '+{multi} Mult with a flush or straight flush.'],
   dados: ['Loaded Dice', '+{multi} Mult with two pair or a full house.'],
   dinamita: ['Powder Keg', 'Each guard defeated: the other thrones take {dano}.'],
@@ -56,7 +56,7 @@ const RELIQUIAS: Record<string, [string, string]> = {
   tiralineas: ['Lockpick', 'Each Exact Hit: +{oro} gold.'],
   calibre: ['Compass', 'Gains +{dano} Damage for good with each Exact Hit.'],
   cizalla: ["Tailor's Shears", 'After an Exact Hit, the next guard loses half its Health.'],
-  metralla: ['Broken Necklace', 'Each ♦ splashes +{dano} more to the other thrones.'],
+  metralla: ['Broken Necklace', 'Each Coins card splashes +{dano} more to the other thrones.'],
   percutor: ['Bell', 'Triggers the first card of the hit again.'],
   resonador: ['War Horn', '×{multi} Mult if you play {cartas} cards or more.'],
   diapason: ['Hand Mirror', 'Copies your latest relic that is not passive.'],
@@ -112,7 +112,7 @@ const ESPECIALES: Record<string, [string, string]> = {
   cemento: ['Chain Mail', '+{wallPerCard} Shield for each card in the hit.'],
   embestida: ['Onslaught', '+{flat} Damage, and +{wallForce} more for each point of Shield standing.'],
   sierra: ['Secret Passage', 'This hit ignores Immune: your cards deal their Damage against any throne.'],
-  ferretero: ['The Tavern Keeper', '+{gold} gold and you draw {draw} extra card.'],
+  ferretero: ['The Storekeeper', '+{gold} gold and you draw {draw} extra card.'],
   'j-doble': ['The Two-Faced King', 'No Counterattack and you draw {draw} extra card.'],
   'j-escasez': ['The Usurer', '+{gold} gold.'],
   'j-sequia': ['The Chalice Lady', '+{heal} Health.'],
@@ -157,8 +157,8 @@ const MONARCAS: Record<string, MonarcaEn> = {
   sequia: {
     nombre: 'The Chalice Lady',
     decreto: 'Poisoned Chalice',
-    desc: 'Your ♥ do not heal: each one you play costs you {veneno} Health.',
-    badge: 'Your ♥ cost you {veneno}',
+    desc: 'Your Cups do not heal: each one you play costs you {veneno} Health.',
+    badge: 'Your Cups cost you {veneno}',
     entrada: 'A toast, darling. My cup has never mended a single heart.',
     contraataque: 'One more little sip... no? I will pour it for you anyway.',
     caida: 'I spilled my chalice all over the felt. How very untidy.',
@@ -210,13 +210,13 @@ const REINADOS: [string, string][] = [
   ['Armored Kings', 'In assaults with a monarch, Kings have {reyes} % more Health.'],
   ['Wrathful King', "Kings' Attack rises by {rey}."],
   ['Old Wounds', 'Your max Health drops by {heridas}.'],
-  ['Night Watch', "Jacks' and Queens' Attack rises by {noche}."],
+  ['Night Watch', "Knaves' and Knights' Attack rises by {noche}."],
   ['Sealed Gates', 'Only in assault {asaltos}, the Attack of all four thrones rises by {clausura}.'],
 ];
 
 const BARAJAS: Record<string, [string, string]> = {
-  obra: ['Conspiracy Deck', 'The usual one: 40 cards, 2 Jokers and a Sealed Pack of {sobre} specials.'],
-  acero: ['Black Deck', 'Only ♠ and ♣, doubled: no Heal or Splash. Drop of Poison, Great Shield and +{vida} Health (+Bulwark with its chest).'],
+  obra: ['Conspiracy Deck', 'The usual Spanish deck: 36 cards from 1 to 9, 2 Jokers and a Sealed Pack of {sobre} specials.'],
+  acero: ['Black Deck', 'Swords and Clubs only, doubled: no Heal or Splash. Drop of Poison, Great Shield, +{vida} Health (+Bulwark with chest).'],
   prestamista: ["Moneylender's Deck", '+{oro} starting gold and interest pays double, but you have {vida} less Health.'],
   ases: ['Deck of Aces', 'Eight aces and no 2: more Accomplice Aces and more punch, but you have {vida} less Health.'],
   corta: ['Short Deck', 'No twos or threes: big hits, the Deck runs out sooner and you have {vida} less Health. +{oro} starting gold.'],
@@ -237,7 +237,7 @@ const JURAMENTOS: Record<string, [string, string, string]> = {
 };
 
 const ATAJOS: Record<string, [string, string]> = {
-  vale: ['Tavern Key', 'At the next Tavern, relics, packs and the Wax Table are free.'],
+  vale: ['Store Key', 'At the next General Store, relics, packs and the Wax Table are free.'],
   envio: ['Contraband', 'You get a Noble or Royal relic right now.'],
   molde: ['Wax Mold', 'Duplicate the card of your Deck that you choose.'],
   liquidacion: ['Hidden Loot', '+15 gold.'],
@@ -257,7 +257,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     texto: 'Between two tombs a padlocked chest peeks out. Forcing it open will shake half the crypt.',
     opciones: [
       { etiqueta: 'Force it open', gana: 'Noble or Royal relic', cuesta: '−5 Health', desc: 'You lose 5 Health. You take a Noble or Royal relic.' },
-      { etiqueta: 'Sell it to the Tavern Keeper', gana: '+8 gold', desc: '+8 gold.' },
+      { etiqueta: 'Sell it to the Storekeeper', gana: '+8 gold', desc: '+8 gold.' },
     ],
   },
   horno: {
@@ -352,11 +352,11 @@ const MEJORAS: Record<string, [string, string?]> = {
   caja_aguante: ['Chest of the Shield'],
   tampones: ['New Seals', 'The Wax Table also offers the powder and sleeve seals.'],
   bronce: ['Crown Jeweler', 'The Wax Table also offers Prismatic Wax and Cursed Glass.'],
-  vale: ["Keeper's Favor", 'One free Refresh Table at each Tavern, per level.'],
-  tienda: ['Black Market', 'Per level: +1 relic at The Tavern, and 2 of those offered are of your main trait.'],
+  vale: ["Keeper's Favor", 'One free Refresh Table at each General Store, per level.'],
+  tienda: ['Black Market', 'Per level: +1 relic at the General Store, and 2 of those offered are of your main trait.'],
   caja: ['Conspiracy Purse', '+{oro} starting gold per rank.'],
   rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
-  tasador: ["Appraiser's Eye", 'Relics at the Tavern cost {n} gold less (minimum 1).'],
+  tasador: ["Appraiser's Eye", 'Relics at the General Store cost {n} gold less (minimum 1).'],
   manga: ['Deep Sleeve', 'On the Endless Throne, the Sleeve holds 2 cards instead of 1.'],
   gracia: ['Keen Eye', 'On the Endless Throne, Exact Hit also counts if you go over by {n} or less.'],
   piedra_iman: ['Lodestone', 'The magnet reaches {pct}% farther and collects {s} s sooner.'],
@@ -392,7 +392,6 @@ const LOGROS: Record<string, [string, string]> = {
   asc3: ['Grand Conspirator', 'Win a campaign on Reign 4 or higher.'],
   abismo: ['Beyond the Throne', 'Clear an Endless Throne.'],
   abismo3: ['Without End', 'Clear three Endless Thrones in one campaign.'],
-  diaria: ['Daily Round', 'Finish a Daily Assault.'],
   doblepar: ['Two and Two', 'Play two pair.'],
   color: ['All One Suit', 'Play a flush.'],
   full: ['Full House', 'Play a full house.'],
@@ -424,7 +423,7 @@ const CIFRAS_LOGRO: Record<string, Record<string, number>> = {
 };
 
 const PALABRAS: Record<string, [string, string]> = {
-  fuerza: ['Damage', 'What your cards add up to: their number (the Ace is worth 11). Against the throne of their suit, 0: it is Immune.'],
+  fuerza: ['Damage', 'What your cards add up to: their number, 1 to 9 (Ace: 11). Against the throne of their suit, 0: it is Immune.'],
   resonancia: ['Mult', 'What multiplies Damage: Damage × Mult = Hit. Always a whole number. The formation sets it; relics and finishes raise it.'],
   limpio: [
     'Exact Hit',
@@ -461,12 +460,16 @@ const ESTADOS: Record<keyof TowerFx, [string, string]> = {
   fractura: ['Exposed', 'The next hit against this throne deals ×{n} Damage.'],
   sobrecarga: ['Stunned', 'This throne skips its next Counterattack.'],
 };
-const PALOS: Record<Suit, [string, string]> = { S: ['SPADES', 'Spades'], D: ['DIAMONDS', 'Diamonds'], H: ['HEARTS', 'Hearts'], C: ['CLUBS', 'Clubs'] };
+/** V40 · the Spanish deck (glossary «Spanish deck»): S Swords, C Clubs, D Coins, H Cups. */
+const PALOS: Record<Suit, [string, string]> = { S: ['SWORDS', 'Swords'], D: ['COINS', 'Coins'], H: ['CUPS', 'Cups'], C: ['CLUBS', 'Clubs'] };
+/** V40 · the court figures: 10 Knave (Sota), 11 Knight (Caballo), 12 King (Rey). */
+const FIGURAS_EN: Record<number, string> = { 10: 'Knave', 11: 'Knight', 12: 'King' };
 
-const GUIA: Record<string, [string, string]> = {
-  palo: ['Suit and Immune', 'SPADES is Immune to ♠. Play the <b>6♣</b>: ♣ gives Shield.'],
-  cuenta: ['The Tally', 'A pair of <b>7</b>s to SPADES: Damage × Mult = Hit.'],
-  exacto: ['Exact Hit', 'The <b>9♦</b> to HEARTS: exactly 9.'],
+/** V40 · the Jester's three lines in the first three hits of the first campaign (src/rules/bufon.ts). */
+const BUFON: Record<string, string> = {
+  palo: "Check the enemy's suit: your cards of that suit do nothing to it. It is Immune.",
+  cuenta: 'The math is simple: Damage × Mult = Hit. Combine cards to raise the Mult.',
+  exacto: 'Leave it at exactly zero for an Exact Hit: no Counterattack, and gold for you.',
 };
 
 /** Texts the rules build on the fly: same keys and `{campo}` as `ES_PLANTILLAS`. */
@@ -504,8 +507,8 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'causa.lista.mas': '{a}, {b} and more',
   'causa.desde': '{palo} Counterattack',
   'causa.desde.sin': 'Counterattack',
-  'causa.falta.1': 'You needed {n} more Shield (♣)',
-  'causa.falta.n': 'You needed {n} more Shield (♣)',
+  'causa.falta.1': 'You needed {n} more Shield (Clubs)',
+  'causa.falta.n': 'You needed {n} more Shield (Clubs)',
   'causa.sirena.titulo': '{desde}: Attack {ataque} against Shield {frena} → {entra} got through',
   'causa.sirena.titulo.sin': '{desde}: Attack {ataque} and no Shield → {entra} got through',
   'causa.sirena.detalle.otra': 'It was Counterattack no. {k} this turn. {queda}. {falta} or an Exact Hit.',
@@ -513,14 +516,14 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'causa.sirena.detalle.asedio': '{queda}. {n} of that Attack was Fury. {falta} or an Exact Hit.',
   'causa.herida.propia': 'Self-inflicted wound',
   'causa.herida.titulo': '{quien}: your own hit cost you {n} Health',
-  'causa.herida.detalle': '{queda}. Shield does not stop what your hit costs: heal (♥) before you gamble.',
+  'causa.herida.detalle': '{queda}. Shield does not stop what your hit costs: heal (Cups) before you gamble.',
   'causa.sin_cartas.titulo': 'No cards: no hand, no Deck, no Discard to go on',
   'causa.sin_cartas.detalle': '{queda}, but there is nothing to hit with: what is spent or destroyed never comes back.',
   'aviso.sirena.titulo': 'Last turn: the {palo} Counterattack (⚔ {ataque}) can finish you',
   'aviso.sirena.escudo': '{n} Shield',
   'aviso.sirena.escudo.sin': 'no Shield',
-  'aviso.sirena.detalle.1': 'You have {vida} Health and {escudo}. Raise your Shield (♣), heal (♥), stun that throne or land an Exact Hit.',
-  'aviso.sirena.detalle.n': 'You have {vida} Health and {escudo}. Raise your Shield (♣), heal (♥), stun that throne or land an Exact Hit.',
+  'aviso.sirena.detalle.1': 'You have {vida} Health and {escudo}. Raise your Shield (Clubs), heal (Cups), stun that throne or land an Exact Hit.',
+  'aviso.sirena.detalle.n': 'You have {vida} Health and {escudo}. Raise your Shield (Clubs), heal (Cups), stun that throne or land an Exact Hit.',
   'paso.racha': 'Streak',
   'paso.carga': 'Stored',
   'paso.expuesto': 'Exposed ×{n}',
@@ -537,6 +540,9 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'paso.carga_dano': '+{n} stored Damage',
   'paso.golpea': '{n} to {palo}',
   'paso.golpea.por': '{por} = {n} to {palo}',
+  // V40 · a card's label in the tally
+  'carta.etiqueta': '{n} of {palo}',
+  'carta.comodin': 'Joker',
   'paso.frenado': '{f} × {n} stopped',
   'paso.destruye': 'destroys {carta}',
   'paso.crece': 'grows',
@@ -577,10 +583,10 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.sin_sobre': 'There is no open pack.',
   'error.no_en_sobre': 'That card is not in the pack.',
   'error.nada_pendiente': 'Nothing is pending.',
-  'error.hoguera': 'Cards only burn in the Bonfire of the Tavern.',
+  'error.hoguera': 'Cards only burn in the Bonfire of the General Store.',
   'error.mazo_minimo': 'The deck cannot drop below {n} cards.',
   'error.no_en_mazo': 'That card is not in the deck.',
-  'error.solo_taberna': 'Only in the Tavern.',
+  'error.solo_taberna': 'Only in the General Store.',
   'error.vida_llena': 'Your Health is already full.',
   'error.no_vender': 'No selling in the middle of an assault.',
   'error.no_llevas': 'You do not carry that relic.',
@@ -695,7 +701,7 @@ export function reglasEn(): Record<string, string> {
     o[`rama.${id}.nombre`] = nombre;
     o[`rama.${id}.desc`] = linea;
   }
-  o['arbol.nombre'] = 'The Conspiracy Tree';
+  o['arbol.nombre'] = 'The Altar';
   o['arbol.desc'] = 'Spend shards here to get better for good.';
   o['arbol.raiz.nombre'] = 'The Broken Crown';
   o['arbol.raiz.desc'] = 'Your shards are shown here.';
@@ -735,6 +741,7 @@ export function reglasEn(): Record<string, string> {
     o[`palo.${s}`] = mayus;
     o[`palo.${s}.nombre`] = nombre;
   }
+  for (const [r, nombre] of Object.entries(FIGURAS_EN)) o[`figura.${r}`] = nombre;
   const C = BALANCE.cobro;
   o['cuenta.asalto'] = 'Assault won';
   o['cuenta.vida'] = f('Health left (1 for every {n})', { n: C.vidaCada });
@@ -744,7 +751,7 @@ export function reglasEn(): Record<string, string> {
   o['mejor.nada'] = 'No play deals Damage: discard, or keep a card in the Sleeve.';
   // V12: coins, shards, drops, bone dice, roll, magnet, payout and AUTO (annex A of SPECS/V12.md)
   o['pieza.moneda.nombre'] = 'Coins';
-  o['pieza.moneda.desc'] = 'Gold for the Tavern.';
+  o['pieza.moneda.desc'] = 'Gold for the General Store.';
   o['pieza.esquirla.nombre'] = 'Crown Shards';
   o['pieza.esquirla.desc'] = 'Crown pieces: you keep them even if you lose.';
   o['pieza.gota.nombre'] = 'Wax Drops';
@@ -763,20 +770,15 @@ export function reglasEn(): Record<string, string> {
   o['auto.desc'] = 'The game plays itself. Tap to take over.';
   o['auto.saquear.nombre'] = 'Auto-Loot';
   o['auto.saquear.desc'] = 'The bot picks your Loot.';
-  o['auto.taberna.nombre'] = 'Auto-Tavern';
-  o['auto.taberna.desc'] = 'The bot shops at the Tavern and picks a route.';
+  o['auto.taberna.nombre'] = 'Auto-Store';
+  o['auto.taberna.desc'] = 'The bot shops at the General Store and picks a route.';
   o['auto.pausa.botin'] = 'AUTO is waiting: pick your Loot.';
-  o['auto.pausa.taberna'] = 'AUTO is waiting: shop at the Tavern or move on.';
+  o['auto.pausa.taberna'] = 'AUTO is waiting: shop at the General Store or move on.';
   o['auto.pausa.mapa'] = 'AUTO is waiting: pick your route on the Map.';
   o['auto.pausa.secreto'] = 'AUTO is waiting: choose in the Secret.';
   o['auto.pausa.fin'] = 'The campaign is over: AUTO turns off.';
-  o['auto.pausa.diaria'] = 'In the Daily Assault you play by hand.';
   o['auto.pausa.coop'] = 'In co-op you play by hand.';
-  for (const [id, [titulo, linea]] of Object.entries(GUIA)) {
-    o[`guia.${id}.titulo`] = titulo;
-    o[`guia.${id}.linea`] = linea;
-  }
-  o['guia.jugador'] = 'YOU';
+  for (const [id, texto] of Object.entries(BUFON)) o[`bufon.${id}`] = texto;
   return { ...o, ...EN_PLANTILLAS };
 }
 

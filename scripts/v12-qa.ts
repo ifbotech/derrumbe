@@ -180,14 +180,11 @@ export async function autoSuite(browser: Browser, url: string, check: Check, pro
   const a1 = await juice(page, 'auto');
   check(a1.saquear && a1.taberna, `Ajustes enciende Auto-saquear y Auto-taberna («${T('auto.saquear.nombre')}», «${T('auto.taberna.nombre')}»)`);
   await page.keyboard.press('Escape');
-  // ── nueva campaña; un perfil nuevo pasa por la partida guiada (se salta) ──
+  // ── nueva campaña (V40: sin partida guiada, empieza por el Sobre) ──
   await page.locator('#m-camp').click();
   await page.locator('#new').click();
-  await page.waitForSelector('.table-screen');
-  check((await count(page, '#btn-auto')) === 0, 'en la partida guiada no hay botón AUTO');
-  await page.locator('#btn-leave').click();
   await page.waitForSelector('.run');
-  check((await run(page))?.phase === 'pack', 'saltar la guía lleva al Sobre');
+  check((await run(page))?.phase === 'pack', 'la campaña nueva empieza por el Sobre');
   // ── A enciende AUTO en el Sobre: abre el Sobre, elige ruta y entra solo a la mesa ──
   await page.keyboard.press('a');
   const toast = (await page.locator('.toast').last().textContent().catch(() => '')) ?? '';
@@ -282,33 +279,6 @@ export async function autoPausaSuite(browser: Browser, url: string, check: Check
   await close();
 }
 
-/** En el Asalto diario no hay AUTO: el botón sale apagado con su razón y ni A ni Select lo encienden. */
-export async function autoDiariaSuite(browser: Browser, url: string, check: Check, problems: string[]): Promise<void> {
-  const { page, close } = await padPage(browser, url, problems, 'diaria');
-  await page.locator('#m-daily').click();
-  await page.waitForSelector('.table-screen, .run');
-  if (await count(page, '.table-screen #btn-leave')) {
-    await page.locator('#btn-leave').click();
-    await page.waitForSelector('.run');
-  }
-  await page.keyboard.press('a');
-  await page.waitForTimeout(150);
-  const said = (await page.locator('.toast').last().textContent().catch(() => '')) ?? '';
-  check(!(await juice(page, 'auto')).on && said.includes(T('auto.pausa.diaria')), `en el Asalto diario, A no enciende AUTO y dice por qué («${said.trim()}»)`);
-  await page.locator('#go').click();
-  await page.locator('#routes .choice.pick').first().click();
-  await page.waitForSelector('.table-screen');
-  await page.waitForTimeout(400);
-  const b = await page.evaluate(() => {
-    const el = document.querySelector<HTMLButtonElement>('#btn-auto');
-    return el ? { disabled: el.disabled, pressed: el.getAttribute('aria-pressed'), label: el.getAttribute('aria-label') ?? '', tip: el.dataset.tip ?? '' } : null;
-  });
-  check(b?.disabled && b.pressed === 'false' && b.label.includes(T('auto.pausa.diaria')), `en la mesa del diario el botón AUTO sale apagado con su razón («${b?.label ?? 'sin botón'}»)`);
-  await press(page, BTN.SELECT);
-  await page.waitForTimeout(150);
-  check(!(await juice(page, 'auto')).on, 'y Select en el mando tampoco lo enciende');
-  await close();
-}
 
 // ───────────────────────── El Árbol de la Conjura ─────────────────────────
 

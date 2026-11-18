@@ -5,7 +5,7 @@ guardian('docs', 120); // tope duro: ver scripts/guardian.ts
 // De paso pone al día en README.md las tablas de balance (desde scripts/meta-report.json) y la de
 // controles, que van entre marcas <!-- …:inicio --> y <!-- …:fin -->.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formation, MATERIAL, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
+import { DIFFICULTY, FIGURAS, FIGURA_NOMBRE, FORM, FORMATIONS, FORMATION_NAME, Formation, MATERIAL, MAX_NUM, PALO_NOMBRE, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { ACHIEVEMENTS, unlocksOf } from '../src/rules/achievements';
 import { BALANCE } from '../src/rules/balance-config';
 import { fraccion } from '../src/rules/cifras';
@@ -36,7 +36,6 @@ const KIND = { f: '+D suma Daño', r: '+M suma Multi', x: '×M multiplica', copy
 /** Nombre de una pieza por su id, para que la prosa no se desincronice de la biblia. */
 const tool = (id: string) => TOOL[id]?.name ?? id;
 const up = (id: string) => UPGRADES.find((u) => u.id === id)?.name ?? id;
-const GUARD = ['Sota', 'Reina', 'Rey'];
 
 // la tabla de controles es la de prompts.ts: la misma que enseñan Ajustes y las insignias de cada botón
 const CONTROLS_TABLE = table(['Acción', 'Teclado y ratón', 'Mando'], CONTROL_ROWS);
@@ -45,22 +44,22 @@ const md = `# ${TITLE} — Reglas
 
 > Este archivo se genera con \`npm run docs\` a partir de los datos del motor (\`src/rules\`). No lo edites a mano.
 
-*${SUBTITLE}.* Juego cooperativo para 1 a 4 jugadores con baraja francesa (52 cartas + 2 comodines).
+*${SUBTITLE}.* Juego cooperativo para 1 a 4 jugadores con baraja española (48 cartas + 2 comodines).
 Sois una conjura: hay que hacer caer **los cuatro tronos** de la corte antes de que su guardia acabe con **tu Vida**.
 Se gana o se pierde en equipo. El Asalto único también se puede jugar en mesa con una baraja real.
 
 ## Preparación
 
-1. Separa las 12 figuras y forma los **cuatro tronos**, una casa por palo (Casa de Picas, Casa de Diamantes…).
-   Cada trono tiene 3 **guardias** en fila: la **Sota** (J) delante, que es la primera en caer, luego la **Reina** (Q) y al final el **Rey** (K).
-2. Baraja las 40 cartas numerales (del As al 10) con los 2 comodines: es el **Mazo**.
+1. Separa las 12 figuras y forma los **cuatro tronos**, una casa por palo (Casa de ${PALO_NOMBRE.S}, Casa de ${PALO_NOMBRE.D}…).
+   Cada trono tiene 3 **guardias** en fila: la **Sota** (10) delante, que es la primera en caer, luego el **Caballo** (11) y al final el **Rey** (12).
+2. Baraja las ${4 * MAX_NUM} cartas de número (del As al ${MAX_NUM}) con los 2 comodines: es el **Mazo**.
    Deja sitio al lado para el **Descarte**.
 3. Cada jugador roba su mano de **${cfg.handSize[1]}** cartas.
 4. La conjura empieza con **${cfg.maxIntegrity} de Vida** y **0 de Escudo** (máximo ${cfg.wallCap}).
 
-${table(['Guardia', 'Vida', 'Ataque'], [11, 12, 13].map((r) => [`${GUARD[r - 11]} (${'JQK'[r - 11]})`, String(cfg.floorHp[r]), `⚔ ${cfg.floorThreat[r]}`]))}
+${table(['Guardia', 'Vida', 'Ataque'], FIGURAS.map((r) => [`${FIGURA_NOMBRE[r]} (${r})`, String(cfg.floorHp[r]), `⚔ ${cfg.floorThreat[r]}`]))}
 
-Cada palo es una casa de la corte: ♠ **${MATERIAL.S}**, ♦ **${MATERIAL.D}**, ♥ **${MATERIAL.H}**, ♣ **${MATERIAL.C}**.
+Cada palo es una casa de la corte: **${MATERIAL.S}**, **${MATERIAL.D}**, **${MATERIAL.H}** y **${MATERIAL.C}**.
 
 **Un enemigo a la vez.** Las Casas se asaltan de una en una, en un orden que la campaña sortea: el **enemigo activo** es el guardia de delante de la primera Casa en pie, y el resto espera en la **fila**. Solo se golpea al enemigo activo.
 
@@ -93,10 +92,10 @@ Una sola regla de palos: **cada trono es Inmune a su propio palo**. Contra el tr
 
 Además de su Daño, las cartas de cada palo activan su poder (aunque no sumen nada). Cada carta da lo mismo, sea cual sea su número:
 
-- ♠ **Perfora**: si la formación lleva alguna pica, los puntos que sobran al abatir a un guardia pasan al siguiente.
-- ♦ **Salpica**: cada diamante hace **${BALANCE.mesa.salpicaPorCarta}** a cada uno de los otros tronos.
-- ♥ **Cura**: cada corazón te cura **${BALANCE.mesa.curaPorCarta}** de Vida.
-- ♣ **Escudo**: cada trébol te da **+${BALANCE.mesa.escudoPorCarta}** de Escudo.
+- **Perfora** (${PALO_NOMBRE.S}): si la formación lleva alguna carta de ${PALO_NOMBRE.S}, los puntos que sobran al abatir a un guardia pasan al siguiente.
+- **Salpica** (${PALO_NOMBRE.D}): cada carta de ${PALO_NOMBRE.D} hace **${BALANCE.mesa.salpicaPorCarta}** a cada uno de los otros tronos.
+- **Cura** (${PALO_NOMBRE.H}): cada carta de ${PALO_NOMBRE.H} te cura **${BALANCE.mesa.curaPorCarta}** de Vida.
+- **Escudo** (${PALO_NOMBRE.C}): cada carta de ${PALO_NOMBRE.C} te da **+${BALANCE.mesa.escudoPorCarta}** de Escudo.
 
 ### Golpe exacto
 
@@ -123,8 +122,8 @@ Los dos desaparecen si cae el guardia.
 - **Comodín · Motín**: se juega solo sobre un trono. Ese trono queda **${TOWER_FX.sobrecarga.name}** y este turno no hay Contraataque. El comodín no vuelve en este asalto.
 - **Furia**: cada punto es **+1 de Ataque** en todos los Contraataques, y se ve junto al ⚔ del enemigo activo. En campaña sube **${FURIA.mazo}** con cada Mazo agotado y, contra un monarca, **${FURIA.rey}** cada turno que sigue en pie (la **Furia del Rey**). En el Asalto único sube además sola, desde el turno ${(cfg.fatigueStart ?? 0) + 1} y cada ${cfg.fatigueEvery} turnos.
 - **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no te quita Vida**, pero sube la **Furia** (${FURIA.mazo} en campaña): los asaltos no se pueden estirar sin fin.
-- **${FORMATION_NAME.compania}**: un As forma jugada con **cualquier otra carta** (×${n(FORM.compania.r)} de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar Escudo, uno de ♥ para curar, uno de ♠ para perforar.
-- **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *${tool('pasarela')}* añade un segundo hueco. La partida guiada te enseña a usarla en su tercer paso.
+- **${FORMATION_NAME.compania}**: un As forma jugada con **cualquier otra carta** (×${n(FORM.compania.r)} de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ${PALO_NOMBRE.C} para levantar Escudo, uno de ${PALO_NOMBRE.H} para curar, uno de ${PALO_NOMBRE.S} para perforar.
+- **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *${tool('pasarela')}* añade un segundo hueco.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
 - **Victoria** (*Corte vencida*): todos los tronos caídos (en los primeros asaltos de la campaña hay menos de cuatro). **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
@@ -136,7 +135,7 @@ Un roguelike de construcción de mazo: **${LAST_STAGE} asaltos** cada vez más d
 
 Los primeros asaltos tienen menos tronos: los palos que faltan se sortean al empezar la campaña y el Mapa los enseña desde el principio.
 
-${table(['Asalto', 'Sala', 'Tronos', 'Guardias por trono', 'Vida', 'Ataque', 'Monarca', 'Atajo'], STAGES.map((s, i) => [String(i + 1), s.name, String(s.thrones), s.floors.map((r) => GUARD[r - 11]).join(', '), `×${n(s.hp)}`, s.threat === 0 ? 'base' : s.threat > 0 ? `+${s.threat}` : String(s.threat), s.tirano ? `sí, ${TIRANO.m}` : s.boss ? 'sí' : '—', s.atajo ? 'sí' : '—']))}
+${table(['Asalto', 'Sala', 'Tronos', 'Guardias por trono', 'Vida', 'Ataque', 'Monarca', 'Atajo'], STAGES.map((s, i) => [String(i + 1), s.name, String(s.thrones), s.floors.map((r) => FIGURA_NOMBRE[r]).join(', '), `×${n(s.hp)}`, s.threat === 0 ? 'base' : s.threat > 0 ? `+${s.threat}` : String(s.threat), s.tirano ? `sí, ${TIRANO.m}` : s.boss ? 'sí' : '—', s.atajo ? 'sí' : '—']))}
 
 En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
@@ -144,8 +143,8 @@ En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
 El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuál es su decreto. En los asaltos sin monarca eliges:
 
-- una **ruta** (dos a elegir; tres con el ${up('rutas')} del Árbol), cada una con su **Juramento**;
-- o, solo en el asalto ${STAGES.flatMap((s, i) => (s.atajo ? [i + 1] : [])).join(' y ')}, el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Taberna) a cambio de un **Atajo de conspirador**.
+- una **ruta** (dos a elegir; tres con el ${up('rutas')} del Altar), cada una con su **Juramento**;
+- o, solo en el asalto ${STAGES.flatMap((s, i) => (s.atajo ? [i + 1] : [])).join(' y ')}, el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Pulpería) a cambio de un **Atajo de conspirador**.
 
 **Juramentos.** Los normales piden una condición y pagan si la cumples; los de **riesgo** endurecen el asalto y pagan siempre que lo ganes.
 
@@ -163,7 +162,7 @@ ${table(['Monarca', 'Decreto', 'Efecto'], BOSSES.map((b) => [b.who, b.name, b.de
 
 Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada ${BALANCE.cobro.interesCada} de oro guardado), recuperas ${BALANCE.cobro.curaTrasAsalto} de Vida y eliges **una de tres opciones a la vista** —dos cartas especiales y una carta de baraja ya marcada con un sello de lacre o un acabado— o pasas a cambio de ${BALANCE.cobro.sinSeleccion} de oro.
 
-### La Taberna
+### La Pulpería
 
 Lo atiende el Tratante.
 
@@ -184,7 +183,6 @@ ${EVENTS.map((e) => `- **${e.name}.** ${e.text}\n${e.options.map((o) => `  - *${
 
 - Después del asalto ${LAST_STAGE} puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un ${Math.round((BALANCE.tronoInfinito.hpCrece - 1) * 100)} % más resistente que el anterior (el primero, ×${n(stageDef(LAST_STAGE + 1).hp)}).
 - **Semilla**: la misma semilla y las mismas decisiones dan exactamente la misma campaña. Puedes escribir la tuya al empezar.
-- **Asalto diario**: usa la fecha como semilla, con la ${DECK.obra.name.toLowerCase()}, en el Reinado 1 y sin nada del Árbol. Igual para todo el mundo.
 - **Reinados**: hay ${ASCENSIONS.length}. Ganar una campaña abre el Reinado siguiente; cada uno añade **un giro** a todos los anteriores y sube un 25 % el cobro de la conjura (sin contar lo que cae a la mesa).
 
 ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), a.name, a.desc]))}
@@ -194,16 +192,16 @@ ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), 
 
 ## Reliquias
 
-Llevas hasta **${TOOL_SLOTS} reliquias**. **No se ordenan**: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Árbol.
+Llevas hasta **${TOOL_SLOTS} reliquias**. **No se ordenan**: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Altar.
 
 ### Rasgos de build
 
-Cada Reliquia es de uno de **cinco rasgos**. Con **${UMBRALES.join(', ').replace(/, (\d+)$/, ' y $1')}** Reliquias del mismo rasgo se encienden sus bonos (se suman a los de las Reliquias). La píldora de la mesa lleva la cuenta y La Taberna marca lo que te acerca al siguiente.
+Cada Reliquia es de uno de **cinco rasgos**. Con **${UMBRALES.join(', ').replace(/, (\d+)$/, ' y $1')}** Reliquias del mismo rasgo se encienden sus bonos (se suman a los de las Reliquias). La píldora de la mesa lleva la cuenta y La Pulpería marca lo que te acerca al siguiente.
 
 ${table(['Rasgo', 'Lema', ...UMBRALES.map((u) => `Con ${u}`)], RASGOS.map((r) => [`**${r.name}**`, r.lema, ...r.bonos]))}
 
 ${RASGOS
-  .map((r) => `### ${r.name}\n\n${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.filter((t) => t.rasgo === r.id).map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Árbol' : 'de salida']))}`)
+  .map((r) => `### ${r.name}\n\n${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.filter((t) => t.rasgo === r.id).map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Altar' : 'de salida']))}`)
   .join('\n\n')}
 
 ## Sellos de lacre y acabados
@@ -226,7 +224,7 @@ ${table(['Carta', 'Efecto', 'Tipo'], SPECIALS.map((s) => [s.name, s.desc, s.lock
 
 ${table(['Baraja', 'Cómo cambia la campaña', 'Se desbloquea con'], DECKS.map((d) => [d.name, d.desc, d.unlock ? (ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name ?? d.unlock) : '—']))}
 
-## El Árbol de la Conjura
+## El Altar
 
 Ganes o pierdas, cada campaña deja **Esquirlas de Corona** ✦: las que caen a la mesa durante los asaltos y el **cobro de la conjura** al cerrarla (${ESQUIRLAS_POR_CORONA} por cada punto de la cuenta de siempre). Lo que cae a la mesa:
 
@@ -240,14 +238,14 @@ ${table(['Qué pasa', 'Monedas', 'Esquirlas', 'Gotas de lacre'], [
 - Con **${BALANCE.caida.gotasPorSello} gotas de lacre**, la Mesa de lacre te sella gratis.
 - **Tirada de huesos**: al ganar cada asalto se tiran dos dados. El **Dado de oro** (caras ${BALANCE.huesos.oro.map((x) => `×${x}`).join(' ')}) multiplica las monedas que cayeron en ese asalto; el **Dado de la Corona** (caras ${BALANCE.huesos.corona.map((x) => `×${x}`).join(' ')}) multiplica sus esquirlas. Al perder no hay tirada.
 
-Las esquirlas se gastan en el Árbol, que crece desde su raíz, «${RAIZ.name}», en cuatro ramas. Un nodo pide tener antes su padre. Solo **el Arsenal** cambia la campaña de cinco asaltos; la Bolsa y los Huesos solo dan más esquirlas, y la Corona de hierro solo actúa en el Trono infinito. El surtido de salida es corto a propósito (${TOOLS.filter((t) => !t.box).length} reliquias); los arcones del Arsenal abren las otras ${TOOLS.filter((t) => t.box).length}, cada uno con su manera de jugar.
+Las esquirlas se gastan en el Altar, que crece desde su raíz, «${RAIZ.name}», en cuatro ramas. Un nodo pide tener antes su padre. Solo **el Arsenal** cambia la campaña de cinco asaltos; la Bolsa y los Huesos solo dan más esquirlas, y la Corona de hierro solo actúa en el Trono infinito. El surtido de salida es corto a propósito (${TOOLS.filter((t) => !t.box).length} reliquias); los arcones del Arsenal abren las otras ${TOOLS.filter((t) => t.box).length}, cada uno con su manera de jugar.
 
 ${RAMAS.map((r) => `### ${r.name}\n\n${r.desc}\n\n${table(['Nodo', 'Efecto', 'Rangos', 'Coste de cada rango'], ARBOL.filter((u) => u.rama === r.id).map((u) => [u.name, u.desc, String(u.rangos), u.costs.map((c) => `${c} ✦`).join(' · ')]))}`).join('\n\n')}
 
 ### Archivo de crónicas y copia de seguridad
 
 - El archivo guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué asalto y ante qué monarca, turnos, mayor Golpe, reliquias y semilla. Desde ahí se puede **copiar la Crónica** o **rejugar la semilla** con la misma baraja y el mismo Reinado.
-- En **Ajustes**, *Exportar progreso* guarda el Árbol, la colección, las crónicas y los ajustes en un archivo .json, e *Importar progreso* lo recupera en otro navegador, otro equipo o la versión de escritorio.
+- En **Ajustes**, *Exportar progreso* guarda el Altar, la colección, las crónicas y los ajustes en un archivo .json, e *Importar progreso* lo recupera en otro navegador, otro equipo o la versión de escritorio.
 
 ### Logros
 
@@ -296,15 +294,15 @@ function balanceMd(r: Report): string {
     return `${cuales} de ${t.mediana[0]} a ${t.mediana[1]}${i === 0 ? ' turnos de mediana' : ''} (P95 ≤ ${t.p95})`;
   });
   return [
-    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Taberna, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
+    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
-    `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con el Árbol vacío y ${entre(O.reinado1.lleno)} con el Árbol lleno; Reinado 8 ${entre(O.reinado8.vacio)} con el Árbol vacío y ${entre(O.reinado8.lleno)} con el Árbol lleno; y cada Reinado, más difícil que el anterior.`,
+    `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con el Altar vacío y ${entre(O.reinado1.lleno)} con el Altar lleno; Reinado 8 ${entre(O.reinado8.vacio)} con el Altar vacío y ${entre(O.reinado8.lleno)} con el Altar lleno; y cada Reinado, más difícil que el anterior.`,
     '',
-    table(['Reinado', 'Árbol vacío', 'Árbol lleno'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
+    table(['Reinado', 'Altar vacío', 'Altar lleno'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
     '',
-    `Por baraja inicial (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el ${O.barajas.vacioObjetivo} % con el Árbol vacío y entre el ${O.barajas.llenoObjetivo} % con el Árbol lleno (el informe avisa fuera de ${O.barajas.vacio[0]}–${O.barajas.vacio[1]} y de ${O.barajas.lleno[0]}–${O.barajas.lleno[1]}).`,
+    `Por baraja inicial (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el ${O.barajas.vacioObjetivo} % con el Altar vacío y entre el ${O.barajas.llenoObjetivo} % con el Altar lleno (el informe avisa fuera de ${O.barajas.vacio[0]}–${O.barajas.vacio[1]} y de ${O.barajas.lleno[0]}–${O.barajas.lleno[1]}).`,
     '',
-    table(['Baraja', 'Árbol vacío', 'Árbol lleno', 'Lo que suma el Árbol'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
+    table(['Baraja', 'Altar vacío', 'Altar lleno', 'Lo que suma el Altar'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
     '',
     `Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media ${p(r.avgLethality)}). Objetivo: todos entre ${n(O.monarcas.ratio[0])}× y ${n(O.monarcas.ratio[1])}× de la media.`,
     '',

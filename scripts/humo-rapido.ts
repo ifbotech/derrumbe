@@ -103,8 +103,10 @@ async function portada(r: Rapido, { page }: Estado): Promise<void> {
   const title = await page.locator('.home h1.title').getAttribute('aria-label');
   const seal = (await page.locator('.home .brand-seal .seal-ribbon').textContent())?.trim();
   r.check(title === BRAND[LANG].title && seal === BRAND[LANG].emblema, `la portada enseña la marca dual: «${title}» con la cinta «${seal}»`);
-  const menu = await page.evaluate(() => ['#m-camp', '#m-daily', '#m-tuto', '#m-guild', '#m-set', '#home-lang'].filter((s) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) > 0).length);
-  r.check(menu === 6, `y su menú a la vista: Campaña, Asalto diario, Partida guiada, La Orden, Ajustes e idioma (${menu} de 6)`);
+  const menu = await page.evaluate(() => ['#m-camp', '#m-guild', '#m-col', '#m-set', '#home-lang'].filter((s) => (document.querySelector(s)?.getBoundingClientRect().width ?? 0) > 0).length);
+  r.check(menu === 5, `y su menú a la vista: Jugar, Altar, Colección, Ajustes e idioma (${menu} de 5)`);
+  const fuera = await page.evaluate(() => ['#m-daily', '#m-tuto'].filter((s) => document.querySelector(s)).length);
+  r.check(fuera === 0, 'V40: ni Asalto diario ni Partida guiada en la portada');
 }
 
 /** Un golpe con el trío de sietes de la mesa de QA contra el trono apuntado (a 8×, para no esperar a la animación). */
@@ -230,7 +232,7 @@ async function idioma(r: Rapido, { page }: Estado): Promise<void> {
     if (reached) await page.keyboard.press('Enter');
     await page.waitForTimeout(120);
     const s = await langState(page, '#home-lang', to);
-    r.check(reached && s.lang === to && s.title === BRAND[to].title && s.same && s.focus, `[teclado] el interruptor de idioma pasa a ${to.toUpperCase()} al instante y sin recargar («${s.title}», «${s.tuto.trim().slice(0, 24)}»)`);
+    r.check(reached && s.lang === to && s.title === BRAND[to].title && s.same && s.focus, `[teclado] el interruptor de idioma pasa a ${to.toUpperCase()} al instante y sin recargar («${s.title}», «${s.jugar.trim().slice(0, 24)}»)`);
   }
 }
 
@@ -254,8 +256,6 @@ async function autoAsalto(r: Rapido, e: Estado): Promise<void> {
     await page.keyboard.press('Escape');
     await page.locator('#m-camp').click();
     await page.locator('#new').click();
-    await page.waitForSelector('.table-screen');
-    await page.locator('#btn-leave').click();
     await page.waitForSelector('.run');
     await page.keyboard.press('a');
     await page.waitForSelector('.table-screen', { timeout: 15_000 }).catch(() => undefined);

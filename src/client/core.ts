@@ -19,14 +19,6 @@ export interface Session {
   playerId: string;
   token: string;
 }
-/** Partida guiada: corre en local con el mismo motor, sin servidor. */
-export interface Tutorial {
-  state: GameState;
-  step: number;
-  mode: 'do' | 'free';
-  /** Qué hacer al terminar (o saltar) el tutorial; por ejemplo, empezar la primera campaña. */
-  then?: () => void;
-}
 /** Campaña en curso: local (se guarda en el navegador) o la que lleva el servidor de la sala. */
 export interface Campaign {
   run: Run;
@@ -57,14 +49,13 @@ export const S = {
   queue: [] as Batch[],
   /** Cartas elegidas, en el orden en que se eligieron: así se resuelven, de izquierda a derecha. */
   selected: [] as string[],
-  tutorial: null as Tutorial | null,
   campaign: null as Campaign | null,
   /** Señas de la conjura en sala: jugador → lo que señala. */
   pings: {} as Record<string, string>,
 };
 
 export const RUN_PLAYER = 'tu';
-/** 'PICAS' → 'Picas': la gótica solo se lee bien en caja baja. */
+/** 'ESPADAS' → 'Espadas': la gótica solo se lee bien en caja baja. */
 export const cap = (s: string) => s[0] + s.slice(1).toLowerCase();
 export const nameOf = (id: string) => (S.shown?.players.find((p) => p.id === id) ?? S.lobby?.players.find((p) => p.id === id))?.name ?? '???';
 /** 1,5 en vez de 1.5 (en inglés, 1.5). */

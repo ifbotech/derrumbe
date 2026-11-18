@@ -7,10 +7,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ASALTOS_10, abonoCampanaVieja, dondeActa, recortaMeta10 } from '../src/rules/migracion';
-import { ESQUIRLAS_POR_CORONA, RUN_11 } from '../src/rules/migracion';
+import { ESQUIRLAS_POR_CORONA, META_38, RUN_11, RUN_38, abonoFrancesa, campanaFrancesa, migraMeta38 } from '../src/rules/migracion';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { applyAction, currentPlayer } from '../src/rules/engine';
-import { LAST_STAGE, META_VERSION, Meta, RUN_VERSION, Run, cargaRun, finishBattle, loadMeta, newMeta, runAction, settle, startStage, trackEvents } from '../src/rules/run';
+import { LAST_STAGE, META_VERSION, Meta, RUN_VERSION, Run, cargaRun, finishBattle, loadMeta, newMeta, newRun, runAction, settle, startStage, trackEvents } from '../src/rules/run';
 import { errorFor } from '../src/rules/textos';
 import { PROTOCOL_VERSION } from '../src/shared/protocol';
 
@@ -44,21 +44,22 @@ describe('una Meta de la 10.0 en la V12: se conserva todo el progreso (y sus Cor
 
   it('La Orden (mejoras), logros, colección, maestrías y contadores, intactos; Coronas × 100', () => {
     expect(meta.v).toBe(META_VERSION);
-    expect(META_VERSION).toBe(4);
+    expect(META_VERSION).toBe(5);
     expect(meta.renown).toBe(old.renown * ESQUIRLAS_POR_CORONA); // no se devuelve nada: las mejoras siguen compradas
     expect(meta.up).toEqual(old.up);
     expect(meta.ach).toEqual(old.ach);
     expect(meta.seen).toEqual(old.seen);
     expect(meta.mastery).toEqual(old.mastery);
     expect(meta).toMatchObject({ runs: old.runs, wins: old.wins, ascMax: old.ascMax, last: old.last });
-    const { reach: _r, ...stats } = old.stats;
+    const { reach: _r, dailies: _d, ...stats } = old.stats as typeof old.stats & { dailies?: number }; // V40: sin Asalto diario
     expect(meta.stats).toMatchObject(stats);
   });
 
-  it('lo que contaba asaltos se recorta a cinco: mejor marca, alcance y Asalto diario', () => {
+  it('lo que contaba asaltos se recorta a cinco (mejor marca y alcance) y el Asalto diario se va (V40)', () => {
     expect(meta.best).toBe(LAST_STAGE);
     expect(meta.stats.reach).toBe(LAST_STAGE);
-    expect(meta.daily).toEqual({ ...old.daily, cleared: Math.min(old.daily.cleared, LAST_STAGE) });
+    expect('daily' in meta).toBe(false);
+    expect('dailies' in meta.stats).toBe(false);
   });
 
   it('cargarla otra vez (ya en la V12) no cambia nada', () => {
@@ -66,8 +67,8 @@ describe('una Meta de la 10.0 en la V12: se conserva todo el progreso (y sus Cor
   });
 
   it('el recorte no sube lo que ya era pequeño', () => {
-    const m = recortaMeta10({ best: 2, stats: { ...newMeta().stats, reach: 3 }, daily: { date: '', cleared: 1, won: false } }, LAST_STAGE);
-    expect([m.best, m.stats.reach, m.daily.cleared]).toEqual([2, 3, 1]);
+    const m = recortaMeta10({ best: 2, stats: { ...newMeta().stats, reach: 3 } }, LAST_STAGE);
+    expect([m.best, m.stats.reach]).toEqual([2, 3]);
   });
 });
 
@@ -84,7 +85,7 @@ describe('un perfil de antes de la 2: se devuelven las Coronas y se vacían las 
 describe('la campaña a medias de la 10.0 se cierra y cobra lo superado', () => {
   it('su versión ya no es la de ahora: no se puede continuar', () => {
     expect(G.campaign.run.v).not.toBe(RUN_VERSION);
-    expect(RUN_VERSION).toBe(5);
+    expect(RUN_VERSION).toBe(6);
     expect(cargaRun(structuredClone(G.campaign.run))).toBeNull();
   });
 
@@ -165,30 +166,50 @@ describe('un perfil de la 11.0 en la V12: Coronas → Esquirlas de Corona, mejor
   });
 });
 
-describe('la campaña a medias de la 11.0 se sigue jugando', () => {
-  it('se carga con los campos nuevos a cero y el bot la termina', () => {
+describe('V40 · la campaña a medias de la baraja francesa (11.0 a 38.0) se descarta con aviso', () => {
+  it('la de la 11.0 ya no se carga: es de la baraja francesa', () => {
     const raw = structuredClone(G11.campaign.run);
     expect(raw.v).toBe(RUN_11);
-    const run = cargaRun(raw)!;
-    expect(run).not.toBeNull();
-    expect(run.v).toBe(RUN_VERSION);
-    expect(run).toMatchObject({ esquirlas: 0, gotas: 0, caida: { oro: 0, esquirlas: 0, gotas: 0 }, ritual: null, esquirlasCorte: 0, stage: 3, phase: 'map' });
-    expect(run.stats).toMatchObject({ esquirlas: 0, gotas: 0, sellosGratis: 0 });
-    const P = [{ id: 'a', name: 'A' }];
-    for (let guard = 0; guard < 4000 && run.phase !== 'won' && run.phase !== 'lost'; guard++) {
-      if (run.phase === 'battle') {
-        let state = startStage(run, P);
-        while (state.phase === 'playing') {
-          const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
-          trackEvents(run, res.events);
-          state = res.state;
-        }
-        finishBattle(run, state);
-      } else expect(runAction(run, chooseRunAction(run)!)).toBeNull();
-    }
-    expect(['won', 'lost']).toContain(run.phase);
-    expect(run.esquirlas).toBeGreaterThan(0);
-    const m = newMeta();
-    expect(settle(m, run)).toBeGreaterThan(run.esquirlas);
+    expect(cargaRun(raw)).toBeNull();
+    expect(campanaFrancesa(raw, RUN_VERSION)).toBe(true);
+  });
+
+  it('la de la 38.0 (v = 5) tampoco; la de ahora sí se carga', () => {
+    expect(RUN_38).toBe(5);
+    expect(RUN_VERSION).toBeGreaterThan(RUN_38);
+    expect(campanaFrancesa({ v: RUN_38 }, RUN_VERSION)).toBe(true);
+    expect(campanaFrancesa({ v: RUN_VERSION }, RUN_VERSION)).toBe(false);
+    expect(campanaFrancesa(null, RUN_VERSION)).toBe(false);
+    expect(campanaFrancesa({ v: 'cinco' }, RUN_VERSION)).toBe(false);
+    // una campaña nueva, guardada y vuelta a cargar, sigue entera
+    const run = newRun({ seedText: 'ESPADAS' }, 1);
+    expect(cargaRun(JSON.parse(JSON.stringify(run)))).toEqual(run);
+  });
+
+  it('abona las esquirlas que llevaba juntadas; si ya estaba cerrada, nada', () => {
+    expect(abonoFrancesa({ v: RUN_38, phase: 'map', esquirlas: 37.9 })).toBe(37);
+    expect(abonoFrancesa({ v: RUN_38, phase: 'battle' })).toBe(0);
+    expect(abonoFrancesa({ v: RUN_38, phase: 'won', esquirlas: 50 })).toBe(0);
+    expect(abonoFrancesa({ v: RUN_38, phase: 'lost', esquirlas: 50 })).toBe(0);
+    expect(abonoFrancesa(null)).toBe(0);
+  });
+});
+
+describe('V40 · una Meta de la 38.0: se conserva todo el progreso y solo se va el Asalto diario', () => {
+  const vieja = { ...structuredClone(newMeta()), v: META_38, renown: 1234, up: { vale: 2 }, runs: 7, wins: 2, daily: { date: '2026-11-15', cleared: 3, won: false }, stats: { ...newMeta().stats, dailies: 4, floors: 40 } };
+  const meta = loadMeta(structuredClone(vieja));
+
+  it('Altar, esquirlas, logros y contadores intactos; sin daily ni dailies', () => {
+    expect(meta.v).toBe(META_VERSION);
+    expect(meta).toMatchObject({ renown: 1234, up: { vale: 2 }, runs: 7, wins: 2 });
+    expect(meta.stats.floors).toBe(40);
+    expect('daily' in meta).toBe(false);
+    expect('dailies' in meta.stats).toBe(false);
+  });
+
+  it('migrar dos veces no cambia nada, y migraMeta38 no toca lo demás', () => {
+    expect(loadMeta(JSON.parse(JSON.stringify(meta)))).toEqual(meta);
+    const m = migraMeta38({ renown: 5, daily: 1, stats: { floors: 2, dailies: 3 } });
+    expect(m).toEqual({ renown: 5, stats: { floors: 2 } });
   });
 });

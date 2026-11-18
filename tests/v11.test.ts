@@ -131,7 +131,7 @@ describe('V11 · la campaña de cinco asaltos', () => {
     expect(tiranoKey('intemperie')).toBe('asalto.tirano.f');
     expect(tiranoKey('furia')).toBe('asalto.tirano.m');
     // el Trono infinito empieza tras el asalto 5, sobre él: cuatro tronos y siempre con monarca
-    expect(stageDef(6)).toMatchObject({ thrones: 4, boss: true, atajo: false, floors: [11, 12, 13] });
+    expect(stageDef(6)).toMatchObject({ thrones: 4, boss: true, atajo: false, floors: [10, 11, 12] });
   });
 
   it('los tronos que faltan se crean sin guardias y con away; la Vida de cada guardia es múltiplo de 5', () => {
@@ -148,7 +148,7 @@ describe('V11 · la campaña de cinco asaltos', () => {
       // en los cinco asaltos y en el Trono infinito, con 1 a 4 jugadores
       for (let n = 1; n <= 7; n++)
         for (const players of [1, 2, 3, 4])
-          for (const r of [11, 12, 13]) {
+          for (const r of [10, 11, 12]) {
             const hp = stageConfig(Object.assign(structuredClone(run), { stage: n }), players).floorHp[r];
             expect(hp % 5, `asalto ${n}, ${players} jugadores, rango ${r}`).toBe(0);
             expect(hp).toBeGreaterThanOrEqual(5);
@@ -218,9 +218,9 @@ describe('V11 · los 36 logros de la 10.0, con los mismos id', () => {
     'j-doble', 'j-escasez', 'j-sequia', 'j-intemperie', 'j-blindaje', 'j-furia', 'j-inestable', 'jefes',
   ];
 
-  it('siguen siendo 36 y con los mismos id', () => {
+  it('siguen siendo 36 y con los mismos id, menos «diaria» (V40: se fue el Asalto diario)', () => {
     expect(IDS_10).toHaveLength(36);
-    expect(ACHIEVEMENTS.map((a) => a.id).sort()).toEqual([...IDS_10].sort());
+    expect(ACHIEVEMENTS.map((a) => a.id).sort()).toEqual(IDS_10.filter((id) => id !== 'diaria').sort());
   });
 
   it('«Adiós, carcelero» pide el asalto 2 y «Medio castillo» el asalto 3, en los dos idiomas', () => {

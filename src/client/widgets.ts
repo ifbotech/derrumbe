@@ -1,6 +1,6 @@
 // Piezas de interfaz que se repiten en varias pantallas: la opción-carta, las Reliquias, el visor
 // de mazos, las reglas y los ajustes.
-import { Card, SUITS, SUIT_GLYPH, sortCards } from '../rules/engine';
+import { Card, SUITS, sortCards } from '../rules/engine';
 import { TOOL, TOOL_SLOTS, ToolInst } from '../rules/tools';
 import { isLang, onLangChange, setLang, t as tr, tFor } from '../shared/i18n';
 import { L, Ln, archN, espD, espN, getLang, palo, rarN, relD, relN } from './lengua';
@@ -13,7 +13,7 @@ import { applyBackup, describeBackup, exportProgress, readBackup } from './backu
 import { COMMUNITY_URL, customServer, platform, setCustomServer } from './platform';
 import { rulesHtml } from './rules-text';
 import { controlRows } from './prompts';
-import { whisperSetting } from './whispers';
+import { bufonSetting, whisperSetting } from './whispers';
 import { type ShareResult, clearTelemetry, feedbackIssueUrl, shareFeedback, telemetryBytes, telemetryLog, telemetryRemote } from './telemetry';
 
 export const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
@@ -149,7 +149,7 @@ export function deckModal(title: string, tabs: DeckTab[], opts: { pick?: number;
     const rows = $('.deck-rows', el);
     rows.innerHTML = '';
     const sorted = sortCards(t.cards);
-    const groups: [string, Card[]][] = [...SUITS.map((s): [string, Card[]] => [`${suitSvg(s)} ${palo(s)}`, sorted.filter((c) => !c.sp && c.suit === s)]), [`${SUIT_GLYPH.X} ${L('ui.mazo.especiales')}`, sorted.filter((c) => c.sp || c.suit === 'X')]];
+    const groups: [string, Card[]][] = [...SUITS.map((s): [string, Card[]] => [`${suitSvg(s)} ${palo(s)}`, sorted.filter((c) => !c.sp && c.suit === s)]), [`★ ${L('ui.mazo.especiales')}`, sorted.filter((c) => c.sp || c.suit === 'X')]];
     for (const [label, cards] of groups) {
       if (!cards.length) continue;
       const row = document.createElement('div');
@@ -270,9 +270,8 @@ export function bindFeedback(root: ParentNode, after?: () => void): void {
 function telemetryCount(): string {
   const log = telemetryLog();
   const runs = log.filter((r) => r.modo !== 'guia').length;
-  const guides = log.length - runs;
   const kb = (telemetryBytes() / 1024).toLocaleString(getLang() === 'es' ? 'es-ES' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  return `${Ln(runs, 'ui.fb.campana.1', 'ui.fb.campana.n')}${guides ? Ln(guides, 'ui.fb.guia.1', 'ui.fb.guia.n') : ''}${L('ui.fb.kb', { kb })}`;
+  return `${Ln(runs, 'ui.fb.campana.1', 'ui.fb.campana.n')}${L('ui.fb.kb', { kb })}`;
 }
 
 /** «Ver»: lo guardado, tal cual, en un cuadro de solo lectura. */
@@ -369,6 +368,7 @@ export function showSettings(onChange?: () => void): void {
   const draw = () => {
     // la fila de Susurros es de juice-ux (whispers.ts): aquí solo se traduce su Sí / No
     const [wName, wDesc, wValue, wDo] = whisperSetting();
+    const [bName, bDesc, bValue, bDo] = bufonSetting();
     const rows: [string, string, string, () => void, boolean, string][] = [
       [L('ui.set.velocidad'), L('ui.set.velocidad.texto'), speedLabel(), () => void cycleSpeed(), true, 'set-speed'],
       [L('ui.set.calma'), L('ui.set.calma.texto'), yes(settings.calm), () => ((settings.calm = !settings.calm), applySettings()), settings.calm, 'set-calma'],
@@ -378,6 +378,8 @@ export function showSettings(onChange?: () => void): void {
       [L('ui.set.contraste'), L('ui.set.contraste.texto'), yes(settings.contrast), () => ((settings.contrast = !settings.contrast), applySettings()), settings.contrast, 'set-contraste'],
       [L('ui.set.pantalla'), L('ui.set.pantalla.texto'), yes(platform.isFullscreen()), () => void platform.toggleFullscreen().then(draw), platform.isFullscreen(), 'set-pantalla'],
       [wName, wDesc, wValue === 'No' ? L('ui.no') : wValue === 'Sí' ? L('ui.si') : wValue, wDo, wValue !== 'No', 'set-susurros'],
+      // V40 · los consejos del Bufón en la primera campaña
+      [bName, bDesc, bValue === 'No' ? L('ui.no') : L('ui.si'), bDo, bValue !== 'No', 'set-bufon'],
       // V12 · lo que AUTO hace por ti fuera de la mesa (AUTO mismo se enciende en la mesa y nunca se guarda)
       [tr('auto.saquear.nombre'), tr('auto.saquear.desc'), yes(settings.autoSaquear), () => ((settings.autoSaquear = !settings.autoSaquear), applySettings()), settings.autoSaquear, 'set-auto-saquear'],
       [tr('auto.taberna.nombre'), tr('auto.taberna.desc'), yes(settings.autoTaberna), () => ((settings.autoTaberna = !settings.autoTaberna), applySettings()), settings.autoTaberna, 'set-auto-taberna'],

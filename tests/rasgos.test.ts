@@ -18,9 +18,9 @@ const PASIVAS: Record<Rasgo, string[]> = {
 const tira = (rasgo: Rasgo, n: number) => PASIVAS[rasgo].slice(0, n).map((id) => ({ id, n: 0 }));
 /** Mesa suelta: guardias de 100 de Vida, la Casa de DIAMANTES delante, y lo que se le añada. */
 function env(tools: { id: string; n: number }[], extra: Partial<StrikeEnv> = {}, cfg: Partial<Config> = {}): StrikeEnv {
-  const config: Config = { ...structuredClone(DEFAULT_CONFIG), floorHp: { 11: 100, 12: 100, 13: 100 }, orden: ['D', 'S', 'H', 'C'], ...cfg };
+  const config: Config = { ...structuredClone(DEFAULT_CONFIG), floorHp: { 10: 100, 11: 100, 12: 100 }, orden: ['D', 'S', 'H', 'C'], ...cfg };
   rasgosCfg(config, tools);
-  return { config, towers: newTowers([11, 12, 13], config), tools, chain: 0, charge: 0, scrap: 0, integrity: config.maxIntegrity, wall: 0, ...extra };
+  return { config, towers: newTowers([10, 11, 12], config), tools, chain: 0, charge: 0, scrap: 0, integrity: config.maxIntegrity, wall: 0, ...extra };
 }
 
 describe('V35 · rasgos: reparto y niveles', () => {
@@ -45,7 +45,7 @@ describe('V35 · Sangre', () => {
     const con2 = previewStrike(env(tira('sangre', 2), { integrity: 8 }), golpe, 'D');
     expect(con2.total).toBe(sin.total);
     // abate a la Sota de 44 con un golpe a medida: cura 1 por el guardia (además de los 2 del ♥)
-    const justo = env(tira('sangre', 2), { integrity: 8 }, { floorHp: { 11: 44, 12: 100, 13: 100 } });
+    const justo = env(tira('sangre', 2), { integrity: 8 }, { floorHp: { 10: 44, 11: 100, 12: 100 } });
     expect(previewStrike(justo, golpe, 'D').repair).toBe(DEFAULT_CONFIG.curaPorCarta + RG.sangre.vida);
     const falta = DEFAULT_CONFIG.maxIntegrity - 8;
     const con4 = previewStrike(env(tira('sangre', 4), { integrity: 8 }), golpe, 'D');
@@ -73,7 +73,7 @@ describe('V35 · Tahúr', () => {
   });
 
   it('el motor tira el dado al empezar cada turno solo con el rasgo activo, y la vista lo enseña', () => {
-    const con = createGame([{ id: 'a', name: 'A' }], 5, { ...structuredClone(DEFAULT_CONFIG), floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 0, 12: 0, 13: 0 } });
+    const con = createGame([{ id: 'a', name: 'A' }], 5, { ...structuredClone(DEFAULT_CONFIG), floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 0, 11: 0, 12: 0 } });
     con.tools = tira('tahur', 2);
     tiraDado(con);
     expect(con.dado).toBeGreaterThanOrEqual(1);
@@ -95,13 +95,13 @@ describe('V35 · Verdugo', () => {
   it('2: ejecuta al que queda con poca Vida; 4: umbral mayor y Daño cargado; 6: la ejecución es Golpe exacto', () => {
     // Sota de 100: un golpe de 88 la deja a 12 (12 %): con el 15 % cae; un golpe de 80 la deja a 20: solo cae con el 25 %
     const golpe = (dano: number, tools: { id: string; n: number }[]) => {
-      const e = env(tools, {}, { floorHp: { 11: 100, 12: 100, 13: 100 } });
+      const e = env(tools, {}, { floorHp: { 10: 100, 11: 100, 12: 100 } });
       e.towers.D.damage = dano - 9; // deja a la Sota a falta del 9♠ que se juega
       return { r: strike(e, [card('S9')], 'D'), e };
     };
     expect(golpe(88, []).r.fallen).toBe(0);
     const con2 = golpe(88, tira('verdugo', 2));
-    expect(con2.r.fell).toEqual([{ tower: 'D', rank: 11, clean: false, exec: true }]);
+    expect(con2.r.fell).toEqual([{ tower: 'D', rank: 10, clean: false, exec: true }]);
     expect(con2.e.towers.D.damage).toBe(0); // una ejecución no deja sobrante
     expect(golpe(80, tira('verdugo', 2)).r.fallen).toBe(0);
     const con4 = golpe(80, tira('verdugo', 4));
@@ -111,7 +111,7 @@ describe('V35 · Verdugo', () => {
     const con6 = golpe(80, tira('verdugo', 6));
     expect(con6.r.clean).toBe(true);
     // un golpe que mata por Daño no es ejecución
-    expect(golpe(100, tira('verdugo', 4)).r.fell[0]).toEqual({ tower: 'D', rank: 11, clean: true });
+    expect(golpe(100, tira('verdugo', 4)).r.fell[0]).toEqual({ tower: 'D', rank: 10, clean: true });
   });
 });
 

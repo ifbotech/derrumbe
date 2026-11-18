@@ -6,7 +6,7 @@ import { backEl } from './card';
 import { masteryBadge } from './engraving';
 import { Locale } from '../shared/brand';
 import { $, $$, S, app, cap, esc, modal } from './core';
-import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, savedCampaign, today } from './campaign';
+import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, savedCampaign } from './campaign';
 import { glyphSvg } from './glyphs';
 import { cifra, cifraEl } from './cifra';
 import { meta, openGuild } from './guild';
@@ -14,7 +14,6 @@ import { L, Ln, acabN, asaltoN, barD, barN, getLang, logN, reinD, reinN, selloN,
 import { brandFor } from '../shared/brand';
 import { hasServer, sendMsg, updateConn } from './net';
 import { setScreen } from './router';
-import { startTutorial, tutorialDone } from './tutorial-ui';
 import { bindLangSwitch, langSwitch, showRules, showSettings } from './widgets';
 import { platform } from './platform';
 
@@ -41,9 +40,6 @@ export function brandLockup(face: Locale = getLang()): string {
       <p class="tagline" lang="${face}">${esc(b.subtitle)}</p>`;
 }
 
-/** La primera campaña empieza por la partida guiada (se puede saltar). */
-const withTutorial = (begin: () => void) => (tutorialDone() ? begin() : startTutorial(begin));
-
 /** Si hay una campaña a medias, pregunta antes de abandonarla. */
 export function confirmAbandon(then: () => void): void {
   const saved = savedCampaign();
@@ -60,14 +56,9 @@ export function confirmAbandon(then: () => void): void {
 
 export function renderHome(face: Locale = getLang()): void {
   const saved = savedCampaign();
-  const date = today();
-  const dailyDone = meta.daily.date === date;
-  const dailyOn = saved?.run.daily === date;
   const done = ACHIEVEMENTS.filter((a) => meta.ach[a.id]).length;
-  const [, month, day] = date.split('-');
-  const MONTHS = L('ui.meses').split(',');
   const wonRun = saved?.run.phase === 'won';
-  const resumeSub = saved ? (wonRun ? L('ui.home.resume.ganada') : `${saved.run.daily ? L('ui.home.resume.diaria') : ''}${L('ui.home.resume.sub', { n: saved.run.stage, oro: cifra(saved.run.gold), baraja: barN(saved.run.deckId) })}`) : '';
+  const resumeSub = saved ? (wonRun ? L('ui.home.resume.ganada') : `${L('ui.home.resume.sub', { n: saved.run.stage, oro: cifra(saved.run.gold), baraja: barN(saved.run.deckId) })}`) : '';
   app.innerHTML = `
   <div class="home">
     <section class="home-left">
@@ -79,25 +70,19 @@ export function renderHome(face: Locale = getLang()): void {
       ${saved ? `<button class="resume" id="resume"><small>${wonRun ? L('ui.home.resume.small.ganada') : L('ui.home.resume.small')}</small><b>${wonRun ? L('ui.home.resume.b.ganada') : L('ui.home.resume.b')}</b><span>${resumeSub}</span></button>` : ''}
       <nav class="menu">
         ${stamp('m-camp', 'estandarte', L('ui.home.camp'), L('ui.home.camp.sub'), 'primary')}
-        ${stamp('m-daily', 'diaria', L('ui.home.diaria'), `${L('ui.home.fecha', { dia: Number(day), mes: MONTHS[Number(month) - 1] })} · ${dailyOn ? L('ui.home.diaria.curso') : dailyDone ? (meta.daily.won ? L('ui.home.diaria.ganada') : L('ui.home.diaria.hoy', { n: meta.daily.cleared })) : L('ui.home.diaria.semilla')}`)}
-        ${stamp('m-coop', 'cuadrilla', L('ui.home.coop'), L('ui.home.coop.sub'))}
-        ${stamp('m-tuto', 'senal', L('ui.home.tuto'), L('ui.home.tuto.sub'))}
         ${stamp('m-guild', 'engranaje', L('ui.home.orden'), L('ui.home.orden.sub', { coronas: cifra(meta.renown), hechos: done, total: ACHIEVEMENTS.length }))}
-        ${stamp('m-rules', 'pergamino', L('ui.reglas'), L('ui.home.reglas.sub'))}
+        ${stamp('m-col', 'relicario', L('ui.home.coleccion'), L('ui.home.coleccion.sub'))}
+        ${stamp('m-set', 'pergamino', L('ui.ajustes'), L('ui.home.ajustes.sub'))}
       </nav>
-      <div class="row foot"><button class="ghost" id="m-set">${L('ui.ajustes')}</button><p class="conn"></p></div>
+      <div class="row foot"><button class="ghost" id="m-coop">${L('ui.home.coop')}</button><button class="ghost" id="m-rules">${L('ui.reglas')}</button><p class="conn"></p></div>
     </section>
   </div>`;
   const resume = $('#resume');
   if (resume) resume.onclick = resumeCampaign;
   $('#m-camp').onclick = () => setScreen('camp');
-  $('#m-daily').onclick = () => {
-    if (dailyOn) return resumeCampaign();
-    confirmAbandon(() => withTutorial(() => newCampaign({ daily: date })));
-  };
   $('#m-coop').onclick = () => coopModal();
-  $('#m-tuto').onclick = () => startTutorial();
   $('#m-guild').onclick = () => openGuild('ups');
+  $('#m-col').onclick = () => openGuild('col');
   $('#m-rules').onclick = showRules;
   $('#m-set').onclick = () => showSettings();
   bindLangSwitch(app);
@@ -208,11 +193,9 @@ export function renderCamp(): void {
   const resume = $('#resume');
   if (resume) resume.onclick = resumeCampaign;
   $('#new').onclick = () =>
-    confirmAbandon(() =>
-      withTutorial(() => {
-        if (saved?.run.phase === 'won') forgetSaved();
-        newCampaign(runOpts());
-      }),
-    );
+    confirmAbandon(() => {
+      if (saved?.run.phase === 'won') forgetSaved();
+      newCampaign(runOpts());
+    });
 }
 

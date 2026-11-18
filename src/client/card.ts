@@ -3,7 +3,7 @@
 // V11: las numeradas (A a 10) van de cara limpia: marfil liso, índice grande y un solo emblema macizo
 // del palo con contorno de tinta. Las figuras, los especiales y el comodín conservan el grabado.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
-import { Card, CardSuit, RANK_LABEL, Seal, Suit, Treatment } from '../rules/engine';
+import { CABALLO, Card, CardSuit, RANK_LABEL, REY, Seal, Suit, Treatment, esFigura } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
 import { L, acabD, acabN, espD, espN, palo, selloD, selloN } from './lengua';
 import { SEAL_ICON, engravingDefs, plateFrame, shade, suitWeaves } from './engraving';
@@ -174,15 +174,16 @@ function jack(s: Suit): [string, string] {
 }
 
 // V10: el rótulo de la figura y el palo, en el idioma de la mesa
-const TITLE = { 11: 'ui.carta.sota', 12: 'ui.carta.reina', 13: 'ui.carta.rey' } as const;
+// V40: la corte española, 10 Sota, 11 Caballo y 12 Rey (el Caballo usa por ahora el grabado de la figura del medio)
+const TITLE = { 10: 'ui.carta.sota', 11: 'ui.carta.caballo', 12: 'ui.carta.rey' } as const;
 const MATERIAL = (s: Suit) => palo(s);
 
 function figure(suit: Suit, rank: number): string {
-  const [still, live] = rank === 13 ? king(suit) : rank === 12 ? queen(suit) : jack(suit);
+  const [still, live] = rank === REY ? king(suit) : rank === CABALLO ? queen(suit) : jack(suit);
   const zoom = 'translate(125 40) scale(1.13) translate(-125 -40)';
-  const mirror = rank === 12 ? ` transform="translate(250 0) scale(-1 1) ${zoom}"` : ` transform="${zoom}"`;
-  const sx = rank === 12 ? -1 : 1;
-  const cap = `<text class="cap" transform="translate(23 188) rotate(-90)">${L(TITLE[rank as 11 | 12 | 13])} · ${MATERIAL(suit)}</text>`;
+  const mirror = rank === CABALLO ? ` transform="translate(250 0) scale(-1 1) ${zoom}"` : ` transform="${zoom}"`;
+  const sx = rank === CABALLO ? -1 : 1;
+  const cap = `<text class="cap" transform="translate(23 188) rotate(-90)">${L(TITLE[rank as 10 | 11 | 12])} · ${MATERIAL(suit)}</text>`;
   // capas de estampación: el sangrado de la tinta detrás del busto y la sombra tallada sobre el ropaje
   const bleed = '<circle cx="128" cy="104" r="96" fill="url(#tone-ink)" opacity="0.32"/><path d="M10,10 H96 L10,118 Z" fill="url(#hatch-fine)" opacity="0.5"/>';
   const carve = shade('M150,146 C170,138 184,136 192,138 L214,236 H150 Z', 'hatch-paper', 0.55) + shade('M40,236 L48,200 H98 L96,236 Z', 'hatch-cross', 0.5);
@@ -564,19 +565,19 @@ const weaveFrame = (suit: Suit) =>
 
 function corner(suit: CardSuit, rank: number, cls: string): string {
   const glyph = suit === 'X' ? '<span class="star-mini">★</span>' : suitSvg(suit);
-  return `<div class="corner ${cls}${rank === 10 ? ' wide' : ''}"><b>${RANK_LABEL[rank]}</b>${glyph}</div>`;
+  return `<div class="corner ${cls}${rank >= 10 ? ' wide' : ''}"><b>${RANK_LABEL[rank]}</b>${glyph}</div>`;
 }
 
 export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } = {}): HTMLDivElement {
   ensureDefs();
   const el = document.createElement('div');
-  const kind = card.sp ? 'special' : card.suit === 'X' ? 'joker' : card.rank > 10 ? 'figure' : card.rank === 1 ? 'ace' : 'number';
+  const kind = card.sp ? 'special' : card.suit === 'X' ? 'joker' : esFigura(card.rank) ? 'figure' : card.rank === 1 ? 'ace' : 'number';
   el.className = `card s-${card.suit} k-${kind}${card.tr ? ` t-${card.tr}` : ''}${card.seal ? ` z-${card.seal}` : ''}${opts.faceDown ? ' flipped' : ''}`;
   el.dataset.id = card.id;
   cardOf.set(el, card);
   const tip = cardTip(card);
   if (tip) el.dataset.tip = tip;
-  const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : card.rank > 10 ? figure(card.suit, card.rank) : numberArt(card.suit);
+  const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : esFigura(card.rank) ? figure(card.suit, card.rank) : numberArt(card.suit);
   // las numeradas, de cara limpia: sin el marco de trama ni el grano del papel, y un solo índice (arriba a la
   // izquierda): el emblema del centro ya dice el palo y la cara queda en marfil
   const limpia = kind === 'number' || kind === 'ace';
@@ -656,7 +657,7 @@ export function bindEyes(): void {
 }
 
 export const ALL_CARDS: Card[] = [
-  ...(['S', 'D', 'H', 'C'] as Suit[]).flatMap((s) => Array.from({ length: 13 }, (_, i) => ({ id: `${s}${i + 1}`, suit: s, rank: i + 1 }))),
+  ...(['S', 'D', 'H', 'C'] as Suit[]).flatMap((s) => Array.from({ length: REY }, (_, i) => ({ id: `${s}${i + 1}`, suit: s, rank: i + 1 }))),
   { id: 'X1', suit: 'X', rank: 0 },
   { id: 'X2', suit: 'X', rank: 0 },
 ];

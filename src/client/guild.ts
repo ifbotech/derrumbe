@@ -60,7 +60,8 @@ export interface Acta {
   seed: string;
   deck: string;
   level: number;
-  daily: string | null;
+  /** Las actas de antes de la V40 pueden traer la fecha de un Asalto diario: ya no se pinta. */
+  daily?: string | null;
   online: boolean;
   gain: number;
   /** El acta en texto, lista para copiar. */
@@ -87,7 +88,6 @@ function fileActa(c: Campaign, gain: number): void {
     seed: c.online ? '' : run.seedText,
     deck: run.deckId,
     level: run.ascension + 1,
-    daily: run.daily,
     online: c.online,
     gain,
     text: actaText(run, c.online),
@@ -110,14 +110,6 @@ export function maybeSettle(c: Campaign): void {
   const mark = run.endless ? c.key + ':abismo' : c.key;
   if (platform.load(SETTLED_KEY) === mark) return;
   platform.save(SETTLED_KEY, mark);
-  if (run.daily && meta.daily.date === run.daily && !run.endless) {
-    // la Obra diaria paga una vez al día; repetirla solo puede mejorar la marca
-    lastGain = 0;
-    const cleared = stagesCleared(run);
-    if (cleared > meta.daily.cleared) meta.daily = { date: run.daily, cleared, won: run.conquered };
-    fileActa(c, 0);
-    return saveMeta();
-  }
   // quien sigue al Trono infinito cobra al caer los Tronos superados y las esquirlas desde la corte (la corte ya se cobró al ganar)
   lastGain = run.endless ? cobroAbismo(meta, run) : settle(meta, run);
   fileActa(c, lastGain);
@@ -271,12 +263,12 @@ function archiveTab(list: HTMLElement): void {
       return `<article class="acta-row ${a.won ? 'won' : 'lost'}">
         <span class="acta-stamp">${a.won ? L('ui.fin.corte') : L('ui.acta.deshecha')}</span>
         <div class="acta-main">
-          <b>${L('ui.orden.fila', { baraja: DECK[a.deck] ? barN(a.deck) : a.deck, n: a.level })}${a.daily ? L('ui.orden.diaria', { d: a.daily }) : ''}${a.online ? L('ui.orden.sala') : ''}</b>
+          <b>${L('ui.orden.fila', { baraja: DECK[a.deck] ? barN(a.deck) : a.deck, n: a.level })}${a.online ? L('ui.orden.sala') : ''}</b>
           <span>${L('ui.orden.linea', { dia: day(a.when), donde: where, t: a.turns, m: cifraEl(a.maxHit, 'record') })}${a.gain ? ` · +${cifra(a.gain)} ✦` : ''}</span>
           <span class="acta-tools">${a.tools.map((id) => glyphSvg(id, 'mini-ico')).join('') || `<em>${L('ui.orden.sin.reliquias')}</em>`}<em>${a.seed ? L('ui.orden.semilla', { s: a.seed }) : L('ui.orden.semilla.servidor')}</em></span>
           ${cause}
         </div>
-        <div class="acta-btns"><button data-replay="${i}" ${replay ? '' : 'disabled'} data-tip="<b>${L('ui.orden.rejugar')}</b>${replay ? L('ui.orden.rejugar.si') : a.daily ? L('ui.orden.rejugar.diaria') : L('ui.orden.rejugar.sala')}">${L('ui.orden.rejugar')}</button><button data-copy="${i}">${L('ui.acta.copiar')}</button></div>
+        <div class="acta-btns"><button data-replay="${i}" ${replay ? '' : 'disabled'} data-tip="<b>${L('ui.orden.rejugar')}</b>${replay ? L('ui.orden.rejugar.si') : L('ui.orden.rejugar.sala')}">${L('ui.orden.rejugar')}</button><button data-copy="${i}">${L('ui.acta.copiar')}</button></div>
       </article>`;
     })
     .join('')}</div>`;
@@ -360,7 +352,7 @@ function collection(list: HTMLElement): void {
   const marks = sec(L('ui.orden.sellos'), SEALS.length + TREATMENTS.length, SEALS.length + TREATMENTS.length, L('ui.orden.sellos.nota'));
   const sample: Card = { id: 'm', suit: 'S', rank: 7 };
   SEALS.forEach((s, i) => marks.appendChild(choice(cardEl({ ...sample, id: `m-s${i}`, suit: (['H', 'S', 'D', 'C'] as const)[i], seal: s }), selloN(s), selloD(s), null, null)));
-  TREATMENTS.forEach((t, i) => marks.appendChild(choice(cardEl({ ...sample, id: `m-t${i}`, rank: 9 + (i % 2), suit: (['C', 'D', 'H', 'S'] as const)[i], tr: t }), acabN(t), acabD(t), null, null)));
+  TREATMENTS.forEach((t, i) => marks.appendChild(choice(cardEl({ ...sample, id: `m-t${i}`, rank: 8 + (i % 2), suit: (['C', 'D', 'H', 'S'] as const)[i], tr: t }), acabN(t), acabD(t), null, null)));
 
   const seenForms = FORMATIONS.filter((f) => have(meta.seen.forms, f)).length;
   const forms = sec(L('ui.orden.formaciones'), seenForms, FORMATIONS.length, L('ui.orden.formaciones.nota'));
@@ -372,7 +364,7 @@ function collection(list: HTMLElement): void {
   people.appendChild(choice(ferreteroEl(), L('ui.tratante'), L('ui.orden.tratante.desc'), null, null));
   for (const b of BOSSES) people.appendChild(have(meta.seen.bosses, b.id) ? choice(portraitEl(`j-${b.id}`, monN(b.id)), monN(b.id), `${monDec(b.id)}: ${monD(b.id)}`, null, null) : hidden('???', L('ui.orden.monarca.no')));
 
-  const french = sec(L('ui.orden.francesa'), 54, 54, L('ui.orden.francesa.nota'));
-  const order = (c: Card) => (c.rank > 10 ? 0 : c.rank === 1 ? 1 : c.rank === 0 ? 3 : 2);
+  const french = sec(L('ui.orden.francesa'), ALL_CARDS.length, ALL_CARDS.length, L('ui.orden.francesa.nota'));
+  const order = (c: Card) => (c.rank >= 10 ? 0 : c.rank === 1 ? 1 : c.rank === 0 ? 3 : 2);
   [...ALL_CARDS].sort((a, b) => order(a) - order(b)).forEach((c) => french.appendChild(cardEl(c)));
 }

@@ -5,11 +5,11 @@
 
 /** Los rangos. Todo en % de campañas ganadas, salvo el ritmo (turnos) y la letalidad (veces la media). */
 export const OBJETIVOS = {
-  /** Reinado 1 y Reinado 8 «Puertas selladas», con el Árbol vacío y lleno. */
-  reinado1: { vacio: [26, 32], lleno: [42, 48] },
+  /** Reinado 1 y Reinado 8 «Puertas selladas», con el Altar vacío y lleno. V40: con la baraja española, el Reinado 1 vacío pasa a 28–34. */
+  reinado1: { vacio: [28, 34], lleno: [42, 48] },
   reinado8: { vacio: [6, 10], lleno: [12, 18] },
-  /** Barajas en el Reinado 1. Objetivo 26–32 vacío y 42–48 lleno; avisa fuera de 23–34 y 40–50. */
-  barajas: { lleno: [40, 50], llenoObjetivo: '42–48', vacio: [23, 34], vacioObjetivo: '26–32', sumaMinima: 6 },
+  /** Barajas en el Reinado 1. Objetivo 28–34 vacío (V40) y 42–48 lleno; avisa fuera de 25–36 y 40–50. */
+  barajas: { lleno: [40, 50], llenoObjetivo: '42–48', vacio: [25, 36], vacioObjetivo: '28–34', sumaMinima: 6 },
   /** Reliquias y especiales dados de salida: trampa por debajo, victoria regalada por encima. */
   regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40 },
   /** Letalidad de cada monarca respecto a la media (con al menos `enfrentados` encuentros). */

@@ -1,10 +1,6 @@
-// V7 · lo que la mesa enseña sin ventanas: el foco de la partida guiada, el monarca con su maldición a la
+// V7 · lo que la mesa enseña sin ventanas: el monarca con su maldición a la
 // vista y su bocadillo de voz. Aquí solo se pinta; la coreografía y los tiempos son de juice-ux.
 //
-//  · spotlight(focus, line) / clearSpotlight(): vela la mesa (una capa con opacity), deja a la vista lo que
-//    señala el paso (cartas, trono, hueco de La Manga, cuenta o escudo de inmunidad), lo rodea con un aro
-//    que late solo con transform y escribe `line` en una placa fija de una línea que no tapa la mano ni la
-//    cuenta y no desplaza la mesa. Nada recibe clics: se sigue jugando a través del velo.
 //  · paintMonarch(bossId, view): retrato, nombre y placa del decreto en el lateral de la mesa, y la parte
 //    de la mesa que castiga la maldición marcada con la misma tinta (morado de veneno, --curse).
 //  · showBark(text) / hideBark(): bocadillo de grabado junto al retrato, una línea ≥ 14 px.
@@ -13,7 +9,6 @@ import './guia.css';
 import { BALANCE } from '../rules/balance-config';
 import type { PlayerView } from '../rules/engine';
 import { BOSSES, bossIdentity, type CurseMark } from '../rules/run';
-import type { TutorialFocus } from '../rules/tutorial';
 import { MonarchMood, monarchSvg } from './art';
 import { L, fxN, monBadge, monD, monDec, monN } from './lengua';
 
@@ -247,119 +242,7 @@ function placeBark(el: HTMLElement): void {
   el.style.setProperty('--pico-x', `${Math.round(Math.max(16, Math.min(r.width - 16, ax)))}px`);
 }
 
-// ───────────────────────── foco de la partida guiada ─────────────────────────
-
-let current: { focus: TutorialFocus; line: string } | null = null;
-
-/** Los nodos que señala un foco, en la mesa de ahora. */
-function focusTargets(focus: TutorialFocus): Element[] {
-  const all = (sel: string) => [...document.querySelectorAll(sel)].filter((e) => e.getBoundingClientRect().width > 0);
-  if (focus === 'cards') {
-    const cards = all('#hand .card.hint, #hand .card.sel, #reserve .card.hint, #reserve .card.sel');
-    return cards.length ? cards : all('#hand');
-  }
-  if (focus === 'target') {
-    for (const sel of ['.tower.hint-target', '.tower.guia-target', '.tower.aimed', '.tower.targetable']) {
-      const t = all(sel);
-      if (t.length) return t.slice(0, 1);
-    }
-    return all('#towers');
-  }
-  // La Manga: el hueco y la carta que se guarda
-  if (focus.ui === 'manga') return [...all('#reserve'), ...all('#hand .card.hint, #hand .card.sel')];
-  if (focus.ui === 'cuenta') {
-    const c = all('#score .calc');
-    return c.length ? c : all('#score');
-  }
-  // inmune: el escudo de hierro del trono del palo de las cartas que se señalan (o el primero en pie)
-  const hinted = document.querySelector('#hand .card.hint, #hand .card.sel');
-  const suit = hinted ? [...hinted.classList].find((k) => /^s-[SDHC]$/.test(k))?.slice(2) : null;
-  const plate = (suit && all(`.tower[data-suit="${suit}"]:not(.fallen) .plate.iron`)) || [];
-  return plate.length ? plate : all('.tower:not(.fallen) .plate.iron').slice(0, 1);
-}
-
-function union(els: Element[]): DOMRect | null {
-  const rs = els.map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
-  if (!rs.length) return null;
-  const l = Math.min(...rs.map((r) => r.left));
-  const t = Math.min(...rs.map((r) => r.top));
-  return new DOMRect(l, t, Math.max(...rs.map((r) => r.right)) - l, Math.max(...rs.map((r) => r.bottom)) - t);
-}
-
-/**
- * Vela la mesa y deja a la vista lo que señala `focus`, con su aro, y escribe `line` en la placa.
- * Se puede volver a llamar con el mismo paso tras un repintado: recoloca sin parpadear.
- */
-export function spotlight(focus: TutorialFocus, line: string): void {
-  current = { focus, line };
-  let root = document.getElementById('guia');
-  if (!root) {
-    root = document.createElement('div');
-    root.id = 'guia';
-    root.className = 'guia';
-    root.innerHTML = '<div class="guia-hueco"></div><div class="guia-aro"></div><p class="guia-placa" role="status" aria-live="polite"></p>';
-    (document.getElementById('app') ?? document.body).appendChild(root);
-  }
-  const placa = root.querySelector<HTMLElement>('.guia-placa')!;
-  if (placa.innerHTML !== line) placa.innerHTML = line;
-  root.hidden = false;
-  document.documentElement.dataset.guia = '1';
-  placeSpotlight(root);
-  requestAnimationFrame(() => root!.classList.add('on'));
-}
-
-export function clearSpotlight(): void {
-  current = null;
-  delete document.documentElement.dataset.guia;
-  const root = document.getElementById('guia');
-  if (!root) return;
-  root.classList.remove('on');
-  root.hidden = true;
-}
-
-function placeSpotlight(root: HTMLElement): void {
-  if (!current) return;
-  const W = innerWidth;
-  const H = innerHeight;
-  const r = union(focusTargets(current.focus));
-  const hole = root.querySelector<HTMLElement>('.guia-hueco')!;
-  const ring = root.querySelector<HTMLElement>('.guia-aro')!;
-  const pad = 8;
-  // el hueco y su aro, con su margen, sin salirse de la ventana
-  // el aro late hasta scale(1.04): el margen con el borde crece con su tamaño para que ni en el pico se salga
-  const mx = r ? 3 + Math.ceil((r.width + 2 * pad) * 0.021) : 3;
-  const my = r ? 3 + Math.ceil((r.height + 2 * pad) * 0.021) : 3;
-  const l = r ? Math.max(mx, r.left - pad) : W / 2;
-  const t = r ? Math.max(my, r.top - pad) : H / 2;
-  const rect = r ? { left: l, top: t, width: Math.min(W - mx, r.right + pad) - l, height: Math.min(H - my, r.bottom + pad) - t } : { left: l, top: t, width: 0, height: 0 };
-  for (const n of [hole, ring]) {
-    n.style.left = `${rect.left}px`;
-    n.style.top = `${rect.top}px`;
-    n.style.width = `${rect.width}px`;
-    n.style.height = `${rect.height}px`;
-  }
-  ring.hidden = !r;
-  // la placa: sobre la franja de Reliquias y poderes; si tocara la mano, la cuenta o el hueco, bajo la barra
-  const placa = root.querySelector<HTMLElement>('.guia-placa')!;
-  placa.style.maxWidth = `${W - 16}px`;
-  const p = placa.getBoundingClientRect();
-  const avoid = [handBox(), box(document.getElementById('score')), r ? new DOMRect(rect.left, rect.top, rect.width, rect.height) : null];
-  const hud = box(document.querySelector('.tray .hudrow'));
-  const bar = box(document.querySelector('.table-screen .bar'));
-  const towers = box(document.getElementById('towers'));
-  const spots = [hud ? hud.top + hud.height / 2 - p.height / 2 : null, (bar?.bottom ?? 0) + 8, towers ? towers.bottom - p.height - 8 : null, hud ? hud.top - p.height - 6 : null].filter((y): y is number => y !== null);
-  const centro = Math.max(8, (W - p.width) / 2);
-  // V35 · con el enemigo grande, el aro (enemigo y La Manga) ocupa media mesa: si en el centro no cabe, al lado del aro
-  const lados = r ? [rect.left + rect.width + 12, rect.left - 12 - p.width].filter((x) => x >= 8 && x + p.width <= W - 8) : [];
-  const huecos = [centro, ...lados].flatMap((left) => spots.map((top) => ({ left, top })));
-  const free = huecos.find(({ left, top }) => avoid.every((a) => !hits({ left, top, right: left + p.width, bottom: top + p.height }, a)));
-  placa.style.left = `${free?.left ?? centro}px`;
-  placa.style.top = `${Math.max(8, Math.min(H - p.height - 8, free?.top ?? spots[0] ?? 8))}px`;
-}
-
 addEventListener('resize', () => {
-  const root = document.getElementById('guia');
-  if (root && current) placeSpotlight(root);
   const bark = document.getElementById('bark');
   if (bark && !bark.hidden) placeBark(bark);
 });

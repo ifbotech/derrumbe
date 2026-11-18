@@ -4,7 +4,7 @@
 import './balance-patch';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { applyAction, currentPlayer } from '../src/rules/engine';
+import { FIGURAS, applyAction, currentPlayer } from '../src/rules/engine';
 import type { Seal, Treatment } from '../src/rules/engine';
 import { RunPolicy, chooseAction, chooseRunAction } from '../src/rules/bot';
 import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, BOSS, CLAUSURA, DECKS, FURIA, STAGES, TIMBRE } from '../src/rules/run';
@@ -80,7 +80,7 @@ if (env.VENTISCA) {
   const [cap, up] = env.VENTISCA.split(':').map(Number);
   BOSS.intemperie.apply = (c) => {
     c.wallCap = Math.min(c.wallCap, cap);
-    if (up) [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + up)));
+    if (up) FIGURAS.forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + up)));
   };
 }
 if (env.CLAUSURA) {

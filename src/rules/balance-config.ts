@@ -11,7 +11,7 @@ export interface FormBase {
   r: number;
   lf: number;
 }
-/** Vida, Ataque y mano por rango (11 Sota, 12 Reina, 13 Rey) o por número de jugadores. */
+/** Vida, Ataque y mano por rango (10 Sota, 11 Caballo, 12 Rey) o por número de jugadores. */
 type PorClave = Record<string, number>;
 /** Lo que hace una carta especial (ver `Fx` en specials.ts). */
 export interface FxConfig {

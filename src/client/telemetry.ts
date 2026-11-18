@@ -15,7 +15,7 @@ export interface TelemetryRun {
   baraja: string; reinado: number; semilla: string;
   resultado: 'en curso' | 'victoria' | 'derrota' | 'saltada';
   asalto: number; turnos: number;
-  /** Partida guiada: cómo acabó la última y cuántos segundos duró. */
+  /** Partida guiada (hasta la 38.0): cómo acabó la última y cuántos segundos duró. Desde la V40 siempre null. */
   guia: 'victoria' | 'derrota' | 'saltada' | null; guiaS: number | null;
   /** Asalto de cada pico de duda (primera acción > 8 s y > 2 × la mediana). */
   dudas: number[];
@@ -51,7 +51,6 @@ const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[xs.length >> 1] ?
 
 export function createTelemetry(d: TelemetryDeps) {
   let log: TelemetryRun[] | null = null;
-  let guideAt: number | null = null;
   let cur: { id: number; rec: TelemetryRun; lat: number[]; turn: string; at: number } | null = null;
   const env = () => d.env?.() ?? {};
   const rev = () => [...read()].reverse();
@@ -61,9 +60,8 @@ export function createTelemetry(d: TelemetryDeps) {
   };
   const write = () => d.storage.save(KEY, JSON.stringify(read()));
   const fresh = (modo: TelemetryRun['modo'], jug = 1): TelemetryRun => {
-    const g = rev().find((r) => r.guia);
     const all = read();
-    const rec: TelemetryRun = { ...blank(day(d.now()), modo, jug), guia: g?.guia ?? null, guiaS: g?.guiaS ?? null, ...env() };
+    const rec: TelemetryRun = { ...blank(day(d.now()), modo, jug), ...env() };
     all.push(rec);
     all.splice(0, Math.max(0, all.length - 10));
     return rec;
@@ -77,7 +75,7 @@ export function createTelemetry(d: TelemetryDeps) {
     const titulo = brandFor(lang).title;
     if (!r) return T('ui.tel.vacio', { titulo, v: version });
     const res = { 'en curso': 'ui.tel.curso', victoria: 'ui.tel.victoria', derrota: 'ui.tel.derrota', saltada: 'ui.tel.saltada' }[r.resultado];
-    const baraja = DECK[r.baraja] ? T(`baraja.${r.baraja}.nombre`) : T('ui.tel.guiada');
+    const baraja = DECK[r.baraja] ? T(`baraja.${r.baraja}.nombre`) : r.baraja || '—';
     const lines = [T('ui.tel.cabeza', { titulo, v: version }), T('ui.tel.linea', { resultado: res ? T(res) : r.resultado, asalto: String(r.asalto), turnos: String(r.turnos), reinado: String(r.reinado), baraja })];
     if (r.causa) lines.push(T('ui.tel.causa', { texto: r.causa.texto }));
     lines.push(T('ui.tel.dudas', { dudas: String(r.dudas.length), manga: String(r.manga), rebobinar: String(r.rebobinar) }));
@@ -121,15 +119,6 @@ export function createTelemetry(d: TelemetryDeps) {
       }
       if (type === 'stash') r.manga++;
       if (type === 'undo') r.rebobinar++;
-      write();
-    },
-    /** La partida guiada: empieza, o acaba con su resultado (la duración va en segundos). */
-    noteGuide(result: 'start' | 'victoria' | 'derrota' | 'saltada', turns = 0): void {
-      if (result === 'start') return void (guideAt = d.now());
-      if (guideAt === null) return;
-      const rec = fresh('guia');
-      Object.assign(rec, { resultado: result, turnos: turns, guia: result, guiaS: Math.round((d.now() - guideAt) / 1000) });
-      guideAt = null;
       write();
     },
     telemetryLog: (): TelemetryRun[] => structuredClone(read()),
@@ -203,6 +192,6 @@ export const telemetry = createTelemetry({
   },
   save: (name, body) => platform.saveFile(name, body),
 });
-export const { noteRun, noteTurn, noteAction, noteGuide, telemetryLog, telemetryBytes, clearTelemetry, telemetryRemote, shareFeedback, feedbackIssueUrl } = telemetry;
+export const { noteRun, noteTurn, noteAction, telemetryLog, telemetryBytes, clearTelemetry, telemetryRemote, shareFeedback, feedbackIssueUrl } = telemetry;
 
 if (web && new URLSearchParams(location.search).has('qa')) Object.assign(window, { __qaTelemetry: telemetry });

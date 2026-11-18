@@ -121,7 +121,7 @@ export function renderRun(): void {
 const host = () => isRunHost();
 const waitNote = () => (host() ? '' : `<p class="wait">${L('ui.run.espera')}</p>`);
 function head(run: Run, h1: string, sub: string): string {
-  return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${run.daily ? L('ui.run.diaria', { d: run.daily }) : barN(run.deckId)} · ${L('ui.run.cabeza', { v: run.integrity, max: run.maxIntegrity, n: run.deck.length })}</p></div><div class="purse">${cifraEl(run.gold, 'oro', 'b', 'id="purse-n"')}<span>${L('ui.run.de.oro')}</span></div></header>`;
+  return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${barN(run.deckId)} · ${L('ui.run.cabeza', { v: run.integrity, max: run.maxIntegrity, n: run.deck.length })}</p></div><div class="purse">${cifraEl(run.gold, 'oro', 'b', 'id="purse-n"')}<span>${L('ui.run.de.oro')}</span></div></header>`;
 }
 /** V27 · las Reliquias que había la última vez que se pintó la tira: la que llega nueva se marca y se dice dónde se colocó. */
 let beltAntes: string[] | null = null;
@@ -169,7 +169,7 @@ function donTexto(run: Run, d: Don): { glifo: string; nombre: string; desc: stri
 function packScreen(run: Run): void {
   const dones = run.don ?? [];
   let elegido = 0;
-  app.innerHTML = `<div class="run">${head(run, L('ui.run.sobre.titulo'), `${L('ui.run.sobre.sub', { n: run.ascension + 1 })}${run.seedText && !run.daily ? L('ui.run.sobre.semilla', { s: run.seedText }) : ''}`)}
+  app.innerHTML = `<div class="run">${head(run, L('ui.run.sobre.titulo'), `${L('ui.run.sobre.sub', { n: run.ascension + 1 })}${run.seedText ? L('ui.run.sobre.semilla', { s: run.seedText }) : ''}`)}
     <div class="run-body"><p class="lead">${L('ui.run.sobre.texto')}</p>
     <div class="choices" id="picks"></div>
     ${dones.length ? `<section class="don"><h3 class="sec">${L('ui.run.don.titulo')}</h3><p class="don-sub">${L('ui.run.don.texto')}</p><div class="don-opts" id="don-opts" role="radiogroup" aria-label="${L('ui.run.don.titulo')}"></div></section>` : ''}${waitNote()}
@@ -533,7 +533,7 @@ export function actaText(run: Run, online = false): string {
   const mvp = mvpTool(run);
   const depth = depthOf(run);
   return [
-    `${L('ui.acta.texto.cab', { marca: marca().fullTitle })}${run.daily ? L('ui.acta.texto.diaria', { d: run.daily }) : ''}`,
+    `${L('ui.acta.texto.cab', { marca: marca().fullTitle })}`,
     `${row} ${run.conquered ? L('ui.acta.texto.corte') : L('ui.acta.texto.asalto', { n: Math.min(cleared, LAST_STAGE), total: LAST_STAGE })}${depth ? L('ui.acta.texto.infinito', { n: depth }) : ''}`,
     L('ui.acta.texto.mayor', { n: run.stats.maxHit }),
     L('ui.acta.texto.guardias', { g: run.stats.floors, e: run.stats.cleans }),
@@ -581,13 +581,13 @@ function actaScreen(run: Run): void {
   // la causa de la derrota (si la campaña cayó en la mesa) y el enlace para jugar la misma
   const death = !won && validDeath(run.death) ? run.death : null;
   const link = seedLink(run, c.online);
-  const seed = run.daily ? L('ui.acta.diaria', { d: run.daily }) : run.seedText || (c.online ? L('ui.acta.servidor') : '—');
+  const seed = run.seedText || (c.online ? L('ui.acta.servidor') : '—');
   // V33: del cobro al Árbol en un clic (en solitario: en conjura de varios se vuelve a la sala)
   const sig = c.online ? null : siguienteMejora(meta);
   app.innerHTML = `<div class="end ${won ? 'won' : 'lost'} in-page acta">
     ${won ? rubble('H', 'end-art') : skyline('end-art')}
     <div class="acta-sheet">
-      <div class="meta"><span class="hot">${L('ui.acta.cronica')}</span><span>${run.daily ? L('ui.acta.diaria.cab', { d: run.daily }) : `${barN(run.deckId)}${run.ascension ? L('ui.acta.reinado.cab', { n: run.ascension + 1 }) : ''}`}</span></div>
+      <div class="meta"><span class="hot">${L('ui.acta.cronica')}</span><span>${barN(run.deckId)}${run.ascension ? L('ui.acta.reinado.cab', { n: run.ascension + 1 }) : ''}</span></div>
       <h1>${won ? L('ui.fin.corte') : L('ui.fin.conjura')}</h1>
       <div class="acta-cols">
         <div class="acta-izq">

@@ -11,12 +11,12 @@ import { canonical } from '../src/rules/state-hash';
 import { TOOLS } from '../src/rules/tools';
 import { DICCIONARIOS } from '../src/shared/i18n';
 
-const MESA: Partial<Config> = { floorHp: { 11: 20, 12: 30, 13: 40 } };
+const MESA: Partial<Config> = { floorHp: { 10: 20, 11: 30, 12: 40 } };
 const FIXTURE = new URL('./fixtures/polvora-4-tronos.json', import.meta.url);
 
 function env(palos?: Suit[], tools: string[] = []): StrikeEnv {
   const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA };
-  return { config, towers: newTowers([11, 12, 13], config, palos), tools: tools.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
+  return { config, towers: newTowers([10, 11, 12], config, palos), tools: tools.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
 }
 
 /** 2.000 golpes en mesas de 4 tronos, con muchas cartas con sello de pólvora: el resumen de cada uno. */
@@ -36,9 +36,9 @@ function golpes4(): string[] {
     // una carta sola, un grupo o una escalera corta, con pólvora en alguna
     const n = 1 + Math.floor(r() * 3);
     const palo = () => pick(SUITS);
-    const rango = 1 + Math.floor(r() * 10);
+    const rango = 1 + Math.floor(r() * 9);
     const cartas: Card[] = Array.from({ length: n }, (_, k) => {
-      const c: Card = { id: `c${k}`, suit: palo(), rank: n === 3 ? Math.min(rango, 8) + k : rango };
+      const c: Card = { id: `c${k}`, suit: palo(), rank: n === 3 ? Math.min(rango, 7) + k : rango };
       if (r() < 0.6) c.seal = 'dinamita';
       else if (r() < 0.2) c.tr = pick(TREATMENTS);
       return c;
@@ -51,7 +51,8 @@ function golpes4(): string[] {
 
 describe('sello de pólvora', () => {
   // La referencia se volvió a grabar con la 31.0 (GRABAR_POLVORA=1): los multiplicadores se aplican al final de la cuenta;
-  // y con la 34.0: el Espejo de mano copia la última Reliquia que no sea pasiva, no la de su derecha.
+  // y con la 34.0: el Espejo de mano copia la última Reliquia que no sea pasiva, no la de su derecha. V40: con la baraja
+  // española (números del 1 al 9 y guardias 10, 11 y 12) se grabó otra vez.
   it('con 4 tronos, 2.000 golpes dan exactamente lo mismo que la referencia grabada', () => {
     const ahora = golpes4();
     if (process.env.GRABAR_POLVORA) writeFileSync(FIXTURE, `${JSON.stringify(ahora)}\n`);

@@ -240,11 +240,11 @@ describe('efectos de combate', () => {
     // con números: un 10 de ♠ contra el guardia de ♦ que se pasa por 0, 1, 2 y 3 de su Vida
     const exacto = (gracia: number, sobra: number) => {
       const config = stageConfig(inf({ gracia }));
-      const towers = newTowers([11, 12, 13], config);
+      const towers = newTowers([10, 11, 12], config);
       const diez: Card[] = [{ id: 'S10', suit: 'S', rank: 10 }];
       const env = { config, towers, tools: [], chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
       const total = previewStrike(env, diez, 'D').total;
-      towers.D.damage = config.floorHp[11] - total + sobra;
+      towers.D.damage = config.floorHp[10] - total + sobra;
       return previewStrike(env, diez, 'D').clean;
     };
     expect([0, 1, 2, 3].map((sobra) => exacto(0, sobra))).toEqual([true, false, false, false]);

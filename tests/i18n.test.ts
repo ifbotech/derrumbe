@@ -128,7 +128,9 @@ describe('glosario obligatorio (SPECS/V10.md, 1.3)', () => {
     expect(en['palabra.fractura.nombre']).toBe('Exposed');
     expect(en['palabra.desarmada.nombre']).toBe('Stunned');
     expect(en['palabra.apuntalado.nombre']).toBeUndefined();
-    expect(['S', 'D', 'H', 'C'].map((s) => en[`palo.${s}.nombre`])).toEqual(['Spades', 'Diamonds', 'Hearts', 'Clubs']);
+    // V40: la baraja española (Espadas, Oros, Copas, Bastos)
+    expect(['S', 'D', 'H', 'C'].map((s) => en[`palo.${s}.nombre`])).toEqual(['Swords', 'Coins', 'Cups', 'Clubs']);
+    expect(['S', 'D', 'H', 'C'].map((s) => es[`palo.${s}.nombre`])).toEqual(['Espadas', 'Oros', 'Copas', 'Bastos']);
   });
 
   it('Health, Shield, Counterattack, Damage × Mult y Up the Sleeve donde toca', () => {
@@ -136,7 +138,7 @@ describe('glosario obligatorio (SPECS/V10.md, 1.3)', () => {
     expect(en['reliquia.encofrado.desc']).toContain('Shield');
     expect(en['monarca.doble.desc']).toContain('Counterattack');
     expect(en['palabra.resonancia.desc']).toContain('Damage × Mult');
-    expect(en['guia.cuenta.linea']).toContain('Damage × Mult');
+    expect(en['bufon.cuenta']).toContain('Damage × Mult');
     expect(en['reliquia.pasarela.desc']).toContain('Up the Sleeve');
     // V37 · la partida guiada ya no tiene paso de La Manga: el nombre se comprueba en la ayuda de su hueco
     expect(en['ui.mesa.manga.hueco.tip']).toContain('<b>Up the Sleeve</b>');

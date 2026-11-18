@@ -2,7 +2,7 @@
 // Se usa para balancear las reglas por simulación y para jugar el turno de un jugador
 // desconectado en partidas online. Entiende las reliquias (las ordena), los sellos de lacre,
 // los acabados, la selección de cartas y las sinergias entre reliquias.
-import { Action, Card, Config, GameState, SUITS, StrikeEnv, Suit, Tower, activo, cardValue, classify, currentPlayer, standing, strike, threatOf, vidaTotal } from './engine';
+import { AS_ALTO, Action, CABALLO, Card, Config, GameState, MAX_NUM, SOTA, SUITS, StrikeEnv, Suit, Tower, activo, cardValue, classify, currentPlayer, standing, strike, threatOf, vidaTotal } from './engine';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';
 import { RARITY, TOOL, TOOL_SLOTS, rasgosDe } from './tools';
@@ -31,11 +31,11 @@ export function formations(hand: Card[]): Card[][] {
   }
   // as de compañía: un As con cualquier otra carta
   for (const ace of byRank.get(1) ?? []) for (const c of cards) if (c.rank !== 1) out.push([c, ace]);
-  // escaleras: el As enlaza por abajo (posición 1) y por arriba (posición 11)
-  const at = (pos: number) => byRank.get(pos === 11 ? 1 : pos);
-  for (let start = 1; start <= 9; start++) {
+  // escaleras: el As enlaza por abajo (posición 1) y por arriba (posición AS_ALTO, detrás del 9)
+  const at = (pos: number) => byRank.get(pos === AS_ALTO ? 1 : pos);
+  for (let start = 1; start <= AS_ALTO - 2; start++) {
     let combos: Card[][] = [[]];
-    for (let pos = start; pos <= (start === 1 ? 10 : 11) && at(pos); pos++) {
+    for (let pos = start; pos <= (start === 1 ? MAX_NUM : AS_ALTO) && at(pos); pos++) {
       const next: Card[][] = [];
       for (const combo of combos) for (const c of at(pos)!) next.push([...combo, c]);
       combos = next.slice(0, 120);
@@ -81,7 +81,7 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
   const has = (id: string) => state.tools.some((t) => t.id === id);
   const wallPays = WALL_PAYOFF.filter(has).length;
   const res = strike(env, cards, target);
-  const unit = cfg.floorHp[11] / 20;
+  const unit = cfg.floorHp[SOTA] / 20;
   const low = state.integrity <= cfg.maxIntegrity / 2 ? 1.5 : 1;
   let score = (before - remaining(env.towers, cfg)) / unit;
   for (const s of SUITS) {
@@ -121,8 +121,8 @@ export function chooseAction(state: GameState): Action {
   const targets: Suit[] = frente ? [frente.suit] : [];
   const joker = held.find((c) => c.suit === 'X' && !c.sp);
   if (joker && frente && !frente.fx.sobrecarga) {
-    // el Motín, cuando el que contraataca pega fuerte (Reina, Rey o monarca) o la Vida está en apuros
-    if (frente.floors[0] >= 12 || state.integrity <= 8 || threatOf(state, frente) >= state.integrity + state.wall) return { type: 'joker', card: joker.id, target: frente.suit };
+    // el Motín, cuando el que contraataca pega fuerte (Caballo, Rey o monarca) o la Vida está en apuros
+    if (frente.floors[0] >= CABALLO || state.integrity <= 8 || threatOf(state, frente) >= state.integrity + state.wall) return { type: 'joker', card: joker.id, target: frente.suit };
   }
 
   type Play = { score: number; cards: Card[]; target: Suit };

@@ -16,11 +16,10 @@ export function abonoCampanaVieja(stage: unknown): number {
   return Math.max(1, Math.min(ASALTOS_10, n - 1));
 }
 
-/** Una Meta de la 10.0 en la V11: la mejor marca, el alcance y el Asalto diario no pasan de `ultimo` asaltos. Muta y devuelve. */
-export function recortaMeta10<M extends Pick<Meta, 'best' | 'stats' | 'daily'>>(meta: M, ultimo: number): M {
+/** Una Meta de la 10.0 en la V11: la mejor marca y el alcance no pasan de `ultimo` asaltos. Muta y devuelve. */
+export function recortaMeta10<M extends Pick<Meta, 'best' | 'stats'>>(meta: M, ultimo: number): M {
   meta.best = Math.min(meta.best, ultimo);
   meta.stats.reach = Math.min(meta.stats.reach, ultimo);
-  meta.daily.cleared = Math.min(meta.daily.cleared, ultimo);
   return meta;
 }
 
@@ -99,6 +98,43 @@ export function migraMeta11<M extends Pick<Meta, 'renown' | 'up'> & { aviso?: Av
   }
   if (coronas > 0 || rangos > 0) meta.aviso = { id: 'arbol-v12', coronas, esquirlas: meta.renown, rangos };
   return meta;
+}
+
+// ───────────────────────── V40: de la baraja francesa a la española ─────────────────────────
+// SPECS/V40-REFUNDACION.md, apartado 9. Las cartas pasan a 1 a 9 y las figuras a 10, 11 y 12: una campaña a medias
+// de antes no se puede seguir y se descarta con un aviso corto. El perfil sigue entero (Altar, logros, Colección y
+// maestría); solo se va el Asalto diario. Los ajustes viven en sus propias claves y no se tocan.
+
+/** Versión de Meta de la 12.0 a la 38.0 (la última con Asalto diario). */
+export const META_38 = 4;
+/** La última versión de campaña guardada de la baraja francesa (de la 12.0 a la 38.0). */
+export const RUN_38 = 5;
+
+/** Una Meta de la 38.0 (o anterior, ya pasada por sus migraciones) en la V40: sin Asalto diario. Muta y devuelve. */
+export function migraMeta38<M extends object>(meta: M): M {
+  const m = meta as M & { daily?: unknown; stats?: Record<string, unknown> };
+  delete m.daily;
+  if (m.stats) delete m.stats.dailies;
+  return meta;
+}
+
+/**
+ * ¿Es una campaña guardada de la baraja francesa (de antes de la V40)? Lo es cualquier campaña con número de versión
+ * por debajo de `version` (la de ahora). Sin versión o sin forma de campaña, no se reconoce: false.
+ */
+export function campanaFrancesa(raw: unknown, version: number): boolean {
+  const v = (raw as { v?: unknown } | null)?.v;
+  return typeof v === 'number' && Number.isFinite(v) && v < version;
+}
+
+/**
+ * Esquirlas que se abonan al descartar una campaña francesa a medias: las que ya había juntado y aún no se habían
+ * cobrado (las de `run.esquirlas`). Una campaña ya cerrada (ganada o perdida) ya cobró: 0.
+ */
+export function abonoFrancesa(raw: unknown): number {
+  const r = raw as { phase?: unknown; esquirlas?: unknown } | null;
+  if (!r || r.phase === 'won' || r.phase === 'lost') return 0;
+  return Math.max(0, Math.floor(Number(r.esquirlas) || 0));
 }
 
 /**

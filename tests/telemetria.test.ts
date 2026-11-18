@@ -170,22 +170,14 @@ describe('datos de prueba: solo en este equipo y solo al pulsar', () => {
     expect(body).not.toContain('{');
   });
 
-  it('la partida guiada: si se terminó y cuánto duró; y solo se guardan las 10 últimas', () => {
+  it('sin campaña no se apunta nada; y solo se guardan las 10 últimas (V40: sin partida guiada)', () => {
     const g = rig();
-    // sin campaña, una jugada (la de la partida guiada) no se apunta en ningún registro
     g.play([{ t: 0, k: 'act', type: 'stash' }]);
     expect(g.tel.telemetryLog()).toEqual([]);
-    g.tel.noteGuide('start');
-    // el reloj avanza 95 s mientras se juega la partida guiada
-    g.play([{ t: 95_000, k: 'turn', view: viewFor(startStage(newRun({}, 1), [{ id: 'tu', name: 'TÚ' }]), 'tu') }]);
-    g.tel.noteGuide('victoria', 7);
-    const guide = g.tel.telemetryLog().at(-1)!;
-    expect(guide).toMatchObject({ modo: 'guia', resultado: 'victoria', turnos: 7, guia: 'victoria', guiaS: 95 });
-    // una campaña nueva lleva cómo acabó la partida guiada
     for (let i = 0; i < 12; i++) g.play([{ t: 100_000 + i, k: 'run', run: newRun({ seedText: `OTRA-${i}` }, 100 + i) }]);
     const log = g.tel.telemetryLog();
     expect(log).toHaveLength(10);
-    expect(log.at(-1)).toMatchObject({ guia: 'victoria', guiaS: 95, semilla: 'OTRA-11' });
+    expect(log.at(-1)).toMatchObject({ guia: null, guiaS: null, semilla: 'OTRA-11' });
   });
 
   it('clearTelemetry() deja la clave vacía', () => {

@@ -70,10 +70,10 @@ const arcon = (arch: Arch, name: string, glyph: string, pos: { x: number; y: num
 
 const ARSENAL: Def[] = [
   { id: 'caja', rama: 'arsenal', padre: null, rangos: 5, name: 'Bolsa de la conjura', glyph: 'hucha', pos: { x: -1, y: 0 }, plantilla: '+{oro} de oro inicial por rango.' },
-  { id: 'vale', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Favor del Tratante', glyph: 'cinta', pos: { x: -2, y: -1 }, texto: 'Un «Renovar mesa» gratis en cada Taberna, por nivel.' },
-  { id: 'tienda', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Puesto grande', glyph: 'andamio', pos: { x: -2, y: 0 }, texto: 'Por nivel: +1 reliquia en La Taberna, y 2 de las que ofrece son de tu rasgo principal.' },
+  { id: 'vale', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Favor del Tratante', glyph: 'cinta', pos: { x: -2, y: -1 }, texto: 'Un «Renovar mesa» gratis en cada Pulpería, por nivel.' },
+  { id: 'tienda', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Puesto grande', glyph: 'andamio', pos: { x: -2, y: 0 }, texto: 'Por nivel: +1 reliquia en La Pulpería, y 2 de las que ofrece son de tu rasgo principal.' },
   { id: 'rutas', rama: 'arsenal', padre: 'caja', rangos: 1, name: 'Cartógrafo', glyph: 'plano', pos: { x: -2, y: 1 }, texto: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.' },
-  { id: 'tasador', rama: 'arsenal', padre: 'tienda', rangos: 3, name: 'Ojo del tasador', glyph: 'oro', pos: { x: -3, y: -1.5 }, plantilla: 'Las reliquias de La Taberna cuestan {n} de oro menos (mínimo 1).' },
+  { id: 'tasador', rama: 'arsenal', padre: 'tienda', rangos: 3, name: 'Ojo del tasador', glyph: 'oro', pos: { x: -3, y: -1.5 }, plantilla: 'Las reliquias de La Pulpería cuestan {n} de oro menos (mínimo 1).' },
   arcon('precision', 'Arcón de precisión', 'calibre', { x: -3, y: -0.5 }),
   arcon('sismo', 'Arcón del eco', 'diapason', { x: -3, y: 0.5 }),
   arcon('alquimia', 'Arcón de alquimia', 'crisol', { x: -4, y: -1 }),
@@ -135,7 +135,7 @@ export function cifraDe(id: string, rango: number): Record<string, number> {
 function build(d: Def, combate: boolean): Nodo {
   const fijos = BALANCE.arbol.costes[d.id];
   const costs = fijos ? [...fijos] : incremental(d.id, d.rangos);
-  if (costs.length !== d.rangos) throw new Error(`árbol: ${d.id} tiene ${d.rangos} rangos y ${costs.length} costes`);
+  if (costs.length !== d.rangos) throw new Error(`altar: ${d.id} tiene ${d.rangos} rangos y ${costs.length} costes`);
   const plantilla = d.plantilla ?? '';
   const desc = d.texto ?? fill(plantilla, cifraDe(d.id, 1));
   const { texto: _t, plantilla: _p, infinito, ...rest } = d;

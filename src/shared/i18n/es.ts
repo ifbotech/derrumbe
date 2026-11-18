@@ -8,14 +8,14 @@
 //     tests/i18n.test.ts y la foto de textos de la V10, que exigen que salgan letra por letra iguales.
 import { ACHIEVEMENTS, unlocksOf } from '../../rules/achievements';
 import { fill, BALANCE } from '../../rules/balance-config';
-import { FORMATION_NAME, FORMATIONS, MATERIAL, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
+import { FIGURA_NOMBRE, FIGURAS, FORMATION_NAME, FORMATIONS, MATERIAL, PALO_NOMBRE, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
 import { REGLA_MEJOR } from '../../rules/mejor-jugada';
 import { KEYWORDS } from '../../rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
 import { RAIZ, RAMAS } from '../../rules/arbol';
 import { SPECIALS } from '../../rules/specials';
 import { ARCH, RARITY, RASGOS, TOOLS } from '../../rules/tools';
-import { TUTORIAL_STEPS, createTutorial } from '../../rules/tutorial';
+import { FRASES_BUFON } from '../../rules/bufon';
 import { ES_PLANTILLAS } from '../../rules/plantillas';
 import { columna } from './ui-arte';
 import { columnaJuice } from './ui-juice';
@@ -26,9 +26,6 @@ export { ES_PLANTILLAS };
 export const ES_UI = { ...columna(0), ...columnaJuice(0) } as const satisfies Record<string, string>;
 export type ClaveUi = keyof typeof ES_UI;
 
-
-/** Mayúscula inicial y el resto en minúscula: «PICAS» → «Picas», «TRÉBOLES» → «Tréboles». */
-const capital = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
 /** Los textos de reglas en español, por clave estable, tal como salen hoy de los datos. */
 export function reglasEs(): Record<string, string> {
@@ -99,7 +96,7 @@ export function reglasEs(): Record<string, string> {
     o[`rama.${r.id}.nombre`] = r.name;
     o[`rama.${r.id}.desc`] = r.desc;
   }
-  o['arbol.nombre'] = 'Árbol de la Conjura';
+  o['arbol.nombre'] = 'El Altar';
   o['arbol.desc'] = 'Gasta esquirlas aquí para mejorar para siempre.';
   o['arbol.raiz.nombre'] = RAIZ.name;
   o['arbol.raiz.desc'] = RAIZ.desc;
@@ -126,10 +123,12 @@ export function reglasEs(): Record<string, string> {
     o[`estado.${k}.nombre`] = v.name;
     o[`estado.${k}.desc`] = v.desc;
   }
+  // V40 · la baraja española: el nombre de cada palo (en mayúsculas, como en la mesa, y para leer) y de cada figura
   for (const s of SUITS) {
     o[`palo.${s}`] = MATERIAL[s];
-    o[`palo.${s}.nombre`] = capital(MATERIAL[s]);
+    o[`palo.${s}.nombre`] = PALO_NOMBRE[s];
   }
+  for (const r of FIGURAS) o[`figura.${r}`] = FIGURA_NOMBRE[r];
   // la cuenta del cobro (run.ts, finishBattle): las mismas cadenas que acaban en `run.pay`
   const C = BALANCE.cobro;
   o['cuenta.asalto'] = 'Asalto ganado';
@@ -140,7 +139,7 @@ export function reglasEs(): Record<string, string> {
   o['mejor.nada'] = 'Ninguna jugada hace Daño: descarta o guarda en La Manga.';
   // V12: monedas, esquirlas, gotas, dados de hueso, tirada, imán, cobro y AUTO (anexo A de SPECS/V12.md)
   o['pieza.moneda.nombre'] = 'Monedas';
-  o['pieza.moneda.desc'] = 'Oro para La Taberna.';
+  o['pieza.moneda.desc'] = 'Oro para La Pulpería.';
   o['pieza.esquirla.nombre'] = 'Esquirlas de Corona';
   o['pieza.esquirla.desc'] = 'Trozos de corona: se guardan aunque pierdas.';
   o['pieza.gota.nombre'] = 'Gotas de lacre';
@@ -159,21 +158,16 @@ export function reglasEs(): Record<string, string> {
   o['auto.desc'] = 'El juego juega solo. Toca para volver.';
   o['auto.saquear.nombre'] = 'Auto-saquear';
   o['auto.saquear.desc'] = 'El bot elige tu Botín.';
-  o['auto.taberna.nombre'] = 'Auto-taberna';
-  o['auto.taberna.desc'] = 'El bot compra en La Taberna y elige ruta.';
+  o['auto.taberna.nombre'] = 'Auto-pulpería';
+  o['auto.taberna.desc'] = 'El bot compra en La Pulpería y elige ruta.';
   o['auto.pausa.botin'] = 'AUTO espera: elige tu Botín.';
-  o['auto.pausa.taberna'] = 'AUTO espera: compra en La Taberna o sigue.';
+  o['auto.pausa.taberna'] = 'AUTO espera: compra en La Pulpería o sigue.';
   o['auto.pausa.mapa'] = 'AUTO espera: elige tu ruta en el Mapa.';
   o['auto.pausa.secreto'] = 'AUTO espera: elige en el Secreto.';
   o['auto.pausa.fin'] = 'La campaña terminó: AUTO se apaga.';
-  o['auto.pausa.diaria'] = 'En el Asalto diario se juega a mano.';
   o['auto.pausa.coop'] = 'En cooperativo se juega a mano.';
-  // la partida guiada
-  for (const s of TUTORIAL_STEPS) {
-    o[`guia.${s.id}.titulo`] = s.title;
-    o[`guia.${s.id}.linea`] = s.line;
-  }
-  o['guia.jugador'] = createTutorial().players[0].name;
+  // V40 · lo que dice el Bufón en los tres primeros golpes de la primera campaña (src/rules/bufon.ts)
+  for (const b of FRASES_BUFON) o[`bufon.${b.id}`] = b.texto;
   return { ...o, ...ES_PLANTILLAS };
 }
 

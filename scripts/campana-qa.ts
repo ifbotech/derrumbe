@@ -104,11 +104,9 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
     await page.locator('#resume').click();
     await page.waitForSelector('.run');
   } else {
-    // portada → preparación → nueva campaña; un perfil nuevo pasa por la partida guiada: se salta
+    // portada → preparación → nueva campaña (V40: sin partida guiada, empieza por el sobre)
     await page.locator('#m-camp').click();
     await page.locator('#new').click();
-    await page.waitForSelector('.table-screen');
-    await page.locator('#btn-leave').click();
     await page.waitForSelector('.run');
   }
   const t0 = Date.now();

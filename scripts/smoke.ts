@@ -28,12 +28,12 @@ import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
 import { campaignSuite } from './campana-qa';
-import { LANG, LOCALE, OTHER, T, VIRTUAL_GAMEPAD, gamepadSuite, guidedRun, immuneCheck, langSwitchSuite } from './gamepad-qa';
+import { LANG, LOCALE, OTHER, T, VIRTUAL_GAMEPAD, gamepadSuite, immuneCheck, langSwitchSuite } from './gamepad-qa';
 import { controlRows } from '../src/client/prompts';
 import { BRAND } from '../src/shared/brand';
 import { telemetrySuite } from './telemetry-qa';
 import { feedbackButtonsSuite } from './feedback-qa';
-import { arbolSuite, autoDiariaSuite, autoPausaSuite, autoSuite, mejorSuite } from './v12-qa';
+import { arbolSuite, autoPausaSuite, autoSuite, mejorSuite } from './v12-qa';
 import { caidaSuite, susurrosSuite, tiradaSuite } from './v12-sensacion';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 import { humoRapido } from './humo-rapido';
@@ -84,7 +84,7 @@ const TRAMO = join(OUT, 'campana-tramo.json');
 const TRAMOS = 5;
 const SECCIONES: Seccion[] = [
   { id: 'mesa', que: 'la mesa con ratón y teclado, susurro, insignias, sonidos, jugo V8, Ajustes, colección, idioma, red y campaña vieja', fn: seccionMesa },
-  { id: 'guia', que: 'la partida guiada con teclado y ratón, Inmune con teclado, la voz del monarca y un asalto a teclado', fn: seccionGuia },
+  { id: 'bufon', que: 'V40: las frases del Bufón sin tapar la mano, Inmune con teclado, la voz del monarca y un asalto a teclado', fn: seccionBufon },
   ...Array.from({ length: TRAMOS }, (_, i): Seccion => ({
     id: `campana-${i + 1}`,
     que: `la campaña de cinco asaltos con el bot y el ratón a 1×: ${i + 1 < TRAMOS ? `asalto ${i + 1}` : 'asalto 5 y las comprobaciones de la campaña'}`,
@@ -94,15 +94,15 @@ const SECCIONES: Seccion[] = [
       return campaignSuite(browser, site.url, check, problems, { n: i + 1, de: TRAMOS, archivo: TRAMO });
     },
   })),
-  { id: 'mando', que: 'la campaña jugada solo con el mando virtual: menú, asalto, Botín, La Taberna, Secreto, reliquias y partida guiada', fn: seccionMando, si: () => !process.env.NO_PAD },
+  { id: 'mando', que: 'la campaña jugada solo con el mando virtual: menú, asalto, Botín, La Pulpería, Secreto y reliquias', fn: seccionMando, si: () => !process.env.NO_PAD },
   { id: 'datos', que: 'los datos de prueba con la red bloqueada y el botón de feedback', fn: seccionDatos },
-  { id: 'v12-entrada', que: 'V12: Mejor jugada (ratón, teclado y mando), el Árbol con mando y teclado, AUTO en pausa y en el diario', fn: seccionEntrada, si: () => !process.env.NO_V12 },
+  { id: 'v12-entrada', que: 'V12: Mejor jugada (ratón, teclado y mando), el Altar con mando y teclado y AUTO en pausa', fn: seccionEntrada, si: () => !process.env.NO_V12 },
   { id: 'auto', que: 'V12: AUTO se apaga al instante (15 medidas) y juega la campaña entera a 8×', fn: seccionAuto, si: () => !process.env.NO_V12 },
   { id: 'v12-sensacion', que: 'V12: lo que cae, la tirada de huesos y los Susurros nuevos', fn: seccionSensacion, si: () => !process.env.NO_V12 },
   { id: 'calma', que: '«Reducir movimiento» y la copia de seguridad', fn: seccionCalma },
 ];
 
-/** La página de las secciones «mesa» y «guia»: un perfil limpio, en ?qa, con los errores apuntados. */
+/** La página de las secciones «mesa» y «bufon»: un perfil limpio, en ?qa, con los errores apuntados. */
 async function paginaPrincipal(browser: Browser, url: string): Promise<Page> {
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
   await context.addInitScript({ content: NAME_SHIM });
@@ -507,8 +507,8 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
   await page.context().close();
 }
 
-// ── sección «guia» ──
-async function seccionGuia({ browser, site }: Sesion): Promise<void> {
+// ── sección «bufon» (V40: sustituye a la partida guiada) ──
+async function seccionBufon({ browser, site }: Sesion): Promise<void> {
   const page = await paginaPrincipal(browser, site.url);
   {
     // lo que la sección «mesa» deja en los datos de prueba de este equipo y se comprueba al final de esta: un golpe,
@@ -526,22 +526,25 @@ async function seccionGuia({ browser, site }: Sesion): Promise<void> {
     await page.waitForTimeout(300);
     await settled(page);
   }
-  // ── V7 · la partida guiada se juega entera: con el teclado (medida) y con el ratón ──
-  console.log('Partida guiada');
-  const shot = (p: Page, name: string) => p.screenshot({ path: join(OUT, `${name}.png`) });
-  await page.keyboard.press('ArrowDown'); // el teclado vuelve a ser el dispositivo en uso
-  await guidedRun(page, 'keys', check, shot);
-  await page.screenshot({ path: join(OUT, 'partida-guiada.png') });
-  await page.locator('#t-home').click();
-  await page.waitForSelector('#m-tuto');
-  check((await count(page, '.end')) === 0 && !(await page.evaluate(() => document.documentElement.dataset.guia)), '«Jugar de verdad» vuelve a la portada sin dejar el foco de la guía');
-  await guidedRun(page, 'mouse', check);
-  await page.locator('#t-again').click();
-  await page.waitForSelector('.table-screen');
-  await page.waitForFunction(() => document.documentElement.dataset.guia === '1', null, { timeout: 10_000 });
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(200);
-  check((await count(page, '.table-screen')) === 0 && (await count(page, '#m-tuto')) === 1 && !(await page.evaluate(() => document.documentElement.dataset.guia)), 'Esc salta la partida guiada de un toque y vuelve a la portada');
+  // ── V40 · el Bufón: cada frase en el hueco de los Susurros, sin ventana, sin tapar la mano y con la mano viva ──
+  console.log('Bufón');
+  for (const id of ['palo', 'cuenta', 'exacto']) {
+    await go(page, `bufon-${id}`);
+    await page.waitForTimeout(250);
+    const b = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('.whisper.bufon');
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const tapa = [...document.querySelectorAll('#hand .card, #score')].some((o) => {
+        const q = o.getBoundingClientRect();
+        return q.width > 0 && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top;
+      });
+      return { texto: el.textContent ?? '', tapa, modales: document.querySelectorAll('.modal').length, bloqueada: !!document.querySelector('.handrow.locked') };
+    });
+    check(!!b && b.texto.includes(T(`bufon.${id}`).slice(0, 20)), `el Bufón dice su frase «${id}»${b ? ` («${b.texto.slice(0, 60)}»)` : ''}`);
+    check(!!b && !b.tapa && b.modales === 0 && !b.bloqueada, `la frase «${id}» no abre ventana, no tapa la mano ni la cuenta y la mano sigue jugable`);
+  }
+  await page.screenshot({ path: join(OUT, 'bufon.png') });
 
   // ── V11 · con el teclado: dos tronos, las flechas solo pisan los presentes y la placa Inmune se ve ──
   await immuneCheck(page, 'keys', check);
@@ -618,7 +621,6 @@ async function seccionGuia({ browser, site }: Sesion): Promise<void> {
     const camp = log.filter((r) => r.modo === 'campana');
     check(camp.some((r) => r.manga >= 1) && camp.some((r) => r.rebobinar >= 1), `los datos de prueba cuentan La Manga y Rebobinar de lo jugado (${camp.map((r) => `${r.manga}/${r.rebobinar}`).join(' · ')})`);
     check(camp.some((r) => r.turnos > 0), 'y los turnos del asalto jugado a teclado');
-    check(log.some((r) => r.modo === 'guia' && r.guia === 'victoria') && log.some((r) => r.modo === 'guia' && r.guia === 'saltada'), 'la partida guiada queda apuntada: terminada y saltada');
   }
   await page.screenshot({ path: join(OUT, 'fin-de-asalto.png') });
   await page.context().close();
@@ -662,7 +664,6 @@ async function seccionEntrada({ browser, site }: Sesion): Promise<void> {
   await arbolSuite(browser, site.url, 'keys', check, problems);
   console.log('AUTO');
   await autoPausaSuite(browser, site.url, check, problems);
-  await autoDiariaSuite(browser, site.url, check, problems);
 }
 
 // ── sección «auto»: AUTO se apaga al instante y juega la campaña entera a 8× ──
