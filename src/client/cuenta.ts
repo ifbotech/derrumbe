@@ -165,58 +165,10 @@ function multiDeHtml(p: Preview): string {
   if (!res.length) return '';
   // de una carta basta la carta («7♥ ×2»: su acabado o su sello ya los dice el recibo)
   const nombre = (w: string) => esc(w.split(' · ')[0].replace(/^(.{22}).+$/, '$1…'));
-  const cifra = (l: Line) => (l.kind === 'x' && l.note === L('ui.cuenta.base') ? l.amount.replace('×', '') : l.amount);
-  // V38d · cada fuente es una ficha; data-v es lo que pesa (para juntar las pequeñas en «+n más» si no caben)
-  const peso = (l: Line) => Number(l.amount.replace(/[^\d,.]/g, '').replace(',', '.')) || 0;
-  const piezas = res.map((l) => `<span class="mpz mpz-${l.kind}" data-v="${peso(l)}"><span class="mq">${nombre(l.who)}</span> <b>${cifra(l)}</b></span>`);
+  const piezas = res.map((l) => `<span class="mpz mpz-${l.kind}"><span class="mq">${nombre(l.who)}</span> <b>${l.kind === 'x' && l.note === L('ui.cuenta.base') ? l.amount.replace('×', '') : l.amount}</b></span>`);
   // V37 · con dos piezas o más, la línea termina en el Multi que resulta («= ×6»), el mismo de la cuenta
   const total = res.length > 1 ? `<i class="mde-s mde-igual" aria-hidden="true">=</i><span class="mpz mpz-tot"><b>×${numL(p.r.res)}</b></span>` : '';
-  // el texto llano de la línea entera, para el lector de pantalla (las fichas se pueden juntar a la vista)
-  const llano = `${L('ui.cuenta.multi.de')} ${res.map((l) => `${l.who.split(' · ')[0]} ${cifra(l)}`).join(' · ')}${res.length > 1 ? ` = ×${numL(p.r.res)}` : ''}`;
-  return `<span class="mde" role="group" aria-label="${esc(llano)}"><i class="mde-t">${L('ui.cuenta.multi.de')}</i>${piezas.join('<i class="mde-s" aria-hidden="true">·</i>')}${total}</span>`;
-}
-
-/**
- * V38d · En apaisado la línea del Multi va en fichas. Si no caben en sus renglones (uno con ≤ 820 px de alto, dos
- * por encima), las fuentes pequeñas se juntan en una ficha «+n más» cuya ayuda dice cuáles son; la primera fuente y
- * las que multiplican (×) son las últimas en juntarse, y la línea sigue acabando en el total de la cuenta.
- */
-function ajustaMulti(score: HTMLElement): void {
-  const mde = score.querySelector<HTMLElement>(':scope > .mde');
-  if (!mde || !matchMedia('(min-width: 641px) and (min-aspect-ratio: 1/1)').matches || getComputedStyle(mde).display === 'none') return;
-  const max = innerHeight <= 820 ? 1 : 2;
-  const renglones = () =>
-    new Set([...mde.querySelectorAll<HTMLElement>(':scope > .mpz:not([hidden])')].map((f) => {
-      const r = f.getBoundingClientRect();
-      return Math.round((r.top + r.bottom) / 2 / 12);
-    })).size;
-  if (renglones() <= max) return;
-  const fichas = [...mde.querySelectorAll<HTMLElement>(':scope > .mpz:not(.mpz-tot)')];
-  const orden = fichas
-    .slice(1)
-    .map((f, i) => ({ f, i, x: f.classList.contains('mpz-x') ? 1 : 0, v: Number(f.dataset.v) || 0 }))
-    .sort((a, b) => a.x - b.x || a.v - b.v || b.i - a.i);
-  const juntas: HTMLElement[] = [];
-  const mas = document.createElement('span');
-  mas.className = 'mpz mpz-mas';
-  mas.tabIndex = 0;
-  const igual = mde.querySelector(':scope > .mde-igual');
-  const sep = document.createElement('i');
-  sep.className = 'mde-s';
-  sep.setAttribute('aria-hidden', 'true');
-  sep.textContent = '·';
-  mde.insertBefore(sep, igual);
-  mde.insertBefore(mas, igual);
-  for (const c of orden) {
-    c.f.hidden = true;
-    const s = c.f.previousElementSibling;
-    if (s?.classList.contains('mde-s')) (s as HTMLElement).hidden = true;
-    juntas.push(c.f);
-    const lista = fichas.filter((f) => juntas.includes(f));
-    mas.textContent = L('ui.cuenta.multi.mas', { n: lista.length });
-    mas.dataset.tip = lista.map((f) => (f.textContent ?? '').replace(/\s+/g, ' ').trim()).join(' · ');
-    if (renglones() <= max) return;
-  }
+  return `<span class="mde" aria-label="${esc(L('ui.cuenta.multi.de'))}"><i class="mde-t">${L('ui.cuenta.multi.de')}</i>${piezas.join('<i class="mde-s" aria-hidden="true">·</i>')}${total}</span>`;
 }
 
 /** El marcador mientras se resuelve un golpe: Daño × Multi = Golpe, con la misma tipografía de cifras. */
@@ -536,7 +488,6 @@ export function paintScore(el: HTMLElement, html: string, preview: Preview | nul
   bind();
   const had = !!document.activeElement?.closest?.('#score .calc');
   el.innerHTML = html;
-  ajustaMulti(el);
   shown = preview;
   if (!preview) closeReceipt();
   else if (why !== null) draw(false);

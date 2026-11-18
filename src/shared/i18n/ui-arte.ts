@@ -464,7 +464,6 @@ export const UI_ARTE = {
   'ui.cuenta.golpe': ['Golpe', 'Hit'],
   'ui.cuenta.abre': ['Cuenta', 'Tally'],
   'ui.cuenta.multi.de': ['Multi:', 'Mult:'],
-  'ui.cuenta.multi.mas': ['+{n} más', '+{n} more'],
   'ui.cuenta.aporte.multi': ['Multi {n}', 'Mult {n}'],
   'ui.cuenta.tras': ['actúa tras el golpe', 'acts after the hit'],
   'ui.cuenta.formacion': ['formación', 'formation'],
