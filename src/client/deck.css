@@ -64,8 +64,8 @@
   .threat .curse-tag .ct-corto { display: inline; }
 }
 @media (min-width: 641px) and (min-aspect-ratio: 1/1) {
-  .tower.activa > .threat .furia { font-size: 15px; font-weight: 700; padding: 2px 8px; }
-  .tower.activa > .threat .curse-tag { font-size: 15px; padding: 1px 7px 1px 6px; border-width: 2px; }
+  .tower.activa > .threat .furia { font-size: 15px; font-weight: 700; padding: 2px 6px; }
+  .tower.activa > .threat .curse-tag { font-size: 15px; padding: 1px 6px 1px 5px; border-width: 2px; margin-left: 0; } /* el hueco ya lo pone la fila: cabe junto al Ataque también con el trono más estrecho del mando */
   .tower.activa > .threat .curse-tag .ct-largo { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
 }
 
@@ -126,4 +126,89 @@
   .run-body.shop .hangers:has(> .choice:nth-child(8)) { row-gap: 18px; }
   .run-body.shop .choice.hang h4 { min-height: 0; margin-top: 4px; }
   .run-body.shop .run-belt { margin-top: 6px; padding-top: 6px; }
+}
+
+/* ═════════════ V38b · lo que pidieron los nueve del Steam Deck en la 38.0 ═════════════ */
+
+/* 1 · la placa del golpe entera a ≥ 7:1: rojo hondo con la cifra crema (7,7:1; el rojo de serie se quedaba en 5,3:1).
+   Sigue siendo rojo de peligro; la de cero, con letra clara (8,1:1) */
+.preview:not(.clean):not(.zero):not(.polvora) { background: var(--red-deep); }
+.preview.zero { color: var(--rotulo); }
+
+/* 2 · el Mazo y el Descarte: el rótulo en tinta clara de 15 px y las dos cifras iguales, de 20 px, en su placa de tinta
+   (15,8:1). El «0» del Descarte va en su placa también cuando la casilla está vacía */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen .bunker .pile { color: var(--rotulo); font-size: 15px; letter-spacing: 0.02em; }
+  .table-screen .bunker .pile :is(#deck-n, #disc-n) {
+    display: inline-block;
+    min-width: 1.6em;
+    padding: 0 5px;
+    background: var(--pit);
+    color: var(--card-paper);
+    border: 2px solid var(--table-4);
+    font-family: var(--num);
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 1.15;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .table-screen .bunker .pile #disc-n { position: relative; z-index: 2; }
+}
+
+/* 3 · Mejor jugada, de igual a igual con Golpear: mismo alto y ancho (dos columnas iguales) y fondo macizo propio en
+   azul de tinta (crema encima a 9,1:1), lejos del latón de Golpear */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen .actions,
+  html[data-input='pad'] .table-screen .actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .table-screen .actions #btn-mejor { --bg: #183f50; --bd: var(--pit); color: var(--card-paper); min-height: 0; height: 100%; }
+  .table-screen .actions #btn-mejor:hover:not(:disabled) { --bg: #21566d; }
+  .table-screen .actions #btn-mejor .ico-btn { color: var(--hazard); }
+  .table-screen .actions #btn-mejor .lbl { font-size: max(15px, 1.7vh); }
+  html[data-input='pad'] .table-screen .actions #btn-mejor .lbl { font-size: 17px; }
+}
+
+/* 4 · las barras de Vida y Escudo, más gruesas en las ventanas bajas: 20 px por casilla (antes 16 y 17) */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
+  .table-screen .bunker :is(#int-blocks, #wall-blocks) i { aspect-ratio: auto; height: 20px; }
+}
+
+/* 5 · la fórmula a ≥ 17 px con las cifras en cajas grandes, y la línea del Multi en su propio renglón debajo */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  #score .calc .fr { gap: 10px; }
+  #score .calc .fr i.lg { font-size: 17px; letter-spacing: 0.03em; }
+  #score .calc .fr b { font-size: clamp(24px, 3vh, 28px); line-height: 1.15; padding: 1px 9px; min-width: 2.2ch; border: 2px solid var(--pit); }
+  #score .calc .fr i.por,
+  #score .calc .fr::before { font-size: clamp(22px, 2.8vh, 26px); }
+  #score > .mde { order: 2; flex: 1 1 100%; max-width: none; justify-content: center; }
+  #score > .marks { order: 3; }
+  #score > .omen { order: 1; }
+}
+
+/* 6 · «Reliquias 6/6» de la tira (La Taberna, el Botín): 15 px y sin transparencia (antes 14 px al 75 %) */
+.run-belt .belt-label { color: var(--rotulo); font-size: 15px; }
+.run-belt .belt-label small { opacity: 1; color: var(--card-paper); font-size: 15px; }
+
+/* V38b · el alto que se llevan la fórmula grande y la línea del Multi en su renglón (unos 35 px de bandeja a 800 de
+   alto) sale del lateral y de la bandeja, nunca de la letra:
+   · la Vida en una sola fila de casillas altas (20 px; antes dos filas de 16): la barra se lee como un medidor;
+   · las casillas del Mazo y del Descarte, más bajas (la cifra va en su placa, no en la carta);
+   · menos aire entre la tira de Reliquias y los rasgos cuando no caben en un renglón */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
+  .table-screen .bunker #int-blocks { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .table-screen .bunker .pile .slot,
+  .table-screen:has(#monarch:not([hidden])) .bunker .pile .slot { height: 32px; }
+  .table-screen .bunker .pile .card,
+  .table-screen:has(#monarch:not([hidden])) .bunker .pile .card { --w: 21px; }
+  .table-screen .hudrow { row-gap: 6px; }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
+  .table-screen .tray { padding-bottom: 14px; } /* la mano queda a 8 px del borde */
+  /* el lateral recupera aire para que el monarca quepa también en inglés (rasgos en dos líneas) */
+  .table-screen .side { row-gap: 6px; }
+  .table-screen .bunker { padding-top: 6px; padding-bottom: 6px; }
+  .table-screen .bunker .stat { margin-top: 2px; margin-bottom: 2px; }
+  .table-screen .bunker .stat-wall { margin-top: 12px; }
+  .table-screen .bunker .piles,
+  .table-screen:has(#monarch:not([hidden])) .bunker .piles { margin-top: 2px; }
 }

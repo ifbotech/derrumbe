@@ -2034,7 +2034,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     if (!main || !dis || !visible(dis)) fail('acciones', 'faltan Golpear o Descartar en la mesa', document.querySelector('.actions'));
     else {
       const area = (b: Element) => b.getBoundingClientRect().width * b.getBoundingClientRect().height;
-      for (const b of bs) if (b !== main && area(b) >= area(main)) fail('acciones', `#${b.id} es tan grande como Golpear`, b);
+      // V38b · Mejor jugada va de igual a igual con Golpear (lo mide «mejor-par»): lo distingue su color, no el tamaño
+      for (const b of bs) if (b !== main && b.id !== 'btn-mejor' && area(b) >= area(main)) fail('acciones', `#${b.id} es tan grande como Golpear`, b);
       for (const b of bs) {
         // en 1366 × 768 SD3 admite 44 px en las secundarias (Golpear siempre 48)
         const h = b.getBoundingClientRect().height;
@@ -2607,7 +2608,9 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
       if (px < 1) continue;
       const fg = rgb(cs.color)!;
       const bg = bgOf(el);
-      const a = fg.a;
+      // la transparencia del nodo y de sus antepasados también apaga la tinta (el «6/6» iba al 75 %)
+      let a = fg.a;
+      for (let q: Element | null = el; q; q = q.parentElement) a *= Number(getComputedStyle(q).opacity);
       const k = ratio({ r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a) }, bg);
       out.push({ el, txt, px, peso: Number(cs.fontWeight) || 400, k });
     }
@@ -2633,6 +2636,10 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
         if (x.peso < 700) fail('placa-golpe', `la línea «${x.txt}» de la placa del golpe va en peso ${x.peso} (mínimo 700, negrita)`);
         if (x.k < 6.95) fail('placa-golpe', `la línea «${x.txt}» de la placa del golpe va a ${f1(x.k)}:1 (mínimo 7:1)`);
       }
+      // V38b · la placa entera (la cifra también), no solo su línea: ≥ 7:1
+      const cifra = textos(p).filter((x) => !x.el.closest('small'));
+      for (const x of cifra) if (x.k < 6.95) fail('placa-golpe', `la cifra «${x.txt}» de la placa del golpe va a ${f1(x.k)}:1 (mínimo 7:1)`);
+      if (cifra.length) medidas.push(`placa: cifra «${cifra.map((x) => x.txt).join('')}» ${f1(Math.min(...cifra.map((x) => x.px)))} px a ${f1(Math.min(...cifra.map((x) => x.k)))}:1`);
       if (H <= 820 && giro > 0.1) fail('placa-golpe', `la placa del golpe va girada ${f1(giro)}° en una ventana de ${H} px de alto (sin giro hasta 820)`);
       medidas.push(`placa «${t.map((x) => x.txt).join(' ')}» ${f1(Math.min(...t.map((x) => x.px)))} px, peso ${Math.min(...t.map((x) => x.peso))}, ${f1(Math.min(...t.map((x) => x.k)))}:1, giro ${f1(giro)}°`);
     }
@@ -2655,6 +2662,57 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
     if (visible(relojero) && !/furia|fury/i.test(relojero.textContent ?? '')) fail('furia', `la marca del Relojero en el ⚔ dice «${relojero.textContent?.trim()}» y no la palabra Furia`);
   }
 
+  // ── V38b · «pilas»: el Mazo y el Descarte, sus rótulos a ≥ 7:1 y sus dos cifras a ≥ 7:1 y del mismo tamaño ──
+  const mazo = document.getElementById('deck-n');
+  const descarte = document.getElementById('disc-n');
+  if (mesa && visible(mazo) && visible(descarte)) {
+    const [tm, td] = [textos(mazo), textos(descarte)];
+    const rotulosPila = [...document.querySelectorAll<HTMLElement>('.bunker .pile')].filter(visible).flatMap(textos).filter((x) => !x.el.closest('#deck-n, #disc-n, .card'));
+    for (const x of [...tm, ...td]) if (x.k < 6.95) fail('pilas', `la cifra «${x.txt}» del ${x.el.id === 'disc-n' ? 'Descarte' : 'Mazo'} va a ${f1(x.k)}:1 (mínimo 7:1)`);
+    for (const x of rotulosPila) if (x.k < 6.95) fail('pilas', `el rótulo «${x.txt}» de las pilas va a ${f1(x.k)}:1 (mínimo 7:1)`);
+    if (tm.length && td.length && Math.abs(tm[0].px - td[0].px) > 0.5) fail('pilas', `la cifra del Descarte mide ${f1(td[0].px)} px y la del Mazo ${f1(tm[0].px)} (han de ser iguales)`);
+    if (tm.length && td.length) medidas.push(`pilas: Mazo ${f1(tm[0].px)} px a ${f1(tm[0].k)}:1 · Descarte ${f1(td[0].px)} px a ${f1(td[0].k)}:1 · rótulos ${rotulosPila.length ? f1(Math.min(...rotulosPila.map((x) => x.k))) : '—'}:1`);
+  }
+
+  // ── V38b · «mejor-par»: Mejor jugada igual de alto y ancho que Golpear, con fondo macizo propio y de otro color ──
+  const golpear = document.querySelector<HTMLElement>('.actions #btn-strike:not([hidden])');
+  const mejor = document.querySelector<HTMLElement>('.actions #btn-mejor:not([hidden])');
+  if (mesa && visible(golpear) && visible(mejor)) {
+    const [rg, rm] = [golpear.getBoundingClientRect(), mejor.getBoundingClientRect()];
+    if (Math.abs(rg.width - rm.width) > 1 || Math.abs(rg.height - rm.height) > 1) fail('mejor-par', `Mejor mide ${Math.round(rm.width)}×${Math.round(rm.height)} px y Golpear ${Math.round(rg.width)}×${Math.round(rg.height)} (han de ser iguales)`);
+    const fondo = (b: Element) => rgb(getComputedStyle(b).getPropertyValue('--bg')) ?? rgb(getComputedStyle(b).backgroundColor);
+    const [fg, fm] = [fondo(golpear), fondo(mejor)];
+    if (!fm || fm.a < 0.9) fail('mejor-par', 'Mejor no tiene fondo macizo propio');
+    else if (fg) {
+      // distancia de color en CIELAB (ΔE76): ≥ 20 se distinguen de un vistazo, también con Golpear apagado
+      const lin = (v: number) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4);
+      const lab = (c: { r: number; g: number; b: number }) => {
+        const [R, G, B] = [lin(c.r), lin(c.g), lin(c.b)];
+        const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+        const [x, y, z] = [f((0.4124564 * R + 0.3575761 * G + 0.1804375 * B) / 0.95047), f(0.2126729 * R + 0.7151522 * G + 0.072175 * B), f((0.0193339 * R + 0.119192 * G + 0.9503041 * B) / 1.08883)];
+        return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+      };
+      const [p, q] = [lab(fg), lab(fm)];
+      const dE = Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+      if (dE < 20) fail('mejor-par', `Mejor va casi del mismo color que Golpear (ΔE ${f1(dE)}, mínimo 20)`);
+    }
+    const tl = [...mejor.querySelectorAll<HTMLElement>('.lbl')].filter(visible).flatMap(textos);
+    for (const x of tl) if (x.k < 6.95) fail('mejor-par', `el rótulo «${x.txt}» de Mejor va a ${f1(x.k)}:1 (mínimo 7:1)`);
+    medidas.push(`botones: Golpear ${Math.round(rg.width)}×${Math.round(rg.height)} · Mejor ${Math.round(rm.width)}×${Math.round(rm.height)}, fondo ${fm ? `rgb(${fm.r}, ${fm.g}, ${fm.b})` : '—'}, rótulo ${tl.length ? f1(Math.min(...tl.map((x) => x.k))) : '—'}:1`);
+  }
+
+  // ── V38b · «barras»: cada casilla de Vida y de Escudo ≥ 14 px de alto, dentro de su panel ──
+  const panel = document.getElementById('bunker');
+  const casillas = [...document.querySelectorAll<HTMLElement>('#int-blocks i, #wall-blocks i')].filter(visible);
+  if (mesa && visible(panel) && casillas.length) {
+    const pr = panel.getBoundingClientRect();
+    const altos = casillas.map((c) => c.getBoundingClientRect());
+    const minAlto = Math.min(...altos.map((r) => r.height));
+    if (minAlto < 13.95) fail('barras', `las casillas de Vida y Escudo miden ${f1(minAlto)} px de alto (mínimo 14)`);
+    if (altos.some((r) => r.bottom > pr.bottom + 0.5 || r.right > pr.right + 0.5)) fail('barras', 'una casilla de Vida o de Escudo se sale de su panel');
+    medidas.push(`barras: casillas de ${f1(minAlto)} px de alto como mínimo`);
+  }
+
   // ── cuenta-aire ──
   const score = document.querySelector<HTMLElement>('#score:not(.live)');
   const calc = score?.querySelector<HTMLElement>(':scope > .calc') ?? null;
@@ -2667,6 +2725,11 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
       if (x.px < 14.95) fail('cuenta-aire', `el rótulo «${x.txt}» de la cuenta mide ${f1(x.px)} px (mínimo 15)`);
       if (x.k < 6.95) fail('cuenta-aire', `el rótulo «${x.txt}» de la cuenta va a ${f1(x.k)}:1 (mínimo 7:1)`);
     }
+    // V38b · la fórmula («= Daño 68 × Multi ×10») a ≥ 17 px, y la línea del Multi en su propio renglón
+    const formula = [...score.querySelectorAll<HTMLElement>('.calc .fr i.lg, .calc .fr b')].filter(visible).flatMap(textos);
+    for (const x of formula) if (x.px < 16.95) fail('cuenta-aire', `«${x.txt}» de la fórmula mide ${f1(x.px)} px (mínimo 17)`);
+    const mde = score.querySelector<HTMLElement>(':scope > .mde');
+    if (visible(mde) && mde.getBoundingClientRect().top < calc.getBoundingClientRect().bottom - 1) fail('cuenta-aire', 'la línea del Multi comparte renglón con la caja de la cuenta (va debajo)');
     for (const x of cifras) if (x.k < 6.95) fail('cuenta-aire', `la cifra «${x.txt}» de la cuenta va a ${f1(x.k)}:1 (mínimo 7:1)`);
     for (const x of seps) if (x.k < 4.45) fail('cuenta-aire', `el separador «${x.txt}» de la línea del Multi va a ${f1(x.k)}:1 (mínimo 4,5:1)`);
     for (const x of marcas) {
@@ -2685,7 +2748,17 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
       if (aire !== null && aire < 7.5) fail('cuenta-aire', `la fila de placas queda a ${f1(aire)} px de la fórmula (mínimo 8)`);
     }
     const min = (a: { px: number; k: number }[], k: 'px' | 'k') => (a.length ? f1(Math.min(...a.map((x) => x[k]))) : '—');
-    medidas.push(`cuenta: rótulos ${min(rotulos, 'px')} px a ${min(rotulos, 'k')}:1 · cifras ${min(cifras, 'k')}:1 · separadores del Multi ${min(seps, 'k')}:1 · placas ${min(marcas, 'px')} px a ${min(marcas, 'k')}:1 · aire ${aire === null ? '—' : `${f1(aire)} px`}`);
+    medidas.push(`cuenta: fórmula ${min(formula, 'px')} px · rótulos ${min(rotulos, 'px')} px a ${min(rotulos, 'k')}:1 · cifras ${min(cifras, 'k')}:1 · separadores del Multi ${min(seps, 'k')}:1 · placas ${min(marcas, 'px')} px a ${min(marcas, 'k')}:1 · aire ${aire === null ? '—' : `${f1(aire)} px`}`);
+  }
+
+  // ── V38b · «reliquias»: el rótulo de la tira y su «6/6», ≥ 15 px y ≥ 7:1 ──
+  for (const etq of [...document.querySelectorAll<HTMLElement>('.run-belt .belt-label')].filter(visible)) {
+    const t = textos(etq);
+    for (const x of t) {
+      if (x.px < 14.95) fail('reliquias', `«${x.txt}» de la tira de Reliquias mide ${f1(x.px)} px (mínimo 15)`);
+      if (x.k < 6.95) fail('reliquias', `«${x.txt}» de la tira de Reliquias va a ${f1(x.k)}:1 (mínimo 7:1)`);
+    }
+    if (t.length) medidas.push(`reliquias: «${t.map((x) => x.txt).join(' ')}» ${f1(Math.min(...t.map((x) => x.px)))} px a ${f1(Math.min(...t.map((x) => x.k)))}:1`);
   }
 
   // ── taberna-alto ──
