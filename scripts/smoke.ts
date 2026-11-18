@@ -191,6 +191,9 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
   }));
   check(quien.sel > 0 && quien.chips.length === quien.sel && quien.chips.every((t) => /^(\+\d+|0)/.test(t)), `cada carta elegida lleva lo que aporta (${quien.chips.join(' | ')})`);
   check(/Multi|Mult/.test(quien.mde) && quien.mde.length > 8, `bajo la fórmula se lee de dónde sale el Multi ${quien.multi} (${quien.mde})`);
+  // V37 · con dos piezas o más, la línea acaba en el mismo Multi que la cuenta
+  const piezasMulti = (quien.mde.match(/·/g) ?? []).length + 1;
+  check(piezasMulti < 2 || quien.mde.replace(/\s+/g, '').endsWith(`=${quien.multi.replace(/\s+/g, '')}`), `la línea del Multi termina en «= ${quien.multi}» (${quien.mde})`);
   const hpBefore = await page.locator('.tower[data-suit="H"] .hp span').textContent();
   // como en una partida real, el audio ya está arrancado antes del primer golpe (el primer clic lo enciende)
   await page.mouse.click(700, 20);

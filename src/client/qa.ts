@@ -177,7 +177,7 @@ async function mesaMonarca(boss: string): Promise<void> {
   if (id) showBark(id.barks.entrada);
 }
 
-/** V7 · la partida guiada en el paso n (0-4), con los pasos anteriores ya jugados y su foco encendido. */
+/** V7 · la partida guiada en el paso n (0-2), con los pasos anteriores ya jugados y su foco encendido. */
 async function guia(step: number): Promise<void> {
   clean();
   setMode('pointer');
@@ -653,8 +653,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // ── arte-ui V7: partida guiada, monarcas y su maldición ──
   // el foco de los pasos 1 (el poder del palo), 3 (La Manga) y 5 (el Golpe exacto)
   'guia-palo': () => guia(0),
-  'guia-manga': () => guia(2),
-  'guia-exacto': () => guia(4),
+  'guia-cuenta': () => guia(1),
+  'guia-exacto': () => guia(2),
   // un asalto con La Dama del Cáliz: su retrato, la placa «Tus ♥ no curan», el cáliz tachado en cada ♥ y su bocadillo
   'mesa-monarca': () => mesaMonarca('sequia'),
   // el mismo asalto con cada monarca (mesa-monarca-doble, …-escasez…): la QA los corre a demanda

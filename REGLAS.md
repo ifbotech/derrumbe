@@ -522,7 +522,7 @@ El juego usa solo seis palabras con significado propio. Todo lo demás se dice c
 |---|---|---|
 | Mover el foco | Flechas | Cruceta o palanca izquierda |
 | Elegir | Enter · 1–9 en la mano · clic | A |
-| Golpear el trono apuntado | Espacio · clic en el trono | X |
+| Golpear al enemigo activo | Espacio · clic en el trono | X |
 | Guardar en La Manga | Y | Y |
 | Mejor jugada (elige; no golpea) | Q | LT |
 | Rebobinar (deshacer) | Z | R3 (pulsar la palanca derecha) |

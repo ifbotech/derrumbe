@@ -143,13 +143,13 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-cuenta', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
 const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-manga', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-cuenta', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
 const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
 /** infra/rapido · navegadores a la vez (QA_HILOS); cada uno es un proceso de Chromium aparte con las banderas de siempre. */
 const HILOS = Math.max(1, Math.floor(Number(process.env.QA_HILOS || 8)) || 1);
@@ -1675,8 +1675,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (!hueco || alpha(hueco) < 0.5) fail('guia', 'la mesa no se vela alrededor del foco');
       if (!aro || !visible(aro)) fail('guia', 'no hay aro de foco a la vista');
       else if (!inside(aro.getBoundingClientRect())) fail('guia', 'el aro de foco se sale de la ventana', aro);
-      // lo que señala cada paso: la carta del paso, el hueco de La Manga y el trono del Golpe exacto
-      const want: Record<string, string> = { 'guia-palo': '#hand .card[data-id="C6"]', 'guia-manga': '#reserve', 'guia-exacto': '.tower[data-suit="H"]' };
+      // lo que señala cada paso: la carta del paso, la cuenta y el trono del Golpe exacto
+      const want: Record<string, string> = { 'guia-palo': '#hand .card[data-id="C6"]', 'guia-cuenta': '#score', 'guia-exacto': '.tower[data-suit="H"]' };
       const t = want[opts.state] ? document.querySelector(want[opts.state]) : null;
       if (want[opts.state] && !t) fail('guia', `no está en la mesa lo que señala el paso (${want[opts.state]})`);
       if (t && aro) {

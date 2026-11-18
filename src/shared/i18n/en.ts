@@ -464,11 +464,9 @@ const ESTADOS: Record<keyof TowerFx, [string, string]> = {
 const PALOS: Record<Suit, [string, string]> = { S: ['SPADES', 'Spades'], D: ['DIAMONDS', 'Diamonds'], H: ['HEARTS', 'Hearts'], C: ['CLUBS', 'Clubs'] };
 
 const GUIA: Record<string, [string, string]> = {
-  palo: ['The Power of a Suit', 'Play the <b>6♣</b> against SPADES: ♣ give you Shield.'],
-  inmune: ['Immune Enemy', 'SPADES is Immune to ♠: your 3♠ does 0. Play the <b>8♥</b>.'],
-  manga: ['Up the Sleeve', 'Keep the <b>9♦</b> Up the Sleeve for later.'],
-  cuenta: ['The Tally', 'A pair of <b>7</b>s to HEARTS: Damage × Mult = Hit.'],
-  exacto: ['Exact Hit', 'The <b>9♦</b> from Up the Sleeve to HEARTS: exactly 9.'],
+  palo: ['Suit and Immune', 'SPADES is Immune to ♠. Play the <b>6♣</b>: ♣ gives Shield.'],
+  cuenta: ['The Tally', 'A pair of <b>7</b>s to SPADES: Damage × Mult = Hit.'],
+  exacto: ['Exact Hit', 'The <b>9♦</b> to HEARTS: exactly 9.'],
 };
 
 /** Texts the rules build on the fly: same keys and `{campo}` as `ES_PLANTILLAS`. */
