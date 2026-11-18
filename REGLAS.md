@@ -223,7 +223,7 @@ Tras los monarcas de los asaltos 2 y 4 aparece un santuario: una apuesta de azar
 | 3 | Corte airada | Cada Mazo agotado sube la Furia 1 más. |
 | 4 | Reyes acorazados | En los asaltos con monarca, los Reyes tienen un 28 % más de Vida. |
 | 5 | Rey colérico | El Ataque de los Reyes sube 1. |
-| 6 | Heridas viejas | Tienes 2 punto menos de Vida. |
+| 6 | Heridas viejas | Tu Vida máxima baja 2. |
 | 7 | Guardia de noche | El Ataque de las Sotas y las Reinas sube 1. |
 | 8 | Puertas selladas | Solo en el asalto 5, el Ataque de los cuatro tronos sube 1. |
 

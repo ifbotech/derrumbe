@@ -42,7 +42,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Corte airada', desc: 'Cada Mazo agotado sube la Furia {furia} más.' },
   { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
-  { name: 'Heridas viejas', desc: 'Tienes {heridas} punto menos de Vida.' },
+  { name: 'Heridas viejas', desc: 'Tu Vida máxima baja {heridas}.' },
   { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y las Reinas sube {noche}.' },
   { name: 'Puertas selladas', desc: 'Solo en el asalto {asaltos}, el Ataque de los cuatro tronos sube {clausura}.' },
 ];
