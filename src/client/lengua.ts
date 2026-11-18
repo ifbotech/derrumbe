@@ -7,7 +7,7 @@
 import { getLang, initLang, numFor, t, type Lang } from '../shared/i18n';
 import type { ClaveUi } from '../shared/i18n/es';
 import { brandFor } from '../shared/brand';
-import { RANK_LABEL, cardLabel, type Card, type Formation, type Suit } from '../rules/engine';
+import { CABALLO, RANK_LABEL, REY, SOTA, cardLabel, type Card, type Formation, type Suit } from '../rules/engine';
 import { LAST_STAGE, tiranoKey } from '../rules/run';
 import { platform } from './platform';
 
@@ -81,4 +81,12 @@ export const palo = (s: Suit) => t(`palo.${s}`);
 /** El palo en caja baja con mayúscula inicial: «Espadas» / «Swords». */
 export const paloN = (s: Suit) => t(`palo.${s}.nombre`);
 /** Cómo se nombra una carta: la especial por su nombre, la de baraja por su número y palo («7 de Espadas» / «7 of Swords»). */
+const FIGURA_UI: Record<number, string> = { [SOTA]: 'ui.carta.sota', [CABALLO]: 'ui.carta.caballo', [REY]: 'ui.carta.rey' };
+/** V40 · un guardia por su figura: «Sota de Espadas», «Knave of Swords» (las cartas de número, como cartaN). */
+export const guardiaN = (c: Card): string => {
+  const k = FIGURA_UI[c.rank];
+  if (!k || c.sp || c.suit === 'X') return cartaN(c);
+  const f = t(k);
+  return t('carta.etiqueta', { n: f.charAt(0) + f.slice(1).toLowerCase(), palo: paloN(c.suit) });
+};
 export const cartaN = (c: Card) => (c.sp ? espN(c.sp) : c.suit === 'X' ? t('carta.comodin') : t('carta.etiqueta', { n: RANK_LABEL[c.rank], palo: paloN(c.suit) }));

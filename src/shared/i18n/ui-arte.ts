@@ -659,7 +659,7 @@ export const UI_ARTE = {
   'ui.run.espera': ['El anfitrión decide por la conjura.', 'The host decides for the crew.'],
   'ui.run.cabeza': ['Vida {v}/{max} · Mazo {n}', 'Health {v}/{max} · Deck {n}'],
   'ui.run.de.oro': ['de oro', 'gold'],
-  'ui.run.reliquias.orden': ['{n}/{total} · el orden no cambia la cuenta', '{n}/{total} · order does not change the count'],
+  'ui.run.reliquias.orden': ['{n}/{total} · el orden no cambia la cuenta', '{n}/{total} · order doesn’t matter'],
   'ui.run.ver.mazo': ['Ver mazo ({n})', 'See deck ({n})'],
   'ui.run.vender.titulo': ['¿Vender {x}?', 'Sell {x}?'],
   'ui.run.vender.texto': ['El Tratante te da {n} de oro.', 'The Storekeeper gives you {n} gold.'],

@@ -5,7 +5,7 @@
     { "hp": 4.4, "threat": 1 },
     { "hp": 5.8, "threat": 2 },
     { "hp": 4.2, "threat": 3 },
-    { "hp": 4.75, "threat": 4 }
+    { "hp": 4.8, "threat": 4 }
   ],
   "tronoInfinito": { "hpCrece": 1.45 },
   "cuadrilla": [1, 1.3, 1.4, 1.48],
@@ -101,9 +101,9 @@
   "huesos": { "oro": [1, 1, 1, 1, 2, 2], "corona": [1, 1, 1, 2, 2, 3] },
   "barajas": {
     "acero": { "vida": 6 },
-    "prestamista": { "oro": 4, "interes": 3, "vida": 1 },
+    "prestamista": { "oro": 7, "interes": 3, "vida": 1 },
     "ases": { "vida": 2 },
-    "corta": { "oro": 3, "vida": 5 },
+    "corta": { "oro": 3, "vida": 4 },
     "caos": { "especiales": 3 }
   },
   "formaciones": {
@@ -155,7 +155,7 @@
     "cortavidrios": { "dano": 3 },
     "paleta": { "dano": 3 },
     "maza": { "dano": 3 },
-    "cincel": { "dano": 8 },
+    "cincel": { "dano": 14 },
     "gemelos": { "multi": 1 },
     "cinta": { "multi": 1 },
     "sacos": { "escudo": 1, "tope": 4 },

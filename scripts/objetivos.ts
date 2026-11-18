@@ -102,27 +102,27 @@ export function revisar(r: InformeMeta): Comprobacion[] {
   const l8 = r.winrate.levels[7];
   const rango = (id: string, v: number, rg: readonly number[], texto: string) => out.push({ id, texto, ok: inRange(v, rg), partes: [{ valor: v, lo: rg[0], hi: rg[1] }] });
   if (l1 && has(l1)) {
-    rango('reinado1.vacio', l1.vacio, O.reinado1.vacio, `Reinado 1 con el Árbol vacío: ${l1.vacio} % (objetivo ${O.reinado1.vacio.join('–')})`);
-    rango('reinado1.lleno', l1.lleno, O.reinado1.lleno, `Reinado 1 con el Árbol lleno: ${l1.lleno} % (objetivo ${O.reinado1.lleno.join('–')})`);
+    rango('reinado1.vacio', l1.vacio, O.reinado1.vacio, `Reinado 1 con el Altar vacío: ${l1.vacio} % (objetivo ${O.reinado1.vacio.join('–')})`);
+    rango('reinado1.lleno', l1.lleno, O.reinado1.lleno, `Reinado 1 con el Altar lleno: ${l1.lleno} % (objetivo ${O.reinado1.lleno.join('–')})`);
   }
   if (l8 && has(l8)) {
-    rango('reinado8.vacio', l8.vacio, O.reinado8.vacio, `Reinado 8 con el Árbol vacío: ${l8.vacio} % (objetivo ${O.reinado8.vacio.join('–')})`);
-    rango('reinado8.lleno', l8.lleno, O.reinado8.lleno, `Reinado 8 con el Árbol lleno: ${l8.lleno} % (objetivo ${O.reinado8.lleno.join('–')})`);
+    rango('reinado8.vacio', l8.vacio, O.reinado8.vacio, `Reinado 8 con el Altar vacío: ${l8.vacio} % (objetivo ${O.reinado8.vacio.join('–')})`);
+    rango('reinado8.lleno', l8.lleno, O.reinado8.lleno, `Reinado 8 con el Altar lleno: ${l8.lleno} % (objetivo ${O.reinado8.lleno.join('–')})`);
   }
   // cada nivel tiene que ser más difícil que el anterior, con el Árbol vacío y con el lleno
   for (let i = 1; i < r.winrate.levels.length; i++) {
     const a = r.winrate.levels[i - 1];
     const b = r.winrate.levels[i];
     if (!has(a) || !has(b)) continue;
-    out.push({ id: `escalera.${b.level}.vacio`, texto: `Reinados ${a.level} → ${b.level} con el Árbol vacío: ${a.vacio} % → ${b.vacio} % (no baja)`, ok: b.vacio < a.vacio, partes: [{ valor: a.vacio - b.vacio, lo: 0.1 }] });
-    out.push({ id: `escalera.${b.level}.lleno`, texto: `Reinados ${a.level} → ${b.level} con el Árbol lleno: ${a.lleno} % → ${b.lleno} % (no baja)`, ok: b.lleno < a.lleno, partes: [{ valor: a.lleno - b.lleno, lo: 0.1 }] });
+    out.push({ id: `escalera.${b.level}.vacio`, texto: `Reinados ${a.level} → ${b.level} con el Altar vacío: ${a.vacio} % → ${b.vacio} % (no baja)`, ok: b.vacio < a.vacio, partes: [{ valor: a.vacio - b.vacio, lo: 0.1 }] });
+    out.push({ id: `escalera.${b.level}.lleno`, texto: `Reinados ${a.level} → ${b.level} con el Altar lleno: ${a.lleno} % → ${b.lleno} % (no baja)`, ok: b.lleno < a.lleno, partes: [{ valor: a.lleno - b.lleno, lo: 0.1 }] });
   }
   for (const d of r.winrate.decks) {
     if (!has(d) || d.deck === 'obra') continue;
-    rango(`baraja.${d.deck}.lleno`, d.lleno, O.barajas.lleno, `${d.name}: ${d.lleno} % con el Árbol lleno (objetivo ${O.barajas.llenoObjetivo}, margen ${O.barajas.lleno.join('–')})`);
-    rango(`baraja.${d.deck}.vacio`, d.vacio, O.barajas.vacio, `${d.name}: ${d.vacio} % con el Árbol vacío (objetivo ${O.barajas.vacioObjetivo})`);
+    rango(`baraja.${d.deck}.lleno`, d.lleno, O.barajas.lleno, `${d.name}: ${d.lleno} % con el Altar lleno (objetivo ${O.barajas.llenoObjetivo}, margen ${O.barajas.lleno.join('–')})`);
+    rango(`baraja.${d.deck}.vacio`, d.vacio, O.barajas.vacio, `${d.name}: ${d.vacio} % con el Altar vacío (objetivo ${O.barajas.vacioObjetivo})`);
     const suma = d.lleno - d.vacio;
-    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: el Árbol lleno solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.barajas.sumaMinima), partes: [{ valor: suma, lo: O.barajas.sumaMinima }] });
+    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: el Altar lleno solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.barajas.sumaMinima), partes: [{ valor: suma, lo: O.barajas.sumaMinima }] });
   }
   const ref = r.giftBaselineN;
   const refPct = r.giftBaseline;
@@ -167,7 +167,7 @@ export function revisar(r: InformeMeta): Comprobacion[] {
   for (const d of r.pacingByDeck) out.push({ id: `ritmo.baraja.${d.deck}`, texto: `${d.name}: percentil 95 de ${d.worstP95} turnos en algún asalto (objetivo ≤ ${O.ritmoBaraja})`, ok: !(d.worstP95 > O.ritmoBaraja), partes: [{ valor: d.worstP95, hi: O.ritmoBaraja }] });
   // el asalto 1 (dos tronos) no mata a más del 8 % de las campañas
   const m1 = r.deaths?.[0];
-  if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con el Árbol vacío (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
+  if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con el Altar vacío (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
   // duración estimada de la campaña con las medianas de turnos de los cinco asaltos
   const min = duracion(r);
   if (min !== null) out.push({ id: 'duracion', texto: `Duración estimada de la campaña: ${min} minutos (objetivo ${O.duracion.minutos.join('–')})`, ok: inRange(min, O.duracion.minutos), partes: [{ valor: min, lo: O.duracion.minutos[0], hi: O.duracion.minutos[1] }] });

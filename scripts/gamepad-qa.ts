@@ -273,10 +273,10 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
   const start = await tools();
   check(start.length >= 3, `la mesa de combate tiene al menos tres reliquias (${start.length})`);
 
-  // un doble par de sietes y dieces: cuatro cartas, así el ×M que pide «4 cartas o más» entra en la cuenta
+  // un doble par de sietes y nueves (V40: ya no hay dieces de número): cuatro cartas, así el ×M que pide «4 cartas o más» entra en la cuenta
   await press(page, BTN.B);
   const ids = await page.evaluate(() =>
-    [['S', '7'], ['D', '7'], ['H', '10'], ['D', '10']].map(([s, r]) =>
+    [['S', '7'], ['D', '7'], ['H', '9'], ['C', '9']].map(([s, r]) =>
       [...document.querySelectorAll<HTMLElement>(`#hand .card.s-${s}`)].find((c) => c.querySelector('.corner b')?.textContent?.trim() === r)?.dataset.id ?? ''),
   );
   let picked = ids.every(Boolean);

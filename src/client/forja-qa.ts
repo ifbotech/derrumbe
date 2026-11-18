@@ -47,7 +47,7 @@ function pieza(id: string): HTMLElement {
     box.appendChild(c);
   } else {
     // el naipe se mide en el documento y se retira: sus piezas se colocan aquí a mano, abiertas por el tajo
-    const card = cardEl(carta('S10') ?? ALL_CARDS[0], { tilt: false });
+    const card = cardEl(carta('S9') ?? ALL_CARDS[0], { tilt: false });
     card.style.setProperty('--w', '200px');
     document.body.appendChild(card);
     const parts = slashPieces(card);

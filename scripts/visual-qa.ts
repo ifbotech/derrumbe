@@ -1907,7 +1907,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
   for (const el of document.querySelectorAll('[data-tip], [aria-label], [title]')) for (const attr of ['data-tip', 'aria-label', 'title']) if (el.hasAttribute(attr)) vieja(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
 
   // ── baraja (V40): la española. Ni los palos franceses ni sus signos, ni la Taberna ni el Árbol, en lo que se lee ──
-  const FRANCESA = /(?<![\p{L}])(?:[Pp]icas?|[Cc]orazon(?:es)?|[Dd]iamantes?|[Tt]r[ée]bol(?:es)?|PICAS|CORAZONES|DIAMANTES|TR[ÉE]BOLES|[Ss]pades?|[Hh]earts?|[Dd]iamonds?|SPADES|HEARTS|DIAMONDS|[Tt]abernas?|TABERNA|[Tt]averns?|TAVERN|Árbol|ÁRBOL|Conspiracy Tree)(?![\p{L}])|[♠♥♦♣♤♡♢♧]/u;
+  const FRANCESA = /(?<![\p{L}])(?:[Pp]icas|[Cc]orazones|[Dd]iamantes|[Tt]r[ée]bol(?:es)?|PICAS|CORAZONES|DIAMANTES|TR[ÉE]BOLES|[Ss]pades|[Hh]earts|[Dd]iamonds|SPADES|HEARTS|DIAMONDS|[Tt]abernas?|TABERNA|[Tt]averns?|TAVERN|Árbol|ÁRBOL|Conspiracy Tree)(?![\p{L}])|[♠♥♦♣♤♡♢♧]/u;
   const francesa = (where: string, text: string | null | undefined, el: Element | null) => {
     if (!text) return;
     const m = text.replace(/<[^>]+>/g, ' ').match(FRANCESA);

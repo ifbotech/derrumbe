@@ -42,8 +42,8 @@ const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
   ['D', 7, { seal: 'eco' }],
   ['H', 7, { tr: 'policromado' }],
   ['C', 9, { tr: 'forjado' }],
-  ['H', 10, { seal: 'jornal' }],
-  ['D', 10, { tr: 'templado' }],
+  ['H', 9, { seal: 'jornal' }],
+  ['D', 8, { tr: 'templado' }],
   ['S', 1, { seal: 'sindical' }],
   ['C', 4, { tr: 'agrietado' }],
 ];
@@ -234,7 +234,7 @@ function derrota(): Run {
   run.stats.turns = 41;
   run.stats.gold = 103;
   run.stats.contracts = 2;
-  run.death = { kind: 'sirena', title: 'Contraataque de ESPADAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Una carta de Bastos más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+  run.death = { kind: 'sirena', title: 'Contraataque de ESPADAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaban 9 de Vida. Faltaron 2 de Escudo (Bastos); un Golpe exacto también lo paraba.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
   return run;
 }
 
@@ -571,7 +571,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
       sample(1, false, 4, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
         kind: 'sirena',
         title: 'Contraataque de BASTOS: ⚔ 18 contra Escudo 4 → entran 14',
-        detail: 'Te quedaba 11 de Vida. Una carta de Bastos más o un Golpe exacto lo evitaban.',
+        detail: 'Te quedaban 11 de Vida. Faltaron 3 de Escudo (Bastos); un Golpe exacto también lo paraba.',
         before: 11,
         threat: 18,
         blocked: 4,

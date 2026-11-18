@@ -329,6 +329,7 @@ export function showSettings(onChange?: () => void): void {
       <div class="set set-progreso"><div><b>${L('ui.set.progreso')}</b><span>${L('ui.set.progreso.texto')}</span></div>
         <span class="server-edit"><button id="set-export">${L('ui.set.exportar')}</button><button id="set-import">${L('ui.set.importar')}</button><input type="file" id="set-file" accept="application/json,.json" hidden /></span></div>
       <div class="set"><div><b>${L('ui.set.comunidad')}</b><span>${L('ui.set.comunidad.texto')}</span></div><button id="set-community">${L('ui.set.abrir')}</button></div>
+      <div class="set-list" id="set-toggles-b"></div>
       </div>
       <div class="set-col set-col-b">
       <div class="set-list" id="set-vol"></div><div class="set-list" id="set-toggles"></div>
@@ -385,14 +386,18 @@ export function showSettings(onChange?: () => void): void {
       [tr('auto.taberna.nombre'), tr('auto.taberna.desc'), yes(settings.autoTaberna), () => ((settings.autoTaberna = !settings.autoTaberna), applySettings()), settings.autoTaberna, 'set-auto-taberna'],
     ];
     const list = $('#set-toggles', el);
-    list.innerHTML = rows.map(([name, desc, value, , on, cls], i) => `<div class="set ${cls}"><div><b>${name}</b><span>${desc}</span></div><button data-set="${i}" class="${on ? 'on' : ''}">${value}</button></div>`).join('');
-    $$('[data-set]', list).forEach(
+    // V40 · la fila del Bufón va en la otra columna: con ella, la lista de interruptores ya no cabía entera en 1366×768
+    const APARTE = 'set-bufon';
+    const fila = ([name, desc, value, , on, cls]: (typeof rows)[number], i: number) => `<div class="set ${cls}"><div><b>${name}</b><span>${desc}</span></div><button data-set="${i}" class="${on ? 'on' : ''}">${value}</button></div>`;
+    list.innerHTML = rows.map((r, i) => (r[5] === APARTE ? '' : fila(r, i))).join('');
+    $('#set-toggles-b', el).innerHTML = rows.map((r, i) => (r[5] === APARTE ? fila(r, i) : '')).join('');
+    $$('[data-set]', el).forEach(
       (b) =>
         (b.onclick = () => {
           const i = Number(b.dataset.set);
           rows[i][3]();
           draw();
-          $<HTMLButtonElement>(`[data-set="${i}"]`, list)?.focus();
+          $<HTMLButtonElement>(`[data-set="${i}"]`, el)?.focus();
           onChange?.();
         }),
     );

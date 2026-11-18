@@ -32,7 +32,7 @@
 .camp-ups .row { flex: none; }
 
 /* ───────────── CINTURÓN EN LAS PANTALLAS DE CAMPAÑA ───────────── */
-.run-belt { display: flex; align-items: center; gap: clamp(8px, 1.2vw, 16px); flex-wrap: wrap; border-top: 3px dashed var(--ink); padding-top: clamp(6px, 1.2vh, 12px); margin-top: clamp(6px, 1.2vh, 12px); }
+.run-belt { display: flex; align-items: center; gap: clamp(8px, 0.8vw, 16px); flex-wrap: wrap; border-top: 3px dashed var(--ink); padding-top: clamp(6px, 1.2vh, 12px); margin-top: clamp(6px, 1.2vh, 12px); }
 .run-belt .belt-slot { width: clamp(36px, 6vh, 62px); }
 .run-belt > button { margin-left: auto; flex: none; }
 

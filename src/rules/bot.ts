@@ -210,7 +210,6 @@ export function toolValue(id: string, run: Run): number {
   if (suit) v += share(suit) < 0.08 ? -20 : (share(suit) - 0.25) * 10;
   if (id === 'mosaico' && SUITS.filter((s) => share(s) >= 0.08).length < 3) v -= 20;
   if (id === 'hucha') v += run.stage <= 3 ? 1.5 : -1;
-  if (id === 'cincel') v -= 1;
   // V35 · rasgos: vale más la Reliquia que completa un bono de 2, 4 o 6, y algo más la que se acerca a uno
   const mios = rasgosDe(run.tools)[def.rasgo];
   v += [2, 4, 6].includes(mios + 1) ? 3.5 : mios >= 1 ? 1.2 : 0;

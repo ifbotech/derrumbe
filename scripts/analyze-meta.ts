@@ -280,7 +280,7 @@ function print(r: ReturnType<typeof report>): void {
   for (const l of r.winrate.levels) if (l.n) console.log(`  ${l.level} ${pad(l.name, 18)} vacío ${num(l.vacio)} %   lleno ${num(l.lleno)} %   (${l.n} por celda)`);
   if (r.winrate.decks.some((d) => d.n)) console.log('\nPor baraja inicial (Reinado 1)');
   for (const d of r.winrate.decks) if (d.n) console.log(`  ${pad(d.name, 24)} vacío ${num(d.vacio)} %   lleno ${num(d.lleno)} %   (${d.n} por celda)`);
-  if (r.winrate.levels[0]?.n) console.log(`\nDónde se pierde (Árbol vacío, % de campañas por asalto): ${r.deaths.join(' · ')}`);
+  if (r.winrate.levels[0]?.n) console.log(`\nDónde se pierde (Altar vacío, % de campañas por asalto): ${r.deaths.join(' · ')}`);
   const gifts = !quick || mode === 'regalos';
   const shown = <T extends { givenN: number }>(rows: T[]) => (mode === 'regalos' ? rows.filter((x) => x.givenN) : rows);
   if (gifts) console.log(`\nReliquias (de regalo al empezar; sin regalo: ${r.giftBaseline} % en ${r.giftBaselineN} campañas; por debajo de ±${r.giftNoise} puntos es ruido)`);
