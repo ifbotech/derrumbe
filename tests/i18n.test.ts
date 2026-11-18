@@ -138,7 +138,8 @@ describe('glosario obligatorio (SPECS/V10.md, 1.3)', () => {
     expect(en['palabra.resonancia.desc']).toContain('Damage × Mult');
     expect(en['guia.cuenta.linea']).toContain('Damage × Mult');
     expect(en['reliquia.pasarela.desc']).toContain('Up the Sleeve');
-    expect(en['guia.manga.titulo']).toBe('Up the Sleeve');
+    // V37 · la partida guiada ya no tiene paso de La Manga: el nombre se comprueba en la ayuda de su hueco
+    expect(en['ui.mesa.manga.hueco.tip']).toContain('<b>Up the Sleeve</b>');
     expect(en['monarca.inestable.desc']).toContain('Exact Hit');
   });
 

@@ -166,7 +166,9 @@ function multiDeHtml(p: Preview): string {
   // de una carta basta la carta («7♥ ×2»: su acabado o su sello ya los dice el recibo)
   const nombre = (w: string) => esc(w.split(' · ')[0].replace(/^(.{22}).+$/, '$1…'));
   const piezas = res.map((l) => `<span class="mpz mpz-${l.kind}"><span class="mq">${nombre(l.who)}</span> <b>${l.kind === 'x' && l.note === L('ui.cuenta.base') ? l.amount.replace('×', '') : l.amount}</b></span>`);
-  return `<span class="mde" aria-label="${esc(L('ui.cuenta.multi.de'))}"><i class="mde-t">${L('ui.cuenta.multi.de')}</i>${piezas.join('<i class="mde-s" aria-hidden="true">·</i>')}</span>`;
+  // V37 · con dos piezas o más, la línea termina en el Multi que resulta («= ×6»), el mismo de la cuenta
+  const total = res.length > 1 ? `<i class="mde-s mde-igual" aria-hidden="true">=</i><span class="mpz mpz-tot"><b>×${numL(p.r.res)}</b></span>` : '';
+  return `<span class="mde" aria-label="${esc(L('ui.cuenta.multi.de'))}"><i class="mde-t">${L('ui.cuenta.multi.de')}</i>${piezas.join('<i class="mde-s" aria-hidden="true">·</i>')}${total}</span>`;
 }
 
 /** El marcador mientras se resuelve un golpe: Daño × Multi = Golpe, con la misma tipografía de cifras. */
