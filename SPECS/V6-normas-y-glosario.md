@@ -80,7 +80,7 @@ Rueda de palos (antes «ciclo de materiales»): **♠ corta ♦ · ♦ compra �
 | En guardia (`apuntalado`) | **se retira** |
 | Motín: desarma a ese guardia y no hay Contraataque | **Motín**: ese trono queda Aturdido y este turno no hay Contraataque |
 | Multi con decimales («×1,5», «+0,15») | **Multi entero** siempre («×2», «+1») |
-| Tintas: hierro, oro bruñido, carmesí, verdín | **Baraja de cuatro colores** por defecto: ♠ `#161514`, ♥ `#C8232C`, ♦ `#1B5E9E` (azul), ♣ `#1B6B46`; la clásica (ocre) y las dos tintas, en Ajustes |
+| Tintas: hierro, oro bruñido, carmesí, verdín | **Baraja de cuatro colores** por defecto: ♠ `#161514`, ♥ `#C8232C`, ♦ `#1B5E9E` (azul), ♣ `#005442` (desde la 38.0; antes `#1B6B46`); la clásica (ocre) y las dos tintas, en Ajustes |
 | ocho asaltos | **cinco asaltos**; el último, **Salón del Trono** con el **Rey Tirano** (o **Reina Tirana**) |
 
 **Las cinco palabras clave** desde la 11.0: **Daño, Multi, Golpe exacto, Expuesto, Aturdido**.

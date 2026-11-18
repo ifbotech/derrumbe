@@ -15,7 +15,7 @@ import type { PlayerView } from '../rules/engine';
 import { BOSSES, bossIdentity, type CurseMark } from '../rules/run';
 import type { TutorialFocus } from '../rules/tutorial';
 import { MonarchMood, monarchSvg } from './art';
-import { fxN, monBadge, monD, monDec, monN } from './lengua';
+import { L, fxN, monBadge, monD, monDec, monN } from './lengua';
 
 // ───────────────────────── iconos de la maldición ─────────────────────────
 // Pequeños, de trazo grueso y en currentColor: van en la placa del decreto y en las marcas de la mesa.
@@ -94,7 +94,8 @@ function markTable(mark: CurseMark, v: PlayerView | null): void {
   // el Inquisidor: ningún trono queda Aturdido; cada trono en pie lo dice con «Aturdido» tachado
   if (mark === 'guardias') for (const t of document.querySelectorAll('.tower:not([hidden]):not(.fallen) .tower-fx')) tag(t, `<s>${fxN('sobrecarga')}</s>`, 'sin-fx');
   if (mark === 'escudo') tag(document.getElementById('wall-num')?.closest('.stat') ?? null, 'Tope');
-  if (mark === 'asedio') tag(document.querySelector('.tower.activa .threat'), `+${MON.inestable.furia}`, 'mini');
+  // V38 · la marca del Relojero dice la palabra («+1 Furia»); en el móvil, donde no cabe, queda «+1» (guia.css)
+  if (mark === 'asedio') tag(document.querySelector('.tower.activa .threat'), `<span class="ct-largo">${L('ui.mesa.furia.mas', { n: MON.inestable.furia })}</span><span class="ct-corto">+${MON.inestable.furia}</span>`, 'mini furia-mas');
   if (mark === 'mano') {
     const hand = document.getElementById('hand');
     if (hand && !hand.querySelector(':scope > .curse-ghost')) hand.insertAdjacentHTML('beforeend', `<div class="curse-ghost" aria-hidden="true">${curseIcon('mano')}</div>`);

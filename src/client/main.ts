@@ -19,6 +19,7 @@ import './taberna.css';
 import './movil.css';
 import './legible.css';
 import './duelo.css'; // V35 · un enemigo grande y la fila
+import './deck.css'; // V38 · legibilidad en el Steam Deck y el portátil (va la última)
 import './tinta';
 import { sfx, startMusic } from './audio';
 import { canRestart, isRunHost, restartCampaign, retireOldSave } from './campaign';

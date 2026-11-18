@@ -40,7 +40,7 @@ const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
 ```
 
-Mide el color real de la captura con una muestra de píxeles, no el del CSS: la trama y el grano bajan el contraste efectivo. Desde la 11.0 la baraja de serie es de cuatro colores: Picas `#161514`, Corazones `#C8232C`, Diamantes `#1B5E9E` y Tréboles `#1B6B46` sobre marfil `#EFE6D5` (la Clásica y Dos tintas, en Ajustes). Las cartas numeradas son de cara limpia (≥ 75 % de marfil); las tramas siguen en tronos, figuras y poderes. Casos que ya fallaron una vez (en la 5.0, con las tintas de entonces): ♥ sobre crema, botón negro sobre gris («Copiar» la crónica), botón naranja sobre fondo naranja («Pasar»), las barras de Vida sobre fondo oscuro, índices de la mano sobre cartas de corazones.
+Mide el color real de la captura con una muestra de píxeles, no el del CSS: la trama y el grano bajan el contraste efectivo. Desde la 11.0 la baraja de serie es de cuatro colores: Picas `#161514`, Corazones `#C8232C`, Diamantes `#1B5E9E` y Tréboles `#005442` (desde la 38.0; 7,2:1) sobre marfil `#EFE6D5` (la Clásica y Dos tintas, en Ajustes). Las cartas numeradas son de cara limpia (≥ 75 % de marfil); las tramas siguen en tronos, figuras y poderes. Casos que ya fallaron una vez (en la 5.0, con las tintas de entonces): ♥ sobre crema, botón negro sobre gris («Copiar» la crónica), botón naranja sobre fondo naranja («Pasar»), las barras de Vida sobre fondo oscuro, índices de la mano sobre cartas de corazones.
 
 ## 4 · Dianas y aire
 

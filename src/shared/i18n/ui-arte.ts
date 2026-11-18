@@ -321,6 +321,8 @@ export const UI_ARTE = {
   'ui.mesa.agotado': ['Mazo agotado ×{n}', 'Deck ran out ×{n}'],
   'ui.mesa.furia': ["Furia", "Fury"],
   'ui.mesa.furia.rey': ["Furia del Rey", "King's Fury"],
+  // V38 · la marca del Relojero en el ⚔ del enemigo: cuánta Furia trae su decreto, con la palabra
+  'ui.mesa.furia.mas': ['+{n} Furia', '+{n} Fury'],
   'ui.mesa.furia.tip': ["<b>Furia +{n}</b>Ataque de más de todos los enemigos de este asalto. Sube {m} cada vez que se agota el Mazo y, contra el monarca, {r} cada turno.", "<b>Fury +{n}</b>Extra Attack for every enemy in this assault. It rises {m} each time the Deck runs out and, against the monarch, {r} every turn."],
   'ui.mesa.fila': ["Detrás esperan", "Waiting behind"],
   'ui.mesa.frente': ["Enemigo", "Enemy"],
