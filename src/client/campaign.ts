@@ -2,7 +2,8 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { ESQUIRLAS_POR_CORONA, abonoCampanaVieja, abonoFrancesa, campanaFrancesa } from '../rules/migracion';
+import { ESQUIRLAS_POR_CORONA, RUN_40, abonoCampanaVieja, abonoFrancesa, campanaFrancesa, mazoDe } from '../rules/migracion';
+import { MAZO_INICIAL } from '../rules/mazos';
 import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
 import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
@@ -25,7 +26,8 @@ const RUN_KEY = 'derrumbe:run';
 const DECK_KEY = 'derrumbe:deck';
 
 /** Con qué se montará la próxima campaña. */
-export const prefs = { ascension: 0, deck: platform.load(DECK_KEY) ?? 'obra', seed: '' };
+// V40 · un id de baraja viejo guardado en las preferencias cae en su Mazo
+export const prefs: { ascension: number; deck: string; seed: string } = { ascension: 0, deck: mazoDe(platform.load(DECK_KEY) ?? MAZO_INICIAL), seed: '' };
 export function pickDeck(id: string): void {
   prefs.deck = id;
   platform.save(DECK_KEY, id);
@@ -56,7 +58,7 @@ export function retireOldSave(): void {
   const old = loadJson<{ run?: { stage?: number; phase?: string; v?: number } }>(RUN_KEY);
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
-  if (campanaFrancesa(old.run, RUN_VERSION) && (old.run.v ?? 0) > 3) {
+  if (campanaFrancesa(old.run, RUN_40) && (old.run.v ?? 0) > 3) {
     const abono = abonoFrancesa(old.run);
     if (abono > 0) {
       meta.renown += abono;
@@ -73,7 +75,7 @@ export function retireOldSave(): void {
   setTimeout(() => toast(L('ui.camp.vieja', { n: gain })), 600);
 }
 export const isRunHost = () => !!S.campaign && (!S.campaign.online || S.lobby?.host === S.session?.playerId);
-export const runOpts = (): RunOpts => ({ up: meta.up, ascension: Math.min(prefs.ascension, meta.ascMax), deck: deckUnlocked(meta, prefs.deck) ? prefs.deck : 'obra', pool: unlockedPool(meta), seedText: prefs.seed.trim() || undefined });
+export const runOpts = (): RunOpts => ({ up: meta.up, ascension: Math.min(prefs.ascension, meta.ascMax), deck: deckUnlocked(meta, prefs.deck) ? prefs.deck : MAZO_INICIAL, pool: unlockedPool(meta), seedText: prefs.seed.trim() || undefined });
 
 /** Empieza una campaña local. Si había otra a medias, se abandona y cobra el renombre de lo ya superado. */
 export function newCampaign(opts: RunOpts): void {
@@ -211,7 +213,7 @@ export function reveal(cards: Card[], tools: string[], title: string): void {
 export function enterStage(fresh: boolean): void {
   const c = S.campaign!;
   if (fresh || !c.state) {
-    c.state = startStage(c.run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+    c.state = startStage(c.run, [{ id: RUN_PLAYER, name: 'Tú' }]);
     c.undoRun = null;
   }
   lastRouted = structuredClone(c.run);

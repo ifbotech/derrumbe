@@ -66,7 +66,7 @@ const POWER = (s: Suit): [string, string] =>
 
 export function buildTable(): void {
   const c = S.campaign;
-  setDeckBack(c?.run.deckId ?? 'obra');
+  setDeckBack(c?.run.deckId ?? 'escoba');
   setScene('battle', c ? Math.min(c.run.stage, LAST_STAGE) : 3, !!c?.run.boss);
   cardEls.clear();
   S.selected.length = 0;
@@ -257,11 +257,11 @@ function onTower(s: Suit, ping = false): void {
   // quien no puede jugar ahora (o pulsa con Alt) marca la torre con tiza para su cuadrilla
   if (ping || (!canAct() && v.players.length > 1)) return sendPing(`tower:${s}`);
   if (!canAct() || v.towers[s].floors.length === 0) return;
-  // V35 · solo se golpea al enemigo que tienes delante; los demás esperan en la fila
+  // V35 · solo se golpea al enemigo que tenés delante; los demás esperan en la fila
   if (activo(v)?.suit !== s) return toast(L('ui.mesa.toast.frente'));
   const cards = selCards();
   if (isJoker(cards)) return act({ t: 'action', action: { type: 'joker', card: cards[0].id, target: s } });
-  if (!classify(cards)) return sfx.deny();
+  if (!classify(cards, S.shown?.config)) return sfx.deny();
   act({ t: 'action', action: { type: 'attack', cards: cards.map((c) => c.id), target: s } });
 }
 
@@ -376,7 +376,7 @@ function renderPlayers(): void {
     .map((p) => {
       const off = S.lobby?.players.find((l) => l.id === p.id)?.connected === false;
       const cls = [p.id === v.turnPlayer && v.phase === 'playing' ? 'turn' : '', p.id === v.you ? 'me' : '', off ? 'off' : ''].join(' ');
-      return `<div class="chip ${cls}" data-p="${p.id}"><span>${p.id === RUN_PLAYER && p.name === 'TÚ' ? L('ui.mesa.tu') : p.name}${off ? L('ui.mesa.bot') : ''}</span><b>${p.handCount}${p.reserveCount ? `+${p.reserveCount}` : ''}</b></div>`;
+      return `<div class="chip ${cls}" data-p="${p.id}"><span>${p.id === RUN_PLAYER && p.name === 'Tú' ? L('ui.mesa.tu') : p.name}${off ? L('ui.mesa.bot') : ''}</span><b>${p.handCount}${p.reserveCount ? `+${p.reserveCount}` : ''}</b></div>`;
     })
     .join('');
 }
@@ -661,7 +661,7 @@ function renderScore(): void {
   const can = canAct();
   const cards = selCards();
   const joker = isJoker(cards);
-  const formation = classify(cards);
+  const formation = classify(cards, S.shown?.config);
   for (const s of SUITS) towerEls[s].classList.remove('aimed');
   let tag = '';
   let body = '';
@@ -751,7 +751,7 @@ export function renderInteractive(): void {
   if (can && S.campaign) noteTurn(v); // juice-ux: la duda del turno empieza a contar
   const cards = selCards();
   const joker = isJoker(cards);
-  const formation = classify(cards);
+  const formation = classify(cards, S.shown?.config);
   $$('.preview').forEach((p) => p.remove());
   for (const s of SUITS) towerEls[s].classList.remove('targetable');
   const mejor = mejorActiva();
@@ -915,7 +915,7 @@ export function refreshSpeed(): void {
 }
 
 /**
- * V35 · Los rasgos de build de tu tira de Reliquias: una píldora por rasgo que llevas, con cuántas tienes y el
+ * V35 · Los rasgos de build de tu tira de Reliquias: una píldora por rasgo que llevás, con cuántas tenés y el
  * siguiente umbral (2, 4 o 6), encendida si ya da bono. Con el Tahúr activo, el dado de este turno.
  */
 let rasgosAntes = '';
@@ -1004,7 +1004,7 @@ export function onTableKey(key: string, target: HTMLElement | null): boolean {
       return true;
     }
     // V35 · el golpe va siempre al enemigo activo
-    const best = isJoker(cards) || classify(cards) ? standingTargets()[0] : null;
+    const best = isJoker(cards) || classify(cards, S.shown?.config) ? standingTargets()[0] : null;
     if (best) onTower(best);
     else if (cards.length) sfx.deny();
     return true;

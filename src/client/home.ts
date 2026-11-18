@@ -1,6 +1,7 @@
 // Portada y preparación de campaña.
 import { ACHIEVEMENTS, deckUnlocked, unlockedPool } from '../rules/achievements';
 import { ASCENSIONS, BOSSES, DECKS, LAST_STAGE, STAGES, newRun } from '../rules/run';
+import { MAZO_INICIAL } from '../rules/mazos';
 import { hero, waxSeal } from './art';
 import { backEl } from './card';
 import { masteryBadge } from './engraving';
@@ -10,7 +11,7 @@ import { forgetSaved, newCampaign, pickDeck, prefs, resumeCampaign, runOpts, sav
 import { glyphSvg } from './glyphs';
 import { cifra, cifraEl } from './cifra';
 import { meta, openGuild } from './guild';
-import { L, Ln, acabN, asaltoN, barD, barN, getLang, logN, reinD, reinN, selloN, tiranoN } from './lengua';
+import { L, Ln, acabN, asaltoN, barD, barL, barN, getLang, logN, reinD, reinN, selloN, tiranoN } from './lengua';
 import { brandFor } from '../shared/brand';
 import { hasServer, sendMsg, updateConn } from './net';
 import { setScreen } from './router';
@@ -123,11 +124,11 @@ export function renderCamp(): void {
   S.campaign = null;
   const saved = savedCampaign();
   prefs.ascension = Math.min(prefs.ascension, meta.ascMax);
-  if (!deckUnlocked(meta, prefs.deck)) pickDeck('obra');
+  if (!deckUnlocked(meta, prefs.deck)) pickDeck(MAZO_INICIAL);
   const decks = DECKS.map((d) => {
     const open = deckUnlocked(meta, d.id);
     const need = d.unlock && ACHIEVEMENTS.some((a) => a.id === d.unlock) ? logN(d.unlock) : '';
-    return `<button class="deck-opt ${d.id === prefs.deck ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><span class="deck-back" data-back="${d.id}"></span><span class="deck-txt"><b>${barN(d.id)}</b><span>${open ? barD(d.id) : L('ui.camp.bloqueada', { logro: need })}</span></span>${masteryBadge(meta.mastery.decks[d.id] ?? 0)}</button>`;
+    return `<button class="deck-opt ${d.id === prefs.deck ? 'on' : ''}" data-deck="${d.id}" ${open ? '' : 'disabled'}><span class="deck-back" data-back="${d.id}"></span><span class="deck-txt"><b>${barN(d.id)}</b><i class="deck-lema">${barL(d.id)}</i><span>${open ? barD(d.id) : L('ui.camp.bloqueada', { logro: need })}</span></span>${masteryBadge(meta.mastery.decks[d.id] ?? 0)}</button>`;
   }).join('');
   // Reinados: cada uno suma un giro a todos los anteriores
   const level = prefs.ascension;

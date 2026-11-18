@@ -90,7 +90,7 @@ function clean(): void {
 
 /** Una campaña a medio camino: Reliquias llenas, oro y unas cuantas cartas con sello o acabado. */
 function baseRun(stage = 1): Run {
-  const run = newRun({ seedText: 'QA-CORONA', deck: 'obra', ascension: 2, up: { tienda: 1, rutas: 1 } }, 7);
+  const run = newRun({ seedText: 'QA-CORONA', deck: 'escoba', ascension: 2, up: { tienda: 1, rutas: 1 } }, 7);
   runAction(run, { t: 'begin' });
   run.stage = stage;
   run.tools = TOOLKIT.map((id) => ({ id, n: id === 'calibre' ? 4 : 0 }));
@@ -123,7 +123,7 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   if (depth) run.endless = true;
   if (boss) run.bosses[at] = boss;
   runAction(run, { t: 'route', i: 0 });
-  let state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  let state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   // la mano que se quiere ver: trío de sietes, cartas marcadas, un as, una especial y el comodín
   const p = state.players[0];
   const all = [...p.hand, ...state.deck];
@@ -138,7 +138,7 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   state.towers[a].damage = Math.floor(hp[state.towers[a].floors[0]] * 0.35);
   // un diamante salpicó a la siguiente Casa
   if (b) state.towers[b].damage = Math.floor(hp[state.towers[b].floors[0]] * 0.12);
-  // los dos estados de la V11: Expuesto y Aturdido, en el enemigo que tienes delante
+  // los dos estados de la V11: Expuesto y Aturdido, en el enemigo que tenés delante
   state.towers[a].fx = { fractura: true, sobrecarga: true };
   state.wall = 3;
   state.integrity = 13;
@@ -190,7 +190,7 @@ function huesos(dos: boolean): void {
   const run = baseRun(2);
   if (dos) run.up = { ...run.up, hueso_tallado: 1, cara_rey: 1, segundo_hueso: 1 };
   runAction(run, { t: 'route', i: 0 });
-  const state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  const state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   run.caida = { oro: 12, esquirlas: 140, gotas: 1 };
   for (const s of SUITS) state.towers[s].floors = [];
   state.phase = 'won';
@@ -204,7 +204,7 @@ function huesos(dos: boolean): void {
 
 function winStage(run: Run): void {
   runAction(run, { t: 'route', i: 0 });
-  const state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  const state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   for (const s of SUITS) state.towers[s].floors = [];
   state.phase = 'won';
   state.turnCount = 9;
@@ -411,7 +411,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
   },
   // V29 · la primera pantalla de una campaña nueva: el Sobre con sus tres cartas y el Don de la Conjura
   don: () => {
-    show(newRun({ seedText: 'QA-CORONA', deck: 'obra', ascension: 0 }, 7));
+    show(newRun({ seedText: 'QA-CORONA', deck: 'escoba', ascension: 0 }, 7));
     setScreen('run');
   },
   hallazgo: () => {
@@ -468,7 +468,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     meta.seen.tools = TOOLS.slice(0, 30).map((t) => t.id);
     meta.seen.specials = ['barreno', 'martillo', 'palanca', 'grua', 'mordaza', 'bola', 'nitro', 'gemelo'];
     meta.seen.bosses = ['doble', 'blindaje', 'furia'];
-    meta.mastery = { tools: { piqueta: 2, gemelos: 5, dinamita: 8, calibre: 1, resonador: 4 }, decks: { obra: 3, acero: 7 } };
+    meta.mastery = { tools: { piqueta: 2, gemelos: 5, dinamita: 8, calibre: 1, resonador: 4 }, decks: { escoba: 3, truco: 7 } };
     openGuild('col');
   },
   acta: () => {
@@ -546,7 +546,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     clean();
     archive.length = 0;
     // V11: las actas nuevas llevan `de` (5 asaltos); la última es de la 10.0, sin `de`: «asalto 7 de 8», sin sala
-    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'obra', level = 1, death: Autopsy | null = null, de: number | undefined = 5) => ({
+    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'escoba', level = 1, death: Autopsy | null = null, de: number | undefined = 5) => ({
       key: `qa:${i}`,
       when: new Date(Date.UTC(2026, 10, 12 - i, 20, 0)).toISOString(),
       won,
@@ -567,8 +567,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
       death,
     });
     archive.push(
-      sample(0, true, 5, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
-      sample(1, false, 4, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
+      sample(0, true, 5, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'escoba', 2),
+      sample(1, false, 4, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'chinchon', 1, {
         kind: 'sirena',
         title: 'Contraataque de BASTOS: ⚔ 18 contra Escudo 4 → entran 14',
         detail: 'Te quedaban 11 de Vida. Faltaron 3 de Escudo (Bastos); un Golpe exacto también lo paraba.',
@@ -578,7 +578,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
         taken: 14,
         tower: 'C',
       }),
-      sample(2, false, 5, 'La Reina Helada', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3, {
+      sample(2, false, 5, 'La Reina Helada', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'truco', 3, {
         kind: 'colapso',
         title: 'Mazo agotado: te quitó 4 de Vida y el Escudo no lo frena',
         detail: 'Te quedaba 3 de Vida. Cada vez que se agota el Mazo quita 1 más: cuenta el Mazo antes de robar.',
@@ -587,8 +587,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
         blocked: 0,
         taken: 4,
       }),
-      sample(3, true, 5, 'El Relojero', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
-      sample(4, false, 7, 'El Usurero', ['hucha', 'cinta'], '4HH2PA', 'obra', 1, null, undefined),
+      sample(3, true, 5, 'El Relojero', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'mentiroso', 1),
+      sample(4, false, 7, 'El Usurero', ['hucha', 'cinta'], '4HH2PA', 'chancho', 1, null, undefined),
     );
     openGuild('arc');
   },
@@ -606,7 +606,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     if (!state) return;
     state.integrity = 2;
     state.wall = 0;
-    // V35 · un enemigo Aturdido no contraataca: aquí el que tienes delante está despierto
+    // V35 · un enemigo Aturdido no contraataca: aquí el que tenés delante está despierto
     for (const s of SUITS) delete state.towers[s].fx.sobrecarga;
     const keep = [...S.selected];
     S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });

@@ -182,7 +182,7 @@ export function rubble(s: Suit, cls = ''): string {
 
 /**
  * Tu escondite de conjurado: el Escudo a la izquierda, tu estandarte de conjura en medio y la Vida
- * a la derecha. Se rasga a medida que pierdes Vida (data-level 0-3).
+ * a la derecha. Se rasga a medida que perdés Vida (data-level 0-3).
  */
 export function bunkerArt(): string {
   return `<svg class="art lino bunker-art" viewBox="0 0 260 66" data-level="0" aria-hidden="true"><g filter="url(#rough)">

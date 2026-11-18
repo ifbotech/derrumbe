@@ -399,7 +399,7 @@ export async function copyLamina(d: Lamina, text: string): Promise<'png' | 'text
 let linkNote = '';
 let watcher: MutationObserver | null = null;
 
-/** Pone el aviso «vienes de una crónica» arriba de la preparación de campaña (y lo repone si la pantalla se repinta). */
+/** Pone el aviso «venís de una crónica» arriba de la preparación de campaña (y lo repone si la pantalla se repinta). */
 function placeNote(): void {
   const host = app.querySelector('.camp .camp-run .scroll');
   if (!host) {

@@ -252,21 +252,21 @@ interface BackDef {
 /** Emblema de la conjura: una daga que atraviesa una corona. */
 const CONJURA = `<path d="M92,204 L88,164 L105,182 L125,152 L145,182 L162,164 L158,204 Z" fill="${PAPER}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><path d="M92,192 H158" stroke="${INK}" stroke-width="3"/>
   <g transform="translate(125 178) rotate(35)"><path d="M-6,-64 L0,-80 L6,-64 V24 H-6 Z" fill="${PAPER}" stroke="${INK}" stroke-width="3"/><path d="M-20,24 H20 V32 H-20 Z" fill="${INK}" stroke="${PAPER}" stroke-width="1.5"/><rect x="-4" y="32" width="8" height="22" fill="${INK}"/><circle cy="60" r="7" fill="${PAPER}" stroke="${INK}" stroke-width="3"/></g>`;
+// V40 · un dorso por Mazo (de momento, los de las barajas viejas; el arte de cada Mazo llega en la fase 3)
 const BACKS: Record<string, BackDef> = {
-  obra: { field: INK, dark: true, diamond: '#ae2d24', emblem: CONJURA },
-  acero: { field: 'url(#pat-S)', dark: true, diamond: INK, emblem: `<g transform="translate(125 158) scale(2.5)" fill="${PAPER}">${PIP.S}</g><g transform="translate(125 206) scale(1.7)" fill="${PAPER}">${PIP.C}</g>` },
-  prestamista: { field: '#f0b415', dark: false, diamond: INK, emblem: `<path d="M110,142 C100,132 104,124 112,128 L125,136 L138,128 C146,124 150,132 140,142 C168,154 172,214 125,216 C78,214 82,154 110,142 Z" fill="#f0b415" stroke="${PAPER}" stroke-width="3.5" stroke-linejoin="round"/><path d="M108,146 H142" stroke="${INK}" stroke-width="5"/><circle cx="125" cy="184" r="14" fill="none" stroke="${INK}" stroke-width="4"/><path d="M125,176 V192" stroke="${INK}" stroke-width="4"/>` },
-  ases: { field: '#ae2d24', dark: true, diamond: PAPER, emblem: `<path d="M100,134 L97,112 L110,124 L125,104 L140,124 L153,112 L150,134 Z" fill="#ae2d24" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><text x="125" y="212" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#ae2d24">${PIP.S}</g>` },
-  corta: { field: PAPER, dark: false, diamond: '#f0b415', emblem: `<g stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"><path d="M96,132 H124 L118,152 L128,170 L114,218 H96 Z" fill="${PAPER}" transform="rotate(-8 110 175)"/><path d="M130,132 H154 V218 H122 L136,170 L126,152 Z" fill="${PAPER}" transform="rotate(8 140 175)"/></g><g transform="translate(108 150) scale(0.9)" fill="#ae2d24">${PIP.H}</g>` },
-  caos: { field: '#2a6359', dark: false, diamond: PAPER, emblem: `<path d="M125,175 C125,168 135,168 135,176 C135,188 115,188 115,174 C115,154 147,154 147,176 C147,200 103,200 103,174 C103,142 159,142 159,176 C159,212 91,212 91,174" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>` },
+  escoba: { field: INK, dark: true, diamond: '#ae2d24', emblem: CONJURA },
+  truco: { field: 'url(#pat-S)', dark: true, diamond: INK, emblem: `<g transform="translate(125 158) scale(2.5)" fill="${PAPER}">${PIP.S}</g><g transform="translate(125 206) scale(1.7)" fill="${PAPER}">${PIP.C}</g>` },
+  chinchon: { field: '#f0b415', dark: false, diamond: INK, emblem: `<path d="M110,142 C100,132 104,124 112,128 L125,136 L138,128 C146,124 150,132 140,142 C168,154 172,214 125,216 C78,214 82,154 110,142 Z" fill="#f0b415" stroke="${PAPER}" stroke-width="3.5" stroke-linejoin="round"/><path d="M108,146 H142" stroke="${INK}" stroke-width="5"/><circle cx="125" cy="184" r="14" fill="none" stroke="${INK}" stroke-width="4"/><path d="M125,176 V192" stroke="${INK}" stroke-width="4"/>` },
+  mentiroso: { field: '#ae2d24', dark: true, diamond: PAPER, emblem: `<path d="M100,134 L97,112 L110,124 L125,104 L140,124 L153,112 L150,134 Z" fill="#ae2d24" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><text x="125" y="212" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#ae2d24">${PIP.S}</g>` },
+  chancho: { field: PAPER, dark: false, diamond: '#f0b415', emblem: `<g stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"><path d="M96,132 H124 L118,152 L128,170 L114,218 H96 Z" fill="${PAPER}" transform="rotate(-8 110 175)"/><path d="M130,132 H154 V218 H122 L136,170 L126,152 Z" fill="${PAPER}" transform="rotate(8 140 175)"/></g><g transform="translate(108 150) scale(0.9)" fill="#ae2d24">${PIP.H}</g>` },
 };
-let currentBack = 'obra';
+let currentBack = 'escoba';
 /** Dorso con el que se dibujan las cartas a partir de ahora (la baraja de la campaña en curso). */
 export function setDeckBack(id: string): void {
-  currentBack = BACKS[id] ? id : 'obra';
+  currentBack = BACKS[id] ? id : 'escoba';
 }
 export function backSvg(id = currentBack): string {
-  const b = BACKS[id] ?? BACKS.obra;
+  const b = BACKS[id] ?? BACKS.escoba;
   const line = b.dark ? PAPER : INK;
   return `
   <svg class="art" viewBox="0 0 250 350" aria-hidden="true">

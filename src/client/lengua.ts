@@ -53,6 +53,8 @@ export const reinN = (i: number) => t(`reinado.${i + 1}.nombre`);
 export const reinD = (i: number) => t(`reinado.${i + 1}.desc`);
 export const barN = (id: string) => t(`baraja.${id}.nombre`);
 export const barD = (id: string) => t(`baraja.${id}.desc`);
+/** V40 · el lema de un Mazo («Mesa barrida»). */
+export const barL = (id: string) => t(`baraja.${id}.lema`);
 export const juraN = (id: string) => t(`juramento.${id}.nombre`);
 export const juraD = (id: string) => t(`juramento.${id}.desc`);
 export const juraP = (id: string) => t(`juramento.${id}.premio`);

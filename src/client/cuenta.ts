@@ -216,7 +216,8 @@ function slip(p: Preview): Slip {
       s.after.push({ who, amount: '', kind: 'n', note: note || L('ui.cuenta.tras') });
       continue;
     }
-    const group = ev.src === 'tool' ? 'belt' : ev.src === 'form' || ev.src === 'chain' || ev.src === 'state' ? 'base' : 'cards';
+    // V40 · las reglas del Mazo (Envido, ¡Escoba!, Mano larga…) van con la base del golpe
+    const group = ev.src === 'tool' ? 'belt' : ev.src === 'form' || ev.src === 'chain' || ev.src === 'state' || ev.src === 'mazo' ? 'base' : 'cards';
     const lines = s[group];
     if (ev.src === 'form') {
       // la formación pone la base de las dos mitades de la cuenta

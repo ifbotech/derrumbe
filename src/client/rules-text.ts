@@ -43,6 +43,8 @@ const FORM_CARDS: Record<Formation, string> = {
   full: 'un trío y una pareja',
   escaleracolor: '3 o más seguidas del mismo palo',
   poker: '4 del mismo número',
+  parpalo: '2 del mismo palo (solo en el Truco)',
+  quince: '2 o más que suman 15 (solo en la Escoba)',
 };
 const n = (x: number) => String(x).replace('.', ',');
 /** Cifras que el reglamento lee de la configuración (V11: todas enteras). */
@@ -63,14 +65,14 @@ function rulesEs(cfg: Config): string {
   const hand = Object.values(cfg.handSize);
   return `
   <p><b>${TITLE}</b> · ${SUBTITLE}. Un juego cooperativo de 1 a 4 jugadores con baraja española. Sois una <b>conjura</b>:
-  tenéis que hacer caer los <b>tronos</b> de la corte antes de quedaros sin <b>Vida</b>. Se gana o se pierde en equipo.</p>
-  <p><b>Un enemigo a la vez</b>: las Casas se asaltan de una en una. En el centro de la mesa está el <b>enemigo activo</b> (el guardia que tienes delante) y, a su lado, la <b>fila</b> con los que vienen después.</p>
+  tienen que hacer caer los <b>tronos</b> de la corte antes de quedarse sin <b>Vida</b>. Se gana o se pierde en equipo.</p>
+  <p><b>Un enemigo a la vez</b>: las Casas se asaltan de una en una. En el centro de la mesa está el <b>enemigo activo</b> (el guardia que tenés delante) y, a su lado, la <b>fila</b> con los que vienen después.</p>
 
   <h3>La mesa</h3>
   <ul>
     <li>Las figuras forman hasta <b>cuatro tronos</b>, uno por palo: la Casa de Espadas, la de Oros, la de Copas y la de Bastos. Cada trono tiene su <b>guardia</b>: primero la <b>Sota</b> (10), luego el <b>Caballo</b> (11) y al final el <b>Rey</b> (12). En campaña, el primer asalto tiene dos tronos y el segundo, tres.</li>
     <li>Las 36 cartas de número (del 1 al 9 de cada palo) y 2 Comodines forman el <b>Mazo</b>. Cada jugador roba su mano (${Math.max(...hand)} cartas${hand.length > 1 ? ` en solitario, ${Math.min(...hand)} en conjura` : ''}).</li>
-    <li>Empiezas con <b>${cfg.maxIntegrity} de Vida</b> y sin <b>Escudo</b> 🛡.</li>
+    <li>Empezás con <b>${cfg.maxIntegrity} de Vida</b> y sin <b>Escudo</b> 🛡.</li>
   </ul>
   <table>
     <tr><th>Guardia</th><th>Vida</th><th>Ataque ⚔</th></tr>
@@ -82,7 +84,7 @@ function rulesEs(cfg: Config): string {
   <h3>Tu turno</h3>
   <ul>
     <li><b>1 · Golpea</b> al enemigo activo con una <b>formación</b>. Antes de golpear, la mesa te enseña la cuenta.</li>
-    <li>En vez de golpear puedes <b>descartar</b> las cartas que quieras, o jugar un <b>Comodín</b>.</li>
+    <li>En vez de golpear podés <b>descartar</b> las cartas que quieras, o jugar un <b>Comodín</b>.</li>
     <li><b>2 · Contraataque</b> ⚔: si no lo has abatido, el enemigo activo te pega con su Ataque (más su <b>Furia</b>). Primero gasta tu Escudo; lo que sobra te quita Vida.</li>
     <li><b>3 · Roba</b> hasta completar tu mano. Turno del siguiente.</li>
   </ul>
@@ -113,7 +115,7 @@ function rulesEs(cfg: Config): string {
   <h3>Golpe exacto</h3>
   <p>Abatir a un guardia con el <b>Golpe justo</b> es la jugada maestra (¡EXACTO!). La mesa te avisa antes de golpear.</p>
   <ul>
-    <li>Ese turno <b>no hay Contraataque</b>, cobras <b>1 de oro</b> y <b>robas 1 carta</b> de más.</li>
+    <li>Ese turno <b>no hay Contraataque</b>, cobrás <b>1 de oro</b> y <b>robás 1 carta</b> de más.</li>
     <li><b>Impulso</b>: el guardia siguiente pierde <b>un cuarto de su Vida</b>.</li>
     <li><b>Racha</b>: tu próximo Golpe suma +${RACHA} de Multi por cada Golpe exacto seguido (hasta +${RACHA_TOPE}). Se corta si el Golpe no es exacto.</li>
   </ul>
@@ -130,7 +132,7 @@ function rulesEs(cfg: Config): string {
     <li><b>Furia</b>: cada punto de Furia es <b>+1 de Ataque</b> en todos los Contraataques; se ve junto al ⚔ del enemigo. Sube con cada <b>Mazo agotado</b> y, contra un monarca, cada turno (<b>Furia del Rey</b>).${cfg.fatigueStart === undefined ? '' : ` En el Asalto único sube además desde el turno ${cfg.fatigueStart + 1}, cada ${cfg.fatigueEvery} turnos.`}</li>
     <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo. <b>Barajar no te quita Vida</b>, pero la <b>Furia</b> sube ${cfg.collapseSiege ? cfg.collapseSiege : FURIA.mazo} (en campaña, ${FURIA.mazo}).</li>
     <li><b>As cómplice</b>: un As forma jugada con <b>cualquier otra carta</b> (×${n(FORM.compania.r)}) y aporta el poder de su palo.</li>
-    <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardas una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
+    <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardás una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
     <li><b>Rebobinar</b> ↩ (campaña en solitario): una vez por asalto deshaces tu última jugada. El Mazo se baraja de nuevo. En sala toda jugada es definitiva.</li>
     <li>Solo se puede <b>pasar</b> con la mano vacía.</li>
     <li><b>Victoria</b>: caen todos los tronos (<b>Corte vencida</b>). <b>Derrota</b>: tu Vida llega a 0 (<b>Conjura deshecha</b>).</li>
@@ -138,16 +140,16 @@ function rulesEs(cfg: Config): string {
   </ul>
 
   <h3>Campaña</h3>
-  <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro; ${MONARCAS} con <b>monarca</b>, y el último, en el Salón del Trono, con el <b>Rey Tirano</b>. Empiezas con un <b>Sobre lacrado</b> de cartas especiales y con un <b>Don de la Conjura</b> que eliges entre tres (una Reliquia, un sello de lacre o una bolsa de oro) y, entre asalto y asalto, mejoras el mazo y tus Reliquias.</p>
+  <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro; ${MONARCAS} con <b>monarca</b>, y el último, en el Salón del Trono, con el <b>Rey Tirano</b>. Empezás con un <b>Sobre lacrado</b> de cartas especiales y con un <b>Don de la Conjura</b> que elegís entre tres (una Reliquia, un sello de lacre o una bolsa de oro) y, entre asalto y asalto, mejoras el mazo y tus Reliquias.</p>
   <ul>
-    <li><b>El Mapa del castillo</b> enseña desde el principio qué monarca espera en cada asalto y su <b>decreto</b>. En los asaltos sin monarca eliges <b>ruta</b>: cada una trae un <b>Juramento</b> (una condición con premio; los de riesgo endurecen el asalto y pagan siempre). En el asalto ${STAGES.findIndex((s) => s.atajo) + 1} también puedes tomar el <b>Atajo</b>: te saltas el asalto (sin Botín ni Pulpería) a cambio de un <b>Atajo de conspirador</b>.</li>
-    <li><b>En el Botín</b> eliges una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasas por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: eliges una de tres Reliquias, y una es de tu rasgo principal.</li>
-    <li><b>Monarcas</b>: el monarca es el último guardia del asalto. Llega con retrato y decreto, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tienes delante, su <b>Furia del Rey</b> sube ${FURIA.rey} cada turno: hay que tumbarlo deprisa.</li>
-    <li><b>La Pulpería</b> del Tratante vende reliquias, Sobres lacrados (abres uno y eliges 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
+    <li><b>El Mapa del castillo</b> enseña desde el principio qué monarca espera en cada asalto y su <b>decreto</b>. En los asaltos sin monarca elegís <b>ruta</b>: cada una trae un <b>Juramento</b> (una condición con premio; los de riesgo endurecen el asalto y pagan siempre). En el asalto ${STAGES.findIndex((s) => s.atajo) + 1} también podés tomar el <b>Atajo</b>: te saltas el asalto (sin Botín ni Pulpería) a cambio de un <b>Atajo de conspirador</b>.</li>
+    <li><b>En el Botín</b> elegís una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasás por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: elegís una de tres Reliquias, y una es de tu rasgo principal.</li>
+    <li><b>Monarcas</b>: el monarca es el último guardia del asalto. Llega con retrato y decreto, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tenés delante, su <b>Furia del Rey</b> sube ${FURIA.rey} cada turno: hay que tumbarlo deprisa.</li>
+    <li><b>La Pulpería</b> del Tratante vende reliquias, Sobres lacrados (abrís uno y elegís 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
     <li>Tras cada monarca intermedio hay un <b>Santuario de la cripta</b>: una apuesta (la Rueda del destino, doble o nada de esquirlas, un dado bendito o maldito, el altar de sangre que cambia Vida por un rasgo) o un dilema con premio y precio.</li>
-    <li>Después del último asalto puedes seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
+    <li>Después del último asalto podés seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
     <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña.</li>
-    <li><b>Reinicio rápido</b>: mantén <b>R</b> 0,7 segundos para empezar de nuevo con la misma baraja y el mismo Reinado. No cuenta como derrota.</li>
+    <li><b>Reinicio rápido</b>: mantené <b>R</b> 0,7 segundos para empezar de nuevo con la misma baraja y el mismo Reinado. No cuenta como derrota.</li>
   </ul>
 
   ${caeEs()}
@@ -160,7 +162,7 @@ function rulesEs(cfg: Config): string {
   </table>
 
   <h3>Reliquias</h3>
-  <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>. <b>No se ordenan</b>: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica.
+  <p>Llevás hasta <b>${TOOL_SLOTS} reliquias</b>. <b>No se ordenan</b>: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica.
   Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a otra y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
 
   <h3>Rasgos de build</h3>
@@ -189,7 +191,7 @@ function rulesEs(cfg: Config): string {
   <h3>Consejos de la conjura</h3>
   <ul>
     <li>Abatir a la Sota deja paso a un Caballo con más Ataque: mira la fila antes de gastar la mano.</li>
-    <li>Elige un rasgo pronto y ve a por su bono de 4: es lo que gana las campañas.</li>
+    <li>Elegí un rasgo pronto y buscá su bono de 4: es lo que gana las campañas.</li>
     <li>Jugar muchas cartas acelera el asalto, pero vacía el Mazo y acerca el Mazo agotado.</li>
     <li>Contra el monarca, la Furia del Rey no espera: guarda tu mejor mano para él.</li>
   </ul>`;
@@ -207,6 +209,8 @@ const FORM_CARDS_EN: Record<Formation, string> = {
   full: 'three of a kind and a pair',
   escaleracolor: '3 or more in a row of the same suit',
   poker: '4 of the same number',
+  parpalo: '2 of the same suit (Truco only)',
+  quince: '2 or more adding up to 15 (Escoba only)',
 };
 
 function rulesEn(cfg: Config): string {

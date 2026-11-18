@@ -16,7 +16,7 @@ export function rasgoCon(tools: ToolInst[], id: string): { rasgo: Rasgo; n: numb
   return { rasgo, n, meta: UMBRALES.find((u) => u >= n) ?? UMBRALES[UMBRALES.length - 1], enciende: U.includes(n) };
 }
 
-/** El chip de rasgo de una Reliquia que puedes llevarte: «🩸 Sangre 3/4» o, si enciende un bono, «¡🩸 SANGRE 4/4!». */
+/** El chip de rasgo de una Reliquia que podés llevarte: «🩸 Sangre 3/4» o, si enciende un bono, «¡🩸 SANGRE 4/4!». */
 export function rasgoChip(tools: ToolInst[], id: string): string {
   const r = rasgoCon(tools, id);
   if (!r) return '';
