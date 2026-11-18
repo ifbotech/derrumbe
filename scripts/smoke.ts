@@ -182,6 +182,15 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
 
   // ── un golpe de verdad: el trío de sietes contra el trono apuntado ──
   await go(page, 'mesa');
+  // V36 · la cuenta dice quién aporta: una placa sobre cada carta elegida y, bajo la fórmula, de dónde sale el Multi
+  const quien = await page.evaluate(() => ({
+    sel: document.querySelectorAll('#hand .card.sel').length,
+    chips: [...document.querySelectorAll('#hand .card.sel > .aporte')].map((e) => e.textContent ?? ''),
+    mde: document.querySelector('#score > .mde')?.textContent ?? '',
+    multi: document.querySelector('#score .calc .fr-r b')?.textContent ?? '',
+  }));
+  check(quien.sel > 0 && quien.chips.length === quien.sel && quien.chips.every((t) => /^(\+\d+|0)/.test(t)), `cada carta elegida lleva lo que aporta (${quien.chips.join(' | ')})`);
+  check(/Multi|Mult/.test(quien.mde) && quien.mde.length > 8, `bajo la fórmula se lee de dónde sale el Multi ${quien.multi} (${quien.mde})`);
   const hpBefore = await page.locator('.tower[data-suit="H"] .hp span').textContent();
   // como en una partida real, el audio ya está arrancado antes del primer golpe (el primer clic lo enciende)
   await page.mouse.click(700, 20);

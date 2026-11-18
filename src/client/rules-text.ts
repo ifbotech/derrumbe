@@ -183,7 +183,7 @@ function rulesEs(cfg: Config): string {
   </table>
 
   <h3>Controles</h3>
-  <p><b>1–9</b> eligen carta · <b>flechas</b> mueven el foco · <b>Enter</b> elige · <b>Espacio</b> golpea el trono apuntado · <b>Y</b> guarda en la manga · <b>Z</b> rebobina · <b>Q</b> Mejor jugada · <b>A</b> AUTO · <b>Supr</b> descarta · <b>Esc</b> suelta o vuelve atrás · <b>Tab</b> abre el mazo · <b>F</b> pantalla completa.</p>
+  <p><b>1–9</b> eligen carta · <b>flechas</b> mueven el foco · <b>Enter</b> elige · <b>Espacio</b> golpea al enemigo activo · <b>Y</b> guarda en la manga · <b>Z</b> rebobina · <b>Q</b> Mejor jugada · <b>A</b> AUTO · <b>Supr</b> descarta · <b>Esc</b> suelta o vuelve atrás · <b>Tab</b> abre el mazo · <b>F</b> pantalla completa.</p>
   <p><b>Lupa</b>: clic derecho, pulsación larga o <b>L</b> sobre cualquier carta, reliquia, guardia o monarca. Con mando: cruceta o palanca, A elegir, X golpear, Y manga, B atrás, LB mazo, RB lupa, LT rebobinar, RT velocidad, Start ajustes. Los botones de la mesa enseñan su atajo según juegues con teclado o con mando. La tabla completa está en Ajustes.</p>
 
   <h3>Consejos de la conjura</h3>
@@ -339,7 +339,7 @@ function rulesEn(cfg: Config): string {
   </table>
 
   <h3>Controls</h3>
-  <p><b>1–9</b> pick a card · <b>arrows</b> move the focus · <b>Enter</b> picks · <b>Space</b> hits the aimed throne · the Y key keeps a card Up the Sleeve · <b>Z</b> rewinds · <b>Q</b> Best Play · the A key turns AUTO on or off · <b>Delete</b> discards · <b>Esc</b> drops or goes back · <b>Tab</b> opens the deck · <b>F</b> full screen.</p>
+  <p><b>1–9</b> pick a card · <b>arrows</b> move the focus · <b>Enter</b> picks · <b>Space</b> hits the active enemy · the Y key keeps a card Up the Sleeve · <b>Z</b> rewinds · <b>Q</b> Best Play · the A key turns AUTO on or off · <b>Delete</b> discards · <b>Esc</b> drops or goes back · <b>Tab</b> opens the deck · <b>F</b> full screen.</p>
   <p><b>Loupe</b>: right click, long press or <b>L</b> on any card, relic, guard or monarch. With a controller: d-pad or stick, A picks, X hits, the Y button keeps Up the Sleeve, B back, LB deck, RB loupe, LT rewind, RT speed, Start settings. The table buttons show their shortcut for keyboard or controller. The full table is in Settings.</p>
 
   <h3>Crew tips</h3>

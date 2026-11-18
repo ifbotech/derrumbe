@@ -69,6 +69,9 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 | **33.0 (i5.2)** | **Campeón y listón vigente** (misma versión, escena de la derrota corregida) | 85,0 | — | 70,0 | 7,08 | 7,83 | 81,0 | 88,9 | 80,0 | **234,63** | `pulso-60-20261117-171718` |
 | 34.0 (i5.2) | rechazada (rama `candidata/v34`) | 83,3 | — | 65,0 | 7,00 | 7,87 | 71,4 | 88,9 | 73,3 | 226,35 | `pulso-60-20261117-182933` |
 | 33.0 con placebo (i5.2) | control: tres palabras cambiadas sin tocar el sentido | 83,3 | — | 65,0 | 7,07 | 7,83 | 81,0 | 77,8 | 80,0 | 229,77 | `pulso-60-20261117-184146` |
+| **35.0 (i5.2, escenas de la 35.0)** | línea base del ciclo V35 → V60 (`v35.0.0`) | 86,7 | — | 70,0 | 6,73 | 7,82 | 81,0 | 77,8 | 93,3 | **233,08** | `pulso-60-20261118-025554` |
+| 35.0 con placebo de las escenas que toca la 36.0 | control: 15 escenas con una palabra cambiada | 80,0 | — | 60,0 | 6,77 | 7,83 | 71,4 | 77,8 | 80,0 | 219,47 | `pulso-60-20261118-041002` |
+| **36.0 (i5.2)** | **aceptada, Campeón** (`v36.0.0`; +16,78 contra su placebo) | 88,3 | — | 75,0 | 6,75 | 7,87 | 76,2 | 100,0 | 86,7 | **236,25** | `pulso-60-20261118-035957` |
 
 (En la fila de `rapido-60`, donde hay dos cifras son español / inglés. Las filas de `pulso-24` agrupan cuatro corridas. **Las dos primeras filas de `pulso-24` no se comparan con las del instrumento rápido**: desde el 2026-11-16 las reseñas van con respuesta corta, `num_predict` 550, y la línea base se rehízo.)
 
@@ -389,3 +392,14 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **Balance** (laboratorio completo, sin avisos): Reinado 1, 30,8 % y 47,7 %; Reinado 8, 6,4 % y 17,7 %; la escalera baja en cada Reinado. Lo que se resistió: la escalera del Reinado 3 no bajaba con giros de oro o de Vida (sí con la Furia por Mazo agotado); un solo objeto de rasgo por nivel del Puesto grande hundía el Árbol lleno unos 6 puntos (se volvió a 2); con 4,4 de Vida en el Patio la duración quedaba corta.
 - **Puertas**: 385 + 9 pruebas, QA visual ES y EN sin fallos en las cuatro ventanas (de 239 fallos de escritorio y 174 de móvil al empezar), humo entero ES y EN, construcción web. Hueco de mando encontrado y cerrado: desde la fila, «derecha» subía al Ritmo de la barra y el «No mostrar más» del susurro quedaba inalcanzable (`nav.ts`).
 - **Pendiente**: fase 2, escenas del panel para la 35.0, línea base en `pulso-60` y aceptación por placebo emparejado o duelo AB/BA.
+
+- **Fase 2 hecha** (2026-11-18): escenas del panel reescritas para la 35.0 (`escenas_v35.py`), línea base `pulso-60-20261118-025554` (F 233,08) y placebo emparejado en el panel (`placebo` y `veredicto`). El duelo AB/BA no se construyó: la vía del placebo basta para decidir y es la que se usa.
+
+### V36 · La cuenta dice quién aporta — aceptada (`v36.0.0`)
+
+- **Hipótesis**: con un solo enemigo, la claridad (6,73) se pierde en la cuenta: no se ve qué carta suma, de dónde sale el Multi ni quién contraataca de verdad tras el golpe.
+- **Qué cambia**: placa sobre cada carta elegida («+7», «0» tachado, «Multi +1»), línea «Multi: …» junto a la cuenta en pantallas anchas, Contraataque previsto del enemigo que queda activo, Susurro «Un enemigo a la vez» y los textos de ayuda puestos al día para el duelo. Ninguna regla.
+- **Medida**: F 236,25 (+3,17 sobre la 35.0); contra su placebo de 15 escenas, +16,78 con 5 pulgares netos y claridad −0,02. Aprobación 88,3 %, críticos 75 %, Steam Deck 100 %, móvil 86,7 % (baja de 93,3), impulsivos 76,2 % (baja de 81,0). Claridad 6,75 y diversión 7,87 siguen lejos de 8,0 y 8,4.
+- **Regla corregida**: el primer `veredicto` también exigía no bajar la claridad, y rechazó la 36.0 por −0,017. Esa condición es de la vía del duelo AB/BA en el mandato, no de la del placebo; se quitó y ahora la claridad y los pulgares se informan sin decidir.
+- **Lección**: el placebo de 15 escenas bajó F 13,6 puntos frente a la línea base (más que el −4,86 de la 33.0): cuantas más escenas se tocan, más deriva, y medir contra el Campeón congelado habría dado solo +3,17.
+- **Siguiente**: la claridad sigue siendo el objetivo más lejano. Quejas que quedan: entender la Furia, contraste y cansancio del texto, y el Steam Deck.
