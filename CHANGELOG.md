@@ -2,6 +2,28 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 38.0.0 — 2026-11-18
+
+Se lee de lejos. Toda la versión es de legibilidad para el Steam Deck (1280×800) y el portátil (1366×768): letra, contraste y aire. No cambia ninguna regla.
+
+### En pantalla
+- **Placa del golpe sobre el enemigo**: la cifra va sobre rojo oscuro (7,7:1) y la línea «caen n» / «exacto», en una banda de tinta propia de 16 px en negrita (15,8:1), sin girar.
+- **Furia**: la etiqueta del ⚔ sube a 15 px y 7,7:1; la marca del Relojero dice «+1 Furia» (en el móvil, «+1»).
+- **La cuenta**: la fórmula a 17 px con cada cifra en su caja; la línea «Multi: …» en su propio renglón debajo; rótulos y placas de debajo a 15 px y ≥ 7:1 (también la del Contraataque previsto), con más aire entre renglones.
+- **Mazo y Descarte** enseñan su cifra al mismo tamaño (20 px, 15,8:1). Las barras de Vida y Escudo pasan a 20 px de alto en ventanas de 820 px o menos.
+- **Mejor mide lo mismo que Golpear** y es un botón secundario: fondo oscuro con filete claro de 3 px. Golpear es el único botón de color lleno.
+- **Barra de arriba** con más aire: 14 px entre oro, esquirlas y lacre (12 con mando) y 8 px hasta el borde de la pantalla.
+- **La Taberna entra entera** a 1280×800 y 1366×768, en español y en inglés, con teclado y con mando: las dos filas de ofertas con sus descripciones, sin desplazar.
+- **Tréboles**: el verde de ♣ pasa de `#1B6B46` a `#005442` (7,2:1 sobre el marfil, antes 5,2:1; con «Alto contraste», `#004a3a`). Con daltonismo se separa más de ♥ y de ♦; de ♠ lo sigue distinguiendo la forma.
+- Etiquetas de las Reliquias de la mesa a ≥ 7:1 y contador «6/6» a 15 px.
+
+### Panel
+- Aceptada por decisión de dirección. Contra el placebo de sus 19 escenas (F 220,73): **+8,14** (variante c) y **+7,44** (variante e, la publicada, con las escenas mínimas). Steam Deck **100 %** (9 de 9; la 37.0 tenía 66,7 %), aprobación **85 %**, F 228,17 (la 37.0, 225,15).
+- La regla endurecida la rechazaba solo por quedar a −8 de la 36.0 (F 236,25). Esa cifra es una tirada suelta alta: el mismo código de la 36.0 con una palabra cambiada en 15 escenas midió 219,40. Desde ahora el listón es la media del Campeón con sus placebos nulos.
+
+### Pruebas
+- 385 + 9 pruebas. QA visual sin fallos en español y en inglés, con comprobaciones nuevas (`legibleV38`): placa del golpe, Furia, cuenta, pilas, Mejor, barras, aire de la barra de arriba, ♣ sobre su papel, iconos de Reliquia y la Taberna dentro del alto de la ventana. Humo de la mesa y del mando, 60 fps, forja y construcción web.
+
 ## 37.0.0 — 2026-11-18
 
 Se empieza antes. La partida guiada pasa de cinco jugadas a tres y la línea del Multi dice cuánto suma al final. No cambia ninguna regla de la campaña.

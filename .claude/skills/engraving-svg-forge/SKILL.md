@@ -54,7 +54,7 @@ Los palos se distinguen **sin color**. Cada uno tiene su trama, definida una sol
 | ♠ Picas | negro `#161514` | rayado diagonal a 45° «de lanzas» | líneas paralelas inclinadas |
 | ♦ Diamantes | azul cobalto `#1B5E9E` | punteado «de gemas» | puntos sueltos, sin líneas |
 | ♥ Corazones | carmesí `#C8232C` | aparejo «de cáliz»: hiladas horizontales con juntas alternas | hiladas horizontales con juntas alternas |
-| ♣ Tréboles | verde `#1B6B46` | rayado cruzado heráldico | retícula de dos direcciones |
+| ♣ Tréboles | verde botella `#005442` (desde la 38.0) | rayado cruzado heráldico | retícula de dos direcciones |
 
 Reglas:
 

@@ -1368,11 +1368,11 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
    Alto contraste (≥ 7:1 sobre el papel). El palo se distingue siempre también por su forma: ♠ ♥ ♦ ♣ van con
    su silueta en la esquina, en el emblema, en la cabecera del trono, en el poder y en la cuenta. */
 :root {
-  /* cuatro colores, sobre el marfil #efe6d5: ♠ 15:1 · ♥ 4,5:1 · ♦ 5,4:1 · ♣ 5,2:1 (emblema e índice grandes y con contorno) */
+  /* cuatro colores, sobre el marfil #efe6d5: ♠ 15:1 · ♥ 4,5:1 · ♦ 5,4:1 · ♣ 7,2:1 (desde la 38.0; emblema e índice grandes y con contorno) */
   --suit-S: #161514;
   --suit-H: #c8232c;
   --suit-D: #1b5e9e;
-  --suit-C: #1b6b46;
+  --suit-C: #005442;
   --suitd-S: #d9cfbb;
   --suitd-H: #ef6a6e;
   --suitd-D: #72aae2;
