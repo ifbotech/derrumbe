@@ -21,7 +21,7 @@ type Step = ['run', Partial<Run>] | ['turn', number] | ['act', string];
 
 /** Una campaña del bot, con lo que la mesa le diría a la telemetría (solo los campos que lee). */
 function botCampaign(seed: number): { steps: Step[]; run: Run } {
-  const run = newRun({ seedText: `HUMO-${seed}`, deck: 'obra' }, seed);
+  const run = newRun({ seedText: `HUMO-${seed}`, deck: 'escoba' }, seed);
   const steps: Step[] = [];
   const note = () => steps.push(['run', structuredClone({ id: run.id, seedText: run.seedText, deckId: run.deckId, ascension: run.ascension, stage: run.stage, phase: run.phase, loot: run.loot, shop: run.shop, tools: run.tools, stats: run.stats, death: run.death })]);
   note();

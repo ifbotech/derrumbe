@@ -66,7 +66,7 @@ const compacta = (evs: GameEvent[]): GameEvent[] =>
 
 /** Una campaña entera con el bot (con el `up` que se le dé) y lo que deja. */
 function juega(up: Record<string, number>, pool: string[], seed: number): { hecho: Hecho; esquirlas: number } {
-  const run = newRun({ up, deck: 'obra', ascension: 0, pool }, seed);
+  const run = newRun({ up, deck: 'escoba', ascension: 0, pool }, seed);
   const delta = newMeta();
   const players = [{ id: 'p0', name: 'p0' }];
   const asaltos: Hecho['asaltos'] = [];

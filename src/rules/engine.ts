@@ -11,6 +11,8 @@
 // Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
 import { BALANCE, fill } from './balance-config';
 import { MAX_SPECIALS, SPECIAL } from './specials';
+import { ENGANO_MODOS, MZ, REGLA, bravoDe, enganoCambia, enganoCartas, esEnvido, esEscoba, formacionMazo } from './mazos';
+import type { Cargas, EnganoEstado, EnganoModo, MazoId } from './mazos';
 import { TOOL, espejada, nivelesDe, rasgosAfter, rasgosStrike } from './tools';
 import type { ToolInst } from './tools';
 
@@ -66,7 +68,7 @@ export const SEAL: Record<Seal, { name: string; desc: string }> = {
   dinamita: { name: 'Sello de pólvora', desc: 'Al golpear, los tronos al lado del golpeado en la mesa reciben el valor de esta carta.' },
   eco: { name: 'Sello de eco', desc: 'Su Daño y el poder de su palo cuentan 2 veces.' },
   jornal: { name: 'Sello de oro real', desc: fill('+{oro} de oro si el golpe abate a un guardia.', { oro: BALANCE.sellos.jornal }) },
-  sindical: { name: 'Sello de la manga', desc: 'Robas 1 carta extra al jugarla o descartarla.' },
+  sindical: { name: 'Sello de la manga', desc: 'Robás 1 carta extra al jugarla o descartarla.' },
 };
 export const TREATMENTS: Treatment[] = ['forjado', 'templado', 'policromado', 'agrietado'];
 export const TREATMENT: Record<Treatment, { name: string; desc: string }> = {
@@ -88,7 +90,7 @@ export function sortCards(cards: Card[]): Card[] {
 
 // ───────────────────────── Formaciones ─────────────────────────
 
-export type Formation = 'solo' | 'compania' | 'grupo' | 'doblepar' | 'escalera' | 'color' | 'full' | 'poker' | 'escaleracolor';
+export type Formation = 'solo' | 'compania' | 'grupo' | 'doblepar' | 'escalera' | 'color' | 'full' | 'poker' | 'escaleracolor' | 'parpalo' | 'quince';
 export const FORMATIONS: Formation[] = ['solo', 'compania', 'grupo', 'escalera', 'doblepar', 'color', 'full', 'escaleracolor', 'poker'];
 export const FORMATION_NAME: Record<Formation, string> = {
   solo: 'Carta sola',
@@ -100,9 +102,17 @@ export const FORMATION_NAME: Record<Formation, string> = {
   full: 'Full',
   poker: 'Póker',
   escaleracolor: 'Escalera de color',
+  parpalo: 'Par de palo',
+  quince: 'Quince',
 };
+/** V40 · Formaciones propias de un Mazo (no salen en el Pergamino): Par de palo (Truco) y Quince (Escoba). */
+export const FORMACIONES_MAZO: Formation[] = ['parpalo', 'quince'];
 /** Base de cada formación (f Daño, r Multi entero) y el Daño que gana por nivel de Pergamino (lf): `formaciones` de balance-config.json. */
 export const FORM: Record<Formation, { f: number; r: number; lf: number }> = BALANCE.formaciones as Record<Formation, { f: number; r: number; lf: number }>;
+/** V40 · Base de las formaciones de Mazo (`mazos.formaciones` de balance-config.json). */
+export const FORM_MAZO: Partial<Record<Formation, { f: number; r: number; lf: number }>> = MZ.formaciones;
+/** Base de cualquier formación, también las de Mazo. */
+export const baseDe = (f: Formation): { f: number; r: number; lf: number } => FORM[f] ?? FORM_MAZO[f]!;
 
 /**
  * Devuelve el tipo de formación o null si las cartas no forman una jugada legal de ataque.
@@ -111,8 +121,17 @@ export const FORM: Record<Formation, { f: number; r: number; lf: number }> = BAL
  *  escalera (3+ seguidas) · escalera de color (3+ seguidas del mismo palo) · color (5+ del mismo palo)
  * El As enlaza por abajo (1-2-3) y por arriba (8-9-1). Las cartas especiales no cuentan para la
  * formación: acompañan al golpe (hasta MAX_SPECIALS) o se juegan solas.
+ * V40 · con `cfg` (la mesa), el Mazo de la campaña acepta además su formación propia (ver `formacionMazo`).
  */
-export function classify(all: Card[]): Formation | null {
+export function classify(all: Card[], cfg?: { mazo?: MazoId }): Formation | null {
+  const base = clasifica(all);
+  if (base || !cfg?.mazo) return base;
+  const specials = all.filter((c) => c.sp);
+  return specials.length > MAX_SPECIALS ? null : formacionMazo(cfg.mazo, all.filter((c) => !c.sp));
+}
+
+/** Las formaciones de siempre (sin las de Mazo). */
+function clasifica(all: Card[]): Formation | null {
   const specials = all.filter((c) => c.sp);
   const cards = all.filter((c) => !c.sp);
   if (specials.length > MAX_SPECIALS) return null;
@@ -205,6 +224,8 @@ export interface Config {
   overhealCharge?: number;
   /** Puntos de muro sobrante (por encima del tope) que hacen falta para reparar 1 de integridad. */
   overwallRepair?: number;
+  /** V40 · El Mazo de la campaña: sus reglas se suman a las de siempre (src/rules/mazos.ts). Sin él, ninguna. */
+  mazo?: MazoId;
 }
 
 /** Furia que corresponde a un turno por el reloj de turnos (0 si la mesa no lo tiene). */
@@ -244,6 +265,8 @@ export interface Tower {
   fx: TowerFx;
   /** No está en este asalto (los asaltos 1 y 2 tienen 2 y 3 tronos): sin guardias, no cuenta para ganar y su Contraataque no hace nada. */
   away?: true;
+  /** V40 · El Mentiroso, Cara de piedra: el próximo Contraataque de este guardia no llega (sin quedar Aturdido). */
+  piedra?: true;
 }
 
 export interface Player {
@@ -293,10 +316,23 @@ export interface GameState {
   undo: GameState | null;
   /** V35 · La Furia del asalto: Ataque de más de todos sus enemigos (ver `siegeLevel`). */
   fatigue: number;
+  /** V40 · Cargas permanentes del Mazo (Escoba, Mano larga): llegan de la campaña y vuelven a ella al acabar el asalto. */
+  cargas?: Cargas;
+  /** V40 · El Mentiroso: el Engaño de este asalto (disponible o usado, y cómo). */
+  engano?: EnganoEstado;
+  /** V40 · Chancho Va: ya se pasó una carta este turno. */
+  pasado?: boolean;
+  /** V40 · Chancho: Contraataques que aún no llegan (el póker aturde en cadena). */
+  cadena?: number;
+  /** V40 · Furia que suma el Mazo (un Engaño elegido a mano que no abatió). */
+  furiaMazo?: number;
+  /** V40 · Cartas de más que se roban al reponer la mano (las ganadas en una jugada que no gastó el turno). */
+  robo?: number;
 }
 
 export type Action =
-  | { type: 'attack'; cards: string[]; target: Suit }
+  /** `engano` (El Mentiroso): sin él, el motor lo usa solo si convierte el golpe en uno que abate; un modo lo pide a mano; false, no. */
+  | { type: 'attack'; cards: string[]; target: Suit; engano?: EnganoModo | false }
   | { type: 'discard'; cards: string[] }
   | { type: 'joker'; card: string; target: Suit }
   | { type: 'pass' }
@@ -305,7 +341,7 @@ export type Action =
   /** Gasta una tiza de replanteo: deshace la última jugada y vuelve a barajar la cantera. */
   | { type: 'undo' };
 
-export type StepSrc = 'form' | 'chain' | 'state' | 'card' | 'treat' | 'seal' | 'special' | 'tool';
+export type StepSrc = 'form' | 'chain' | 'state' | 'card' | 'treat' | 'seal' | 'special' | 'tool' | 'mazo';
 /**
  * Aviso de herramienta que dispara: qué hizo (sumó Fuerza al golpe, pegó a una torre, reparó el búnker
  * o cargó Fuerza para el golpe siguiente) y cuánto. Lo llevan los `step` de las herramientas cuya cuenta
@@ -323,7 +359,8 @@ export type GameEvent =
   /** Un paso de la resolución: quién aporta (src + id, y slot si es una herramienta) y cuánto. */
   | { e: 'step'; src: StepSrc; id: string; slot?: number; label: string; df?: number; dr?: number; mr?: number; fuerza: number; res: number; proc?: Proc }
   | { e: 'impact'; tower: Suit; fuerza: number; res: number; total: number }
-  | { e: 'discard'; player: string; cards: Card[] }
+  /** `libre` (Chancho Va, Pasar): el descarte no gastó el turno. */
+  | { e: 'discard'; player: string; cards: Card[]; libre?: true }
   | { e: 'joker'; player: string; card: Card; target: Suit }
   | { e: 'pass'; player: string }
   | { e: 'stash'; player: string; card?: Card; back?: Card | null }
@@ -481,6 +518,9 @@ export interface StrikeEnv {
   fatigue?: number;
   /** V35 · La cara del dado del Tahúr este turno. */
   dado?: number;
+  /** V40 · Cargas permanentes del Mazo y Engaño del asalto (solo los leen las reglas de Mazo). */
+  cargas?: Cargas;
+  engano?: EnganoEstado;
 }
 
 /** V35 · Vida que le queda a un trono entero: la de todos sus guardias (la del monarca, multiplicada) menos el daño del que está al frente. */
@@ -548,8 +588,23 @@ export interface Outcome {
   fell: { tower: Suit; rank: number; clean: boolean; exec?: true }[];
 }
 
+/**
+ * V40 · Lo que el golpe deja hecho por las reglas del Mazo, para que `applyAction` lo apunte en el estado: una Escoba
+ * o una Mano larga (suman su carga), un Chancho (aturde en cadena), el Engaño usado y el alivio del Contraataque.
+ */
+export interface MazoFx {
+  escoba?: true;
+  larga?: true;
+  chancho?: true;
+  engano?: EnganoModo;
+  /** Lo que baja el Contraataque de este turno (Mano larga). */
+  alivio?: number;
+}
+
 export interface StrikeResult extends Outcome {
   events: GameEvent[];
+  /** V40 · Lo que hicieron las reglas del Mazo. */
+  mazo: MazoFx;
   formation: Formation | null;
   fuerza: number;
   res: number;
@@ -598,20 +653,38 @@ function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean,
     out.fallenBy[t.suit] = (out.fallenBy[t.suit] ?? 0) + 1;
     out.fell.push({ tower: t.suit, rank, clean, ...(exec ? { exec: true as const } : {}) });
     t.fx = {};
+    delete t.piedra;
     t.damage = pierce && standing(t) ? excess : 0;
     out.events.push({ e: 'floorDown', tower: t.suit, rank, clean, towerDown: !standing(t), damage: t.damage, ...(exec ? { exec: true as const } : {}) });
   }
 }
 
+/** ¿Pega más la formación `a` que la `b`? (más Multi; a igual Multi, más Daño de base) */
+const mejorForma = (a: Formation, b: Formation) => baseDe(a).r > baseDe(b).r || (baseDe(a).r === baseDe(b).r && baseDe(a).f > baseDe(b).f);
+
+/**
+ * V40 · La formación de un golpe con el Engaño (El Mentiroso): con `palo` o `numero`, la mejor entre la de las cartas
+ * y la de las cartas contadas como de un solo palo o número. null si ni así es una jugada.
+ */
+export function formaConEngano(all: Card[], cfg: { mazo?: MazoId }, engano?: EnganoModo): Formation | null {
+  const formation = classify(all, cfg);
+  if (!engano || engano === 'inmune') return formation;
+  const alt = classify(enganoCartas(engano, all), cfg);
+  return alt && (!formation || mejorForma(alt, formation)) ? alt : formation;
+}
+
 /**
  * Resuelve un golpe sobre `env` (muta sus torres, su carga y los contadores de sus herramientas).
  * Con `rng` las cartas agrietadas pueden hacerse añicos; sin él (previsualización) nunca.
+ * V40 · `opts.engano`: el golpe usa el Engaño de El Mentiroso de ese modo (lo decide `applyAction`, ver `eligeEngano`).
  */
-export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: number }): StrikeResult {
+export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: number }, opts: { engano?: EnganoModo } = {}): StrikeResult {
   const cfg = env.config;
-  const formation = classify(all);
+  const engano = opts.engano && cfg.mazo === 'mentiroso' ? opts.engano : undefined;
+  const formation = formaConEngano(all, cfg, engano);
   const tally: Tally = { events: [], dealt: {}, fallenBy: {}, fell: [] };
-  const out: StrikeResult = { ...tally, formation, fuerza: 0, res: 1, total: 0, fallen: 0, clean: false, wallGain: 0, repair: 0, hurt: 0, gold: 0, draw: 0, noSiren: false, shattered: [] };
+  const mz: MazoFx = {};
+  const out: StrikeResult = { ...tally, mazo: mz, formation, fuerza: 0, res: 1, total: 0, fallen: 0, clean: false, wallGain: 0, repair: 0, hurt: 0, gold: 0, draw: 0, noSiren: false, shattered: [] };
   if (!formation) return out;
   const tower = env.towers[target];
   const cards = all.filter((c) => !c.sp);
@@ -634,7 +707,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     target,
     fuerza: 0,
     res: 1,
-    mono: cards.length >= 2 && suits.length === 1,
+    mono: cards.length >= 2 && (suits.length === 1 || engano === 'palo'),
     poly: suits.length >= 3,
     impacts: [],
     pierce: !!cfg.alwaysPierce,
@@ -672,10 +745,16 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
 
   // 1 · la formación pone la base (el Pergamino solo sube su Daño)
   const level = cfg.formLevel?.[formation] ?? 0;
-  const base = FORM[formation];
+  const base = baseDe(formation);
   x.fuerza = base.f + level * base.lf;
   x.res = base.r;
   emit({ df: x.fuerza, dr: x.res - 1 });
+  // V40 · el Engaño de El Mentiroso, si este golpe lo usa
+  if (engano) {
+    cur = { src: 'mazo', id: 'engano', label: REGLA.engano.name };
+    x.note(engano === 'inmune' ? 'sin Inmune' : engano === 'palo' ? 'como de un solo palo' : 'como de un solo número');
+    mz.engano = engano;
+  }
 
   // 2 · lo que arrastra la mesa: Racha de Golpes exactos y Daño cargado
   if (env.chain > 0) {
@@ -691,7 +770,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   // 3 · las cartas, de izquierda a derecha
   const riders = specials.map((c) => SPECIAL[c.sp!]?.fx ?? {});
   const allHigh = riders.some((fx) => fx.allHigh);
-  const noImmune = riders.some((fx) => fx.noImmune);
+  const noImmune = riders.some((fx) => fx.noImmune) || engano === 'inmune';
   const highest = Math.max(0, ...cards.map(cardValue));
   const sealReps = cfg.sealTwice ? 2 : 1;
   /** Cartas de cada palo en el golpe (el sello de eco cuenta su carta dos veces): de aquí salen los poderes. */
@@ -734,12 +813,53 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
           x.note(`+${BALANCE.sellos.jornal} de oro si cae un guardia`);
         } else {
           x.draw++;
-          x.note('robas 1');
+          x.note('robás 1');
         }
       }
     }
   }
   if (power.S > 0) x.pierce = true;
+
+  // 3 bis · V40: las reglas del Mazo de la campaña
+  const regla = (id: keyof typeof REGLA, label: string = REGLA[id].name) => void (cur = { src: 'mazo', id, label });
+  if (cfg.mazo === 'truco') {
+    // los bravos pegan con su bono (si la carta pega: contra el trono de su palo es Inmune y no suma)
+    cards.forEach((c, i) => {
+      const b = bravoDe(c);
+      if (!b || !x.impacts[i]) return;
+      regla('bravo', `${cardLabel(c)} · ${REGLA.bravo.name}`);
+      x.F(b);
+    });
+    if (esEnvido(cards)) {
+      regla('envido');
+      x.F(MZ.truco.envido);
+    }
+  } else if (cfg.mazo === 'escoba' && esEscoba(cards)) {
+    regla('escoba');
+    x.R(MZ.escoba.multi);
+    x.F((env.cargas?.escoba ?? 0) * MZ.escoba.carga);
+    mz.escoba = true;
+  } else if (cfg.mazo === 'chinchon') {
+    if (formation === 'grupo' && cards.length === 3) {
+      regla('pierna');
+      x.R(MZ.chinchon.pierna);
+    }
+    if (formation === 'escaleracolor') {
+      regla('escalera');
+      x.F(MZ.chinchon.escalera);
+    }
+    if (cards.length >= MZ.chinchon.cartas) {
+      regla('larga');
+      x.F((env.cargas?.larga ?? 0) * MZ.chinchon.carga);
+      mz.larga = true;
+      mz.alivio = MZ.chinchon.alivio;
+      x.note(`−${MZ.chinchon.alivio} al Contraataque`);
+    }
+  } else if (cfg.mazo === 'chancho' && formation === 'poker') {
+    regla('chancho');
+    mz.chancho = true;
+    x.note(`los ${MZ.chancho.cadena} Contraataques siguientes no llegan`);
+  }
 
   // 4 · las cartas especiales que acompañan
   const best = Math.max(0, ...x.impacts);
@@ -846,13 +966,13 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   if (cfg.crumbleHurt && rough) {
     cur = { src: 'state', id: 'inestable', label: CRUMBLE_LABEL };
     x.hurt += cfg.crumbleHurt * rough;
-    x.note(`pierdes ${cfg.crumbleHurt * rough} de Vida`);
+    x.note(`perdés ${cfg.crumbleHurt * rough} de Vida`);
   }
-  // V35 · Cáliz envenenado: cada Copa del golpe te quita Vida
+  // V35 · Cáliz envenenado: el golpe con Copas te quita Vida (V40: una vez por golpe, no por cada Copa)
   if (cfg.veneno && power.H) {
     cur = { src: 'state', id: 'veneno', label: VENENO_LABEL };
-    x.hurt += cfg.veneno * power.H;
-    x.note(`pierdes ${cfg.veneno * power.H} de Vida`);
+    x.hurt += cfg.veneno;
+    x.note(`perdés ${cfg.veneno} de Vida`);
   }
 
   // 10 · los estados que deja la mezcla de palos: un solo palo deja Expuesto; tres palos (o El Espía), Aturdido
@@ -875,12 +995,28 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     gold: x.gold,
     draw: x.draw,
     noSiren: x.noSiren,
+    mazo: mz,
   };
 }
 
 /** Lo mismo que `strike`, sin tocar el estado: para previsualizar y para que el bot compare jugadas. */
-export function previewStrike(env: StrikeEnv, cards: Card[], target: Suit): StrikeResult {
-  return strike({ ...env, towers: structuredClone(env.towers), tools: env.tools.map((t) => ({ ...t })) }, cards, target);
+export function previewStrike(env: StrikeEnv, cards: Card[], target: Suit, opts: { engano?: EnganoModo } = {}): StrikeResult {
+  return strike({ ...env, towers: structuredClone(env.towers), tools: env.tools.map((t) => ({ ...t })) }, cards, target, undefined, opts);
+}
+
+/** ¿El golpe abate al guardia del trono apuntado? */
+const abate = (r: StrikeResult, target: Suit) => (r.fallenBy[target] ?? 0) > 0;
+
+/**
+ * V40 · El Engaño de El Mentiroso para este golpe: el modo con que se usa, o undefined si no se usa. Solo con el Engaño
+ * del asalto aún sin usar. `pedido` (la acción): un modo lo pide a mano (si cambia algo); false, no se usa; sin él,
+ * automático: solo si el golpe no abatía y con el Engaño sí abate (prueba Inmune, luego palo, luego número).
+ */
+export function eligeEngano(env: StrikeEnv, cards: Card[], target: Suit, pedido?: EnganoModo | false): EnganoModo | undefined {
+  if (env.config.mazo !== 'mentiroso' || !env.engano || env.engano.usado || pedido === false) return undefined;
+  if (pedido) return enganoCambia(pedido, cards, target) ? pedido : undefined;
+  if (!classify(cards, env.config) || abate(previewStrike(env, cards, target), target)) return undefined;
+  return ENGANO_MODOS.find((m) => enganoCambia(m, cards, target) && abate(previewStrike(env, cards, target, { engano: m }), target));
 }
 
 // ───────────────────────── Turno ─────────────────────────
@@ -905,6 +1041,8 @@ interface Turn {
   state: GameState;
   events: GameEvent[];
   draw: number;
+  /** V40 · Lo que baja el Contraataque de este turno (Mano larga del Chinchón). */
+  alivio?: number;
 }
 
 function hookFor(turn: Turn, slot: number): Hook {
@@ -930,7 +1068,7 @@ function hookFor(turn: Turn, slot: number): Hook {
       events.push({ e: 'wall', amount: state.wall - before, total: state.wall });
     },
     draw(n) {
-      mark(`robas ${n}`);
+      mark(`robás ${n}`);
       turn.draw += n;
     },
     charge(n) {
@@ -984,8 +1122,8 @@ export function nextCollapse(env: { config: Config; collapses: number }): number
  * V35 · La Furia del asalto: Ataque de más de todos sus enemigos. Suma la inicial (decreto), la de los Mazos agotados,
  * la Furia del Rey (un punto por cada turno que el monarca lleva de enemigo activo) y, en la partida clásica, el reloj.
  */
-export function siegeLevel(env: { config: Config; collapses: number; turnCount: number; furiaRey?: number }): number {
-  return (env.config.furiaInicial ?? 0) + fatigueAt(env.config, env.turnCount) + deckSiege(env) + (env.furiaRey ?? 0);
+export function siegeLevel(env: { config: Config; collapses: number; turnCount: number; furiaRey?: number; furiaMazo?: number }): number {
+  return (env.config.furiaInicial ?? 0) + fatigueAt(env.config, env.turnCount) + deckSiege(env) + (env.furiaRey ?? 0) + (env.furiaMazo ?? 0);
 }
 
 function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
@@ -1024,7 +1162,20 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
     events.push({ e: 'state', tower: t.suit, fx: 'sobrecarga', on: false });
     return say(t.suit, 'sobrecarga');
   }
-  const threat = threatOf(state, t);
+  // V40 · El Mentiroso, Cara de piedra: el Contraataque de este guardia no llega (se pierde si cae antes)
+  if (t.piedra) {
+    delete t.piedra;
+    events.push({ e: 'step', src: 'mazo', id: 'piedra', label: REGLA.piedra.name, fuerza: 0, res: 0 });
+    return say(t.suit, 'sobrecarga');
+  }
+  // V40 · Chancho: el póker aturde en cadena (los Contraataques siguientes no llegan, sea quien sea el enemigo)
+  if ((state.cadena ?? 0) > 0) {
+    state.cadena = state.cadena! - 1;
+    events.push({ e: 'step', src: 'mazo', id: 'chancho', label: `${REGLA.chancho.name}: quedan ${state.cadena}`, fuerza: 0, res: 0 });
+    return say(t.suit, 'sobrecarga');
+  }
+  // V40 · Mano larga (Chinchón): el Contraataque de este turno llega más flojo
+  const threat = Math.max(0, threatOf(state, t) - (turn.alivio ?? 0));
   const blocked = Math.min(state.wall, threat);
   state.wall -= blocked;
   const taken = threat - blocked;
@@ -1102,15 +1253,19 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
 
   if (action.type === 'attack') {
     const cards = takeFromHand(p, action.cards);
-    const formation = classify(cards);
+    // V40 · un Engaño pedido a mano puede hacer jugada lo que no lo era (cuatro cartas sueltas «son» un póker)
+    const pedido = action.engano && state.config.mazo === 'mentiroso' && state.engano && !state.engano.usado ? action.engano : undefined;
+    const formation = classify(cards, state.config) ?? (pedido ? formaConEngano(cards, state.config, pedido) : null);
     if (!formation) throw new RuleError('Formación inválida: carta sola, grupo, doble par, full, póker, escalera o color.');
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Ese trono ya cayó.');
-    if (tower !== activo(state)) throw new RuleError('Solo puedes golpear al enemigo que tienes delante.');
+    if (tower !== activo(state)) throw new RuleError('Solo podés golpear al enemigo que tenés delante.');
+    const engano = eligeEngano(state, cards, action.target, action.engano);
     spend(p, action.cards);
     events.push({ e: 'play', player: p.id, cards, target: action.target, formation });
-    const res = strike(state, cards, action.target, state);
+    const res = strike(state, cards, action.target, state, { engano });
     events.push(...res.events);
+    mazoTrasGolpe(turn, res, action.target, engano, action.engano === undefined);
     let repair = res.repair;
     if (res.wallGain > 0) {
       const before = state.wall;
@@ -1152,9 +1307,11 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     if (allDown(state)) return win();
   } else if (action.type === 'discard') {
     const cards = takeFromHand(p, action.cards);
-    if (cards.length === 0) throw new RuleError('Elige al menos una carta para descartar.');
+    if (cards.length === 0) throw new RuleError('Elegí al menos una carta para descartar.');
+    // V40 · Chancho Va, Pasar: la primera carta suelta que se descarta en el turno no lo gasta
+    const libre = state.config.mazo === 'chancho' && !state.pasado && cards.length === 1;
     spend(p, action.cards);
-    events.push({ e: 'discard', player: p.id, cards });
+    events.push({ e: 'discard', player: p.id, cards, ...(libre ? { libre: true as const } : {}) });
     turn.draw += cards.filter((c) => c.seal === 'sindical').length * (state.config.sealTwice ? 2 : 1);
     state.tools.forEach((t, slot) => TOOL[t.id]?.discard?.(hookFor(turn, slot), t, cards));
     const rest = cards.filter((c) => !state.burned.includes(c.id));
@@ -1162,21 +1319,47 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
       state.exhausted.push(...rest);
       state.charge += rest.length * state.config.discardExhaust;
     } else state.discard.push(...rest);
+    if (libre) {
+      // se roba una carta nueva en el acto y se sigue jugando el turno (lo que roban los sellos, al reponer)
+      state.pasado = true;
+      events.push({ e: 'step', src: 'mazo', id: 'pasar', label: REGLA.pasar.name, fuerza: 0, res: 0 });
+      if (allDown(state)) return win();
+      const nueva = drawOne(state, events);
+      if (nueva) {
+        p.hand.push(nueva);
+        events.push({ e: 'draw', player: p.id, count: 1, cards: [nueva] });
+      }
+      state.robo = (state.robo ?? 0) + turn.draw;
+      return { state, events };
+    }
   } else if (action.type === 'joker') {
     const [card] = takeFromHand(p, [action.card]);
     if (card.suit !== 'X' || card.sp) throw new RuleError('Esa carta no es un Comodín.');
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Ese trono ya cayó.');
-    if (tower !== activo(state)) throw new RuleError('Solo puedes golpear al enemigo que tienes delante.');
+    if (tower !== activo(state)) throw new RuleError('Solo podés golpear al enemigo que tenés delante.');
     spend(p, [card.id]);
     state.exhausted.push(card); // el comodín no vuelve esta obra
     skip = 'huelga';
     events.push({ e: 'joker', player: p.id, card, target: action.target });
+    // V40 · El Mentiroso, Cara de piedra: el Comodín no gasta el turno; el próximo Contraataque de ese guardia no
+    // llega (sin quedar Aturdido: no cuenta para lo que premia a los Aturdidos) y el golpe siguiente suma Daño
+    if (state.config.mazo === 'mentiroso') {
+      skip = null;
+      tower.piedra = true;
+      state.tools.forEach((t, slot) => TOOL[t.id]?.joker?.(hookFor(turn, slot), t));
+      state.charge += MZ.mentiroso.dano;
+      events.push({ e: 'step', src: 'mazo', id: 'piedra', label: `${REGLA.piedra.name}: +${MZ.mentiroso.dano} de Daño cargado`, fuerza: 0, res: 0, proc: { what: 'carga', n: MZ.mentiroso.dano } });
+      if (allDown(state)) return win();
+      // lo que se roba (la Antorcha) llega con el resto al reponer la mano, al final del turno
+      state.robo = (state.robo ?? 0) + turn.draw;
+      return { state, events };
+    }
     // el Motín: ese trono queda Aturdido y este turno no hay Contraataque
     setFx(tower, 'sobrecarga', events, state.config);
     state.tools.forEach((t, slot) => TOOL[t.id]?.joker?.(hookFor(turn, slot), t));
   } else if (action.type === 'pass') {
-    if (p.hand.length + p.reserve.length > 0) throw new RuleError('Solo puedes pasar con la mano vacía.');
+    if (p.hand.length + p.reserve.length > 0) throw new RuleError('Solo podés pasar con la mano vacía.');
     events.push({ e: 'pass', player: p.id });
     // nadie tiene cartas y no queda cantera ni escombrera: no hay con qué seguir
     if (state.deck.length + state.discard.length === 0 && state.players.every((q) => q.hand.length + q.reserve.length === 0)) state.integrity = 0;
@@ -1187,7 +1370,9 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   const sirens = skip ? 1 : (state.config.sirenCount ?? 1);
   for (let i = 0; i < sirens && state.integrity > 0; i++) siren(turn, skip);
   if (allDown(state)) return win(); // una herramienta puede rematar durante la sirena
-  if (state.integrity > 0) refill(state, p, events, turn.draw);
+  // V40 · más lo que se robó en las jugadas que no gastan el turno (Pasar, Cara de piedra)
+  if (state.integrity > 0) refill(state, p, events, turn.draw + (state.robo ?? 0));
+  if (state.robo) state.robo = 0;
   if (state.integrity <= 0) {
     state.integrity = 0;
     state.phase = 'lost';
@@ -1197,6 +1382,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   state.turn = (state.turn + 1) % state.players.length;
   state.turnCount++;
   state.stashed = false;
+  if (state.pasado) state.pasado = false;
   // V35 · Furia del Rey: cada turno que el monarca sigue de enemigo activo (ya lo era al empezar el turno), la Furia sube
   if (state.config.jefe && esJefe(prev.config, activo(prev)) && esJefe(state.config, activo(state))) state.furiaRey = (state.furiaRey ?? 0) + state.config.jefe.furia;
   const fatigue = siegeLevel(state);
@@ -1207,6 +1393,36 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   tiraDado(state);
   events.push({ e: 'turn', player: currentPlayer(state).id });
   return { state, events };
+}
+
+/**
+ * V40 · Lo que un golpe deja en el estado por las reglas del Mazo: el Engaño usado (y la Furia si no abatió), las
+ * cargas permanentes (Escoba, Mano larga), el Chancho en cadena, el alivio del Contraataque y el bono De arranque.
+ */
+function mazoTrasGolpe(turn: Turn, res: StrikeResult, target: Suit, engano: EnganoModo | undefined, auto: boolean): void {
+  const { state, events } = turn;
+  const mark = (id: string, label: string, proc?: Proc) => events.push({ e: 'step', src: 'mazo', id, label, fuerza: 0, res: 0, ...(proc ? { proc } : {}) });
+  if (engano) {
+    const abatio = (res.fallenBy[target] ?? 0) > 0;
+    const furia = abatio ? 0 : MZ.mentiroso.furia;
+    state.engano = { usado: true, modo: engano, turno: state.turnCount, auto, abatio, ...(furia ? { furia } : {}) };
+    if (furia) {
+      state.furiaMazo = (state.furiaMazo ?? 0) + furia;
+      mark('engano', `${REGLA.engano.name}: la Furia sube ${furia}`);
+    }
+  }
+  for (const id of ['escoba', 'larga'] as const) {
+    if (!res.mazo[id]) continue;
+    state.cargas = { ...state.cargas, [id]: (state.cargas?.[id] ?? 0) + 1 };
+    mark(id, `${REGLA[id].name}: carga ${state.cargas[id]}`);
+  }
+  if (res.mazo.chancho) state.cadena = (state.cadena ?? 0) + MZ.chancho.cadena;
+  if (res.mazo.alivio) turn.alivio = res.mazo.alivio;
+  if (state.config.mazo === 'chancho' && state.turnCount < MZ.chancho.turnos && res.fell.length) {
+    const n = res.fell.length * MZ.chancho.dano;
+    state.charge += n;
+    mark('arranque', `${REGLA.arranque.name}: +${n} de Daño cargado`, { what: 'carga', n });
+  }
 }
 
 /** V35 · Tira el dado del Tahúr para el turno que empieza (solo con el rasgo activo: sin él no se gasta azar). */
@@ -1252,6 +1468,10 @@ export interface PlayerView extends StrikeEnv {
   collapses: number;
   /** V35 · Lo que la Furia debe a los turnos del monarca (la «Furia del Rey»). */
   furiaRey: number;
+  /** V40 · Chancho Va: ya se pasó una carta este turno. Chancho: Contraataques que aún no llegan. Furia del Engaño. */
+  pasado?: boolean;
+  cadena?: number;
+  furiaMazo?: number;
   phase: Phase;
   /** Lo que aún no has visto (cantera y manos ajenas), ordenado: no revela el orden de robo. */
   unseen: Card[];
@@ -1288,6 +1508,12 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     collapses: state.collapses,
     furiaRey: state.furiaRey ?? 0,
     ...(state.dado ? { dado: state.dado } : {}),
+    // V40 · lo del Mazo (cargas, Engaño, Pasar, Chancho), para que la interfaz lo enseñe
+    ...(state.cargas ? { cargas: state.cargas } : {}),
+    ...(state.engano ? { engano: state.engano } : {}),
+    ...(state.pasado ? { pasado: true } : {}),
+    ...(state.cadena ? { cadena: state.cadena } : {}),
+    ...(state.furiaMazo ? { furiaMazo: state.furiaMazo } : {}),
     phase: state.phase,
     unseen: sortCards([...state.deck, ...state.players.filter((p) => p.id !== playerId).flatMap((p) => [...p.hand, ...p.reserve])]),
     discard: sortCards(state.discard),

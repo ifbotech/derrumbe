@@ -39,7 +39,7 @@ export const KEYWORDS: Keyword[] = [
     name: 'Golpe exacto',
     match: /(?<![\p{L}\p{N}])(?:golpes? exactos?|¡EXACTO!)(?![\p{L}\p{N}])/giu,
     matchEn: /(?<![\p{L}\p{N}])(?:exact hits?|EXACT!)(?![\p{L}\p{N}])/giu,
-    desc: fill('Abatir a un guardia con el Golpe justo: sin Contraataque, +{oro} de oro, robas 1, Impulso (el siguiente pierde {impulso} de su Vida) y Racha (+{racha} de Multi al próximo golpe, hasta +{tope}).', C),
+    desc: fill('Abatir a un guardia con el Golpe justo: sin Contraataque, +{oro} de oro, robás 1, Impulso (el siguiente pierde {impulso} de su Vida) y Racha (+{racha} de Multi al próximo golpe, hasta +{tope}).', C),
   },
   {
     id: 'fractura',

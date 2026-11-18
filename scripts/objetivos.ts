@@ -5,11 +5,17 @@
 
 /** Los rangos. Todo en % de campañas ganadas, salvo el ritmo (turnos) y la letalidad (veces la media). */
 export const OBJETIVOS = {
-  /** Reinado 1 y Reinado 8 «Puertas selladas», con el Altar vacío y lleno. V40: con la baraja española, el Reinado 1 vacío pasa a 28–34. */
-  reinado1: { vacio: [28, 34], lleno: [42, 48] },
+  /**
+   * Reinado 1 y Reinado 8 «Puertas selladas», con el Altar vacío y lleno (con el Mazo inicial). V40: con la baraja
+   * española, el Reinado 1 vacío pasa a 28–34; con los 5 Mazos (decisión de dirección) el lleno puede subir a 42–50.
+   */
+  reinado1: { vacio: [28, 34], lleno: [42, 50] },
   reinado8: { vacio: [6, 10], lleno: [12, 18] },
-  /** Barajas en el Reinado 1. Objetivo 28–34 vacío (V40) y 42–48 lleno; avisa fuera de 25–36 y 40–50. */
-  barajas: { lleno: [40, 50], llenoObjetivo: '42–48', vacio: [25, 36], vacioObjetivo: '28–34', sumaMinima: 6 },
+  /**
+   * V40 · Los 5 Mazos en el Reinado 1: cada uno 28–34 con el Altar vacío y los cinco a 5 puntos o menos entre sí
+   * (`dispersion`: el mejor menos el peor); con el Altar lleno, ≤ 50 (avisa por debajo de 40) y el Altar suma ≥ 6.
+   */
+  mazos: { lleno: [40, 50], llenoObjetivo: '42–50', vacio: [28, 34], vacioObjetivo: '28–34', dispersion: 5, sumaMinima: 6 },
   /** Reliquias y especiales dados de salida: trampa por debajo, victoria regalada por encima. */
   regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40 },
   /** Letalidad de cada monarca respecto a la media (con al menos `enfrentados` encuentros). */
@@ -91,6 +97,8 @@ export const noise = (n: number, nRef: number, refPct: number) => {
   return Math.round(3 * Math.sqrt(p * (1 - p) * (1 / Math.max(1, n) + 1 / Math.max(1, nRef))) * 1000) / 10;
 };
 
+import { MAZO_INICIAL } from '../src/rules/mazos';
+
 const inRange = (v: number, [lo, hi]: readonly number[]) => v >= lo && v <= hi;
 
 /** Todas las comprobaciones del informe, en el orden en que salen los avisos (sin la partida clásica). */
@@ -118,11 +126,19 @@ export function revisar(r: InformeMeta): Comprobacion[] {
     out.push({ id: `escalera.${b.level}.lleno`, texto: `Reinados ${a.level} → ${b.level} con el Altar lleno: ${a.lleno} % → ${b.lleno} % (no baja)`, ok: b.lleno < a.lleno, partes: [{ valor: a.lleno - b.lleno, lo: 0.1 }] });
   }
   for (const d of r.winrate.decks) {
-    if (!has(d) || d.deck === 'obra') continue;
-    rango(`baraja.${d.deck}.lleno`, d.lleno, O.barajas.lleno, `${d.name}: ${d.lleno} % con el Altar lleno (objetivo ${O.barajas.llenoObjetivo}, margen ${O.barajas.lleno.join('–')})`);
-    rango(`baraja.${d.deck}.vacio`, d.vacio, O.barajas.vacio, `${d.name}: ${d.vacio} % con el Altar vacío (objetivo ${O.barajas.vacioObjetivo})`);
+    if (!has(d) || d.deck === MAZO_INICIAL) continue;
+    rango(`baraja.${d.deck}.lleno`, d.lleno, O.mazos.lleno, `${d.name}: ${d.lleno} % con el Altar lleno (objetivo ${O.mazos.llenoObjetivo}, margen ${O.mazos.lleno.join('–')})`);
+    rango(`baraja.${d.deck}.vacio`, d.vacio, O.mazos.vacio, `${d.name}: ${d.vacio} % con el Altar vacío (objetivo ${O.mazos.vacioObjetivo})`);
     const suma = d.lleno - d.vacio;
-    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: el Altar lleno solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.barajas.sumaMinima), partes: [{ valor: suma, lo: O.barajas.sumaMinima }] });
+    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: el Altar lleno solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.mazos.sumaMinima), partes: [{ valor: suma, lo: O.mazos.sumaMinima }] });
+  }
+  // V40 · ningún Mazo domina: con el Altar vacío, del mejor al peor hay 5 puntos o menos (el inicial incluido)
+  const vacios = r.winrate.decks.filter(has);
+  if (vacios.length > 1) {
+    const hi = vacios.reduce((a, b) => (b.vacio > a.vacio ? b : a));
+    const lo = vacios.reduce((a, b) => (b.vacio < a.vacio ? b : a));
+    const d = Math.round((hi.vacio - lo.vacio) * 10) / 10;
+    out.push({ id: 'mazos.dispersion', texto: `Mazos con el Altar vacío: de ${hi.name} (${hi.vacio} %) a ${lo.name} (${lo.vacio} %) hay ${d} puntos (objetivo ≤ ${O.mazos.dispersion})`, ok: d <= O.mazos.dispersion, partes: [{ valor: d, hi: O.mazos.dispersion }] });
   }
   const ref = r.giftBaselineN;
   const refPct = r.giftBaseline;

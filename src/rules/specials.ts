@@ -30,7 +30,7 @@ export interface Fx {
   /** Daño directo a cada una de las otras torres. */
   splash?: number;
   noSiren?: boolean;
-  /** Cartas extra que robas este turno. */
+  /** Cartas extra que robás este turno. */
   draw?: number;
   /** Deja Aturdido al trono golpeado. */
   disarm?: boolean;
@@ -52,24 +52,24 @@ type SpecialDef = Omit<Special, 'fx'>;
 const DEFS: SpecialDef[] = [
   { id: 'barreno', name: 'Ballesta', desc: 'El golpe Perfora y suma +{flat} de Daño.' },
   { id: 'martillo', name: 'Martillo de guerra', desc: 'La carta de mayor valor del golpe cuenta 2 veces.' },
-  { id: 'saboteador', name: 'El Espía', desc: 'El trono que golpeas queda Aturdido.' },
+  { id: 'saboteador', name: 'El Espía', desc: 'El trono que golpeás queda Aturdido.' },
   { id: 'palanca', name: 'Garfio', desc: '+{flatPerCard} de Daño por cada carta del golpe.' },
-  { id: 'grua', name: 'Paloma mensajera', desc: 'Robas {draw} cartas extra este turno.' },
+  { id: 'grua', name: 'Paloma mensajera', desc: 'Robás {draw} cartas extra este turno.' },
   { id: 'mordaza', name: 'Tregua', desc: 'No hay Contraataque este turno.' },
   { id: 'clavos', name: 'Lluvia de flechas', desc: '{splash} puntos a cada uno de los otros tronos.' },
   { id: 'chatarrero', name: 'Carterista', desc: '+{gold} de oro.' },
   { id: 'pico', name: 'Rescate', desc: 'Si el golpe abate a un guardia, +{goldOnKill} de oro.' },
   { id: 'botica', name: 'Elixir', desc: '+{heal} de Vida.' },
   { id: 'gemelo', name: 'Naipe trucado', desc: 'Todas las cartas del golpe valen lo que la de mayor valor.' },
-  { id: 'nitro', name: 'Pacto oscuro', desc: '×{strikeMult} de Multi, pero pierdes {hurt} de Vida.' },
+  { id: 'nitro', name: 'Pacto oscuro', desc: '×{strikeMult} de Multi, pero perdés {hurt} de Vida.' },
   { id: 'bola', name: 'Clarín', desc: '+{multi} de Multi.' },
   { id: 'hormigonera', name: 'Puerta atrancada', desc: '+{wall} de Escudo.' },
   { id: 'cemento', name: 'Cota de malla', desc: '+{wallPerCard} de Escudo por cada carta del golpe.' },
   { id: 'embestida', name: 'Embestida', desc: '+{flat} de Daño, y +{wallForce} más por cada punto de Escudo en pie.' },
   { id: 'sierra', name: 'Pasadizo', desc: 'Este golpe no respeta Inmune: tus cartas hacen su Daño contra cualquier trono.' },
   // ── legendarias ──
-  { id: 'ferretero', name: 'El Tratante', desc: '+{gold} de oro y robas {draw} carta extra.', locked: 'ferretero' },
-  { id: 'j-doble', name: 'El Rey de Dos Caras', desc: 'No hay Contraataque y robas {draw} carta extra.', locked: 'j-doble' },
+  { id: 'ferretero', name: 'El Tratante', desc: '+{gold} de oro y robás {draw} carta extra.', locked: 'ferretero' },
+  { id: 'j-doble', name: 'El Rey de Dos Caras', desc: 'No hay Contraataque y robás {draw} carta extra.', locked: 'j-doble' },
   { id: 'j-escasez', name: 'El Usurero', desc: '+{gold} de oro.', locked: 'j-escasez' },
   { id: 'j-sequia', name: 'La Dama del Cáliz', desc: '+{heal} de Vida.', locked: 'j-sequia' },
   { id: 'j-intemperie', name: 'La Reina Helada', desc: '+{wall} de Escudo y no hay Contraataque.', locked: 'j-intemperie' },

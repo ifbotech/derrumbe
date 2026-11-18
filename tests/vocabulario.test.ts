@@ -73,6 +73,14 @@ const PROHIBIDAS: [string, RegExp][] = [
   ['Tavern (hoy General Store)', /\btaverns?\b/],
   ['Árbol (hoy el Altar)', /\barbol\b/],
   ['Conspiracy Tree (hoy the Altar)', /\bconspiracy tree\b/],
+  // V40 (1b): las seis barajas de inicio pasaron a ser los 5 Mazos
+  ['Baraja de la conjura (hoy la Escoba)', /\bbaraja de la conjura\b/],
+  ['Baraja negra (hoy el Truco)', /\bbaraja negra\b/],
+  ['Baraja del prestamista (hoy el Chinchón)', /\bbaraja del prestamista\b/],
+  ['Baraja de ases (hoy El Mentiroso)', /\bbaraja de ases\b/],
+  ['Baraja corta (hoy Chancho Va)', /\bbaraja corta\b/],
+  ['Baraja del caos', /\bbaraja del caos\b/],
+  ['las barajas de inicio en inglés (hoy los Decks)', /\b(?:conspiracy|black|moneylender'?s|chaos|short) deck\b|\bdeck of aces\b/],
 ];
 
 /**

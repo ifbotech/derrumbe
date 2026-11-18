@@ -288,7 +288,7 @@ describe('textos al vuelo en inglés', () => {
   it('las líneas del cobro', () => {
     let lineas = 0;
     for (let seed = 1; seed <= 6; seed++) {
-      const { run } = playCampaign({ seed, deck: 'obra', ascension: 0, full: true, giveTool: 'hucha' });
+      const { run } = playCampaign({ seed, deck: 'escoba', ascension: 0, full: true, giveTool: 'hucha' });
       for (const [label] of run.pay) {
         expect(restosEs(cobroFor('en', label)), label).toEqual([]);
         lineas++;

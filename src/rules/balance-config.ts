@@ -59,7 +59,7 @@ export interface BalanceConfig {
   /** Cifras de los decretos de los monarcas. */
   monarcas: {
     doble: { contraataques: number; ataque: number };
-    escasez: { cartas: number };
+    escasez: { cartas: number; ataque: number };
     intemperie: { escudoTope: number };
     furia: { ataque: number };
     inestable: { furia: number; vida: number };
@@ -93,13 +93,17 @@ export interface BalanceConfig {
   caida: { esquirlaGolpe: number; esquirlaGuardia: number; esquirlaExacto: number; esquirlaMonarca: number; oroGuardia: number; gotaExacto: number; gotasPorSello: number; formacionCartas: number; imanSegundos: number; maxPiezas: number };
   /** Caras de los dados de hueso (enteras): el Dado de oro y el Dado de la Corona. */
   huesos: { oro: number[]; corona: number[] };
-  /** Lo que suma o quita cada baraja inicial. */
-  barajas: {
-    acero: { vida: number };
-    prestamista: { oro: number; interes: number; vida: number };
-    ases: { vida: number };
-    corta: { oro: number; vida: number };
-    caos: { especiales: number };
+  /**
+   * V40 · Los 5 Mazos (ver src/rules/mazos.ts): las bases de sus formaciones propias (Par de palo del Truco, Quince de
+   * la Escoba) y las cifras de cada regla. `vida`: lo que el Mazo suma o quita a la Vida inicial; `mano`, al tamaño de la mano.
+   */
+  mazos: {
+    formaciones: Record<'parpalo' | 'quince', FormBase>;
+    truco: { vida: number; mano: number; bravo: Record<'S1' | 'C1' | 'S7' | 'D7', number>; envido: number };
+    escoba: { vida: number; mano: number; multi: number; carga: number };
+    chinchon: { vida: number; mano: number; pierna: number; escalera: number; cartas: number; carga: number; alivio: number };
+    mentiroso: { vida: number; mano: number; comodines: number; dano: number; furia: number };
+    chancho: { vida: number; mano: number; cadena: number; turnos: number; dano: number };
   };
   formaciones: Record<string, FormBase>;
   /** La mesa por defecto (DEFAULT_CONFIG del motor). */

@@ -2,7 +2,8 @@
 // Se usa para balancear las reglas por simulación y para jugar el turno de un jugador
 // desconectado en partidas online. Entiende las reliquias (las ordena), los sellos de lacre,
 // los acabados, la selección de cartas y las sinergias entre reliquias.
-import { AS_ALTO, Action, CABALLO, Card, Config, GameState, MAX_NUM, SOTA, SUITS, StrikeEnv, Suit, Tower, activo, cardValue, classify, currentPlayer, standing, strike, threatOf, vidaTotal } from './engine';
+import { AS_ALTO, Action, CABALLO, Card, Config, GameState, MAX_NUM, SOTA, SUITS, StrikeEnv, Suit, Tower, activo, cardValue, classify, currentPlayer, eligeEngano, standing, strike, threatOf, vidaTotal } from './engine';
+import { ESCOBA_SUMA, MZ } from './mazos';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';
 import { RARITY, TOOL, TOOL_SLOTS, rasgosDe } from './tools';
@@ -15,8 +16,8 @@ export function arrange(cards: Card[]): Card[] {
   return [...cards].sort((a, b) => late(a) - late(b) || cardValue(b) - cardValue(a));
 }
 
-/** Todas las formaciones de ataque legales que se pueden armar con una mano (sin cartas especiales). */
-export function formations(hand: Card[]): Card[][] {
+/** Todas las formaciones de ataque legales que se pueden armar con una mano (sin cartas especiales). Con `cfg`, también las del Mazo. */
+export function formations(hand: Card[], cfg?: { mazo?: Config['mazo'] }): Card[][] {
   const cards = hand.filter((c) => c.suit !== 'X' && !c.sp);
   const out: Card[][] = cards.map((c) => [c]);
   const byRank = new Map<number, Card[]>();
@@ -58,7 +59,18 @@ export function formations(hand: Card[]): Card[][] {
     const same = cards.filter((c) => c.suit === s).sort((x, y) => cardValue(y) - cardValue(x));
     if (same.length >= 5) out.push(same, same.slice(0, 5));
   }
-  return out.filter((f) => classify(f)).map(arrange);
+  // V40 · Truco: las parejas del mismo palo (Par de palo, que canta Envido)
+  if (cfg?.mazo === 'truco') for (let i = 0; i < cards.length; i++) for (let j = i + 1; j < cards.length; j++) if (cards[i].suit === cards[j].suit) out.push([cards[i], cards[j]]);
+  // V40 · Escoba: todas las combinaciones que suman 15 (hasta 12 cartas: 4.096 subconjuntos como mucho)
+  if (cfg?.mazo === 'escoba') {
+    const lisas = cards.slice(0, 12);
+    for (let mask = 3; mask < 1 << lisas.length; mask++) {
+      let suma = 0;
+      for (let i = 0; i < lisas.length && suma <= ESCOBA_SUMA; i++) if (mask & (1 << i)) suma += lisas[i].rank;
+      if (suma === ESCOBA_SUMA) out.push(lisas.filter((_, i) => mask & (1 << i)));
+    }
+  }
+  return out.filter((f) => classify(f, cfg)).map(arrange);
 }
 
 const remaining = (towers: Record<Suit, Tower>, cfg: Config) => SUITS.reduce((a, s) => a + vidaTotal(towers[s], cfg), 0);
@@ -80,7 +92,9 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
   const risk = danger(state, state.towers) * (cfg.sirenCount ?? 1);
   const has = (id: string) => state.tools.some((t) => t.id === id);
   const wallPays = WALL_PAYOFF.filter(has).length;
-  const res = strike(env, cards, target);
+  // V40 · El Mentiroso: el Engaño automático, tal como lo aplicará el motor
+  const engano = eligeEngano(state, cards, target);
+  const res = strike(env, cards, target, undefined, { engano });
   const unit = cfg.floorHp[SOTA] / 20;
   const low = state.integrity <= cfg.maxIntegrity / 2 ? 1.5 : 1;
   let score = (before - remaining(env.towers, cfg)) / unit;
@@ -107,6 +121,10 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
   score -= res.hurt * 1.8 * low;
   score -= cards.filter((c) => !c.sp).length * 0.8 + cards.filter((c) => c.sp).length * 0.5; // las especiales vuelven en cada vuelta de cantera: guardarlas solo estorba
   if (state.integrity - res.hurt <= 0) score -= 1000;
+  // V40 · lo que el Mazo deja para después: una carga permanente vale; el Chancho en cadena, como Aturdidos
+  if (res.mazo.escoba || res.mazo.larga) score += 2.5;
+  if (res.mazo.chancho) score += threatOf(state, activo(state) ?? state.towers[target]) * 1.7 * low * Math.min(2, MZ.chancho.cadena);
+  if (res.mazo.alivio) score += Math.min(res.mazo.alivio, risk) * 1.7 * low;
   return score;
 }
 
@@ -120,6 +138,8 @@ export function chooseAction(state: GameState): Action {
   const frente = activo(state);
   const targets: Suit[] = frente ? [frente.suit] : [];
   const joker = held.find((c) => c.suit === 'X' && !c.sp);
+  // V40 · El Mentiroso: el Comodín no gasta el turno, así que se juega en cuanto no haya ya un Contraataque frenado
+  if (joker && frente && !frente.fx.sobrecarga && !frente.piedra && state.config.mazo === 'mentiroso') return { type: 'joker', card: joker.id, target: frente.suit };
   if (joker && frente && !frente.fx.sobrecarga) {
     // el Motín, cuando el que contraataca pega fuerte (Caballo, Rey o monarca) o la Vida está en apuros
     if (frente.floors[0] >= CABALLO || state.integrity <= 8 || threatOf(state, frente) >= state.integrity + state.wall) return { type: 'joker', card: joker.id, target: frente.suit };
@@ -127,7 +147,7 @@ export function chooseAction(state: GameState): Action {
 
   type Play = { score: number; cards: Card[]; target: Suit };
   const plays: Play[] = [];
-  for (const cards of formations(held)) for (const target of targets) plays.push({ score: evaluate(state, cards, target), cards, target });
+  for (const cards of formations(held, state.config)) for (const target of targets) plays.push({ score: evaluate(state, cards, target), cards, target });
   plays.sort((a, b) => b.score - a.score);
   // las cartas especiales se prueban sobre las mejores jugadas, y también solas
   const specials = held.filter((c) => c.sp);
@@ -146,6 +166,13 @@ export function chooseAction(state: GameState): Action {
     const used = new Set(best && best.score > 1.5 ? best.cards.map((c) => c.id) : []);
     const keep = p.hand.filter((c) => !used.has(c.id)).sort((a, b) => cardWorth(b) - cardWorth(a))[0];
     if (keep) return { type: 'stash', card: keep.id };
+  }
+  // V40 · Chancho Va: antes de golpear, pasa la carta que menos sirve (sola en su número y fuera de la jugada)
+  if (state.config.mazo === 'chancho' && !state.pasado && p.hand.length > 1) {
+    const used = new Set(best && best.score > 1.5 ? best.cards.map((c) => c.id) : []);
+    const veces = (c: Card) => held.filter((h) => !h.sp && h.suit !== 'X' && h.rank === c.rank).length;
+    const junk = p.hand.filter((c) => !used.has(c.id) && !c.sp && c.suit !== 'X' && veces(c) === 1 && c.rank !== 1).sort((a, b) => cardWorth(a) - cardWorth(b))[0];
+    if (junk && cardWorth(junk) <= 4) return { type: 'discard', cards: [junk.id] };
   }
   if (best && best.score > 1.5) return { type: 'attack', cards: best.cards.map((c) => c.id), target: best.target };
   // Sin jugada útil: descarta las dos cartas más bajas.

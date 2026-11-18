@@ -12,7 +12,9 @@ import { BALANCE, fill } from './balance-config';
 import { ARBOL, Nodo, cifraDe, cleanUp as limpiaArbol, comprarNodo, rangoDe } from './arbol';
 import { Caida, Pieza, caidaDe, caidaVacia, sumaPiezas } from './caida';
 import { Tirada, multiplicadores, tirarHuesos } from './huesos';
-import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, META_38, RUN_11, migraMeta11, migraMeta38, migraRun11, recortaMeta10 } from './migracion';
+import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, META_38, META_40, RUN_11, RUN_40, mazoDe, migraMeta11, migraMeta38, migraMeta40, migraRun11, migraRun40, recortaMeta10 } from './migracion';
+import { CIFRAS_MAZO, MANO_BASE, MAZO_INICIAL, MZ, TRUCO_MAX, esMazo } from './mazos';
+import type { Cargas, MazoId, ReglaId } from './mazos';
 import { CABALLO, Card, Config, DEFAULT_CONFIG, FIGURAS, FORM, FORMATIONS, Formation, GameEvent, GameState, MAX_NUM, REY, SEALS, SOTA, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
@@ -21,11 +23,11 @@ import { Arch, BOXES, RARITY, RASGOS, Rarity, Rasgo, TOOL, TOOL_SLOTS, ToolInst,
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
 /**
- * Versión del formato de campaña guardada. 6 desde la V40 (baraja española: 1 a 9 y figuras 10, 11 y 12). Una
- * campaña de antes (5, o la 4 de la 11.0) se jugaba con la baraja francesa: no se puede continuar y se descarta
- * con un aviso (`campanaFrancesa` en migracion.ts).
+ * Versión del formato de campaña guardada. 7 desde la V40 con los 5 Mazos (`cargas`, y `deckId` es un Mazo); 6 en el
+ * tramo 1a (baraja española con las barajas viejas: se migra con `migraRun40`). Una campaña de antes (5, o la 4 de la
+ * 11.0) se jugaba con la baraja francesa: no se puede continuar y se descarta con un aviso (`campanaFrancesa`).
  */
-export const RUN_VERSION = 6;
+export const RUN_VERSION = 7;
 
 /**
  * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
@@ -143,17 +145,17 @@ export const BOSSES: Boss[] = [
     id: 'escasez',
     who: 'El Usurero',
     name: 'Escasez',
-    desc: 'Jugáis con {cartas} carta menos en la mano.',
+    desc: 'Juegan con {cartas} carta menos en la mano y sus guardias pegan +{ataque}.',
     barks: { entrada: 'Acá no se fía, querido. Jugá con lo justo y gracias.', contraataque: 'Vengo a cobrar los intereses. ¿Quiero? Siempre quiero.', caida: 'Me dejaron sin un cobre... anotá la deuda, che.' },
     curse: { mark: 'mano', badge: '{cartas} carta menos en la mano' },
-    apply: (c) => eachHand(c, -MON.escasez.cartas),
+    apply: (c) => (eachHand(c, -MON.escasez.cartas), eachThreat(c, MON.escasez.ataque)),
   },
   {
     id: 'sequia',
     who: 'La Dama del Cáliz',
     fem: true,
     name: 'Cáliz envenenado',
-    desc: 'Tus Copas no curan: cada una que juegas te quita {veneno} de Vida.',
+    desc: 'Tus Copas no curan: cada golpe con Copas te quita {veneno} de Vida.',
     barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
     curse: { mark: 'corazones', badge: 'Tus Copas te quitan {veneno}' },
     // se aplica después de las reliquias: con el Bálsamo, tampoco curan
@@ -244,15 +246,15 @@ export interface Contract {
 }
 const turnLimit = (run: Run) => 3 + 4 * stageDef(run.stage).floors.length;
 export const CONTRACTS: Contract[] = [
-  { id: 'intacto', name: 'Piel intacta', desc: 'Termina el asalto sin perder Vida.', reward: '+8 de oro', done: (b) => b.taken === 0, pay: (run) => void (run.gold += 8) },
+  { id: 'intacto', name: 'Piel intacta', desc: 'Terminá el asalto sin perder Vida.', reward: '+8 de oro', done: (b) => b.taken === 0, pay: (run) => void (run.gold += 8) },
   { id: 'limpios', name: 'Pulso firme', desc: 'Da 3 Golpes exactos.', reward: 'Un sello de lacre al azar', done: (b) => b.cleans >= 3, pay: (run) => void stampRandom(run, 1) },
-  { id: 'rapido', name: 'Al galope', desc: 'Gana el asalto en 3 turnos + 4 por guardia de cada trono, o menos (3 guardias: 15).', reward: '+6 de oro', done: (_, s, run) => s.turnCount < turnLimit(run), pay: (run) => void (run.gold += 6) },
-  { id: 'sincolapso', name: 'Mazo medido', desc: 'Termina sin que se agote el Mazo.', reward: '+5 de oro', done: (_, s) => s.collapses === 0, pay: (run) => void (run.gold += 5) },
+  { id: 'rapido', name: 'Al galope', desc: 'Ganá el asalto en 3 turnos + 4 por guardia de cada trono, o menos (3 guardias: 15).', reward: '+6 de oro', done: (_, s, run) => s.turnCount < turnLimit(run), pay: (run) => void (run.gold += 6) },
+  { id: 'sincolapso', name: 'Mazo medido', desc: 'Terminá sin que se agote el Mazo.', reward: '+5 de oro', done: (_, s) => s.collapses === 0, pay: (run) => void (run.gold += 5) },
   { id: 'austero', name: 'Sin motines', desc: 'No juegues ningún Comodín.', reward: 'Un acabado al azar', done: (b) => b.jokers === 0, pay: (run) => void treatRandom(run) },
-  { id: 'maestra', name: 'Jugada maestra', desc: 'Juega un color, un full, un póker o una escalera de color.', reward: 'Un Pergamino al azar', done: (b) => b.forms.some((f) => ['color', 'full', 'poker', 'escaleracolor'].includes(f)), pay: (run) => void run.levels[pick(run, FORMATIONS, 1)[0]]++ },
+  { id: 'maestra', name: 'Jugada maestra', desc: 'Jugá un color, un full, un póker o una escalera de color.', reward: 'Un Pergamino al azar', done: (b) => b.forms.some((f) => ['color', 'full', 'poker', 'escaleracolor'].includes(f)), pay: (run) => void run.levels[pick(run, FORMATIONS, 1)[0]]++ },
   { id: 'horas', name: 'Noche larga', desc: 'El Ataque de todos los tronos sube 1.', reward: '+10 de oro', risk: true, cfg: (c) => eachThreat(c, 1), pay: (run) => void (run.gold += 10) },
   { id: 'sinred', name: 'Sin escudo', desc: 'El Escudo no puede pasar de 2.', reward: 'Una reliquia Rara o mejor', risk: true, cfg: (c) => void (c.wallCap = Math.min(c.wallCap, 2)), pay: (run) => void grantTool(run, ['oficio', 'capataz', 'reliquia']) },
-  { id: 'corta', name: 'Conjura corta', desc: 'Jugáis con 1 carta menos en la mano.', reward: '+12 de oro', risk: true, cfg: (c) => eachHand(c, -1), pay: (run) => void (run.gold += 12) },
+  { id: 'corta', name: 'Conjura corta', desc: 'Juegan con 1 carta menos en la mano.', reward: '+12 de oro', risk: true, cfg: (c) => eachHand(c, -1), pay: (run) => void (run.gold += 12) },
 ];
 export const CONTRACT: Record<string, Contract> = Object.fromEntries(CONTRACTS.map((c) => [c.id, c]));
 
@@ -266,7 +268,7 @@ export interface Tag {
 }
 export const TAGS: Tag[] = [
   { id: 'vale', name: 'Llave de la Pulpería', desc: 'En la próxima Pulpería, reliquias, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
-  { id: 'envio', name: 'Contrabando', desc: 'Recibes ya una reliquia Noble o Regia.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
+  { id: 'envio', name: 'Contrabando', desc: 'Recibís ya una reliquia Noble o Regia.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
   { id: 'molde', name: 'Molde de cera', desc: 'Duplicas la carta de tu Mazo que elijas.', apply: (run) => void (run.pending = { kind: 'dup' }) },
   { id: 'liquidacion', name: 'Botín escondido', desc: '+15 de oro.', apply: (run) => void (run.gold += 15) },
   { id: 'timbrado', name: 'Lacre doble', desc: 'Dos cartas al azar de tu Mazo reciben un sello de lacre.', apply: (run) => void stampRandom(run, 2) },
@@ -301,7 +303,7 @@ export const EVENTS: EventDef[] = [
     name: 'El cofre enterrado',
     text: 'Entre dos tumbas asoma un cofre con candado. Forzarlo hará temblar media cripta.',
     options: [
-      { label: 'Forzarlo', read: { gain: 'Reliquia Noble o Regia', cost: '−5 de Vida', glyph: 'contenedor' }, desc: 'Pierdes 5 de Vida. Te llevas una reliquia Noble o Regia.', can: (run) => run.integrity > 5 && run.tools.length < TOOL_SLOTS, apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
+      { label: 'Forzarlo', read: { gain: 'Reliquia Noble o Regia', cost: '−5 de Vida', glyph: 'contenedor' }, desc: 'Perdés 5 de Vida. Te llevás una reliquia Noble o Regia.', can: (run) => run.integrity > 5 && run.tools.length < TOOL_SLOTS, apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
       { label: 'Vendérselo al Tratante', read: { gain: '+8 de oro', cost: '', glyph: 'oro' }, desc: '+8 de oro.', apply: (run) => void (run.gold += 8) },
     ],
   },
@@ -310,7 +312,7 @@ export const EVENTS: EventDef[] = [
     name: 'El caldero del alquimista',
     text: 'Un caldero hierve solo en un rincón. Lo que entra, sale convertido en otra cosa.',
     options: [
-      { label: 'Fundir dos cartas', read: { gain: 'Carta en Lacre policromo', cost: 'Dos cartas arden', glyph: 'crisol' }, desc: 'Eliges dos: arden y nace una con el número más alto, en Lacre policromo y con el sello que llevaran.', can: (run) => run.deck.filter(isPlain).length > MIN_DECK, apply: (run) => void (run.pending = { kind: 'fuse' }) },
+      { label: 'Fundir dos cartas', read: { gain: 'Carta en Lacre policromo', cost: 'Dos cartas arden', glyph: 'crisol' }, desc: 'Elegís dos: arden y nace una con el número más alto, en Lacre policromo y con el sello que llevaran.', can: (run) => run.deck.filter(isPlain).length > MIN_DECK, apply: (run) => void (run.pending = { kind: 'fuse' }) },
       { label: 'Calentarse y seguir', read: { gain: '+4 de Vida', cost: '', glyph: 'reparacion' }, desc: '+4 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 4)) },
     ],
   },
@@ -328,7 +330,7 @@ export const EVENTS: EventDef[] = [
     name: 'Los lacradores ciegos',
     text: 'Tres monjes sellan a la luz de una vela lo que les pongas delante, y no aceptan regateos.',
     options: [
-      { label: 'Pagar con Vida', read: { gain: '3 cartas con sello', cost: '−6 de Vida', glyph: 'sello' }, desc: 'Pierdes 6 de Vida. Tres cartas al azar reciben un sello de lacre.', can: (run) => run.integrity > 6, apply: (run) => void ((run.integrity -= 6), stampRandom(run, 3)) },
+      { label: 'Pagar con Vida', read: { gain: '3 cartas con sello', cost: '−6 de Vida', glyph: 'sello' }, desc: 'Perdés 6 de Vida. Tres cartas al azar reciben un sello de lacre.', can: (run) => run.integrity > 6, apply: (run) => void ((run.integrity -= 6), stampRandom(run, 3)) },
       { label: 'Pagar con oro', read: { gain: 'Tu mejor carta policroma', cost: '−8 de oro', glyph: 'forja' }, desc: '8 de oro. Tu carta más alta recibe Lacre policromo.', can: (run) => run.gold >= 8, apply: (run) => void ((run.gold -= 8), treatBest(run, 'policromado')) },
       { label: 'Seguir de largo', read: { gain: 'Nada cambia', cost: '', glyph: 'atajo' }, desc: 'Nada cambia.', apply: () => {} },
     ],
@@ -336,9 +338,9 @@ export const EVENTS: EventDef[] = [
   {
     id: 'planos',
     name: 'Los mapas escondidos',
-    text: 'Tras una losa están los mapas del castillo. Arrancarlos hace crujir lo poco que os protege.',
+    text: 'Tras una losa están los mapas del castillo. Arrancarlos hace crujir lo poco que los protege.',
     options: [
-      { label: 'Arrancarlos', read: { gain: '2 formaciones +2 niveles', cost: '−3 de Vida máxima', glyph: 'plano' }, desc: 'Pierdes 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 8, apply: (run) => void ((run.maxIntegrity -= 3), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
+      { label: 'Arrancarlos', read: { gain: '2 formaciones +2 niveles', cost: '−3 de Vida máxima', glyph: 'plano' }, desc: 'Perdés 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 8, apply: (run) => void ((run.maxIntegrity -= 3), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
       { label: 'Copiarlos a mano', read: { gain: '1 formación +1 nivel', cost: '−5 de oro', glyph: 'pergamino' }, desc: '5 de oro. Una formación al azar sube 1 nivel.', can: (run) => run.gold >= 5, apply: (run) => void ((run.gold -= 5), run.levels[pick(run, FORMATIONS, 1)[0]]++) },
       { label: 'Dejarlos donde están', read: { gain: 'Nada cambia', cost: '', glyph: 'atajo' }, desc: 'Nada cambia.', apply: () => {} },
     ],
@@ -366,7 +368,7 @@ EVENTS.push(
           else (run.integrity -= 4), sale(run, 'rueda.negro', false, { n: 4 });
         },
       },
-      { label: 'No tocarla', read: { gain: '+3 de oro', cost: '', glyph: 'oro' }, desc: 'Te llevas las monedas del suelo: +3 de oro.', apply: (run) => void (run.gold += 3) },
+      { label: 'No tocarla', read: { gain: '+3 de oro', cost: '', glyph: 'oro' }, desc: 'Te llevás las monedas del suelo: +3 de oro.', apply: (run) => void (run.gold += 3) },
     ],
   },
   {
@@ -376,8 +378,8 @@ EVENTS.push(
     options: [
       {
         label: 'Doble o nada',
-        read: { gain: 'Esquirlas ×2', cost: '1 de 2: las pierdes', glyph: 'dados' },
-        desc: 'Te juegas las esquirlas de esta campaña: 1 de cada 2 veces se doblan; si no, las pierdes.',
+        read: { gain: 'Esquirlas ×2', cost: '1 de 2: las perdés', glyph: 'dados' },
+        desc: 'Te jugás las esquirlas de esta campaña: 1 de cada 2 veces se doblan; si no, las perdés.',
         can: (run) => run.esquirlas > 0,
         apply: (run) => {
           const antes = run.esquirlas;
@@ -396,7 +398,7 @@ EVENTS.push(
       {
         label: 'Ofrecer tu sangre',
         read: { gain: 'Reliquia de tu rasgo', cost: '−3 de Vida máxima', glyph: 'corazon' },
-        desc: 'Pierdes 3 de Vida máxima para siempre. Te llevas una Reliquia del rasgo del que llevas más.',
+        desc: 'Perdés 3 de Vida máxima para siempre. Te llevás una Reliquia del rasgo del que llevás más.',
         can: (run) => run.maxIntegrity > 8 && run.tools.length < TOOL_SLOTS && !!rasgoMayor(run),
         apply: (run) => {
           const rasgo = rasgoMayor(run)!;
@@ -470,10 +472,10 @@ export interface Meta {
   aviso?: AvisoArbol;
 }
 /**
- * 5 desde la V40 (sin Asalto diario: se van `daily` y `stats.dailies`); 4 desde la V12 (Árbol de la Conjura, `renown`
+ * 6 desde los 5 Mazos de la V40 (la maestría va por Mazo); 5 desde la V40 (sin Asalto diario: se van `daily` y `stats.dailies`); 4 desde la V12 (Árbol de la Conjura, `renown`
  * en Esquirlas de Corona). Ver `loadMeta` y src/rules/migracion.ts.
  */
-export const META_VERSION = 5;
+export const META_VERSION = 6;
 export const newMeta = (): Meta => ({
   v: META_VERSION,
   renown: 0,
@@ -509,6 +511,8 @@ export function loadMeta(saved: unknown): Meta {
   if (v <= META_11) migraMeta11(meta, Object.fromEntries(ARBOL.map((n) => [n.id, n.rangos])));
   // perfiles de la 38.0 (y anteriores): fuera el Asalto diario; el Altar, los logros y la Colección siguen
   if (v <= META_38) migraMeta38(meta);
+  // perfiles del tramo 1a de la V40: la maestría de cada baraja de inicio pasa a su Mazo
+  if (v <= META_40) migraMeta40(meta);
   meta.v = META_VERSION;
   delete (meta.seen as { relics?: unknown }).relics;
   return meta;
@@ -599,7 +603,10 @@ export interface Run {
   seedText: string;
   rng: number;
   ascension: number;
+  /** V40 · El Mazo de la campaña (src/rules/mazos.ts). */
   deckId: string;
+  /** V40 · Cargas permanentes de su Mazo (Escoba, Mano larga): crecen en los golpes y duran toda la campaña. */
+  cargas: Cargas;
   up: Record<string, number>;
   /** Surtidos de esta campaña. */
   pool: string[];
@@ -675,7 +682,7 @@ export interface Run {
   ritual: Tirada | null;
   /** Esquirlas que llevaba la campaña al vencer a la corte (las ya cobradas si sigue al Trono infinito). */
   esquirlasCorte: number;
-  /** Cartas (ids) que el Timbre del gremio selló al entrar a la obra en curso; vacío si no lo llevas. */
+  /** Cartas (ids) que el Timbre del gremio selló al entrar a la obra en curso; vacío si no lo llevás. */
   stamped?: string[];
   /** Autopsia de la derrota: qué tiró el búnker en la última obra. La rellena `trackEvents` y se limpia al empezar otra obra. */
   death?: Autopsy | null;
@@ -716,7 +723,7 @@ function rollTool(run: Run, rarities: Rarity[], exclude: string[] = []): string 
 }
 const ALL_RARITIES: Rarity[] = ['comun', 'oficio', 'capataz', 'reliquia'];
 
-/** V35 · El rasgo con más Reliquias en la tira (a igualdad, el de la Reliquia más reciente); null si no llevas ninguna. */
+/** V35 · El rasgo con más Reliquias en la tira (a igualdad, el de la Reliquia más reciente); null si no llevás ninguna. */
 export function rasgoMayor(run: Pick<Run, 'tools'>): Rasgo | null {
   const n = rasgosDe(run.tools);
   let mejor: Rasgo | null = null;
@@ -735,7 +742,7 @@ function rollToolRasgo(run: Run, rasgo: Rasgo, exclude: string[] = []): string |
 }
 
 /**
- * V35 · El Cofre del monarca: tres Reliquias a elegir una. La primera es de tu rasgo con más Reliquias (si llevas
+ * V35 · El Cofre del monarca: tres Reliquias a elegir una. La primera es de tu rasgo con más Reliquias (si llevás
  * alguna); las otras, Raras, Nobles o Regias al azar.
  */
 function cofreDelMonarca(run: Run): string[] {
@@ -787,88 +794,82 @@ export function addSpecial(run: Run, spId: string): Card {
   return card;
 }
 
-// ───────────────────────── Barajas iniciales ─────────────────────────
+// ───────────────────────── Los 5 Mazos ─────────────────────────
 
+/**
+ * V40 · Un Mazo de inicio (SPECS/V40-REFUNDACION.md, apartado 5): la baraja con que se empieza y sus reglas, que el
+ * motor aplica con `cfg.mazo` (src/rules/mazos.ts). Sustituye a las seis barajas de la baraja francesa.
+ */
 export interface DeckDef {
-  id: string;
+  id: MazoId;
   name: string;
+  /** Lema de dos o tres palabras («Mesa barrida»). */
+  lema: string;
   desc: string;
-  /** Logro que la desbloquea (null: disponible desde el principio). */
+  /** Logro que lo desbloquea (null: disponible desde el principio). */
   unlock: string | null;
+  /** Sus reglas, en el orden en que se explican. */
+  reglas: ReglaId[];
   build(run: Run): void;
 }
-const copyOf = (c: Card): Card => ({ ...c, id: `${c.id}b` });
-/** Cifras de cada baraja (`barajas` de balance-config.json). */
-const BAR = BALANCE.barajas;
+/** Suma (o quita) la Vida inicial propia de un Mazo (`mazos.<id>.vida`). */
+const vidaMazo = (run: Run, n: number) => {
+  run.maxIntegrity += n;
+  run.integrity = run.maxIntegrity;
+};
 export const DECKS: DeckDef[] = [
-  { id: 'obra', name: 'Baraja de la conjura', desc: 'La española de siempre: 36 cartas del 1 al 9, 2 Comodines y un Sobre lacrado de {sobre} especiales.', unlock: null, build: () => {} },
   {
-    id: 'acero',
-    name: 'Baraja negra',
-    desc: 'Solo Espadas y Bastos, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +{vida} de Vida (+Baluarte con su arcón).',
+    id: 'escoba',
+    name: 'Escoba',
+    lema: 'Mesa barrida',
+    desc: fill('Mano de {mano}. Si las cartas del golpe suman 15, ¡Escoba!: +{multi} de Multi y una carga de Daño.', CIFRAS_MAZO.escoba),
+    unlock: null,
+    reglas: ['escoba'],
+    build: (run) => vidaMazo(run, MZ.escoba.vida),
+  },
+  {
+    id: 'truco',
+    name: 'Truco',
+    lema: 'Envido y bravas',
+    desc: fill('Del 1 al 7, mano de {mano} y {vida} de Vida. Los bravos pegan más; 2 del mismo palo cantan Envido.', CIFRAS_MAZO.truco),
     unlock: 'capataz',
+    reglas: ['bravo', 'envido'],
     build: (run) => {
-      const black = run.deck.filter((c) => c.suit === 'S' || c.suit === 'C');
-      run.deck = [...black, ...black.map(copyOf), ...run.deck.filter((c) => c.suit === 'X')];
-      run.tools.push({ id: 'acido', n: 0 }, { id: 'sacos', n: 0 });
-      // la caja de aguante del gremio le da con qué cobrar tanto muro: el Bastión
-      if (run.toolPool.includes('bastion')) run.tools.push({ id: 'bastion', n: 0 });
-      run.maxIntegrity += BAR.acero.vida;
-      run.integrity = run.maxIntegrity;
+      run.deck = run.deck.filter((c) => c.suit === 'X' || c.rank <= TRUCO_MAX);
+      vidaMazo(run, MZ.truco.vida);
     },
   },
   {
-    id: 'prestamista',
-    name: 'Baraja del prestamista',
-    desc: '+{oro} de oro inicial y el interés rinde el doble, pero tienes {vida} de Vida menos.',
+    id: 'chinchon',
+    name: 'Chinchón',
+    lema: 'Pierna y escalera',
+    desc: fill('Tríos y escaleras del palo pegan más; las manos largas cargan Daño. Empezás con {vida} de Vida.', CIFRAS_MAZO.chinchon),
     unlock: 'media',
-    build: (run) => {
-      run.gold += BAR.prestamista.oro;
-      run.interestCap += BAR.prestamista.interes;
-      run.maxIntegrity -= BAR.prestamista.vida;
-      run.integrity = run.maxIntegrity;
-    },
+    reglas: ['pierna', 'escalera', 'larga'],
+    build: (run) => vidaMazo(run, MZ.chinchon.vida),
   },
   {
-    id: 'ases',
-    name: 'Baraja de ases',
-    desc: 'Ocho ases y ningún 2: más Ases cómplices y más pegada, pero tienes {vida} de Vida menos.',
+    id: 'mentiroso',
+    name: 'El Mentiroso',
+    lema: 'Cara de piedra',
+    desc: fill('Mano de {mano}, {n} Comodines que no gastan el turno y un Engaño por asalto. {vida} de Vida.', CIFRAS_MAZO.mentiroso),
     unlock: 'madre',
+    reglas: ['piedra', 'engano'],
     build: (run) => {
-      const aces = run.deck.filter((c) => c.rank === 1);
-      run.deck = [...run.deck.filter((c) => c.rank !== 2), ...aces.map(copyOf)];
-      run.maxIntegrity -= BAR.ases.vida;
-      run.integrity = run.maxIntegrity;
+      for (let i = 0; i < MZ.mentiroso.comodines; i++) run.deck.push({ id: `X${3 + i}`, suit: 'X', rank: 0 });
+      vidaMazo(run, MZ.mentiroso.vida);
     },
   },
   {
-    id: 'corta',
-    name: 'Baraja corta',
-    desc: 'Sin doses ni treses: golpes gordos, el Mazo se agota antes y tienes {vida} de Vida menos. +{oro} de oro inicial.',
+    id: 'chancho',
+    name: 'Chancho Va',
+    lema: 'Mano al centro',
+    desc: fill('Pasá 1 carta por turno y robá otra; el póker aturde en cadena. Empezás con {vida} de Vida.', CIFRAS_MAZO.chancho),
     unlock: 'golpe100',
-    build: (run) => {
-      run.deck = run.deck.filter((c) => c.rank < 2 || c.rank > 3);
-      run.gold += BAR.corta.oro;
-      run.maxIntegrity -= BAR.corta.vida;
-      run.integrity = run.maxIntegrity;
-    },
-  },
-  {
-    id: 'caos',
-    name: 'Baraja del caos',
-    desc: 'Un solo Comodín, pero el Sobre lacrado inicial trae {total} cartas especiales.',
-    unlock: 'coleccion',
-    build: (run) => {
-      run.deck = run.deck.filter((c) => c.id !== 'X2');
-      for (const id of rollSpecials(run, BAR.caos.especiales)) {
-        run.pack.push(id);
-        addSpecial(run, id);
-      }
-    },
+    reglas: ['pasar', 'chancho', 'arranque'],
+    build: (run) => vidaMazo(run, MZ.chancho.vida),
   },
 ];
-const DECK_NUMS: Record<string, Record<string, number>> = { ...BAR, obra: { sobre: BALANCE.inicio.sobre }, caos: { total: BALANCE.inicio.sobre + BAR.caos.especiales } };
-for (const d of DECKS) d.desc = fill(d.desc, DECK_NUMS[d.id] ?? {});
 export const DECK: Record<string, DeckDef> = Object.fromEntries(DECKS.map((d) => [d.id, d]));
 
 
@@ -914,7 +915,7 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     seedText: seedText || `#${(seed >>> 0).toString(36).toUpperCase()}`,
     rng: seed,
     ascension: Math.max(0, Math.min(MAX_ASCENSION, Math.floor(opts.ascension ?? 0) || 0)),
-    deckId: DECK[opts.deck ?? ''] ? opts.deck! : 'obra',
+    deckId: DECK[mazoDe(opts.deck)] ? mazoDe(opts.deck) : MAZO_INICIAL,
     up,
     pool: [...new Set([...BASE_POOL, ...(Array.isArray(opts.pool) ? opts.pool.filter((id) => typeof id === 'string' && SPECIAL[id]) : [])])],
     toolPool: toolPool(boxes),
@@ -927,6 +928,7 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     maxIntegrity,
     tools: [],
     deck: standardDeck(),
+    cargas: {},
     levels: Object.fromEntries(FORMATIONS.map((f) => [f, 0])) as Record<Formation, number>,
     handBonus: 0,
     interestCap: BALANCE.inicio.interesTope,
@@ -1012,7 +1014,9 @@ export function stageConfig(run: Run, players = 1): Config {
   const st = stageDef(run.stage);
   const cfg: Config = structuredClone(DEFAULT_CONFIG);
   cfg.maxIntegrity = run.maxIntegrity;
-  cfg.handSize = { [players]: 7 + run.handBonus };
+  // V40 · cada Mazo puede jugar con una carta más o menos en la mano (`mazos.<id>.mano`)
+  const manoMazo = esMazo(run.deckId) ? MZ[run.deckId].mano : 0;
+  cfg.handSize = { [players]: MANO_BASE + run.handBonus + manoMazo };
   // en cuadrilla hay más manos entre las que elegir: las obras aguantan más
   const a = run.ascension;
   const scale = st.hp * (a >= 1 ? REIN.corazas : 1) * COOP_HP[Math.min(players, 4) - 1];
@@ -1030,6 +1034,8 @@ export function stageConfig(run: Run, players = 1): Config {
   cfg.orden = ordenCasas(run);
   if (st.boss) cfg.jefe = { suit: cfg.orden[cfg.orden.length - 1], vida: FURIA.jefeVida, furia: FURIA.rey };
   cfg.formLevel = { ...run.levels };
+  // V40 · las reglas del Mazo de la campaña
+  if (esMazo(run.deckId)) cfg.mazo = run.deckId;
   // Árbol (Corona de hierro), solo en el Trono infinito: Manga honda guarda 2 cartas; Buen ojo da Golpe exacto
   // pasándose por poco (solo por arriba). En los cinco asaltos no tocan la mesa (V12-C).
   if (run.endless && rangoDe(run.up, 'manga') > 0) cfg.reserveSize = 2;
@@ -1077,6 +1083,9 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
     chalk: players.length === 1 ? 1 : 0,
     undo: null,
     fatigue: config.furiaInicial ?? 0,
+    // V40 · las cargas del Mazo vienen de la campaña; el Engaño de El Mentiroso, uno por asalto
+    cargas: { ...run.cargas },
+    ...(config.mazo === 'mentiroso' ? { engano: { usado: false } } : {}),
   };
   tiraDado(state);
   return state;
@@ -1125,7 +1134,7 @@ function abona(run: Run, c: Caida): void {
 export const removeCost = (run: Run) => BALANCE.taberna.hoguera.base + BALANCE.taberna.hoguera.paso * run.removals;
 export const healCost = (run: Run) => BALANCE.taberna.curar.base + BALANCE.taberna.curar.paso * run.heals;
 export const rerollCost = (run: Run) => (run.vouchers > 0 ? 0 : BALANCE.taberna.renovar.base + BALANCE.taberna.renovar.paso * run.rerolls);
-/** La Mesa de lacre sella gratis si llevas `caida.gotasPorSello` gotas de lacre (y las gasta al sellar). */
+/** La Mesa de lacre sella gratis si llevás `caida.gotasPorSello` gotas de lacre (y las gasta al sellar). */
 export const selloGratis = (run: Run, o: Offer): boolean => !run.freeShop && o.kind === 'forja' && run.gotas >= BALANCE.caida.gotasPorSello;
 export const offerCost = (run: Run, o: Offer) => (run.freeShop || selloGratis(run, o) ? 0 : o.cost);
 export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?.rarity ?? 'comun'].cost / 2));
@@ -1190,7 +1199,8 @@ function advance(run: Run): void {
 
 function draftOptions(run: Run): DraftOpt[] {
   const specials = rollSpecials(run, 2).map((id): DraftOpt => ({ kind: 'special', id }));
-  const card: Card = { id: `c-${++run.serial}`, suit: pick<Suit>(run, SUITS, 1)[0], rank: pick(run, [1, 6, 7, 8, MAX_NUM], 1)[0] };
+  // V40 · el Truco no reparte 8 ni 9
+  const card: Card = { id: `c-${++run.serial}`, suit: pick<Suit>(run, SUITS, 1)[0], rank: pick(run, run.deckId === 'truco' ? [1, 5, 6, 7, TRUCO_MAX] : [1, 6, 7, 8, MAX_NUM], 1)[0] };
   if (roll(run, 2)) card.seal = pick(run, run.seals, 1)[0];
   else card.tr = pick(run, run.treats, 1)[0];
   return [...specials, { kind: 'card', card }];
@@ -1200,6 +1210,7 @@ function draftOptions(run: Run): DraftOpt[] {
 export function finishBattle(run: Run, state: GameState): void {
   if (run.phase !== 'battle' || state.phase === 'playing') return;
   run.tools = state.tools.map((t) => ({ ...t }));
+  run.cargas = { ...state.cargas };
   run.deck = run.deck.filter((c) => !state.burned.includes(c.id));
   run.scrap = state.scrap;
   run.stats.turns += state.turnCount;
@@ -1315,12 +1326,12 @@ export function runAction(run: Run, a: RunAction): string | null {
       const cost = offerCost(run, o);
       if (run.gold < cost) return 'No te alcanza el oro.';
       if (o.kind === 'forja') {
-        if (!run.deck.some(isPlain)) return 'No tienes cartas que sellar.';
+        if (!run.deck.some(isPlain)) return 'No tenés cartas que sellar.';
         run.pending = { kind: 'forge', i: a.i }; // se cobra al elegir la carta
         return null;
       }
       if (o.kind === 'tool') {
-        if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias. Vende una antes.`;
+        if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias. Vendé una antes.`;
         placeTool(run.tools, { id: o.id!, n: 0 });
       } else if (o.kind === 'sobre') run.sobre = rollSpecials(run, 3);
       else if (o.kind === 'clandestino') addSpecial(run, rollSpecials(run, 1)[0]);
@@ -1368,7 +1379,7 @@ export function runAction(run: Run, a: RunAction): string | null {
     case 'sell': {
       if (run.phase === 'battle') return 'En pleno asalto no se vende.';
       const t = run.tools[a.i];
-      if (!t) return 'No llevas esa reliquia.';
+      if (!t) return 'No llevás esa reliquia.';
       run.gold += sellValue(t.id);
       run.tools.splice(a.i, 1);
       return null;
@@ -1383,7 +1394,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       run.shop = generateShop(run);
       return null;
     case 'next':
-      if (run.phase !== 'shop') return 'Aún no puedes seguir.';
+      if (run.phase !== 'shop') return 'Aún no podés seguir.';
       if (run.sobre) return 'Antes elige una carta del sobre abierto.';
       if (!run.endless && EVENT_AFTER.includes(run.stage) && run.events.length) {
         run.phase = 'event';
@@ -1398,7 +1409,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       if (run.phase !== 'event' || !run.event) return 'No hay ningún Secreto de la cripta.';
       const opt = EVENT[run.event].options[a.i];
       if (!opt) return 'Esa opción no existe.';
-      if (opt.can && !opt.can(run)) return 'No puedes elegir eso ahora.';
+      if (opt.can && !opt.can(run)) return 'No podés elegir eso ahora.';
       run.suerte = null;
       opt.apply(run);
       if (!run.pending) advance(run);
@@ -1425,7 +1436,7 @@ function resolvePending(run: Run, ids: string[]): string | null {
   const chosen = cards as Card[];
   if (p.kind === 'forge') {
     const o = run.shop[p.i];
-    if (chosen.length !== 1 || !isPlain(chosen[0])) return 'Elige una carta de baraja.';
+    if (chosen.length !== 1 || !isPlain(chosen[0])) return 'Elegí una carta de baraja.';
     if (!o || o.sold) return 'Esa oferta ya no está.';
     const cost = offerCost(run, o);
     if (run.gold < cost) return 'No te alcanza el oro.';
@@ -1439,10 +1450,10 @@ function resolvePending(run: Run, ids: string[]): string | null {
     o.sold = true;
     run.stats.forged++;
   } else if (p.kind === 'dup') {
-    if (chosen.length !== 1) return 'Elige una carta.';
+    if (chosen.length !== 1) return 'Elegí una carta.';
     run.deck.push({ ...chosen[0], id: `c-${++run.serial}` });
   } else {
-    if (chosen.length !== 2 || !chosen.every(isPlain)) return 'Elige dos cartas de baraja.';
+    if (chosen.length !== 2 || !chosen.every(isPlain)) return 'Elegí dos cartas de baraja.';
     if (run.deck.length - 1 < MIN_DECK) return `El mazo no puede bajar de ${MIN_DECK} cartas.`;
     const [a, b] = chosen;
     const high = cardValue(a) >= cardValue(b) ? a : b;
@@ -1506,6 +1517,8 @@ export function cobroAbismo(meta: Meta, run: Run): number {
 export function cargaRun(raw: unknown): Run | null {
   const r = raw as Run | null;
   if (!r || typeof r !== 'object' || !r.stats) return null;
+  // la del tramo 1a de la V40 (baraja española con las barajas viejas) sigue, con su Mazo
+  if (r.v === RUN_40) migraRun40(r, RUN_VERSION);
   return r.v === RUN_VERSION ? r : null;
 }
 

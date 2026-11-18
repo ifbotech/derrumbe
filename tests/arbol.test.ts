@@ -280,7 +280,7 @@ describe('neutralidad del incremental (criterio 5)', () => {
     let esqLleno = 0;
     for (let i = 0; i < muestra(300, 36); i++) {
       // Reinado 8 (campañas más cortas) y Reinado 1, alternados, con la baraja de la conjura
-      const spec = { seed: (i + 1) * 7919 + 31, deck: 'obra', ascension: i % 2 ? 7 : 0, full: false };
+      const spec = { seed: (i + 1) * 7919 + 31, deck: 'escoba', ascension: i % 2 ? 7 : 0, full: false };
       const vacio = playCampaign(spec);
       const conIncr = playCampaign({ ...spec, up: incr });
       const pick = (r: typeof vacio) => ({ won: r.log.won, cleared: r.log.cleared, turnos: r.log.stageTurns, golpes: r.log.golpes, maxHit: r.log.maxHit, oro: r.log.gold, deck: r.run.deck.length, tools: r.log.toolsEnd, gotas: r.run.stats.gotas });

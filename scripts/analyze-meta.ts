@@ -8,7 +8,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //   npm run analyze:meta -- foco      solo los Reinados 1 y 8 (para afinar la dureza)
 //   npm run analyze:meta -- niveles   los 8 Reinados · barajas: las 6 barajas en el Reinado 1 · clasica: el Asalto único
 //   npm run analyze:meta -- regalos --piezas=clavos,ariete --n=600   unas pocas piezas, con muestra grande
-//   … --n=2000 cambia las campañas por celda; --barajas=corta,ases mide solo esas barajas.
+//   … --n=2000 cambia las campañas por celda; --barajas=truco,chancho mide solo esos Mazos.
 //   Solo el informe completo escribe meta-report.json.
 //   npm run analyze:meta -- --tramo=1/5 … --tramo=5/5 y luego -- --juntar   el informe completo por tramos (< 300 s cada uno)
 //   npm run analyze:meta -- --fast  certificación rápida del bucle (6.000 campañas, < 90 s; 0 s si la huella no cambió)
@@ -33,6 +33,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAction } from '../src/rules/bot';
 import { DIFFICULTY, SEAL, SEALS, TREATMENT, TREATMENTS, applyAction, createGame, currentPlayer } from '../src/rules/engine';
+import { MAZO_INICIAL } from '../src/rules/mazos';
 import { ASCENSIONS, BOSS, BOSSES, DECKS, LAST_STAGE, STAGES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
@@ -50,8 +51,10 @@ const arg = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.spli
 const mode = args.find((a) => !a.startsWith('--')) ?? 'todo';
 const quick = mode !== 'todo';
 const N = Number(arg('n') ?? 0);
-/** --barajas=corta,ases: en el modo «barajas», mide solo esas. */
+/** --barajas=truco,chancho: en el modo «barajas», mide solo esos Mazos. */
 const onlyDecks = arg('barajas')?.split(',');
+/** --vacio: solo el Altar vacío (para sondear una regla de Mazo en la mitad de tiempo; solo en los modos rápidos). */
+const fulls = args.includes('--vacio') ? [false] : [false, true];
 /** Campañas por pieza en el estudio de regalos (y otras tantas de control, con las mismas semillas y sin regalo). */
 const GIFT_N = 160;
 /**
@@ -74,10 +77,10 @@ function plan(): Spec[] {
   const seeds = (count: number, salt: number) => Array.from({ length: count }, (_, i) => (i + 1) * 7919 + salt * 104729);
   // todos los niveles juegan las mismas semillas: comparar uno con otro tiene así menos ruido
   const levels = (which: number[], count: number) => {
-    for (const a of which) for (const full of [false, true]) for (const seed of seeds(count, 0)) specs.push({ seed, deck: 'obra', ascension: a, full });
+    for (const a of which) for (const full of fulls) for (const seed of seeds(count, 0)) specs.push({ seed, deck: MAZO_INICIAL, ascension: a, full });
   };
   const decks = (count: number) => {
-    for (const d of DECKS) if (d.id !== 'obra' && (!onlyDecks || onlyDecks.includes(d.id))) for (const full of [false, true]) for (const seed of seeds(count, 0)) specs.push({ seed, deck: d.id, ascension: 0, full });
+    for (const d of DECKS) if (d.id !== MAZO_INICIAL && (!onlyDecks || onlyDecks.includes(d.id))) for (const full of fulls) for (const seed of seeds(count, 0)) specs.push({ seed, deck: d.id, ascension: 0, full });
   };
   const all = ASCENSIONS.map((_, a) => a);
   if (mode === 'clasica') return specs;
@@ -85,22 +88,23 @@ function plan(): Spec[] {
     // unas pocas piezas con muestra grande, para saber si un aviso del informe es ruido o no
     const count = N || 600;
     const salt = Number(arg('sal') ?? 31); // --sal=29 repite las semillas que usa el informe completo para las especiales (23 para las herramientas)
-    for (const seed of seeds(count, salt)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, control: 'special' });
-    for (const id of onlyPieces) for (const seed of seeds(count, salt)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, ...(TOOLS.some((t) => t.id === id) ? { giveTool: id } : { giveSpecial: id }) });
+    for (const seed of seeds(count, salt)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'special' });
+    for (const id of onlyPieces) for (const seed of seeds(count, salt)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, ...(TOOLS.some((t) => t.id === id) ? { giveTool: id } : { giveSpecial: id }) });
     return specs;
   }
   if (mode === 'foco') return levels([0, 7], N || 1200), specs;
   if (mode === 'niveles') return levels(all, N || 800), specs;
-  if (mode === 'barajas') return onlyDecks || levels([0], N || 800), decks(N || 800), specs;
+  // --barajas=escoba,truco: solo esos Mazos (el inicial, con sus campañas del Reinado 1)
+  if (mode === 'barajas') return (!onlyDecks || onlyDecks.includes(MAZO_INICIAL)) && levels([0], N || 800), decks(N || 800), specs;
   if (mode === 'rapido') return levels(all, N || 300), decks(N || 300), specs;
   levels(all, N || 1500);
   decks(N || 1500);
   // cada herramienta y cada especial, de regalo al empezar (Árbol lleno, nivel 1)
   // y, de control, las mismas semillas sin regalo: se suman a la referencia (nivel 1, Árbol lleno)
-  for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, control: 'tool' });
-  for (const t of TOOLS) for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, giveTool: t.id });
-  for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, control: 'special' });
-  for (const s of SPECIALS) for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: 'obra', ascension: 0, full: true, giveSpecial: s.id });
+  for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'tool' });
+  for (const t of TOOLS) for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveTool: t.id });
+  for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'special' });
+  for (const s of SPECIALS) for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveSpecial: s.id });
   return specs;
 }
 
@@ -169,12 +173,12 @@ function report(logs: Log[], confirm: Log[] = []) {
   const group = (deck: string, a: number, full: boolean) => plain.filter((l) => l.spec.deck === deck && l.spec.ascension === a && l.spec.full === full);
 
   const winrate = {
-    levels: ASCENSIONS.map((asc, a) => ({ level: a + 1, name: asc.name, vacio: wr(group('obra', a, false)), lleno: wr(group('obra', a, true)), n: group('obra', a, true).length })),
-    decks: DECKS.map((d) => ({ deck: d.id, name: d.name, vacio: wr(group(d.id, 0, false)), lleno: wr(group(d.id, 0, true)), n: group(d.id, 0, true).length })),
+    levels: ASCENSIONS.map((asc, a) => ({ level: a + 1, name: asc.name, vacio: wr(group(MAZO_INICIAL, a, false)), lleno: wr(group(MAZO_INICIAL, a, true)), n: Math.max(group(MAZO_INICIAL, a, true).length, group(MAZO_INICIAL, a, false).length) })),
+    decks: DECKS.map((d) => ({ deck: d.id, name: d.name, vacio: wr(group(d.id, 0, false)), lleno: wr(group(d.id, 0, true)), n: Math.max(group(d.id, 0, true).length, group(d.id, 0, false).length) })),
   };
 
   // referencia para medir el valor de cada cosa: Árbol lleno, nivel 1, baraja de obra
-  const base = group('obra', 0, true);
+  const base = group(MAZO_INICIAL, 0, true);
   const baseWr = wr(base);
   /** Referencia de los regalos: todas las campañas sin regalo de nivel 1 con Árbol lleno (las de la tabla de niveles y las de control). */
   const noGift = [...base, ...logs.filter((l) => l.spec.control), ...confirm.filter((l) => l.spec.control)];
@@ -254,7 +258,7 @@ function report(logs: Log[], confirm: Log[] = []) {
     return { deck: d.id, name: d.name, worstP95: Math.max(0, ...p95), n: mine.length };
   }).filter((d) => d.n > 0);
   // dónde se pierden las campañas (Árbol vacío, nivel 1, baraja de obra)
-  const fresh = group('obra', 0, false);
+  const fresh = group(MAZO_INICIAL, 0, false);
   const deaths = Array.from({ length: LAST_STAGE }, (_, i) => pct(fresh.filter((l) => l.diedAt === i + 1).length, fresh.length));
 
   // ── avisos: los objetivos de balance (scripts/objetivos.ts), uno por uno; se calculan al final ──

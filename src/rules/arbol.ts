@@ -98,17 +98,17 @@ const BOLSA: Def[] = [
 const HUESOS: Def[] = [
   { id: 'hueso_tallado', rama: 'huesos', padre: null, rangos: 5, name: 'Hueso tallado', glyph: 'dados', pos: { x: 0.4, y: -1.8 }, plantilla: 'Mejoras de +1 a la cara más baja del Dado de la Corona: {n}.' },
   { id: 'cara_rey', rama: 'huesos', padre: 'hueso_tallado', rangos: 5, name: 'Cara del rey', glyph: 'estandarte', pos: { x: 0.4, y: -2.8 }, plantilla: 'La cara más alta del Dado de la Corona vale ×{n}.' },
-  { id: 'segundo_hueso', rama: 'huesos', padre: 'cara_rey', rangos: 1, name: 'Segundo hueso', glyph: 'naipes_par', pos: { x: 0.4, y: -3.8 }, texto: 'Tiras dos Dados de la Corona y sus caras se multiplican.' },
+  { id: 'segundo_hueso', rama: 'huesos', padre: 'cara_rey', rangos: 1, name: 'Segundo hueso', glyph: 'naipes_par', pos: { x: 0.4, y: -3.8 }, texto: 'Tirás dos Dados de la Corona y sus caras se multiplican.' },
 ];
 
 const CORONA: Def[] = [
   { id: 'corona_hierro', rama: 'corona', padre: 'esq_monarca', rangos: 5, name: 'Corona de hierro', glyph: 'abismo', pos: { x: 4, y: -1.2 }, plantilla: 'En el Trono infinito, las esquirlas de la mesa valen ×{n}.' },
-  { id: 'pendon', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Pendón negro', glyph: 'cajones', pos: { x: 5, y: -1.8 }, plantilla: '+{n} esquirlas por cada Trono infinito que superas.' },
+  { id: 'pendon', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Pendón negro', glyph: 'cajones', pos: { x: 5, y: -1.8 }, plantilla: '+{n} esquirlas por cada Trono infinito que superás.' },
   { id: 'sangre_real', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Sangre real', glyph: 'corazon', pos: { x: 5, y: -0.6 }, plantilla: 'En el Trono infinito, cada cara del Dado de la Corona sube {n}.' },
-  { id: 'trono_huesos', rama: 'corona', padre: 'sangre_real', rangos: 1, name: 'Trono de huesos', glyph: 'relicario', pos: { x: 6, y: -0.6 }, texto: 'En el Trono infinito tiras un Dado de la Corona más.' },
+  { id: 'trono_huesos', rama: 'corona', padre: 'sangre_real', rangos: 1, name: 'Trono de huesos', glyph: 'relicario', pos: { x: 6, y: -0.6 }, texto: 'En el Trono infinito tirás un Dado de la Corona más.' },
   // combate solo en el Trono infinito: costes fijos de `arbol.costes`, como los del Arsenal
   { id: 'manga', rama: 'corona', padre: 'corona_hierro', rangos: 1, name: 'Manga honda', glyph: 'pasarela', pos: { x: 4, y: -2.4 }, texto: 'En el Trono infinito, La Manga guarda 2 cartas en vez de 1.', infinito: true },
-  { id: 'gracia', rama: 'corona', padre: 'manga', rangos: 2, name: 'Buen ojo', glyph: 'nivel', pos: { x: 5, y: -3 }, plantilla: 'En el Trono infinito, Golpe exacto también si te pasas por {n} o menos.', infinito: true },
+  { id: 'gracia', rama: 'corona', padre: 'manga', rangos: 2, name: 'Buen ojo', glyph: 'nivel', pos: { x: 5, y: -3 }, plantilla: 'En el Trono infinito, Golpe exacto también si te pasás por {n} o menos.', infinito: true },
 ];
 
 /**

@@ -12,7 +12,7 @@ type Step = { t: number } & ({ k: 'run'; run: Run } | { k: 'turn'; view: PlayerV
 
 /** Una campaña del bot, apuntada como la vería la mesa: cada cambio de campaña, cada turno y cada jugada. */
 function campaign(seed: number): { steps: Step[]; run: Run } {
-  const run = newRun({ seedText: `QA-${seed}`, deck: 'obra' }, seed);
+  const run = newRun({ seedText: `QA-${seed}`, deck: 'escoba' }, seed);
   const steps: Step[] = [];
   let t = Date.UTC(2026, 10, 13, 21, 45, 12);
   const note = () => steps.push({ t, k: 'run', run: structuredClone(run) });
@@ -149,7 +149,7 @@ describe('datos de prueba: solo en este equipo y solo al pulsar', () => {
     const r = rig();
     r.play(lost.steps);
     const rec = r.tel.telemetryLog().at(-1)!;
-    expect(rec).toMatchObject({ modo: 'campana', jug: 1, baraja: 'obra', reinado: 1, semilla: lost.run.seedText, resultado: 'derrota', asalto: lost.run.stage, turnos: lost.run.stats.turns, entrada: 'mando', ventana: '1280x800' });
+    expect(rec).toMatchObject({ modo: 'campana', jug: 1, baraja: 'escoba', reinado: 1, semilla: lost.run.seedText, resultado: 'derrota', asalto: lost.run.stage, turnos: lost.run.stats.turns, entrada: 'mando', ventana: '1280x800' });
     expect(rec.causa?.tipo).toBe(lost.run.death?.kind);
     expect(rec.causa?.texto).toBe(lost.run.death?.title);
     // una duda de 30 s por asalto jugado, en su asalto

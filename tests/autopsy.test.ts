@@ -308,7 +308,7 @@ describe('aviso de último turno', () => {
     const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 4, wall: 2 });
     const o = omen(view(s))!;
     expect(o.kind).toBe('sirena');
-    expect(o.title).toMatch(/^Último turno: el Contraataque de (ESPADAS|OROS|COPAS|BASTOS) \(⚔ 6\) puede acabar contigo$/);
+    expect(o.title).toMatch(/^Último turno: el Contraataque de (ESPADAS|OROS|COPAS|BASTOS) \(⚔ 6\) puede acabar con vos$/);
     expect(o.detail).toContain('Te quedan 4 de Vida y 2 de Escudo');
     // las cifras también van en campos propios (el aviso de un renglón del móvil las lee de ahí)
     expect(o).toMatchObject({ threat: 6, shield: 2, life: 4 });

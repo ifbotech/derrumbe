@@ -8,7 +8,7 @@
 //     tests/i18n.test.ts y la foto de textos de la V10, que exigen que salgan letra por letra iguales.
 import { ACHIEVEMENTS, unlocksOf } from '../../rules/achievements';
 import { fill, BALANCE } from '../../rules/balance-config';
-import { FIGURA_NOMBRE, FIGURAS, FORMATION_NAME, FORMATIONS, MATERIAL, PALO_NOMBRE, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
+import { FIGURA_NOMBRE, FIGURAS, FORMACIONES_MAZO, FORMATION_NAME, FORMATIONS, MATERIAL, PALO_NOMBRE, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
 import { REGLA_MEJOR } from '../../rules/mejor-jugada';
 import { KEYWORDS } from '../../rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
@@ -16,6 +16,7 @@ import { RAIZ, RAMAS } from '../../rules/arbol';
 import { SPECIALS } from '../../rules/specials';
 import { ARCH, RARITY, RASGOS, TOOLS } from '../../rules/tools';
 import { FRASES_BUFON } from '../../rules/bufon';
+import { REGLAS } from '../../rules/mazos';
 import { ES_PLANTILLAS } from '../../rules/plantillas';
 import { columna } from './ui-arte';
 import { columnaJuice } from './ui-juice';
@@ -64,7 +65,13 @@ export function reglasEs(): Record<string, string> {
   });
   for (const d of DECKS) {
     o[`baraja.${d.id}.nombre`] = d.name;
+    o[`baraja.${d.id}.lema`] = d.lema;
     o[`baraja.${d.id}.desc`] = d.desc;
+  }
+  // V40 · las reglas de los 5 Mazos
+  for (const r of REGLAS) {
+    o[`regla.${r.id}.nombre`] = r.name;
+    o[`regla.${r.id}.desc`] = r.desc;
   }
   for (const c of CONTRACTS) {
     o[`juramento.${c.id}.nombre`] = c.name;
@@ -110,7 +117,7 @@ export function reglasEs(): Record<string, string> {
     o[`palabra.${k.id}.nombre`] = k.name;
     o[`palabra.${k.id}.desc`] = k.desc;
   }
-  for (const f of FORMATIONS) o[`formacion.${f}`] = FORMATION_NAME[f];
+  for (const f of [...FORMATIONS, ...FORMACIONES_MAZO]) o[`formacion.${f}`] = FORMATION_NAME[f];
   for (const s of SEALS) {
     o[`sello.${s}.nombre`] = SEAL[s].name;
     o[`sello.${s}.desc`] = SEAL[s].desc;
@@ -143,7 +150,7 @@ export function reglasEs(): Record<string, string> {
   o['pieza.esquirla.nombre'] = 'Esquirlas de Corona';
   o['pieza.esquirla.desc'] = 'Trozos de corona: se guardan aunque pierdas.';
   o['pieza.gota.nombre'] = 'Gotas de lacre';
-  o['pieza.gota.desc'] = fill('Junta {n} y la Mesa de lacre te sella gratis.', { n: BALANCE.caida.gotasPorSello });
+  o['pieza.gota.desc'] = fill('Juntá {n} y la Mesa de lacre te sella gratis.', { n: BALANCE.caida.gotasPorSello });
   o['hueso.oro.nombre'] = 'Dado de oro';
   o['hueso.oro.desc'] = 'Multiplica tus monedas del asalto.';
   o['hueso.corona.nombre'] = 'Dado de la Corona';
@@ -153,9 +160,9 @@ export function reglasEs(): Record<string, string> {
   o['iman.nombre'] = 'Imán';
   o['iman.desc'] = 'Lo que cae vuela solo a tu bolsa.';
   o['cobro.conjura.nombre'] = 'Cobro de la conjura';
-  o['cobro.conjura.desc'] = 'Las esquirlas que ganas al acabar la campaña.';
+  o['cobro.conjura.desc'] = 'Las esquirlas que ganás al acabar la campaña.';
   o['auto.nombre'] = 'AUTO';
-  o['auto.desc'] = 'El juego juega solo. Toca para volver.';
+  o['auto.desc'] = 'El juego juega solo. Tocá para volver.';
   o['auto.saquear.nombre'] = 'Auto-saquear';
   o['auto.saquear.desc'] = 'El bot elige tu Botín.';
   o['auto.taberna.nombre'] = 'Auto-pulpería';

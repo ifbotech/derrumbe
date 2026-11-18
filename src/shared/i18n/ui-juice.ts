@@ -57,25 +57,25 @@ export const UI_JUICE = {
 
   // ── Susurros (whispers.ts): una línea cada uno ──
   'ui.w.inmune': ['<b>Inmune:</b> tus {glyph} no le hacen Daño a un enemigo de su mismo palo (su poder sí cuenta). Guárdalas para la Casa siguiente.', '<b>Immune:</b> your {glyph} deal no Damage to an enemy of their own suit (their power does count). Save them for the next House.'],
-  'ui.w.andamio': ['<b>Viene un Contraataque fuerte:</b> guarda en La Manga{kh} la carta que no quieras gastar; al reponer robas una más.', '<b>A strong Counterattack is coming:</b> keep the card you want to save Up the Sleeve{kh}; when you refill, you draw one more.'],
-  'ui.w.limpio': ['<b>Golpe exacto:</b> si golpeas ahora no hay Contraataque, cobras 1 de oro y robas una carta más.', '<b>Exact Hit:</b> strike now and there is no Counterattack: you collect 1 gold and draw one more card.'],
+  'ui.w.andamio': ['<b>Viene un Contraataque fuerte:</b> guarda en La Manga{kh} la carta que no quieras gastar; al reponer robás una más.', '<b>A strong Counterattack is coming:</b> keep the card you want to save Up the Sleeve{kh}; when you refill, you draw one more.'],
+  'ui.w.limpio': ['<b>Golpe exacto:</b> si golpeás ahora no hay Contraataque, cobrás 1 de oro y robás una carta más.', '<b>Exact Hit:</b> strike now and there is no Counterattack: you collect 1 gold and draw one more card.'],
   'ui.w.forja': ['<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.', '<b>Wax Table:</b> the card you pick stays sealed forever. Cancel spends nothing.'],
-  'ui.w.atajo': ['<b>Atajo:</b> te saltas el asalto sin Botín ni Pulpería, pero te llevas «{tag}».', '<b>Shortcut:</b> you skip the assault with no Spoils and no General Store, but you take “{tag}”.'],
+  'ui.w.atajo': ['<b>Atajo:</b> te saltás el asalto sin Botín ni Pulpería, pero te llevás «{tag}».', '<b>Shortcut:</b> you skip the assault with no Spoils and no General Store, but you take “{tag}”.'],
   'ui.w.jefe': ['<b>Monarca:</b> {who} impone un decreto en este asalto. Su placa, junto a tu Vida, te lo recuerda. Es el último guardia: cada turno que sigue en pie, su Furia sube.', '<b>Monarch:</b> {who} imposes a decree on this assault. The plate beside your Health reminds you. It is the last guard: each turn it stays standing, its Fury rises.'],
   'ui.w.fatiga': ["<b>Furia:</b> el Ataque de los enemigos ha subido. Sube con cada Mazo agotado y, contra el monarca, cada turno.", "<b>Fury:</b> enemy Attack has gone up. It rises each time the Deck runs out and, against the monarch, every turn."],
-  'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte. No pierdes Vida: {efecto}.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back in. You lose no Health: {efecto}.'],
+  'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte. No perdés Vida: {efecto}.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back in. You lose no Health: {efecto}.'],
   'ui.w.cantera.sube': ["la Furia sube {n} (⚔ +{n} en cada enemigo)", "the Fury rises {n} (⚔ +{n} on every enemy)"],
   'ui.w.cantera.gratis': ['esta vez no pasa nada más', 'nothing else happens this time'],
   // V11: la mesa de dos o tres tronos y los dos estados, la primera vez que se ven
-  'ui.w.ausente': ['<b>Un enemigo a la vez:</b> este asalto tiene {n} Casas y se asaltan de una en una. Solo golpeas al del centro, y solo él te contraataca; la fila enseña las que esperan.', '<b>One enemy at a time:</b> this assault has {n} Houses, stormed one by one. You only strike the one in the centre, and only it strikes back; the queue shows the ones waiting.'],
+  'ui.w.ausente': ['<b>Un enemigo a la vez:</b> este asalto tiene {n} Casas y se asaltan de una en una. Solo golpeás al del centro, y solo él te contraataca; la fila enseña las que esperan.', '<b>One enemy at a time:</b> this assault has {n} Houses, stormed one by one. You only strike the one in the centre, and only it strikes back; the queue shows the ones waiting.'],
   'ui.w.expuesto': ['<b>Expuesto ({glyph}):</b> el próximo golpe contra ese enemigo hace ×{n} de Daño. Lo deja un golpe de 2 cartas o más de un solo palo.', '<b>Exposed ({glyph}):</b> the next hit against that enemy deals ×{n} Damage. A hit of 2+ cards of one suit leaves it Exposed.'],
   'ui.w.aturdido': ['<b>Aturdido ({glyph}):</b> ese enemigo se salta su próximo Contraataque. Lo deja un golpe de tres palos.', '<b>Stunned ({glyph}):</b> that enemy skips its next Counterattack. A hit with three suits leaves it Stunned.'],
   // V11: el registro de la mesa, cuando el Contraataque saca el palo de un trono que no está en el asalto (table.ts)
   // V12: lo que cae, la tirada de huesos, el Árbol, Mejor jugada, AUTO y las 3 gotas, la primera vez
-  'ui.w.caida': ['<b>Lo que cae</b> vuela solo a tu bolsa: esquirlas, monedas y gotas. Pasa el cursor o el dedo para cogerlo antes.', '<b>Loot</b> flies to your purse by itself: shards, coins and drops. Sweep the cursor or a finger over it to grab it sooner.'],
+  'ui.w.caida': ['<b>Lo que cae</b> vuela solo a tu bolsa: esquirlas, monedas y gotas. Pasá el cursor o el dedo para agarrarlo antes.', '<b>Loot</b> flies to your purse by itself: shards, coins and drops. Sweep the cursor or a finger over it to grab it sooner.'],
   'ui.w.tirada': ['<b>Tirada de huesos:</b> tras ganar un asalto, los dados multiplican lo que cayó. Cualquier tecla la salta.', '<b>Bone Roll:</b> after a win, dice multiply what dropped. Any key skips it.'],
-  'ui.w.arbol': ['<b>Altar:</b> gasta esquirlas aquí para mejorar para siempre. Lo que puedes comprar lleva filete de latón.', '<b>Altar:</b> spend shards here to get better for good. What you can buy has a brass frame.'],
-  'ui.w.mejor': ['<b>Mejor jugada</b> elige por ti el mejor golpe. Tú confirmas con Golpear{kh}.', '<b>Best Play</b> picks the best strike for you. You confirm with Strike{kh}.'],
+  'ui.w.arbol': ['<b>Altar:</b> gasta esquirlas aquí para mejorar para siempre. Lo que podés comprar lleva filete de latón.', '<b>Altar:</b> spend shards here to get better for good. What you can buy has a brass frame.'],
+  'ui.w.mejor': ['<b>Mejor jugada</b> elige por vos el mejor golpe. Vos confirmás con Golpear{kh}.', '<b>Best Play</b> picks the best strike for you. You confirm with Strike{kh}.'],
   'ui.w.auto': ['<b>AUTO:</b> el juego juega solo. Cualquier tecla, clic o botón te devuelve el mando.', '<b>AUTO:</b> the game plays itself. Any key, click or button hands control back to you.'],
   'ui.w.gotas': ['<b>{n} gotas de lacre:</b> la próxima Mesa de lacre te sella gratis.', '<b>{n} Wax Drops:</b> the next Wax Table seals for free.'],
   'ui.w.off': ['No mostrar más', 'Do not show again'],
@@ -92,7 +92,7 @@ export const UI_JUICE = {
   'ui.main.velocidad': ['Velocidad {v}', 'Speed {v}'],
   // V12 · AUTO (auto.ts): encendido y apagado fuera de la mesa (en la mesa lo dice su botón)
   'ui.auto.on': ['AUTO encendido: cualquier tecla o botón lo apaga', 'AUTO on: any key or button turns it off'],
-  'ui.auto.off': ['AUTO apagado: ahora juegas tú', 'AUTO off: your turn to play'],
+  'ui.auto.off': ['AUTO apagado: ahora jugás vos', 'AUTO off: your turn to play'],
   'ui.main.reiniciar.pad': ['Select + Start', 'Select + Start'],
 
   // ── insignias de reliquia (fx.ts, procBadge) ──

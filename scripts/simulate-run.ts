@@ -17,7 +17,7 @@ import { playCampaign } from './lab';
 const runs = Number(process.argv[2] ?? 400);
 const guild = process.argv[3] ?? 'ambos';
 const players = Number(process.argv[4] ?? 1);
-const which = process.argv[5] ?? 'obra';
+const which = process.argv[5] ?? 'escoba';
 const policy = { skip: process.env.SKIP ? process.env.SKIP.split(',') : [], risk: process.env.RISK === '1' };
 const ascension = Math.max(0, Number(process.env.ASC ?? 1) - 1);
 const verbose = process.env.VERBOSE === '1';

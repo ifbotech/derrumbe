@@ -8,6 +8,10 @@ import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
 import { muestra } from './muestra';
 
+/** V40 · Vida y mano de la campaña por defecto (la Escoba, el Mazo inicial: −1 de Vida y una carta menos). */
+const VIDA0 = BALANCE.inicio.vida + BALANCE.mazos.escoba.vida;
+const MANO0 = 7 + BALANCE.mazos.escoba.mano;
+
 const P = [{ id: 'a', name: 'A' }];
 const act = (run: Run, a: RunAction) => expect(runAction(run, a), JSON.stringify(a)).toBeNull();
 const fullGuild = () => Object.fromEntries(UPGRADES.map((u) => [u.id, u.costs.length]));
@@ -91,7 +95,7 @@ describe('semillas', () => {
 describe('preparación', () => {
   it('empieza con un sobre de 3 especiales, 4 de oro y los jefes ya sorteados a la vista', () => {
     const run = newRun({}, 7);
-    expect(run).toMatchObject({ phase: 'pack', stage: 1, gold: 4, integrity: BALANCE.inicio.vida, maxIntegrity: BALANCE.inicio.vida, tools: [] });
+    expect(run).toMatchObject({ phase: 'pack', stage: 1, gold: 4, integrity: VIDA0, maxIntegrity: VIDA0, tools: [] });
     expect(run.pack.length).toBe(3);
     expect(run.deck.length).toBe(41); // V40: 36 de número, 2 Comodines y las 3 especiales del sobre
     expect(run.deck.filter((c) => c.sp).map((c) => c.sp)).toEqual(run.pack);
@@ -115,27 +119,25 @@ describe('preparación', () => {
     expect(run.seals).toEqual(SEALS);
     expect(run.treats).toEqual(TREATMENTS);
     expect(run.pool.length).toBe(SPECIALS.length);
-    expect(run.maxIntegrity).toBe(BALANCE.inicio.vida);
+    expect(run.maxIntegrity).toBe(VIDA0);
     expect(run.gold).toBe(4 + 5 * BALANCE.arbol.oroPorNivel);
     expect(cleanUp({ vale: 99, inventada: 3, caja: -1 })).toMatchObject({ vale: 2, caja: 0 });
   });
 
-  it('cada baraja inicial monta un mazo válido', () => {
+  it('V40 · cada Mazo monta una baraja válida, con su Vida y su mano', () => {
+    expect(DECKS.map((d) => d.id)).toEqual(['escoba', 'truco', 'chinchon', 'mentiroso', 'chancho']);
     for (const d of DECKS) {
       const run = newRun({ deck: d.id }, 3);
+      expect(run.deckId).toBe(d.id);
       expect(new Set(run.deck.map((c) => c.id)).size, d.id).toBe(run.deck.length);
       expect(run.integrity, d.id).toBe(run.maxIntegrity);
-      expect(startStage(Object.assign(run, { phase: 'battle' as const }), P).players[0].hand.length).toBe(7 + run.handBonus);
+      expect(run.maxIntegrity, d.id).toBe(BALANCE.inicio.vida + BALANCE.mazos[d.id].vida);
+      expect(run.gold, d.id).toBe(4);
+      expect(startStage(Object.assign(run, { phase: 'battle' as const }), P).players[0].hand.length, d.id).toBe(7 + run.handBonus + BALANCE.mazos[d.id].mano);
     }
-    expect(newRun({ deck: 'acero' }, 3).tools.map((t) => t.id)).toEqual(['acido', 'sacos']);
-    expect(newRun({ deck: 'acero' }, 3).maxIntegrity).toBe(BALANCE.inicio.vida + BALANCE.barajas.acero.vida);
-    // con la caja de aguante abierta en el gremio, la baraja negra trae además el Bastión
-    expect(newRun({ deck: 'acero', up: { caja_aguante: 1 } }, 3).tools.map((t) => t.id)).toEqual(['acido', 'sacos', 'bastion']);
-    // ases y caos ya no llevan oro de más
-    expect(newRun({ deck: 'ases' }, 3).gold).toBe(4);
-    expect(newRun({ deck: 'caos' }, 3).gold).toBe(4);
-    expect(newRun({ deck: 'ases' }, 3).deck.filter((c) => c.rank === 1).length).toBe(8);
-    expect(newRun({ deck: 'caos' }, 3).pack.length).toBe(BALANCE.inicio.sobre + BALANCE.barajas.caos.especiales);
+    // los ids viejos de baraja caen en su Mazo; uno desconocido, en la Escoba
+    expect(newRun({ deck: 'acero' }, 3).deckId).toBe('truco');
+    expect(newRun({ deck: 'inventada' }, 3).deckId).toBe('escoba');
   });
 });
 
@@ -280,7 +282,7 @@ describe('cobro y selección', () => {
     // V12: «Asalto ganado» paga max(0, cobro.asalto + asalto) y ya no hay línea de Golpes exactos (son gotas de lacre)
     expect(run.pay.find(([l]) => l === 'Asalto ganado')?.[1] ?? 0).toBe(Math.max(0, BALANCE.cobro.asalto + 1));
     expect(run.pay.some(([l]) => l === 'Golpes exactos')).toBe(false);
-    expect(run.integrity).toBe(BALANCE.inicio.vida);
+    expect(run.integrity).toBe(VIDA0);
     expect(run.draft.map((o) => o.kind)).toEqual(['special', 'special', 'card']);
     const card = run.draft[2];
     if (card.kind === 'card') expect(!!card.card.seal !== !!card.card.tr).toBe(true);
@@ -541,7 +543,7 @@ describe('cinturón', () => {
     run.tools = ['sacos', 'andamio', 'nivel'].map((id) => ({ id, n: 0 }));
     const cfg = stageConfig(run);
     expect(cfg.wallCap).toBe(base.wallCap + 4);
-    expect(cfg.handSize[1]).toBe(8);
+    expect(cfg.handSize[1]).toBe(MANO0 + 1);
     expect(cfg.cleanTol).toBe(1);
   });
 });
@@ -580,7 +582,7 @@ describe('hallazgos en los cimientos', () => {
     const run = newRun({}, 31);
     Object.assign(run, { phase: 'event', event: 'caja' });
     act(run, { t: 'event', i: 0 });
-    expect(run.integrity).toBe(BALANCE.inicio.vida - 5);
+    expect(run.integrity).toBe(VIDA0 - 5);
     expect(['capataz', 'reliquia']).toContain(TOOL[run.tools[0].id].rarity);
   });
 
@@ -613,7 +615,7 @@ describe('hallazgos en los cimientos', () => {
   it('no deja elegir lo que no puedes pagar', () => {
     const run = newRun({}, 31);
     Object.assign(run, { phase: 'event', event: 'clandestino', gold: 0 });
-    expect(runAction(run, { t: 'event', i: 1 })).toMatch(/No puedes/);
+    expect(runAction(run, { t: 'event', i: 1 })).toMatch(/No podés/);
   });
 });
 
@@ -699,10 +701,10 @@ describe('final, cimientos abisales y gremio', () => {
   });
 
 
-  it('los logros se cumplen jugando, dan renombre y abren barajas y cartas legendarias', () => {
+  it('los logros se cumplen jugando, dan renombre y abren Mazos y cartas legendarias', () => {
     const meta = newMeta();
-    expect(deckUnlocked(meta, 'obra')).toBe(true);
-    expect(deckUnlocked(meta, 'ases')).toBe(false);
+    expect(deckUnlocked(meta, 'escoba')).toBe(true);
+    expect(deckUnlocked(meta, 'mentiroso')).toBe(false);
     const run = newRun({}, 13);
     run.stage = LAST_STAGE;
     run.tools = [{ id: 'piqueta', n: 0 }];
@@ -716,7 +718,7 @@ describe('final, cimientos abisales y gremio', () => {
     expect(meta.seen.tools).toEqual(['piqueta']);
     const got = claim(meta).map((a) => a.id);
     for (const id of ['primera', 'capataz', 'media', 'madre', 'golpe100', `j-${run.bosses[LAST_STAGE]}`]) expect(got).toContain(id);
-    expect(deckUnlocked(meta, 'ases')).toBe(true);
+    expect(deckUnlocked(meta, 'mentiroso')).toBe(true);
     expect(unlockedPool(meta)).toContain(`j-${run.bosses[LAST_STAGE]}`);
     expect(claim(meta)).toEqual([]);
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
@@ -750,8 +752,8 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(6, 3)).floorThreat[10]).toBe(base.floorThreat[10] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + BALANCE.reinados.reyColerico);
-    // 8 · clausura: +1 de Ataque en todos los tronos, solo en el asalto 5 (ni en el 4 ni en los otros con monarca)
-    for (const r of [10, 11, 12]) expect(stageConfig(at(7, 5)).floorThreat[r]).toBe(stageConfig(at(6, 5)).floorThreat[r] + 1);
+    // 8 · clausura: +{clausura.threat} de Ataque en todos los tronos, solo en el asalto 5 (ni en el 4 ni en los otros con monarca)
+    for (const r of [10, 11, 12]) expect(stageConfig(at(7, 5)).floorThreat[r]).toBe(stageConfig(at(6, 5)).floorThreat[r] + BALANCE.clausura.threat);
     expect(stageConfig(at(7, 4)).floorThreat[10]).toBe(stageConfig(at(6, 4)).floorThreat[10]);
     expect(stageConfig(at(7, 2)).floorThreat[10]).toBe(stageConfig(at(6, 2)).floorThreat[10]);
     expect(stageConfig(at(7, 3)).floorThreat[10]).toBe(stageConfig(at(6, 3)).floorThreat[10]);
@@ -776,11 +778,11 @@ describe('niveles de obra y maestría', () => {
 
   it('ganar estampa el sello de maestría en la baraja y en cada herramienta del cinturón', () => {
     const meta = newMeta();
-    const run = Object.assign(newRun({ ascension: 3, deck: 'obra' }, 5), { stage: LAST_STAGE });
+    const run = Object.assign(newRun({ ascension: 3, deck: 'escoba' }, 5), { stage: LAST_STAGE });
     run.tools = [{ id: 'prisma', n: 0 }, { id: 'calibre', n: 2 }];
     win(run);
     settle(meta, run);
-    expect(meta.mastery).toEqual({ tools: { prisma: 4, calibre: 4 }, decks: { obra: 4 } });
+    expect(meta.mastery).toEqual({ tools: { prisma: 4, calibre: 4 }, decks: { escoba: 4 } });
     expect(meta.ascMax).toBe(4);
     // una victoria en un nivel más bajo no rebaja el sello
     const again = Object.assign(newRun({ ascension: 0 }, 6), { stage: LAST_STAGE });

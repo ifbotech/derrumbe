@@ -2,6 +2,7 @@
 // tools.ts, specials.ts y run.ts al rellenar sus descripciones en español; aquí se repiten, puras y sobre
 // los mismos números de `BALANCE`, para rellenar las plantillas inglesas sin tocar los archivos de la huella.
 // tests/i18n.test.ts comprueba que cada texto inglés lleva exactamente las cifras del español.
+import { CIFRAS_MAZO } from './mazos';
 import { BALANCE, relic } from './balance-config';
 
 /** Cifras de la descripción de una reliquia (`reliquias.<id>` más las derivadas de tools.ts). */
@@ -42,12 +43,9 @@ export function cifrasReinado(): Record<string, number | string> {
   };
 }
 
-/** Cifras de una baraja inicial (como `DECK_NUMS` de run.ts). */
+/** Cifras de la descripción de un Mazo (como en run.ts). */
 export function cifrasBaraja(id: string): Record<string, number> {
-  const B = BALANCE.barajas as unknown as Record<string, Record<string, number>>;
-  if (id === 'obra') return { sobre: BALANCE.inicio.sobre };
-  if (id === 'caos') return { ...B.caos, total: BALANCE.inicio.sobre + BALANCE.barajas.caos.especiales };
-  return B[id] ?? {};
+  return (CIFRAS_MAZO as Record<string, Record<string, number>>)[id] ?? {};
 }
 
 /** Una fracción como la lee el jugador: «¼», «½», «¾»; si no es una de esas, en tanto por ciento («30 %»). */

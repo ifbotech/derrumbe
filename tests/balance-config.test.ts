@@ -95,7 +95,8 @@ describe('balance-config.json: esquema y rangos', () => {
     expect([...Object.keys(RAW.arbol.costes), ...Object.keys(RAW.arbol.bases)].sort()).toEqual(UPGRADES.map((u) => u.id).sort());
     for (const cs of Object.values(RAW.arbol.costes) as number[][]) for (const c of cs) expect(ent(c) && c > 0).toBe(true);
     for (const c of Object.values(RAW.arbol.bases) as number[]) expect(ent(c) && c > 0).toBe(true);
-    expect(RAW.inicio.vida).toBeGreaterThan(RAW.barajas.corta.vida + RAW.reinados.heridasViejas);
+    // V40 · ningún Mazo empieza con tan poca Vida que las Heridas viejas lo dejen por debajo de 8
+    for (const [id, m] of Object.entries(RAW.mazos) as [string, { vida?: number }][]) if (id !== 'formaciones') expect(RAW.inicio.vida + (m.vida ?? 0) - RAW.reinados.heridasViejas, id).toBeGreaterThanOrEqual(8);
     for (const v of Object.values(RAW.inicio)) expect(ent(v) && v >= 0).toBe(true);
   });
 
@@ -184,7 +185,9 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(engine.SEAL.jornal.desc).toContain(num(B.sellos.jornal));
     expect(run.BOSS.furia.curse.badge).toContain(num(B.monarcas.furia.ataque));
     expect(run.ASCENSIONS[2].desc).toContain(num(B.reinados.furia));
-    expect(run.DECK.corta.desc).toContain(num(B.barajas.corta.vida));
+    // V40 · la Vida con que se empieza en cada Mazo está en su texto (Escoba: la mano y el Multi)
+    for (const id of ['truco', 'chinchon', 'mentiroso', 'chancho'] as const) expect(run.DECK[id].desc, id).toContain(num(B.inicio.vida + B.mazos[id].vida));
+    expect(run.DECK.escoba.desc).toContain(`+${num(B.mazos.escoba.multi)} de Multi`);
     // las originales no cambiaron: el archivo de disco sigue igual
     expect(STAGES[0].hp).toBe(RAW.asaltos[0].hp);
     expect(DEFAULT_CONFIG).toEqual(RAW.mesa);

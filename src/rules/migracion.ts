@@ -6,6 +6,8 @@
 // No importa run.ts en tiempo de ejecución (run.ts importa este módulo): el número de asaltos de ahora
 // llega como argumento.
 import type { Meta } from './run';
+import { MAZO_INICIAL, esMazo } from './mazos';
+import type { MazoId } from './mazos';
 
 /** Asaltos de una campaña de la 10.0. */
 export const ASALTOS_10 = 8;
@@ -120,7 +122,8 @@ export function migraMeta38<M extends object>(meta: M): M {
 
 /**
  * ¿Es una campaña guardada de la baraja francesa (de antes de la V40)? Lo es cualquier campaña con número de versión
- * por debajo de `version` (la de ahora). Sin versión o sin forma de campaña, no se reconoce: false.
+ * por debajo de `version` (la primera de la baraja española: `RUN_40`). Sin versión o sin forma de campaña, no se
+ * reconoce: false.
  */
 export function campanaFrancesa(raw: unknown, version: number): boolean {
   const v = (raw as { v?: unknown } | null)?.v;
@@ -152,5 +155,41 @@ export function migraRun11<R extends { v: number; stats: object }>(run: R, versi
   r.stats.gotas ??= 0;
   r.stats.sellosGratis ??= 0;
   r.v = version;
+  return run;
+}
+
+// ───────────────────────── V40 (tramo 1b): de las barajas de inicio a los 5 Mazos ─────────────────────────
+// Las seis barajas de inicio (Conjura, Negra, Prestamista, Ases, Corta, Caos) pasan a los 5 Mazos. Cada baraja va al
+// Mazo que se desbloquea con su mismo logro; la del Caos (su logro ya no desbloquea nada) va a la Escoba, la inicial.
+// Lo que guardaba ids de baraja (la maestría del perfil, la preferida, la campaña en curso, las actas y el registro
+// de partidas) se lee con `mazoDe`.
+
+/** Versión de Meta y de campaña guardada del tramo 1a de la V40 (baraja española, aún con las barajas viejas). */
+export const META_40 = 5;
+export const RUN_40 = 6;
+/** Cada baraja de inicio vieja y el Mazo que la sustituye. */
+export const MAZO_DE_BARAJA: Record<string, MazoId> = { obra: 'escoba', acero: 'truco', prestamista: 'chinchon', ases: 'mentiroso', corta: 'chancho', caos: 'escoba' };
+/** El Mazo de un id guardado: el mismo si ya es un Mazo, el que sustituye a una baraja vieja, o el inicial. */
+export const mazoDe = (id: unknown): MazoId => (esMazo(id) ? id : typeof id === 'string' && MAZO_DE_BARAJA[id] ? MAZO_DE_BARAJA[id] : MAZO_INICIAL);
+
+/** Una Meta del tramo 1a (o anterior) con los 5 Mazos: la maestría de cada baraja pasa a su Mazo (la más alta). Muta y devuelve. */
+export function migraMeta40<M extends { mastery?: { decks?: Record<string, number> } }>(meta: M): M {
+  const decks = meta.mastery?.decks;
+  if (!decks) return meta;
+  const out: Record<string, number> = {};
+  for (const [id, n] of Object.entries(decks)) {
+    const level = Math.max(0, Math.floor(Number(n) || 0));
+    const m = mazoDe(id);
+    out[m] = Math.max(out[m] ?? 0, level);
+  }
+  meta.mastery!.decks = out;
+  return meta;
+}
+
+/** Una campaña del tramo 1a (`v` = RUN_40) con los 5 Mazos: su baraja pasa a su Mazo y las cargas nacen a cero. Muta y devuelve. */
+export function migraRun40<R extends { v: number; deckId?: string; cargas?: unknown }>(run: R, version: number): R {
+  run.deckId = mazoDe(run.deckId);
+  run.cargas ??= {};
+  run.v = version;
   return run;
 }

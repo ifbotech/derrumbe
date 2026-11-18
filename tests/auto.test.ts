@@ -35,8 +35,8 @@ function juega(run: Run, opts: AutoOpts): { run: Run; pausa: string | null } {
 describe('pasoAuto', () => {
   it('con Auto-saquear y Auto-taberna, la misma campaña que el laboratorio con la misma semilla', () => {
     for (const seed of [7919, 15838, 23757, 31676, 39595, 47514]) {
-      const lab = playCampaign({ seed, deck: 'obra', ascension: 0, full: false }).run;
-      const { run, pausa } = juega(newRun({ deck: 'obra', ascension: 0, pool: [], up: {} }, seed), { saquear: true, taberna: true });
+      const lab = playCampaign({ seed, deck: 'escoba', ascension: 0, full: false }).run;
+      const { run, pausa } = juega(newRun({ deck: 'escoba', ascension: 0, pool: [], up: {} }, seed), { saquear: true, taberna: true });
       expect(pausa).toBe('fin');
       expect(run).toEqual(lab);
     }

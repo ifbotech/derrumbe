@@ -1,21 +1,21 @@
 {
-  "inicio": { "vida": 19, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
+  "inicio": { "vida": 22, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
   "asaltos": [
-    { "hp": 5.9, "threat": 1 },
-    { "hp": 4.4, "threat": 1 },
-    { "hp": 5.8, "threat": 2 },
-    { "hp": 4.2, "threat": 3 },
-    { "hp": 4.8, "threat": 4 }
+    { "hp": 5.6, "threat": 1 },
+    { "hp": 5.0, "threat": 1 },
+    { "hp": 7.2, "threat": 2 },
+    { "hp": 5.8, "threat": 3 },
+    { "hp": 6.3, "threat": 4 }
   ],
   "tronoInfinito": { "hpCrece": 1.45 },
   "cuadrilla": [1, 1.3, 1.4, 1.48],
-  "reinados": { "corazas": 1.1, "furia": 1, "reyesAcorazados": 1.28, "reyColerico": 1, "heridasViejas": 2, "guardiaNoche": 1 },
+  "reinados": { "corazas": 1.15, "furia": 1, "reyesAcorazados": 1.28, "reyColerico": 1, "heridasViejas": 2, "guardiaNoche": 1 },
   "furia": { "mazo": 2, "rey": 1, "jefeVida": 2 },
-  "clausura": { "stages": [5], "threat": 1 },
+  "clausura": { "stages": [5], "threat": 2 },
   "timbre": { "stamps": 1 },
   "monarcas": {
     "doble": { "contraataques": 2, "ataque": 0.5 },
-    "escasez": { "cartas": 1 },
+    "escasez": { "cartas": 1, "ataque": 1 },
     "intemperie": { "escudoTope": 1 },
     "furia": { "ataque": 3 },
     "inestable": { "furia": 1, "vida": 1 },
@@ -99,12 +99,16 @@
   },
   "caida": { "esquirlaGolpe": 1, "esquirlaGuardia": 2, "esquirlaExacto": 5, "esquirlaMonarca": 25, "oroGuardia": 1, "gotaExacto": 1, "gotasPorSello": 3, "formacionCartas": 3, "imanSegundos": 1, "maxPiezas": 40 },
   "huesos": { "oro": [1, 1, 1, 1, 2, 2], "corona": [1, 1, 1, 2, 2, 3] },
-  "barajas": {
-    "acero": { "vida": 6 },
-    "prestamista": { "oro": 7, "interes": 3, "vida": 1 },
-    "ases": { "vida": 2 },
-    "corta": { "oro": 3, "vida": 4 },
-    "caos": { "especiales": 3 }
+  "mazos": {
+    "formaciones": {
+      "parpalo": { "f": 0, "r": 1, "lf": 3 },
+      "quince": { "f": 6, "r": 1, "lf": 3 }
+    },
+    "truco": { "vida": -9, "mano": 1, "bravo": { "S1": 10, "C1": 8, "S7": 6, "D7": 4 }, "envido": 5 },
+    "escoba": { "vida": -1, "mano": -1, "multi": 1, "carga": 2 },
+    "chinchon": { "vida": -5, "mano": 0, "pierna": 1, "escalera": 8, "cartas": 4, "carga": 1, "alivio": 1 },
+    "mentiroso": { "vida": -8, "mano": 1, "comodines": 1, "dano": 15, "furia": 2 },
+    "chancho": { "vida": -7, "mano": 0, "cadena": 2, "turnos": 4, "dano": 20 }
   },
   "formaciones": {
     "solo": { "f": 0, "r": 1, "lf": 4 },

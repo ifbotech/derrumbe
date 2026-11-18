@@ -135,6 +135,8 @@ export const PERMITIDOS_EN: string[] = [
   // arte-ui V10: la tecla y el botón Y del mando (no es la «y» española)
   'the Y key',
   'the Y button',
+  // reglas-balance V40 (1b): el nombre del juego de naipes que da nombre a un Mazo (como «Truco» o «Escoba»)
+  'Chinchón',
 ];
 
 /** Los restos de español de un texto inglés (vacío si está limpio). Quita antes las etiquetas HTML, los `{campo}` y lo permitido. */

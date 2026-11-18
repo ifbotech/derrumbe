@@ -68,7 +68,7 @@ function hurtSources(tx: TextosAutopsia, batch: GameEvent[]): string[] {
     if (ev.e === 'play') for (const c of ev.cards) if (c.sp && SPECIAL[c.sp]?.fx.hurt) names.push(tx.especial(c.sp));
     if (ev.e !== 'step') continue;
     if (ev.src === 'state' && ev.id === 'inestable') names.push(tx.arena());
-    else if (ev.src === 'tool' && ev.df === undefined && ev.dr === undefined && ev.mr === undefined && /pierdes \d+ de Vida/.test(ev.label)) names.push(tx.reliquia(ev.id));
+    else if (ev.src === 'tool' && ev.df === undefined && ev.dr === undefined && ev.mr === undefined && /perdés \d+ de Vida/.test(ev.label)) names.push(tx.reliquia(ev.id));
   }
   return [...new Set(names)];
 }

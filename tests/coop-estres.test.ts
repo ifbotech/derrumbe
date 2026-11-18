@@ -247,7 +247,7 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
     const clients = await room(3, SEED + 50, 'campana', 0);
     const [host] = clients;
     await host.next((m) => m.t === 'lobby' && m.lobby.mode === 'campana', 'modo campaña');
-    host.send({ t: 'start', deck: 'obra' });
+    host.send({ t: 'start', deck: 'escoba' });
     const phase = (p: Run['phase']) => Promise.all(clients.map((c) => c.next((m) => m.t === 'run' && m.run.phase === p, `campaña en ${p}`)));
     await phase('pack');
     host.send({ t: 'run', action: { t: 'begin' } });

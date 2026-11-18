@@ -394,7 +394,7 @@ describe('turno: sirena, muro, descartes, huelga y colapso', () => {
     expect(state.wall).toBe(0); // 2 de Escudo (un ♣), y contraataca el enemigo activo: la Sota de ♠, que ataca 3
     expect(of(events, 'siren')[0]).toMatchObject({ tower: 'S', threat: 3, blocked: 2, taken: 1 });
     // V35 · solo se golpea al enemigo activo
-    expect(() => applyAction(s, 'a', { type: 'attack', cards: ['C9'], target: 'H' })).toThrow(/enemigo que tienes delante/);
+    expect(() => applyAction(s, 'a', { type: 'attack', cards: ['C9'], target: 'H' })).toThrow(/enemigo que tenés delante/);
     const next = applyAction(state, 'a', { type: 'discard', cards: ['S2'] });
     expect(next.state.integrity).toBe(16);
   });

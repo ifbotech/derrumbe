@@ -16,6 +16,7 @@ import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, UPGRADES } 
 import { cifraDe } from '../../rules/arbol';
 import { BASE_POOL, SPECIALS } from '../../rules/specials';
 import { RASGOS, TOOL_SLOTS, TOOLS } from '../../rules/tools';
+import { CIFRAS_REGLA, REGLAS } from '../../rules/mazos';
 import type { Arch, Rarity } from '../../rules/tools';
 import { ES_UI, type ClaveUi } from './es';
 import { columna } from './ui-arte';
@@ -148,7 +149,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
   escasez: {
     nombre: 'The Usurer',
     decreto: 'Scarcity',
-    desc: 'Everyone plays with {cartas} fewer card in hand.',
+    desc: 'Everyone plays with {cartas} fewer card in hand and his guards hit +{ataque}.',
     badge: '{cartas} fewer card in hand',
     entrada: 'No credit at this table, dear. Play with what you have.',
     contraataque: 'I came to collect the interest. Call? I always call.',
@@ -157,7 +158,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
   sequia: {
     nombre: 'The Chalice Lady',
     decreto: 'Poisoned Chalice',
-    desc: 'Your Cups do not heal: each one you play costs you {veneno} Health.',
+    desc: 'Your Cups do not heal: each hit with Cups costs you {veneno} Health.',
     badge: 'Your Cups cost you {veneno}',
     entrada: 'A toast, darling. My cup has never mended a single heart.',
     contraataque: 'One more little sip... no? I will pour it for you anyway.',
@@ -214,13 +215,28 @@ const REINADOS: [string, string][] = [
   ['Sealed Gates', 'Only in assault {asaltos}, the Attack of all four thrones rises by {clausura}.'],
 ];
 
-const BARAJAS: Record<string, [string, string]> = {
-  obra: ['Conspiracy Deck', 'The usual Spanish deck: 36 cards from 1 to 9, 2 Jokers and a Sealed Pack of {sobre} specials.'],
-  acero: ['Black Deck', 'Swords and Clubs only, doubled: no Heal or Splash. Drop of Poison, Great Shield, +{vida} Health (+Bulwark with chest).'],
-  prestamista: ["Moneylender's Deck", '+{oro} starting gold and interest pays double, but you have {vida} less Health.'],
-  ases: ['Deck of Aces', 'Eight aces and no 2: more Accomplice Aces and more punch, but you have {vida} less Health.'],
-  corta: ['Short Deck', 'No twos or threes: big hits, the Deck runs out sooner and you have {vida} less Health. +{oro} starting gold.'],
-  caos: ['Chaos Deck', 'A single Joker, but the starting Sealed Pack brings {total} special cards.'],
+/** V40 · The 5 Decks: [name, motto, description template]. */
+const BARAJAS: Record<string, [string, string, string]> = {
+  escoba: ['Escoba', 'Clean sweep', 'Hand of {mano}. If the hit adds up to 15, Sweep!: +{multi} Mult and a Damage charge.'],
+  truco: ['Truco', 'Envido and bravos', '1 to 7, hand of {mano} and {vida} Health. Bravos hit harder; 2 of one suit call Envido.'],
+  chinchon: ['Chinchón', 'Sets and runs', 'Sets and suited runs hit harder; long hands store Damage. You start with {vida} Health.'],
+  mentiroso: ['The Liar', 'Poker face', 'Hand of {mano}, {n} Jokers that do not spend the turn and one Bluff per assault. {vida} Health.'],
+  chancho: ['Chancho Va', 'Pass it on', 'Pass 1 card per turn and draw another; four of a kind stuns in a chain. {vida} Health.'],
+};
+
+/** V40 · The rules of the 5 Decks: [name, description template]. Figures from CIFRAS_REGLA (mazos.ts). */
+const REGLAS_EN: Record<string, [string, string]> = {
+  bravo: ['Bravo', 'Bravos add Damage: 1 of Swords +{s1}, 1 of Clubs +{c1}, 7 of Swords +{s7} and 7 of Coins +{d7}.'],
+  envido: ['Envido', 'A hit of 2 cards of the same suit (it counts as a play): +{n} Damage.'],
+  escoba: ['Sweep!', 'If the cards add up to 15 (it counts as a play): +{multi} Mult and +{carga} Damage per Sweep already made.'],
+  pierna: ['Set', 'A group of 3 equal cards: +{n} Mult.'],
+  escalera: ['Suited Run', 'A straight flush: +{n} Damage.'],
+  larga: ['Long Hand', 'A hit of {cartas} cards or more: −{alivio} to the Counterattack, and +{carga} Damage for good to those long hands.'],
+  piedra: ['Poker Face', "Playing a Joker does not spend the turn: that guard's Counterattack misses and your next hit gets +{n} Damage."],
+  engano: ['Bluff', 'Once per assault, the hit that would not defeat counts as one suit, one number or ignores Immune.'],
+  pasar: ['Pass', 'Once per turn, discarding just 1 card does not spend the turn: you draw another at once.'],
+  chancho: ['Chancho', 'Four of a kind (4 equal cards): the next {n} Counterattacks miss.'],
+  arranque: ['Quick Start', 'Defeat a guard in the first {turnos} turns of the assault: +{n} Damage to the next hit.'],
 };
 
 /** Oaths: [name, condition, reward]. Their figures are written in run.ts, so here too (the parity test compares them). */
@@ -442,6 +458,8 @@ const FORMACIONES: Record<Formation, string> = {
   full: 'Full House',
   poker: 'Four of a Kind',
   escaleracolor: 'Straight Flush',
+  parpalo: 'Suit Pair',
+  quince: 'Fifteen',
 };
 
 const SELLOS: Record<Seal, [string, string]> = {
@@ -550,6 +568,15 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'paso.salpica': 'half splashes',
   'paso.rebosa_escudo': '{n} overflow Shield ÷ {d} = heals {c}',
   'paso.rebosa_cura': '{n} overflow healing × {d} = +{c} stored Damage',
+  // V40 · the rules of the 5 Decks (engine.ts)
+  'paso.engano.inmune': 'ignores Immune',
+  'paso.engano.palo': 'as a single suit',
+  'paso.engano.numero': 'as a single number',
+  'paso.engano.furia': 'Fury rises {n}',
+  'paso.alivio': '−{n} to the Counterattack',
+  'paso.cadena': 'the next {n} Counterattacks miss',
+  'paso.cadena.quedan': '{n} left',
+  'paso.carga_mazo': 'charge {n}',
   'error.jugadores': 'From 1 to 4 players.',
   'error.repetidas': 'Repeated cards.',
   'error.no_en_mano': 'That card is not in your hand.',
@@ -658,7 +685,14 @@ export function reglasEn(): Record<string, string> {
     const b = BARAJAS[d.id];
     if (!b) continue;
     o[`baraja.${d.id}.nombre`] = b[0];
-    o[`baraja.${d.id}.desc`] = f(b[1], cifrasBaraja(d.id));
+    o[`baraja.${d.id}.lema`] = b[1];
+    o[`baraja.${d.id}.desc`] = f(b[2], cifrasBaraja(d.id));
+  }
+  for (const r of REGLAS) {
+    const e = REGLAS_EN[r.id];
+    if (!e) continue;
+    o[`regla.${r.id}.nombre`] = e[0];
+    o[`regla.${r.id}.desc`] = f(e[1], CIFRAS_REGLA[r.id]);
   }
   for (const c of CONTRACTS) {
     const j = JURAMENTOS[c.id];

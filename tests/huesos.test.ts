@@ -100,7 +100,7 @@ describe('tirada', () => {
 
   it('al perder no hay tirada; en campañas enteras, una por asalto ganado', () => {
     for (let i = 0; i < 20; i++) {
-      const { run, log } = playCampaign({ seed: (i + 1) * 7919, deck: 'obra', ascension: 0, full: false });
+      const { run, log } = playCampaign({ seed: (i + 1) * 7919, deck: 'escoba', ascension: 0, full: false });
       if (log.won) expect(run.ritual?.asalto).toBe(5);
       else if (run.phase === 'lost') expect(run.ritual).toBeNull();
     }

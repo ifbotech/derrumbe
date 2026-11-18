@@ -166,7 +166,7 @@ describe('V11 · la campaña de cinco asaltos', () => {
     const otra = SUITS.find((s) => !state.towers[s].away && s !== frente.suit)!;
     // una carta que no mata al guardia (sin Golpe exacto): contraataca el que tienes delante
     state.players[0].hand = [{ id: 'mano-1', suit: otra, rank: 1 }, ...state.players[0].hand.slice(1)];
-    expect(() => applyAction(state, 'a', { type: 'attack', cards: ['mano-1'], target: otra })).toThrow(/enemigo que tienes delante/);
+    expect(() => applyAction(state, 'a', { type: 'attack', cards: ['mano-1'], target: otra })).toThrow(/enemigo que tenés delante/);
     const res = applyAction(state, 'a', { type: 'attack', cards: ['mano-1'], target: frente.suit });
     const siren = res.events.find((e): e is Extract<GameEvent, { e: 'siren' }> => e.e === 'siren')!;
     expect(siren).toMatchObject({ tower: frente.suit, reason: 'strike' });

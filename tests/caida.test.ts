@@ -90,7 +90,7 @@ describe('lo que cae es lo que se abona', () => {
   it('al perder también se cobran las esquirlas: cobro de la conjura = Coronas × 100 + esquirlas', () => {
     let vistas = 0;
     for (let i = 0; i < 40 && vistas < 5; i++) {
-      const { run } = playCampaign({ seed: (i + 1) * 7919, deck: 'obra', ascension: 7, full: false });
+      const { run } = playCampaign({ seed: (i + 1) * 7919, deck: 'escoba', ascension: 7, full: false });
       if (run.phase !== 'lost') continue;
       vistas++;
       expect(run.esquirlas).toBeGreaterThan(0);
@@ -126,7 +126,7 @@ describe('gotas de lacre', () => {
 
   it('el bot usa las gotas (sellos gratis en campañas enteras)', () => {
     let gratis = 0;
-    for (let i = 0; i < 40; i++) gratis += playCampaign({ seed: (i + 1) * 104729, deck: 'obra', ascension: 0, full: false }).run.stats.sellosGratis;
+    for (let i = 0; i < 40; i++) gratis += playCampaign({ seed: (i + 1) * 104729, deck: 'escoba', ascension: 0, full: false }).run.stats.sellosGratis;
     expect(gratis).toBeGreaterThan(0);
   }, 120_000);
 });

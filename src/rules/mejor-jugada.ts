@@ -1,5 +1,5 @@
 // Mejor jugada (V12, SPECS/V12.md 1.6). Regla, tal como la lee el jugador:
-//   «Mejor jugada: si puedes dar un Golpe exacto, lo elige. Si no, elige tu Golpe más alto. Tú confirmas.»
+//   «Mejor jugada: si podés dar un Golpe exacto, lo elige. Si no, elige tu Golpe más alto. Vos confirmás.»
 //
 // Puro: no toca el estado. Recorre TODAS las formaciones legales que se pueden armar con la mano y La Manga
 // (sin cartas especiales ni Comodín) contra cada trono en pie, con `previewStrike` (la misma cuenta que se
@@ -11,7 +11,7 @@ import { arrange } from './bot';
 import { Card, GameState, Player, SUITS, Suit, activo, classify, currentPlayer, previewStrike } from './engine';
 
 /** La regla en una línea, tal como va en el Reglamento (clave `regla.mejor`; ≤ 100 caracteres). */
-export const REGLA_MEJOR = 'Mejor jugada: si puedes dar un Golpe exacto, lo elige. Si no, elige tu Golpe más alto. Tú confirmas.';
+export const REGLA_MEJOR = 'Mejor jugada: si podés dar un Golpe exacto, lo elige. Si no, elige tu Golpe más alto. Vos confirmás.';
 
 export interface MejorJugada {
   /** Las cartas en el orden en que se juegan (el del bot: la más alta primero, lo que multiplica al final). */
@@ -31,12 +31,12 @@ function jugador(state: GameState, playerId?: string): Player | undefined {
 }
 
 /** Todas las formaciones legales con estas cartas (subconjuntos que `classify` acepta), en el orden de juego. */
-export function formacionesLegales(cartas: Card[]): Card[][] {
+export function formacionesLegales(cartas: Card[], cfg?: { mazo?: GameState['config']['mazo'] }): Card[][] {
   const lisas = cartas.filter((c) => c.suit !== 'X' && !c.sp).slice(0, MAX_CARTAS);
   const out: Card[][] = [];
   for (let mask = 1; mask < 1 << lisas.length; mask++) {
     const sub = lisas.filter((_, i) => mask & (1 << i));
-    if (classify(sub)) out.push(arrange(sub));
+    if (classify(sub, cfg)) out.push(arrange(sub));
   }
   return out;
 }
@@ -61,7 +61,7 @@ export function jugadasPosibles(state: GameState, playerId?: string): MejorJugad
   const frente = activo(state);
   const tronos: Suit[] = frente ? [frente.suit] : [];
   const out: MejorJugada[] = [];
-  for (const cartas of formacionesLegales([...p.hand, ...p.reserve])) {
+  for (const cartas of formacionesLegales([...p.hand, ...p.reserve], state.config)) {
     for (const target of tronos) {
       const r = previewStrike(state, cartas, target);
       out.push({ cards: cartas.map((c) => c.id), target, total: r.total, exacto: r.clean });
