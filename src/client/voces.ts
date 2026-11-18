@@ -72,7 +72,7 @@ export function voiceOn(ev: GameEvent): void {
   const bossId = S.campaign?.run.boss;
   const v = S.shown;
   if (!bossId || !v) return;
-  if (ev.e === 'siren' && ev.card && ev.reason === 'strike') {
+  if (ev.e === 'siren' && ev.tower && ev.reason === 'strike') {
     strikes++;
     if (strikes === 1 || (strikes - 1) % 3 === 0) speak(bossId, 'contraataque');
   } else if (ev.e === 'floorDown' && ev.towerDown && SUITS.every((s) => s === ev.tower || v.towers[s].floors.length === 0)) {

@@ -593,14 +593,16 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     if (document.querySelectorAll('#beltbar .belt-slot.tool').length < 5) fail('maqueta', 'el cinturón de prueba tiene menos de 5 herramientas');
     if (!document.querySelector('#reserve .card')) fail('maqueta', 'el andamio de prueba está vacío');
     if (!document.querySelector('#score .calc')) fail('maqueta', 'no hay previsualización de daño', document.querySelector('#score'));
-    if (opts.state === 'mesa-fatiga' && !document.querySelector('#fatigue.on:not([hidden])')) fail('maqueta', 'con la obra alargada no se ve la fatiga de cimientos encendida');
+    // V35 · la Furia va junto al Ataque del enemigo activo
+    if (opts.state === 'mesa-fatiga' && ![...document.querySelectorAll('.tower.activa .threat .furia')].some(visible)) fail('maqueta', 'con el asalto alargado no se ve la Furia junto al Ataque del enemigo');
     if (opts.state === 'mesa-mando' && !opts.mobile) {
       const shown = [...document.querySelectorAll('.actions .kh.pd, .bar .kh.pd')].filter(visible).length;
       if (shown < 4) fail('maqueta', `con mando solo se ven ${shown} insignias de botón en la mesa`);
       if ([...document.querySelectorAll('.kh.kb')].some(visible)) fail('maqueta', 'con mando siguen a la vista indicaciones de teclado');
     }
-    // contrato C5: los seis botones de acción, con los id de siempre
-    for (const id of ['btn-strike', 'btn-stash', 'btn-undo', 'btn-discard', 'btn-clear', 'btn-pass']) if (!document.querySelector(`.actions #${id}`)) fail('maqueta', `falta el botón de acción #${id}`);
+    // contrato C5: los botones de acción, con los id de siempre (V35: La Manga se usa desde su hueco y Soltar va con
+    // Atrás o Esc: #btn-stash y #btn-clear ya no están)
+    for (const id of ['btn-strike', 'btn-undo', 'btn-discard', 'btn-pass']) if (!document.querySelector(`.actions #${id}`)) fail('maqueta', `falta el botón de acción #${id}`);
   }
 
   // ───────── maqueta · la barra de arriba: ninguna ficha tapada por otra ni por un botón ─────────
@@ -865,10 +867,12 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
 
   // ───────── pulgar: en móvil las acciones van abajo, la mano encima y las torres arriba ─────────
   if (opts.mobile && opts.state.startsWith('mesa')) {
-    const need: [string, string][] = [['#btn-strike', 'Golpear'], ['#btn-stash', 'Andamio'], ['#btn-discard', 'Descartar'], ['#btn-undo', 'Tiza']];
+    // V35 · Deshacer solo sale cuando hay algo que deshacer: si está a la vista, también va al alcance del pulgar
+    const need: [string, string][] = [['#btn-strike', 'Golpear'], ['#btn-discard', 'Descartar'], ['#btn-undo', 'Tiza']];
     let barTop = H;
     for (const [sel, label] of need) {
       const b = document.querySelector<HTMLElement>(sel);
+      if (sel === '#btn-undo' && b?.hidden) continue;
       if (!b || !visible(b)) {
         fail('pulgar', `falta ${label} (${sel}) en la barra del pulgar`);
         continue;
@@ -1423,8 +1427,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     }
     if (opts.state === 'mesa-inmune') {
       const palabra = document.documentElement.lang === 'en' ? 'Immune' : 'Inmune';
+      // V35 · solo se golpea (y se apunta) al enemigo activo
       const aimed = document.querySelector<HTMLElement>('.tower.aimed');
-      if (aimed?.dataset.suit !== 'S') fail('inmune', `en mesa-inmune el trono apuntado debía ser PICAS y es ${aimed?.dataset.suit ?? 'ninguno'}`);
+      if (!aimed?.classList.contains('activa')) fail('inmune', `en mesa-inmune el trono apuntado debía ser el enemigo activo y es ${aimed?.dataset.suit ?? 'ninguno'}`);
       const plate = aimed?.querySelector<HTMLElement>('.plates .plate.iron');
       const b = plate?.querySelector('b');
       if (!plate || !b || !visible(plate)) fail('inmune', 'el trono apuntado no enseña su placa de hierro Inmune', aimed);
@@ -1523,8 +1528,13 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         const br = bar.getBoundingClientRect();
         if (Math.abs(sr.left + sr.width / 2 - (br.left + br.width / 2)) > 3 * scaleOf(s)) fail('vida', `la placa de la Vida del trono ${suit} no va centrada sobre la barra`, s);
       }
-      for (const b of document.querySelectorAll<HTMLElement>('.tower .threat b')) {
+      // V35 · el mínimo vale para el enemigo activo; las fichas de la fila son una referencia pequeña (≥ 14 px)
+      for (const b of document.querySelectorAll<HTMLElement>('.tower .threat > b')) {
         if (!visible(b)) continue;
+        if (b.closest('.tower.espera, .tower.fallen')) {
+          if (parseFloat(getComputedStyle(b).fontSize) < 13.95) fail('ataque', `el Ataque de la Casa en fila ${b.closest('.tower')?.getAttribute('data-suit')} mide ${getComputedStyle(b).fontSize} (mínimo 14)`, b);
+          continue;
+        }
         const px = parseFloat(getComputedStyle(b).fontSize);
         if (px < needAtk - 0.05) fail('ataque', `el Ataque del trono ${b.closest('.tower')?.getAttribute('data-suit')} mide ${px.toFixed(2)} px (mínimo ${needAtk})`, b);
         // la placa del Ataque no tapa el palo del rótulo (con dos cifras, en el móvil, lo tapaba)
@@ -1556,7 +1566,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         const suit = aimed.dataset.suit;
         const m = new DOMMatrixReadOnly(getComputedStyle(aimed).transform === 'none' ? undefined : getComputedStyle(aimed).transform);
         const k = Math.hypot(m.a, m.b);
-        if (k < 1.095) fail('apuntado', `el trono apuntado ${suit} va a escala ${k.toFixed(3)} (mínimo 1,10)`, aimed);
+        // V35 · el enemigo activo ya es el grande de la mesa: apuntarlo no lo agranda (pisaría la fila)
+        if (!aimed.classList.contains('activa') && k < 1.095) fail('apuntado', `el trono apuntado ${suit} va a escala ${k.toFixed(3)} (mínimo 1,10)`, aimed);
         // con «Reducir movimiento» (.calm): se mide un clon dentro de un .calm aparte, sin tocar la mesa (cambiar
         // la clase de <html> volvería a lanzar el reparto de la mano)
         const calm = document.createElement('div');
@@ -1585,8 +1596,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (shown.length !== n) fail('tronos', `se ven ${shown.length} tronos y el asalto tiene ${n}`);
       for (const t of document.querySelectorAll<HTMLElement>('.tower[hidden]')) if (t.getBoundingClientRect().width > 0) fail('tronos', `el trono ausente ${t.dataset.suit} se pinta`, t);
       if (opts.ref4) {
-        const want = n === 2 ? 1.4 : 1;
-        for (const t of shown) if (t.offsetWidth < opts.ref4 * want - 0.5) fail('tronos', `el trono ${t.dataset.suit} mide ${t.offsetWidth} px de ancho; con ${n} tronos, mínimo ${(opts.ref4 * want).toFixed(0)} (${want} × ${opts.ref4} de la mesa de cuatro)`, t);
+        // V35 · el enemigo activo mide lo mismo haya las Casas que haya (la fila se acorta)
+        const want = 1;
+        for (const t of shown.filter((x) => x.classList.contains('activa'))) if (t.offsetWidth < opts.ref4 * want - 0.5) fail('tronos', `el trono ${t.dataset.suit} mide ${t.offsetWidth} px de ancho; con ${n} tronos, mínimo ${(opts.ref4 * want).toFixed(0)} (${want} × ${opts.ref4} de la mesa de cuatro)`, t);
       }
     }
     // F2 · cuenta: Daño y Multi en su renglón, cifras ≥ 18 / 16 / 15 px y palabras ≥ 14 px
@@ -2017,8 +2029,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const bs = [...document.querySelectorAll<HTMLElement>('.actions button')].filter(visible);
     const main = bs.find((b) => b.id === 'btn-strike' || b.id === 'btn-pass');
     const dis = document.getElementById('btn-discard');
+    // V35 · Soltar ya no es un botón (Atrás o Esc): si vuelve, sigue la regla del relleno distinto
     const clr = document.getElementById('btn-clear');
-    if (!main || !dis || !clr || !visible(dis) || !visible(clr)) fail('acciones', 'faltan Golpear, Descartar o Soltar en la mesa', document.querySelector('.actions'));
+    if (!main || !dis || !visible(dis)) fail('acciones', 'faltan Golpear o Descartar en la mesa', document.querySelector('.actions'));
     else {
       const area = (b: Element) => b.getBoundingClientRect().width * b.getBoundingClientRect().height;
       for (const b of bs) if (b !== main && area(b) >= area(main)) fail('acciones', `#${b.id} es tan grande como Golpear`, b);
@@ -2049,8 +2062,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         return c && c.a >= 0.1 ? c : null;
       };
       const fd = fondo(dis);
-      const fc = fondo(clr);
-      if (fd && fc && ratio(fd, fc) < 3) fail('acciones', `Descartar y Soltar tienen rellenos parecidos (${ratio(fd, fc).toFixed(1)}:1, mínimo 3:1)`, clr);
+      const fc = clr ? fondo(clr) : null;
+      if (clr && fd && fc && ratio(fd, fc) < 3) fail('acciones', `Descartar y Soltar tienen rellenos parecidos (${ratio(fd, fc).toFixed(1)}:1, mínimo 3:1)`, clr);
       if (!fd) fail('acciones', 'Descartar no tiene tinta propia (relleno transparente)', dis);
     }
   }
@@ -2805,7 +2818,7 @@ async function correTramo(browser: Browser, site: { url: string }, t: Trabajo, h
     /** V12 · tamaño de letra de cada cifra marcada (data-cifra-k) en «mesa» (regla «compacto»). */
     let refCifras: Record<string, number> | undefined;
     const cifrasDe = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll<HTMLElement>('[data-cifra-k]')].reverse().map((e) => [e.dataset.cifraK, parseFloat(getComputedStyle(e).fontSize)])) as Record<string, number>);
-    const anchoTrono = () => page.evaluate(() => (document.querySelector('.tower:not([hidden]):not(.aimed)') as HTMLElement | null)?.offsetWidth ?? 0);
+    const anchoTrono = () => page.evaluate(() => (document.querySelector('.tower.activa:not([hidden])') as HTMLElement | null)?.offsetWidth ?? 0);
     // V22 · Steam Deck (1280×800): también la mesa de referencia se mide jugando con mando, como se fotografía
     const conMando = async (): Promise<void> => {
       if (process.env.QA_DECK_RATON !== '1' && view.name === '1280x800') await page.evaluate(() => (window as unknown as { __qa: { mando: () => void } }).__qa.mando());

@@ -39,7 +39,7 @@ const REIN = BALANCE.reinados;
 export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
   { name: 'Corazas finas', desc: 'Todos los guardias tienen un {pct} % más de Vida.' },
-  { name: 'Impuesto real', desc: 'Todo en la Taberna cuesta {impuesto} de oro más.' },
+  { name: 'Corte airada', desc: 'Cada Mazo agotado sube la Furia {furia} más.' },
   { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tienes {heridas} punto menos de Vida.' },
@@ -152,11 +152,11 @@ export const BOSSES: Boss[] = [
     who: 'La Dama del Cáliz',
     fem: true,
     name: 'Cáliz envenenado',
-    desc: 'Tus ♥ no curan.',
+    desc: 'Tus ♥ no curan: cada una que juegas te quita {veneno} de Vida.',
     barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
-    curse: { mark: 'corazones', badge: 'Tus ♥ no curan' },
+    curse: { mark: 'corazones', badge: 'Tus ♥ te quitan {veneno}' },
     // se aplica después de las reliquias: con el Bálsamo, tampoco curan
-    apply: (c) => void (c.curaPorCarta = 0),
+    apply: (c) => void ((c.curaPorCarta = 0), (c.veneno = MON.sequia.veneno)),
   },
   {
     id: 'intemperie',
@@ -172,10 +172,10 @@ export const BOSSES: Boss[] = [
     id: 'blindaje',
     who: 'El Inquisidor',
     name: 'Guardia de hierro',
-    desc: 'Ningún trono queda Aturdido.',
+    desc: 'Ningún guardia queda Aturdido, pero pegan {ataque} menos.',
     barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
     curse: { mark: 'guardias', badge: 'Sin Aturdido' },
-    apply: (c) => void (c.noFx = 'sobrecarga'),
+    apply: (c) => void ((c.noFx = 'sobrecarga'), eachThreat(c, -MON.blindaje.ataque)),
   },
   {
     id: 'furia',
@@ -716,11 +716,15 @@ function rollTool(run: Run, rarities: Rarity[], exclude: string[] = []): string 
 }
 const ALL_RARITIES: Rarity[] = ['comun', 'oficio', 'capataz', 'reliquia'];
 
-/** V35 · El rasgo con más Reliquias en la tira (a igualdad, el primero de la lista); null si no llevas ninguna. */
+/** V35 · El rasgo con más Reliquias en la tira (a igualdad, el de la Reliquia más reciente); null si no llevas ninguna. */
 export function rasgoMayor(run: Pick<Run, 'tools'>): Rasgo | null {
   const n = rasgosDe(run.tools);
-  const mejor = RASGOS.reduce((a, r) => (n[r.id] > n[a.id] ? r : a), RASGOS[0]);
-  return n[mejor.id] > 0 ? mejor.id : null;
+  let mejor: Rasgo | null = null;
+  for (const t of [...run.tools].reverse()) {
+    const r = TOOL[t.id]?.rasgo;
+    if (r && (!mejor || n[r] > n[mejor])) mejor = r;
+  }
+  return mejor;
 }
 
 /** Una Reliquia al azar de un rasgo (de cualquier rareza); null si no queda ninguna en el surtido. */
@@ -1005,7 +1009,7 @@ export function ordenCasas(run: Pick<Run, 'id' | 'stage' | 'palos'>): Suit[] {
 export const TIMBRE: { stamps: number } = BALANCE.timbre;
 /** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
 export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
-ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), impuesto: REIN.impuesto, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
+ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), furia: REIN.furia, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
@@ -1025,7 +1029,8 @@ export function stageConfig(run: Run, players = 1): Config {
   }
   // V35 · duelo Casa por Casa: se combate la primera en pie de `orden`. Sin reloj de turnos: la Furia sube con cada
   // Mazo agotado y, contra el monarca (el último guardia del asalto), con cada turno
-  cfg.collapseSiege = FURIA.mazo;
+  // Corte airada (Reinado 3+): cada Mazo agotado sube la Furia un poco más
+  cfg.collapseSiege = FURIA.mazo + (a >= 2 ? REIN.furia : 0);
   cfg.orden = ordenCasas(run);
   if (st.boss) cfg.jefe = { suit: cfg.orden[cfg.orden.length - 1], vida: FURIA.jefeVida, furia: FURIA.rey };
   cfg.formLevel = { ...run.levels };
@@ -1130,16 +1135,16 @@ export const offerCost = (run: Run, o: Offer) => (run.freeShop || selloGratis(ru
 export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?.rarity ?? 'comun'].cost / 2));
 
 function generateShop(run: Run): Offer[] {
-  const offers = stock(run);
-  if (run.ascension >= 2) for (const o of offers) o.cost += REIN.impuesto;
-  return offers;
+  return stock(run);
 }
 
 function stock(run: Run): Offer[] {
   const offers: Offer[] = [];
   const seen: string[] = [];
+  // V35 · el Puesto grande (Árbol): por nivel, una Reliquia más y dos de las ofrecidas son de tu rasgo principal
+  const mayor = rasgoMayor(run);
   for (let i = 0; i < BALANCE.taberna.reliquias + lvl(run, 'tienda'); i++) {
-    const id = rollTool(run, ALL_RARITIES, seen);
+    const id = (i < 2 * lvl(run, 'tienda') && mayor ? rollToolRasgo(run, mayor, seen) : null) ?? rollTool(run, ALL_RARITIES, seen);
     if (!id) break;
     seen.push(id);
     // Ojo del tasador (Árbol): las reliquias cuestan menos, nunca menos de 1

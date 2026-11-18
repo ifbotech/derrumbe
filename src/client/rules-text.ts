@@ -3,8 +3,8 @@
 import { Config, DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formation, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../rules/engine';
 import { KEYWORDS } from '../rules/keywords';
 import { BALANCE } from '../rules/balance-config';
-import { ASCENSIONS, FATIGUE, LAST_STAGE, STAGES } from '../rules/run';
-import { TOOL_SLOTS } from '../rules/tools';
+import { ASCENSIONS, FURIA, LAST_STAGE, STAGES } from '../rules/run';
+import { RASGOS, TOOL_SLOTS, UMBRALES } from '../rules/tools';
 import { SUBTITLE, TITLE } from '../shared/brand';
 import { tFor } from '../shared/i18n';
 import { RAMAS } from '../rules/arbol';
@@ -49,6 +49,11 @@ const n = (x: number) => String(x).replace('.', ',');
 const RACHA = BALANCE.golpe.racha;
 const RACHA_TOPE = BALANCE.golpe.racha * BALANCE.golpe.rachaTope;
 const MONARCAS = STAGES.filter((s) => s.boss).length;
+/** V35 · la tabla de los cinco rasgos, con sus bonos de 2, 4 y 6 Reliquias. */
+const rasgosTabla = (l: 'es' | 'en') =>
+  `<table><tr><th>${l === 'es' ? 'Rasgo' : 'Trait'}</th>${UMBRALES.map((u) => `<th>${u}</th>`).join('')}</tr>${RASGOS.map(
+    (r) => `<tr><td><b>${tFor(l, `rasgo.${r.id}.nombre`)}</b><br>${tFor(l, `rasgo.${r.id}.lema`)}</td>${[1, 2, 3].map((i) => `<td>${tFor(l, `rasgo.${r.id}.bono.${i}`)}</td>`).join('')}</tr>`,
+  ).join('')}</table>`;
 
 function rulesEs(cfg: Config): string {
   const S = suitSvg('S');
@@ -59,6 +64,7 @@ function rulesEs(cfg: Config): string {
   return `
   <p><b>${TITLE}</b> · ${SUBTITLE}. Un juego cooperativo de 1 a 4 jugadores con baraja francesa. Sois una <b>conjura</b>:
   tenéis que hacer caer los <b>tronos</b> de la corte antes de quedaros sin <b>Vida</b>. Se gana o se pierde en equipo.</p>
+  <p><b>Un enemigo a la vez</b>: las Casas se asaltan de una en una. En el centro de la mesa está el <b>enemigo activo</b> (el guardia que tienes delante) y, a su lado, la <b>fila</b> con los que vienen después.</p>
 
   <h3>La mesa</h3>
   <ul>
@@ -75,16 +81,16 @@ function rulesEs(cfg: Config): string {
 
   <h3>Tu turno</h3>
   <ul>
-    <li><b>1 · Golpea</b> un trono con una <b>formación</b>. Antes de golpear, la mesa te enseña la cuenta.</li>
+    <li><b>1 · Golpea</b> al enemigo activo con una <b>formación</b>. Antes de golpear, la mesa te enseña la cuenta.</li>
     <li>En vez de golpear puedes <b>descartar</b> las cartas que quieras, o jugar un <b>Comodín</b>.</li>
-    <li><b>2 · Contraataque</b> ⚔: se voltea una carta del Mazo y ataca el trono de ese palo, con el Ataque de su guardia. Primero gasta tu Escudo; lo que sobra te quita Vida. Si ese trono ya cayó, no está en el asalto o sale un Comodín, no pasa nada.</li>
+    <li><b>2 · Contraataque</b> ⚔: si no lo has abatido, el enemigo activo te pega con su Ataque (más su <b>Furia</b>). Primero gasta tu Escudo; lo que sobra te quita Vida.</li>
     <li><b>3 · Roba</b> hasta completar tu mano. Turno del siguiente.</li>
   </ul>
 
   <h3>Daño × Multi = Golpe</h3>
   <p>Cada jugada se cuenta igual: <b>Golpe = Daño × Multi</b>, y el Multi siempre es entero. <b>El orden no importa</b>: la mesa hace la cuenta y te la enseña antes de golpear.</p>
   <ul>
-    <li><b>Daño</b>: se suma todo. La base de la formación, el número de cada carta, el Asedio final y lo que añadan <b>acabados</b>, <b>cartas especiales</b> y <b>Reliquias</b>. El <b>As</b> vale <b>11</b> y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).</li>
+    <li><b>Daño</b>: se suma todo. La base de la formación, el número de cada carta y lo que añadan <b>acabados</b>, <b>cartas especiales</b> y <b>Reliquias</b>. El <b>As</b> vale <b>11</b> y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).</li>
     <li><b>Multi</b>: se suma todo (la formación, la Racha y lo que añadan acabados, especiales y Reliquias) y, al final, se aplican los multiplicadores (×2, ×3…).</li>
   </ul>
   <table>
@@ -121,23 +127,24 @@ function rulesEs(cfg: Config): string {
   <h3>Más reglas</h3>
   <ul>
     <li><b>Comodín · Motín</b>: se juega solo sobre un trono. Ese trono queda <b>Aturdido</b> (se salta su próximo Contraataque) y este turno no hay Contraataque. El Comodín sale del asalto.</li>
-    <li><b>Asedio final</b>: ningún asedio dura para siempre. ${cfg.fatigueStart === undefined ? `En campaña, desde el turno ${FATIGUE.start + 1}` : `Desde el turno ${cfg.fatigueStart + 1}`} y cada ${cfg.fatigueEvery ?? FATIGUE.every} turnos sube un nivel: <b>+${n(cfg.fatigueDano ?? FATIGUE.dano)} de Daño</b> a todos los Golpes y <b>+1 de Ataque</b> a todos los tronos. La mesa avisa tres turnos antes.</li>
-    <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo. <b>Barajar no te quita Vida</b>: el <b>Asedio final</b> sube ${cfg.collapseSiege} niveles (+${cfg.collapseSiege} de Ataque en cada trono, más Daño en tus golpes) y el siguiente Contraataque lo da el trono en pie con más Ataque, salga el palo que salga. El Escudo lo frena como siempre.</li>
+    <li><b>Furia</b>: cada punto de Furia es <b>+1 de Ataque</b> en todos los Contraataques; se ve junto al ⚔ del enemigo. Sube con cada <b>Mazo agotado</b> y, contra un monarca, cada turno (<b>Furia del Rey</b>).${cfg.fatigueStart === undefined ? '' : ` En el Asalto único sube además desde el turno ${cfg.fatigueStart + 1}, cada ${cfg.fatigueEvery} turnos.`}</li>
+    <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo. <b>Barajar no te quita Vida</b>, pero la <b>Furia</b> sube ${cfg.collapseSiege ? cfg.collapseSiege : FURIA.mazo} (en campaña, ${FURIA.mazo}).</li>
     <li><b>As cómplice</b>: un As forma jugada con <b>cualquier otra carta</b> (×${n(FORM.compania.r)}) y aporta el poder de su palo.</li>
     <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardas una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
     <li><b>Rebobinar</b> ↩ (campaña en solitario): una vez por asalto deshaces tu última jugada. El Mazo se baraja de nuevo. En sala toda jugada es definitiva.</li>
     <li>Solo se puede <b>pasar</b> con la mano vacía.</li>
     <li><b>Victoria</b>: caen todos los tronos (<b>Corte vencida</b>). <b>Derrota</b>: tu Vida llega a 0 (<b>Conjura deshecha</b>).</li>
-    <li>Modo <b>BRUTAL</b> (Asalto único): ${DIFFICULTY.brutal.maxIntegrity} de Vida y cada Mazo agotado sube el Asedio final ${DIFFICULTY.brutal.collapseSiege} niveles.</li>
+    <li>Modo <b>BRUTAL</b> (Asalto único): ${DIFFICULTY.brutal.maxIntegrity} de Vida y cada Mazo agotado sube la Furia ${DIFFICULTY.brutal.collapseSiege}.</li>
   </ul>
 
   <h3>Campaña</h3>
   <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro; ${MONARCAS} con <b>monarca</b>, y el último, en el Salón del Trono, con el <b>Rey Tirano</b>. Empiezas con un <b>Sobre lacrado</b> de cartas especiales y con un <b>Don de la Conjura</b> que eliges entre tres (una Reliquia, un sello de lacre o una bolsa de oro) y, entre asalto y asalto, mejoras el mazo y tus Reliquias.</p>
   <ul>
     <li><b>El Mapa del castillo</b> enseña desde el principio qué monarca espera en cada asalto y su <b>decreto</b>. En los asaltos sin monarca eliges <b>ruta</b>: cada una trae un <b>Juramento</b> (una condición con premio; los de riesgo endurecen el asalto y pagan siempre). En el asalto ${STAGES.findIndex((s) => s.atajo) + 1} también puedes tomar el <b>Atajo</b>: te saltas el asalto (sin Botín ni Taberna) a cambio de un <b>Atajo de conspirador</b>.</li>
-    <li><b>En el Botín</b> eliges una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasas por 3 de oro. Los monarcas dejan además una reliquia.</li>
+    <li><b>En el Botín</b> eliges una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasas por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: eliges una de tres Reliquias, y una es de tu rasgo principal.</li>
+    <li><b>Monarcas</b>: el monarca es el último guardia del asalto. Llega con retrato y decreto, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tienes delante, su <b>Furia del Rey</b> sube ${FURIA.rey} cada turno: hay que tumbarlo deprisa.</li>
     <li><b>La Taberna</b> del Tratante vende reliquias, Sobres lacrados (abres uno y eliges 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
-    <li>Tras cada monarca intermedio hay un <b>Secreto de la cripta</b>: un dilema con premio y precio.</li>
+    <li>Tras cada monarca intermedio hay un <b>Santuario de la cripta</b>: una apuesta (la Rueda del destino, doble o nada de esquirlas, un dado bendito o maldito, el Altar que cambia Vida por un rasgo) o un dilema con premio y precio.</li>
     <li>Después del último asalto puedes seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
     <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña. El <b>Asalto diario</b> usa la fecha como semilla, con la baraja de la conjura y sin mejoras del Árbol.</li>
     <li><b>Reinicio rápido</b>: mantén <b>R</b> 0,7 segundos para empezar de nuevo con la misma baraja y el mismo Reinado. No cuenta como derrota.</li>
@@ -154,7 +161,11 @@ function rulesEs(cfg: Config): string {
 
   <h3>Reliquias</h3>
   <p>Llevas hasta <b>${TOOL_SLOTS} reliquias</b>. <b>No se ordenan</b>: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica.
-  Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a la de su derecha y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
+  Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a otra y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
+
+  <h3>Rasgos de build</h3>
+  <p>Cada Reliquia es de uno de <b>cinco rasgos</b>. Con <b>2, 4 y 6</b> Reliquias del mismo rasgo se encienden sus bonos, que se suman a los de las Reliquias. La píldora de arriba de la mesa lleva la cuenta y La Taberna marca lo que te acerca al siguiente.</p>
+  ${rasgosTabla('es')}
 
   <h3>Sellos de lacre y acabados</h3>
   <table>
@@ -177,10 +188,10 @@ function rulesEs(cfg: Config): string {
 
   <h3>Consejos de la conjura</h3>
   <ul>
-    <li>Abatir a la Sota deja paso a una Reina con más Ataque: un trono a medias es más peligroso que uno entero.</li>
-    <li>Un trono caído ya no contraataca. Acabar tronos te da turnos seguros.</li>
+    <li>Abatir a la Sota deja paso a una Reina con más Ataque: mira la fila antes de gastar la mano.</li>
+    <li>Elige un rasgo pronto y ve a por su bono de 4: es lo que gana las campañas.</li>
     <li>Jugar muchas cartas acelera el asalto, pero vacía el Mazo y acerca el Mazo agotado.</li>
-    <li>El orden importa dos veces: el de las cartas dentro de la jugada y el de tus Reliquias.</li>
+    <li>Contra el monarca, la Furia del Rey no espera: guarda tu mejor mano para él.</li>
   </ul>`;
 }
 
@@ -209,6 +220,7 @@ function rulesEn(cfg: Config): string {
   return `
   <p><b>${b.title}</b> · ${b.subtitle}. A co-op game for 1 to 4 players with a standard deck of cards. You are a <b>conspiracy</b>:
   you must bring down the <b>thrones</b> of the court before you run out of <b>Health</b>. You win or lose as a team.</p>
+  <p><b>One enemy at a time</b>: the Houses are stormed one by one. In the middle of the table is the <b>active enemy</b> (the guard in front of you) and, beside it, the <b>queue</b> with those coming next.</p>
 
   <h3>The table</h3>
   <ul>
@@ -225,16 +237,16 @@ function rulesEn(cfg: Config): string {
 
   <h3>Your turn</h3>
   <ul>
-    <li><b>1 · Hit</b> a throne with a <b>formation</b>. Before you hit, the table shows you the tally.</li>
+    <li><b>1 · Hit</b> the active enemy with a <b>formation</b>. Before you hit, the table shows you the tally.</li>
     <li>Instead of hitting you can <b>discard</b> any cards you like, or play a <b>Joker</b>.</li>
-    <li><b>2 · Counterattack</b> ⚔: a card is flipped from the Deck and the throne of that suit attacks, with the Attack of its guard. Your Shield is spent first; whatever is left takes Health. If that throne already fell, is not in the assault or a Joker comes up, nothing happens.</li>
+    <li><b>2 · Counterattack</b> ⚔: if you did not defeat it, the active enemy hits you with its Attack (plus its <b>Fury</b>). Your Shield is spent first; whatever is left takes Health.</li>
     <li><b>3 · Draw</b> up to your full hand. Next player's turn.</li>
   </ul>
 
   <h3>Damage × Mult = Hit</h3>
   <p>Every play is counted the same way: <b>Hit = Damage × Mult</b>, and Mult is always a whole number. <b>Order does not matter</b>: the table does the count and shows it before you strike.</p>
   <ul>
-    <li><b>Damage</b>: everything is added up. The formation’s base, the number on each card, the Final Siege and whatever <b>finishes</b>, <b>special cards</b> and <b>Relics</b> add. The <b>Ace</b> is worth <b>11</b> and links straights at the bottom (A-2-3) and at the top (9-10-A).</li>
+    <li><b>Damage</b>: everything is added up. The formation’s base, the number on each card and whatever <b>finishes</b>, <b>special cards</b> and <b>Relics</b> add. The <b>Ace</b> is worth <b>11</b> and links straights at the bottom (A-2-3) and at the top (9-10-A).</li>
     <li><b>Mult</b>: everything is added up (the formation, the Streak and whatever finishes, specials and Relics add) and, at the end, the multipliers apply (×2, ×3…).</li>
   </ul>
   <table>
@@ -271,23 +283,24 @@ function rulesEn(cfg: Config): string {
   <h3>More rules</h3>
   <ul>
     <li><b>Joker · Mutiny</b>: played alone on a throne. That throne is <b>Stunned</b> (it skips its next Counterattack) and there is no Counterattack this turn. The Joker leaves the assault.</li>
-    <li><b>Final Siege</b>: no siege lasts forever. ${cfg.fatigueStart === undefined ? `In a campaign, from turn ${FATIGUE.start + 1}` : `From turn ${cfg.fatigueStart + 1}`} and every ${cfg.fatigueEvery ?? FATIGUE.every} turns it goes up a level: <b>+${x(cfg.fatigueDano ?? FATIGUE.dano)} Damage</b> to every Hit and <b>+1 Attack</b> to every throne. The table warns you three turns ahead.</li>
-    <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again. <b>Shuffling costs no Health</b>: the <b>Final Siege</b> rises ${cfg.collapseSiege} levels (+${cfg.collapseSiege} Attack on every throne, more Damage on your strikes) and the next Counterattack comes from the standing throne with the most Attack, whatever suit is drawn. Shield stops it as usual.</li>
+    <li><b>Fury</b>: each point of Fury is <b>+1 Attack</b> on every Counterattack; it shows next to the enemy’s ⚔. It rises each time the <b>Deck runs out</b> and, against a monarch, every turn (<b>King’s Fury</b>).${cfg.fatigueStart === undefined ? '' : ` In the Single Assault it also rises from turn ${cfg.fatigueStart + 1}, every ${cfg.fatigueEvery} turns.`}</li>
+    <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again. <b>Shuffling costs no Health</b>, but <b>Fury</b> rises ${cfg.collapseSiege ? cfg.collapseSiege : FURIA.mazo} (in a campaign, ${FURIA.mazo}).</li>
     <li><b>Accomplice Ace</b>: an Ace makes a play with <b>any other card</b> (×${x(FORM.compania.r)}) and brings the power of its suit.</li>
     <li><b>Up the Sleeve</b>: once per turn, without spending it, you keep a card from your hand Up the Sleeve. It does not count towards hand size and is played from there. If the sleeve is full, the stored card goes back to your hand.</li>
     <li><b>Rewind</b> ↩ (solo campaign): once per assault you undo your last play. The Deck is shuffled again. In a room every play is final.</li>
     <li>You can only <b>pass</b> with an empty hand.</li>
     <li><b>Victory</b>: every throne falls (<b>Court Defeated</b>). <b>Defeat</b>: your Health reaches 0 (<b>Conspiracy Undone</b>).</li>
-    <li><b>BRUTAL</b> mode (Single Assault): ${DIFFICULTY.brutal.maxIntegrity} Health and each time the Deck runs out the Final Siege rises ${DIFFICULTY.brutal.collapseSiege} levels.</li>
+    <li><b>BRUTAL</b> mode (Single Assault): ${DIFFICULTY.brutal.maxIntegrity} Health and each time the Deck runs out Fury rises ${DIFFICULTY.brutal.collapseSiege}.</li>
   </ul>
 
   <h3>Campaign</h3>
   <p>A deck-building roguelike: <b>${LAST_STAGE} assaults</b>, each one a hall of the castle and each harder than the last; ${MONARCAS} of them with a <b>monarch</b>, and the last one, in the Throne Room, with the <b>Tyrant King</b>. You start with a <b>Sealed Pack</b> of special cards and a <b>Conspiracy’s Gift</b> you choose from three (a Relic, a wax seal or a purse of gold) and, between assaults, you improve your deck and your Relics.</p>
   <ul>
     <li><b>The Castle Map</b> shows from the start which monarch awaits in each assault and their <b>decree</b>. In assaults without a monarch you pick a <b>route</b>: each one brings an <b>Oath</b> (a condition with a reward; risky ones make the assault harder and always pay). In assault ${STAGES.findIndex((s) => s.atajo) + 1} you can also take the <b>Shortcut</b>: you skip the assault (no Spoils or Tavern) in exchange for a <b>conspirator Shortcut</b>.</li>
-    <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. Monarchs also leave a relic.</li>
+    <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. When a monarch falls it opens its <b>Chest</b>: you pick one of three Relics, and one is of your main trait.</li>
+    <li><b>Monarchs</b>: the monarch is the last guard of the assault. It arrives with a portrait and a decree, has ×${FURIA.jefeVida} Health and, while it is in front of you, its <b>King’s Fury</b> rises ${FURIA.rey} every turn: bring it down fast.</li>
     <li>In <b>The Tavern</b>, the Tavern Keeper sells relics, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
-    <li>After each middle monarch there is a <b>Crypt Secret</b>: a dilemma with a reward and a price.</li>
+    <li>After each middle monarch there is a <b>Crypt Shrine</b>: a gamble (the Wheel of Fate, double or nothing on shards, a blessed or cursed die, the Altar that trades Health for a trait) or a dilemma with a reward and a price.</li>
     <li>After the last assault you can go on to the <b>Endless Throne</b>: assaults without end, each one harder.</li>
     <li><b>Seed</b>: the same seed and the same choices give the same campaign. The <b>Daily Assault</b> uses the date as its seed, with the crew's deck and no Tree upgrades.</li>
     <li><b>Quick restart</b>: hold <b>R</b> for ${x(0.7)} seconds to start again with the same deck and the same Reign. It does not count as a defeat.</li>
@@ -304,7 +317,11 @@ function rulesEn(cfg: Config): string {
 
   <h3>Relics</h3>
   <p>You carry up to <b>${TOOL_SLOTS} relics</b>. <b>You never sort them</b>: each new one goes to the end of the row and none depends on its slot. In the count everything is added first and multiplied at the end.
-  Each one says what it does: <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far, <b>⇉</b> copies the one to its right and <b>•</b> is passive. Golden rule: what adds first, what multiplies at the end.</p>
+  Each one says what it does: <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far, <b>⇉</b> copies another and <b>•</b> is passive. Golden rule: what adds first, what multiplies at the end.</p>
+
+  <h3>Build traits</h3>
+  <p>Each Relic belongs to one of <b>five traits</b>. With <b>2, 4 and 6</b> Relics of the same trait its bonuses light up, on top of the Relics’ own. The pill at the top of the table keeps count and The Tavern marks what brings you closer to the next one.</p>
+  ${rasgosTabla('en')}
 
   <h3>Wax Seals and Finishes</h3>
   <table>
@@ -327,10 +344,10 @@ function rulesEn(cfg: Config): string {
 
   <h3>Crew tips</h3>
   <ul>
-    <li>Defeating the Jack lets through a Queen with more Attack: a half-taken throne is more dangerous than a whole one.</li>
-    <li>A fallen throne no longer counterattacks. Finishing thrones buys you safe turns.</li>
+    <li>Defeating the Jack lets through a Queen with more Attack: check the queue before you spend your hand.</li>
+    <li>Pick a trait early and go for its 4 bonus: that is what wins campaigns.</li>
     <li>Playing many cards speeds up the assault, but empties the Deck and brings it closer to running out.</li>
-    <li>Order matters twice: the cards within the play, and your Relics.</li>
+    <li>Against the monarch, King’s Fury does not wait: save your best hand for it.</li>
   </ul>`;
 }
 

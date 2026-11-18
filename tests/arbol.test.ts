@@ -42,8 +42,8 @@ describe('la forma del Árbol', () => {
     expect(nodo('vale')!.costs).toEqual([400, 800]);
     expect(nodo('tienda')!.costs).toEqual([800, 1200]);
     for (const id of ['caja_precision', 'caja_sismo', 'caja_alquimia', 'caja_limite', 'caja_trituradora', 'caja_aguante']) expect(nodo(id)!.costs).toEqual([400]);
-    // V12-C: 1 de oro por rango (5 con la Bolsa llena; La Orden de la 11.0 daba 2 × 4 = 8)
-    expect(BALANCE.arbol.oroPorNivel).toBe(1);
+    // V35: 2 de oro por rango (10 con la Bolsa llena; la V12-C daba 1)
+    expect(BALANCE.arbol.oroPorNivel).toBe(2);
   });
 
   it('cuatro ramas; cada padre existe, está en el Árbol y no hay ciclos', () => {
@@ -78,7 +78,7 @@ describe('la forma del Árbol', () => {
   });
 
   it('cifras de cada rango (enteras salvo los segundos del imán) y los dados con multiplicadores enteros', () => {
-    expect(cifraDe('caja', 3)).toEqual({ oro: 1 });
+    expect(cifraDe('caja', 3)).toEqual({ oro: 2 });
     expect(cifraDe('esq_monarca', 2)).toEqual({ n: 50 });
     expect(cifraDe('cara_rey', 1)).toEqual({ n: 4 });
     expect(cifraDe('cara_rey', 5)).toEqual({ n: 8 });

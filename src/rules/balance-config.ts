@@ -49,7 +49,7 @@ export interface BalanceConfig {
   /** Vida de los guardias según el tamaño de la conjura (1 a 4 jugadores); también retrasa el Asedio final. */
   cuadrilla: number[];
   /** Giros de los Reinados 2, 3, 5, 6 y 7 (el 8 es `clausura`). */
-  reinados: { corazas: number; impuesto: number; reyesAcorazados: number; reyColerico: number; heridasViejas: number; guardiaNoche: number };
+  reinados: { corazas: number; furia: number; reyesAcorazados: number; reyColerico: number; heridasViejas: number; guardiaNoche: number };
   /** V35 · Furia: lo que sube con cada Mazo agotado, lo que sube cada turno del monarca y por cuánto se multiplica la Vida del monarca. */
   furia: { mazo: number; rey: number; jefeVida: number };
   /** Reinado 8 «Puertas selladas»: asaltos en los que sube el Ataque de todos los tronos, y cuánto. */
@@ -63,6 +63,10 @@ export interface BalanceConfig {
     intemperie: { escudoTope: number };
     furia: { ataque: number };
     inestable: { furia: number; vida: number };
+    /** V35 · lo que quita cada ♥ jugada contra la Dama del Cáliz. */
+    sequia: { veneno: number };
+    /** V35 · cuánto Ataque de menos tienen los guardias del Inquisidor (sin Aturdido el duelo se le hace largo). */
+    blindaje: { ataque: number };
   };
   /** Precios de La Taberna. */
   taberna: {
@@ -114,7 +118,7 @@ export interface BalanceConfig {
   };
   /** Asalto único (partida clásica): lo que cambia sobre la mesa por defecto. */
   clasica: {
-    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; collapseSiege: number; fatigueStart: number; fatigueEvery: number };
+    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; collapseSiege: number; cuadrilla: number[]; fatigueStart: number; fatigueEvery: number };
     brutal: { maxIntegrity: number; collapseSiege: number };
   };
   /** Cifras de cada reliquia, por `id`. */

@@ -61,7 +61,8 @@ export async function mejorSuite(page: Page, how: 'keys' | 'mouse' | 'pad', chec
   // se suelta la selección de la mesa de QA (el trío de sietes)
   if (how === 'pad') await press(page, BTN.B);
   else if (how === 'keys') await page.keyboard.press('Escape');
-  else await page.locator('#btn-clear').click();
+  // V35 · sin botón Soltar: con el ratón, se vuelve a pinchar cada carta elegida
+  else for (let i = 0; i < 12 && (await page.locator('#hand .card.sel').count()); i++) await page.locator('#hand .card.sel').first().click();
   const m = await juice(page, 'mejor');
   check(!!m && m.cards.length > 0, `[${how}] la mesa de QA tiene una Mejor jugada (${m ? `${m.cards.length} cartas contra ${m.target}, Golpe ${m.total}${m.exacto ? ', exacto' : ''}` : 'ninguna'})`);
   if (!m) return;

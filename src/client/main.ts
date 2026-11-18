@@ -18,6 +18,7 @@ import './conjura.css';
 import './taberna.css';
 import './movil.css';
 import './legible.css';
+import './duelo.css'; // V35 · un enemigo grande y la fila
 import './tinta';
 import { sfx, startMusic } from './audio';
 import { canRestart, isRunHost, restartCampaign, retireOldSave } from './campaign';

@@ -25,6 +25,8 @@ import { renderPings } from './pings';
 import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, mejN, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
 import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
 import { ritualDelBotin } from './ritual';
+import { rasgoChip, rasgoCon } from './rasgos-ui';
+import { t } from '../shared/i18n';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
 // Iconos de juramentos, atajos y secretos: el emblema de GLYPH que mejor dice la imagen de la biblia de
@@ -97,6 +99,7 @@ export function renderRun(): void {
   else if (run.phase === 'event') eventScreen(run);
   else if (over) actaScreen(run);
   else return;
+  if (lastPhase === 'event' && run.phase !== 'event' && run.suerte) suerteCartel(run);
   lastGold = run.gold;
   lastPhase = run.phase;
   const dv = $('#deck-view');
@@ -301,7 +304,13 @@ function rewardScreen(run: Run): void {
   const loot = $('#loot');
   if (loot && !run.looted) {
     const full = run.tools.length >= TOOL_SLOTS;
-    run.loot.forEach((id) => loot.appendChild(choice(toolTile(id), relN(id), relD(id), full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null)));
+    loot.classList.add('cofre');
+    run.loot.forEach((id, i) => {
+      const box = choice(toolTile(id), relN(id), `${rasgoChip(run.tools, id)}${relD(id)}`, full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null);
+      if (rasgoCon(run.tools, id)?.enciende) box.classList.add('rasgo-enciende');
+      box.style.setProperty('--i', String(i));
+      loot.appendChild(box);
+    });
     loot.appendChild(choice(tileEl('retirar', L('ui.run.ninguna'), 'service'), L('ui.run.pasar'), full ? L('ui.run.caben.llenas', { n: TOOL_SLOTS }) : L('ui.run.caben', { n: TOOL_SLOTS, m: run.tools.length }), L('ui.run.pasar'), host() ? () => runDo({ t: 'loot', id: null }) : null));
   }
 }
@@ -321,7 +330,7 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   if (o.kind === 'tool') {
     el = toolTile(o.id!);
     title = relN(o.id!);
-    desc = `${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>`;
+    desc = `${rasgoChip(run.tools, o.id!)}${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>`;
   } else if (o.kind === 'sobre') {
     el = tileEl('sobre', L('ui.run.sobre'), 'service');
     title = L('ui.run.sobre');
@@ -343,6 +352,7 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
     desc = L('ui.run.pergamino.desc', { f: now.f, f2: now.f + FORM[f].lf, r: now.r });
   }
   const box = choice(el, title, desc, null, buy, o.sold ? 'sold hang' : 'hang');
+  if (o.kind === 'tool' && !o.sold && rasgoCon(run.tools, o.id!)?.enciende) box.classList.add('rasgo-enciende');
   box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `<b>${cost}</b> ${L('ui.run.de.oro')}`}</span>`);
   if (o.sold) stampOn(box, L('ui.run.vendido'), 's-skip');
   return box;
@@ -492,6 +502,20 @@ function eventScreen(run: Run): void {
     $('#opts').appendChild(b);
   });
   revealOptions($('#opts')); // juice-ux: se dan vuelta de una en una y el foco cae en la primera
+}
+
+/** V35 · lo que dio el santuario: el gajo de la rueda, el doble o nada, el altar o el dado. */
+function suerteCartel(run: Run): void {
+  const s = run.suerte!;
+  const k = `suerte.${s.clave}`;
+  const vals = { ...s.datos, x: s.reliquia ? relN(s.reliquia) : '', r: s.rasgo ? t(`rasgo.${s.rasgo}.nombre`) : '' };
+  const el = modal(
+    `<div class="reveal-box suerte ${s.buena ? 'buena' : 'mala'}"><small>${L('ui.run.suerte')}</small><h2>${t(`${k}.titulo`, vals)}</h2><p class="lead">${t(`${k}.texto`, vals)}</p>${s.reliquia ? '<div class="choices"></div>' : ''}<button class="primary x">${L('ui.run.suerte.ok')}</button></div>`,
+    { cls: 'reveal suerte-modal' },
+  );
+  if (s.reliquia) $('.choices', el).appendChild(choice(toolTile(s.reliquia), relN(s.reliquia), `${rasgoChip(run.tools.filter((x) => x.id !== s.reliquia), s.reliquia)}${relD(s.reliquia)}`, null, null));
+  if (s.buena) sfx.coins(12);
+  else sfx.hiss();
 }
 
 // ───────────────────────── Crónica ─────────────────────────

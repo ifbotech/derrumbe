@@ -243,7 +243,7 @@ describe('contratos', () => {
     act(ko, { t: 'begin' });
     ko.node.routes[0] = 'intacto';
     const state = enter(ko);
-    trackEvents(ko, [{ e: 'siren', card: null, tower: 'S', threat: 2, blocked: 0, taken: 2, integrity: 18, wall: 0, reason: 'strike' }]);
+    trackEvents(ko, [{ e: 'siren', tower: 'S', threat: 2, blocked: 0, taken: 2, integrity: 18, wall: 0, reason: 'strike' }]);
     for (const t of Object.values(state.towers)) t.floors = [];
     state.phase = 'won';
     finishBattle(ko, state);
@@ -763,8 +763,8 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(3, 3)).floorThreat[13]).toBe(base.floorThreat[13]);
     expect(stageConfig(at(4, 3)).floorThreat[13]).toBe(base.floorThreat[13] + BALANCE.reinados.reyColerico);
     expect(stageConfig(at(4, 3)).floorThreat[11]).toBe(base.floorThreat[11]);
-    // 6 · búnker viejo: un punto menos de integridad
-    expect(at(4).maxIntegrity - at(5).maxIntegrity).toBe(1);
+    // 6 · heridas viejas: menos Vida máxima
+    expect(at(4).maxIntegrity - at(5).maxIntegrity).toBe(BALANCE.reinados.heridasViejas);
     // 7 · turno de noche: J y Q, no las K
     expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + 1);
@@ -780,12 +780,14 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(7, 4)).floorHp[11]).toBe(stageConfig(at(1, 4)).floorHp[11]);
   });
 
-  it('3 · precios de obra: la ferretería cuesta 2 más; al terminar una obra el búnker se repara 4', () => {
+  it('3 · Corte airada (V35): cada Mazo agotado sube la Furia más; La Taberna no cambia de precio; al terminar un asalto curas 4', () => {
+    for (const st of [1, 3, 5]) expect(stageConfig(at(2, st)).collapseSiege).toBe(stageConfig(at(1, st)).collapseSiege + BALANCE.reinados.furia);
+    expect(stageConfig(at(1, 3)).collapseSiege).toBe(stageConfig(at(0, 3)).collapseSiege);
     const cheap = at(1);
     const dear = at(2);
     toShop(cheap);
     toShop(dear);
-    expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost + 2));
+    expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost));
     const healed = at(7);
     win(healed, (s) => (s.integrity = 10));
     expect(healed.integrity).toBe(14);

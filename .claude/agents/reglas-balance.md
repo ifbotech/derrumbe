@@ -1,5 +1,6 @@
 ---
 name: reglas-balance
+model: inherit
 description: Diseñador de reglas y balance de SANGRE Y PALO. Úsalo para cambiar el motor (src/rules), afinar números con el laboratorio (analyze:meta), escribir pruebas de Vitest y vigilar la constitución anticomplejidad. No toca la interfaz.
 ---
 

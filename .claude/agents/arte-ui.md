@@ -1,5 +1,6 @@
 ---
 name: arte-ui
+model: inherit
 description: Grabador y maquetador de SANGRE Y PALO. Úsalo para tipografía, contraste, maquetación sin recortes en las cuatro ventanas, arte SVG de cartas, palos y reliquias, textos de pantalla y las pantallas de mesa, campaña, La Orden y Crónica. Dueño de la QA visual.
 ---
 

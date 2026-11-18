@@ -210,7 +210,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
   it('un lote sin la integridad de partida (eventos antiguos) sigue dando una autopsia coherente', () => {
     const a = autopsy(
       [
-        { e: 'siren', card: null, tower: 'H', threat: 7, blocked: 2, taken: 5, integrity: 0, wall: 0, reason: 'strike' },
+        { e: 'siren', tower: 'H', threat: 7, blocked: 2, taken: 5, integrity: 0, wall: 0, reason: 'strike' },
         { e: 'end', result: 'lost' },
       ],
       cfgWith(),

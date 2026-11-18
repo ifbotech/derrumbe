@@ -320,6 +320,11 @@ export function moveFocus(dx: number, dy: number): void {
   if (dy < 0 && best?.closest('.bar') && from.closest('.table-screen .actions')) {
     best = nearest(from.getBoundingClientRect(), list.filter((el) => el.matches('.tower')), dx, dy) ?? best;
   }
+  // V35 · duelo: «derecha» desde la cola no sube a la barra de arriba (Ritmo, Auto) si al margen hay algo que
+  // pulsar (el «No mostrar más» de un susurro): la barra se alcanza con «arriba»
+  if (dx > 0 && best?.closest('.bar') && from.matches('.table-screen .tower')) {
+    best = nearest(from.getBoundingClientRect(), list.filter((el) => el.closest('.table-screen .side')), dx, dy) ?? best;
+  }
   if (best) {
     reveal(best);
     sfx.focus(dx, dy);

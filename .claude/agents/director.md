@@ -1,5 +1,6 @@
 ---
 name: director
+model: inherit
 description: Director del estudio de SANGRE Y PALO. Úsalo para planificar una versión (hoja de ruta, especificación de un sprint, criterios de aceptación), decidir si una versión se publica o se revierte, y redactar el registro de cambios. No toca código del juego.
 tools: Read, Grep, Glob, Write, Edit, Bash
 ---

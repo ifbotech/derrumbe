@@ -174,6 +174,10 @@ export interface Config {
   fatigueEvery?: number;
   /** Lo que le cuesta al búnker cada piso que cae sin golpe limpio. */
   crumbleHurt?: number;
+  /** V35 · Asalto único: la Vida de los guardias ×cuadrilla[jugadores − 1] (redondeada a 5: el Golpe exacto vive de esas cifras). */
+  cuadrilla?: number[];
+  /** V35 · Cáliz envenenado: lo que te quita cada ♥ del golpe. */
+  veneno?: number;
   /** Fuerza que se guarda para el próximo golpe por cada punto reparado de más con el búnker lleno. */
   overhealCharge?: number;
   /** Puntos de muro sobrante (por encima del tope) que hacen falta para reparar 1 de integridad. */
@@ -364,6 +368,8 @@ export function newTowers(floors: number[], _cfg?: Config, palos?: Suit[]): Reco
 
 export function createGame(players: { id: string; name: string }[], seed: number, config: Config = DEFAULT_CONFIG): GameState {
   if (players.length < 1 || players.length > 4) throw new RuleError('Se juega de 1 a 4 jugadores.');
+  const k = config.cuadrilla?.[players.length - 1] ?? 1;
+  if (k !== 1) config = { ...config, floorHp: Object.fromEntries(Object.entries(config.floorHp).map(([r, hp]) => [r, Math.round((hp * k) / 5) * 5])) as Config['floorHp'] };
   const state: GameState = {
     config,
     rng: seed | 0,
@@ -437,6 +443,7 @@ export const floorHp = (t: Tower, cfg: Config): number => {
 
 /** Etiqueta en mesa del decreto «inestable» (cada guardia abatido sin Golpe exacto te cuesta Vida). */
 export const CRUMBLE_LABEL = 'Arena rápida';
+export const VENENO_LABEL = 'Cáliz envenenado';
 
 /** Lo que un golpe necesita saber del estado. Lo cumplen tanto GameState como PlayerView. */
 export interface StrikeEnv {
@@ -817,6 +824,12 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     cur = { src: 'state', id: 'inestable', label: CRUMBLE_LABEL };
     x.hurt += cfg.crumbleHurt * rough;
     x.note(`pierdes ${cfg.crumbleHurt * rough} de Vida`);
+  }
+  // V35 · Cáliz envenenado: cada ♥ del golpe te quita Vida
+  if (cfg.veneno && power.H) {
+    cur = { src: 'state', id: 'veneno', label: VENENO_LABEL };
+    x.hurt += cfg.veneno * power.H;
+    x.note(`pierdes ${cfg.veneno * power.H} de Vida`);
   }
 
   // 10 · los estados que deja la mezcla de palos: un solo palo deja Expuesto; tres palos (o El Espía), Aturdido

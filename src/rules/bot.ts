@@ -184,7 +184,7 @@ export function toolValue(id: string, run: Run): number {
   if (def.arch === 'precision' && id !== 'nivel') v += has('nivel') ? 2.5 : 0;
   if (id === 'nivel') v += 1 + run.tools.filter((t) => TOOL[t.id]?.arch === 'precision').length;
   if (id === 'montacargas' || id === 'prensa') v += Math.min(4, run.scrap * 0.5) + (has('trituradora') ? 2 : 0) - 1.5;
-  if (id === 'horno') v += has('trituradora') ? 2 : -1.5;
+  if (id === 'horno') v += has('trituradora') ? 2 : -0.5; // V35: cuenta para el Tahúr aunque no haya Trituradora
   if (id === 'trituradora') v += has('montacargas') || has('prensa') ? 2 : -1;
   if (id === 'contenedor') v -= 1;
   if (id === 'catalizador') v += has('crisol') ? 2 : 0;

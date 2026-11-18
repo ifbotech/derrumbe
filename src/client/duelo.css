@@ -1,0 +1,311 @@
+/* V35 · El duelo Casa por Casa: UN enemigo grande en el centro (la Casa activa) y, a su lado, la fila con los que
+   vienen después. Las Casas ya caídas se recogen al final de la fila. Va la última: manda sobre las reglas de
+   columnas de styles.css y theme.css (que repartían la mesa en cuatro tronos iguales). */
+
+/* ── la mesa: el enemigo activo ocupa la columna grande; la fila, la estrecha ── */
+.table-screen .towers,
+.table-screen .towers[data-n] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, clamp(150px, 15cqw, 230px));
+  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-flow: row dense;
+  column-gap: clamp(10px, 1.2vw, 20px);
+  row-gap: clamp(6px, 1vh, 10px);
+  padding-block: 0;
+}
+@media not all and (max-aspect-ratio: 1/1) {
+  @media (min-width: 641px) {
+    .table-screen .towers,
+    .table-screen .towers[data-n] { width: min(calc(100cqw - clamp(190px, 19cqw, 330px)), calc(100cqh * 2.06)); }
+  }
+}
+.table-screen .towers > .tower { grid-column: 2; }
+.table-screen .towers > .tower.activa { grid-column: 1; grid-row: 1 / span 3; }
+/* una sola Casa en el asalto (o la última en pie y las demás caídas): el enemigo ocupa toda la mesa */
+.table-screen .towers[data-n='1'] { grid-template-columns: minmax(0, 1fr); }
+.table-screen .towers[data-n='1'] > .tower.activa { grid-row: 1; }
+
+/* ── el enemigo activo: retrato a la izquierda, su ficha a la derecha ── */
+.table-screen .tower.activa {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  grid-template-areas: 'tag tag' 'slot fx' 'slot hp' 'slot threat' 'slot storeys' 'foot foot';
+  column-gap: clamp(8px, 1.2vw, 18px);
+  row-gap: clamp(4px, 0.9vh, 10px);
+  align-items: start;
+  --bw: 3px;
+  --bd: var(--tc);
+  --sh: 0 8px 0 var(--pit);
+}
+.tower.activa > .tower-tag { grid-area: tag; font-size: clamp(18px, 3.2vh, 34px); }
+.tower.activa > .floor-slot { grid-area: slot; align-self: stretch; min-height: 0; }
+.tower.activa > .tower-fx { grid-area: fx; justify-content: flex-start; }
+.tower.activa > .hp { grid-area: hp; height: clamp(26px, 4.2vh, 40px); }
+.tower.activa > .hp span { font-size: clamp(17px, 2.6vh, 26px); padding: 2px 10px; }
+.tower.activa > .threat { grid-area: threat; position: static; height: auto; padding: 0; font-size: clamp(15px, 2.1vh, 20px); align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.tower.activa > .threat > b { font-size: clamp(27px, 3.4vh, 34px); }
+.tower.activa > .storeys { grid-area: storeys; align-self: stretch; min-height: 0; }
+.tower.activa > .footing { grid-area: foot; }
+/* el guardia que tienes delante, grande (la regla de serie ya lo ajusta al hueco: aquí el hueco es mucho mayor) */
+.tower.activa .floor-slot .card { --w: min(92cqw, calc((100cqh - var(--storey-h) - var(--plate-h) - 14px) / 1.4)); }
+/* «ENEMIGO» encima del nombre: dice a quién se golpea sin leer reglas */
+.tower.activa > .tower-tag::after {
+  content: attr(data-frente);
+  margin-left: auto;
+  font-family: var(--mono, monospace);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  background: var(--red);
+  color: var(--card-paper);
+  padding: 2px 8px;
+}
+
+/* ── la Furia, junto al Ataque ── */
+.threat .furia {
+  font-style: normal;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--red);
+  color: var(--card-paper);
+  border: 2px solid var(--pit);
+  font-family: var(--mono, monospace);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.threat .furia b { color: var(--card-paper); background: none; border: 0; box-shadow: none; padding: 0; min-width: 0; font-size: 1.15em; letter-spacing: 0; }
+.tower.activa.jefe .threat .furia { background: var(--pit); color: var(--hazard); border-color: var(--red-lit); animation: furia-late 1.4s ease-in-out infinite; }
+.tower.activa.jefe .threat .furia b { color: var(--hazard); }
+@keyframes furia-late { 50% { transform: scale(1.07); } }
+@media (prefers-reduced-motion: reduce) { .tower.activa.jefe .threat .furia { animation: none; } }
+
+/* ── el monarca: marco de latón y su nombre en el rótulo ── */
+.tower.activa.jefe { --bd: var(--gold); --bw: 4px; --sh: 0 8px 0 var(--pit), 0 0 0 3px var(--pit), 0 0 22px rgba(201, 138, 30, 0.35); }
+.tower.activa.jefe > .tower-tag { background: var(--gold); color: var(--pit); }
+.storey.es-jefe b { background: var(--gold); color: var(--pit); }
+
+/* con monarca, el lateral lleva su ficha debajo: el Mazo y el Descarte, más bajos, le dejan sitio */
+.table-screen:has(#monarch:not([hidden])) .bunker .piles { margin-top: 4px; }
+.table-screen:has(#monarch:not([hidden])) .bunker .pile .slot { height: clamp(40px, 5.6vh, 72px); }
+.table-screen:has(#monarch:not([hidden])) .bunker .pile .card { --w: clamp(24px, 3.6vh, 46px); }
+/* en las ventanas bajas (portátil, Steam Deck), las casillas de Vida, más planas: la cifra ya dice cuánta queda */
+@media (min-width: 641px) and (max-height: 820px) and (min-aspect-ratio: 1/1) {
+  .table-screen .bunker #int-blocks i { aspect-ratio: auto; height: 16px; }
+}
+
+/* ── la fila: cada Casa que espera, en pequeño (rótulo, carta, Vida y Ataque) ── */
+.table-screen .tower.espera,
+.table-screen .towers > .tower.fallen {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'tag tag' 'slot hp' 'slot threat';
+  column-gap: 6px;
+  row-gap: 3px;
+  align-items: center;
+  padding: 3px 4px 4px;
+  cursor: default;
+  --sh: 0 3px 0 var(--pit);
+}
+.tower.espera > .tower-tag,
+.towers > .tower.fallen > .tower-tag { grid-area: tag; font-size: clamp(14px, 1.8vh, 18px); padding: 2px 6px 3px; }
+.tower.espera > .floor-slot { grid-area: slot; container-type: normal; align-self: stretch; display: grid; place-items: center; }
+.tower.espera > .floor-slot .card { --w: clamp(34px, 5.2vh, 56px); }
+.tower.espera > .floor-slot > :is(.facade, .plates) { display: none; }
+/* lo que le llega de rebote (pólvora, Salpica): una cifra pequeña sobre su carta, sin salirse de la ficha */
+.table-screen .tower.espera > .floor-slot > .preview { top: auto; bottom: 2px; left: 50%; right: auto; max-width: none; transform: translateX(-50%); font-size: 15px; padding: 1px 4px; white-space: nowrap; }
+.table-screen .tower.espera > .floor-slot > .preview small { display: none; }
+.tower.espera > .hp { grid-area: hp; height: 22px; align-self: end; }
+.tower.espera > .hp span { font-size: 14px; padding: 0 4px; }
+.tower.espera > .threat { grid-area: threat; position: static; height: auto; padding: 0; font-size: 14px; align-self: start; justify-content: flex-end; }
+/* el rótulo con aire arriba y abajo: la romana de inscripción sube y baja más que su cuerpo */
+.table-screen .tower:is(.espera, .fallen, .activa) > .tower-tag > span { display: inline-block; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; margin-block: -0.225em; }
+.table-screen .tower.espera > .tower-tag .glyph { display: block; width: 20px; height: 20px; flex: none; }
+.tower.espera > .threat > span,
+.tower.espera > .threat .furia { display: none; }
+.tower.espera > :is(.storeys, .footing, .tower-fx) { display: none; }
+/* «EN FILA»: no se le puede golpear todavía */
+.table-screen .tower.espera.targetable { cursor: default; outline: none; }
+
+/* las Casas caídas, al final de la fila y casi borradas */
+.towers > .tower.fallen { grid-template-areas: 'tag tag'; grid-template-rows: auto; align-self: start; --bd: var(--table-3); --sh: none; background: transparent; }
+/* sin transparencia (el rótulo tiene que leerse): tachado y en gris de mesa */
+.table-screen .towers > .tower.fallen > .tower-tag { opacity: 1; background: var(--table-3); color: var(--card-paper); border-bottom-color: transparent; }
+.towers > .tower.fallen > :not(.tower-tag) { display: none; }
+.towers > .tower.fallen > .tower-tag > span { text-decoration: line-through; text-decoration-thickness: 2px; }
+
+/* ── píldoras de rasgo (y el dado del Tahúr) en la fila del cinturón ── */
+.rasgos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rasgo {
+  --rc: var(--dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 2px 10px 2px 6px;
+  border: 2px solid var(--rc);
+  background: var(--pit);
+  color: var(--card-paper);
+  font-family: var(--mono, monospace);
+  font-size: 14px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: help;
+}
+.rasgo .ico { font-style: normal; font-size: 17px; line-height: 1; }
+.rasgo b { font-weight: 700; letter-spacing: 0.03em; }
+.rasgo em { font-style: normal; color: var(--dim); }
+.rasgo.on { background: var(--rc); color: var(--pit); }
+.rasgo.on em { color: var(--pit); font-weight: 700; }
+.rasgo.r-sangre { --rc: var(--red-lit); }
+.rasgo.r-tahur { --rc: var(--gold); }
+.rasgo.r-verdugo { --rc: var(--glass); }
+.rasgo.r-bastion { --rc: var(--verd-lit); }
+.rasgo.r-horda { --rc: var(--hazard); }
+.rasgo.dado { --rc: var(--gold); padding: 2px 6px; }
+.rasgo .cara {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: var(--card-paper);
+  color: var(--ink);
+  border: 2px solid var(--pit);
+  border-radius: 5px;
+  font-family: var(--num);
+  font-style: normal;
+  font-size: 18px;
+}
+.rasgo .cara[data-cara='5'], .rasgo .cara[data-cara='6'] { background: var(--hazard); }
+.rasgo.sube { animation: rasgo-sube 0.7s cubic-bezier(0.34, 1.6, 0.64, 1); }
+@keyframes rasgo-sube { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .rasgo.sube { animation: none; } }
+
+/* ── móvil y vertical: el enemigo arriba a lo ancho; la fila, una tira de fichas debajo ── */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  /* el enemigo a la izquierda y la fila en una columna estrecha a su lado: así caben el lateral y el monarca */
+  .table-screen .towers,
+  .table-screen .towers[data-n] {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) 132px;
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+    column-gap: 8px;
+    row-gap: 8px;
+    align-content: start;
+    padding: 0 5px;
+  }
+  .table-screen .towers > .tower { grid-column: 2; grid-row: auto; }
+  .table-screen .towers > .tower.activa { grid-column: 1; grid-row: 1 / span 3; }
+  .table-screen .towers[data-n='1'] { grid-template-columns: minmax(0, 1fr); }
+  .table-screen .tower.activa { grid-template-columns: 70px minmax(0, 1fr); row-gap: 3px; }
+  .tower.activa > .tower-tag { font-size: clamp(16px, 4.4vw, 22px); }
+  .tower.activa > .tower-tag > span { display: inline-block; }
+  .tower.activa > .threat > b { font-size: clamp(21px, 5.6vw, 26px); }
+  /* el marco rojo ya dice «enemigo»: en el móvil el rótulo es solo su nombre y su palo */
+  .tower.activa > .tower-tag::after { display: none; }
+  .tower.activa .floor-slot { container-type: size; aspect-ratio: auto; }
+  .tower.espera > .floor-slot .card { --w: 34px; }
+  .tower.espera > .tower-tag > span { display: inline-block; overflow: hidden; text-overflow: ellipsis; }
+  .tower.espera > .tower-tag .glyph { display: none; }
+  .towers > .tower.fallen > .tower-tag > span { display: inline-block; }
+}
+
+/* el enemigo activo ya es grande: apuntarlo no lo agranda (pisaría la fila); se marca con el borde */
+.table-screen .tower.activa.aimed,
+.table-screen .tower.activa.targetable.aimed:hover { transform: none; }
+.table-screen .tower.espera.aimed { transform: none; outline: none; }
+
+/* ── menos ruido en la bandeja: los poderes de palo solo salen cuando la jugada elegida los enciende ── */
+.table-screen #powers > .power:not(.on) { display: none; }
+.table-screen #powers:not(:has(.power.on)) { display: none; }
+
+/* ── móvil: el guardia activo con tamaño de carta de verdad; las píldoras de rasgo, icono y cuenta ── */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .tower.activa .floor-slot { container-type: inline-size; align-self: start; grid-template-rows: auto auto; }
+  .tower.activa .floor-slot .card { --w: 56px; }
+  .tower.activa > .floor-slot > .facade { display: none; }
+  .tower.activa > .tower-fx { height: auto; position: static; align-content: flex-start; align-items: flex-start; }
+  .tower.activa > .storeys { min-height: 0; }
+  /* la fila: dos líneas por Casa, su palo y su Vida arriba; lo que le llega de rebote y su Ataque, abajo (la carta y
+     el nombre, en la lupa) */
+  .table-screen .tower.espera,
+  .table-screen .towers > .tower.fallen {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    grid-template-areas: 'tag hp hp' 'slot slot threat';
+    column-gap: 4px;
+    row-gap: 1px;
+    padding: 2px 3px;
+    border-width: 2px;
+    min-height: 44px; /* una diana de 44 px, con su borde */
+    align-items: center;
+    align-self: start;
+  }
+  .table-screen .towers > .tower.fallen { grid-template-columns: auto; grid-template-areas: 'tag'; justify-items: center; }
+  .table-screen .tower:is(.espera, .fallen) > .tower-tag { min-height: 0; padding: 1px 2px; margin: 0; background: transparent; border: 0; }
+  .table-screen .tower:is(.espera, .fallen) > .tower-tag > span { display: none; }
+  .table-screen .tower:is(.espera, .fallen) > .tower-tag .glyph { display: block; width: 16px; height: 16px; flex: none; }
+  .table-screen .towers > .tower.fallen > .tower-tag .glyph { opacity: 0.45; }
+  .table-screen .tower.espera > .hp { height: 18px; align-self: center; }
+  .table-screen .tower.espera > .hp span { font-size: 14px; line-height: 1; }
+  .table-screen .tower.espera > .threat { font-size: 14px; line-height: 1; }
+  .table-screen .tower.espera > .threat > b { font-size: 15px; line-height: 1; padding: 0 3px; }
+  .table-screen .tower.espera > .floor-slot { grid-area: slot; pointer-events: none; align-self: stretch; display: flex; align-items: center; justify-content: flex-start; min-height: 0; }
+  .table-screen .tower.espera > .floor-slot > .card { display: none; }
+  .table-screen .tower.espera > .floor-slot > .preview { position: static; transform: none; font-size: 14px; line-height: 1.2; padding: 0 3px; }
+  .table-screen .tower.espera > .threat { align-self: center; }
+  /* 8 px de aire entre el cinturón y la cuenta (la bandeja reparte 5) */
+  .table-screen #score { margin-top: 3px; }
+  .rasgos { gap: 4px; }
+  .rasgo { min-height: 30px; padding: 1px 6px 1px 4px; gap: 4px; }
+  .rasgo b { display: none; }
+  .rasgo .ico { font-size: 16px; }
+}
+
+/* ── V35 · rasgo de cada Reliquia en La Taberna, el Cofre y el santuario ── */
+.rasgo-chip {
+  --rc: var(--dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 6px 4px 0;
+  padding: 1px 8px 1px 5px;
+  border: 2px solid var(--rc);
+  background: var(--pit);
+  color: var(--card-paper);
+  font-family: var(--mono, monospace);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.rasgo-chip i { font-style: normal; }
+.choice .rasgo-chip { display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; white-space: normal; letter-spacing: 0; margin-right: 0; }
+.rasgo-chip.r-sangre { --rc: var(--red-lit); }
+.rasgo-chip.r-tahur { --rc: var(--gold); }
+.rasgo-chip.r-verdugo { --rc: var(--glass); }
+.rasgo-chip.r-bastion { --rc: var(--verd-lit); }
+.rasgo-chip.r-horda { --rc: var(--hazard); }
+.rasgo-chip.enciende { background: var(--rc); color: var(--pit); animation: chip-late 1.2s ease-in-out infinite; }
+@keyframes chip-late { 50% { transform: scale(1.07); } }
+.choice.rasgo-enciende { outline: 3px solid var(--hazard); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .rasgo-chip.enciende { animation: none; } }
+
+/* el Cofre del monarca: las tres Reliquias salen de una en una */
+#loot.cofre > .choice { animation: cofre-sale 0.5s cubic-bezier(0.34, 1.5, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 0.18s + 0.2s); }
+@keyframes cofre-sale { from { opacity: 0; transform: translateY(18px) scale(0.9); } }
+@media (prefers-reduced-motion: reduce) { #loot.cofre > .choice { animation: none; } }
+
+/* el cartel del santuario */
+.suerte-modal .reveal-box.suerte { text-align: center; max-width: min(520px, calc(100vw - 32px)); }
+.suerte-modal .reveal-box.suerte h2 { font-family: var(--title); font-size: clamp(26px, 5vh, 44px); margin: 6px 0; }
+.suerte-modal .reveal-box.suerte.buena h2 { color: var(--hazard); }
+.suerte-modal .reveal-box.suerte.mala h2 { color: var(--red-lit); }
+.suerte-modal .reveal-box.suerte .lead { font-size: 17px; }

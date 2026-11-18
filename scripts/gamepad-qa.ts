@@ -415,7 +415,8 @@ export async function guidedRun(page: Page, how: How, check: Check, shot?: (page
     let done = true;
     if (how === 'mouse') {
       for (const id of cards) await page.locator(card(id)).click();
-      if (a.type === 'stash') await page.locator('#btn-stash').click();
+      // V35 · La Manga se usa desde su hueco (ya no hay botón)
+      if (a.type === 'stash') await page.locator('#reserve .reserve-slot.empty').first().click();
       else if ('target' in a) await page.locator(`.tower[data-suit="${a.target}"]`).click();
     } else if (a.type === 'stash') {
       // La Manga: Y sobre la carta enfocada, sin elegirla antes
@@ -556,16 +557,17 @@ export async function immuneCheck(page: Page, how: 'pad' | 'keys', check: Check)
     let reachedAll = true;
     let hops = true;
     for (const t of towers) reachedAll &&= await go(t);
-    for (let i = 0; i + 1 < towers.length; i++) {
-      await go(towers[i]);
-      await key('R');
-      const r = await at();
-      await key('L');
-      const l = await at();
-      path.push(`${towers[i].slice(18, 19)}→${r}←${l}`);
-      hops &&= r === towers[i + 1].slice(18, 19) && l === towers[i].slice(18, 19);
-    }
-    check(towers.length === n && reachedAll && hops && !path.join().includes('!'), `[${name}] con ${n} tronos (${state}), el foco llega a cada uno y → / ← pasan de un trono presente al de al lado (${path.join(' · ')})`);
+    // V35 · el duelo: el enemigo activo a un lado y la fila al otro; → lleva del enemigo a la fila y ← lo devuelve
+    const activa = await page.evaluate(() => document.querySelector<HTMLElement>('.tower.activa')?.dataset.suit ?? '');
+    const fila = towers.map((t) => t.slice(18, 19)).filter((x) => x !== activa);
+    await go(`.tower[data-suit="${activa}"]`);
+    await key('R');
+    const r = await at();
+    await key('L');
+    const l = await at();
+    path.push(`${activa}→${r}←${l}`);
+    hops &&= fila.includes(r) && l === activa;
+    check(towers.length === n && reachedAll && hops && !path.join().includes('!'), `[${name}] con ${n} tronos (${state}), el foco llega a cada uno y → / ← van del enemigo activo a la fila y vuelven (${path.join(' · ')})`);
   }
   const plate = () =>
     page.evaluate(() => {
@@ -576,20 +578,19 @@ export async function immuneCheck(page: Page, how: 'pad' | 'keys', check: Check)
     });
   const seen: string[] = [];
   let platesOk = true;
-  for (const t of towers) {
+  // V35 · la placa Inmune va en el enemigo activo (las fichas de la fila no llevan placas)
+  for (const t of ['.tower.activa']) {
     await go(t);
     const p = await plate();
     seen.push(`${p.t}: «${p.text}»`);
     platesOk &&= p.iron && p.factor === 0 && p.text.includes(T('ui.mesa.inmune'));
   }
-  check(platesOk, `[${name}] al apuntar cada trono se ve su placa «${T('ui.mesa.inmune')}» y ninguna carta lleva sello de factor (${seen.join(' · ')})`);
-  // una carta del palo de un trono presente elegida, apuntando a ese trono: la cuenta dice «Inmune · 0»
+  check(platesOk, `[${name}] al apuntar al enemigo activo se ve su placa «${T('ui.mesa.inmune')}» y ninguna carta lleva sello de factor (${seen.join(' · ')})`);
+  // una carta del palo del enemigo activo elegida, apuntándolo: la cuenta dice «Inmune · 0»
   const pick = await page.evaluate(() => {
-    for (const t of document.querySelectorAll<HTMLElement>('.tower:not([hidden])')) {
-      const c = document.querySelector<HTMLElement>(`#hand .card.s-${t.dataset.suit}:not(.k-special)`);
-      if (c) return { suit: t.dataset.suit!, id: c.dataset.id! };
-    }
-    return null;
+    const t = document.querySelector<HTMLElement>('.tower.activa');
+    const c = t && document.querySelector<HTMLElement>(`#hand .card.s-${t.dataset.suit}:not(.k-special)`);
+    return t && c ? { suit: t.dataset.suit!, id: c.dataset.id! } : null;
   });
   let line = '';
   // la mesa de QA trae un trío ya elegido: se suelta antes (B / Esc deshace la elección)
@@ -843,10 +844,38 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     // mando): si hay uno, se comprueba que se llega a él desde el trono de la derecha y se aparta. Durante el barrido no
     // se escriben más, para medir la mesa y no el susurro de turno.
     if (await count(page, '.table-screen .side > .whisper')) {
-      await focusDirect(page, towers[towers.length - 1]);
-      const w = await walk(page, '.side > .whisper .whisper-off', false, 2, 30);
-      if (w.steps < 0) console.log(`  · trono de la derecha → susurro: ${w.path.join(' ')}`);
-      check(w.steps >= 0, 'con un susurro al margen, su «No mostrar más» queda a una o dos pulsaciones del trono de la derecha');
+      // V35 (duelo): la mesa ya no es una fila de tronos; el susurro queda a la derecha de la cola y del trono
+      // activo, así que basta con que su «No mostrar más» quede a una o dos pulsaciones de alguno de los tronos a la vista
+      const visibles = await page.evaluate(
+        ([list]) => list.filter((sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return !!r && r.width > 0; }),
+        [towers] as const,
+      );
+      let w = { steps: -1, path: [] as string[] };
+      const tried: string[] = [];
+      for (const from of visibles) {
+        await focusDirect(page, from);
+        w = await walk(page, '.side > .whisper .whisper-off', false, 2, 30);
+        if (w.steps >= 0) break;
+        tried.push(w.path.join(' '));
+        // el margen queda a la derecha de la mesa: también vale llegar con «derecha» una o dos veces
+        await focusDirect(page, from);
+        w = await page.evaluate(async () => {
+          const pad = (window as unknown as QaWindow).__qaGamepad;
+          const target = document.querySelector('.side > .whisper .whisper-off');
+          const path: string[] = [];
+          for (let i = 1; i <= 2; i++) {
+            await pad.press(15, 30);
+            const a = document.activeElement as HTMLElement | null;
+            path.push(`R→${a ? `.${a.classList[0] ?? a.tagName}${a.dataset.suit ? `[${a.dataset.suit}]` : ''}` : '∅'}`);
+            if (a === target) return { steps: i, path };
+          }
+          return { steps: -1, path };
+        });
+        if (w.steps >= 0) break;
+        tried.push(`${from} ${w.path.join(' ')}`);
+      }
+      if (w.steps < 0) console.log(`  · tronos → susurro: ${tried.join(' | ')}`);
+      check(w.steps >= 0, 'con un susurro al margen, su «No mostrar más» queda a una o dos pulsaciones de un trono');
     }
     await page.evaluate(() => {
       (window as unknown as QaWindow).__whispers.force(false);

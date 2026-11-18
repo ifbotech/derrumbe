@@ -88,15 +88,13 @@ function markTable(mark: CurseMark, v: PlayerView | null): void {
     if (!host || host.querySelector(':scope > .curse-tag')) return;
     host.insertAdjacentHTML('beforeend', `<em class="curse-tag ${cls}">${curseIcon(mark)}${text}</em>`);
   };
-  if (mark === 'contraataque') tag(document.getElementById('siren-slot')?.closest('.pile') ?? null, `×${MON.doble.contraataques}`);
+  // V35 · el Contraataque lo da siempre el enemigo activo: la marca va en su ⚔
+  if (mark === 'contraataque') tag(document.querySelector('.tower.activa .threat'), `×${MON.doble.contraataques}`, 'mini');
   if (mark === 'ataque') for (const t of document.querySelectorAll('.tower:not(.fallen) .threat')) tag(t, `+${MON.furia.ataque}`, 'mini');
   // el Inquisidor: ningún trono queda Aturdido; cada trono en pie lo dice con «Aturdido» tachado
   if (mark === 'guardias') for (const t of document.querySelectorAll('.tower:not([hidden]):not(.fallen) .tower-fx')) tag(t, `<s>${fxN('sobrecarga')}</s>`, 'sin-fx');
   if (mark === 'escudo') tag(document.getElementById('wall-num')?.closest('.stat') ?? null, 'Tope');
-  if (mark === 'asedio') {
-    const f = document.getElementById('fatigue');
-    if (f && !f.hidden) tag(f, `−${MON.inestable.antes}`, 'mini');
-  }
+  if (mark === 'asedio') tag(document.querySelector('.tower.activa .threat'), `+${MON.inestable.furia}`, 'mini');
   if (mark === 'mano') {
     const hand = document.getElementById('hand');
     if (hand && !hand.querySelector(':scope > .curse-ghost')) hand.insertAdjacentHTML('beforeend', `<div class="curse-ghost" aria-hidden="true">${curseIcon('mano')}</div>`);
@@ -349,10 +347,13 @@ function placeSpotlight(root: HTMLElement): void {
   const bar = box(document.querySelector('.table-screen .bar'));
   const towers = box(document.getElementById('towers'));
   const spots = [hud ? hud.top + hud.height / 2 - p.height / 2 : null, (bar?.bottom ?? 0) + 8, towers ? towers.bottom - p.height - 8 : null, hud ? hud.top - p.height - 6 : null].filter((y): y is number => y !== null);
-  const left = Math.max(8, (W - p.width) / 2);
-  const free = spots.find((top) => avoid.every((a) => !hits({ left, top, right: left + p.width, bottom: top + p.height }, a)));
-  placa.style.left = `${left}px`;
-  placa.style.top = `${Math.max(8, Math.min(H - p.height - 8, free ?? spots[0] ?? 8))}px`;
+  const centro = Math.max(8, (W - p.width) / 2);
+  // V35 · con el enemigo grande, el aro (enemigo y La Manga) ocupa media mesa: si en el centro no cabe, al lado del aro
+  const lados = r ? [rect.left + rect.width + 12, rect.left - 12 - p.width].filter((x) => x >= 8 && x + p.width <= W - 8) : [];
+  const huecos = [centro, ...lados].flatMap((left) => spots.map((top) => ({ left, top })));
+  const free = huecos.find(({ left, top }) => avoid.every((a) => !hits({ left, top, right: left + p.width, bottom: top + p.height }, a)));
+  placa.style.left = `${free?.left ?? centro}px`;
+  placa.style.top = `${Math.max(8, Math.min(H - p.height - 8, free?.top ?? spots[0] ?? 8))}px`;
 }
 
 addEventListener('resize', () => {

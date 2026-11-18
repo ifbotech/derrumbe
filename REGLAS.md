@@ -17,16 +17,18 @@ Se gana o se pierde en equipo. El Asalto único también se puede jugar en mesa 
 
 | Guardia | Vida | Ataque |
 |---|---|---|
-| Sota (J) | 150 | ⚔ 3 |
-| Reina (Q) | 215 | ⚔ 6 |
-| Rey (K) | 280 | ⚔ 8 |
+| Sota (J) | 130 | ⚔ 3 |
+| Reina (Q) | 185 | ⚔ 5 |
+| Rey (K) | 240 | ⚔ 7 |
 
 Cada palo es una casa de la corte: ♠ **PICAS**, ♦ **DIAMANTES**, ♥ **CORAZONES**, ♣ **TRÉBOLES**.
 
+**Un enemigo a la vez.** Las Casas se asaltan de una en una, en un orden que la campaña sortea: el **enemigo activo** es el guardia de delante de la primera Casa en pie, y el resto espera en la **fila**. Solo se golpea al enemigo activo.
+
 ## El turno
 
-1. **Acción** (elige una): **Golpear** un trono con una formación, **Descartar** las cartas que quieras o jugar un **Comodín** (Motín). Solo se puede **Pasar** con la mano vacía.
-2. **Contraataque**: se voltea la carta superior del Mazo. El trono de ese palo te ataca con el **Ataque** (⚔) de su guardia de delante. El **Escudo** frena primero; el resto te quita **Vida**. Si ese trono ya cayó, o sale un comodín, no pasa nada.
+1. **Acción** (elige una): **Golpear** al enemigo activo con una formación, **Descartar** las cartas que quieras o jugar un **Comodín** (Motín). Solo se puede **Pasar** con la mano vacía.
+2. **Contraataque**: si no lo has abatido, el enemigo activo te ataca con su **Ataque** (⚔) más la **Furia**. El **Escudo** frena primero; el resto te quita **Vida**.
 3. **Robar** hasta completar la mano. Turno del siguiente.
 
 ## Daño × Multi
@@ -37,8 +39,8 @@ Todo golpe se calcula igual:
 
 **El orden no importa.** La mesa hace la cuenta y te la enseña antes de golpear:
 
-1. **Daño**: se suma todo. La base de la formación, el número de cada carta (0 contra el trono de su palo: es **Inmune**), el Daño cargado, el Asedio final y lo que añadan acabados, cartas especiales (hasta 2 por golpe) y reliquias. Si el trono está **Expuesto**, ese Daño vale ×2.
-2. **Multi**: se suma todo (la base de la formación, la Racha de Golpes exactos y lo que añadan acabados, especiales y reliquias) y, al final, se aplican los multiplicadores (×2, ×3…).
+1. **Daño**: se suma todo. La base de la formación, el número de cada carta (0 contra el trono de su palo: es **Inmune**), el Daño cargado y lo que añadan acabados, cartas especiales (hasta 2 por golpe) y reliquias. Si el trono está **Expuesto**, ese Daño vale ×2.
+2. **Multi**: se suma todo (la base de la formación, la Racha de Golpes exactos y lo que añadan acabados, especiales, reliquias y rasgos) y, al final, se aplican los multiplicadores (×2, ×3…).
 
 El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).
 
@@ -90,28 +92,28 @@ Los dos desaparecen si cae el guardia.
 ### Reglas especiales
 
 - **Comodín · Motín**: se juega solo sobre un trono. Ese trono queda **Aturdido** y este turno no hay Contraataque. El comodín no vuelve en este asalto.
-- **Asedio final**: ningún asalto dura para siempre. En campaña, desde el turno 10 de cada asalto y cada 2 turnos, el asedio sube un nivel; cada nivel da **+40 de Daño** a todos los golpes y **+1 de Ataque** a todos los tronos. El asalto se acelera en los dos sentidos: pegas más y te pegan más. La mesa avisa tres turnos antes. En conjura de varios empieza más tarde, en proporción a lo que aguantan los guardias; en el Asalto único, en el turno 30 y cada 3 turnos.
-- **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no te quita Vida**: el **Asedio final** sube 2 niveles (+2 de Ataque en cada trono, más Daño en tus golpes) y el siguiente Contraataque lo da el trono en pie con más Ataque, salga el palo que salga. El Escudo lo frena como siempre: los asaltos no se pueden estirar sin fin.
+- **Furia**: cada punto es **+1 de Ataque** en todos los Contraataques, y se ve junto al ⚔ del enemigo activo. En campaña sube **2** con cada Mazo agotado y, contra un monarca, **1** cada turno que sigue en pie (la **Furia del Rey**). En el Asalto único sube además sola, desde el turno 30 y cada 3 turnos.
+- **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no te quita Vida**, pero sube la **Furia** (2 en campaña): los asaltos no se pueden estirar sin fin.
 - **As cómplice**: un As forma jugada con **cualquier otra carta** (×2 de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ♣ para levantar Escudo, uno de ♥ para curar, uno de ♠ para perforar.
 - **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *Manga doble* añade un segundo hueco. La partida guiada te enseña a usarla en su tercer paso.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
 - **Victoria** (*Corte vencida*): todos los tronos caídos (en los primeros asaltos de la campaña hay menos de cuatro). **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
-- Modo **BRUTAL** (Asalto único): 16 de Vida y cada Mazo agotado sube el Asedio final 3 niveles.
+- Modo **BRUTAL** (Asalto único): 16 de Vida y cada Mazo agotado sube la Furia 1.
 
 ## Campaña
 
 Un roguelike de construcción de mazo: **5 asaltos** cada vez más duros, una sala del castillo cada uno, 3 de ellos con **monarca** (el del último es el **Rey Tirano** o la **Reina Tirana**). Empiezas con un Sobre lacrado de 3 cartas especiales, 4 de oro y un **Don de la Conjura** que eliges entre tres (una Reliquia común, un sello de lacre en una carta de tu Mazo o una bolsa de 5 de oro); entre asalto y asalto mejoras el Mazo y tus reliquias. La Vida base de los guardias es 25 / 35 / 45; cada asalto la multiplica y la Vida final se redondea al múltiplo de 5 más cercano.
 
-Los primeros asaltos tienen menos tronos: los palos que faltan se sortean al empezar la campaña y el Mapa los enseña desde el principio. Si el Contraataque saca el palo de un trono que no está, no pasa nada.
+Los primeros asaltos tienen menos tronos: los palos que faltan se sortean al empezar la campaña y el Mapa los enseña desde el principio.
 
 | Asalto | Sala | Tronos | Guardias por trono | Vida | Ataque | Monarca | Atajo |
 |---|---|---|---|---|---|---|---|
-| 1 | El Puente levadizo | 2 | Sota | ×7,5 | +2 | — | — |
-| 2 | El Patio de armas | 3 | Sota, Reina | ×5,6 | +2 | sí | — |
-| 3 | La Cripta | 4 | Sota, Reina | ×5,72 | +3 | — | sí |
-| 4 | La Galería real | 4 | Sota, Reina, Rey | ×5,72 | +5 | sí | — |
-| 5 | El Salón del Trono | 4 | Sota, Reina, Rey | ×7,28 | +5 | sí, Rey Tirano | — |
+| 1 | El Puente levadizo | 2 | Sota | ×5,9 | +1 | — | — |
+| 2 | El Patio de armas | 3 | Sota, Reina | ×4,4 | +1 | sí | — |
+| 3 | La Cripta | 4 | Sota, Reina | ×5,8 | +2 | — | sí |
+| 4 | La Galería real | 4 | Sota, Reina, Rey | ×4,2 | +3 | sí | — |
+| 5 | El Salón del Trono | 4 | Sota, Reina, Rey | ×4,75 | +4 | sí, Rey Tirano | — |
 
 En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
@@ -146,17 +148,17 @@ El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuá
 | Botín escondido | +15 de oro. |
 | Lacre doble | Dos cartas al azar de tu Mazo reciben un sello de lacre. |
 
-**Monarcas** (7; cada campaña sortea 3). Cada uno impone un **decreto**. Al caer dejan botín: una de dos reliquias Raras o mejores.
+**Monarcas** (7; cada campaña sortea 3). El monarca es el **último guardia** del asalto: llega con retrato, tiene ×2 de Vida y, mientras lo tienes delante, su **Furia del Rey** sube 1 cada turno. Cada uno impone además un **decreto**. Al caer abre su **Cofre**: una de tres Reliquias, una de ellas de tu rasgo principal.
 
 | Monarca | Decreto | Efecto |
 |---|---|---|
-| El Rey de Dos Caras | Doble Contraataque | Hay 2 Contraataques cada turno, pero cada uno ataca un 40 % menos. |
+| El Rey de Dos Caras | Doble Contraataque | Hay 2 Contraataques cada turno, pero cada uno ataca un 50 % menos. |
 | El Usurero | Escasez | Jugáis con 1 carta menos en la mano. |
-| La Dama del Cáliz | Cáliz envenenado | Tus ♥ no curan. |
-| La Reina Helada | Escarcha | El Escudo no puede pasar de 2. |
-| El Inquisidor | Guardia de hierro | Ningún trono queda Aturdido. |
-| El Verdugo | Furia | El Ataque de todos los tronos sube 3. |
-| El Relojero | Arena rápida | El Asedio final empieza 4 turnos antes, y cada guardia abatido sin Golpe exacto te quita 1 de Vida. |
+| La Dama del Cáliz | Cáliz envenenado | Tus ♥ no curan: cada una que juegas te quita 1 de Vida. |
+| La Reina Helada | Escarcha | El Escudo no puede pasar de 1. |
+| El Inquisidor | Guardia de hierro | Ningún guardia queda Aturdido, pero pegan 1 menos. |
+| El Carnicero | Hacha afilada | El Ataque de todos los guardias sube 3. |
+| El Relojero | Arena rápida | El asalto empieza con 1 de Furia, y cada guardia abatido sin Golpe exacto te quita 1 de Vida. |
 
 ### El Botín
 
@@ -173,9 +175,9 @@ Lo atiende el Tratante.
 - **Pergamino**: sube de nivel una formación.
 - **Curar** (+6 de Vida), **La hoguera** (quema una carta; el Mazo no baja de 12) y **Renovar mesa** (cambia lo que hay en oferta), los tres con coste creciente.
 
-### Secretos de la cripta
+### Santuarios de la cripta
 
-Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de estos 5:
+Tras los monarcas de los asaltos 2 y 4 aparece un santuario: una apuesta de azar o un dilema con premio y precio. Cada campaña ve 2 de estos 9:
 
 - **El cofre enterrado.** Entre dos tumbas asoma un cofre con candado. Forzarlo hará temblar media cripta.
   - *Forzarlo*: Pierdes 5 de Vida. Te llevas una reliquia Noble o Regia.
@@ -194,10 +196,22 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
   - *Arrancarlos*: Pierdes 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.
   - *Copiarlos a mano*: 5 de oro. Una formación al azar sube 1 nivel.
   - *Dejarlos donde están*: Nada cambia.
+- **La rueda de la fortuna.** Una rueda de carro cuelga del techo, pintada en cuatro gajos. Alguien dejó la manivela puesta.
+  - *Girar la rueda*: Sale un gajo al azar: +12 de oro, +6 de Vida, una Reliquia Rara o −4 de Vida.
+  - *No tocarla*: Te llevas las monedas del suelo: +3 de oro.
+- **Los huesos del diablo.** Un tahúr sin rostro agita dos huesos en un cubilete. Mira tu bolsa de esquirlas y sonríe.
+  - *Doble o nada*: Te juegas las esquirlas de esta campaña: 1 de cada 2 veces se doblan; si no, las pierdes.
+  - *Guardar la bolsa*: Nada cambia.
+- **El altar de sangre.** Un altar con cinco estandartes. El cuenco del centro pide algo tuyo antes de dar nada.
+  - *Ofrecer tu sangre*: Pierdes 3 de Vida máxima para siempre. Te llevas una Reliquia del rasgo del que llevas más.
+  - *Rezar y seguir*: +3 de Vida.
+- **El dado de dos caras.** Sobre una losa hay un dado de hueso: tres caras blancas, tres negras. Solo se puede tirar una vez.
+  - *Tirarlo*: Blanca: 2 formaciones suben 1 nivel. Negra: +10 de oro y +1 de Ataque en el próximo asalto.
+  - *Dejarlo quieto*: +2 de Vida.
 
 ### Trono infinito, semillas y Reinados
 
-- Después del asalto 5 puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un 45 % más resistente que el anterior (el primero, ×10,6).
+- Después del asalto 5 puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un 45 % más resistente que el anterior (el primero, ×6,9).
 - **Semilla**: la misma semilla y las mismas decisiones dan exactamente la misma campaña. Puedes escribir la tuya al empezar.
 - **Asalto diario**: usa la fecha como semilla, con la baraja de la conjura, en el Reinado 1 y sin nada del Árbol. Igual para todo el mundo.
 - **Reinados**: hay 8. Ganar una campaña abre el Reinado siguiente; cada uno añade **un giro** a todos los anteriores y sube un 25 % el cobro de la conjura (sin contar lo que cae a la mesa).
@@ -205,11 +219,11 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
 | Reinado | Nombre | Giro |
 |---|---|---|
 | 1 | Reinado de paz | Las reglas de siempre. |
-| 2 | Corazas finas | Todos los guardias tienen un 15 % más de Vida. |
-| 3 | Impuesto real | Todo en la Taberna cuesta 2 de oro más. |
-| 4 | Reyes acorazados | En los asaltos con monarca, los Reyes tienen un 25 % más de Vida. |
-| 5 | Rey colérico | El Ataque de los Reyes sube 2. |
-| 6 | Heridas viejas | Tienes 1 punto menos de Vida. |
+| 2 | Corazas finas | Todos los guardias tienen un 10 % más de Vida. |
+| 3 | Corte airada | Cada Mazo agotado sube la Furia 1 más. |
+| 4 | Reyes acorazados | En los asaltos con monarca, los Reyes tienen un 28 % más de Vida. |
+| 5 | Rey colérico | El Ataque de los Reyes sube 1. |
+| 6 | Heridas viejas | Tienes 2 punto menos de Vida. |
 | 7 | Guardia de noche | El Ataque de las Sotas y las Reinas sube 1. |
 | 8 | Puertas selladas | Solo en el asalto 5, el Ataque de los cuatro tronos sube 1. |
 
@@ -220,92 +234,94 @@ Tras los monarcas de los asaltos 2 y 4 aparece un dilema. Cada campaña ve 2 de 
 
 Llevas hasta **6 reliquias**. **No se ordenan**: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay 52: 28 en el surtido de salida y 24 más en los arcones del Árbol.
 
-### El Arsenal
+### Rasgos de build
+
+Cada Reliquia es de uno de **cinco rasgos**. Con **2, 4 y 6** Reliquias del mismo rasgo se encienden sus bonos (se suman a los de las Reliquias). La píldora de la mesa lleva la cuenta y La Taberna marca lo que te acerca al siguiente.
+
+| Rasgo | Lema | Con 2 | Con 4 | Con 6 |
+|---|---|---|---|---|
+| **Sangre** | Pacto de sangre | Cada guardia abatido te cura 1 de Vida. | +1 de Multi por cada 4 de Vida que te falten. | ×2 de Multi con la Vida a la mitad o menos. |
+| **Tahúr** | Azar y dados | Dado del Tahúr: cada turno da de +1 a +3 de Multi. | El dado da de +1 a +6 de Multi. Con un 6, +3 de oro al golpear. | Con un 5 o un 6, el dado da además ×2 de Multi. |
+| **Verdugo** | Ejecución | Ejecuta: el enemigo que quede con 15 % de Vida o menos, cae. | Ejecuta con 25 % o menos. Tras ejecutar, +20 de Daño al próximo golpe. | Toda ejecución cuenta como Golpe exacto. |
+| **Bastión** | Muralla de hierro | Empiezas cada asalto con 4 de Escudo. | +3 de Daño por cada punto de Escudo. | +6 de Daño por cada punto de Escudo, y su tope sube 4. |
+| **Horda** | Cascada de naipes | +1 de Multi si juegas 3 cartas o más. | La primera carta del golpe se activa otra vez. | Todas las cartas del golpe se activan otra vez. |
+
+### Sangre
 
 | Reliquia | Rareza | Tipo | Efecto | Surtido |
 |---|---|---|---|---|
-| Daga de Picas | Común | +D suma Daño | +3 de Daño por cada ♠ que juegues. | de salida |
-| Anillo de Diamantes | Común | +D suma Daño | +3 de Daño por cada ♦ que juegues. | de salida |
 | Cáliz de Corazones | Común | +D suma Daño | +3 de Daño por cada ♥ que juegues. | de salida |
-| Maza de Tréboles | Común | +D suma Daño | +3 de Daño por cada ♣ que juegues. | de salida |
-| Estilete | Común | +D suma Daño | +8 de Daño si juegas una carta sola. | de salida |
-| Dagas gemelas | Común | +M suma Multi | +1 de Multi con grupo, doble par, full o póker. | de salida |
-| Escalinata | Común | +M suma Multi | +1 de Multi con escalera o escalera de color. | de salida |
-| Pavés | Común | • pasiva | Cada ♣ da +1 de Escudo más, y el tope del Escudo sube +4. | de salida |
 | Bálsamo | Común | • pasiva | Cada ♥ cura +1 más. | de salida |
-| Broquel | Común | • pasiva | Cada guardia abatido: +2 de Escudo. | de salida |
 | Yelmo | Común | • pasiva | Cada guardia abatido: +1 de Vida. | de salida |
-| Baraja de reserva | Común | • pasiva | 1 Mazo agotado por asalto no sube el Asedio final ni cambia quién contraataca. | de salida |
-| Bolsa de monedas | Común | • pasiva | +4 de oro al terminar cada asalto. | de salida |
-| Lanza | Rara | • pasiva | Todos tus golpes Perforan, lleven o no ♠. | de salida |
-| Estandarte | Rara | +M suma Multi | +2 de Multi con color o escalera de color. | de salida |
-| Dados cargados | Rara | +M suma Multi | +1 de Multi con doble par o full. | de salida |
-| Barril de pólvora | Noble | • pasiva | Cada guardia abatido: los otros tronos reciben 6. | arcón del Árbol |
 | Gota de veneno | Noble | • pasiva | Ningún trono es Inmune: contra el trono de su palo, tus cartas hacen su Daño. | de salida |
-| Guantelete | Noble | • pasiva | +1 carta en la mano. | arcón del Árbol |
-| Manga doble | Noble | • pasiva | +1 hueco en La Manga: guardas dos cartas aparte de la mano. | de salida |
-| Máscara de traidor | Regia | • pasiva | Inmune se invierte: contra el trono de su palo, tus cartas hacen el doble de Daño. | de salida |
-| Pócima de sueño | Noble | • pasiva | El Ataque de todos los guardias baja 1. | arcón del Árbol |
-| Llave maestra | Regia | ×M multiplica | ×2 de Multi en el primer golpe contra cada guardia. | arcón del Árbol |
-
-### Mano precisa
-
-| Reliquia | Rareza | Tipo | Efecto | Surtido |
-|---|---|---|---|---|
 | Péndulo | Común | • pasiva | Cada Golpe exacto: +4 de Vida. | de salida |
-| Balanza | Rara | • pasiva | El Golpe exacto admite un margen de ±1. | de salida |
-| Ganzúa | Común | • pasiva | Cada Golpe exacto: +2 de oro. | arcón del Árbol |
-| Compás | Rara | +D suma Daño | Gana +2 de Daño para siempre con cada Golpe exacto. | arcón del Árbol |
-| Tijeras de sastre | Noble | • pasiva | Tras un Golpe exacto, el guardia siguiente pierde la mitad de su Vida. | arcón del Árbol |
-
-### Eco y repetición
-
-| Reliquia | Rareza | Tipo | Efecto | Surtido |
-|---|---|---|---|---|
-| Collar roto | Rara | • pasiva | Cada ♦ salpica +1 más a los otros tronos. | de salida |
-| Campana | Rara | +D suma Daño | Vuelve a activar la primera carta del golpe. | de salida |
-| Cuerno de guerra | Noble | ×M multiplica | ×2 de Multi si juegas 4 cartas o más. | de salida |
-| Espejo de mano | Rara | ⇉ copia | Copia tu última reliquia que no sea pasiva. | arcón del Árbol |
-| Tambor de guerra | Rara | • pasiva | Con grupo, doble par, full o póker, la mitad del Golpe salpica a los otros tronos. | arcón del Árbol |
-| Anillo de sello | Regia | • pasiva | Al empezar cada asalto, sella 1 carta de tu Mazo al azar. Los sellos se activan dos veces. | arcón del Árbol |
-
-### Alquimia de palos
-
-| Reliquia | Rareza | Tipo | Efecto | Surtido |
-|---|---|---|---|---|
-| Prisma | Rara | +M suma Multi | +1 de Multi por cada carta del golpe que comparta palo con otra (hasta +2). | de salida |
-| Vitral | Rara | +D suma Daño | +10 de Daño si el golpe mezcla 3 palos o más. | arcón del Árbol |
-| Caldero | Noble | • pasiva | Expuesto hace ×3 de Daño en vez de ×2, y los golpes de 3 palos también dejan Expuesto. | arcón del Árbol |
-| Piedra filosofal | Regia | +M suma Multi | +1 de Multi por cada trono Expuesto o Aturdido. | arcón del Árbol |
-
-### Vida al filo
-
-| Reliquia | Rareza | Tipo | Efecto | Surtido |
-|---|---|---|---|---|
 | Vela gastada | Rara | +D suma Daño | +1 de Daño por cada punto de Vida que te falte. | de salida |
 | Rosa de espinas | Rara | • pasiva | Cuando un Contraataque te quita Vida, el trono que atacó recibe 8. | arcón del Árbol |
 | Antorcha | Rara | • pasiva | Cada Motín (Comodín): +3 de oro y robas 2 cartas. | arcón del Árbol |
 | Último aliento | Noble | ×M multiplica | ×2 de Multi si tu Vida está al 50 % o menos. | arcón del Árbol |
 | Corazón de piedra | Regia | ×M multiplica | ×2 de Multi. Si el golpe no abate a ningún guardia, pierdes 1 de Vida. | arcón del Árbol |
 
-### Fuego y ceniza
+### Tahúr
 
 | Reliquia | Rareza | Tipo | Efecto | Surtido |
 |---|---|---|---|---|
+| Anillo de Diamantes | Común | +D suma Daño | +3 de Daño por cada ♦ que juegues. | de salida |
+| Bolsa de monedas | Común | • pasiva | +4 de oro al terminar cada asalto. | de salida |
+| Dados cargados | Rara | +M suma Multi | +1 de Multi con doble par o full. | de salida |
+| Máscara de traidor | Regia | • pasiva | Inmune se invierte: contra el trono de su palo, tus cartas hacen el doble de Daño. | de salida |
+| Ganzúa | Común | • pasiva | Cada Golpe exacto: +2 de oro. | arcón del Árbol |
+| Espejo de mano | Rara | ⇉ copia | Copia tu última reliquia que no sea pasiva. | arcón del Árbol |
+| Prisma | Rara | +M suma Multi | +1 de Multi por cada carta del golpe que comparta palo con otra (hasta +2). | de salida |
+| Vitral | Rara | +D suma Daño | +10 de Daño si el golpe mezcla 3 palos o más. | arcón del Árbol |
+| Caldero | Noble | • pasiva | Expuesto hace ×3 de Daño en vez de ×2, y los golpes de 3 palos también dejan Expuesto. | arcón del Árbol |
+| Piedra filosofal | Regia | +M suma Multi | +1 de Multi por cada trono Expuesto o Aturdido. | arcón del Árbol |
+| Fuelle | Común | • pasiva | +3 de oro cada vez que arde una carta en un asalto (Brasero, Cristal maldito). | arcón del Árbol |
+
+### Verdugo
+
+| Reliquia | Rareza | Tipo | Efecto | Surtido |
+|---|---|---|---|---|
+| Daga de Picas | Común | +D suma Daño | +3 de Daño por cada ♠ que juegues. | de salida |
+| Estilete | Común | +D suma Daño | +8 de Daño si juegas una carta sola. | de salida |
+| Lanza | Rara | • pasiva | Todos tus golpes Perforan, lleven o no ♠. | de salida |
+| Llave maestra | Regia | ×M multiplica | ×2 de Multi en el primer golpe contra cada guardia. | arcón del Árbol |
+| Balanza | Rara | • pasiva | El Golpe exacto admite un margen de ±1. | de salida |
+| Compás | Rara | +D suma Daño | Gana +2 de Daño para siempre con cada Golpe exacto. | arcón del Árbol |
+| Tijeras de sastre | Noble | • pasiva | Tras un Golpe exacto, el guardia siguiente pierde la mitad de su Vida. | arcón del Árbol |
 | Brasero | Rara | • pasiva | Al descartar, la primera carta arde: sale de tu Mazo para siempre. | de salida |
 | Urna de cenizas | Rara | +D suma Daño | +2 de Daño por cada carta quemada en la campaña. | de salida |
-| Fuelle | Común | • pasiva | +3 de oro cada vez que arde una carta en un asalto (Brasero, Cristal maldito). | arcón del Árbol |
-| Cofre cerrado | Rara | • pasiva | Lo que descartas no vuelve en este asalto, y cada carta da +6 de Daño a tu próximo golpe. | arcón del Árbol |
 | Cetro de ceniza | Noble | ×M multiplica | ×2 de Multi si en la campaña ya ardieron 5 cartas o más. | arcón del Árbol |
 
-### Escudo y réplica
+### Bastión
 
 | Reliquia | Rareza | Tipo | Efecto | Surtido |
 |---|---|---|---|---|
+| Maza de Tréboles | Común | +D suma Daño | +3 de Daño por cada ♣ que juegues. | de salida |
+| Pavés | Común | • pasiva | Cada ♣ da +1 de Escudo más, y el tope del Escudo sube +4. | de salida |
+| Broquel | Común | • pasiva | Cada guardia abatido: +2 de Escudo. | de salida |
+| Baraja de reserva | Común | • pasiva | 1 Mazo agotado por asalto no sube la Furia. | de salida |
+| Manga doble | Noble | • pasiva | +1 hueco en La Manga: guardas dos cartas aparte de la mano. | de salida |
+| Pócima de sueño | Noble | • pasiva | El Ataque de todos los guardias baja 1. | arcón del Árbol |
 | Ariete | Rara | +D suma Daño | +4 de Daño por cada punto de Escudo en pie. | arcón del Árbol |
 | Rodela de púas | Rara | • pasiva | Si el Escudo frena entero un Contraataque, su trono recibe 3 × lo frenado. Ej.: frena 4 → recibe 12. | arcón del Árbol |
 | Copa rebosante | Rara | • pasiva | Escudo que no cabe: cada 2 curan 1. Cura que no cabe: +3 de Daño por punto a tu próximo golpe. | arcón del Árbol |
 | Baluarte | Noble | +M suma Multi | +1 de Multi si tu Escudo está a la mitad de su tope o por encima. | arcón del Árbol |
+
+### Horda
+
+| Reliquia | Rareza | Tipo | Efecto | Surtido |
+|---|---|---|---|---|
+| Dagas gemelas | Común | +M suma Multi | +1 de Multi con grupo, doble par, full o póker. | de salida |
+| Escalinata | Común | +M suma Multi | +1 de Multi con escalera o escalera de color. | de salida |
+| Estandarte | Rara | +M suma Multi | +2 de Multi con color o escalera de color. | de salida |
+| Barril de pólvora | Noble | • pasiva | Cada guardia abatido: los otros tronos reciben 6. | arcón del Árbol |
+| Guantelete | Noble | • pasiva | +1 carta en la mano. | arcón del Árbol |
+| Collar roto | Rara | • pasiva | Cada ♦ salpica +1 más a los otros tronos. | de salida |
+| Campana | Rara | +D suma Daño | Vuelve a activar la primera carta del golpe. | de salida |
+| Cuerno de guerra | Noble | ×M multiplica | ×2 de Multi si juegas 4 cartas o más. | de salida |
+| Tambor de guerra | Rara | • pasiva | Con grupo, doble par, full o póker, la mitad del Golpe salpica a los otros tronos. | arcón del Árbol |
+| Anillo de sello | Regia | • pasiva | Al empezar cada asalto, sella 1 carta de tu Mazo al azar. Los sellos se activan dos veces. | arcón del Árbol |
+| Cofre cerrado | Rara | • pasiva | Lo que descartas no vuelve en este asalto, y cada carta da +6 de Daño a tu próximo golpe. | arcón del Árbol |
 
 ## Sellos de lacre y acabados
 
@@ -364,7 +380,7 @@ No tienen palo ni número: acompañan a cualquier golpe (hasta 2 por golpe) o se
 | Baraja | Cómo cambia la campaña | Se desbloquea con |
 |---|---|---|
 | Baraja de la conjura | La de siempre: 40 cartas, 2 Comodines y un Sobre lacrado de 3 especiales. | — |
-| Baraja negra | Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +3 de Vida (+Baluarte con su arcón). | Adiós, carcelero |
+| Baraja negra | Solo ♠ y ♣, dobles: sin Cura ni Salpica. Gota de veneno, Pavés y +6 de Vida (+Baluarte con su arcón). | Adiós, carcelero |
 | Baraja del prestamista | +4 de oro inicial y el interés rinde el doble, pero tienes 1 de Vida menos. | Medio castillo |
 | Baraja de ases | Ocho ases y ningún 2: más Ases cómplices y más pegada, pero tienes 2 de Vida menos. | Fin del reinado |
 | Baraja corta | Sin doses ni treses: golpes gordos, el Mazo se agota antes y tienes 5 de Vida menos. +3 de oro inicial. | De un solo golpe |
@@ -392,9 +408,9 @@ Mejoras que te ayudan a ganar.
 
 | Nodo | Efecto | Rangos | Coste de cada rango |
 |---|---|---|---|
-| Bolsa de la conjura | +1 de oro inicial por rango. | 5 | 300 ✦ · 600 ✦ · 700 ✦ · 800 ✦ · 900 ✦ |
+| Bolsa de la conjura | +2 de oro inicial por rango. | 5 | 300 ✦ · 600 ✦ · 700 ✦ · 800 ✦ · 900 ✦ |
 | Favor del Tratante | Un «Renovar mesa» gratis en cada Taberna, por nivel. | 2 | 400 ✦ · 800 ✦ |
-| Puesto grande | +1 reliquia en oferta en cada Taberna, por nivel. | 2 | 800 ✦ · 1200 ✦ |
+| Puesto grande | Por nivel: +1 reliquia en La Taberna, y 2 de las que ofrece son de tu rasgo principal. | 2 | 800 ✦ · 1200 ✦ |
 | Cartógrafo | Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2. | 1 | 600 ✦ |
 | Ojo del tasador | Las reliquias de La Taberna cuestan 1 de oro menos (mínimo 1). | 3 | 200 ✦ · 300 ✦ · 400 ✦ |
 | Arcón de precisión | Añade al surtido: Llave maestra, Ganzúa, Compás, Tijeras de sastre. | 1 | 400 ✦ |
@@ -486,7 +502,7 @@ Más esquirlas y más poder en el Trono infinito.
 | Trofeo: La Dama del Cáliz | Vence a la Dama del Cáliz (cáliz envenenado). | +200 ✦ | Carta legendaria: La Dama del Cáliz |
 | Trofeo: La Reina Helada | Vence a la Reina Helada (escarcha). | +200 ✦ | Carta legendaria: La Reina Helada |
 | Trofeo: El Inquisidor | Vence al Inquisidor (guardia de hierro). | +200 ✦ | Carta legendaria: El Inquisidor |
-| Trofeo: El Verdugo | Vence al Verdugo (furia). | +200 ✦ | Carta legendaria: El Verdugo |
+| Trofeo: El Carnicero | Vence al Carnicero (hacha afilada). | +200 ✦ | Carta legendaria: El Verdugo |
 | Trofeo: El Relojero | Vence al Relojero (arena rápida). | +200 ✦ | Carta legendaria: El Relojero |
 | Ningún rey en pie | Vence a los 7 monarcas. | +800 ✦ | — |
 

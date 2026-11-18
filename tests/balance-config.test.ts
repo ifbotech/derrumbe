@@ -56,7 +56,7 @@ describe('balance-config.json: esquema y rangos', () => {
     expect(RAW.cuadrilla[0]).toBe(1);
     for (let i = 1; i < 4; i++) expect(RAW.cuadrilla[i]).toBeGreaterThanOrEqual(RAW.cuadrilla[i - 1]);
     expect(RAW.reinados.corazas).toBeGreaterThanOrEqual(1);
-    for (const k of ['impuesto', 'reyColerico', 'heridasViejas', 'guardiaNoche'] as const) expect(ent(RAW.reinados[k]) && RAW.reinados[k] >= 0, k).toBe(true);
+    for (const k of ['furia', 'reyColerico', 'heridasViejas', 'guardiaNoche'] as const) expect(ent(RAW.reinados[k]) && RAW.reinados[k] >= 0, k).toBe(true);
     expect(ent(RAW.furia.mazo) && RAW.furia.mazo >= 1).toBe(true);
     expect(ent(RAW.furia.rey) && RAW.furia.rey >= 1).toBe(true);
     expect(RAW.furia.jefeVida).toBeGreaterThan(1);
@@ -183,7 +183,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(engine.TREATMENT.forjado.desc).toContain(num(B.acabados.forjado));
     expect(engine.SEAL.jornal.desc).toContain(num(B.sellos.jornal));
     expect(run.BOSS.furia.curse.badge).toContain(num(B.monarcas.furia.ataque));
-    expect(run.ASCENSIONS[2].desc).toContain(num(B.reinados.impuesto));
+    expect(run.ASCENSIONS[2].desc).toContain(num(B.reinados.furia));
     expect(run.DECK.corta.desc).toContain(num(B.barajas.corta.vida));
     // las originales no cambiaron: el archivo de disco sigue igual
     expect(STAGES[0].hp).toBe(RAW.asaltos[0].hp);
@@ -239,8 +239,8 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const inq = base();
     run.BOSS.blindaje.apply(inq);
     expect(inq.noFx).toBe('sobrecarga');
-    // V11-C: el Inquisidor solo quita los estados (sin Ataque extra)
-    expect(inq.floorThreat[11]).toBe(B.mesa.floorThreat[11]);
+    // V35: el Inquisidor quita el Aturdido y, a cambio, sus guardias pegan menos
+    for (const r of [11, 12, 13] as const) expect(inq.floorThreat[r]).toBe(Math.max(1, B.mesa.floorThreat[r] - B.monarcas.blindaje.ataque));
     const rel = base();
     run.BOSS.inestable.apply(rel);
     expect(rel.furiaInicial).toBe(B.monarcas.inestable.furia);

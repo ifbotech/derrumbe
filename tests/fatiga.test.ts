@@ -142,11 +142,11 @@ describe('jefes de la 4.0', () => {
     return cfg;
   };
 
-  it('El Inquisidor (V11-C): ningún trono queda Aturdido; Expuesto sigue y el Ataque no cambia', () => {
+  it('El Inquisidor (V35): ningún trono queda Aturdido; Expuesto sigue y sus guardias pegan menos', () => {
     const cfg = boss('blindaje');
     const s = table(cfg);
     const calm = table(cfgWith());
-    expect(threatOf(s, s.towers.S)).toBe(threatOf(calm, calm.towers.S));
+    expect(threatOf(s, s.towers.S)).toBe(Math.max(1, threatOf(calm, calm.towers.S) - BALANCE.monarcas.blindaje.ataque));
     strike(s, [card('C2'), card('C3'), card('C4')], 'S'); // un solo palo: sin el decreto dejaría Expuesto
     strike(s, [card('S3'), card('H4'), card('D5')], 'C'); // tres palos: sin el decreto dejaría Aturdido (no lo deja)
     expect(s.towers.S.fx).toEqual({ fractura: true }); // un solo palo: Expuesto, como siempre
@@ -169,7 +169,7 @@ describe('jefes de la 4.0', () => {
 
   it('La Ventisca limita el muro sin anularlo', () => {
     const cfg = boss('intemperie');
-    expect(cfg.wallCap).toBeGreaterThanOrEqual(2);
+    expect(cfg.wallCap).toBeGreaterThanOrEqual(1);
     expect(cfg.wallCap).toBeLessThan(DEFAULT_CONFIG.wallCap);
   });
 });

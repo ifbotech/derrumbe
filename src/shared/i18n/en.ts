@@ -157,8 +157,8 @@ const MONARCAS: Record<string, MonarcaEn> = {
   sequia: {
     nombre: 'The Chalice Lady',
     decreto: 'Poisoned Chalice',
-    desc: 'Your ♥ do not heal.',
-    badge: 'Your ♥ do not heal',
+    desc: 'Your ♥ do not heal: each one you play costs you {veneno} Health.',
+    badge: 'Your ♥ cost you {veneno}',
     entrada: 'A toast, darling. My cup has never mended a single heart.',
     contraataque: 'One more little sip... no? I will pour it for you anyway.',
     caida: 'I spilled my chalice all over the felt. How very untidy.',
@@ -175,7 +175,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
   blindaje: {
     nombre: 'The Inquisitor',
     decreto: 'Iron Guard',
-    desc: 'No throne is ever Stunned.',
+    desc: 'No guard is ever Stunned, but they hit {ataque} less.',
     badge: 'Never Stunned',
     entrada: 'My guards pray with their eyes open. No one surprises them.',
     contraataque: 'Confess your hand, heretic. A fierce card never lies.',
@@ -206,7 +206,7 @@ const ASALTOS = ['The Drawbridge', 'The Training Yard', 'The Crypt', 'The Royal 
 const REINADOS: [string, string][] = [
   ['Reign of Peace', 'The usual rules.'],
   ['Fine Armor', 'Every guard has {pct} % more Health.'],
-  ['Royal Tax', 'Everything in the Tavern costs {impuesto} more gold.'],
+  ['Wrathful Court', 'Each Deck run-out raises the Fury {furia} more.'],
   ['Armored Kings', 'In assaults with a monarch, Kings have {reyes} % more Health.'],
   ['Wrathful King', "Kings' Attack rises by {rey}."],
   ['Old Wounds', 'Your max Health drops by {heridas}.'],
@@ -353,7 +353,7 @@ const MEJORAS: Record<string, [string, string?]> = {
   tampones: ['New Seals', 'The Wax Table also offers the powder and sleeve seals.'],
   bronce: ['Crown Jeweler', 'The Wax Table also offers Prismatic Wax and Cursed Glass.'],
   vale: ["Keeper's Favor", 'One free Refresh Table at each Tavern, per level.'],
-  tienda: ['Black Market', '+1 relic on offer at each Tavern, per level.'],
+  tienda: ['Black Market', 'Per level: +1 relic at The Tavern, and 2 of those offered are of your main trait.'],
   caja: ['Conspiracy Purse', '+{oro} starting gold per rank.'],
   rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
   tasador: ["Appraiser's Eye", 'Relics at the Tavern cost {n} gold less (minimum 1).'],

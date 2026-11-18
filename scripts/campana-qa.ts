@@ -194,7 +194,8 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
           turns++;
         } else if (a.type === 'stash') {
           await pick([a.card!]);
-          await page.locator('#btn-stash').click();
+          // V35 · La Manga se usa desde su hueco (ya no hay botón)
+          await page.locator('#reserve .reserve-slot.empty').first().click();
         } else if (a.type === 'pass') {
           ms = await timed(page, '#btn-pass');
           turns++;
