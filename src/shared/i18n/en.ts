@@ -15,7 +15,7 @@ import type { Formation, Seal, Suit, Treatment, TowerFx } from '../../rules/engi
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, UPGRADES } from '../../rules/run';
 import { cifraDe } from '../../rules/arbol';
 import { BASE_POOL, SPECIALS } from '../../rules/specials';
-import { TOOL_SLOTS, TOOLS } from '../../rules/tools';
+import { RASGOS, TOOL_SLOTS, TOOLS } from '../../rules/tools';
 import type { Arch, Rarity } from '../../rules/tools';
 import { ES_UI, type ClaveUi } from './es';
 import { columna } from './ui-arte';
@@ -39,7 +39,7 @@ const RELIQUIAS: Record<string, [string, string]> = {
   botiquin: ['Balm', 'Each ♥ heals +{vida} more.'],
   encofrado: ['Buckler', 'Each guard defeated: +{escudo} Shield.'],
   casco: ['Helm', 'Each guard defeated: +{vida} Health.'],
-  puntales: ['False Bottom', '{gratis} Deck run-out per assault neither raises the Final Siege nor changes who strikes back.'],
+  puntales: ['False Bottom', '{gratis} Deck run-out per assault does not raise the Fury.'],
   hucha: ['Coin Purse', '+{oro} gold at the end of each assault.'],
   taladro: ['Lance', 'All your hits Pierce, with or without ♠.'],
   estandarte: ['Banner', '+{multi} Mult with a flush or straight flush.'],
@@ -182,10 +182,10 @@ const MONARCAS: Record<string, MonarcaEn> = {
     caida: 'Heresy! They beat me with marked cards.',
   },
   furia: {
-    nombre: 'The Executioner',
-    decreto: 'Fury',
-    desc: 'The Attack of every throne rises by {ataque}.',
-    badge: '+{ataque} Attack on every throne',
+    nombre: 'The Butcher',
+    decreto: 'Sharpened Axe',
+    desc: 'The Attack of every guard rises by {ataque}.',
+    badge: '+{ataque} Attack on every guard',
     entrada: 'I sharpened my axe all night. All in, and no mercy!',
     contraataque: 'I raise! And this time my hand does not shake.',
     caida: 'My hood slipped off. A bad hand, that one of mine.',
@@ -193,8 +193,8 @@ const MONARCAS: Record<string, MonarcaEn> = {
   inestable: {
     nombre: 'The Clockmaker',
     decreto: 'Quicksand',
-    desc: 'The Final Siege starts {antes} turns earlier; each guard defeated without an Exact Hit costs {vida} Health.',
-    badge: 'Final Siege {antes} turns early',
+    desc: 'The assault starts with {furia} Fury, and each guard defeated without an Exact Hit costs {vida} Health.',
+    badge: 'Starts with {furia} Fury',
     entrada: 'Tick, tock. Every grain of sand is playing on my side.',
     contraataque: 'Your sand is running out, partner. I never rush: I wait.',
     caida: 'My clock stopped... right on your hour.',
@@ -294,6 +294,47 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
       { etiqueta: 'Leave them be', gana: 'Nothing changes', desc: 'Nothing changes.' },
     ],
   },
+  rueda: {
+    nombre: 'The Wheel of Fortune',
+    texto: 'A cartwheel hangs from the ceiling, painted in four wedges. Someone left the crank in place.',
+    opciones: [
+      { etiqueta: 'Spin the wheel', gana: 'Gold, Health or relic', cuesta: '1 in 4: −4 Health', desc: 'A random wedge comes up: +12 gold, +6 Health, a Rare relic or −4 Health.' },
+      { etiqueta: 'Leave it alone', gana: '+3 gold', desc: 'You pick up the coins on the floor: +3 gold.' },
+    ],
+  },
+  doble: {
+    nombre: "The Devil's Bones",
+    texto: 'A faceless gambler shakes two bones in a cup. He looks at your pouch of shards and smiles.',
+    opciones: [
+      { etiqueta: 'Double or nothing', gana: 'Shards ×2', cuesta: '1 in 2: you lose them', desc: 'You stake the shards of this campaign: 1 time in 2 they double; otherwise you lose them.' },
+      { etiqueta: 'Keep the pouch', gana: 'Nothing changes', desc: 'Nothing changes.' },
+    ],
+  },
+  altar: {
+    nombre: 'The Altar of Blood',
+    texto: 'An altar with five banners. The bowl in the middle asks for something of yours before giving anything.',
+    opciones: [
+      { etiqueta: 'Offer your blood', gana: 'Relic of your trait', cuesta: '−3 Max Health', desc: 'You lose 3 Max Health for good. You take a relic of the trait you carry the most of.' },
+      { etiqueta: 'Pray and move on', gana: '+3 Health', desc: '+3 Health.' },
+    ],
+  },
+  dado: {
+    nombre: 'The Two-Faced Die',
+    texto: 'On a flagstone lies a bone die: three white faces, three black. It can only be rolled once.',
+    opciones: [
+      { etiqueta: 'Roll it', gana: '2 formations +1 level', cuesta: '1 in 2: +1 Attack', desc: 'White: 2 formations go up 1 level. Black: +10 gold and +1 Attack in the next assault.' },
+      { etiqueta: 'Leave it be', gana: '+2 Health', desc: '+2 Health.' },
+    ],
+  },
+};
+
+/** V35 · The five build traits: name, motto and what they give with 2, 4 and 6 relics (figures from `rasgos` in balance-config.json). */
+const RASGOS_EN: Record<string, { nombre: string; lema: string; bonos: [string, string, string] }> = {
+  sangre: { nombre: 'Blood', lema: 'Blood pact', bonos: ['Each guard defeated heals you {vida} Health.', '+{multi} Mult for every {cada} Health you are missing.', '×{x} Mult at half Health or less.'] },
+  tahur: { nombre: 'Gambler', lema: 'Luck and dice', bonos: ["Gambler's die: each turn it gives +1 to +3 Mult.", 'The die gives +1 to +6 Mult. On a 6, +{oro} gold when you hit.', 'On a 5 or a 6, the die also gives ×{x} Mult.'] },
+  verdugo: { nombre: 'Executioner', lema: 'Execution', bonos: ['Execute: an enemy left at {pct} % Health or less falls.', 'Execute at {pct2} % or less. After an execution, +{dano} Damage on your next hit.', 'Every execution counts as an Exact Hit.'] },
+  bastion: { nombre: 'Bastion', lema: 'Iron wall', bonos: ['You start every assault with {escudo} Shield.', '+{dano} Damage for each point of Shield.', '+{dano2} Damage for each point of Shield, and its cap rises by {tope}.'] },
+  horda: { nombre: 'Horde', lema: 'Card cascade', bonos: ['+{multi} Mult if you play {cartas} cards or more.', 'The first card of the hit triggers again.', 'Every card of the hit triggers again.'] },
 };
 
 /** Upgrades of the Order. The chests list the relics they add (with their English names). */
@@ -424,7 +465,7 @@ const PALOS: Record<Suit, [string, string]> = { S: ['SPADES', 'Spades'], D: ['DI
 
 const GUIA: Record<string, [string, string]> = {
   palo: ['The Power of a Suit', 'Play the <b>6♣</b> against SPADES: ♣ give you Shield.'],
-  inmune: ['Immune Throne', 'Your ♥ do nothing to HEARTS: <b>8♥</b> to SPADES.'],
+  inmune: ['Immune Enemy', 'SPADES is Immune to ♠: your 3♠ does 0. Play the <b>8♥</b>.'],
   manga: ['Up the Sleeve', 'Keep the <b>9♦</b> Up the Sleeve for later.'],
   cuenta: ['The Tally', 'A pair of <b>7</b>s to HEARTS: Damage × Mult = Hit.'],
   exacto: ['Exact Hit', 'The <b>9♦</b> from Up the Sleeve to HEARTS: exactly 9.'],
@@ -435,6 +476,28 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'asalto.infinito.nombre': 'Endless Throne {n}',
   // V12
   'cuenta.dado': 'Gold Die ×{n}',
+  'suerte.rueda.oro.titulo': 'Golden wedge',
+  'suerte.rueda.oro.texto': '+{n} gold.',
+  'suerte.rueda.vida.titulo': 'Wedge of life',
+  'suerte.rueda.vida.texto': '+{n} Health.',
+  'suerte.rueda.reliquia.titulo': 'Treasure wedge',
+  'suerte.rueda.reliquia.texto': 'You take “{x}”.',
+  'suerte.rueda.lleno.titulo': 'Treasure wedge',
+  'suerte.rueda.lleno.texto': 'No room for another relic: +{n} gold.',
+  'suerte.rueda.negro.titulo': 'Black wedge',
+  'suerte.rueda.negro.texto': '−{n} Health.',
+  'suerte.doble.si.titulo': 'Double',
+  'suerte.doble.si.texto': 'Your shards double: {a} → {b} ✦.',
+  'suerte.doble.no.titulo': 'Nothing',
+  'suerte.doble.no.texto': 'You lose the {a} ✦ of this campaign.',
+  'suerte.altar.si.titulo': 'The altar answers',
+  'suerte.altar.si.texto': 'You take “{x}”: you now carry {n} {r}.',
+  'suerte.altar.no.titulo': 'The altar is silent',
+  'suerte.altar.no.texto': 'There was no {r} relic left: +{n} gold.',
+  'suerte.dado.blanca.titulo': 'White face',
+  'suerte.dado.blanca.texto': 'Two formations go up 1 level.',
+  'suerte.dado.negra.titulo': 'Black face',
+  'suerte.dado.negra.texto': '+{n} gold. In the next assault, the Attack of the guards rises by 1.',
   'arbol.aviso': 'Your {coronas} Crowns are now {esquirlas} Crown Shards. Your {rangos} upgrades remain in the Armory.',
   'logro.desbloquea.carta': 'Legendary card: {nombre}',
   'causa.quedaba.1': 'You had {n} Health left',
@@ -443,14 +506,13 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'causa.lista.mas': '{a}, {b} and more',
   'causa.desde': '{palo} Counterattack',
   'causa.desde.sin': 'Counterattack',
-  'causa.desde.mazo': '{desde} after the Deck ran out',
   'causa.falta.1': 'You needed {n} more Shield (♣)',
   'causa.falta.n': 'You needed {n} more Shield (♣)',
   'causa.sirena.titulo': '{desde}: Attack {ataque} against Shield {frena} → {entra} got through',
   'causa.sirena.titulo.sin': '{desde}: Attack {ataque} and no Shield → {entra} got through',
   'causa.sirena.detalle.otra': 'It was Counterattack no. {k} this turn. {queda}. {falta} or an Exact Hit.',
   'causa.sirena.detalle': '{queda}. {falta}; an Exact Hit would have stopped it too.',
-  'causa.sirena.detalle.asedio': '{queda}. {n} of that Attack was Final Siege. {falta} or an Exact Hit.',
+  'causa.sirena.detalle.asedio': '{queda}. {n} of that Attack was Fury. {falta} or an Exact Hit.',
   'causa.herida.propia': 'Self-inflicted wound',
   'causa.herida.titulo': '{quien}: your own hit cost you {n} Health',
   'causa.herida.detalle': '{queda}. Shield does not stop what your hit costs: heal (♥) before you gamble.',
@@ -463,7 +525,6 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'aviso.sirena.detalle.n': 'You have {vida} Health and {escudo}. Raise your Shield (♣), heal (♥), stun that throne or land an Exact Hit.',
   'paso.racha': 'Streak',
   'paso.carga': 'Stored',
-  'paso.asedio': 'Final Siege',
   'paso.expuesto': 'Exposed ×{n}',
   'paso.inmune': 'immune',
   'paso.eco': 'echo',
@@ -494,6 +555,7 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.sin_manga': 'There is no Up the Sleeve in this assault.',
   'error.formacion': 'Invalid formation: single card, group, two pair, full house, four of a kind, straight or flush.',
   'error.trono_caido': 'That throne has already fallen.',
+  'error.frente': 'You can only hit the enemy in front of you.',
   'error.descartar': 'Choose at least one card to discard.',
   'error.no_comodin': 'That card is not a Joker.',
   'error.pasar': 'You can only pass with an empty hand.',
@@ -550,6 +612,13 @@ export function reglasEn(): Record<string, string> {
     if (!r) continue;
     o[`reliquia.${t.id}.nombre`] = r[0];
     o[`reliquia.${t.id}.desc`] = f(r[1], cifrasReliquia(t.id));
+  }
+  for (const r of RASGOS) {
+    const e = RASGOS_EN[r.id];
+    if (!e) continue;
+    o[`rasgo.${r.id}.nombre`] = e.nombre;
+    o[`rasgo.${r.id}.lema`] = e.lema;
+    e.bonos.forEach((b, i) => (o[`rasgo.${r.id}.bono.${i + 1}`] = f(b, BALANCE.rasgos[r.id])));
   }
   for (const [r, v] of Object.entries(RAREZAS)) o[`rareza.${r}`] = v;
   for (const [a, v] of Object.entries(ARQUETIPOS)) o[`arquetipo.${a}`] = v;

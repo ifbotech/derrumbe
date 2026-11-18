@@ -11,7 +11,7 @@
 // Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
 import { BALANCE, fill } from './balance-config';
 import { MAX_SPECIALS, SPECIAL } from './specials';
-import { TOOL, espejada } from './tools';
+import { TOOL, espejada, nivelesDe, rasgosAfter, rasgosStrike } from './tools';
 import type { ToolInst } from './tools';
 
 // ───────────────────────── Cartas ─────────────────────────
@@ -116,13 +116,25 @@ export function classify(all: Card[]): Formation | null {
 export interface Config {
   maxIntegrity: number;
   wallCap: number;
-  /**
-   * V27 · Mazo agotado: el Descarte se baraja sin quitar Vida y el Asedio final sube estos niveles
-   * (cada nivel, +1 de Ataque a todos los tronos y más Daño a tus golpes: se ve en la mesa).
-   */
+  /** V35 · Mazo agotado: el Descarte se baraja sin quitar Vida y la Furia del asalto sube esto (a la vista en el ⚔ del enemigo). */
   collapseSiege: number;
-  /** Mazos agotados por asalto que no suben el Asedio (Baraja de reserva). */
+  /** Mazos agotados por asalto que no suben la Furia (Baraja de reserva). */
   collapseFree?: number;
+  /** V35 · El orden en que se asaltan las Casas (los tronos del asalto): se combate solo la primera que quede en pie. */
+  orden?: Suit[];
+  /**
+   * V35 · El monarca del asalto: el último guardia de la Casa `suit`. Su Vida se multiplica por `vida` y, mientras es
+   * el enemigo activo, la Furia sube `furia` al acabar cada turno (la «Furia del Rey»).
+   */
+  jefe?: { suit: Suit; vida: number; furia: number };
+  /** V35 · Furia con la que empieza el asalto (decreto del Relojero). */
+  furiaInicial?: number;
+  /** V35 · Rasgo Verdugo: el enemigo que quede con esta fracción de su Vida o menos, cae (0,15 = 15 %). */
+  ejecuta?: number;
+  /** V35 · Rasgo Verdugo (6): toda ejecución cuenta como Golpe exacto. */
+  ejecutaExacta?: boolean;
+  /** V35 · Rasgo Bastión: Escudo con el que empieza el asalto. */
+  wallStart?: number;
   /** Poderes de palo, por carta (sea cual sea su rango): Escudo por cada ♣, Cura por cada ♥ y Salpica por cada ♦. */
   escudoPorCarta: number;
   curaPorCarta: number;
@@ -155,13 +167,11 @@ export interface Config {
   /** Huecos de andamio: cartas que cada jugador puede guardar aparte de su mano (1 por defecto). */
   reserveSize?: number;
   /**
-   * Fatiga de cimientos: desde este turno de la obra, y cada `fatigueEvery` turnos, sube un nivel.
-   * Cada nivel da +`fatigueDano` de Daño a todos los golpes y +1 de Ataque a todos los tronos:
-   * el asalto se acelera en los dos sentidos. Sin definir, no hay fatiga.
+   * Reloj de turnos (solo la partida clásica): desde este turno, y cada `fatigueEvery` turnos, la Furia sube 1.
+   * Sin definir (la campaña), la Furia solo sube por los Mazos agotados y por los turnos del monarca.
    */
   fatigueStart?: number;
   fatigueEvery?: number;
-  fatigueDano?: number;
   /** Lo que le cuesta al búnker cada piso que cae sin golpe limpio. */
   crumbleHurt?: number;
   /** Fuerza que se guarda para el próximo golpe por cada punto reparado de más con el búnker lleno. */
@@ -170,7 +180,7 @@ export interface Config {
   overwallRepair?: number;
 }
 
-/** Nivel de fatiga de cimientos que corresponde a un turno de la obra. */
+/** Furia que corresponde a un turno por el reloj de turnos (0 si la mesa no lo tiene). */
 export function fatigueAt(cfg: Config, turnCount: number): number {
   if (cfg.fatigueStart === undefined || turnCount < cfg.fatigueStart) return 0;
   return 1 + Math.floor((turnCount - cfg.fatigueStart) / Math.max(1, cfg.fatigueEvery ?? 2));
@@ -231,10 +241,11 @@ export interface GameState {
   turn: number;
   turnCount: number;
   collapses: number;
-  /** V27 · el cerco: el Mazo se agotó y el siguiente Contraataque lo da el trono en pie con más Ataque. */
-  cerco?: boolean;
+  /** V35 · Furia del Rey: lo que ha subido la Furia por los turnos que el monarca lleva de enemigo activo. */
+  furiaRey?: number;
+  /** V35 · Rasgo Tahúr: la cara del dado de este turno (1 a 6), a la vista antes de golpear. Sin el rasgo no hay dado. */
+  dado?: number;
   phase: Phase;
-  lastSiren: Card | null;
   /** Cinturón de herramientas, de izquierda a derecha (campaña). */
   tools: ToolInst[];
   /** Racha de Golpes exactos: cada eslabón da +`golpe.racha` de Multi al siguiente golpe (hasta `golpe.rachaTope`). */
@@ -253,7 +264,7 @@ export interface GameState {
   chalk: number;
   /** La mesa justo antes de la última jugada, mientras quede tiza. */
   undo: GameState | null;
-  /** Nivel de fatiga de cimientos (ver Config.fatigueStart). */
+  /** V35 · La Furia del asalto: Ataque de más de todos sus enemigos (ver `siegeLevel`). */
   fatigue: number;
 }
 
@@ -292,7 +303,7 @@ export type GameEvent =
   | { e: 'undo'; chalk: number }
   | { e: 'fatigue'; level: number }
   | { e: 'hit'; tower: Suit; amount: number; splash: boolean; damage: number; hp: number }
-  | { e: 'floorDown'; tower: Suit; rank: number; clean: boolean; towerDown: boolean; damage: number }
+  | { e: 'floorDown'; tower: Suit; rank: number; clean: boolean; towerDown: boolean; damage: number; exec?: true }
   | { e: 'onda'; tower: Suit; amount: number }
   | { e: 'state'; tower: Suit; fx: keyof TowerFx; on: boolean }
   | { e: 'wall'; amount: number; total: number }
@@ -300,8 +311,9 @@ export type GameEvent =
   | { e: 'hurt'; amount: number; integrity: number }
   | { e: 'gold'; amount: number }
   | { e: 'burn'; card: Card }
-  | { e: 'siren'; card: Card | null; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'ruin' | 'sobrecarga' | 'joker' | 'clean' | 'huelga' | 'empty'; /** V27: lo dio el trono más fuerte por un Mazo agotado, no el palo de la carta. */ cerco?: true; /** V30: nivel de Asedio final que llevaba ese Ataque (si lo había). */ asedio?: number }
-  /** Mazo agotado: el Descarte se barajó. `sube`: niveles de Asedio final que sumó (0 si salió gratis: entonces tampoco hay cerco); `asedio`: el nivel que queda. */
+  /** El Contraataque del enemigo activo. `tower` es null si no lo hubo (`reason`: Golpe exacto, Motín o carta que lo anula). `asedio`: cuánto del Ataque era Furia. */
+  | { e: 'siren'; tower: Suit | null; threat: number; blocked: number; taken: number; integrity: number; wall: number; reason: 'strike' | 'sobrecarga' | 'clean' | 'huelga'; asedio?: number }
+  /** Mazo agotado: el Descarte se barajó. `sube`: Furia que sumó (0 si salió gratis); `asedio`: la Furia que queda. */
   | { e: 'collapse'; sube: number; asedio: number }
   | { e: 'draw'; player: string; count: number; cards?: Card[] }
   | { e: 'turn'; player: string }
@@ -365,7 +377,6 @@ export function createGame(players: { id: string; name: string }[], seed: number
     turnCount: 0,
     collapses: 0,
     phase: 'playing',
-    lastSiren: null,
     tools: [],
     chain: 0,
     charge: 0,
@@ -406,7 +417,23 @@ export function vecinosPresentes(towers: Record<Suit, Tower>, target: Suit): Sui
   const i = fila.indexOf(target);
   return [fila[i - 1], fila[i + 1]].filter((s): s is Suit => s !== undefined);
 }
-export const floorHp = (t: Tower, cfg: Config): number => cfg.floorHp[t.floors[0]];
+/** V35 · El orden de las Casas del asalto. */
+export const ordenDe = (cfg: Config): readonly Suit[] => cfg.orden ?? SUITS;
+
+/** V35 · El enemigo activo: la primera Casa en pie. Solo a ella se la golpea y solo ella contraataca; las demás esperan. */
+export function activo(env: { config: Config; towers: Record<Suit, Tower> }): Tower | null {
+  for (const s of ordenDe(env.config)) if (standing(env.towers[s])) return env.towers[s];
+  return null;
+}
+
+/** V35 · ¿El guardia al frente de este trono es el monarca del asalto? (el último de su Casa) */
+export const esJefe = (cfg: Config, t: Tower | null): boolean => !!t && !!cfg.jefe && cfg.jefe.suit === t.suit && t.floors.length === 1;
+
+/** Vida del guardia al frente de un trono. La del monarca va multiplicada y redondeada a 5. */
+export const floorHp = (t: Tower, cfg: Config): number => {
+  const hp = cfg.floorHp[t.floors[0]];
+  return esJefe(cfg, t) ? Math.max(5, Math.round((hp * cfg.jefe!.vida) / 5) * 5) : hp;
+};
 
 /** Etiqueta en mesa del decreto «inestable» (cada guardia abatido sin Golpe exacto te cuesta Vida). */
 export const CRUMBLE_LABEL = 'Arena rápida';
@@ -422,9 +449,17 @@ export interface StrikeEnv {
   integrity: number;
   wall: number;
   fatigue?: number;
+  /** V35 · La cara del dado del Tahúr este turno. */
+  dado?: number;
 }
 
-/** Ataque de un trono ahora mismo: el de su guardia más el Asedio final. */
+/** V35 · Vida que le queda a un trono entero: la de todos sus guardias (la del monarca, multiplicada) menos el daño del que está al frente. */
+export function vidaTotal(t: Tower, cfg: Config): number {
+  const n = t.floors.length;
+  return t.floors.reduce((a, r, i) => a + (cfg.jefe && cfg.jefe.suit === t.suit && i === n - 1 ? Math.max(5, Math.round((cfg.floorHp[r] * cfg.jefe.vida) / 5) * 5) : cfg.floorHp[r]), 0) - (n ? t.damage : 0);
+}
+
+/** Ataque de un trono ahora mismo: el de su guardia más la Furia del asalto. */
 export function threatOf(env: { config: Config; fatigue?: number }, t: Tower): number {
   if (!t.floors.length) return 0;
   return env.config.floorThreat[t.floors[0]] + (env.fatigue ?? 0);
@@ -479,7 +514,8 @@ export interface Outcome {
   /** Pisos derribados (en cualquier torre). */
   fallen: number;
   clean: boolean;
-  fell: { tower: Suit; rank: number; clean: boolean }[];
+  /** `exec`: cayó por ejecución (rasgo Verdugo), sin que el Daño llegara a su Vida. */
+  fell: { tower: Suit; rank: number; clean: boolean; exec?: true }[];
 }
 
 export interface StrikeResult extends Outcome {
@@ -504,7 +540,7 @@ interface Tally {
   events: GameEvent[];
   dealt: Partial<Record<Suit, number>>;
   fallenBy: Partial<Record<Suit, number>>;
-  fell: { tower: Suit; rank: number; clean: boolean }[];
+  fell: { tower: Suit; rank: number; clean: boolean; exec?: true }[];
 }
 
 /** Deja un estado en un trono en pie (si no lo tiene ya y la mesa lo permite) y lo anuncia. */
@@ -520,17 +556,20 @@ function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean,
   out.dealt[t.suit] = (out.dealt[t.suit] ?? 0) + amount;
   t.damage += amount;
   out.events.push({ e: 'hit', tower: t.suit, amount, splash, damage: t.damage, hp: floorHp(t, cfg) });
-  while (standing(t) && t.damage >= floorHp(t, cfg) - tol) {
+  // V35 · ejecución (rasgo Verdugo): también cae el que queda con `ejecuta` de su Vida o menos
+  const rematable = (hp: number) => !!cfg.ejecuta && hp - t.damage <= Math.floor(hp * cfg.ejecuta);
+  while (standing(t) && (t.damage >= floorHp(t, cfg) - tol || rematable(floorHp(t, cfg)))) {
     const hp = floorHp(t, cfg);
-    // exacto a ±cleanTol; por arriba, también hasta cleanTol + cleanOver (Buen ojo)
-    const clean = t.damage - hp >= -tol && t.damage - hp <= tol + (cfg.cleanOver ?? 0);
-    const excess = clean ? 0 : t.damage - hp;
+    const exec = t.damage < hp - tol;
+    // exacto a ±cleanTol; por arriba, también hasta cleanTol + cleanOver (Buen ojo). Una ejecución lo es si el rasgo lo dice
+    const clean = exec ? !!cfg.ejecutaExacta : t.damage - hp >= -tol && t.damage - hp <= tol + (cfg.cleanOver ?? 0);
+    const excess = clean || exec ? 0 : t.damage - hp;
     const rank = t.floors.shift()!;
     out.fallenBy[t.suit] = (out.fallenBy[t.suit] ?? 0) + 1;
-    out.fell.push({ tower: t.suit, rank, clean });
+    out.fell.push({ tower: t.suit, rank, clean, ...(exec ? { exec: true as const } : {}) });
     t.fx = {};
     t.damage = pierce && standing(t) ? excess : 0;
-    out.events.push({ e: 'floorDown', tower: t.suit, rank, clean, towerDown: !standing(t), damage: t.damage });
+    out.events.push({ e: 'floorDown', tower: t.suit, rank, clean, towerDown: !standing(t), damage: t.damage, ...(exec ? { exec: true as const } : {}) });
   }
 }
 
@@ -608,7 +647,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   x.res = base.r;
   emit({ df: x.fuerza, dr: x.res - 1 });
 
-  // 2 · lo que arrastra la mesa: Racha de Golpes exactos, Daño cargado y Asedio final
+  // 2 · lo que arrastra la mesa: Racha de Golpes exactos y Daño cargado
   if (env.chain > 0) {
     cur = { src: 'chain', id: 'onda', label: 'Racha' };
     x.R(BALANCE.golpe.racha * env.chain);
@@ -617,10 +656,6 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     cur = { src: 'state', id: 'carga', label: 'Carga' };
     x.F(env.charge);
     env.charge = 0;
-  }
-  if ((env.fatigue ?? 0) > 0) {
-    cur = { src: 'state', id: 'fatiga', label: 'Asedio final' };
-    x.F((cfg.fatigueDano ?? BALANCE.asedio.dano) * env.fatigue!);
   }
 
   // 3 · las cartas, de izquierda a derecha
@@ -716,7 +751,11 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     def.strike?.(x, t);
   });
 
-  // 5 bis · V31: ahora sí, los multiplicadores de Multi, sobre todo el Multi ya sumado
+  // 5 bis · V35: los rasgos de build (bonos de 2, 4 y 6 Reliquias del mismo rasgo)
+  const marca = (r: { id: string; name: string }) => void (cur = { src: 'state', id: `rasgo-${r.id}`, label: r.name });
+  rasgosStrike(x, marca);
+
+  // 5 ter · V31: ahora sí, los multiplicadores de Multi, sobre todo el Multi ya sumado
   for (const m of porMultiplicar) {
     cur = m.cur;
     x.res *= m.n;
@@ -765,6 +804,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     cur = { src: 'tool', id: t.id, slot, label: def.name };
     def.after(x, t, seen);
   });
+  rasgosAfter(x, seen, marca);
   for (const e of x.extra) {
     const t = env.towers[e.tower];
     if (standing(t)) applyDamage(t, Math.ceil(floorHp(t, cfg) * e.pct), false, true, cfg, tally);
@@ -894,29 +934,22 @@ function destroy(turn: Turn, card: Card): boolean {
   return true;
 }
 
-/** V27 · Niveles de Asedio final que deben los Mazos agotados de este asalto (los gratis no cuentan). */
+/** V35 · Furia que deben los Mazos agotados de este asalto (los gratis no cuentan). */
 export function deckSiege(env: { config: Config; collapses: number }): number {
   return Math.max(0, env.collapses - (env.config.collapseFree ?? 0)) * env.config.collapseSiege;
 }
 
-/** Niveles de Asedio final que subirá el próximo Mazo agotado (0 si sale gratis). Ya no quita Vida. */
+/** Furia que subirá el próximo Mazo agotado (0 si sale gratis). Barajar no quita Vida. */
 export function nextCollapse(env: { config: Config; collapses: number }): number {
   return deckSiege({ config: env.config, collapses: env.collapses + 1 }) - deckSiege(env);
 }
 
-/** Nivel de Asedio final: el que toca por turno más el de los Mazos agotados. */
-export function siegeLevel(env: { config: Config; collapses: number; turnCount: number }): number {
-  return fatigueAt(env.config, env.turnCount) + deckSiege(env);
-}
-
-/** El trono en pie con más Ataque (a igualdad, el primero en el orden de los palos); null si no queda ninguno. */
-export function strongest(env: { config: Config; fatigue?: number; towers: Record<Suit, Tower> }): Tower | null {
-  let best: Tower | null = null;
-  for (const s of SUITS) {
-    const t = env.towers[s];
-    if (standing(t) && (!best || threatOf(env, t) > threatOf(env, best))) best = t;
-  }
-  return best;
+/**
+ * V35 · La Furia del asalto: Ataque de más de todos sus enemigos. Suma la inicial (decreto), la de los Mazos agotados,
+ * la Furia del Rey (un punto por cada turno que el monarca lleva de enemigo activo) y, en la partida clásica, el reloj.
+ */
+export function siegeLevel(env: { config: Config; collapses: number; turnCount: number; furiaRey?: number }): number {
+  return (env.config.furiaInicial ?? 0) + fatigueAt(env.config, env.turnCount) + deckSiege(env) + (env.furiaRey ?? 0);
 }
 
 function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
@@ -926,12 +959,9 @@ function reshuffleIfNeeded(state: GameState, events: GameEvent[]): void {
   shuffle(state.deck, state);
   const sube = nextCollapse(state);
   state.collapses++;
-  // V27: barajar el Descarte no quita Vida; sube el Asedio final, a la vista en cada trono
+  // barajar el Descarte no quita Vida: sube la Furia, a la vista en el ⚔ del enemigo
   events.push({ e: 'collapse', sube, asedio: siegeLevel(state) });
   if (sube > 0) {
-    // …y el siguiente Contraataque lo da el trono en pie con más Ataque, salga el palo que salga: un asalto no se
-    // puede estirar sin fin barajando (antes lo impedía la Vida que quitaba cada Mazo agotado)
-    state.cerco = true;
     state.fatigue = siegeLevel(state);
     events.push({ e: 'fatigue', level: state.fatigue });
   }
@@ -946,31 +976,25 @@ type SirenReason = Extract<GameEvent, { e: 'siren' }>['reason'];
 
 function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   const { state, events } = turn;
-  const say = (card: Card | null, tower: Suit | null, reason: SirenReason): void => {
-    events.push({ e: 'siren', card, tower, blocked: 0, taken: 0, threat: 0, integrity: state.integrity, wall: state.wall, reason });
+  const say = (tower: Suit | null, reason: SirenReason): void => {
+    events.push({ e: 'siren', tower, blocked: 0, taken: 0, threat: 0, integrity: state.integrity, wall: state.wall, reason });
   };
-  if (skip) return say(null, null, skip);
-  const card = drawOne(state, events);
-  if (!card) return say(null, null, 'empty');
-  state.discard.push(card);
-  state.lastSiren = card;
-  // V27 · el cerco: tras un Mazo agotado, este Contraataque lo da el trono en pie con más Ataque
-  const cerco = state.cerco ? strongest(state) : null;
-  state.cerco = false;
-  if (!cerco && card.suit === 'X') return say(card, null, 'joker');
-  const t = cerco ?? state.towers[card.suit as Suit];
-  if (!standing(t)) return say(card, t.suit, 'ruin');
+  if (skip) return say(null, skip);
+  // V35 · contraataca el enemigo activo (ya no se voltea una carta del Mazo para ver qué trono ataca)
+  const t = activo(state);
+  if (!t) return say(null, 'huelga');
   if (t.fx.sobrecarga) {
     t.fx.sobrecarga = false;
     events.push({ e: 'state', tower: t.suit, fx: 'sobrecarga', on: false });
-    return say(card, t.suit, 'sobrecarga');
+    return say(t.suit, 'sobrecarga');
   }
   const threat = threatOf(state, t);
   const blocked = Math.min(state.wall, threat);
   state.wall -= blocked;
   const taken = threat - blocked;
   state.integrity -= taken;
-  events.push({ e: 'siren', card, tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike', ...(cerco ? { cerco: true as const } : {}), ...((state.fatigue ?? 0) > 0 ? { asedio: state.fatigue } : {}) });
+  const furia = Math.min(threat, state.fatigue ?? 0);
+  events.push({ e: 'siren', tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike', ...(furia > 0 ? { asedio: furia } : {}) });
   state.tools.forEach((tool, slot) => TOOL[tool.id]?.siren?.(hookFor(turn, slot), tool, { tower: t.suit, threat, blocked, taken }));
 }
 
@@ -1046,6 +1070,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     if (!formation) throw new RuleError('Formación inválida: carta sola, grupo, doble par, full, póker, escalera o color.');
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Ese trono ya cayó.');
+    if (tower !== activo(state)) throw new RuleError('Solo puedes golpear al enemigo que tienes delante.');
     spend(p, action.cards);
     events.push({ e: 'play', player: p.id, cards, target: action.target, formation });
     const res = strike(state, cards, action.target, state);
@@ -1106,6 +1131,7 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
     if (card.suit !== 'X' || card.sp) throw new RuleError('Esa carta no es un Comodín.');
     const tower = state.towers[action.target];
     if (!tower || !standing(tower)) throw new RuleError('Ese trono ya cayó.');
+    if (tower !== activo(state)) throw new RuleError('Solo puedes golpear al enemigo que tienes delante.');
     spend(p, [card.id]);
     state.exhausted.push(card); // el comodín no vuelve esta obra
     skip = 'huelga';
@@ -1135,13 +1161,22 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   state.turn = (state.turn + 1) % state.players.length;
   state.turnCount++;
   state.stashed = false;
+  // V35 · Furia del Rey: cada turno que el monarca sigue de enemigo activo (ya lo era al empezar el turno), la Furia sube
+  if (state.config.jefe && esJefe(prev.config, activo(prev)) && esJefe(state.config, activo(state))) state.furiaRey = (state.furiaRey ?? 0) + state.config.jefe.furia;
   const fatigue = siegeLevel(state);
   if (fatigue !== (state.fatigue ?? 0)) {
     state.fatigue = fatigue;
     events.push({ e: 'fatigue', level: fatigue });
   }
+  tiraDado(state);
   events.push({ e: 'turn', player: currentPlayer(state).id });
   return { state, events };
+}
+
+/** V35 · Tira el dado del Tahúr para el turno que empieza (solo con el rasgo activo: sin él no se gasta azar). */
+export function tiraDado(state: GameState): void {
+  if (nivelesDe(state.tools).tahur > 0) state.dado = 1 + Math.floor(nextRandom(state) * 6);
+  else delete state.dado;
 }
 
 /**
@@ -1172,16 +1207,15 @@ export interface PlayerView extends StrikeEnv {
   /** Tizas de replanteo que quedan, y si hay una jugada que deshacer. */
   chalk: number;
   canUndo: boolean;
-  /** Nivel de fatiga de cimientos de la obra. */
+  /** La Furia del asalto. */
   fatigue: number;
   deckCount: number;
   discardCount: number;
-  lastSiren: Card | null;
   turnPlayer: string;
   turnCount: number;
   collapses: number;
-  /** V27 · el cerco está echado: el siguiente Contraataque lo da el trono en pie con más Ataque. */
-  cerco: boolean;
+  /** V35 · Lo que la Furia debe a los turnos del monarca (la «Furia del Rey»). */
+  furiaRey: number;
   phase: Phase;
   /** Lo que aún no has visto (cantera y manos ajenas), ordenado: no revela el orden de robo. */
   unseen: Card[];
@@ -1213,11 +1247,11 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     wall: state.wall,
     deckCount: state.deck.length,
     discardCount: state.discard.length,
-    lastSiren: state.lastSiren,
     turnPlayer: currentPlayer(state).id,
     turnCount: state.turnCount,
     collapses: state.collapses,
-    cerco: !!state.cerco,
+    furiaRey: state.furiaRey ?? 0,
+    ...(state.dado ? { dado: state.dado } : {}),
     phase: state.phase,
     unseen: sortCards([...state.deck, ...state.players.filter((p) => p.id !== playerId).flatMap((p) => [...p.hand, ...p.reserve])]),
     discard: sortCards(state.discard),

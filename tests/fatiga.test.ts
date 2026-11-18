@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { chooseAction } from '../src/rules/bot';
-import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameState, applyAction, createGame, currentPlayer, fatigueAt, newTowers, previewStrike, strike, threatOf, viewFor } from '../src/rules/engine';
-import { BOSS, FATIGUE, STAGES, newRun, stageConfig } from '../src/rules/run';
+import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameState, applyAction, createGame, currentPlayer, esJefe, fatigueAt, floorHp, newTowers, previewStrike, strike, threatOf, viewFor } from '../src/rules/engine';
+import { BOSS, FURIA, STAGES, newRun, stageConfig } from '../src/rules/run';
 import { SPECIAL } from '../src/rules/specials';
 import { TOOL, TOOLS } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
@@ -21,12 +21,12 @@ describe('fatiga de cimientos', () => {
     expect(fatigueAt(cfgWith(), 99)).toBe(0);
   });
 
-  it('acelera el asalto en los dos sentidos: más Daño para ti y más Ataque para el Contraataque', () => {
-    const cfg = cfgWith({ fatigueStart: 8, fatigueEvery: 2, fatigueDano: 4 });
+  it('V35 · la Furia solo sube el Ataque de los enemigos: tus golpes no cambian', () => {
+    const cfg = cfgWith({ fatigueStart: 8, fatigueEvery: 2 });
     const fresh = table(cfg);
     const tired = table(cfg, [], { fatigue: 3 });
     const hit = [card('S5')];
-    expect(previewStrike(tired, hit, 'D').fuerza).toBe(previewStrike(fresh, hit, 'D').fuerza + 12);
+    expect(previewStrike(tired, hit, 'D').fuerza).toBe(previewStrike(fresh, hit, 'D').fuerza);
     expect(previewStrike(tired, hit, 'D').res).toBe(previewStrike(fresh, hit, 'D').res);
     expect(threatOf(tired, tired.towers.S)).toBe(threatOf(fresh, fresh.towers.S) + 3);
   });
@@ -45,10 +45,35 @@ describe('fatiga de cimientos', () => {
     expect(viewFor(state, 'a').fatigue).toBe(state.fatigue);
   });
 
-  it('en campaña empieza en el turno previsto; la partida clásica la tiene más tarde y la guiada no la tiene', () => {
-    expect(stageConfig(newRun({}, 3), 1).fatigueStart).toBe(FATIGUE.start);
-    expect(DIFFICULTY.obra.fatigueStart!).toBeGreaterThan(FATIGUE.start * 2);
+  it('V35 · la campaña no tiene reloj de turnos (Furia por Mazo agotado y por turnos del monarca); la clásica lo conserva', () => {
+    const cfg = stageConfig(newRun({}, 3), 1);
+    expect(cfg.fatigueStart).toBeUndefined();
+    expect(cfg.collapseSiege).toBe(FURIA.mazo);
+    expect(DIFFICULTY.obra.fatigueStart!).toBeGreaterThan(20);
     expect(DEFAULT_CONFIG.fatigueStart).toBeUndefined();
+  });
+
+  it('V35 · Furia del Rey: cada turno que el monarca sigue de enemigo activo, la Furia sube; su Vida va multiplicada', () => {
+    const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 1, 12: 1, 13: 2 }, jefe: { suit: 'S', vida: 2, furia: 1 } });
+    const s = table(cfg, [], { integrity: 20 });
+    // PICAS es la Casa activa y le queda un solo guardia (el Rey): es el monarca
+    s.towers.S.floors = [13];
+    expect(esJefe(cfg, s.towers.S)).toBe(true);
+    expect(floorHp(s.towers.S, cfg)).toBe(1800);
+    expect(esJefe(cfg, s.towers.D)).toBe(false);
+    s.players[0].hand = [card('H2'), card('H3'), card('H4')];
+    const uno = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
+    expect(uno.state.furiaRey).toBe(1);
+    expect(uno.state.fatigue).toBe(1);
+    expect(uno.events.some((e) => e.e === 'fatigue' && e.level === 1)).toBe(true);
+    const dos = applyAction(uno.state, 'a', { type: 'discard', cards: ['H3'] });
+    expect(dos.state.fatigue).toBe(2);
+    // el segundo Contraataque ya lleva la Furia del primero: 2 del Rey + 1
+    expect(dos.events.find((e) => e.e === 'siren')).toMatchObject({ tower: 'S', threat: 3, asedio: 1 });
+    // contra un guardia que no es el monarca la Furia no sube sola
+    const guardia = table(cfg, [], { integrity: 20 });
+    guardia.players[0].hand = [card('H2'), card('H3')];
+    expect(applyAction(guardia, 'a', { type: 'discard', cards: ['H2'] }).state.fatigue).toBe(0);
   });
 
   // V11-C: los asaltos 1–3 enseñan (Ataque bajo) y la dureza llega en el 4 y el 5; la Vida ya no se mantiene baja,
@@ -88,21 +113,19 @@ describe('aguante: la defensa se cobra en daño', () => {
     const play = (wall: number) => {
       const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 } });
       const s = table(cfg, ['contragolpe'], { wall });
-      // la sirena saca un trébol: golpea la torre de hormigón (amenaza 3 con una J)
-      s.deck = [card('C9'), ...s.deck.filter((c) => c.id !== 'C9')];
+      // contraataca el enemigo activo: la Sota de PICAS (Ataque 3)
       s.players[0].hand = [card('S2'), card('S3')];
       const out = applyAction(s, 'a', { type: 'discard', cards: ['S2'] }).state;
-      return out.towers.C.damage;
+      return out.towers.S.damage;
     };
     expect(play(5)).toBe(9);
     expect(play(1)).toBe(0);
   });
 
   it('Rebosadero: el muro que sobra repara, y lo que sobra de reparar carga Fuerza', () => {
-    const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 } });
+    // guardias que no pegan: lo que se mide es lo que rebosa
+    const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 0, 12: 0, 13: 0 } });
     const s = table(cfg, ['rebosadero'], { wall: cfg.wallCap - 1, integrity: cfg.maxIntegrity - 1 });
-    s.deck = [card('X0'), ...s.deck]; // sirena muda: un comodín
-    s.deck[0] = { id: 'X1', suit: 'X', rank: 0 };
     s.players[0].hand = [card('C8'), card('C9'), card('C10')];
     // escalera de tréboles: tres ♣, +6 de Escudo; cabe 1 y sobran 5 → cura 2; cabe 1 y sobra 1 → +3 de Daño cargado
     const out = applyAction(s, 'a', { type: 'attack', cards: ['C8', 'C9', 'C10'], target: 'S' }).state;
@@ -130,11 +153,9 @@ describe('jefes de la 4.0', () => {
     expect(s.towers.C.fx).toEqual({});
   });
 
-  it('El Topo: cada piso que cae sin golpe limpio le cuesta al búnker, y su fatiga llega antes', () => {
+  it('El Relojero: cada guardia abatido sin Golpe exacto te quita Vida, y el asalto empieza con Furia', () => {
     const cfg = boss('inestable');
-    cfg.fatigueStart = 8;
-    BOSS.inestable.apply(cfg);
-    expect(cfg.fatigueStart).toBe(8 - BALANCE.monarcas.inestable.antes);
+    expect(cfg.furiaInicial).toBe(BALANCE.monarcas.inestable.furia);
     const s = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
     const rough = strike(s, [card('C10'), card('H10')], 'D'); // pareja sin picas: tira la J con daño de sobra y no perfora
     expect(rough.fallen).toBeGreaterThan(0);

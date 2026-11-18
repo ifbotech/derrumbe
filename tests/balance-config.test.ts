@@ -48,19 +48,22 @@ describe('balance-config.json: esquema y rangos', () => {
     for (const k of ['maxIntegrity', 'wallCap', 'collapseSiege', 'escudoPorCarta', 'curaPorCarta', 'salpicaPorCarta'] as const) expect(RAW.mesa[k], k).toBeGreaterThanOrEqual(1);
     for (const k of ['escudoPorCarta', 'curaPorCarta', 'salpicaPorCarta'] as const) expect(ent(RAW.mesa[k]), k).toBe(true);
     expect(RAW.clasica.brutal.maxIntegrity).toBeGreaterThan(0);
-    expect(RAW.clasica.brutal.collapseSiege).toBeGreaterThan(RAW.mesa.collapseSiege);
+    expect(RAW.clasica.brutal.collapseSiege).toBeGreaterThan(RAW.clasica.obra.collapseSiege);
   });
 
-  it('cuadrilla, Reinados, Asedio final, Puertas selladas y Anillo de sello', () => {
+  it('cuadrilla, Reinados, Furia, Puertas selladas y Anillo de sello', () => {
     expect(RAW.cuadrilla).toHaveLength(4);
     expect(RAW.cuadrilla[0]).toBe(1);
     for (let i = 1; i < 4; i++) expect(RAW.cuadrilla[i]).toBeGreaterThanOrEqual(RAW.cuadrilla[i - 1]);
     expect(RAW.reinados.corazas).toBeGreaterThanOrEqual(1);
     for (const k of ['impuesto', 'reyColerico', 'heridasViejas', 'guardiaNoche'] as const) expect(ent(RAW.reinados[k]) && RAW.reinados[k] >= 0, k).toBe(true);
-    expect(ent(RAW.asedio.start) && RAW.asedio.start >= 1).toBe(true);
-    expect(ent(RAW.asedio.every) && RAW.asedio.every >= 1).toBe(true);
-    expect(ent(RAW.asedio.dano) && RAW.asedio.dano >= 1).toBe(true);
-    expect(ent(RAW.clasica.obra.fatigueDano) && RAW.clasica.obra.fatigueDano >= 1).toBe(true);
+    expect(ent(RAW.furia.mazo) && RAW.furia.mazo >= 1).toBe(true);
+    expect(ent(RAW.furia.rey) && RAW.furia.rey >= 1).toBe(true);
+    expect(RAW.furia.jefeVida).toBeGreaterThan(1);
+    // V35 · los bonos de los cinco rasgos: enteros y positivos (los multiplicadores, de 2 en adelante)
+    for (const [rasgo, cifras] of Object.entries(RAW.rasgos)) for (const [k, v] of Object.entries(cifras)) expect(ent(v) && v >= (k === 'x' ? 2 : 1), `${rasgo}.${k}`).toBe(true);
+    expect(RAW.rasgos.verdugo.pct2).toBeGreaterThan(RAW.rasgos.verdugo.pct);
+    expect(RAW.rasgos.bastion.dano2).toBeGreaterThan(RAW.rasgos.bastion.dano);
     expect(RAW.reinados.reyesAcorazados).toBeGreaterThan(1);
     for (const s of RAW.clausura.stages) expect(ent(s) && s >= 1 && s <= 8).toBe(true);
     expect(RAW.clausura.threat).toBeGreaterThanOrEqual(1);
@@ -74,7 +77,7 @@ describe('balance-config.json: esquema y rangos', () => {
     expect(m.doble.ataque).toBeLessThan(1);
     expect(m.escasez.cartas).toBeGreaterThanOrEqual(1);
     expect(m.intemperie.escudoTope).toBeGreaterThanOrEqual(1);
-    for (const v of [m.furia.ataque, m.inestable.antes, m.inestable.vida]) expect(ent(v) && v >= 1).toBe(true);
+    for (const v of [m.furia.ataque, m.inestable.furia, m.inestable.vida]) expect(ent(v) && v >= 1).toBe(true);
   });
 
   it('La Taberna, el cobro y la Orden: precios ≥ 0, enteros; pesos > 0', () => {
@@ -165,7 +168,7 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
   it('las tablas del motor son las del archivo', async () => {
     const { B, engine, run, tools, specials } = await patched();
     expect(run.STAGES.map((s) => [s.hp, s.threat])).toEqual(B.asaltos.map((s) => [s.hp, s.threat]));
-    expect(run.FATIGUE).toEqual(B.asedio);
+    expect(run.FURIA).toEqual(B.furia);
     expect(run.TIMBRE).toEqual(B.timbre);
     expect(run.CLAUSURA).toEqual(B.clausura);
     expect(engine.FORM).toEqual(B.formaciones);
@@ -207,7 +210,8 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const r5 = (x: number) => Math.max(5, Math.round(x / 5) * 5);
     expect(c.floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[0])));
     expect(c.floorThreat[11]).toBe(B.mesa.floorThreat[11] + B.asaltos[0].threat);
-    expect(c.fatigueStart).toBe(Math.round(B.asedio.start * B.cuadrilla[0]));
+    expect(c.fatigueStart).toBeUndefined();
+    expect(c.collapseSiege).toBe(B.furia.mazo);
     expect(run.stageConfig(r, 2).floorHp[11]).toBe(r5(B.mesa.floorHp[11] * (B.asaltos[0].hp * 1 * B.cuadrilla[1])));
     const a = run.newRun({ ascension: 6 }, 5);
     const ca = run.stageConfig(a, 1);
@@ -237,9 +241,9 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(inq.noFx).toBe('sobrecarga');
     // V11-C: el Inquisidor solo quita los estados (sin Ataque extra)
     expect(inq.floorThreat[11]).toBe(B.mesa.floorThreat[11]);
-    const rel = { ...base(), fatigueStart: 20 };
+    const rel = base();
     run.BOSS.inestable.apply(rel);
-    expect(rel.fatigueStart).toBe(20 - B.monarcas.inestable.antes);
+    expect(rel.furiaInicial).toBe(B.monarcas.inestable.furia);
     expect(rel.crumbleHurt).toBe(B.monarcas.inestable.vida);
   });
 

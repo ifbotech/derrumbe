@@ -16,12 +16,13 @@ export const OBJETIVOS = {
   monarcas: { ratio: [0.8, 1.3], enfrentados: 150 },
   /** Turnos por asalto: hasta qué asalto vale cada tramo, rango de la mediana y tope del percentil 95. */
   ritmo: [
-    { hasta: 1, mediana: [4, 6], p95: 9 },
-    { hasta: 3, mediana: [7, 10], p95: 13 },
-    { hasta: Infinity, mediana: [9, 12], p95: 15 },
+    // V35 · duelo Casa por Casa: los enemigos van en fila (2, 6, 8, 12 y 12) y el monarca cierra los asaltos 2, 4 y 5
+    { hasta: 1, mediana: [3, 5], p95: 8 },
+    { hasta: 3, mediana: [7, 11], p95: 16 },
+    { hasta: Infinity, mediana: [8, 12], p95: 19 },
   ],
   /** Peor percentil 95 de los cinco asaltos, en cada baraja. */
-  ritmoBaraja: 15,
+  ritmoBaraja: 19,
   /** Campañas que mueren en el asalto 1 (Reinado 1, Árbol vacío), en %: el asalto de dos tronos enseña, no mata. */
   muertesAsalto1: 8,
   /**

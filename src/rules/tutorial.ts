@@ -2,16 +2,16 @@
 // el poder de un palo, el trono Inmune, La Manga, la cuenta Daño × Multi = Golpe y el Golpe exacto.
 // Corre entera en el cliente con el mismo motor; tests/tutorial.test.ts la juega de principio a fin.
 //
-// Dos tronos, como el asalto 1 de la campaña: PICAS (una Sota) y CORAZONES (un Rey y detrás una Reina).
-// DIAMANTES y TRÉBOLES no están en esta mesa. El guion, siguiendo el foco (5 acciones; la última gana):
+// Dos Casas, como el asalto 1 de la campaña: PICAS (una Sota) y, detrás, CORAZONES (un Rey y una Reina).
+// DIAMANTES y TRÉBOLES no están en esta mesa. V35: se combate a un enemigo cada vez (primero la Sota de PICAS) y en
+// la partida guiada nadie contraataca (`sirenCount: 0`): no se puede perder. El guion (5 acciones; la última gana):
 //   1 · palo    6♣ a PICAS (Sota, Vida 13): 6 × 1 = 6, queda en 7; los ♣ dan +2 de Escudo.
-//   2 · inmune  8♥ a PICAS: 8 × 1 = 8, cae la Sota y PICAS cae. Los ♥ no harían nada a CORAZONES.
+//   2 · inmune  8♥ a PICAS: 8 × 1 = 8, cae la Sota y PICAS cae. Un ♠ no le haría nada: PICAS es Inmune a su palo.
 //   3 · manga   el 9♦ a La Manga (no gasta el turno).
 //   4 · cuenta  pareja 7♦ 7♣ a CORAZONES (Rey, Vida 20): (2 + 14) × 2 = 32, cae el Rey; +2 de Escudo.
 //               Los ♦ salpican a otro trono en pie, y no queda ninguno (con un ♠ el sobrante Perforaría).
 //   5 · exacto  el 9♦ de La Manga a CORAZONES (Reina, Vida 9): 9 × 1 = 9 justos. Golpe exacto y victoria.
-// Los Contraataques del guion sacan palos de tronos ausentes o caídos: no hacen nada. Fuera del guion la
-// mesa tampoco aprieta: Ataque 1 o 2 contra 20 de Vida.
+// Fuera del guion la mesa tampoco aprieta: no hay Contraataques.
 import { Action, Card, Config, DEFAULT_CONFIG, GameEvent, GameState, PlayerView, Suit, multiplier, newTowers, standing } from './engine';
 
 export const TUTORIAL_PLAYER = 'tu';
@@ -21,12 +21,14 @@ export const TUTORIAL_CONFIG: Config = {
   floorHp: { 11: 13, 12: 9, 13: 20 },
   floorThreat: { 11: 1, 12: 1, 13: 2 },
   reserveSize: 1,
+  // en la partida guiada nadie contraataca
+  sirenCount: 0,
 };
 
 const card = (id: string): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0 } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)) });
 
 const HAND = ['C6', 'H8', 'D9', 'D7', 'C7', 'H2', 'S3'];
-/** Orden del Mazo. Los tres Contraataques del guion (posiciones 0, 2 y 4) sacan ♣, ♠ y ♦: tronos ausentes o ya caídos. */
+/** Orden del Mazo (de aquí se roba para reponer la mano). */
 const DECK = ['C2', 'H3', 'S2', 'D2', 'D3', 'C3', 'S4', 'H4', 'C4', 'D4', 'S5', 'H5', 'C5', 'D5', 'S6', 'H6', 'D6', 'H7', 'S7', 'S8', 'C8', 'D8', 'S9', 'H9', 'C9', 'S10', 'H10', 'C10', 'D10', 'X1', 'S1', 'H1', 'C1', 'D1', 'X2'];
 /** Los dos tronos de la mesa: una Sota (13 de Vida) en PICAS; un Rey (20) y detrás una Reina (9) en CORAZONES. */
 const FLOORS: Partial<Record<Suit, number[]>> = { S: [11], H: [13, 12] };
@@ -47,7 +49,6 @@ export function createTutorial(): GameState {
     turnCount: 0,
     collapses: 0,
     phase: 'playing',
-    lastSiren: null,
     tools: [],
     chain: 0,
     charge: 0,
@@ -114,7 +115,7 @@ const line = (id: TutorialStep['id'], title: string, text: string, focus: Tutori
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
   line('palo', 'El poder del palo', 'Juega el <b>6♣</b> contra PICAS: los ♣ te dan Escudo.', 'cards', (_v, ev) => sawPower(ev), ['C6'], 'S'),
-  line('inmune', 'Trono Inmune', 'Tus ♥ no hacen nada a CORAZONES: <b>8♥</b> a PICAS.', { ui: 'inmune' }, dodgedImmune, ['H8'], 'S'),
+  line('inmune', 'Enemigo Inmune', 'PICAS es Inmune a ♠: tu 3♠ haría 0. Juega el <b>8♥</b>.', { ui: 'inmune' }, dodgedImmune, ['H8'], 'S'),
   line('manga', 'La Manga', 'Guarda el <b>9♦</b> en La Manga para después.', { ui: 'manga' }, (_v, ev) => ev.some((e) => e.e === 'stash' && !!e.card), ['D9']),
   line('cuenta', 'La cuenta', 'Pareja de <b>7</b> a CORAZONES: Daño × Multi = Golpe.', { ui: 'cuenta' }, (_v, ev) => (played(ev)?.cards.length ?? 0) >= 2 && ev.some((e) => e.e === 'impact'), ['D7', 'C7'], 'H'),
   line('exacto', 'Golpe exacto', 'El <b>9♦</b> de La Manga a CORAZONES: 9 justos.', 'target', (_v, ev) => ev.some((e) => e.e === 'floorDown' && e.clean), ['D9'], 'H'),

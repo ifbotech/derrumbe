@@ -18,9 +18,12 @@ function env(tools: string[] = [], cfg: Partial<Config> = {}): StrikeEnv {
   return { config, towers: newTowers([11, 12, 13], config), tools: tools.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
 }
 
-/** Partida de un jugador con la mano y la cima de la cantera que se pidan. */
+/**
+ * Partida de un jugador con la mano y la cima de la cantera que se pidan. V35: se combate Casa por Casa; aquí la
+ * primera es DIAMANTES (los golpes de estas pruebas van contra ♦) salvo que la prueba diga otro `orden`.
+ */
 function game(hand: Card[], top: Card[] = [], tools: string[] = [], cfg: Partial<Config> = {}): GameState {
-  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA, ...cfg };
+  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA, orden: ['D', 'S', 'H', 'C'], ...cfg };
   for (const id of tools) TOOL[id].cfg?.(config);
   const s = createGame([{ id: 'a', name: 'A' }], 1, config);
   const taken = new Set([...hand, ...top].map((c) => c.id));
@@ -362,7 +365,7 @@ describe('golpe limpio y estados de las torres', () => {
   });
 
   it('sobrecarga: la torre se salta su próximo golpe de sirena', () => {
-    const s = game(cards('S3', 'H4', 'D5', 'D2', 'D7', 'D8', 'D9'), cards('C9', 'C10'));
+    const s = game(cards('S3', 'H4', 'D5', 'D2', 'D7', 'D8', 'D9'), cards('C9', 'C10'), [], { orden: ['C', 'S', 'D', 'H'] });
     const first = applyAction(s, 'a', { type: 'attack', cards: ['S3', 'H4', 'D5'], target: 'C' });
     expect(of(first.events, 'siren')[0]).toMatchObject({ tower: 'C', reason: 'sobrecarga', taken: 0 });
     expect(first.state.integrity).toBe(20);
@@ -386,10 +389,12 @@ describe('golpe limpio y estados de las torres', () => {
 
 describe('turno: sirena, muro, descartes, huelga y colapso', () => {
   it('la sirena golpea con la amenaza del piso y el muro la absorbe', () => {
-    const s = game(cards('C9', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'), cards('H9', 'D9'));
+    const s = game(cards('C9', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'), cards('H9', 'D9'), [], { orden: ['S', 'D', 'H', 'C'] });
     const { state, events } = applyAction(s, 'a', { type: 'attack', cards: ['C9'], target: 'S' });
-    expect(state.wall).toBe(0); // 2 de Escudo (un ♣), y la Sota de ♥ ataca 3
-    expect(of(events, 'siren')[0]).toMatchObject({ tower: 'H', threat: 3, blocked: 2, taken: 1 });
+    expect(state.wall).toBe(0); // 2 de Escudo (un ♣), y contraataca el enemigo activo: la Sota de ♠, que ataca 3
+    expect(of(events, 'siren')[0]).toMatchObject({ tower: 'S', threat: 3, blocked: 2, taken: 1 });
+    // V35 · solo se golpea al enemigo activo
+    expect(() => applyAction(s, 'a', { type: 'attack', cards: ['C9'], target: 'H' })).toThrow(/enemigo que tienes delante/);
     const next = applyAction(state, 'a', { type: 'discard', cards: ['S2'] });
     expect(next.state.integrity).toBe(16);
   });
@@ -423,7 +428,7 @@ describe('turno: sirena, muro, descartes, huelga y colapso', () => {
     const s = game(cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'), cards('H9'), ['megafono']);
     const { state } = applyAction(s, 'a', { type: 'discard', cards: ['S2'] });
     expect(state.integrity).toBe(17);
-    expect(state.towers.H.damage).toBe(8);
+    expect(state.towers.D.damage).toBe(8); // contraatacó el enemigo activo (♦) y la Rosa de espinas se lo devuelve
   });
 
   it('cuando el Mazo se agota se baraja el Descarte: no quita Vida y el Asedio final sube 1 (V27)', () => {

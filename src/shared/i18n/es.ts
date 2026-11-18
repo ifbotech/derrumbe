@@ -14,7 +14,7 @@ import { KEYWORDS } from '../../rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
 import { RAIZ, RAMAS } from '../../rules/arbol';
 import { SPECIALS } from '../../rules/specials';
-import { ARCH, RARITY, TOOLS } from '../../rules/tools';
+import { ARCH, RARITY, RASGOS, TOOLS } from '../../rules/tools';
 import { TUTORIAL_STEPS, createTutorial } from '../../rules/tutorial';
 import { ES_PLANTILLAS } from '../../rules/plantillas';
 import { columna } from './ui-arte';
@@ -36,6 +36,12 @@ export function reglasEs(): Record<string, string> {
   for (const t of TOOLS) {
     o[`reliquia.${t.id}.nombre`] = t.name;
     o[`reliquia.${t.id}.desc`] = t.desc;
+  }
+  // V35 · los cinco rasgos de build y sus bonos con 2, 4 y 6 Reliquias
+  for (const r of RASGOS) {
+    o[`rasgo.${r.id}.nombre`] = r.name;
+    o[`rasgo.${r.id}.lema`] = r.lema;
+    r.bonos.forEach((b, i) => (o[`rasgo.${r.id}.bono.${i + 1}`] = b));
   }
   for (const [r, v] of Object.entries(RARITY)) o[`rareza.${r}`] = v.name;
   for (const [a, v] of Object.entries(ARCH)) o[`arquetipo.${a}`] = v;

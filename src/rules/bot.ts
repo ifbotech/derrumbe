@@ -2,10 +2,10 @@
 // Se usa para balancear las reglas por simulación y para jugar el turno de un jugador
 // desconectado en partidas online. Entiende las reliquias (las ordena), los sellos de lacre,
 // los acabados, la selección de cartas y las sinergias entre reliquias.
-import { Action, Card, Config, GameState, SUITS, StrikeEnv, Suit, Tower, cardValue, classify, currentPlayer, standing, strike, threatOf } from './engine';
+import { Action, Card, Config, GameState, SUITS, StrikeEnv, Suit, Tower, activo, cardValue, classify, currentPlayer, standing, strike, threatOf, vidaTotal } from './engine';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';
-import { RARITY, TOOL, TOOL_SLOTS } from './tools';
+import { RARITY, TOOL, TOOL_SLOTS, rasgosDe } from './tools';
 
 // ───────────────────────── La obra ─────────────────────────
 
@@ -61,12 +61,12 @@ export function formations(hand: Card[]): Card[][] {
   return out.filter((f) => classify(f)).map(arrange);
 }
 
-const remaining = (towers: Record<Suit, Tower>, cfg: Config) => SUITS.reduce((a, s) => a + towers[s].floors.reduce((b, r) => b + cfg.floorHp[r], 0) - (standing(towers[s]) ? towers[s].damage : 0), 0);
-/**
- * Daño medio que hará el próximo Contraataque. Se divide entre 4 aunque haya menos tronos en el asalto: el
- * Mazo sigue teniendo los cuatro palos, y el de un trono ausente o caído sale y no hace nada (V11).
- */
-const danger = (env: { config: Config; fatigue?: number }, towers: Record<Suit, Tower>) => SUITS.reduce((a, s) => a + (standing(towers[s]) && !towers[s].fx.sobrecarga ? threatOf(env, towers[s]) : 0), 0) / 4;
+const remaining = (towers: Record<Suit, Tower>, cfg: Config) => SUITS.reduce((a, s) => a + vidaTotal(towers[s], cfg), 0);
+/** V35 · Daño que hará el próximo Contraataque: el Ataque del enemigo activo (0 si está Aturdido o no queda nadie). */
+const danger = (env: { config: Config; fatigue?: number; towers: Record<Suit, Tower> }, towers: Record<Suit, Tower>) => {
+  const t = activo({ config: env.config, towers });
+  return t && !t.fx.sobrecarga ? threatOf(env, t) : 0;
+};
 /** Herramientas que solo rinden con cartas de un palo. */
 const SUIT_TOOL: Record<string, Suit> = { piqueta: 'S', cortavidrios: 'D', metralla: 'D', paleta: 'H', botiquin: 'H', maza: 'C', sacos: 'C' };
 /** Herramientas que cobran la defensa: con ellas el muro (o reparar de más) vale el doble. */
@@ -92,7 +92,7 @@ function evaluate(state: GameState, cards: Card[], target: Suit): number {
   if (res.clean) score += 3;
   // un trono que queda Aturdido se salta su próximo Contraataque
   const hitTower = env.towers[target];
-  if (standing(hitTower) && hitTower.fx.sobrecarga && !state.towers[target].fx.sobrecarga) score += (threatOf(state, hitTower) / 4) * 1.7 * low;
+  if (standing(hitTower) && hitTower.fx.sobrecarga && !state.towers[target].fx.sobrecarga) score += threatOf(state, hitTower) * 1.7 * low;
   // dejar Expuesto a un trono que sigue en pie: el próximo golpe contra él hace más Daño
   if (standing(hitTower) && hitTower.fx.fractura && !state.towers[target].fx.fractura) score += 1.5;
   const walled = Math.min(res.wallGain, cfg.wallCap - state.wall);
@@ -116,14 +116,13 @@ export function chooseAction(state: GameState): Action {
   const held = [...p.hand, ...p.reserve];
   if (held.length === 0) return { type: 'pass' };
 
-  const targets = SUITS.filter((s) => standing(state.towers[s]));
+  // V35 · solo se golpea al enemigo activo
+  const frente = activo(state);
+  const targets: Suit[] = frente ? [frente.suit] : [];
   const joker = held.find((c) => c.suit === 'X' && !c.sp);
-  if (joker) {
-    const armed = targets.filter((s) => !state.towers[s].fx.sobrecarga);
-    const pool = armed.length ? armed : targets;
-    const target = pool.reduce((a, b) => (state.towers[b].floors[0] > state.towers[a].floors[0] ? b : a));
-    // Úsalo cuando la torre más peligrosa es una Q o K, o si el búnker está en apuros.
-    if (state.towers[target].floors[0] >= 12 || state.integrity <= 8) return { type: 'joker', card: joker.id, target };
+  if (joker && frente && !frente.fx.sobrecarga) {
+    // el Motín, cuando el que contraataca pega fuerte (Reina, Rey o monarca) o la Vida está en apuros
+    if (frente.floors[0] >= 12 || state.integrity <= 8 || threatOf(state, frente) >= state.integrity + state.wall) return { type: 'joker', card: joker.id, target: frente.suit };
   }
 
   type Play = { score: number; cards: Card[]; target: Suit };
@@ -212,6 +211,9 @@ export function toolValue(id: string, run: Run): number {
   if (id === 'mosaico' && SUITS.filter((s) => share(s) >= 0.08).length < 3) v -= 20;
   if (id === 'hucha') v += run.stage <= 3 ? 1.5 : -1;
   if (id === 'cincel') v -= 1;
+  // V35 · rasgos: vale más la Reliquia que completa un bono de 2, 4 o 6, y algo más la que se acerca a uno
+  const mios = rasgosDe(run.tools)[def.rasgo];
+  v += [2, 4, 6].includes(mios + 1) ? 3.5 : mios >= 1 ? 1.2 : 0;
   return v;
 }
 
