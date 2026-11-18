@@ -6,7 +6,7 @@
 //   (e) P95 del tiempo de mejorJugada ≤ 30 ms en esas 500 mesas
 import { describe, expect, it } from 'vitest';
 import { arrange, chooseAction } from '../src/rules/bot';
-import { Card, GameState, SEALS, SUITS, Suit, TREATMENTS, applyAction, classify, currentPlayer, nextRandom, previewStrike, seedFrom, standing } from '../src/rules/engine';
+import { activo, Card, GameState, SEALS, SUITS, Suit, TREATMENTS, applyAction, classify, currentPlayer, nextRandom, previewStrike, seedFrom, standing } from '../src/rules/engine';
 import { REGLA_MEJOR, cartasConExacto, mejorJugada } from '../src/rules/mejor-jugada';
 import { DICCIONARIOS } from '../src/shared/i18n';
 import * as R from '../src/rules/run';
@@ -33,11 +33,11 @@ function todas(state: GameState): Jugada[] {
   for (const s of subs) {
     if (!classify(s)) continue;
     const orden = arrange(s);
-    for (const t of SUITS) {
-      if (!standing(state.towers[t])) continue;
-      const r = previewStrike(state, orden, t);
-      out.push({ cards: orden.map((c) => c.id), target: t, total: r.total, exacto: r.clean });
-    }
+    // V35 · solo se golpea al enemigo activo
+    const t = activo(state)?.suit;
+    if (!t) continue;
+    const r = previewStrike(state, orden, t);
+    out.push({ cards: orden.map((c) => c.id), target: t, total: r.total, exacto: r.clean });
   }
   return out;
 }

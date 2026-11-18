@@ -17,7 +17,7 @@ import { ES_PLANTILLAS } from './plantillas';
 type Paso = Extract<GameEvent, { e: 'step' }>;
 
 /** Prefijos de clave cuyo valor español es un nombre propio que puede ir en la cabecera de un paso. */
-const NOMBRES = /^(?:reliquia\.[^.]+\.nombre|especial\.[^.]+\.nombre|formacion\.[^.]+|sello\.[^.]+\.nombre|acabado\.[^.]+\.nombre|estado\.[^.]+\.nombre|monarca\.[^.]+\.decreto|paso\.(?:racha|carga|asedio))$/;
+const NOMBRES = /^(?:reliquia\.[^.]+\.nombre|especial\.[^.]+\.nombre|formacion\.[^.]+|sello\.[^.]+\.nombre|acabado\.[^.]+\.nombre|estado\.[^.]+\.nombre|monarca\.[^.]+\.decreto|rasgo\.[^.]+\.nombre|paso\.(?:racha|carga))$/;
 
 let nombresEs: Map<string, string> | null = null;
 /** Nombre español → clave («Broquel» → «reliquia.encofrado.nombre»). */

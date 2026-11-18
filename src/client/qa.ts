@@ -4,7 +4,7 @@
 import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
-import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, previewStrike, viewFor } from '../rules/engine';
+import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, ordenDe, previewStrike, viewFor } from '../rules/engine';
 import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
 import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../rules/tutorial';
 import { TOOLS, placeTool } from '../rules/tools';
@@ -132,14 +132,14 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   p.hand = hand;
   // un asalto ya empezado: daño, un guardia abatido, estados y algo de Escudo
   const hp = state.config.floorHp;
-  const here = SUITS.filter((s) => !state.towers[s].away);
-  const [a, b, c, d] = here;
-  state.towers[a].damage = Math.floor(hp[state.towers[a].floors[0]] * 0.72);
-  if (state.towers[b].floors.length > 1) state.towers[b].floors.shift();
-  state.towers[b].damage = Math.floor(hp[state.towers[b].floors[0]] * 0.35);
-  // los dos estados de la V11: Expuesto y Aturdido (con dos tronos, los dos en el segundo)
-  state.towers[c ?? b].fx = { fractura: true };
-  state.towers[d ?? b].fx = { ...state.towers[d ?? b].fx, sobrecarga: true };
+  // V35 · un enemigo a la vez: la Casa activa ya perdió a su Sota y su Reina va tocada; la fila, entera
+  const [a, b] = ordenDe(state.config).filter((s) => !state.towers[s].away);
+  if (state.towers[a].floors.length > 1) state.towers[a].floors.shift();
+  state.towers[a].damage = Math.floor(hp[state.towers[a].floors[0]] * 0.35);
+  // un diamante salpicó a la siguiente Casa
+  if (b) state.towers[b].damage = Math.floor(hp[state.towers[b].floors[0]] * 0.12);
+  // los dos estados de la V11: Expuesto y Aturdido, en el enemigo que tienes delante
+  state.towers[a].fx = { fractura: true, sobrecarga: true };
   state.wall = 3;
   state.integrity = 13;
   state.chain = 1;
@@ -311,8 +311,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // V11: el asalto 1 (dos tronos) y el 2 (tres tronos, con monarca): la fila se reparte entre los que hay
   'mesa-2tronos': () => mesa(false, 'pointer', 4, null, 1),
   'mesa-3tronos': () => mesa(false, 'pointer', 4, null, 2),
-  // V12: la mesa de dos tronos con el 7♠ del sello de pólvora elegido contra el otro trono: la vista previa
-  // enseña «+n» en el trono de al lado (vecinosPresentes) y la cuenta, «Pólvora +n al lado»
+  // V12: la mesa de dos tronos con el 7♠ del sello de pólvora elegido contra el enemigo activo: la vista previa
+  // enseña «+n» en la Casa de al lado (vecinosPresentes) y la cuenta, «Pólvora +n al lado»
   'mesa-polvora': async () => {
     await mesa(false, 'pointer', 4, null, 1);
     const state = S.campaign?.state;
@@ -320,8 +320,9 @@ const STATES: Record<string, () => void | Promise<void>> = {
     const siete = find(state.players[0].hand, 'S', 7);
     S.selected.splice(0, S.selected.length, ...(siete ? [siete.id] : []));
     renderInteractive();
-    const otro = SUITS.find((x) => x !== 'S' && !state.towers[x].away && state.towers[x].floors.length);
-    if (otro) apunta(otro);
+    // V35 · se golpea al enemigo activo; la pólvora salpica a la Casa que viene después
+    const frente = ordenDe(state.config).find((x) => !state.towers[x].away && state.towers[x].floors.length);
+    if (frente) apunta(frente);
   },
   // V12: el Trono infinito hondo (Trono infinito 18): Vida de los guardias de seis cifras, un Golpe de cuatro con
   // una Racha de 8 Golpes exactos y los tronos Expuestos, y 1.234 de oro: todo en notación compacta (regla «compacto»)
@@ -345,11 +346,10 @@ const STATES: Record<string, () => void | Promise<void>> = {
     S.selected.length = 0;
     renderInteractive();
   },
-  // V11: cartas del palo del trono apuntado (el trío de sietes contra PICAS): placa Inmune en el trono y,
-  // con la cuenta abierta, la línea «Inmune · 0» del 7♠
+  // V11: cartas del palo del trono apuntado (V35: el trío de sietes contra el enemigo activo, Corazones): placa
+  // Inmune en el enemigo y, con la cuenta abierta, la línea «Inmune · 0» del 7♥
   'mesa-inmune': async () => {
     await mesa();
-    apunta('S');
     const { pinReceipt } = await import('./cuenta');
     pinReceipt();
   },
@@ -520,8 +520,18 @@ const STATES: Record<string, () => void | Promise<void>> = {
     card?.setAttribute('data-foco', '');
     card?.focus({ preventScroll: true });
   },
-  // un asalto que se alarga: Asedio final de nivel 2, con su Daño y su Ataque de más
-  'mesa-fatiga': () => mesa(false, 'pointer', 12),
+  // un asalto que se alarga: V35 · el Mazo agotado dos veces, la Furia a +4 junto al Ataque del enemigo
+  'mesa-fatiga': async () => {
+    await mesa(false, 'pointer', 12);
+    const state = S.campaign?.state;
+    if (!state) return;
+    state.fatigue = 2 * state.config.collapseSiege;
+    const keep = [...S.selected];
+    S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
+    await pump();
+    S.selected.splice(0, S.selected.length, ...keep);
+    renderInteractive();
+  },
   // V11: Ajustes con la fila «Colores de la baraja» enfocada (Cuatro colores, Clásica o Dos tintas)
   // V12 · Auto-saquear encendido y Auto-taberna apagado, cada uno con su línea
   'ajustes-auto': () => {
@@ -611,6 +621,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
     if (!state) return;
     state.integrity = 2;
     state.wall = 0;
+    // V35 · un enemigo Aturdido no contraataca: aquí el que tienes delante está despierto
+    for (const s of SUITS) delete state.towers[s].fx.sobrecarga;
     const keep = [...S.selected];
     S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
     await pump();
@@ -679,14 +691,15 @@ const STATES: Record<string, () => void | Promise<void>> = {
   // V12 · Mejor jugada pulsada: las cartas elegidas y su trono marcados, y las coronas del Golpe exacto en la mano
   'mesa-mejor': async () => {
     await mesa();
-    // un Golpe exacto a mano: el as contra Tréboles deja el guardia justo a cero
+    // un Golpe exacto a mano: el as contra el enemigo activo deja su guardia justo a cero
     const st = S.campaign?.state;
     if (st) {
       const as = st.players[0].hand.find((c) => c.rank === 1 && !c.sp);
-      const tr = st.towers.C;
+      const frente = ordenDe(st.config).find((s) => !st.towers[s].away && st.towers[s].floors.length) ?? 'C';
+      const tr = st.towers[frente];
       if (as && tr.floors.length) {
         tr.damage = 0;
-        const dealt = previewStrike(st, [as], 'C').dealt.C ?? 0;
+        const dealt = previewStrike(st, [as], frente).dealt[frente] ?? 0;
         tr.damage = Math.max(0, st.config.floorHp[tr.floors[0]] - dealt);
       }
       S.queue.push({ view: viewFor(st, RUN_PLAYER), events: [] });
@@ -710,7 +723,9 @@ const STATES: Record<string, () => void | Promise<void>> = {
     const rub = document.querySelector<SVGElement>('.tower[data-suit="D"] .rubble');
     if (rub) {
       rub.querySelectorAll<SVGElement>('.crn-l, .crn-r').forEach((h) => (h.style.opacity = '0'));
-      const r = rub.getBoundingClientRect();
+      // V35 · la Casa caída se recoge en la fila (sin escombro a la vista): la corona salta de su rótulo, como en fx.ts
+      const rr = rub.getBoundingClientRect();
+      const r = rr.width > 0 ? rr : (document.querySelector('.tower[data-suit="D"] .tower-tag') ?? rub).getBoundingClientRect();
       const host = crownShardsHost('D');
       const w = r.width * 0.58;
       host.style.cssText = `position:fixed;z-index:56;width:${w}px;left:${r.left + r.width * 0.48 - w / 2}px;top:${r.top + r.height * 0.6 - w * 0.32}px;`;
@@ -723,7 +738,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
         s.style.transform = `translate(${(vx * k).toFixed(1)}px, ${(vy * k + w * 0.12).toFixed(1)}px) rotate(${parseFloat(s.style.getPropertyValue('--giro')) * 0.5}deg)`;
       });
     }
-    const guard = document.querySelector<HTMLElement>('.tower[data-suit="S"] .floor-slot .card');
+    // V35 · el tajo, en el guardia del enemigo activo (el de la fila es una ficha sin carta en el móvil)
+    const guard = document.querySelector<HTMLElement>('.tower.activa .floor-slot .card');
     if (guard) {
       const pieces = slashPieces(guard);
       guard.style.visibility = 'hidden';

@@ -238,10 +238,8 @@ const focusIsSane = (page: Page) =>
   });
 
 /**
- * LB / RB sobre las reliquias en combate. El primer asalto de la campaña no tiene dos, así que se monta
- * la mesa de QA (seis reliquias, el orden se puede cambiar) y se juega con el mando: con el foco en una
- * reliquia, RB la mueve a la derecha y LB a la izquierda, el foco y el marco viajan con ella, el orden
- * nuevo es el que usa la cuenta del golpe y en los extremos solo suena el tope.
+ * V34 · Las reliquias en combate con el mando. Las Reliquias no se ordenan: con el foco en una, RB y LB hacen lo de
+ * siempre (la Lupa y el Mazo), la tira no cambia y la cuenta del golpe tampoco. Se monta la mesa de QA (seis reliquias).
  */
 export async function combatRelics(page: Page, check: Check): Promise<void> {
   const tools = () => run(page).then((r) => r?.tools ?? []);
@@ -269,7 +267,7 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
     return r.steps >= 0;
   };
   await page.evaluate(() => (window as unknown as QaWindow).__qa.go('mesa'));
-  await page.waitForSelector('.table-screen #beltbar .belt.can-order');
+  await page.waitForSelector('.table-screen #beltbar .belt');
   await settled(page);
   await press(page, BTN.DOWN); // el mando vuelve a ser el dispositivo en uso
   const start = await tools();
@@ -289,55 +287,22 @@ export async function combatRelics(page: Page, check: Check): Promise<void> {
   const p0 = await calc();
   check(picked && /\d/.test(p0) && !p0.endsWith('?'), `con el mando se eligen cuatro cartas y la cuenta se previsualiza (${p0 || 'sin cuenta'})`);
 
-  // RB y LB sobre la primera reliquia
+  // RB y LB sobre la primera reliquia: la Lupa y el Mazo, como en el resto de la mesa
   check(await reach(slot(0)), 'el foco llega a la primera reliquia de la mesa');
   await press(page, BTN.RB);
   await page.waitForTimeout(250);
-  let now = await tools();
-  check(now[0] === start[1] && now[1] === start[0] && now.slice(2).join() === start.slice(2).join(), 'en combate, RB mueve la reliquia enfocada un hueco a la derecha');
-  check(await active(page, slot(1, start[0])), 'y el foco viaja con ella a su hueco nuevo');
-  await page.waitForTimeout(150);
-  check(await ringOk(page), 'con el foco abrazándola');
-  check((await count(page, '.lupa')) === 0, 'RB sobre una reliquia no abre la lupa');
+  check((await tools()).join() === start.join(), 'en combate, RB sobre una reliquia no la mueve: las Reliquias no se ordenan');
+  check((await count(page, '.lupa')) === 1, 'RB abre su Lupa');
+  await press(page, BTN.B);
+  await page.waitForTimeout(200);
+  check((await count(page, '.lupa')) === 0 && (await calc()) === p0, 'B la cierra y la cuenta del golpe sigue igual');
+  check(await reach(slot(0)), 'el foco vuelve a la reliquia');
   await press(page, BTN.LB);
   await page.waitForTimeout(250);
-  check((await tools()).join() === start.join() && (await active(page, slot(0, start[0]))), 'LB la devuelve a la izquierda, con el foco');
-  check((await count(page, '.deck-modal')) === 0, 'LB sobre una reliquia no abre el mazo');
-
-  // el tope de la izquierda
-  let mark = await sounds();
-  await press(page, BTN.LB);
+  check((await tools()).join() === start.join() && (await count(page, '.deck-modal')) === 1, 'LB sobre una reliquia abre el Mazo y tampoco la mueve');
+  await press(page, BTN.B);
   await page.waitForTimeout(200);
-  check((await heardSince(mark)).includes('edge') && (await tools()).join() === start.join(), 'en el primer hueco, LB solo da el toque de tope');
-  check((await active(page, slot(0, start[0]))) && (await count(page, '.deck-modal, .lupa')) === 0, 'y no mueve el foco ni abre nada');
-
-  // el tope de la derecha
-  const last = start.length - 1;
-  check(await reach(slot(last)), 'el foco llega a la última reliquia');
-  mark = await sounds();
-  await press(page, BTN.RB);
-  await page.waitForTimeout(200);
-  check((await heardSince(mark)).includes('edge') && (await tools()).join() === start.join(), 'en el último hueco, RB solo da el toque de tope');
-  check((await active(page, slot(last, start[last]))) && (await count(page, '.deck-modal, .lupa')) === 0, 'y no mueve el foco ni abre la lupa');
-
-  // V31 · el orden no cambia la cuenta: el ×M de la derecha, llevado a la izquierda, da lo mismo
-  const xm = start[last];
-  let changed = '';
-  for (let i = 0; i < last; i++) {
-    await press(page, BTN.LB);
-    await page.waitForTimeout(220);
-    const c = await calc();
-    if (c !== p0) changed = changed || c;
-  }
-  now = await tools();
-  check(now[0] === xm && now.slice(1).join() === start.slice(0, last).join(), `LB repetido lleva la reliquia de la derecha hasta el primer hueco (${now.join(', ')})`);
-  check(await active(page, slot(0, xm)), 'y el foco la acompaña todo el camino');
-  check(!changed, `mover una Reliquia no cambia la cuenta del golpe (${p0}${changed ? ` → ${changed}` : ''})`);
-  for (let i = 0; i < last; i++) {
-    await press(page, BTN.RB);
-    await page.waitForTimeout(220);
-  }
-  check((await tools()).join() === start.join() && (await calc()) === p0, 'RB repetido la devuelve a su sitio y la cuenta vuelve a la de antes');
+  check((await count(page, '.deck-modal')) === 0 && (await calc()) === p0, 'B lo cierra con la misma cuenta');
   await press(page, BTN.B);
 }
 
@@ -450,7 +415,8 @@ export async function guidedRun(page: Page, how: How, check: Check, shot?: (page
     let done = true;
     if (how === 'mouse') {
       for (const id of cards) await page.locator(card(id)).click();
-      if (a.type === 'stash') await page.locator('#btn-stash').click();
+      // V35 · La Manga se usa desde su hueco (ya no hay botón)
+      if (a.type === 'stash') await page.locator('#reserve .reserve-slot.empty').first().click();
       else if ('target' in a) await page.locator(`.tower[data-suit="${a.target}"]`).click();
     } else if (a.type === 'stash') {
       // La Manga: Y sobre la carta enfocada, sin elegirla antes
@@ -591,16 +557,17 @@ export async function immuneCheck(page: Page, how: 'pad' | 'keys', check: Check)
     let reachedAll = true;
     let hops = true;
     for (const t of towers) reachedAll &&= await go(t);
-    for (let i = 0; i + 1 < towers.length; i++) {
-      await go(towers[i]);
-      await key('R');
-      const r = await at();
-      await key('L');
-      const l = await at();
-      path.push(`${towers[i].slice(18, 19)}→${r}←${l}`);
-      hops &&= r === towers[i + 1].slice(18, 19) && l === towers[i].slice(18, 19);
-    }
-    check(towers.length === n && reachedAll && hops && !path.join().includes('!'), `[${name}] con ${n} tronos (${state}), el foco llega a cada uno y → / ← pasan de un trono presente al de al lado (${path.join(' · ')})`);
+    // V35 · el duelo: el enemigo activo a un lado y la fila al otro; → lleva del enemigo a la fila y ← lo devuelve
+    const activa = await page.evaluate(() => document.querySelector<HTMLElement>('.tower.activa')?.dataset.suit ?? '');
+    const fila = towers.map((t) => t.slice(18, 19)).filter((x) => x !== activa);
+    await go(`.tower[data-suit="${activa}"]`);
+    await key('R');
+    const r = await at();
+    await key('L');
+    const l = await at();
+    path.push(`${activa}→${r}←${l}`);
+    hops &&= fila.includes(r) && l === activa;
+    check(towers.length === n && reachedAll && hops && !path.join().includes('!'), `[${name}] con ${n} tronos (${state}), el foco llega a cada uno y → / ← van del enemigo activo a la fila y vuelven (${path.join(' · ')})`);
   }
   const plate = () =>
     page.evaluate(() => {
@@ -611,20 +578,19 @@ export async function immuneCheck(page: Page, how: 'pad' | 'keys', check: Check)
     });
   const seen: string[] = [];
   let platesOk = true;
-  for (const t of towers) {
+  // V35 · la placa Inmune va en el enemigo activo (las fichas de la fila no llevan placas)
+  for (const t of ['.tower.activa']) {
     await go(t);
     const p = await plate();
     seen.push(`${p.t}: «${p.text}»`);
     platesOk &&= p.iron && p.factor === 0 && p.text.includes(T('ui.mesa.inmune'));
   }
-  check(platesOk, `[${name}] al apuntar cada trono se ve su placa «${T('ui.mesa.inmune')}» y ninguna carta lleva sello de factor (${seen.join(' · ')})`);
-  // una carta del palo de un trono presente elegida, apuntando a ese trono: la cuenta dice «Inmune · 0»
+  check(platesOk, `[${name}] al apuntar al enemigo activo se ve su placa «${T('ui.mesa.inmune')}» y ninguna carta lleva sello de factor (${seen.join(' · ')})`);
+  // una carta del palo del enemigo activo elegida, apuntándolo: la cuenta dice «Inmune · 0»
   const pick = await page.evaluate(() => {
-    for (const t of document.querySelectorAll<HTMLElement>('.tower:not([hidden])')) {
-      const c = document.querySelector<HTMLElement>(`#hand .card.s-${t.dataset.suit}:not(.k-special)`);
-      if (c) return { suit: t.dataset.suit!, id: c.dataset.id! };
-    }
-    return null;
+    const t = document.querySelector<HTMLElement>('.tower.activa');
+    const c = t && document.querySelector<HTMLElement>(`#hand .card.s-${t.dataset.suit}:not(.k-special)`);
+    return t && c ? { suit: t.dataset.suit!, id: c.dataset.id! } : null;
   });
   let line = '';
   // la mesa de QA trae un trío ya elegido: se suelta antes (B / Esc deshace la elección)
@@ -803,7 +769,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   await B();
   check((await count(page, '.settings-modal')) === 0, 'B vuelve a cerrar los ajustes');
 
-  // (LB / RB sobre las reliquias de la mesa se prueban al final, en la mesa de QA con seis)
+  // (LB / RB con el foco en una reliquia se prueban al final, en la mesa de QA con seis)
   check(await focusOn(page, '#hand .card'), 'fuera de las reliquias…');
   await press(page, BTN.LB);
   check((await count(page, '.deck-modal')) === 1, '…LB sigue abriendo el mazo');
@@ -878,10 +844,38 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     // mando): si hay uno, se comprueba que se llega a él desde el trono de la derecha y se aparta. Durante el barrido no
     // se escriben más, para medir la mesa y no el susurro de turno.
     if (await count(page, '.table-screen .side > .whisper')) {
-      await focusDirect(page, towers[towers.length - 1]);
-      const w = await walk(page, '.side > .whisper .whisper-off', false, 2, 30);
-      if (w.steps < 0) console.log(`  · trono de la derecha → susurro: ${w.path.join(' ')}`);
-      check(w.steps >= 0, 'con un susurro al margen, su «No mostrar más» queda a una o dos pulsaciones del trono de la derecha');
+      // V35 (duelo): la mesa ya no es una fila de tronos; el susurro queda a la derecha de la cola y del trono
+      // activo, así que basta con que su «No mostrar más» quede a una o dos pulsaciones de alguno de los tronos a la vista
+      const visibles = await page.evaluate(
+        ([list]) => list.filter((sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return !!r && r.width > 0; }),
+        [towers] as const,
+      );
+      let w = { steps: -1, path: [] as string[] };
+      const tried: string[] = [];
+      for (const from of visibles) {
+        await focusDirect(page, from);
+        w = await walk(page, '.side > .whisper .whisper-off', false, 2, 30);
+        if (w.steps >= 0) break;
+        tried.push(w.path.join(' '));
+        // el margen queda a la derecha de la mesa: también vale llegar con «derecha» una o dos veces
+        await focusDirect(page, from);
+        w = await page.evaluate(async () => {
+          const pad = (window as unknown as QaWindow).__qaGamepad;
+          const target = document.querySelector('.side > .whisper .whisper-off');
+          const path: string[] = [];
+          for (let i = 1; i <= 2; i++) {
+            await pad.press(15, 30);
+            const a = document.activeElement as HTMLElement | null;
+            path.push(`R→${a ? `.${a.classList[0] ?? a.tagName}${a.dataset.suit ? `[${a.dataset.suit}]` : ''}` : '∅'}`);
+            if (a === target) return { steps: i, path };
+          }
+          return { steps: -1, path };
+        });
+        if (w.steps >= 0) break;
+        tried.push(`${from} ${w.path.join(' ')}`);
+      }
+      if (w.steps < 0) console.log(`  · tronos → susurro: ${tried.join(' | ')}`);
+      check(w.steps >= 0, 'con un susurro al margen, su «No mostrar más» queda a una o dos pulsaciones de un trono');
     }
     await page.evaluate(() => {
       (window as unknown as QaWindow).__whispers.force(false);
@@ -1030,29 +1024,17 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     check((await run(page))?.phase === 'shop', 'A elige la carta y abre La Taberna');
   }
 
-  // ── La Taberna: reordenar las reliquias y sellar una carta en la Mesa de lacre ──
+  // ── La Taberna: las reliquias (no se ordenan) y sellar una carta en la Mesa de lacre ──
   if ((await run(page))?.phase === 'shop') {
     await page.evaluate(() => (window as unknown as QaWindow).__qa.boost());
     const tools = (await run(page))!.tools;
     check((await focusOn(page, '.run-belt .belt-slot[data-slot="0"]')) && true, 'el foco llega a las reliquias');
-    await A();
-    check(await focusOn(page, '.run-belt .belt-slot[data-slot="1"]'), 'y a su segundo hueco');
-    await A();
-    await page.waitForTimeout(200);
-    const reordered = (await run(page))!.tools;
-    check(reordered[0] === tools[1] && reordered[1] === tools[0], 'A sobre una reliquia y A sobre otro hueco las cambia de sitio');
-    check(await focusOn(page, '.run-belt .belt-slot[data-slot="0"]'), 'el foco vuelve al primer hueco');
     await press(page, BTN.RB);
     await page.waitForTimeout(250);
-    check((await run(page))!.tools.slice(0, 2).join() === tools.slice(0, 2).join(), 'en La Taberna, RB mueve la reliquia enfocada a la derecha');
-    check(await active(page, `.run-belt .belt-slot[data-slot="1"][data-id="${reordered[0]}"]`), 'el foco viaja con la reliquia a su hueco nuevo');
-    check(await ringOk(page), 'y el foco la sigue');
-    await press(page, BTN.LB);
-    await page.waitForTimeout(250);
-    check((await run(page))!.tools.slice(0, 2).join() === reordered.slice(0, 2).join() && (await active(page, '.run-belt .belt-slot[data-slot="0"]')), 'LB la devuelve a la izquierda, con el foco');
-    await press(page, BTN.LB);
-    await page.waitForTimeout(150);
-    check((await count(page, '.deck-modal')) === 0 && (await run(page))!.tools.slice(0, 2).join() === reordered.slice(0, 2).join(), 'en el primer hueco, LB no hace nada (ni abre el mazo)');
+    check((await run(page))!.tools.join() === tools.join() && (await count(page, '.lupa')) === 1, 'en La Taberna, RB sobre una reliquia abre su Lupa y no la mueve');
+    await press(page, BTN.B);
+    await page.waitForTimeout(200);
+    check((await count(page, '.lupa')) === 0, 'B cierra la Lupa');
     // la Mesa de lacre estrena su susurro: se fuerza (en QA solo susurra la mesa de primera campaña)
     await page.evaluate(() => (window as unknown as QaWindow).__whispers.force(true));
     const marks = (await run(page))!.marks;
@@ -1091,7 +1073,7 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       if (h?.a && h.text.includes(T(key)) && h.stuck && h.inside) seen.push(T(key));
       else console.log(`  · [SD5] ${sel}: ${reached ? 'enfocado' : 'no llega'} · ${JSON.stringify(h)} · foco en ${await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 90))}`);
     }
-    check(seen.length === verbs.length && /LB/.test(belt?.text ?? '') && /RB/.test(belt?.text ?? '') && (belt?.text ?? '').includes(T('ui.pad.mover')), `[SD5] cada botón de La Taberna enseña su insignia (${seen.join(' · ')}) y la reliquia, también LB / RB ${T('ui.pad.mover')}`);
+    check(seen.length === verbs.length && !/LB|RB/.test(belt?.text ?? ''), `[SD5] cada botón de La Taberna enseña su insignia (${seen.join(' · ')}) y la reliquia ya no ofrece LB / RB`);
     check(await focusOn(page, '#offers .choice.pick:has(.card[data-id^="forja-"])'), 'el foco llega a la oferta de la Mesa de lacre');
     const gold0 = (await run(page))!.gold;
     const h3 = await hintAt();

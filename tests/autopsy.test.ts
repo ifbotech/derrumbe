@@ -52,8 +52,8 @@ describe('autopsia de la derrota (contrato C1)', () => {
     // el 6♥ repara 2 antes de que suene la sirena: al búnker le quedaban 3 + 2
     const s = table(cfg, [card('H6'), card('H3')], [card('D4')], [], { integrity: 3, wall: 0 });
     const { a } = lose(s, { type: 'attack', cards: ['H6'], target: 'S' });
-    expect(a).toMatchObject({ kind: 'sirena', tower: 'D', before: 5, threat: 9, blocked: 0, taken: 9 });
-    expect(a.title).toBe(`Contraataque de ${MATERIAL.D}: Ataque 9 y ningún Escudo → entran 9`);
+    expect(a).toMatchObject({ kind: 'sirena', tower: 'S', before: 5, threat: 9, blocked: 0, taken: 9 });
+    expect(a.title).toBe(`Contraataque de ${MATERIAL.S}: Ataque 9 y ningún Escudo → entran 9`);
     expect(a.detail).toContain('quedaban 5');
     expect(a.detail).toContain('Faltaron 5 de Escudo');
     fits(a);
@@ -63,13 +63,13 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 4, 12: 4, 13: 4 }, sirenCount: 2 });
     const s = table(cfg, [card('H2'), card('H3')], [card('S9'), card('C9')], [], { integrity: 6, wall: 0 });
     const { a } = lose(s, { type: 'discard', cards: ['H2'] });
-    expect(a).toMatchObject({ kind: 'sirena', tower: 'C', before: 2, threat: 4, taken: 4 });
+    expect(a).toMatchObject({ kind: 'sirena', tower: 'S', before: 2, threat: 4, taken: 4 });
     expect(a.detail).toContain('2.º Contraataque del turno');
     expect(a.detail).toContain('quedaban 2');
     fits(a);
   });
 
-  it('V27 · el Mazo agotado no quita Vida ni mata: baraja el Descarte y sube el Asedio final 1 nivel', () => {
+  it('V35 · el Mazo agotado no quita Vida ni mata: baraja el Descarte y sube la Furia', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 1, 12: 1, 13: 1 } });
     const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 1, wall: 8 });
     // Mazo vacío y Descarte lleno: el Contraataque tiene que barajar
@@ -86,53 +86,52 @@ describe('autopsia de la derrota (contrato C1)', () => {
     expect(out.state.phase).toBe('playing');
   });
 
-  it('V30 · la derrota tras agotar el Mazo se explica: dice que fue al agotarlo y cuánto puso el Asedio final', () => {
-    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 3, 12: 3, 13: 6 } });
-    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 5, wall: 2 });
-    s.towers.C.floors = [13];
-    s.discard = s.deck.filter((c) => c.suit === 'S' || c.suit === 'X');
-    s.deck = [];
+  it('V35 · la causa de la derrota dice cuánto del Ataque era Furia', () => {
+    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 6, 12: 6, 13: 6 } });
+    // dos Mazos agotados en este asalto: la Furia va por 2
+    const s = table(cfg, [card('H2'), card('H3')], [card('D9')], [], { integrity: 5, wall: 2, collapses: 2, fatigue: 2 * cfg.collapseSiege });
+    const furia = 2 * cfg.collapseSiege;
     const { a, events } = lose(s, { type: 'discard', cards: ['H2'] });
     const golpe = events.find((e) => e.e === 'siren')!;
-    expect(golpe).toMatchObject({ cerco: true, asedio: cfg.collapseSiege, threat: 6 + cfg.collapseSiege });
+    expect(golpe).toMatchObject({ tower: 'S', asedio: furia, threat: 6 + furia });
     expect(a.kind).toBe('sirena');
-    expect(a.title).toBe(`Contraataque de TRÉBOLES tras agotar el Mazo: Ataque ${6 + cfg.collapseSiege} contra Escudo 2 → entran ${4 + cfg.collapseSiege}`);
+    expect(a.title).toBe(`Contraataque de PICAS: Ataque ${6 + furia} contra Escudo 2 → entran ${4 + furia}`);
     expect(a.detail).toContain('Te quedaban 5 de Vida');
-    expect(a.detail).toContain(`${cfg.collapseSiege} del Ataque eran del Asedio final`);
+    expect(a.detail).toContain(`${furia} del Ataque eran de Furia`);
     fits(a);
     // el caso más largo que puede salir (palo de nueve letras y cifras de tres) sigue entrando en sus dos líneas
-    fits({ title: 'Contraataque de DIAMANTES tras agotar el Mazo: Ataque 148 contra Escudo 12 → entran 136', detail: 'Te quedaban 21 de Vida. 120 del Ataque eran del Asedio final. Faltaron 116 de Escudo (♣) o un Golpe exacto.' });
+    fits({ title: 'Contraataque de DIAMANTES: Ataque 148 contra Escudo 12 → entran 136', detail: 'Te quedaban 21 de Vida. 120 del Ataque eran de Furia. Faltaron 116 de Escudo (♣) o un Golpe exacto.' });
   });
 
-  it('V30 · sin Mazo agotado ni Asedio, la causa es la de siempre', () => {
+  it('V30 · sin Furia, la causa es la de siempre', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 6, 12: 6, 13: 6 } });
     const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 3, wall: 1 });
     const { a, events } = lose(s, { type: 'discard', cards: ['H2'] });
     const golpe = events.find((e) => e.e === 'siren')!;
     expect(golpe.e === 'siren' && golpe.asedio).toBeUndefined();
     expect(a.title).toBe('Contraataque de PICAS: Ataque 6 contra Escudo 1 → entran 5');
-    expect(a.detail).not.toContain('Asedio');
+    expect(a.detail).not.toContain('Furia');
   });
 
-  it('V27 · el cerco: tras un Mazo agotado, el Contraataque lo da el trono en pie con más Ataque, salga el palo que salga', () => {
+  it('V35 · tras un Mazo agotado sigue contraatacando el enemigo activo, y desde el turno siguiente con la Furia sumada', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 1, 12: 3, 13: 5 } });
-    // arriba del Descarte que se va a barajar solo hay comodines y picas; el trono más fuerte es el primero con Rey delante
     const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 20, wall: 2 });
+    // el trono más fuerte ya no pinta nada: contraataca la Casa que tienes delante (PICAS, con su Sota)
     s.towers.C.floors = [13];
-    s.discard = s.deck.filter((c) => c.suit === 'S' || c.suit === 'X');
+    s.discard = s.deck;
     s.deck = [];
     const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
     const golpe = out.events.find((e) => e.e === 'siren')!;
-    expect(golpe).toMatchObject({ e: 'siren', reason: 'strike', tower: 'C', cerco: true, threat: 5 + cfg.collapseSiege, blocked: 2 });
-    expect(out.state.integrity).toBe(20 - (5 + cfg.collapseSiege - 2));
-    expect(out.state.cerco).toBe(false);
-    // el Contraataque siguiente vuelve a ir por el palo de la carta
+    // este Contraataque llega antes de robar (y de barajar): Ataque 1, sin Furia todavía
+    expect(golpe).toMatchObject({ e: 'siren', reason: 'strike', tower: 'S', threat: 1, blocked: 1 });
+    expect(out.state.integrity).toBe(20);
+    expect(out.state.fatigue).toBe(cfg.collapseSiege);
     const otra = applyAction(out.state, 'a', { type: 'discard', cards: ['H3'] });
     const segundo = otra.events.find((e) => e.e === 'siren')!;
-    expect(segundo.e === 'siren' && segundo.cerco).toBeFalsy();
+    expect(segundo).toMatchObject({ tower: 'S', threat: 1 + cfg.collapseSiege, asedio: cfg.collapseSiege });
   });
 
-  it('V27 · con la Baraja de reserva, el primer Mazo agotado del asalto no sube el Asedio ni echa el cerco', () => {
+  it('V35 · con la Baraja de reserva, el primer Mazo agotado del asalto no sube la Furia', () => {
     const cfg = cfgWith({ floorHp: TOUGH });
     const s = table(cfg, [card('H2'), card('H3')], [], ['puntales'], { integrity: 20 });
     s.discard = s.deck;
@@ -140,7 +139,6 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
     expect(out.events.find((e) => e.e === 'collapse')).toMatchObject({ sube: 0, asedio: 0 });
     expect(out.state.fatigue ?? 0).toBe(0);
-    expect(out.state.cerco ?? false).toBe(false);
     expect(out.state.collapses).toBe(1);
   });
 
@@ -158,7 +156,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
   });
 
   it('herida propia: Corazón de la torre cobra su punto cuando el golpe no tira nada', () => {
-    const cfg = cfgWith({ floorHp: TOUGH });
+    const cfg = cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] });
     const s = table(cfg, [card('S5'), card('H3')], [card('X1')], ['corazon'], { integrity: 1, wall: 8 });
     const { a } = lose(s, { type: 'attack', cards: ['S5'], target: 'D' });
     expect(a).toMatchObject({ kind: 'herida', before: 1, threat: 1, blocked: 0, taken: 1 });
@@ -169,7 +167,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
   });
 
   it('herida propia: el suelo inestable del Topo y la Nitroglicerina salen con su nombre', () => {
-    const topo = cfgWith({ floorHp: { 11: 20, 12: 30, 13: 40 } });
+    const topo = cfgWith({ floorHp: { 11: 20, 12: 30, 13: 40 }, orden: ['D', 'S', 'H', 'C'] });
     BOSS.inestable.apply(topo);
     // pareja de dieces sin corazones (nada repara): tira la J de vidrio con daño de sobra, no es limpio y el suelo cobra 1
     const s = table(topo, [card('C10'), card('S10'), card('D3')], [card('X1')], [], { integrity: 1 });
@@ -182,7 +180,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
     fits(a);
 
     const nitro: Card = { id: 'sp-nitro-9', suit: 'X', rank: 0, sp: 'nitro' };
-    const t = table(cfgWith({ floorHp: TOUGH }), [card('S5'), nitro, card('D3')], [card('X1')], [], { integrity: 2 });
+    const t = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), nitro, card('D3')], [card('X1')], [], { integrity: 2 });
     const b = lose(t, { type: 'attack', cards: ['S5', nitro.id], target: 'D' }).a;
     expect(b).toMatchObject({ kind: 'herida', before: 2, taken: 2 });
     expect(b.title).toBe(`${SPECIAL.nitro.name}: tu propio golpe te costó 2 de Vida`);
@@ -212,7 +210,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
   it('un lote sin la integridad de partida (eventos antiguos) sigue dando una autopsia coherente', () => {
     const a = autopsy(
       [
-        { e: 'siren', card: null, tower: 'H', threat: 7, blocked: 2, taken: 5, integrity: 0, wall: 0, reason: 'strike' },
+        { e: 'siren', tower: 'H', threat: 7, blocked: 2, taken: 5, integrity: 0, wall: 0, reason: 'strike' },
         { e: 'end', result: 'lost' },
       ],
       cfgWith(),
@@ -336,20 +334,17 @@ describe('aviso de último turno', () => {
     expect(omen(view(noHearts))).toBeNull();
   });
 
-  it('V27 · con el Mazo vacío, el aviso cuenta el Ataque que llegará después de barajar (Asedio +1)', () => {
+  it('V35 · con el Mazo vacío, el aviso cuenta el Ataque de ahora: la Furia de barajar llega al turno siguiente', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 5, 12: 5, 13: 5 } });
-    // 4 de Vida y 2 de Escudo: un Ataque de 5 se aguanta; con el Asedio un nivel más (⚔ 6), no
+    // 4 de Vida y 2 de Escudo: un Ataque de 5 se aguanta, y el próximo Contraataque llega antes de barajar
     const s = table(cfg, [card('H2')], [card('S9')], [], { integrity: 4, wall: 2 });
     expect(omen(view(s))).toBeNull();
-    const vacio = { ...s, discard: s.deck, deck: [] };
-    const o = omen(view(vacio))!;
+    expect(omen(view({ ...s, discard: s.deck, deck: [] }))).toBeNull();
+    // con la Furia ya subida (un Mazo agotado antes), el Ataque es 6 y sí avisa; el que avisa es el enemigo activo
+    const o = omen(view({ ...s, collapses: 1, fatigue: cfg.collapseSiege }))!;
     expect(o.kind).toBe('sirena');
-    expect(o).toMatchObject({ threat: 5 + cfg.collapseSiege, shield: 2, life: 4 });
+    expect(o).toMatchObject({ threat: 5 + cfg.collapseSiege, shield: 2, life: 4, tower: 'S' });
     fits(o);
-    // la Baraja de reserva: el primer Mazo agotado del asalto no sube el Asedio, así que no hay aviso
-    const reserva = cfgWith({ floorHp: TOUGH, floorThreat: { 11: 5, 12: 5, 13: 5 } });
-    TOOL.puntales.cfg!(reserva);
-    expect(omen(view({ ...vacio, config: reserva }))).toBeNull();
   });
 
   it('con la partida terminada no avisa de nada', () => {
@@ -363,17 +358,17 @@ describe('avisos de herramienta que dispara (contrato C2)', () => {
   const steps = (events: GameEvent[], id: string) => events.filter((e): e is Extract<GameEvent, { e: 'step' }> => e.e === 'step' && e.id === id);
 
   it('Ariete marca la Fuerza que suma, y solo cuando suma', () => {
-    const cfg = cfgWith({ floorHp: TOUGH });
+    const cfg = cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] });
     const s = table(cfg, [card('S5'), card('H3')], [card('X1')], ['ariete'], { wall: 5 });
     const [st] = steps(applyAction(s, 'a', { type: 'attack', cards: ['S5'], target: 'D' }).events, 'ariete');
     expect(st.df).toBe(20);
     expect(st.proc).toEqual({ what: 'fuerza', n: 20 });
-    const dry = table(cfgWith({ floorHp: TOUGH }), [card('S5'), card('H3')], [card('X1')], ['ariete'], { wall: 0 });
+    const dry = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), card('H3')], [card('X1')], ['ariete'], { wall: 0 });
     expect(steps(applyAction(dry, 'a', { type: 'attack', cards: ['S5'], target: 'D' }).events, 'ariete')).toHaveLength(0);
   });
 
   it('el Diapasón que copia al Ariete también lo anuncia; una herramienta callada no', () => {
-    const s = table(cfgWith({ floorHp: TOUGH }), [card('S5'), card('H3')], [card('X1')], ['piqueta', 'diapason', 'ariete'], { wall: 2 });
+    const s = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), card('H3')], [card('X1')], ['piqueta', 'diapason', 'ariete'], { wall: 2 });
     const events = applyAction(s, 'a', { type: 'attack', cards: ['S5'], target: 'D' }).events;
     expect(steps(events, 'diapason')[0].proc).toEqual({ what: 'fuerza', n: 8 });
     expect(steps(events, 'ariete')[0].proc).toEqual({ what: 'fuerza', n: 8 });

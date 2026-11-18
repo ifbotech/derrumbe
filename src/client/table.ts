@@ -1,9 +1,10 @@
 // La mesa de combate: los cuatro tronos, tu Vida, las Reliquias, poderes de palo, marcador
 // Daño × Multi = Golpe, la Manga, mano y la cola de eventos que anima cada jugada paso a paso.
-import { Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, classify, multiplier, previewStrike, threatOf, vecinosPresentes } from '../rules/engine';
+import { Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, SUITS, SUIT_GLYPH, StrikeResult, Suit, TOWER_FX, TowerFx, activo, cardLabel, cardValue, classify, esJefe, floorHp, multiplier, ordenDe, previewStrike, threatOf, vecinosPresentes } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
 import { BALANCE } from '../rules/balance-config';
-import { BOSS, CONTRACT, LAST_STAGE, stageDef } from '../rules/run';
+import { BOSS, CONTRACT, FURIA, LAST_STAGE, stageDef } from '../rules/run';
+import { RASGOS, UMBRALES, nivelRasgo, rasgosDe } from '../rules/tools';
 import { SPECIAL } from '../rules/specials';
 import type { ClientMsg } from '../shared/protocol';
 import { bunkerArt, rubble, skyline } from './art';
@@ -35,6 +36,7 @@ import { MejorJugada, cartasConExacto, mejorJugada } from '../rules/mejor-jugada
 import type { GameState } from '../rules/engine';
 import { t } from '../shared/i18n';
 import { noteAction, noteTurn } from './telemetry';
+import { RASGO_ICO } from './rasgos-ui';
 
 /** Cartas de la mano y del andamio que están pintadas. */
 const cardEls = new Map<string, HTMLDivElement>();
@@ -99,7 +101,6 @@ export function buildTable(): void {
           <div class="blocks wall" id="wall-blocks"></div>
           <div class="piles">
             <div class="pile"><div class="slot" id="deck-slot"></div>${L('ui.mesa.mazo')} <b id="deck-n"></b></div>
-            <div class="pile"><div class="slot" id="siren-slot"></div>${L('ui.mesa.contraataque')}</div>
             <div class="pile"><div class="slot" id="disc-slot"><span class="count" id="disc-n"></span></div>${L('ui.mesa.descarte')}</div>
           </div>
         </div>
@@ -113,7 +114,7 @@ export function buildTable(): void {
       <div class="hudrow">
         <div class="beltbar" id="beltbar" hidden></div>
         <div class="powers" id="powers"></div>
-        <div class="power fatigue" id="fatigue" hidden></div>
+        <div class="rasgos" id="rasgos" hidden></div>
       </div>
       <div class="status score" id="score"></div>
       <div class="playrow">
@@ -124,10 +125,8 @@ export function buildTable(): void {
       <div class="actions">
         <button id="btn-strike" class="primary" data-tip="${L('ui.mesa.golpear.tip')}"><span class="lbl">${L('ui.mesa.golpear')}</span>${hint('strike')}</button>
         <button id="btn-mejor" class="secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span>${hint('best')}</button>
-        <button id="btn-stash" data-tip="${L('ui.mesa.manga.tip')}"><span class="lbl">${L('ui.mesa.manga')}</span>${hint('stash')}</button>
         <button id="btn-undo" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${rotuloDeshacer('ui.mesa.deshacer')}</span>${hint('undo')}</button>
         <button id="btn-discard"><span class="lbl">${L('ui.mesa.descartar')}</span><b class="sel-n" id="discard-n" hidden></b>${hint('discard')}</button>
-        <button id="btn-clear">${L('ui.mesa.soltar')}${hint('back')}</button>
         <button id="btn-pass" hidden>${L('ui.mesa.pasar')}${hint('strike')}</button>
       </div>
       </div>
@@ -190,9 +189,7 @@ export function buildTable(): void {
       leave.textContent = L('ui.salir');
     }, 2500);
   };
-  $('#btn-clear').onclick = clearSelection;
   $('#btn-strike').onclick = () => onTableKey(' ', null);
-  $('#btn-stash').onclick = () => stash();
   $('#btn-discard').onclick = discardSelection;
   $('#btn-undo').onclick = undo;
   $('#btn-mejor').onclick = () => usarMejor();
@@ -269,6 +266,8 @@ function onTower(s: Suit, ping = false): void {
   // quien no puede jugar ahora (o pulsa con Alt) marca la torre con tiza para su cuadrilla
   if (ping || (!canAct() && v.players.length > 1)) return sendPing(`tower:${s}`);
   if (!canAct() || v.towers[s].floors.length === 0) return;
+  // V35 · solo se golpea al enemigo que tienes delante; los demás esperan en la fila
+  if (activo(v)?.suit !== s) return toast(L('ui.mesa.toast.frente'));
   const cards = selCards();
   const step = guidedStep();
   if (step) {
@@ -376,9 +375,8 @@ export function renderBelt(): void {
   bar.hidden = !S.campaign && tools.length === 0;
   if (bar.hidden) return;
   hideTip();
-  const canOrder = !!S.campaign && isRunHost() && !S.busy && !S.waiting && S.queue.length === 0 && tools.length > 1;
   bar.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')}</span>`;
-  bar.appendChild(beltEl(tools, { onReorder: canOrder ? (order) => runDo({ t: 'reorder', order }) : undefined }));
+  bar.appendChild(beltEl(tools));
   const carry: string[] = [];
   if (v?.chain) carry.push(`<em class="carry chain" data-tip="${Ln(v.chain, 'ui.mesa.racha.tip.1', 'ui.mesa.racha.tip.n', { m: racha(v.chain) })}">${L('ui.mesa.racha', { m: racha(v.chain) })}</em>`);
   if (v?.charge) carry.push(`<em class="carry charge" data-tip="${L('ui.mesa.carga.tip')}">${L('ui.mesa.carga', { n: v.charge })}</em>`);
@@ -423,9 +421,21 @@ function renderTower(s: Suit): void {
   el.parentElement?.setAttribute('data-n', String(SUITS.filter((x) => !v.towers[x].away).length));
   if (t.away) return;
   el.classList.toggle('fallen', top === undefined);
+  // V35 · un enemigo grande en el centro: la Casa activa. Las demás esperan en fila, en el orden en que se asaltan
+  const frente = activo(v);
+  const orden = ordenDe(cfg);
+  el.classList.toggle('activa', frente === t);
+  el.classList.toggle('espera', top !== undefined && frente !== t);
+  el.classList.toggle('jefe', top !== undefined && esJefe(cfg, t));
+  el.classList.toggle('con-jefe', top !== undefined && cfg.jefe?.suit === s);
+  el.style.order = String(top === undefined ? 20 + orden.indexOf(s) : frente === t ? 0 : 1 + orden.indexOf(s));
+  $('.tower-tag', el).dataset.frente = frente === t ? L(esJefe(cfg, t) ? 'ui.mesa.frente.jefe' : 'ui.mesa.frente') : '';
   // todas las torres reservan sitio para los mismos pisos: así sus cartas miden igual
   el.parentElement?.style.setProperty('--below', String(Math.max(0, ...SUITS.map((x) => v.towers[x].floors.length - 1))));
-  const key = `${t.floors.join('-') || 'ruin'}|${cfg.ownMult ?? 0}`;
+  const boss = S.campaign?.run.boss ?? null;
+  /** Vida de cada guardia de este trono, del que está al frente al último (el monarca, multiplicado). */
+  const vidas = t.floors.map((_, i) => floorHp({ ...t, floors: t.floors.slice(i) }, cfg));
+  const key = `${t.floors.join('-') || 'ruin'}|${cfg.ownMult ?? 0}|${vidas.join('-')}`;
   if (el.dataset.floor !== key) {
     const sameTop = el.dataset.top === String(top);
     el.dataset.floor = key;
@@ -448,17 +458,24 @@ function renderTower(s: Suit): void {
         slot.insertBefore(c, $('.plates', slot));
       }
     }
-    // los pisos que quedan debajo, en alzado
+    // los guardias que esperan detrás en esta Casa (el último puede ser el monarca)
     $('.storeys', el).innerHTML = t.floors
       .slice(1)
-      .map((r) => `<div class="storey" data-tip="${L('ui.mesa.guardia.tip', { guardia: cap(GUARD(r)), casa: HOUSE(s), vida: cfg.floorHp[r], ataque: cfg.floorThreat[r] })}">${storeySvg(s, r)}<b>${FLOOR(r)}</b>${cifraEl(cfg.floorHp[r], 'guardia')}</div>`)
+      .map((r, i) => {
+        const jefe = !!cfg.jefe && cfg.jefe.suit === s && i === t.floors.length - 2;
+        const nombre = jefe && boss ? monN(boss) : cap(GUARD(r));
+        return `<div class="storey${jefe ? ' es-jefe' : ''}" data-tip="${L('ui.mesa.guardia.tip', { guardia: nombre, casa: HOUSE(s), vida: vidas[i + 1], ataque: cfg.floorThreat[r] })}">${storeySvg(s, r)}<b>${jefe ? L('ui.mesa.monarca') : FLOOR(r)}</b>${cifraEl(vidas[i + 1], 'guardia')}</div>`;
+      })
       .join('');
+    // el nombre del que está al frente: el guardia o, si es el último del asalto con monarca, el monarca
+    const quien = $('.tower-tag span', el);
+    if (quien) quien.textContent = top !== undefined && esJefe(cfg, t) && boss ? monN(boss) : paloN(s);
   }
   // V11: dos estados, Expuesto y Aturdido; la insignia no se parte nunca y no lleva cifra
   const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => top !== undefined && t.fx?.[k]);
   $('.tower-fx', el).innerHTML = fx.map((k) => `<em class="fx fx-${k}" data-tip="<b>${fxN(k)}</b>${fxD(k)}">${fxN(k)}</em>`).join('');
   if (top !== undefined) {
-    const hp = cfg.floorHp[top];
+    const hp = floorHp(t, cfg);
     const left = Math.max(0, hp - t.damage);
     const level = String(Math.min(3, Math.ceil((3 * t.damage) / hp)));
     $('.hp-fill', el).style.transform = `scaleX(${left / hp})`;
@@ -468,7 +485,10 @@ function renderTower(s: Suit): void {
     $('.cracks', el)?.setAttribute('data-level', level);
     $('.facade .storey-art', el)?.setAttribute('data-level', level);
     const threat = threatOf(v, t);
-    $('.threat', el).innerHTML = `<span>${L('ui.mesa.ataque')}</span><b>⚔ ${threat}</b>`;
+    // V35 · la Furia va a la vista junto al Ataque (ya incluida en la cifra)
+    const furia = v.fatigue ?? 0;
+    $('.threat', el).innerHTML = `<span>${L('ui.mesa.ataque')}</span><b>⚔ ${threat}</b>${furia > 0 ? `<i class="furia" data-tip="${L('ui.mesa.furia.tip', { n: furia, m: cfg.collapseSiege, r: cfg.jefe?.furia ?? FURIA.rey })}">${L(esJefe(cfg, t) ? 'ui.mesa.furia.rey' : 'ui.mesa.furia')} <b>+${furia}</b></i>` : ''}`;
+    el.classList.toggle('con-furia', furia > 0);
   }
 }
 
@@ -496,17 +516,6 @@ function renderBunker(): void {
   setNum('#deck-n', String(Math.max(0, v.deckCount)));
   setNum('#disc-n', String(Math.max(0, v.discardCount)));
   $('#collapses').textContent = v.collapses ? L('ui.mesa.agotado', { n: v.collapses }) : '';
-  const slot = $('#siren-slot');
-  const id = v.lastSiren?.id ?? '';
-  if (slot.dataset.card !== id) {
-    slot.dataset.card = id;
-    slot.innerHTML = '';
-    if (v.lastSiren) {
-      const c = cardEl(v.lastSiren, { faceDown: true });
-      slot.appendChild(c);
-      requestAnimationFrame(() => requestAnimationFrame(() => c.classList.remove('flipped')));
-    }
-  }
 }
 
 /** Crea (o recupera) la carta pintada de la mano o del andamio. */
@@ -600,25 +609,20 @@ function renderHand(): void {
   hand.classList.toggle('locked', !canAct());
 }
 
-/** Torres a las que se puede golpear con la selección actual, con el resultado previsto de cada una. */
+/** V35 · El enemigo activo (el único al que se golpea) con el resultado previsto de la selección actual contra él. */
 function previews(cards: Card[]): Partial<Record<Suit, StrikeResult>> {
   const v = S.shown!;
-  const out: Partial<Record<Suit, StrikeResult>> = {};
-  for (const s of SUITS) if (v.towers[s].floors.length) out[s] = previewStrike(v, cards, s);
-  return out;
+  const s = activo(v)?.suit;
+  return s ? { [s]: previewStrike(v, cards, s) } : {};
 }
-/** La mejor torre para esta jugada: la que más pisos tira y, a igualdad, la que más daño recibe. */
+/** El trono al que irá el golpe: el enemigo activo. */
 function bestTarget(pv: Partial<Record<Suit, StrikeResult>>): Suit | null {
-  let best: Suit | null = null;
-  for (const s of SUITS) {
-    const r = pv[s];
-    if (!r) continue;
-    const b = best ? pv[best]! : null;
-    if (!b || r.fallen > b.fallen || (r.fallen === b.fallen && (r.dealt[s] ?? 0) > (b.dealt[best!] ?? 0))) best = s;
-  }
-  return best;
+  return SUITS.find((s) => pv[s]) ?? null;
 }
-const standingTargets = () => SUITS.filter((s) => S.shown!.towers[s].floors.length > 0);
+const standingTargets = (): Suit[] => {
+  const s = activo(S.shown!)?.suit;
+  return s ? [s] : [];
+};
 
 /** Los cuatro poderes de palo, siempre a la vista; se encienden con lo que aporta la jugada elegida. */
 function renderPowers(cards: Card[], r: StrikeResult | null, target: Suit | null): void {
@@ -657,7 +661,8 @@ function renderScore(): void {
   let shownTarget: Suit | null = null;
   let preview: Preview | null = null;
   // con tiza la jugada se puede deshacer; sin ella (o en sala) es definitiva
-  const final = v.players.length === 1 && S.campaign ? (v.chalk > 0 ? `<em class="m dim">${L('ui.mesa.deshacer.puede')}</em>` : `<em class="m dim">${L('ui.mesa.definitiva')}</em>`) : '';
+  // V35 · menos ruido: solo se avisa cuando la jugada ya NO se puede deshacer
+  const final = v.players.length === 1 && S.campaign && v.chalk <= 0 ? `<em class="m dim">${L('ui.mesa.definitiva')}</em>` : '';
   if (v.phase !== 'playing') {
     tag = `<span class="tag">${L('ui.mesa.terminado')}</span>`;
     body = S.campaign ? '' : `<button id="btn-end">${L('ui.mesa.resultado')}</button>`;
@@ -776,14 +781,12 @@ export function renderInteractive(): void {
   discardN.textContent = cards.length ? String(cards.length) : '';
   discardN.hidden = !cards.length;
   $('#btn-discard').setAttribute('aria-label', cards.length ? Ln(cards.length, 'ui.mesa.descartar.1', 'ui.mesa.descartar.n') : L('ui.mesa.descartar'));
-  $<HTMLButtonElement>('#btn-clear').disabled = cards.length === 0;
   $('#btn-pass').hidden = !(can && held().length === 0);
   $('#btn-strike').hidden = !$('#btn-pass').hidden;
   $<HTMLButtonElement>('#btn-strike').disabled = !can || cards.length === 0;
-  $<HTMLButtonElement>('#btn-stash').hidden = !v.reserveSize;
-  $<HTMLButtonElement>('#btn-stash').disabled = !can || v.stashed || cards.length !== 1 || !v.hand.some((c) => c.id === cards[0].id);
   const undoBtn = $<HTMLButtonElement>('#btn-undo');
-  undoBtn.hidden = !(S.campaign && v.players.length === 1);
+  // V35 · Deshacer solo aparece cuando hay una jugada que se puede deshacer
+  undoBtn.hidden = !(S.campaign && v.players.length === 1 && v.canUndo);
   undoBtn.disabled = !can || !v.canUndo;
   const rotulo = rotuloDeshacer(v.chalk > 0 ? 'ui.mesa.deshacer' : 'ui.mesa.deshacer.no');
   if ($('.lbl', undoBtn).innerHTML !== rotulo) $('.lbl', undoBtn).innerHTML = rotulo;
@@ -808,7 +811,7 @@ export function renderAll(): void {
   renderBelt();
   renderInteractive();
   renderPings();
-  renderFatigue();
+  renderRasgos();
 }
 
 // ───────────────────────── V12 · Mejor jugada y AUTO ─────────────────────────
@@ -910,20 +913,33 @@ export function refreshSpeed(): void {
   if (btn) btn.innerHTML = `${speedLabel()}${hint('speed')}`;
 }
 
-/** Fatiga de cimientos: avisa tres turnos antes de empezar y luego enseña su nivel. */
-function renderFatigue(): void {
-  const el = $('#fatigue');
+/**
+ * V35 · Los rasgos de build de tu tira de Reliquias: una píldora por rasgo que llevas, con cuántas tienes y el
+ * siguiente umbral (2, 4 o 6), encendida si ya da bono. Con el Tahúr activo, el dado de este turno.
+ */
+let rasgosAntes = '';
+export function renderRasgos(): void {
+  const el = $('#rasgos');
   const v = S.shown;
   if (!el || !v) return;
-  const start = v.config.fatigueStart;
-  const res = v.config.fatigueDano ?? BALANCE.asedio.dano;
-  const level = v.fatigue ?? 0;
-  const left = start === undefined ? Infinity : start - v.turnCount;
-  el.hidden = start === undefined || v.phase !== 'playing' || (level === 0 && left > 3);
-  if (el.hidden || start === undefined) return;
-  el.classList.toggle('on', level > 0);
-  el.innerHTML = level > 0 ? `<b>${L('ui.mesa.asedio')}</b><em>${level}</em>` : `<b>${L('ui.mesa.asedio.en')}</b><em>${Math.max(1, left)}</em><b>${Math.max(1, left) === 1 ? L('ui.mesa.turno') : L('ui.mesa.turnos')}</b>`;
-  el.dataset.tip = `${L('ui.mesa.asedio.tip', { t: start + 1, c: v.config.fatigueEvery ?? 2, m: res })}${level ? L('ui.mesa.asedio.ahora', { m: res * level, n: level }) : ''}`;
+  const n = rasgosDe(v.tools);
+  const mios = RASGOS.filter((r) => n[r.id] > 0);
+  el.hidden = mios.length === 0;
+  if (el.hidden) return;
+  el.innerHTML =
+    mios
+      .map((r) => {
+        const nivel = nivelRasgo(n[r.id]);
+        const meta = UMBRALES.find((u) => u > n[r.id]) ?? UMBRALES[2];
+        const bonos = UMBRALES.map((u, i) => L('ui.mesa.rasgo.bono', { u, texto: t(`rasgo.${r.id}.bono.${i + 1}`) })).join('');
+        return `<span class="rasgo r-${r.id}${nivel ? ' on' : ''}" data-rasgo="${r.id}" data-nivel="${nivel}" data-tip="${L('ui.mesa.rasgo.tip', { nombre: t(`rasgo.${r.id}.nombre`), lema: t(`rasgo.${r.id}.lema`), n: n[r.id] })}${bonos}"><i class="ico" aria-hidden="true">${RASGO_ICO[r.id]}</i><b>${t(`rasgo.${r.id}.nombre`)}</b><em>${n[r.id]}/${meta}</em></span>`;
+      })
+      .join('') + (v.dado ? `<span class="rasgo dado on" data-tip="${L('ui.mesa.dado.tip', { n: v.dado })}"><i class="cara" data-cara="${v.dado}">${v.dado}</i></span>` : '');
+  // un rasgo que sube de nivel da un salto (una vez)
+  const ahora = mios.map((r) => `${r.id}:${nivelRasgo(n[r.id])}`).join(',');
+  if (rasgosAntes && ahora !== rasgosAntes)
+    for (const r of mios) if (!rasgosAntes.includes(`${r.id}:${nivelRasgo(n[r.id])}`) && nivelRasgo(n[r.id]) > 0) el.querySelector(`[data-rasgo="${r.id}"]`)?.classList.add('sube');
+  rasgosAntes = ahora;
 }
 
 // ───────────────────────── Mazo y teclado ─────────────────────────
@@ -986,10 +1002,10 @@ export function onTableKey(key: string, target: HTMLElement | null): boolean {
       act({ t: 'action', action: { type: 'pass' } });
       return true;
     }
-    const focusTower = target?.closest<HTMLElement>('.tower')?.dataset.suit as Suit | undefined;
-    const want = focusTower ?? guidedStep()?.target ?? aim; // juice-ux: en la partida guiada, sin trono enfocado, el del paso
-    const best = want && v.towers[want].floors.length ? want : guidedStep()?.target ?? (isJoker(cards) ? (guidedStep()?.target ?? standingTargets()[0]) : classify(cards) ? bestTarget(previews(cards)) : null);
+    // V35 · el golpe va siempre al enemigo activo
+    const best = isJoker(cards) || classify(cards) ? standingTargets()[0] : null;
     if (best) onTower(best);
+    else if (cards.length) sfx.deny();
     return true;
   }
   return false;
@@ -1061,7 +1077,7 @@ const towerMid = (s: Suit) => {
   const r = $('.floor-slot', towerEls[s]).getBoundingClientRect();
   return [r.left + r.width / 2, r.top + r.height / 2] as const;
 };
-const SIREN_QUIET = { clean: 'ui.log.quieto.clean', huelga: 'ui.log.quieto.huelga', empty: 'ui.log.quieto.empty' } as const;
+const SIREN_QUIET = { clean: 'ui.log.quieto.clean', huelga: 'ui.log.quieto.huelga' } as const;
 
 async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
   const v = S.shown!;
@@ -1126,12 +1142,13 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
     case 'fatigue':
       v.fatigue = ev.level;
       for (const s of SUITS) renderTower(s);
-      renderFatigue();
       if (ev.level > 0) {
-        banner(L('ui.log.asedio.banner', { n: ev.level }), 'red', L('ui.log.asedio.sub'));
-        sfx.rumble(1 + ev.level);
-        logLine(L('ui.log.asedio', { n: ev.level, m: (v.config.fatigueDano ?? BALANCE.asedio.dano) * ev.level }), 'red');
-        await wait(650);
+        // la Furia del Rey sube cada turno: su aviso es corto para no frenar el duelo
+        const rey = esJefe(v.config, activo(v));
+        banner(L('ui.log.furia.banner', { n: ev.level }), 'red', L(rey ? 'ui.mesa.furia.rey' : 'ui.log.furia.sub'));
+        sfx.rumble(1 + Math.min(4, ev.level));
+        logLine(L('ui.log.furia', { n: ev.level }), 'red');
+        await wait(rey ? 380 : 650);
       }
       break;
     case 'undo':
@@ -1264,19 +1281,15 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
       break;
     case 'siren': {
       endLive();
-      if (!ev.card) {
+      // V35 · contraataca el enemigo activo (ya no se voltea una carta del Mazo)
+      if (!ev.tower) {
         logLine(L(SIREN_QUIET[ev.reason as keyof typeof SIREN_QUIET] ?? 'ui.log.sin.contra'), 'dim');
         await wait(200);
         break;
       }
-      v.deckCount -= 1;
-      v.discardCount += 1;
-      v.lastSiren = ev.card;
-      sfx.siren();
-      renderBunker();
-      await wait(700);
-      const glyph = ev.card.sp ? espN(ev.card.sp) : `${RANK_LABEL[ev.card.rank]}${SUIT_GLYPH[ev.card.suit]}`;
-      if (ev.reason === 'strike' && ev.tower) {
+      if (ev.reason === 'strike') {
+        sfx.siren();
+        await wait(380);
         restart(towerEls[ev.tower], 'strike');
         const striker = $('.floor-slot .card', towerEls[ev.tower]);
         if (striker) {
@@ -1294,17 +1307,16 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
         v.integrity = ev.integrity;
         v.wall = ev.wall;
         renderBunker();
-        logLine(`${L('ui.log.contra', { g: glyph, casa: LA_HOUSE(ev.tower), n: ev.threat })}${ev.blocked ? L('ui.log.contra.frena', { n: ev.blocked }) : ''} → ${ev.taken ? L('ui.log.contra.vida', { n: ev.taken }) : L('ui.log.contra.salvo')}${ev.cerco ? ` · ${L('ui.log.contra.cerco')}` : ''}`, ev.taken ? 'red' : 'dim');
+        logLine(`${L('ui.log.contra', { casa: LA_HOUSE(ev.tower), n: ev.threat })}${ev.blocked ? L('ui.log.contra.frena', { n: ev.blocked }) : ''} → ${ev.taken ? L('ui.log.contra.vida', { n: ev.taken }) : L('ui.log.contra.salvo')}`, ev.taken ? 'red' : '');
         await wait(650);
       } else {
-        const why = ev.reason === 'joker' ? L('ui.log.por.joker') : ev.reason === 'ruin' ? L(v.towers[ev.tower!].away ? 'ui.log.por.ausente' : 'ui.log.por.ruin', { casa: LA_HOUSE(ev.tower!) }) : L('ui.log.por.sobrecarga', { casa: LA_HOUSE(ev.tower!) }); // V11 (juice-ux): el trono que no está en el asalto
-        logLine(L('ui.log.contra.otro', { g: glyph, por: why }), 'dim');
+        logLine(L('ui.log.contra.otro', { por: L('ui.log.por.sobrecarga', { casa: LA_HOUSE(ev.tower) }) }), 'dim');
         await wait(300);
       }
       break;
     }
     case 'collapse':
-      // V27: barajar el Descarte ya no quita Vida; sube el Asedio final (el evento 'fatigue' que sigue lo pinta en los tronos)
+      // barajar el Descarte no quita Vida; sube la Furia (el evento 'fatigue' que sigue la pinta en el enemigo)
       banner(L('ui.log.agotado'), ev.sube > 0 ? 'red' : '', ev.sube > 0 ? L('ui.log.agotado.sub', { n: ev.sube }) : L('ui.log.agotado.sub.gratis'));
       if (ev.sube > 0) sfx.crash();
       v.deckCount = v.discardCount;

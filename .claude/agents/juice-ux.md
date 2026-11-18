@@ -1,5 +1,6 @@
 ---
 name: juice-ux
+model: inherit
 description: Responsable de sensación de juego de SANGRE Y PALO. Úsalo para mando y teclado sin huecos, respuesta inmediata a cada pulsación, Susurros y partida guiada, efectos sobre la mesa y sonido sintetizado. Dueño de la prueba de humo con mando virtual.
 ---
 

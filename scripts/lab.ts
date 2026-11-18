@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { applyAction, currentPlayer } from '../src/rules/engine';
 import type { Seal, Treatment } from '../src/rules/engine';
 import { RunPolicy, chooseAction, chooseRunAction } from '../src/rules/bot';
-import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, BOSS, CLAUSURA, DECKS, FATIGUE, STAGES, TIMBRE } from '../src/rules/run';
+import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, BOSS, CLAUSURA, DECKS, FURIA, STAGES, TIMBRE } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 
 export interface Spec {
@@ -55,7 +55,7 @@ export interface Log {
 
 // Mandos de ajuste (variables de entorno): valen para el laboratorio entero, también en sus procesos hijos.
 //   HPS=3.9,3.9,…  resistencia de cada obra · HPX=0.8 escala todas · LATE=0.2 inclina hacia las últimas
-//   THR=2,2,3,…    amenaza de cada obra · FAT=8,2,0.25  fatiga: turno de inicio, cada cuántos turnos, Resonancia por nivel
+//   THR=2,2,3,…    amenaza de cada obra · FUR=1,1,2  Furia: por Mazo agotado, por turno del monarca, Vida del monarca (× la de su guardia)
 //   BARAJA=corta:1:-3  prueba una baraja con más o menos búnker y oro inicial de los que tiene
 //   TIMBRE=2  cartas que sella el Timbre del gremio al empezar cada obra · VENTISCA=4:1  tope de muro de La Ventisca (y amenaza que suma)
 //   CLAUSURA=5:1  asaltos en los que el Reinado 8 sube el Ataque, y cuánto (2,4,5:1 es «en los asaltos con monarca»)
@@ -87,9 +87,9 @@ if (env.CLAUSURA) {
   const [stages, threat] = env.CLAUSURA.split(':');
   Object.assign(CLAUSURA, { stages: stages.split(',').map(Number), threat: Number(threat ?? 1) });
 }
-if (env.FAT) {
-  const [start, every, dano] = env.FAT.split(',').map(Number);
-  Object.assign(FATIGUE, { start, every: every || FATIGUE.every, dano: dano ?? FATIGUE.dano });
+if (env.FUR) {
+  const [mazo, rey, jefeVida] = env.FUR.split(',').map(Number);
+  Object.assign(FURIA, { mazo, rey: rey ?? FURIA.rey, jefeVida: jefeVida || FURIA.jefeVida });
 }
 
 const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec[key] ?? 0) + 1);

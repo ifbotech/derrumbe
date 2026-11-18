@@ -9,7 +9,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, randomInt } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
-import { DIFFICULTY, Difficulty, GameEvent, GameState, RuleError, applyAction, createGame, currentPlayer, eventsFor, reorder, viewFor } from '../rules/engine';
+import { DIFFICULTY, Difficulty, GameEvent, GameState, RuleError, applyAction, createGame, currentPlayer, eventsFor, viewFor } from '../rules/engine';
 import { chooseAction } from '../rules/bot';
 import { Run, finishBattle, newRun, publicRun, runAction, startStage, trackEvents } from '../rules/run';
 import { stateHash } from '../rules/state-hash';
@@ -283,11 +283,6 @@ export function startServer(opts: ServerOptions): Promise<RunningServer> {
         // la semilla ya se enseñó en la crónica: el Trono infinito se siembra de nuevo
         if (action.t === 'endless') room.run.rng = nextSeed();
         broadcastRun(room);
-        // las reliquias se pueden reordenar en pleno asalto: la mesa sigue la misma permutación
-        if (action.t === 'reorder' && room.state && room.state.phase === 'playing') {
-          room.state.tools = reorder(room.state.tools, action.order) ?? room.state.tools;
-          broadcastState(room, []);
-        }
         return;
       }
       case 'difficulty':

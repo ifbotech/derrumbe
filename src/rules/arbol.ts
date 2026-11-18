@@ -71,7 +71,7 @@ const arcon = (arch: Arch, name: string, glyph: string, pos: { x: number; y: num
 const ARSENAL: Def[] = [
   { id: 'caja', rama: 'arsenal', padre: null, rangos: 5, name: 'Bolsa de la conjura', glyph: 'hucha', pos: { x: -1, y: 0 }, plantilla: '+{oro} de oro inicial por rango.' },
   { id: 'vale', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Favor del Tratante', glyph: 'cinta', pos: { x: -2, y: -1 }, texto: 'Un «Renovar mesa» gratis en cada Taberna, por nivel.' },
-  { id: 'tienda', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Puesto grande', glyph: 'andamio', pos: { x: -2, y: 0 }, texto: '+1 reliquia en oferta en cada Taberna, por nivel.' },
+  { id: 'tienda', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Puesto grande', glyph: 'andamio', pos: { x: -2, y: 0 }, texto: 'Por nivel: +1 reliquia en La Taberna, y 2 de las que ofrece son de tu rasgo principal.' },
   { id: 'rutas', rama: 'arsenal', padre: 'caja', rangos: 1, name: 'Cartógrafo', glyph: 'plano', pos: { x: -2, y: 1 }, texto: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.' },
   { id: 'tasador', rama: 'arsenal', padre: 'tienda', rangos: 3, name: 'Ojo del tasador', glyph: 'oro', pos: { x: -3, y: -1.5 }, plantilla: 'Las reliquias de La Taberna cuestan {n} de oro menos (mínimo 1).' },
   arcon('precision', 'Arcón de precisión', 'calibre', { x: -3, y: -0.5 }),

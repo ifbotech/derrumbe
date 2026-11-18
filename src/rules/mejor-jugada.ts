@@ -8,7 +8,7 @@
 //
 // Desempates, por orden: Golpe más alto; menos cartas; trono en el orden ♠ ♦ ♥ ♣; `id` de las cartas.
 import { arrange } from './bot';
-import { Card, GameState, Player, SUITS, Suit, classify, currentPlayer, previewStrike, standing } from './engine';
+import { Card, GameState, Player, SUITS, Suit, activo, classify, currentPlayer, previewStrike } from './engine';
 
 /** La regla en una línea, tal como va en el Reglamento (clave `regla.mejor`; ≤ 100 caracteres). */
 export const REGLA_MEJOR = 'Mejor jugada: si puedes dar un Golpe exacto, lo elige. Si no, elige tu Golpe más alto. Tú confirmas.';
@@ -57,7 +57,9 @@ export function jugadasPosibles(state: GameState, playerId?: string): MejorJugad
   if (state.phase !== 'playing') return [];
   const p = jugador(state, playerId);
   if (!p) return [];
-  const tronos = SUITS.filter((s) => standing(state.towers[s]));
+  // V35 · solo se golpea al enemigo activo
+  const frente = activo(state);
+  const tronos: Suit[] = frente ? [frente.suit] : [];
   const out: MejorJugada[] = [];
   for (const cartas of formacionesLegales([...p.hand, ...p.reserve])) {
     for (const target of tronos) {

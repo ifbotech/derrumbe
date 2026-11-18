@@ -50,7 +50,8 @@ function golpes4(): string[] {
 }
 
 describe('sello de pólvora', () => {
-  // La referencia se volvió a grabar con la 31.0 (GRABAR_POLVORA=1): los multiplicadores se aplican al final de la cuenta.
+  // La referencia se volvió a grabar con la 31.0 (GRABAR_POLVORA=1): los multiplicadores se aplican al final de la cuenta;
+  // y con la 34.0: el Espejo de mano copia la última Reliquia que no sea pasiva, no la de su derecha.
   it('con 4 tronos, 2.000 golpes dan exactamente lo mismo que la referencia grabada', () => {
     const ahora = golpes4();
     if (process.env.GRABAR_POLVORA) writeFileSync(FIXTURE, `${JSON.stringify(ahora)}\n`);

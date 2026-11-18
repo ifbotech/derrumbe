@@ -59,34 +59,20 @@ export function toolTile(id: string): HTMLDivElement {
   return el;
 }
 
-/** Permutación que mueve la reliquia `from` al hueco `to`. */
-export function moveOrder(n: number, from: number, to: number): number[] {
-  const order = Array.from({ length: n }, (_, i) => i);
-  order.splice(to, 0, ...order.splice(from, 1));
-  return order;
-}
-
 export interface BeltOpts {
-  /** Se puede reordenar: recibe la permutación nueva. */
-  onReorder?: (order: number[]) => void;
   /** Se puede vender: recibe el hueco. */
   onSell?: (slot: number) => void;
   sellValue?: (id: string) => number;
 }
 
 /**
- * Las Reliquias: de izquierda a derecha, que es el orden en que se activan.
- * Para reordenar, arrastra una sobre otra o pulsa una y luego el hueco de destino.
+ * Las Reliquias, en el orden en que llegaron. No se ordenan (V34): ninguna depende de su hueco. En La Taberna,
+ * pulsar una dos veces la vende.
  */
 export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
   const el = document.createElement('div');
-  el.className = `belt${opts.onReorder ? ' can-order' : ''}`;
+  el.className = 'belt';
   let picked = -1;
-  const move = (from: number, to: number) => {
-    if (from === to || !opts.onReorder) return;
-    sfx.flick();
-    opts.onReorder(moveOrder(tools.length, from, to));
-  };
   for (let i = 0; i < TOOL_SLOTS; i++) {
     const t = tools[i];
     const slot = document.createElement('div');
@@ -104,37 +90,16 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
     slot.dataset.lupa = `tool:${t.id}`;
     slot.tabIndex = 0;
     const sell = opts.onSell ? `<hr>${L('ui.rel.vender', { n: opts.sellValue?.(t.id) ?? 0 })}` : '';
-    const order = opts.onReorder ? `<hr>${L('ui.rel.orden')}` : '';
-    slot.dataset.tip = toolTip(t.id, `<small>${i === 0 ? L('ui.rel.hueco.1', { n: i + 1, total: TOOL_SLOTS }) : L('ui.rel.hueco.n', { n: i + 1, total: TOOL_SLOTS, antes: i })}</small>${order}${sell}`);
+    slot.dataset.tip = toolTip(t.id, sell);
     slot.innerHTML = `${glyphSvg(t.id, 'belt-ico')}<span class="kind">${KIND_LABEL[def.kind]}</span>${count ? `<span class="cnt">${count}</span>` : ''}<span class="pos">${i + 1}</span>`;
-    if (opts.onReorder) {
-      slot.draggable = true;
-      slot.addEventListener('dragstart', (e) => {
-        e.dataTransfer?.setData('text/plain', String(i));
-        slot.classList.add('dragging');
-      });
-      slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
-      slot.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        slot.classList.add('over');
-      });
-      slot.addEventListener('dragleave', () => slot.classList.remove('over'));
-      slot.addEventListener('drop', (e) => {
-        e.preventDefault();
-        slot.classList.remove('over');
-        const from = Number(e.dataTransfer?.getData('text/plain'));
-        if (Number.isInteger(from)) move(from, i);
-      });
-    }
     const click = () => {
-      if (picked >= 0 && picked !== i) return move(picked, i);
+      if (!opts.onSell) return;
       if (picked === i) {
         picked = -1;
         slot.classList.remove('picked');
-        if (opts.onSell) opts.onSell(i);
+        opts.onSell(i);
         return;
       }
-      if (!opts.onReorder && !opts.onSell) return;
       picked = i;
       $$('.belt-slot', el).forEach((s) => s.classList.toggle('picked', s === slot));
     };
@@ -143,12 +108,6 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         click();
-      } else if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-        // Mayús + flechas mueven la reliquia; las flechas solas mueven el foco
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.key === 'ArrowLeft' && i > 0) move(i, i - 1);
-        else if (e.key === 'ArrowRight' && i < tools.length - 1) move(i, i + 1);
       }
     });
     el.appendChild(slot);

@@ -49,9 +49,9 @@ export interface BalanceConfig {
   /** Vida de los guardias según el tamaño de la conjura (1 a 4 jugadores); también retrasa el Asedio final. */
   cuadrilla: number[];
   /** Giros de los Reinados 2, 3, 5, 6 y 7 (el 8 es `clausura`). */
-  reinados: { corazas: number; impuesto: number; reyesAcorazados: number; reyColerico: number; heridasViejas: number; guardiaNoche: number };
-  /** Asedio final: turno en que empieza (en solitario), cada cuántos sube y Daño que da cada nivel. */
-  asedio: { start: number; every: number; dano: number };
+  reinados: { corazas: number; furia: number; reyesAcorazados: number; reyColerico: number; heridasViejas: number; guardiaNoche: number };
+  /** V35 · Furia: lo que sube con cada Mazo agotado, lo que sube cada turno del monarca y por cuánto se multiplica la Vida del monarca. */
+  furia: { mazo: number; rey: number; jefeVida: number };
   /** Reinado 8 «Puertas selladas»: asaltos en los que sube el Ataque de todos los tronos, y cuánto. */
   clausura: { stages: number[]; threat: number };
   /** Anillo de sello: cartas que sella al empezar cada asalto. */
@@ -62,7 +62,11 @@ export interface BalanceConfig {
     escasez: { cartas: number };
     intemperie: { escudoTope: number };
     furia: { ataque: number };
-    inestable: { antes: number; vida: number };
+    inestable: { furia: number; vida: number };
+    /** V35 · lo que quita cada ♥ jugada contra la Dama del Cáliz. */
+    sequia: { veneno: number };
+    /** V35 · cuánto Ataque de menos tienen los guardias del Inquisidor (sin Aturdido el duelo se le hace largo). */
+    blindaje: { ataque: number };
   };
   /** Precios de La Taberna. */
   taberna: {
@@ -104,9 +108,17 @@ export interface BalanceConfig {
   golpe: { racha: number; rachaTope: number; expuesto: number; onda: number; oroExacto: number };
   acabados: { forjado: number; templado: number; policromado: number; agrietado: number; agrietadoRompe: number };
   sellos: { jornal: number };
+  /** V35 · Cifras de los bonos de cada rasgo de build (con 2, 4 y 6 Reliquias). */
+  rasgos: {
+    sangre: { vida: number; cada: number; multi: number; x: number };
+    tahur: { oro: number; x: number };
+    verdugo: { pct: number; pct2: number; dano: number };
+    bastion: { escudo: number; dano: number; dano2: number; tope: number };
+    horda: { multi: number; cartas: number };
+  };
   /** Asalto único (partida clásica): lo que cambia sobre la mesa por defecto. */
   clasica: {
-    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; fatigueStart: number; fatigueEvery: number; fatigueDano: number };
+    obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; collapseSiege: number; cuadrilla: number[]; fatigueStart: number; fatigueEvery: number };
     brutal: { maxIntegrity: number; collapseSiege: number };
   };
   /** Cifras de cada reliquia, por `id`. */
@@ -173,8 +185,7 @@ export interface Afinable {
 export const AFINABLES: Afinable[] = [
   ...BALANCE.asaltos.map((_, i): Afinable => ({ ruta: `asaltos.${i}.hp`, entero: false })),
   ...BALANCE.asaltos.map((_, i): Afinable => ({ ruta: `asaltos.${i}.threat`, entero: true })),
-  { ruta: 'asedio.start', entero: true },
-  { ruta: 'asedio.dano', entero: true },
+  { ruta: 'furia.jefeVida', entero: false, paso: 0.1 },
   { ruta: 'reinados.corazas', entero: false },
   { ruta: 'reinados.reyesAcorazados', entero: false },
   { ruta: 'cuadrilla.1', entero: false },

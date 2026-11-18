@@ -1,23 +1,23 @@
 {
-  "generated": "2026-11-17T19:37:58.617Z",
-  "rules": "fe42d0885d5aa510",
+  "generated": "2026-11-18T00:18:02.178Z",
+  "rules": "7ac7424f4758ff01",
   "campaigns": 6000,
   "hilos": 12,
-  "segundos": 242.4,
+  "segundos": 53.5,
   "ok": true,
   "checks": [
     {
       "id": "reinado1.vacio",
-      "valor": 31.5,
+      "valor": 35.5,
       "lo": 26,
       "hi": 32,
-      "margen": 4.4,
+      "margen": 4.5,
       "n": 1000,
       "pasa": true
     },
     {
       "id": "reinado1.lleno",
-      "valor": 47.5,
+      "valor": 43.2,
       "lo": 42,
       "hi": 48,
       "margen": 4.7,
@@ -26,25 +26,25 @@
     },
     {
       "id": "reinado8.vacio",
-      "valor": 10.4,
+      "valor": 9.8,
       "lo": 6,
       "hi": 10,
-      "margen": 4.1,
+      "margen": 4,
       "n": 500,
       "pasa": true
     },
     {
       "id": "reinado8.lleno",
-      "valor": 16,
+      "valor": 15.2,
       "lo": 12,
       "hi": 18,
-      "margen": 4.9,
+      "margen": 4.8,
       "n": 500,
       "pasa": true
     },
     {
       "id": "baraja.acero.vacio",
-      "valor": 37,
+      "valor": 37.3,
       "lo": 23,
       "hi": 34,
       "margen": 8.4,
@@ -53,16 +53,70 @@
     },
     {
       "id": "baraja.acero.lleno",
-      "valor": 50,
+      "valor": 36,
       "lo": 40,
       "hi": 50,
-      "margen": 8.7,
+      "margen": 8.3,
       "n": 300,
       "pasa": true
     },
     {
       "id": "baraja.prestamista.vacio",
-      "valor": 36.3,
+      "valor": 34.7,
+      "lo": 23,
+      "hi": 34,
+      "margen": 8.2,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.prestamista.lleno",
+      "valor": 41.3,
+      "lo": 40,
+      "hi": 50,
+      "margen": 8.5,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.ases.vacio",
+      "valor": 39,
+      "lo": 23,
+      "hi": 34,
+      "margen": 8.4,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.ases.lleno",
+      "valor": 40.7,
+      "lo": 40,
+      "hi": 50,
+      "margen": 8.5,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.corta.vacio",
+      "valor": 31.3,
+      "lo": 23,
+      "hi": 34,
+      "margen": 8,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.corta.lleno",
+      "valor": 43.3,
+      "lo": 40,
+      "hi": 50,
+      "margen": 8.6,
+      "n": 300,
+      "pasa": true
+    },
+    {
+      "id": "baraja.caos.vacio",
+      "valor": 35,
       "lo": 23,
       "hi": 34,
       "margen": 8.3,
@@ -70,71 +124,17 @@
       "pasa": true
     },
     {
-      "id": "baraja.prestamista.lleno",
-      "valor": 47,
+      "id": "baraja.caos.lleno",
+      "valor": 42,
       "lo": 40,
       "hi": 50,
-      "margen": 8.6,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.ases.vacio",
-      "valor": 39.7,
-      "lo": 23,
-      "hi": 34,
       "margen": 8.5,
       "n": 300,
       "pasa": true
     },
     {
-      "id": "baraja.ases.lleno",
-      "valor": 48.3,
-      "lo": 40,
-      "hi": 50,
-      "margen": 8.7,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.corta.vacio",
-      "valor": 32.3,
-      "lo": 23,
-      "hi": 34,
-      "margen": 8.1,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.corta.lleno",
-      "valor": 52.3,
-      "lo": 40,
-      "hi": 50,
-      "margen": 8.7,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.caos.vacio",
-      "valor": 27.7,
-      "lo": 23,
-      "hi": 34,
-      "margen": 7.8,
-      "n": 300,
-      "pasa": true
-    },
-    {
-      "id": "baraja.caos.lleno",
-      "valor": 57.3,
-      "lo": 40,
-      "hi": 50,
-      "margen": 8.6,
-      "n": 300,
-      "pasa": true
-    },
-    {
       "id": "arbol.suma",
-      "valor": 16,
+      "valor": 7.7,
       "lo": 0,
       "margen": 0,
       "n": 2000,
@@ -142,7 +142,7 @@
     },
     {
       "id": "reinados.bajan",
-      "valor": 21.1,
+      "valor": 25.7,
       "lo": 0,
       "margen": 0,
       "n": 1500,
@@ -150,42 +150,42 @@
     },
     {
       "id": "ritmo.1.p95",
-      "valor": 9,
-      "hi": 9,
+      "valor": 6,
+      "hi": 8,
       "margen": 1,
       "n": 5000,
       "pasa": true
     },
     {
       "id": "ritmo.2.p95",
-      "valor": 12,
-      "hi": 13,
+      "valor": 15,
+      "hi": 16,
       "margen": 1,
       "n": 5000,
       "pasa": true
     },
     {
       "id": "ritmo.3.p95",
-      "valor": 12,
-      "hi": 13,
+      "valor": 13,
+      "hi": 16,
       "margen": 1,
-      "n": 4979,
+      "n": 4908,
       "pasa": true
     },
     {
       "id": "ritmo.4.p95",
-      "valor": 14,
-      "hi": 15,
+      "valor": 18,
+      "hi": 19,
       "margen": 1,
-      "n": 4932,
+      "n": 4889,
       "pasa": true
     },
     {
       "id": "ritmo.5.p95",
-      "valor": 15,
-      "hi": 15,
+      "valor": 18,
+      "hi": 19,
       "margen": 1,
-      "n": 3309,
+      "n": 3125,
       "pasa": true
     },
     {

@@ -13,10 +13,10 @@ import { ARBOL, Nodo, cifraDe, cleanUp as limpiaArbol, comprarNodo, rangoDe } fr
 import { Caida, Pieza, caidaDe, caidaVacia, sumaPiezas } from './caida';
 import { Tirada, multiplicadores, tirarHuesos } from './huesos';
 import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, RUN_11, migraMeta11, migraRun11, recortaMeta10 } from './migracion';
-import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, reorder, seedFrom, shuffle, standardDeck } from './engine';
+import { Card, Config, DEFAULT_CONFIG, FORM, FORMATIONS, Formation, GameEvent, GameState, SEALS, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
-import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool } from './tools';
+import { Arch, BOXES, RARITY, RASGOS, Rarity, Rasgo, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool, rasgosCfg, rasgosDe } from './tools';
 
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
@@ -39,7 +39,7 @@ const REIN = BALANCE.reinados;
 export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
   { name: 'Corazas finas', desc: 'Todos los guardias tienen un {pct} % más de Vida.' },
-  { name: 'Impuesto real', desc: 'Todo en la Taberna cuesta {impuesto} de oro más.' },
+  { name: 'Corte airada', desc: 'Cada Mazo agotado sube la Furia {furia} más.' },
   { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tienes {heridas} punto menos de Vida.' },
@@ -152,11 +152,11 @@ export const BOSSES: Boss[] = [
     who: 'La Dama del Cáliz',
     fem: true,
     name: 'Cáliz envenenado',
-    desc: 'Tus ♥ no curan.',
+    desc: 'Tus ♥ no curan: cada una que juegas te quita {veneno} de Vida.',
     barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
-    curse: { mark: 'corazones', badge: 'Tus ♥ no curan' },
+    curse: { mark: 'corazones', badge: 'Tus ♥ te quitan {veneno}' },
     // se aplica después de las reliquias: con el Bálsamo, tampoco curan
-    apply: (c) => void (c.curaPorCarta = 0),
+    apply: (c) => void ((c.curaPorCarta = 0), (c.veneno = MON.sequia.veneno)),
   },
   {
     id: 'intemperie',
@@ -172,28 +172,28 @@ export const BOSSES: Boss[] = [
     id: 'blindaje',
     who: 'El Inquisidor',
     name: 'Guardia de hierro',
-    desc: 'Ningún trono queda Aturdido.',
+    desc: 'Ningún guardia queda Aturdido, pero pegan {ataque} menos.',
     barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
     curse: { mark: 'guardias', badge: 'Sin Aturdido' },
-    apply: (c) => void (c.noFx = 'sobrecarga'),
+    apply: (c) => void ((c.noFx = 'sobrecarga'), eachThreat(c, -MON.blindaje.ataque)),
   },
   {
     id: 'furia',
-    who: 'El Verdugo',
-    name: 'Furia',
-    desc: 'El Ataque de todos los tronos sube {ataque}.',
+    who: 'El Carnicero',
+    name: 'Hacha afilada',
+    desc: 'El Ataque de todos los guardias sube {ataque}.',
     barks: { entrada: 'Afilé el hacha toda la noche. ¡Vale cuatro, y sin piedad!', contraataque: '¡Truco! Y esta vez no me tiembla el pulso.', caida: 'Se me cayó la capucha. Mala mano, la mía.' },
-    curse: { mark: 'ataque', badge: '+{ataque} de Ataque en cada trono' },
+    curse: { mark: 'ataque', badge: '+{ataque} de Ataque en cada guardia' },
     apply: (c) => eachThreat(c, MON.furia.ataque),
   },
   {
     id: 'inestable',
     who: 'El Relojero',
     name: 'Arena rápida',
-    desc: 'El Asedio final empieza {antes} turnos antes, y cada guardia abatido sin Golpe exacto te quita {vida} de Vida.',
+    desc: 'El asalto empieza con {furia} de Furia, y cada guardia abatido sin Golpe exacto te quita {vida} de Vida.',
     barks: { entrada: 'Tic, tac. Cada grano de arena juega de mi lado.', contraataque: 'Se te acaba la arena, compadre. Yo no apuro: espero.', caida: 'Se me paró el reloj... justo a tu hora.' },
-    curse: { mark: 'asedio', badge: 'Asedio final {antes} turnos antes' },
-    apply: (c) => void ((c.crumbleHurt = MON.inestable.vida), (c.fatigueStart = Math.max(1, (c.fatigueStart ?? BALANCE.asedio.start) - MON.inestable.antes))),
+    curse: { mark: 'asedio', badge: 'Empieza con {furia} de Furia' },
+    apply: (c) => void ((c.crumbleHurt = MON.inestable.vida), (c.furiaInicial = (c.furiaInicial ?? 0) + MON.inestable.furia)),
   },
 ];
 /** Cifras de cada decreto para su texto y su placa. */
@@ -343,6 +343,96 @@ export const EVENTS: EventDef[] = [
     ],
   },
 ];
+/** V35 · Apunta lo que salió en un santuario, para enseñarlo. */
+const sale = (run: Run, clave: string, buena: boolean, datos: Record<string, number> = {}, mas: { reliquia?: string; rasgo?: Rasgo } = {}) => void (run.suerte = { clave, datos, buena, ...mas });
+EVENTS.push(
+  {
+    id: 'rueda',
+    name: 'La rueda de la fortuna',
+    text: 'Una rueda de carro cuelga del techo, pintada en cuatro gajos. Alguien dejó la manivela puesta.',
+    options: [
+      {
+        label: 'Girar la rueda',
+        read: { gain: 'Oro, Vida o Reliquia', cost: '1 de 4: −4 de Vida', glyph: 'dados' },
+        desc: 'Sale un gajo al azar: +12 de oro, +6 de Vida, una Reliquia Rara o −4 de Vida.',
+        can: (run) => run.integrity > 4,
+        apply: (run) => {
+          const gajo = Math.floor(nextRandom(run) * 4);
+          if (gajo === 0) (run.gold += 12), sale(run, 'rueda.oro', true, { n: 12 });
+          else if (gajo === 1) (run.integrity = Math.min(run.maxIntegrity, run.integrity + 6)), sale(run, 'rueda.vida', true, { n: 6 });
+          else if (gajo === 2 && grantTool(run, ['oficio'])) sale(run, 'rueda.reliquia', true, {}, { reliquia: run.tools[run.tools.length - 1].id });
+          else if (gajo === 2) (run.gold += 12), sale(run, 'rueda.lleno', true, { n: 12 });
+          else (run.integrity -= 4), sale(run, 'rueda.negro', false, { n: 4 });
+        },
+      },
+      { label: 'No tocarla', read: { gain: '+3 de oro', cost: '', glyph: 'oro' }, desc: 'Te llevas las monedas del suelo: +3 de oro.', apply: (run) => void (run.gold += 3) },
+    ],
+  },
+  {
+    id: 'doble',
+    name: 'Los huesos del diablo',
+    text: 'Un tahúr sin rostro agita dos huesos en un cubilete. Mira tu bolsa de esquirlas y sonríe.',
+    options: [
+      {
+        label: 'Doble o nada',
+        read: { gain: 'Esquirlas ×2', cost: '1 de 2: las pierdes', glyph: 'dados' },
+        desc: 'Te juegas las esquirlas de esta campaña: 1 de cada 2 veces se doblan; si no, las pierdes.',
+        can: (run) => run.esquirlas > 0,
+        apply: (run) => {
+          const antes = run.esquirlas;
+          if (nextRandom(run) < 0.5) (run.esquirlas = antes * 2), sale(run, 'doble.si', true, { a: antes, b: antes * 2 });
+          else (run.esquirlas = 0), sale(run, 'doble.no', false, { a: antes });
+        },
+      },
+      { label: 'Guardar la bolsa', read: { gain: 'Nada cambia', cost: '', glyph: 'atajo' }, desc: 'Nada cambia.', apply: () => {} },
+    ],
+  },
+  {
+    id: 'altar',
+    name: 'El altar de sangre',
+    text: 'Un altar con cinco estandartes. El cuenco del centro pide algo tuyo antes de dar nada.',
+    options: [
+      {
+        label: 'Ofrecer tu sangre',
+        read: { gain: 'Reliquia de tu rasgo', cost: '−3 de Vida máxima', glyph: 'corazon' },
+        desc: 'Pierdes 3 de Vida máxima para siempre. Te llevas una Reliquia del rasgo del que llevas más.',
+        can: (run) => run.maxIntegrity > 8 && run.tools.length < TOOL_SLOTS && !!rasgoMayor(run),
+        apply: (run) => {
+          const rasgo = rasgoMayor(run)!;
+          const id = rollToolRasgo(run, rasgo);
+          run.maxIntegrity -= 3;
+          run.integrity = Math.min(run.integrity, run.maxIntegrity);
+          if (id) placeTool(run.tools, { id, n: 0 }), sale(run, 'altar.si', true, { n: rasgosDe(run.tools)[rasgo] }, { reliquia: id, rasgo });
+          else (run.gold += 10), sale(run, 'altar.no', true, { n: 10 }, { rasgo });
+        },
+      },
+      { label: 'Rezar y seguir', read: { gain: '+3 de Vida', cost: '', glyph: 'reparacion' }, desc: '+3 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 3)) },
+    ],
+  },
+  {
+    id: 'dado',
+    name: 'El dado de dos caras',
+    text: 'Sobre una losa hay un dado de hueso: tres caras blancas, tres negras. Solo se puede tirar una vez.',
+    options: [
+      {
+        label: 'Tirarlo',
+        read: { gain: '2 formaciones +1 nivel', cost: '1 de 2: +1 Ataque', glyph: 'dados' },
+        desc: 'Blanca: 2 formaciones suben 1 nivel. Negra: +10 de oro y +1 de Ataque en el próximo asalto.',
+        apply: (run) => {
+          if (nextRandom(run) < 0.5) {
+            for (const fo of pick(run, FORMATIONS, 2)) run.levels[fo] += 1;
+            sale(run, 'dado.blanca', true);
+          } else {
+            run.gold += 10;
+            run.curse = true;
+            sale(run, 'dado.negra', false, { n: 10 });
+          }
+        },
+      },
+      { label: 'Dejarlo quieto', read: { gain: '+2 de Vida', cost: '', glyph: 'reparacion' }, desc: '+2 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 2)) },
+    ],
+  },
+);
 export const EVENT: Record<string, EventDef> = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
 
 // ───────────────────────── Árbol de la Conjura (progreso permanente) ─────────────────────────
@@ -483,7 +573,6 @@ export type RunAction =
   | { t: 'next' }
   | { t: 'event'; i: number }
   /** Cinturón: nuevo orden de las herramientas (permutación de índices). */
-  | { t: 'reorder'; order: number[] }
   /** Tras el asalto 5: seguir en el Trono infinito. */
   | { t: 'endless' };
 
@@ -556,6 +645,11 @@ export interface Run {
   pending: Pending | null;
   event: string | null;
   events: string[];
+  /**
+   * V35 · Lo que salió en el último santuario de azar (la pantalla siguiente lo enseña una vez): la clave de sus textos
+   * (`suerte.<clave>.titulo` y `.texto` de plantillas.ts), sus cifras y, si los hay, la Reliquia y el rasgo que nombra.
+   */
+  suerte?: { clave: string; datos: Record<string, number>; reliquia?: string; rasgo?: Rasgo; buena: boolean } | null;
   rerolls: number;
   vouchers: number;
   removals: number;
@@ -621,6 +715,41 @@ function rollTool(run: Run, rarities: Rarity[], exclude: string[] = []): string 
   return pool[pool.length - 1];
 }
 const ALL_RARITIES: Rarity[] = ['comun', 'oficio', 'capataz', 'reliquia'];
+
+/** V35 · El rasgo con más Reliquias en la tira (a igualdad, el de la Reliquia más reciente); null si no llevas ninguna. */
+export function rasgoMayor(run: Pick<Run, 'tools'>): Rasgo | null {
+  const n = rasgosDe(run.tools);
+  let mejor: Rasgo | null = null;
+  for (const t of [...run.tools].reverse()) {
+    const r = TOOL[t.id]?.rasgo;
+    if (r && (!mejor || n[r] > n[mejor])) mejor = r;
+  }
+  return mejor;
+}
+
+/** Una Reliquia al azar de un rasgo (de cualquier rareza); null si no queda ninguna en el surtido. */
+function rollToolRasgo(run: Run, rasgo: Rasgo, exclude: string[] = []): string | null {
+  const owned = run.tools.map((t) => t.id);
+  const pool = run.toolPool.filter((id) => !owned.includes(id) && !exclude.includes(id) && TOOL[id].rasgo === rasgo);
+  return pool.length ? pool[Math.floor(nextRandom(run) * pool.length)] : null;
+}
+
+/**
+ * V35 · El Cofre del monarca: tres Reliquias a elegir una. La primera es de tu rasgo con más Reliquias (si llevas
+ * alguna); las otras, Raras, Nobles o Regias al azar.
+ */
+function cofreDelMonarca(run: Run): string[] {
+  const out: string[] = [];
+  const mayor = rasgoMayor(run);
+  const propia = mayor ? rollToolRasgo(run, mayor) : null;
+  if (propia) out.push(propia);
+  while (out.length < 3) {
+    const id = rollTool(run, ['oficio', 'capataz', 'reliquia'], out) ?? rollTool(run, ALL_RARITIES, out);
+    if (!id) break;
+    out.push(id);
+  }
+  return out;
+}
 
 function grantTool(run: Run, rarities: Rarity[]): boolean {
   if (run.tools.length >= TOOL_SLOTS) return false;
@@ -863,14 +992,24 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
 
 /** Cuánto más aguantan las obras según el tamaño de la cuadrilla (1 a 4 jugadores). */
 const COOP_HP = BALANCE.cuadrilla;
-/** Asedio final en campaña: turno en que empieza (en solitario), cada cuántos turnos sube y cuánto Daño da cada nivel. */
-export const FATIGUE: { start: number; every: number; dano: number } = BALANCE.asedio;
+/** V35 · Furia en campaña: lo que sube con cada Mazo agotado, con cada turno del monarca, y la Vida del monarca (× la de su guardia). */
+export const FURIA: { mazo: number; rey: number; jefeVida: number } = BALANCE.furia;
+
+/**
+ * V35 · El orden en que se asaltan las Casas de un asalto: los tronos presentes, empezando por uno que depende de la
+ * campaña y del asalto (así no se abre siempre por Picas). El monarca, si lo hay, es el último guardia de la última.
+ */
+export function ordenCasas(run: Pick<Run, 'id' | 'stage' | 'palos'>): Suit[] {
+  const presentes = run.palos?.[run.stage] ?? [...SUITS];
+  const k = Math.abs((run.id | 0) + run.stage * 7) % presentes.length;
+  return [...presentes.slice(k), ...presentes.slice(0, k)];
+}
 
 /** Timbre del gremio: cartas del mazo que sella al empezar cada obra (además de activar dos veces todos los sellos). */
 export const TIMBRE: { stamps: number } = BALANCE.timbre;
 /** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
 export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
-ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), impuesto: REIN.impuesto, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
+ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), furia: REIN.furia, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
@@ -888,16 +1027,19 @@ export function stageConfig(run: Run, players = 1): Config {
     cfg.floorHp[r] = roundHp(DEFAULT_CONFIG.floorHp[r] * scale * reyes);
     cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === 13 ? REIN.reyColerico : 0) + (a >= 6 && r !== 13 ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
   }
-  // fatiga de cimientos: en cuadrilla las obras duran más turnos y empieza en proporción
-  cfg.fatigueStart = Math.round(FATIGUE.start * COOP_HP[Math.min(players, 4) - 1]);
-  cfg.fatigueEvery = FATIGUE.every;
-  cfg.fatigueDano = FATIGUE.dano;
+  // V35 · duelo Casa por Casa: se combate la primera en pie de `orden`. Sin reloj de turnos: la Furia sube con cada
+  // Mazo agotado y, contra el monarca (el último guardia del asalto), con cada turno
+  // Corte airada (Reinado 3+): cada Mazo agotado sube la Furia un poco más
+  cfg.collapseSiege = FURIA.mazo + (a >= 2 ? REIN.furia : 0);
+  cfg.orden = ordenCasas(run);
+  if (st.boss) cfg.jefe = { suit: cfg.orden[cfg.orden.length - 1], vida: FURIA.jefeVida, furia: FURIA.rey };
   cfg.formLevel = { ...run.levels };
   // Árbol (Corona de hierro), solo en el Trono infinito: Manga honda guarda 2 cartas; Buen ojo da Golpe exacto
   // pasándose por poco (solo por arriba). En los cinco asaltos no tocan la mesa (V12-C).
   if (run.endless && rangoDe(run.up, 'manga') > 0) cfg.reserveSize = 2;
   if (run.endless && rangoDe(run.up, 'gracia') > 0) cfg.cleanOver = cifraDe('gracia', rangoDe(run.up, 'gracia')).n;
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
+  rasgosCfg(cfg, run.tools);
   if (run.boss) BOSS[run.boss]?.apply(cfg);
   if (run.contract) CONTRACT[run.contract]?.cfg?.(cfg);
   if (run.curse) eachThreat(cfg, 1);
@@ -914,7 +1056,7 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
   run.death = null;
   run.caida = caidaVacia();
   run.ritual = null;
-  return {
+  const state: GameState = {
     config,
     rng: (run.rng ^ 0x5bd1e995) | 0,
     players: players.map((p) => ({ id: p.id, name: p.name, hand: deck.splice(0, size), reserve: [] })),
@@ -922,12 +1064,12 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
     discard: [],
     towers: newTowers(stageDef(run.stage).floors, config, run.palos?.[run.stage]),
     integrity: Math.min(run.integrity, config.maxIntegrity),
-    wall: 0,
+    // V35 · rasgo Bastión: el asalto empieza con Escudo
+    wall: Math.min(config.wallCap, config.wallStart ?? 0),
     turn: 0,
     turnCount: 0,
     collapses: 0,
     phase: 'playing',
-    lastSiren: null,
     tools: run.tools.map((t) => ({ ...t })),
     chain: 0,
     charge: 0,
@@ -938,8 +1080,10 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
     // una tiza de replanteo por obra, solo en solitario
     chalk: players.length === 1 ? 1 : 0,
     undo: null,
-    fatigue: 0,
+    fatigue: config.furiaInicial ?? 0,
   };
+  tiraDado(state);
+  return state;
 }
 
 /**
@@ -991,16 +1135,16 @@ export const offerCost = (run: Run, o: Offer) => (run.freeShop || selloGratis(ru
 export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?.rarity ?? 'comun'].cost / 2));
 
 function generateShop(run: Run): Offer[] {
-  const offers = stock(run);
-  if (run.ascension >= 2) for (const o of offers) o.cost += REIN.impuesto;
-  return offers;
+  return stock(run);
 }
 
 function stock(run: Run): Offer[] {
   const offers: Offer[] = [];
   const seen: string[] = [];
+  // V35 · el Puesto grande (Árbol): por nivel, una Reliquia más y dos de las ofrecidas son de tu rasgo principal
+  const mayor = rasgoMayor(run);
   for (let i = 0; i < BALANCE.taberna.reliquias + lvl(run, 'tienda'); i++) {
-    const id = rollTool(run, ALL_RARITIES, seen);
+    const id = (i < 2 * lvl(run, 'tienda') && mayor ? rollToolRasgo(run, mayor, seen) : null) ?? rollTool(run, ALL_RARITIES, seen);
     if (!id) break;
     seen.push(id);
     // Ojo del tasador (Árbol): las reliquias cuestan menos, nunca menos de 1
@@ -1110,20 +1254,12 @@ export function finishBattle(run: Run, state: GameState): void {
   run.phase = 'reward';
   run.draft = draftOptions(run);
   run.drafted = false;
-  const lootA = st.boss ? rollTool(run, ['oficio', 'capataz', 'reliquia']) : null;
-  const lootB = lootA ? rollTool(run, ['oficio', 'capataz', 'reliquia'], [lootA]) : null;
-  run.loot = [lootA, lootB].filter((id): id is string => !!id);
+  run.loot = st.boss ? cofreDelMonarca(run) : [];
   run.looted = run.loot.length === 0;
 }
 
 /** Aplica una decisión de campaña. Devuelve un mensaje de error legible, o null si se aplicó. */
 export function runAction(run: Run, a: RunAction): string | null {
-  if (a.t === 'reorder') {
-    const next = reorder(run.tools, a.order);
-    if (!next) return 'Ese orden no es válido.';
-    run.tools = next;
-    return null;
-  }
   if (run.pending && a.t !== 'target' && a.t !== 'cancel') return 'Antes elige las cartas pendientes.';
   switch (a.t) {
     case 'begin':
@@ -1267,6 +1403,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       const opt = EVENT[run.event].options[a.i];
       if (!opt) return 'Esa opción no existe.';
       if (opt.can && !opt.can(run)) return 'No puedes elegir eso ahora.';
+      run.suerte = null;
       opt.apply(run);
       if (!run.pending) advance(run);
       return null;
@@ -1377,14 +1514,6 @@ export function cargaRun(raw: unknown): Run | null {
   if (!r || typeof r !== 'object' || !r.stats) return null;
   if (r.v === RUN_11) migraRun11(r, RUN_VERSION);
   return r.v === RUN_VERSION ? r : null;
-}
-
-/** Reordena el cinturón de la campaña y, si hay obra en curso, el de la mesa (misma permutación). */
-export function reorderBelt(run: Run, state: GameState | null, order: number[]): string | null {
-  const err = runAction(run, { t: 'reorder', order });
-  if (err) return err;
-  if (state && state.phase === 'playing') state.tools = reorder(state.tools, order) ?? state.tools;
-  return null;
 }
 
 /**

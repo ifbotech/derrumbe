@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer, seedFrom } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
-import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, reorderBelt, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FATIGUE } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, dailySeed, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FURIA, rasgoMayor } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
@@ -243,7 +243,7 @@ describe('contratos', () => {
     act(ko, { t: 'begin' });
     ko.node.routes[0] = 'intacto';
     const state = enter(ko);
-    trackEvents(ko, [{ e: 'siren', card: null, tower: 'S', threat: 2, blocked: 0, taken: 2, integrity: 18, wall: 0, reason: 'strike' }]);
+    trackEvents(ko, [{ e: 'siren', tower: 'S', threat: 2, blocked: 0, taken: 2, integrity: 18, wall: 0, reason: 'strike' }]);
     for (const t of Object.values(state.towers)) t.floors = [];
     state.phase = 'won';
     finishBattle(ko, state);
@@ -311,13 +311,15 @@ describe('cobro y selección', () => {
     expect(runAction(run, { t: 'draft', i: 0 })).toMatch(/selección/);
   });
 
-  it('los jefes dejan botín: una de dos herramientas de oficio o mejor', () => {
+  it('V35 · el Cofre del monarca: una de tres Reliquias (la de tu rasgo puede ser de cualquier rareza)', () => {
     const run = newRun({}, 11);
     run.stage = 2;
     win(run);
-    expect(run.loot.length).toBe(2);
+    expect(run.loot.length).toBe(3);
+    expect(new Set(run.loot).size).toBe(3);
     expect(run.beaten).toEqual([run.bosses[2]]);
-    for (const id of run.loot) expect(TOOL[id].rarity).not.toBe('comun');
+    // sin Reliquias en la tira no hay rasgo que favorecer: las tres son Raras o mejores
+    if (!rasgoMayor(run)) for (const id of run.loot) expect(TOOL[id].rarity).not.toBe('comun');
     act(run, { t: 'draft', i: null });
     expect(run.phase).toBe('reward'); // falta el botín
     act(run, { t: 'loot', id: run.loot[0] });
@@ -432,19 +434,20 @@ describe('ferretería', () => {
     toShop(run);
     run.gold = 50;
     const before = JSON.stringify(run.shop);
-    expect(rerollCost(run)).toBe(2);
+    expect(rerollCost(run)).toBe(BALANCE.taberna.renovar.base);
     act(run, { t: 'reroll' });
     expect(JSON.stringify(run.shop)).not.toBe(before);
-    expect(rerollCost(run)).toBe(3);
+    const R = BALANCE.taberna.renovar;
+    expect(rerollCost(run)).toBe(R.base + R.paso);
     act(run, { t: 'reroll' });
-    expect(run.gold).toBe(45);
+    expect(run.gold).toBe(50 - R.base - (R.base + R.paso));
     const guild = newRun({ up: { vale: 2 } }, 21);
     toShop(guild);
     const gold = guild.gold;
     act(guild, { t: 'reroll' });
     act(guild, { t: 'reroll' });
     expect(guild.gold).toBe(gold);
-    expect(rerollCost(guild)).toBe(2);
+    expect(rerollCost(guild)).toBe(BALANCE.taberna.renovar.base);
   });
 
   it('herramientas: se compran hasta llenar el cinturón, se venden por la mitad y se reparan búnkeres', () => {
@@ -533,17 +536,12 @@ describe('V29 · el Don de la Conjura', () => {
 });
 
 describe('cinturón', () => {
-  it('se reordena con una permutación; en plena obra, la mesa sigue el mismo orden', () => {
+  it('V34 · las Reliquias no se ordenan: no existe la acción; en pleno asalto tampoco se venden', () => {
     const run = newRun({}, 4);
     run.tools = ['piqueta', 'prisma', 'ultimo'].map((id) => ({ id, n: 0 }));
-    act(run, { t: 'reorder', order: [2, 0, 1] });
-    expect(run.tools.map((t) => t.id)).toEqual(['ultimo', 'piqueta', 'prisma']);
-    expect(runAction(run, { t: 'reorder', order: [0, 0, 1] })).toMatch(/no es válido/);
-    const state = enter(run);
-    state.tools[0].n = 3;
-    expect(reorderBelt(run, state, [1, 2, 0])).toBeNull();
+    expect(runAction(run, { t: 'reorder', order: [2, 0, 1] } as unknown as RunAction)).not.toBeNull();
     expect(run.tools.map((t) => t.id)).toEqual(['piqueta', 'prisma', 'ultimo']);
-    expect(state.tools).toEqual([{ id: 'piqueta', n: 0 }, { id: 'prisma', n: 0 }, { id: 'ultimo', n: 3 }]);
+    enter(run);
     expect(runAction(run, { t: 'sell', i: 0 })).toMatch(/pleno asalto/);
   });
 
@@ -658,9 +656,9 @@ describe('final, cimientos abisales y gremio', () => {
     const solo = stageConfig(run, 1).floorHp[11];
     expect(stageConfig(run, 3).floorHp[11]).toBeGreaterThan(solo);
     expect(stageConfig(newRun({ ascension: 2 }, 13), 1).floorHp[11]).toBeGreaterThan(solo);
-    // en cuadrilla la fatiga de cimientos empieza más tarde, en proporción a lo que aguantan las obras
-    expect(stageConfig(run, 1).fatigueStart).toBe(FATIGUE.start);
-    expect(stageConfig(run, 4).fatigueStart!).toBeGreaterThan(FATIGUE.start);
+    // V35 · la campaña no tiene reloj de turnos: la Furia sube con cada Mazo agotado
+    expect(stageConfig(run, 1).fatigueStart).toBeUndefined();
+    expect(stageConfig(run, 4).collapseSiege).toBe(FURIA.mazo);
     // en solitario hay una tiza de replanteo por obra; en cuadrilla, ninguna
     expect(startStage(Object.assign(newRun({}, 13), { phase: 'battle' as const }), P).chalk).toBe(1);
     expect(startStage(Object.assign(newRun({}, 13), { phase: 'battle' as const }), [...P, { id: 'b', name: 'B' }]).chalk).toBe(0);
@@ -765,8 +763,8 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(3, 3)).floorThreat[13]).toBe(base.floorThreat[13]);
     expect(stageConfig(at(4, 3)).floorThreat[13]).toBe(base.floorThreat[13] + BALANCE.reinados.reyColerico);
     expect(stageConfig(at(4, 3)).floorThreat[11]).toBe(base.floorThreat[11]);
-    // 6 · búnker viejo: un punto menos de integridad
-    expect(at(4).maxIntegrity - at(5).maxIntegrity).toBe(1);
+    // 6 · heridas viejas: menos Vida máxima
+    expect(at(4).maxIntegrity - at(5).maxIntegrity).toBe(BALANCE.reinados.heridasViejas);
     // 7 · turno de noche: J y Q, no las K
     expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + 1);
@@ -782,12 +780,14 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(7, 4)).floorHp[11]).toBe(stageConfig(at(1, 4)).floorHp[11]);
   });
 
-  it('3 · precios de obra: la ferretería cuesta 2 más; al terminar una obra el búnker se repara 4', () => {
+  it('3 · Corte airada (V35): cada Mazo agotado sube la Furia más; La Taberna no cambia de precio; al terminar un asalto curas 4', () => {
+    for (const st of [1, 3, 5]) expect(stageConfig(at(2, st)).collapseSiege).toBe(stageConfig(at(1, st)).collapseSiege + BALANCE.reinados.furia);
+    expect(stageConfig(at(1, 3)).collapseSiege).toBe(stageConfig(at(0, 3)).collapseSiege);
     const cheap = at(1);
     const dear = at(2);
     toShop(cheap);
     toShop(dear);
-    expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost + 2));
+    expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost));
     const healed = at(7);
     win(healed, (s) => (s.integrity = 10));
     expect(healed.integrity).toBe(14);

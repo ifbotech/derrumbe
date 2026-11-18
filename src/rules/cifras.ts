@@ -33,7 +33,7 @@ export function cifrasReinado(): Record<string, number | string> {
   return {
     pct: Math.round((R.corazas - 1) * 100),
     reyes: Math.round((R.reyesAcorazados - 1) * 100),
-    impuesto: R.impuesto,
+    furia: R.furia,
     rey: R.reyColerico,
     heridas: R.heridasViejas,
     noche: R.guardiaNoche,

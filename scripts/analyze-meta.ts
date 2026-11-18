@@ -10,6 +10,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //   npm run analyze:meta -- regalos --piezas=clavos,ariete --n=600   unas pocas piezas, con muestra grande
 //   … --n=2000 cambia las campañas por celda; --barajas=corta,ases mide solo esas barajas.
 //   Solo el informe completo escribe meta-report.json.
+//   npm run analyze:meta -- --tramo=1/5 … --tramo=5/5 y luego -- --juntar   el informe completo por tramos (< 300 s cada uno)
 //   npm run analyze:meta -- --fast  certificación rápida del bucle (6.000 campañas, < 90 s; 0 s si la huella no cambió)
 //
 // Qué mide:
@@ -26,7 +27,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 // con esos números cambiados (ver scripts/balance-patch.ts) sin tocar balance-config.json.
 import './balance-patch';
 import { spawn } from 'node:child_process';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -115,11 +116,32 @@ if (shard) {
   process.exit(0);
 }
 
+/** V35 · tramos: dónde deja cada tramo sus registros hasta que `--juntar` los lee. */
+const TRAMOS = join(tmpdir(), 'derrumbe-meta-tramos');
+const tramo = arg('tramo')?.split('/').map(Number) as [number, number] | undefined;
+
 async function runAll(argv: string[] = args): Promise<Log[]> {
   // LAB_HILOS=6 deja núcleos libres cuando hay otras pruebas (capturas, humo) corriendo a la vez
   const cap = Number(process.env.LAB_HILOS) || 12;
   const workers = Math.max(1, Math.min(cap, availableParallelism() - 1));
   const self = fileURLToPath(import.meta.url);
+  // en un tramo, cada proceso juega su trozo del trozo k de K, y el registro se queda en disco
+  if (tramo && argv === args) {
+    const [k, K] = tramo;
+    mkdirSync(TRAMOS, { recursive: true });
+    if (k === 1) for (const f of readdirSync(TRAMOS)) rmSync(join(TRAMOS, f), { force: true });
+    await Promise.all(
+      Array.from({ length: workers }, (_, i) => {
+        const idx = (k - 1) * workers + i;
+        const out = join(TRAMOS, `t-${idx}-de-${K * workers}.json`);
+        return new Promise<void>((resolve, reject) => {
+          const child = spawn(process.execPath, [...process.execArgv, self, `--shard=${idx}/${K * workers}`, `--out=${out}`, ...argv.filter((a) => !a.startsWith('--shard') && !a.startsWith('--out') && !a.startsWith('--tramo'))], { stdio: ['ignore', 'inherit', 'inherit'] });
+          child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`el proceso ${i} terminó con código ${code}`))));
+        });
+      }),
+    );
+    return [];
+  }
   const files = Array.from({ length: workers }, (_, i) => join(tmpdir(), `derrumbe-meta-${process.pid}-${i}.json`));
   await Promise.all(
     files.map(
@@ -294,7 +316,20 @@ function classic(games: number) {
 }
 
 const started = Date.now();
-const running = runAll();
+if (tramo) {
+  await runAll();
+  console.log(`
+Tramo ${tramo[0]}/${tramo[1]} jugado · ${Math.round((Date.now() - started) / 1000)} s. ${tramo[0] === tramo[1] ? 'Falta: npm run analyze:meta -- --juntar' : ''}`);
+  process.exit(0);
+}
+/** Con `--juntar`, los registros de todos los tramos; si no, el laboratorio de siempre. */
+function juntados(): Promise<Log[]> {
+  const files = readdirSync(TRAMOS).filter((f) => f.startsWith('t-'));
+  const total = Number(files[0]?.match(/-de-(\d+)\.json$/)?.[1] ?? 0);
+  if (!files.length || files.length !== total) throw new Error(`faltan tramos: hay ${files.length} de ${total} registros en ${TRAMOS}`);
+  return Promise.resolve(files.flatMap((f) => JSON.parse(readFileSync(join(TRAMOS, f), 'utf8')) as Log[]));
+}
+const running = args.includes('--juntar') ? juntados() : runAll();
 // mientras los procesos juegan campañas, este juega las partidas clásicas
 const classicRows = mode === 'todo' || mode === 'clasica' ? classic(N || 1500) : [];
 const logs = mode === 'clasica' ? [] : await running;

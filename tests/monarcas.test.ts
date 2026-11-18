@@ -69,9 +69,7 @@ describe('la maldición a la vista', () => {
     expect(cfg('blindaje').noFx).toBe('sobrecarga');
     expect(BOSS.blindaje.curse.badge).toBe('Sin Aturdido');
     expect(cfg('furia').floorThreat[11] - DEFAULT_CONFIG.floorThreat[11]).toBe(Number(BOSS.furia.curse.badge.match(/\d+/)![0]));
-    const c = { ...DEFAULT_CONFIG, fatigueStart: 8 };
-    BOSS.inestable.apply(c);
-    expect(8 - c.fatigueStart!).toBe(Number(BOSS.inestable.curse.badge.match(/\d+/)![0]));
+    expect(cfg('inestable').furiaInicial).toBe(Number(BOSS.inestable.curse.badge.match(/\d+/)![0]));
   });
 
   it('bossIdentity da quién es, su maldición, su voz y su placa, sin compartir los datos', () => {
@@ -101,7 +99,7 @@ describe('Secretos de la cripta en dos segundos', () => {
 
   it('lo que cuesta está vacío solo en las opciones gratis, y nunca es igual a lo que da', () => {
     const free = EVENTS.flatMap((ev) => ev.options.filter((o) => !o.read.cost).map((o) => `${ev.id}:${o.label}`));
-    expect(free).toEqual(['caja:Vendérselo al Tratante', 'horno:Calentarse y seguir', 'contrato:Romperlo', 'clandestino:Seguir de largo', 'planos:Dejarlos donde están']);
+    expect(free).toEqual(['caja:Vendérselo al Tratante', 'horno:Calentarse y seguir', 'contrato:Romperlo', 'clandestino:Seguir de largo', 'planos:Dejarlos donde están', 'rueda:No tocarla', 'doble:Guardar la bolsa', 'altar:Rezar y seguir', 'dado:Dejarlo quieto']);
     for (const ev of EVENTS) for (const o of ev.options) expect(o.read.gain).not.toBe(o.read.cost);
   });
 });

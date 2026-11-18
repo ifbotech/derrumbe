@@ -3,11 +3,11 @@
 // los 36 logros de la 10.0.
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../src/rules/balance-config';
-import { GameEvent, SEALS, SUITS, TREATMENTS, applyAction, currentPlayer } from '../src/rules/engine';
+import { GameEvent, SEALS, SUITS, TREATMENTS, activo, applyAction, currentPlayer } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS } from '../src/rules/achievements';
 import { KEYWORDS } from '../src/rules/keywords';
-import { BOSSES, EVENT_AFTER, LAST_STAGE, Run, STAGES, UPGRADES, addSpecial, finishBattle, newMeta, newRun, runAction, stageConfig, stageDef, startStage, tiranoKey, trackEvents } from '../src/rules/run';
+import { BOSSES, EVENT_AFTER, LAST_STAGE, Run, STAGES, UPGRADES, addSpecial, finishBattle, newMeta, newRun, ordenCasas, runAction, stageConfig, stageDef, startStage, tiranoKey, trackEvents } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 import { ES } from '../src/shared/i18n/es';
@@ -156,18 +156,21 @@ describe('V11 · la campaña de cinco asaltos', () => {
     }
   });
 
-  it('el Contraataque del palo de un trono ausente no hace nada', () => {
+  it('V35 · se combate Casa por Casa: solo se golpea a la primera en pie, y es ella la que contraataca', () => {
     const run = newRun({}, 3);
     const state = startStage(Object.assign(run, { phase: 'battle' as const }), [{ id: 'a', name: 'A' }]);
-    const away = SUITS.find((s) => state.towers[s].away)!;
-    const target = SUITS.find((s) => !state.towers[s].away)!;
-    // una carta que no mata al guardia (sin Golpe exacto) y un Contraataque del palo ausente encima del Mazo
-    state.players[0].hand = [{ id: 'mano-1', suit: SUITS.find((s) => s !== target)!, rank: 1 }, ...state.players[0].hand.slice(1)];
-    state.deck.unshift({ id: 'contra-1', suit: away, rank: 10 });
-    const res = applyAction(state, 'a', { type: 'attack', cards: ['mano-1'], target });
+    const frente = activo(state)!;
+    expect(frente.away).toBeFalsy();
+    expect(state.config.orden).toEqual(ordenCasas(run));
+    expect(frente.suit).toBe(state.config.orden![0]);
+    const otra = SUITS.find((s) => !state.towers[s].away && s !== frente.suit)!;
+    // una carta que no mata al guardia (sin Golpe exacto): contraataca el que tienes delante
+    state.players[0].hand = [{ id: 'mano-1', suit: otra, rank: 1 }, ...state.players[0].hand.slice(1)];
+    expect(() => applyAction(state, 'a', { type: 'attack', cards: ['mano-1'], target: otra })).toThrow(/enemigo que tienes delante/);
+    const res = applyAction(state, 'a', { type: 'attack', cards: ['mano-1'], target: frente.suit });
     const siren = res.events.find((e): e is Extract<GameEvent, { e: 'siren' }> => e.e === 'siren')!;
-    expect(siren).toMatchObject({ tower: away, reason: 'ruin', taken: 0 });
-    expect(res.state.integrity).toBe(state.integrity);
+    expect(siren).toMatchObject({ tower: frente.suit, reason: 'strike' });
+    expect(res.state.integrity).toBe(state.integrity - siren.taken);
   });
 
   it('el asalto 2 se gana derribando los tres tronos que hay', () => {

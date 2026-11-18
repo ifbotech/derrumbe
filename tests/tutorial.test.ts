@@ -76,8 +76,8 @@ describe('partida guiada de cinco pasos', () => {
     // 5 · el 9♦ de La Manga a CORAZONES (Reina, Vida 9): 9 × 1 = 9 justos, Golpe exacto y victoria
     expect(impact(log[4])).toMatchObject({ tower: 'H', fuerza: 9, res: 1, total: 9 });
     expect(log[4].find((e) => e.e === 'floorDown')).toMatchObject({ tower: 'H', rank: 12, clean: true, towerDown: true });
-    // los Contraataques del guion salen de tronos caídos
-    for (const ev of [log[0], log[1], log[3]]) expect(ev.find((e) => e.e === 'siren')).toMatchObject({ reason: 'ruin', taken: 0 });
+    // V35 · en la partida guiada nadie contraataca
+    for (const ev of [log[0], log[1], log[3]]) expect(ev.find((e) => e.e === 'siren')).toBeUndefined();
   });
 
   it('ningún paso se da por hecho con una jugada que no toca', () => {
@@ -89,10 +89,12 @@ describe('partida guiada de cinco pasos', () => {
     };
     // un 3♠ contra PICAS no hace nada: ni poder a la vista ni trono esquivado
     expect(tryStep(palo, { type: 'attack', cards: ['S3'], target: 'S' })).toBe(false);
-    expect(tryStep(inmune, { type: 'attack', cards: ['H8'], target: 'H' })).toBe(false);
+    // V35 · solo se golpea al enemigo activo (PICAS): un ♠ contra PICAS es Inmune y no enseña nada
+    expect(() => tryStep(inmune, { type: 'attack', cards: ['H8'], target: 'H' })).toThrow(RuleError);
+    expect(tryStep(inmune, { type: 'attack', cards: ['S3'], target: 'S' })).toBe(false);
     expect(tryStep(inmune, { type: 'attack', cards: ['H8'], target: 'S' })).toBe(true);
-    expect(tryStep(manga, { type: 'attack', cards: ['D9'], target: 'H' })).toBe(false);
-    expect(tryStep(cuenta, { type: 'attack', cards: ['S3'], target: 'H' })).toBe(false);
+    expect(tryStep(manga, { type: 'attack', cards: ['D9'], target: 'S' })).toBe(false);
+    expect(tryStep(cuenta, { type: 'attack', cards: ['S3'], target: 'S' })).toBe(false);
     expect(tryStep(exacto, { type: 'attack', cards: ['C6'], target: 'S' })).toBe(false);
     // los done son puros: misma mesa y mismos eventos, misma respuesta
     const res = applyAction(s, TUTORIAL_PLAYER, { type: 'attack', cards: ['C6'], target: 'S' });

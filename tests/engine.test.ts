@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameEvent, GameState, StrikeEnv, Suit, applyAction, classify, createGame, currentPlayer, eventsFor, newTowers, previewStrike, reorder, seedFrom, sortCards, strike, viewFor } from '../src/rules/engine';
+import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameEvent, GameState, StrikeEnv, Suit, applyAction, classify, createGame, currentPlayer, eventsFor, newTowers, previewStrike, seedFrom, sortCards, strike, viewFor } from '../src/rules/engine';
 import { chooseAction, formations } from '../src/rules/bot';
-import { ARCH, RARITY, TOOL, TOOLS, bestOrder, placeTool, toolPool } from '../src/rules/tools';
+import { ARCH, RARITY, TOOL, TOOLS, espejada, placeTool, toolPool } from '../src/rules/tools';
 import { muestra } from './muestra';
 
 const card = (id: string, extra: Partial<Card> = {}): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0, ...extra } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)), ...extra });
@@ -18,9 +18,12 @@ function env(tools: string[] = [], cfg: Partial<Config> = {}): StrikeEnv {
   return { config, towers: newTowers([11, 12, 13], config), tools: tools.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0 };
 }
 
-/** Partida de un jugador con la mano y la cima de la cantera que se pidan. */
+/**
+ * Partida de un jugador con la mano y la cima de la cantera que se pidan. V35: se combate Casa por Casa; aquí la
+ * primera es DIAMANTES (los golpes de estas pruebas van contra ♦) salvo que la prueba diga otro `orden`.
+ */
 function game(hand: Card[], top: Card[] = [], tools: string[] = [], cfg: Partial<Config> = {}): GameState {
-  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA, ...cfg };
+  const config: Config = { ...structuredClone(DEFAULT_CONFIG), ...MESA, orden: ['D', 'S', 'H', 'C'], ...cfg };
   for (const id of tools) TOOL[id].cfg?.(config);
   const s = createGame([{ id: 'a', name: 'A' }], 1, config);
   const taken = new Set([...hand, ...top].map((c) => c.id));
@@ -128,9 +131,15 @@ describe('cinturón: el orden no cambia la cuenta (V31)', () => {
     expect(primeroQueMultiplica).toBeGreaterThan(ultimoQueSuma);
   });
 
-  it('el Diapasón copia la herramienta de su derecha', () => {
+  it('V34 · el Espejo de mano copia la Reliquia más reciente que no sea pasiva, esté donde esté', () => {
     expect(strike(env(['diapason', 'plano_maestro']), run, 'D')).toMatchObject({ res: 12 });
-    expect(strike(env(['plano_maestro', 'diapason']), run, 'D')).toMatchObject({ res: 6 });
+    expect(strike(env(['plano_maestro', 'diapason']), run, 'D')).toMatchObject({ res: 12 });
+    // la más reciente es la última de la tira que no es pasiva ni otro Espejo
+    expect(espejada(['prisma', 'plano_maestro', 'sacos', 'diapason'].map((id) => ({ id, n: 0 })))?.id).toBe('plano_maestro');
+    expect(espejada(['plano_maestro', 'prisma'].map((id) => ({ id, n: 0 })))?.id).toBe('prisma');
+    expect(espejada(['sacos', 'diapason'].map((id) => ({ id, n: 0 })))).toBeUndefined();
+    // sin nada que copiar no hace nada
+    expect(strike(env(['diapason']), run, 'D').res).toBe(strike(env([]), run, 'D').res);
     const steps = of(strike(env(['diapason', 'plano_maestro']), run, 'D').events, 'step').filter((s) => s.src === 'tool');
     expect(steps.map((s) => [s.id, s.slot])).toEqual([['diapason', 0], ['plano_maestro', 1]]);
   });
@@ -140,34 +149,11 @@ describe('cinturón: el orden no cambia la cuenta (V31)', () => {
     expect(strike(env(['percutor']), cards('H7', 'S7'), 'S').fuerza).toBe(2 + 7 + 0 + 7);
   });
 
-  it('reordenar exige una permutación válida y el orden recomendado deja lo que multiplica al final', () => {
-    expect(reorder(['a', 'b', 'c'], [2, 0, 1])).toEqual(['c', 'a', 'b']);
-    expect(reorder(['a', 'b', 'c'], [0, 0, 1])).toBeNull();
-    expect(reorder(['a', 'b'], [0, 1, 2])).toBeNull();
-    const belt = ['plano_maestro', 'prisma', 'piqueta', 'sacos'].map((id) => ({ id, n: 0 }));
-    expect(bestOrder(belt).map((i) => belt[i].id)).toEqual(['sacos', 'piqueta', 'prisma', 'plano_maestro']);
-    const withCopy = ['diapason', 'piqueta', 'ultimo'].map((id) => ({ id, n: 0 }));
-    expect(bestOrder(withCopy).map((i) => withCopy[i].id)).toEqual(['piqueta', 'diapason', 'ultimo']);
-  });
-
-  it('V26 · una Reliquia nueva se coloca sola en su sitio recomendado, sin mover las que ya estaban', () => {
-    // cinturón en orden recomendado: pasiva, +Daño, +Multi, ×Multi
-    const belt = ['sacos', 'piqueta', 'prisma', 'plano_maestro'].map((id) => ({ id, n: 0 }));
-    const recomendado = (b: { id: string }[]) => bestOrder(b.map((t) => ({ id: t.id, n: 0 }))).map((i) => b[i].id);
-    expect(recomendado(belt)).toEqual(belt.map((t) => t.id));
-    // una que suma Daño entra con las que suman Daño, antes de lo que suma o multiplica el Multi
-    const k = placeTool(belt, { id: 'maza', n: 0 });
-    expect(belt.map((t) => t.id)).toEqual(['sacos', 'piqueta', 'maza', 'prisma', 'plano_maestro']);
-    expect(k).toBe(2);
-    expect(recomendado(belt)).toEqual(belt.map((t) => t.id));
-    // una pasiva entra con las pasivas, y el orden sigue siendo el recomendado
-    placeTool(belt, { id: 'casco', n: 0 });
-    expect(recomendado(belt)).toEqual(belt.map((t) => t.id));
-    expect(belt).toHaveLength(6);
-    // con un orden puesto a mano no se toca lo que ya estaba: solo entra la nueva
-    const mano = ['plano_maestro', 'piqueta'].map((id) => ({ id, n: 0 }));
-    placeTool(mano, { id: 'sacos', n: 0 });
-    expect(mano.filter((t) => t.id !== 'sacos').map((t) => t.id)).toEqual(['plano_maestro', 'piqueta']);
+  it('V34 · una Reliquia nueva va al final de la tira y las demás no se mueven', () => {
+    const belt = ['plano_maestro', 'piqueta'].map((id) => ({ id, n: 0 }));
+    expect(placeTool(belt, { id: 'sacos', n: 0 })).toBe(2);
+    expect(placeTool(belt, { id: 'maza', n: 0 })).toBe(3);
+    expect(belt.map((t) => t.id)).toEqual(['plano_maestro', 'piqueta', 'sacos', 'maza']);
   });
 
   it('hay al menos 36 herramientas, de 4 rarezas y 5 arquetipos, todas bien definidas', () => {
@@ -379,7 +365,7 @@ describe('golpe limpio y estados de las torres', () => {
   });
 
   it('sobrecarga: la torre se salta su próximo golpe de sirena', () => {
-    const s = game(cards('S3', 'H4', 'D5', 'D2', 'D7', 'D8', 'D9'), cards('C9', 'C10'));
+    const s = game(cards('S3', 'H4', 'D5', 'D2', 'D7', 'D8', 'D9'), cards('C9', 'C10'), [], { orden: ['C', 'S', 'D', 'H'] });
     const first = applyAction(s, 'a', { type: 'attack', cards: ['S3', 'H4', 'D5'], target: 'C' });
     expect(of(first.events, 'siren')[0]).toMatchObject({ tower: 'C', reason: 'sobrecarga', taken: 0 });
     expect(first.state.integrity).toBe(20);
@@ -403,10 +389,12 @@ describe('golpe limpio y estados de las torres', () => {
 
 describe('turno: sirena, muro, descartes, huelga y colapso', () => {
   it('la sirena golpea con la amenaza del piso y el muro la absorbe', () => {
-    const s = game(cards('C9', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'), cards('H9', 'D9'));
+    const s = game(cards('C9', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'), cards('H9', 'D9'), [], { orden: ['S', 'D', 'H', 'C'] });
     const { state, events } = applyAction(s, 'a', { type: 'attack', cards: ['C9'], target: 'S' });
-    expect(state.wall).toBe(0); // 2 de Escudo (un ♣), y la Sota de ♥ ataca 3
-    expect(of(events, 'siren')[0]).toMatchObject({ tower: 'H', threat: 3, blocked: 2, taken: 1 });
+    expect(state.wall).toBe(0); // 2 de Escudo (un ♣), y contraataca el enemigo activo: la Sota de ♠, que ataca 3
+    expect(of(events, 'siren')[0]).toMatchObject({ tower: 'S', threat: 3, blocked: 2, taken: 1 });
+    // V35 · solo se golpea al enemigo activo
+    expect(() => applyAction(s, 'a', { type: 'attack', cards: ['C9'], target: 'H' })).toThrow(/enemigo que tienes delante/);
     const next = applyAction(state, 'a', { type: 'discard', cards: ['S2'] });
     expect(next.state.integrity).toBe(16);
   });
@@ -440,7 +428,7 @@ describe('turno: sirena, muro, descartes, huelga y colapso', () => {
     const s = game(cards('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'), cards('H9'), ['megafono']);
     const { state } = applyAction(s, 'a', { type: 'discard', cards: ['S2'] });
     expect(state.integrity).toBe(17);
-    expect(state.towers.H.damage).toBe(8);
+    expect(state.towers.D.damage).toBe(8); // contraatacó el enemigo activo (♦) y la Rosa de espinas se lo devuelve
   });
 
   it('cuando el Mazo se agota se baraja el Descarte: no quita Vida y el Asedio final sube 1 (V27)', () => {

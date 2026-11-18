@@ -39,9 +39,6 @@ export const UI_JUICE = {
   'ui.ctl.mazo': ['Ver el Mazo y el Descarte', 'See the Deck and the Discard'],
   'ui.ctl.lupa': ['Lupa', 'Loupe'],
   'ui.ctl.lupa.k': ['{k} · clic derecho · pulsación larga', '{k} · right click · long press'],
-  'ui.ctl.reliquias': ['Mover las reliquias', 'Move your Relics'],
-  'ui.ctl.reliquias.k': ['Arrastrar · {mayus} + flechas', 'Drag · {mayus} + arrow keys'],
-  'ui.ctl.reliquias.p': ['{a} / {b} con el foco en la reliquia', '{a} / {b} with the focus on a relic'],
   'ui.ctl.velocidad': ['Cambiar la velocidad (1× → 2× → 4× → 8×)', 'Change the speed (1× → 2× → 4× → 8×)'],
   'ui.ctl.barra': ['botón de la barra', 'button on the top bar'],
   'ui.ctl.pantalla': ['Pantalla completa', 'Full screen'],
@@ -53,7 +50,6 @@ export const UI_JUICE = {
   // ── SD5 · la insignia del foco con el mando en La Taberna (nav.ts) ──
   'ui.pad.comprar': ['Comprar', 'Buy'],
   'ui.pad.elegir': ['Elegir', 'Pick'],
-  'ui.pad.mover': ['Mover', 'Move'],
   'ui.pad.curar': ['Curar', 'Heal'],
   'ui.pad.quemar': ['Quemar', 'Burn'],
   'ui.pad.renovar': ['Renovar', 'Refresh'],
@@ -67,16 +63,15 @@ export const UI_JUICE = {
   'ui.w.forja': ['<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.', '<b>Wax Table:</b> the card you pick stays sealed forever. Cancel spends nothing.'],
   'ui.w.atajo': ['<b>Atajo:</b> te saltas el asalto sin Botín ni Taberna, pero te llevas «{tag}».', '<b>Shortcut:</b> you skip the assault with no Spoils and no Tavern, but you take “{tag}”.'],
   'ui.w.jefe': ['<b>Monarca:</b> {who} impone un decreto en este asalto. Su ficha de la barra te lo recuerda.', '<b>Monarch:</b> {who} imposes a decree on this assault. The token on the top bar reminds you.'],
-  'ui.w.fatiga': ['<b>Asedio final:</b> desde ahora tus golpes suman más Daño cada turno, pero los Contraataques pegan más fuerte.', '<b>Final Siege:</b> from now on your strikes add more Damage each turn, but Counterattacks hit harder.'],
+  'ui.w.fatiga': ["<b>Furia:</b> el Ataque de los enemigos ha subido. Sube con cada Mazo agotado y, contra el monarca, cada turno.", "<b>Fury:</b> enemy Attack has gone up. It rises each time the Deck runs out and, against the monarch, every turn."],
   'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte. No pierdes Vida: {efecto}.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back in. You lose no Health: {efecto}.'],
-  'ui.w.cantera.sube': ['el Asedio final sube {n} (⚔ +{n} en cada trono) y el siguiente Contraataque lo da el trono más fuerte', 'the Final Siege rises {n} (⚔ +{n} on every throne) and the strongest throne gives the next Counterattack'],
+  'ui.w.cantera.sube': ["la Furia sube {n} (⚔ +{n} en cada enemigo)", "the Fury rises {n} (⚔ +{n} on every enemy)"],
   'ui.w.cantera.gratis': ['esta vez no pasa nada más', 'nothing else happens this time'],
   // V11: la mesa de dos o tres tronos y los dos estados, la primera vez que se ven
   'ui.w.ausente': ['<b>En este asalto hay {n} tronos:</b> si el Contraataque saca el palo de uno que no está, no pasa nada.', '<b>This assault has {n} thrones:</b> if the Counterattack draws the suit of one that is not here, nothing happens.'],
   'ui.w.expuesto': ['<b>Expuesto {glyph}:</b> el próximo golpe contra ese trono hace ×{n} de Daño. Lo deja un golpe de 2 cartas o más de un solo palo.', '<b>Exposed {glyph}:</b> the next hit against that throne deals ×{n} Damage. A hit of 2+ cards of one suit leaves it Exposed.'],
   'ui.w.aturdido': ['<b>Aturdido {glyph}:</b> ese trono se salta su próximo Contraataque. Lo deja un golpe de tres palos.', '<b>Stunned {glyph}:</b> that throne skips its next Counterattack. A hit with three suits leaves it Stunned.'],
   // V11: el registro de la mesa, cuando el Contraataque saca el palo de un trono que no está en el asalto (table.ts)
-  'ui.log.por.ausente': ['{casa} no está en este asalto', '{casa} is not in this assault'],
   // V12: lo que cae, la tirada de huesos, el Árbol, Mejor jugada, AUTO y las 3 gotas, la primera vez
   'ui.w.caida': ['<b>Lo que cae</b> vuela solo a tu bolsa: esquirlas, monedas y gotas. Pasa el cursor o el dedo para cogerlo antes.', '<b>Loot</b> flies to your purse by itself: shards, coins and drops. Sweep the cursor or a finger over it to grab it sooner.'],
   'ui.w.tirada': ['<b>Tirada de huesos:</b> tras ganar un asalto, los dados multiplican lo que cayó. Cualquier tecla la salta.', '<b>Bone Roll:</b> after a win, dice multiply what dropped. Any key skips it.'],
@@ -86,7 +81,7 @@ export const UI_JUICE = {
   'ui.w.gotas': ['<b>{n} gotas de lacre:</b> la próxima Mesa de lacre te sella gratis.', '<b>{n} Wax Drops:</b> the next Wax Table seals for free.'],
   'ui.w.off': ['No mostrar más', 'Do not show again'],
   'ui.w.ajuste': ['Susurros', 'Whispers'],
-  'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Asedio final…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Final Siege…).'],
+  'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Furia…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Fury…).'],
 
   // ── partida guiada (tutorial-ui.ts): el final y los avisos ──
   'ui.tuto.ganada': ['PARTIDA GUIADA COMPLETADA', 'GUIDED GAME COMPLETE'],

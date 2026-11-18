@@ -2,6 +2,33 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 35.0.0 — 2026-11-18
+
+Un enemigo a la vez. La mesa deja las cuatro columnas de tronos y pone en el centro un solo enemigo grande; las Reliquias se agrupan en cinco rasgos con bonos a 2, 4 y 6; el monarca tiene una Furia que se ve y suelta un Cofre al caer; entre asaltos aparecen santuarios de azar. Cambian varias reglas. Incluye la 34.0 (las Reliquias no se ordenan).
+
+### Reglas
+- **Duelo Casa por Casa**: las Casas se asaltan de una en una, en un orden que la campaña sortea. Solo se golpea al **enemigo activo**, el guardia de delante de la primera Casa en pie; el resto espera en la fila.
+- **Furia** en vez del Asedio invisible: cada punto es +1 de Ataque en todos los Contraataques y se ve junto al ⚔ del enemigo activo. En campaña sube 2 con cada Mazo agotado y, contra un monarca, 1 cada turno que sigue en pie (la **Furia del Rey**).
+- **Rasgos de build [2/4/6]**: cada Reliquia es de uno de cinco rasgos (Sangre, Tahúr, Verdugo, Bastión y Horda). Con 2, 4 y 6 Reliquias del mismo rasgo se encienden sus bonos: curar al abatir, Multi por la Vida que falta, el dado del Tahúr (de +1 a +6 de Multi), ejecutar por debajo del 15 % o el 25 % de Vida, Daño por cada punto de Escudo y cartas que se activan dos veces.
+- **Cofre del monarca**: al caer, el monarca deja elegir una de tres Reliquias, y una de ellas es de tu rasgo principal.
+- **Santuarios de la cripta**: tras los monarcas de los asaltos 2 y 4 aparece una apuesta de azar o un dilema con premio y precio. Cada campaña ve 2 de 9.
+- **Reinado 3, «Corte airada»**: cada Mazo agotado sube la Furia 1 más. Sustituye al Impuesto real, que encarecía La Taberna.
+- **Las Reliquias no se ordenan** (de la 34.0): el Espejo de mano copia la última Reliquia que no sea pasiva, y desaparecen el arrastre y los atajos para moverlas.
+
+### En pantalla
+- El enemigo activo ocupa el centro de la mesa, con su Vida, su ⚔, su inmunidad y la Furia en grande. La fila muestra en losas pequeñas a los que esperan y a los caídos.
+- Menos botones: Golpear, Descartar, Mejor jugada y Rebobinar en la botonera; Auto y el Ritmo en la barra de arriba. Desaparecen «Manga» (la reserva se usa pinchando su hueco) y «Soltar» (se vuelve a pinchar la carta).
+- La píldora de rasgos lleva la cuenta en la mesa y La Taberna marca lo que te acerca al siguiente nivel.
+- En el móvil, el enemigo activo y la fila caben en una columna con la fila a la derecha.
+- Con el mando, «derecha» desde la fila llega al susurro del margen en vez de subir a la barra.
+
+### Balance
+- Vida inicial 21. Vida de los guardias por asalto ajustada (5,9 · 4,4 · 5,8 · 4,2 · 4,75), Acero con 6 de Vida y 2 de oro por nivel del Árbol.
+- Laboratorio completo: en el Reinado 1 se gana el 30,8 % de las campañas con el Árbol vacío y el 47,7 % con el Árbol lleno; en el Reinado 8, el 6,4 % y el 17,7 %. Cada Reinado es más difícil que el anterior, y barajas y monarcas quedan en sus franjas.
+
+### Pruebas
+- 385 + 9 pruebas, QA visual sin fallos en español y en inglés (cuatro ventanas), humo entero en español e inglés y construcción web. Las comprobaciones de la mesa, del mando y de la guía se rehicieron para el duelo.
+
 ## 33.0.0 — 2026-11-17
 
 Del cobro al Árbol en un clic. La Crónica que cierra la campaña dice qué mejora te alcanza y te lleva a comprarla. No cambia ninguna regla de combate.

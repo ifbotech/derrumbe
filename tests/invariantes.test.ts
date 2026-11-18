@@ -4,7 +4,7 @@
 //   · como mucho 5 palabras clave (V11) y 56 reliquias (TOOLS), con identificadores únicos
 //   · toda descripción cabe en 100 caracteres (V12; antes 115) y no inventa palabras clave
 //   · el informe publicado del laboratorio (scripts/meta-report.json) es de estas reglas, no trae avisos,
-//     ningún asalto (los cinco) pasa de 15 turnos en el percentil 95 con ninguna baraja, y los Reinados 1 y 8
+//     ningún asalto (los cinco) pasa del tope de turnos de su tramo en el percentil 95 con ninguna baraja, y los Reinados 1 y 8
 //     están en rango y bajan del 1 al 8 (objetivos de scripts/objetivos.ts, SPECS/V11.md 1.10)
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -12,9 +12,9 @@ import { fingerprint } from '../scripts/lab';
 import { OBJETIVOS } from '../scripts/objetivos';
 import { FORMATION_NAME, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { KEYWORDS, TERMS } from '../src/rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FATIGUE, TAGS, UPGRADES } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FURIA, TAGS, UPGRADES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
-import { RARITY, TOOLS } from '../src/rules/tools';
+import { RARITY, RASGOS, TOOLS, UMBRALES } from '../src/rules/tools';
 
 const MAX_DESC = 100;
 
@@ -92,8 +92,22 @@ describe('constitución anticomplejidad', () => {
     for (const k of KEYWORDS) expect(DESCS.some(([, d]) => new RegExp(k.match.source, k.match.flags).test(d)), k.name).toBe(true);
   });
 
-  it('la fatiga de cimientos sube cada 2 turnos', () => {
-    expect(FATIGUE.every).toBe(2);
+  it('V35 · la Furia sube de uno en uno con el monarca y con cada Mazo agotado, siempre en enteros', () => {
+    expect(Number.isInteger(FURIA.rey) && FURIA.rey >= 1).toBe(true);
+    expect(Number.isInteger(FURIA.mazo) && FURIA.mazo >= 1).toBe(true);
+  });
+
+  it('V35 · cinco rasgos, cada Reliquia con el suyo, y tres bonos por rasgo (con 2, 4 y 6) de ≤ 100 caracteres', () => {
+    expect(RASGOS.map((r) => r.id)).toEqual(['sangre', 'tahur', 'verdugo', 'bastion', 'horda']);
+    expect(UMBRALES).toEqual([2, 4, 6]);
+    for (const t of TOOLS) expect(RASGOS.some((r) => r.id === t.rasgo), t.id).toBe(true);
+    // con seis huecos, cada rasgo tiene Reliquias de sobra para llegar a su bono de 6
+    for (const r of RASGOS) expect(TOOLS.filter((t) => t.rasgo === r.id).length, r.id).toBeGreaterThanOrEqual(8);
+    for (const r of RASGOS) for (const b of r.bonos) {
+      expect(b.length, b).toBeLessThanOrEqual(100);
+      expect(b.endsWith('.'), b).toBe(true);
+      expect(b, b).not.toMatch(/\{\w+\}/);
+    }
   });
 });
 
@@ -143,14 +157,14 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     expect(r.flags).toEqual([]);
   });
 
-  it.runIf(vigente)('ningún asalto de los cinco pasa de 15 turnos en el percentil 95, con ninguna de las seis barajas', () => {
+  it.runIf(vigente)('ningún asalto de los cinco pasa del tope de turnos de su tramo en el percentil 95, con ninguna de las seis barajas', () => {
     expect(r.pacingByDeck.map((d) => d.deck).sort()).toEqual(DECKS.map((d) => d.id).sort());
     for (const d of r.pacingByDeck) {
       expect(d.n, d.name).toBeGreaterThan(0);
-      expect(d.worstP95, d.name).toBeLessThanOrEqual(15);
+      expect(d.worstP95, d.name).toBeLessThanOrEqual(OBJETIVOS.ritmoBaraja);
     }
     expect(r.pacing.map((p) => p.stage)).toEqual([1, 2, 3, 4, 5]);
-    for (const p of r.pacing) expect(p.p95, `asalto ${p.stage}`).toBeLessThanOrEqual(15);
+    for (const p of r.pacing) expect(p.p95, `asalto ${p.stage}`).toBeLessThanOrEqual(OBJETIVOS.ritmo.find((t) => p.stage <= t.hasta)!.p95);
   });
 
   it.runIf(vigente)('el Reinado 1 y el Reinado 8 están en rango, y del 1 al 8 cada Reinado gana menos que el anterior', () => {

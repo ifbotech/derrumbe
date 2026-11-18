@@ -9,7 +9,7 @@
 //                         src/rules/textos.ts. Las plantillas españolas son las de src/rules/plantillas.ts
 //                         (`causa.*`, `aviso.*`), letra por letra los textos de siempre.
 import { fill } from './balance-config';
-import { CRUMBLE_LABEL, Card, Config, GameEvent, MATERIAL, PlayerView, SUITS, Suit, nextCollapse, standing, strongest, threatOf } from './engine';
+import { CRUMBLE_LABEL, Card, Config, GameEvent, MATERIAL, PlayerView, Suit, activo, nextCollapse, threatOf } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { SPECIAL } from './specials';
 import { TOOL } from './tools';
@@ -107,8 +107,8 @@ export function autopsyWith(tx: TextosAutopsia, events: GameEvent[], cfg: Config
       const from = tower ? tx.t('causa.desde', { palo: tx.palo(tower) }) : tx.t('causa.desde.sin');
       const need = ev.taken - before + 1;
       const wall = tx.t(need === 1 ? 'causa.falta.1' : 'causa.falta.n', { n: need });
-      // V30: la causa dice si el golpe vino de agotar el Mazo (lo da el trono más fuerte) y cuánto puso el Asedio final
-      const golpe = { desde: ev.cerco ? tx.t('causa.desde.mazo', { desde: from }) : from, ataque: ev.threat, frena: ev.blocked, entra: ev.taken };
+      // V35: la causa dice cuánto del Ataque era Furia
+      const golpe = { desde: from, ataque: ev.threat, frena: ev.blocked, entra: ev.taken };
       const asedio = Math.min(ev.asedio ?? 0, ev.threat);
       return {
         kind: 'sirena',
@@ -172,23 +172,11 @@ export function omen(v: PlayerView): Omen | null {
 /** `omen` con los textos de un idioma. */
 export function omenWith(tx: TextosAutopsia, v: PlayerView): Omen | null {
   if (v.phase !== 'playing' || v.integrity <= 0) return null;
-  // V27: con el Mazo vacío, el próximo Contraataque baraja antes el Descarte y el Asedio final ya ha subido:
-  // el aviso cuenta el Ataque que de verdad va a llegar
-  const env = v.deckCount === 0 ? { config: v.config, fatigue: (v.fatigue ?? 0) + nextCollapse(v) } : v;
-  // …y con el cerco echado (o a punto: Mazo vacío y el barajado no sale gratis) el golpe lo da el trono en pie con
-  // más Ataque, salga el palo que salga
-  const cerco = v.cerco || (v.deckCount === 0 && nextCollapse(v) > 0);
-  // Contraataque: el mayor Ataque en pie que de verdad puede salir (trono armado y con cartas de su palo por salir)
-  const pool: Card[] = v.deckCount > 0 ? v.unseen : [...v.discard, ...v.hand, ...v.reserve];
-  let worst: Suit | null = null;
-  for (const s of SUITS) {
-    const t = v.towers[s];
-    if (!standing(t) || t.fx.sobrecarga) continue;
-    if (!cerco && !pool.some((c) => c.suit === s)) continue;
-    if (worst === null || threatOf(env, t) > threatOf(env, v.towers[worst])) worst = s;
-  }
-  // con cerco, si el más fuerte está Aturdido se salta el golpe: no hay peligro
-  if (cerco && strongest({ ...env, towers: v.towers })?.fx.sobrecarga) worst = null;
+  // V35 · el Contraataque lo da el enemigo activo. Con el Mazo vacío, robar tras tu jugada baraja el Descarte y la
+  // Furia sube antes del turno siguiente, no antes de este golpe: el aviso cuenta el Ataque de ahora
+  const env = v;
+  const frente = activo(v);
+  const worst: Suit | null = frente && !frente.fx.sobrecarga ? frente.suit : null;
   if (worst === null) return null;
   const threat = threatOf(env, v.towers[worst]);
   if (threat < v.integrity + v.wall) return null;

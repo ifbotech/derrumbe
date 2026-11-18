@@ -3,7 +3,7 @@
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
 import { ESQUIRLAS_POR_CORONA, abonoCampanaVieja } from '../rules/migracion';
-import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, reorderBelt, runAction, stageDef, startStage, trackEvents } from '../rules/run';
+import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
 import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
 import { sfx } from './audio';
@@ -121,16 +121,12 @@ export function runDo(a: RunAction): void {
   if (!isRunHost()) return toast(L('ui.camp.anfitrion'));
   if (c.online) return sendMsg({ t: 'run', action: a });
   const prev = structuredClone(c.run);
-  const err = a.t === 'reorder' ? reorderBelt(c.run, c.state, a.order) : runAction(c.run, a);
+  const err = runAction(c.run, a);
   if (err) {
     if (err.includes('oro')) ferreteroSays('poor');
     return toast(errorFor(getLang(), err));
   }
   saveCampaign();
-  if (a.t === 'reorder' && S.screen === 'table') {
-    if (S.shown && c.state) S.shown.tools = c.state.tools;
-    return renderBelt(), renderInteractive(); // la cuenta del golpe usa el orden nuevo
-  }
   if (c.run.phase === 'battle' && a.t === 'route') return enterStage(true);
   renderRun();
   afterRunChange(prev);
