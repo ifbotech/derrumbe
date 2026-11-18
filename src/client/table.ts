@@ -12,7 +12,7 @@ import { setPressure, setScene, sfx } from './audio';
 import { afterBatch, campaignAct, isRunHost, routeRun, runDo, stageIntro } from './campaign';
 import { backEl, cardEl, pipPath, setDeckBack, suitSvg } from './card';
 import { causeHtml } from './causa';
-import { liveHtml, Preview, closeReceipt, paintScore, polvoraDe, previewHtml, stageOver } from './cuenta';
+import { aportes, contraataqueTras, liveHtml, Preview, closeReceipt, paintScore, polvoraDe, previewHtml, stageOver } from './cuenta';
 import { L, Ln, asaltoN, espN, formN, fxD, fxN, juraD, juraN, juraP, marca, monD, monDec, monN, paloN } from './lengua';
 import { $, $$, RUN_PLAYER, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, settings, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
@@ -609,6 +609,30 @@ function renderHand(): void {
   hand.classList.toggle('locked', !canAct());
 }
 
+/**
+ * V36 · Encima de cada carta elegida, lo que aporta al golpe contra el enemigo activo («+7», «0» si es Inmune,
+ * «+6 · ×2» con Lacre policromo): la cuenta ya no pide adivinar qué carta dio qué.
+ */
+function marcaAportes(p: Preview | null): void {
+  const ap = p ? aportes(p) : null;
+  for (const [id, el] of cardEls) {
+    const a = ap?.get(id);
+    let chip = el.querySelector<HTMLElement>(':scope > .aporte');
+    if (!a) {
+      chip?.remove();
+      continue;
+    }
+    if (!chip) {
+      chip = document.createElement('i');
+      chip.className = 'aporte';
+      chip.setAttribute('aria-hidden', 'true');
+      el.append(chip);
+    }
+    chip.textContent = a.txt;
+    chip.classList.toggle('cero', a.inmune);
+  }
+}
+
 /** V35 · El enemigo activo (el único al que se golpea) con el resultado previsto de la selección actual contra él. */
 function previews(cards: Card[]): Partial<Record<Suit, StrikeResult>> {
   const v = S.shown!;
@@ -696,14 +720,15 @@ function renderScore(): void {
     }
   }
   paintScore(el, tag + body, preview, v);
+  marcaAportes(preview);
   renderPowers(cards, shown, shownTarget);
   polvoraPreview(shown, shownTarget);
   if (shown?.clean) whisper('limpio');
   if (shownTarget && (v.config.ownMult ?? 0) === 0 && cards.some((c) => !c.sp && c.suit === shownTarget))
     whisper('inmune', { material: paloN(shownTarget).toLowerCase(), glyph: SUIT_GLYPH[shownTarget] });
   // antes de un sirenazo serio con el andamio sin usar: todavía se está a tiempo de guardar una carta
-  if (shown && shownTarget && !shown.clean && !shown.noSiren && v.reserveSize > 0 && v.reserve.length === 0) {
-    const incoming = threatOf(v, v.towers[shownTarget]) - v.wall - Math.max(0, Math.min(shown.wallGain, v.config.wallCap - v.wall));
+  if (preview && shown && shownTarget && !shown.clean && !shown.noSiren && v.reserveSize > 0 && v.reserve.length === 0) {
+    const incoming = (contraataqueTras(preview) ?? 0) - v.wall - Math.max(0, Math.min(shown.wallGain, v.config.wallCap - v.wall));
     if (incoming >= 4) whisper('andamio');
   }
   const end = $('#btn-end', el);

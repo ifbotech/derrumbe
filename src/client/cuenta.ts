@@ -12,7 +12,7 @@
 import type { Autopsy, Omen } from '../rules/autopsy';
 import { omenFor, pasoFor } from '../rules/textos';
 import { L, formN, getLang, numL, palo, paloN } from './lengua';
-import { Card, FORMATION_NAME, Formation, MATERIAL, PlayerView, RANK_LABEL, SUITS, StrikeResult, Suit, multiplier, threatOf, vecinosPresentes } from '../rules/engine';
+import { Card, FORMATION_NAME, Formation, MATERIAL, PlayerView, RANK_LABEL, SUITS, StrikeResult, Suit, activo, multiplier, ordenDe, threatOf, vecinosPresentes } from '../rules/engine';
 import { cifraEl } from './cifra';
 import { SPECIAL } from '../rules/specials';
 import { causeHtml } from './causa';
@@ -82,14 +82,17 @@ export function previewHtml(p: Preview, tail = ''): string {
   // V12 · lo que el trono apuntado pierde además del Golpe (el Impulso del Golpe exacto sobre el guardia siguiente, o
   // el daño que añaden las reliquias tras el golpe): la placa del trono dice el total y la cuenta, de dónde sale
   const mas = Math.max(0, (r.dealt[target] ?? 0) - r.total);
-  const worst = Math.max(0, ...SUITS.filter((s) => v.towers[s].floors.length && !v.towers[s].fx.sobrecarga).map((s) => threatOf(v, v.towers[s])));
+  // V36 · contraataca el enemigo que quede activo tras el golpe (el mismo, el guardia siguiente o la Casa siguiente);
+  // si queda Aturdido, se salta el Contraataque
+  const contra = contraataqueTras(p);
+  const worst = contra ?? 0;
   const marks = [
     r.clean ? `<em class="m gold">${L('ui.cuenta.exacto')}</em>` : '',
     fallen ? `<em class="m red">${throne ? L('ui.cuenta.cae.trono') : fallen > 1 ? L('ui.cuenta.caen', { n: fallen }) : L('ui.cuenta.cae')}</em>` : '',
     immune ? `<em class="m inm" data-tip="${L('ui.cuenta.inmune.tip')}">${L('ui.cuenta.inmune')}</em>` : '',
     mas ? `<em class="m mas" data-extra="${mas}">${r.clean ? L('ui.cuenta.impulso', { n: mas }) : L('ui.cuenta.mas', { n: mas })}</em>` : '',
     r.hurt ? `<em class="m red">${L('ui.cuenta.vida', { n: r.hurt })}</em>` : '',
-    r.clean || r.noSiren ? `<em class="m good">${L('ui.cuenta.sin.contra')}</em>` : (v.config.sirenCount ?? 1) > 1
+    r.clean || r.noSiren || contra === null ? `<em class="m good">${L('ui.cuenta.sin.contra')}</em>` : (v.config.sirenCount ?? 1) > 1
         ? `<em class="m dim curse" data-tip="${L('ui.cuenta.doble.tip', { n: worst })}">${L('ui.cuenta.doble', { n: worst })}</em>`
         : `<em class="m dim" data-tip="${L('ui.cuenta.contra.tip', { n: worst })}">${L('ui.cuenta.contra', { n: worst })}</em>`,
     wallGain > 0 ? `<em class="m">${L('ui.cuenta.escudo', { n: wallGain })}</em>` : '',
@@ -107,7 +110,63 @@ export function previewHtml(p: Preview, tail = ''): string {
         <span class="fr"><span class="fr-f"><i class="lg">${L('ui.cuenta.dano')}</i><i class="sh">${L('ui.cuenta.dano.corto')}</i>${cifraEl(r.fuerza, 'dano', 'b')}</span><i class="por" aria-hidden="true">×</i><span class="fr-r"><i class="lg">${L('ui.cuenta.multi')}</i><i class="sh">${L('ui.cuenta.multi.corto')}</i><b>×${numL(r.res)}</b></span><em class="abre">${L('ui.cuenta.abre')}${CHEVRON}</em></span>
       </span>
     </div>
+    ${multiDeHtml(p)}
     <span class="marks">${marks}</span>`;
+}
+
+/**
+ * V36 · El Ataque del Contraataque que sigue a este golpe, o null si no lo hay: lo da el enemigo que quede activo (si el
+ * golpe abate al de delante, el guardia siguiente de su Casa o, si cae la Casa, el de delante de la siguiente). Un
+ * enemigo Aturdido (de antes, o por este golpe de tres palos) se lo salta; un guardia nuevo llega sin estados.
+ */
+export function contraataqueTras(p: Preview): number | null {
+  const { v, r, target } = p;
+  const t = v.towers[target];
+  const fallen = r.fallenBy[target] ?? 0;
+  const env = { config: v.config, fatigue: v.fatigue };
+  if (!fallen) {
+    const aturde = t.fx.sobrecarga || r.events.some((e) => e.e === 'state' && e.tower === target && e.fx === 'sobrecarga' && e.on);
+    return aturde ? null : threatOf(env, t);
+  }
+  if (fallen < t.floors.length) return v.config.floorThreat[t.floors[fallen]] + (v.fatigue ?? 0);
+  const orden = ordenDe(v.config);
+  const i = orden.indexOf(target);
+  const siguiente = [...orden.slice(i + 1), ...orden.slice(0, i)].map((s) => v.towers[s]).find((x) => x && x.suit !== target && x.floors.length);
+  return siguiente ? threatOf(env, siguiente) : null;
+}
+
+/**
+ * V36 · Lo que aporta cada carta elegida (su número contra el enemigo, su acabado y su sello), para llevarlo encima de
+ * la carta: «+7», «0» si es Inmune, «+6 · ×2» con Lacre policromo.
+ */
+export function aportes(p: Preview): Map<string, { txt: string; inmune: boolean }> {
+  const acc = new Map<string, { df: number; dr: number; mr: number; inmune: boolean }>();
+  for (const ev of p.r.events) {
+    if (ev.e === 'impact') break;
+    if (ev.e !== 'step' || (ev.src !== 'card' && ev.src !== 'treat' && ev.src !== 'seal')) continue;
+    const a = acc.get(ev.id) ?? { df: 0, dr: 0, mr: 1, inmune: false };
+    a.df += ev.df ?? 0;
+    a.dr += ev.dr ?? 0;
+    a.mr *= ev.mr ?? 1;
+    if (ev.src === 'card' && ev.df === undefined && ev.label.endsWith(': inmune')) a.inmune = true;
+    acc.set(ev.id, a);
+  }
+  const out = new Map<string, { txt: string; inmune: boolean }>();
+  for (const [id, a] of acc) {
+    const partes = [a.df || a.inmune || !(a.dr || a.mr !== 1) ? signed(a.df) || '0' : '', a.dr ? L('ui.cuenta.aporte.multi', { n: signed(a.dr) }) : '', a.mr !== 1 ? `×${num(a.mr)}` : ''].filter(Boolean);
+    out.set(id, { txt: partes.join(' · '), inmune: a.inmune && !a.df });
+  }
+  return out;
+}
+
+/** V36 · De dónde sale el Multi, en una línea bajo la fórmula: «Multi: Grupo 2 · Racha +1 · Cuerno de guerra ×2». */
+function multiDeHtml(p: Preview): string {
+  const res = slip(p).res;
+  if (!res.length) return '';
+  // de una carta basta la carta («7♥ ×2»: su acabado o su sello ya los dice el recibo)
+  const nombre = (w: string) => esc(w.split(' · ')[0].replace(/^(.{22}).+$/, '$1…'));
+  const piezas = res.map((l) => `<span class="mpz mpz-${l.kind}"><span class="mq">${nombre(l.who)}</span> <b>${l.kind === 'x' && l.note === L('ui.cuenta.base') ? l.amount.replace('×', '') : l.amount}</b></span>`);
+  return `<span class="mde" aria-label="${esc(L('ui.cuenta.multi.de'))}"><i class="mde-t">${L('ui.cuenta.multi.de')}</i>${piezas.join('<i class="mde-s" aria-hidden="true">·</i>')}</span>`;
 }
 
 /** El marcador mientras se resuelve un golpe: Daño × Multi = Golpe, con la misma tipografía de cifras. */

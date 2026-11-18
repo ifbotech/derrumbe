@@ -203,3 +203,31 @@ button.recibo-x:hover:not(:disabled) { --bg: var(--laton); color: var(--ink); }
   .ficha { padding-right: 6px; column-gap: 4px; }
   .ficha ul { column-gap: 10px; }
 }
+
+/* ───────────── V36 · la cuenta dice quién aporta ───────────── */
+/* encima de cada carta elegida, lo que aporta al golpe: una placa al pie de la carta («+7», «0» si es Inmune) */
+.hand .card > .aporte, .reserve .card > .aporte {
+  position: absolute; z-index: 8; left: 50%; bottom: -8px; transform: translateX(-50%);
+  padding: 0 6px; white-space: nowrap; font-style: normal; font-family: var(--num); font-weight: 400;
+  font-size: max(15px, 1.6vh); line-height: 1.45; font-variant-numeric: tabular-nums;
+  background: var(--red); color: var(--card-paper); border: 2px solid var(--pit); pointer-events: none;
+}
+.hand .card > .aporte.cero, .reserve .card > .aporte.cero { background: var(--table-3); color: var(--card-paper); text-decoration: line-through; text-decoration-thickness: 2px; }
+.hand .card:not(.sel) > .aporte, .reserve .card:not(.sel) > .aporte { display: none; }
+/* a la derecha de la cuenta, de dónde sale el Multi: «Multi: Grupo 2 · Racha +1 · Cuerno de guerra ×2» (en el móvil no
+   cabe: lo dicen las placas de las cartas y el recibo) */
+#score > .mde { display: inline-flex; flex-wrap: wrap; align-content: center; align-items: baseline; gap: 0 6px; max-width: clamp(280px, 32vw, 500px); font-family: var(--cap); font-weight: 700; font-size: 14px; line-height: 1.25; letter-spacing: 0.02em; text-transform: uppercase; color: var(--dim); }
+#score > .mde i { font-style: normal; font-family: var(--cap); font-size: 14px; }
+#score > .mde .mde-t { color: var(--card-paper); }
+#score > .mde .mpz { white-space: nowrap; }
+#score > .mde .mpz b { font-family: var(--num); font-weight: 400; font-size: 15px; padding: 0 2px; color: var(--card-paper); }
+#score > .mde .mpz-x b { color: var(--hazard); }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  #score > .mde { display: none; }
+}
+/* con el aviso de último turno en la fila, manda el aviso: de dónde sale el Multi lo sigue diciendo el recibo */
+#score:has(> .omen) > .mde { display: none; }
+/* con la línea del Multi al lado, la cuenta se corre a la izquierda, bajo las Reliquias: 8 px de aire entre dianas */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  #score:has(> .mde) { padding-top: 3px; }
+}

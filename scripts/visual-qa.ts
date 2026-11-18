@@ -2703,6 +2703,9 @@ async function caraLimpia(png: string): Promise<{ fails: Fail[]; min: number; n:
     const tapas: { l: number; t: number; r: number; b: number }[] = [];
     const sello = c.querySelector('svg.ly.art.seal > g')?.getBoundingClientRect();
     if (sello) tapas.push({ l: sello.left - 2, t: sello.top - 2, r: sello.right + 2, b: sello.bottom + 2 });
+    // V36 · la placa de lo que aporta la carta elegida («+7»), al pie de la carta
+    const aporte = c.querySelector(':scope > .aporte')?.getBoundingClientRect();
+    if (aporte && aporte.width > 0) tapas.push({ l: aporte.left - 2, t: aporte.top - 2, r: aporte.right + 2, b: aporte.bottom + 2 });
     if (c.dataset.n) {
       const a = getComputedStyle(c, '::after');
       const cr = c.getBoundingClientRect();

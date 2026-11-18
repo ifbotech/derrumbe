@@ -169,9 +169,9 @@ export function tableWhispers(): void {
   if (exp) whisper('expuesto', { glyph: SUIT_GLYPH[exp], n: String(BALANCE.golpe.expuesto) });
   const stun = fx('sobrecarga');
   if (stun) whisper('aturdido', { glyph: SUIT_GLYPH[stun] });
-  // V11: el asalto de dos (o tres) tronos: lo que pasa con el palo de un trono que no está
+  // V36: el duelo Casa por Casa, la primera vez que se ve (un enemigo a la vez; la fila espera)
   const here = SUITS.filter((s) => !v.towers[s].away).length;
-  if (here < SUITS.length) whisper('ausente', { n: String(here) });
+  if (here > 1) whisper('ausente', { n: String(here) });
   const boss = S.campaign?.run.boss ? BOSS[S.campaign.run.boss] : null;
   if (boss) whisper('jefe', { who: monN(boss.id) });
   if ((v.fatigue ?? 0) > 0) whisper('fatiga');
