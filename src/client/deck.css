@@ -156,14 +156,14 @@
   .table-screen .bunker .pile #disc-n { position: relative; z-index: 2; }
 }
 
-/* 3 · Mejor jugada, de igual a igual con Golpear: mismo alto y ancho (dos columnas iguales) y fondo macizo propio en
-   azul de tinta (crema encima a 9,1:1), lejos del latón de Golpear */
+/* 3 · Mejor jugada, del mismo alto y ancho que Golpear (dos columnas iguales), pero secundario (V38c): fondo de mesa
+   oscuro, filete claro de 3 px y rótulo crema (≥ 7:1). Golpear es el único botón lleno de color */
 @media (min-width: 641px) and (min-aspect-ratio: 1/1) {
   .table-screen .actions,
   html[data-input='pad'] .table-screen .actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .table-screen .actions #btn-mejor { --bg: #183f50; --bd: var(--pit); color: var(--card-paper); min-height: 0; height: 100%; }
-  .table-screen .actions #btn-mejor:hover:not(:disabled) { --bg: #21566d; }
-  .table-screen .actions #btn-mejor .ico-btn { color: var(--hazard); }
+  .table-screen .actions #btn-mejor { --bg: var(--table-2); --bd: var(--rotulo); --bw: 3px; color: var(--card-paper); min-height: 0; height: 100%; }
+  .table-screen .actions #btn-mejor:hover:not(:disabled) { --bg: var(--table-3); --bd: var(--card-paper); color: var(--card-paper); }
+  .table-screen .actions #btn-mejor .ico-btn { color: var(--rotulo); }
   .table-screen .actions #btn-mejor .lbl { font-size: max(15px, 1.7vh); }
   html[data-input='pad'] .table-screen .actions #btn-mejor .lbl { font-size: 17px; }
 }
@@ -211,4 +211,33 @@
   .table-screen .bunker .stat-wall { margin-top: 12px; }
   .table-screen .bunker .piles,
   .table-screen:has(#monarch:not([hidden])) .bunker .piles { margin-top: 2px; }
+}
+
+/* ═════════════ V38c · portátil (1366×768) y 1080p ═════════════
+   El panel: «el botón MEJOR compite con GOLPEAR», «la barra de arriba son 5 cifras pegadas», «los Tréboles se pierden
+   en el marfil», «los iconos de reliquias son invisibles». */
+
+/* 4 · ♣ verde botella: 7,2:1 sobre el marfil (antes 5,2). Con daltonismo se separa más del ♥ (protanopía 6,8 → 9,4) y
+   del ♦ (tritanopía 8,1 → 10,7); del ♠ queda a ≥ 15 y lo distingue su forma (y su trama en figuras y tronos).
+   Los papeles de la carta agrietada y la forjada, algo más claros: el índice y el palo siguen ≥ 7:1 encima. */
+:root { --suit-C: #005442; }
+:root.contraste { --suit-C: #004a3a; }
+.t-agrietado .ly.paper { background-color: #f1e3d3; }
+.t-forjado .ly.paper { background-color: #eae7e0; }
+
+/* 5 · la tira de Reliquias de la mesa: la etiqueta «+D» sobre rojo hondo (7,7:1, antes 5,3) y el icono algo mayor */
+.belt-slot.k-f .kind { background: var(--red-deep); }
+#beltbar .belt-ico { width: 80%; height: 80%; margin-bottom: 6%; }
+
+/* 2 · la barra de arriba: la bolsa con aire (14 px entre oro, esquirlas y lacre; 6 px entre cada icono y su cifra) y,
+   con mando, la insignia «Select» de AUTO dentro del botón, no asomando al borde de la ventana */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .bar .chip.bolsa { gap: 14px; }
+  .bar .bolsa-c { gap: 6px; }
+  html[data-input='pad'] .bar .chip.bolsa { gap: 12px; }
+  html[data-input='pad'] .bar .bolsa-c { gap: 6px; }
+  .bar #btn-auto .kh, .bar #btn-auto .kh + .kh { position: static; margin: 0; }
+  /* con la insignia dentro, AUTO es más ancho: en el último paso de apretada (mando, monarca, 1280) suelta el engranaje
+     y se queda en su luz y su insignia (el aria-label y el aviso siguen diciendo «AUTO») */
+  html[data-input='pad'] .bar.apretada7 #btn-auto .ico-btn { display: none; }
 }

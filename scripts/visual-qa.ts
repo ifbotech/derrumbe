@@ -90,7 +90,7 @@ guardian('qa:visual', Number(process.env.QA_HILOS || 8) > 1 ? 170 : 1200); // to
 //             acabado tiene ≥ 75 % de los píxeles de su cara a ΔE ≤ 6 del marfil #efe6d5, medido en la captura
 //   paleta    (en mesa, una vez por ventana) con Cuatro colores, Clásica y Dos tintas, cada tinta de palo ≥ 4,5:1
 //             sobre el papel y su variante clara ≥ 4,5:1 sobre --table; con Alto contraste, ≥ 7:1 las dos; la
-//             paleta de serie es la pedida (#161514, #c8232c, #1b5e9e, #1b6b46 sobre #efe6d5); y el palo de la
+//             paleta de serie es la pedida (#161514, #c8232c, #1b5e9e, #005442 sobre #efe6d5; ♣ desde la V38c); y el palo de la
 //             esquina lleva contorno de tinta
 //   daltonismo  en mesa, mesa-clasica y mesa-2tintas: ΔE2000 entre cada par de tintas de palo simuladas con
 //             Machado (2009) (protanopía, deuteranopía y tritanopía, severidad 1); un par por debajo de 15 es aviso
@@ -1132,7 +1132,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
           if (ratio(lit, mesa) < need - 0.04) fail('paleta', `${tag}: la variante clara del palo ${s} (${hex(lit)}) va a ${ratio(lit, mesa).toFixed(2)}:1 sobre la mesa (mínimo ${need}:1)`);
         }
         if (!alto && !cls.length) {
-          const pedidos: Record<string, string> = { S: '#161514', H: '#c8232c', D: '#1b5e9e', C: '#1b6b46' };
+          const pedidos: Record<string, string> = { S: '#161514', H: '#c8232c', D: '#1b5e9e', C: '#005442' }; // V38c: ♣ verde botella, 7,2:1 sobre el marfil (antes #1b6b46, 5,2:1)
           for (const [s, want] of Object.entries(pedidos)) if (hex(tok(`--suit-${s}`)) !== want) fail('paleta', `cuatro colores: el palo ${s} es ${hex(tok(`--suit-${s}`))} y el pedido es ${want}`);
         }
       }
@@ -2652,7 +2652,9 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
       const que = e.matches('.curse-plate') ? 'la ficha del monarca' : e.matches('.furia') ? 'la etiqueta de Furia' : 'la marca del monarca en el ⚔';
       const t = textos(e);
       for (const x of t) {
-        if (x.px < 13.95) fail('furia', `${que} «${x.txt}» mide ${f1(x.px)} px (mínimo 14)`);
+        // V38c · en el ⚔ (Furia y marca del monarca), ≥ 15 px en toda ventana apaisada; la ficha del monarca, ≥ 14
+        const minimo = e.matches('.curse-plate') ? 14 : 15;
+        if (x.px < minimo - 0.05) fail('furia', `${que} «${x.txt}» mide ${f1(x.px)} px (mínimo ${minimo})`);
         if (x.k < 6.95) fail('furia', `${que} «${x.txt}» va a ${f1(x.k)}:1 (mínimo 7:1)`);
       }
       const todo = t.map((x) => x.txt).join(' ');
@@ -2674,31 +2676,40 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
     if (tm.length && td.length) medidas.push(`pilas: Mazo ${f1(tm[0].px)} px a ${f1(tm[0].k)}:1 · Descarte ${f1(td[0].px)} px a ${f1(td[0].k)}:1 · rótulos ${rotulosPila.length ? f1(Math.min(...rotulosPila.map((x) => x.k))) : '—'}:1`);
   }
 
-  // ── V38b · «mejor-par»: Mejor jugada igual de alto y ancho que Golpear, con fondo macizo propio y de otro color ──
+  // ── V38b/V38c · «mejor-par»: Mejor jugada igual de alto y ancho que Golpear, pero secundario: fondo de mesa oscuro
+  //    sin color (croma LCh ≤ 12), filete claro de ≥ 3 px (≥ 3:1 sobre su fondo) y rótulo ≥ 7:1. Golpear es el único lleno.
   const golpear = document.querySelector<HTMLElement>('.actions #btn-strike:not([hidden])');
   const mejor = document.querySelector<HTMLElement>('.actions #btn-mejor:not([hidden])');
   if (mesa && visible(golpear) && visible(mejor)) {
     const [rg, rm] = [golpear.getBoundingClientRect(), mejor.getBoundingClientRect()];
     if (Math.abs(rg.width - rm.width) > 1 || Math.abs(rg.height - rm.height) > 1) fail('mejor-par', `Mejor mide ${Math.round(rm.width)}×${Math.round(rm.height)} px y Golpear ${Math.round(rg.width)}×${Math.round(rg.height)} (han de ser iguales)`);
     const fondo = (b: Element) => rgb(getComputedStyle(b).getPropertyValue('--bg')) ?? rgb(getComputedStyle(b).backgroundColor);
+    const lin = (v: number) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4);
+    const lab = (c: { r: number; g: number; b: number }) => {
+      const [R, G, B] = [lin(c.r), lin(c.g), lin(c.b)];
+      const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+      const [x, y, z] = [f((0.4124564 * R + 0.3575761 * G + 0.1804375 * B) / 0.95047), f(0.2126729 * R + 0.7151522 * G + 0.072175 * B), f((0.0193339 * R + 0.119192 * G + 0.9503041 * B) / 1.08883)];
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+    };
+    const croma = (c: { r: number; g: number; b: number }) => Math.hypot(lab(c)[1], lab(c)[2]);
     const [fg, fm] = [fondo(golpear), fondo(mejor)];
-    if (!fm || fm.a < 0.9) fail('mejor-par', 'Mejor no tiene fondo macizo propio');
-    else if (fg) {
-      // distancia de color en CIELAB (ΔE76): ≥ 20 se distinguen de un vistazo, también con Golpear apagado
-      const lin = (v: number) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4);
-      const lab = (c: { r: number; g: number; b: number }) => {
-        const [R, G, B] = [lin(c.r), lin(c.g), lin(c.b)];
-        const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-        const [x, y, z] = [f((0.4124564 * R + 0.3575761 * G + 0.1804375 * B) / 0.95047), f(0.2126729 * R + 0.7151522 * G + 0.072175 * B), f((0.0193339 * R + 0.119192 * G + 0.9503041 * B) / 1.08883)];
-        return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
-      };
-      const [p, q] = [lab(fg), lab(fm)];
-      const dE = Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
-      if (dE < 20) fail('mejor-par', `Mejor va casi del mismo color que Golpear (ΔE ${f1(dE)}, mínimo 20)`);
+    const csm = getComputedStyle(mejor, '::before'); // el marco de los botones va en su ::before (styles.css)
+    const filete = parseFloat(csm.borderTopWidth);
+    const colFilete = rgb(csm.borderTopColor);
+    let kFilete = 0;
+    if (!fm || fm.a < 0.9) fail('mejor-par', 'Mejor no tiene fondo propio (ha de ser el de la mesa, oscuro)');
+    else {
+      if (croma(fm) > 12) fail('mejor-par', `el fondo de Mejor va saturado (croma ${f1(croma(fm))}, máximo 12): compite con Golpear`);
+      if (lab(fm)[0] > 35) fail('mejor-par', `el fondo de Mejor es claro (L* ${f1(lab(fm)[0])}, máximo 35): ha de ser el de la mesa`);
+      kFilete = colFilete ? ratio(colFilete, fm) : 0;
+      if (filete < 2.95) fail('mejor-par', `el filete de Mejor mide ${f1(filete)} px (mínimo 3)`);
+      if (kFilete < 2.95) fail('mejor-par', `el filete de Mejor va a ${f1(kFilete)}:1 sobre su fondo (mínimo 3:1)`);
     }
+    // Golpear, encendido, es el único botón lleno de color
+    if (fg && !(golpear as HTMLButtonElement).disabled && croma(fg) < 30) fail('mejor-par', `Golpear no va lleno de color (croma ${f1(croma(fg))}, mínimo 30)`);
     const tl = [...mejor.querySelectorAll<HTMLElement>('.lbl')].filter(visible).flatMap(textos);
     for (const x of tl) if (x.k < 6.95) fail('mejor-par', `el rótulo «${x.txt}» de Mejor va a ${f1(x.k)}:1 (mínimo 7:1)`);
-    medidas.push(`botones: Golpear ${Math.round(rg.width)}×${Math.round(rg.height)} · Mejor ${Math.round(rm.width)}×${Math.round(rm.height)}, fondo ${fm ? `rgb(${fm.r}, ${fm.g}, ${fm.b})` : '—'}, rótulo ${tl.length ? f1(Math.min(...tl.map((x) => x.k))) : '—'}:1`);
+    medidas.push(`botones: Golpear ${Math.round(rg.width)}×${Math.round(rg.height)} · Mejor ${Math.round(rm.width)}×${Math.round(rm.height)}, fondo ${fm ? `rgb(${fm.r}, ${fm.g}, ${fm.b}) croma ${f1(croma(fm))}` : '—'}, filete ${f1(filete)} px a ${f1(kFilete)}:1, rótulo ${tl.length ? f1(Math.min(...tl.map((x) => x.k))) : '—'}:1`);
   }
 
   // ── V38b · «barras»: cada casilla de Vida y de Escudo ≥ 14 px de alto, dentro de su panel ──
@@ -2759,6 +2770,90 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
       if (x.k < 6.95) fail('reliquias', `«${x.txt}» de la tira de Reliquias va a ${f1(x.k)}:1 (mínimo 7:1)`);
     }
     if (t.length) medidas.push(`reliquias: «${t.map((x) => x.txt).join(' ')}» ${f1(Math.min(...t.map((x) => x.px)))} px a ${f1(Math.min(...t.map((x) => x.k)))}:1`);
+  }
+
+  // ── V38c · «barra-aire»: la barra de arriba despegada del borde (≥ 8 px), en un renglón, y la bolsa con aire:
+  //    ≥ 12 px entre sus bloques (oro, esquirlas, lacre) y ≥ 6 px entre cada icono y su cifra ──
+  const barra = document.querySelector<HTMLElement>('.table-screen .bar');
+  if (mesa && visible(barra)) {
+    const rb = barra.getBoundingClientRect();
+    let arriba = Infinity;
+    let quien = '';
+    for (const e of barra.querySelectorAll<Element>('*')) {
+      if (e instanceof SVGElement && !(e instanceof SVGSVGElement)) continue;
+      if (!visible(e)) continue;
+      const r = e.getBoundingClientRect();
+      if (r.top - rb.top < arriba) {
+        arriba = r.top - rb.top;
+        const dueño = e.closest('[id]');
+        quien = `${dueño ? `#${dueño.id}` : 'la barra'}${dueño === e ? '' : ` › ${e.tagName.toLowerCase()}.${String(e.getAttribute('class') ?? '').split(' ')[0]}`}`;
+      }
+    }
+    if (arriba < 7.95) fail('barra-aire', `${quien} queda a ${f1(arriba)} px del borde de arriba (mínimo 8)`);
+    const piezas = [...barra.children].filter((c) => visible(c)).map((c) => c.getBoundingClientRect());
+    const cima = Math.min(...piezas.map((r) => r.top));
+    if (piezas.some((r) => r.top > cima + 24)) fail('barra-aire', 'la barra de arriba baja a un segundo renglón');
+    const bloques = [...barra.querySelectorAll<HTMLElement>('#bolsa .bolsa-c')].filter(visible);
+    let entre = Infinity;
+    let icono = Infinity;
+    for (let i = 0; i < bloques.length; i++) {
+      const r = bloques[i].getBoundingClientRect();
+      if (i) entre = Math.min(entre, r.left - bloques[i - 1].getBoundingClientRect().right);
+      const svg = bloques[i].querySelector('svg');
+      const b = bloques[i].querySelector('b');
+      if (svg && b) icono = Math.min(icono, b.getBoundingClientRect().left - svg.getBoundingClientRect().right);
+    }
+    if (bloques.length > 1 && entre < 11.95) fail('barra-aire', `entre dos cifras de la bolsa hay ${f1(entre)} px (mínimo 12)`);
+    if (bloques.length && icono < 5.95) fail('barra-aire', `una cifra de la bolsa queda a ${f1(icono)} px de su icono (mínimo 6)`);
+    medidas.push(`barra: a ${f1(arriba)} px del borde · bolsa ${bloques.length ? `${f1(entre)} px entre bloques, ${f1(icono)} px icono–cifra` : '—'} · ${barra.className.split(' ').filter((c) => c.startsWith('apretada')).length} pasos de apretada`);
+  }
+
+  // ── V38c · «trebol»: el índice y el palo de cada carta de ♣ a la vista, ≥ 7:1 sobre su papel (también agrietada o forjada) ──
+  {
+    let peor = Infinity;
+    let cual = '';
+    for (const c of [...document.querySelectorAll<HTMLElement>('.card.s-C.k-number')].filter(visible)) {
+      const papel = c.querySelector<HTMLElement>('.ly.paper');
+      const fondoP = papel ? rgb(getComputedStyle(papel).backgroundColor) : null;
+      if (!fondoP || fondoP.a < 0.9) continue;
+      for (const e of c.querySelectorAll<Element>('.corner b, .corner .glyph, .art .kC')) {
+        const cs = getComputedStyle(e);
+        const t = rgb(e instanceof SVGElement ? cs.fill : cs.color);
+        if (!t) continue;
+        const k = ratio(t, fondoP);
+        if (k < peor) {
+          peor = k;
+          const tr = [...c.classList].find((x) => x.startsWith('t-'));
+          cual = `${c.dataset.id ?? '♣'}${tr ? ` (${tr.slice(2)})` : ''}`;
+        }
+      }
+    }
+    if (peor < 6.95) fail('trebol', `el ♣ de ${cual} va a ${f1(peor)}:1 sobre su papel (mínimo 7:1)`);
+    if (peor < Infinity) medidas.push(`trébol: peor índice o palo ${f1(peor)}:1 (${cual})`);
+  }
+
+  // ── V38c · «iconos-reliquia»: en la tira de la mesa, la tinta de cada icono sobre su casilla y cada etiqueta
+  //    (+D, +M, ×M, •, +8) ≥ 7:1, y la etiqueta ≥ 14 px ──
+  if (mesa) {
+    let kIco = Infinity;
+    let kEtq = Infinity;
+    let pxEtq = Infinity;
+    for (const slot of [...document.querySelectorAll<HTMLElement>('#beltbar .belt-slot.tool')].filter(visible)) {
+      const fondoS = bgOf(slot);
+      const tinta = slot.querySelector<SVGElement>('.belt-ico .ink');
+      if (tinta) {
+        const t = rgb(getComputedStyle(tinta).fill);
+        if (t) kIco = Math.min(kIco, ratio(t, fondoS));
+      }
+      for (const x of [...slot.querySelectorAll<HTMLElement>('.kind, .cnt')].filter(visible).flatMap(textos)) {
+        kEtq = Math.min(kEtq, x.k);
+        pxEtq = Math.min(pxEtq, x.px);
+        if (x.k < 6.95) fail('iconos-reliquia', `la etiqueta «${x.txt}» de ${slot.dataset.id} va a ${f1(x.k)}:1 (mínimo 7:1)`);
+        if (x.px < 13.95) fail('iconos-reliquia', `la etiqueta «${x.txt}» de ${slot.dataset.id} mide ${f1(x.px)} px (mínimo 14)`);
+      }
+    }
+    if (kIco < 6.95) fail('iconos-reliquia', `la tinta de un icono de reliquia va a ${f1(kIco)}:1 sobre su casilla (mínimo 7:1)`);
+    if (kIco < Infinity) medidas.push(`iconos de reliquia: tinta ${f1(kIco)}:1 · etiquetas ${f1(pxEtq)} px a ${f1(kEtq)}:1`);
   }
 
   // ── taberna-alto ──
