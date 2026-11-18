@@ -2034,8 +2034,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     if (!main || !dis || !visible(dis)) fail('acciones', 'faltan Golpear o Descartar en la mesa', document.querySelector('.actions'));
     else {
       const area = (b: Element) => b.getBoundingClientRect().width * b.getBoundingClientRect().height;
-      // V38b · Mejor jugada va de igual a igual con Golpear (lo mide «mejor-par»): lo distingue su color, no el tamaño
-      for (const b of bs) if (b !== main && b.id !== 'btn-mejor' && area(b) >= area(main)) fail('acciones', `#${b.id} es tan grande como Golpear`, b);
+      // V38b · Mejor jugada va de igual a igual con Golpear (lo mide «mejor-par»): lo distingue su color, no el tamaño; V38d · Descartar también (lo mide «descartar»)
+      for (const b of bs) if (b !== main && b.id !== 'btn-mejor' && b.id !== 'btn-discard' && area(b) >= area(main)) fail('acciones', `#${b.id} es tan grande como Golpear`, b);
       for (const b of bs) {
         // en 1366 × 768 SD3 admite 44 px en las secundarias (Golpear siempre 48)
         const h = b.getBoundingClientRect().height;
@@ -2721,7 +2721,11 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
     const minAlto = Math.min(...altos.map((r) => r.height));
     if (minAlto < 13.95) fail('barras', `las casillas de Vida y Escudo miden ${f1(minAlto)} px de alto (mínimo 14)`);
     if (altos.some((r) => r.bottom > pr.bottom + 0.5 || r.right > pr.right + 0.5)) fail('barras', 'una casilla de Vida o de Escudo se sale de su panel');
-    medidas.push(`barras: casillas de ${f1(minAlto)} px de alto como mínimo`);
+    // V38d · Escudo del mismo grosor que Vida, en toda ventana apaisada
+    const altoDe = (sel: string) => Math.min(...casillas.filter((c) => c.matches(sel)).map((c) => c.getBoundingClientRect().height));
+    const [hV, hE] = [altoDe('#int-blocks i'), altoDe('#wall-blocks i')];
+    if (Number.isFinite(hV) && Number.isFinite(hE) && Math.abs(hV - hE) > 0.5) fail('barras', `la barra de Escudo mide ${f1(hE)} px de alto y la de Vida ${f1(hV)} (el mismo grosor)`);
+    medidas.push(`barras: casillas de ${f1(minAlto)} px de alto como mínimo · Vida ${f1(hV)} px, Escudo ${f1(hE)} px`);
   }
 
   // ── cuenta-aire ──
@@ -2854,6 +2858,144 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
     }
     if (kIco < 6.95) fail('iconos-reliquia', `la tinta de un icono de reliquia va a ${f1(kIco)}:1 sobre su casilla (mínimo 7:1)`);
     if (kIco < Infinity) medidas.push(`iconos de reliquia: tinta ${f1(kIco)}:1 · etiquetas ${f1(pxEtq)} px a ${f1(kEtq)}:1`);
+  }
+
+  // ── V38d · «multi-fichas»: la línea del Multi en fichas con filete (≥ 16 px, ≥ 7:1, ≥ 6 px de aire entre fichas),
+  //    el total en una caja como la del Multi de la fórmula, a lo sumo dos renglones (uno con ≤ 820 px de alto) ──
+  const lineaMulti = document.querySelector<HTMLElement>('#score:not(.live) > .mde');
+  if (mesa && visible(lineaMulti)) {
+    const fichas = [...lineaMulti.querySelectorAll<HTMLElement>(':scope > .mpz:not(.mpz-tot)')].filter(visible);
+    const total = lineaMulti.querySelector<HTMLElement>(':scope > .mpz-tot b');
+    const multiCuenta = document.querySelector<HTMLElement>('#score .calc .fr-r b');
+    let pxMin = Infinity;
+    let kMin = Infinity;
+    let aireMin = Infinity;
+    for (const f of fichas) {
+      for (const x of textos(f)) {
+        pxMin = Math.min(pxMin, x.px);
+        kMin = Math.min(kMin, x.k);
+        if (x.px < 15.95) fail('multi-fichas', `«${x.txt}» de la ficha del Multi mide ${f1(x.px)} px (mínimo 16)`);
+        if (x.k < 6.95) fail('multi-fichas', `«${x.txt}» de la ficha del Multi va a ${f1(x.k)}:1 (mínimo 7:1)`);
+      }
+      const cs = getComputedStyle(f);
+      const filete = parseFloat(cs.borderTopWidth);
+      const col = rgb(cs.borderTopColor);
+      if (filete < 1.95 || !col || col.a < 0.5 || ratio(col, bgOf(f.parentElement!)) < 2.95) fail('multi-fichas', `la ficha «${f.textContent?.trim()}» no lleva filete visible (${f1(filete)} px)`);
+    }
+    // el aire entre fichas vecinas del mismo renglón
+    const piezas = [...lineaMulti.children].filter((c): c is HTMLElement => c instanceof HTMLElement && visible(c) && !c.matches('.mde-s:not(.mde-igual)'));
+    const cajas = piezas.map((p) => p.getBoundingClientRect());
+    for (let i = 1; i < cajas.length; i++) {
+      const [a, b] = [cajas[i - 1], cajas[i]];
+      if (Math.abs(a.top + a.height / 2 - (b.top + b.height / 2)) < 8) aireMin = Math.min(aireMin, b.left - a.right);
+    }
+    if (aireMin < 5.95) fail('multi-fichas', `entre dos fichas del Multi hay ${f1(aireMin)} px (mínimo 6)`);
+    // renglones: los centros distintos de las fichas
+    const renglones = new Set(fichas.map((f) => Math.round((f.getBoundingClientRect().top + f.getBoundingClientRect().bottom) / 16))).size;
+    const maxR = H <= 820 ? 1 : 2;
+    if (renglones > maxR) fail('multi-fichas', `la línea del Multi ocupa ${renglones} renglones (máximo ${maxR} con ${H} px de alto: el resto va en «+n más»)`);
+    if (fichas.length > 1 && !visible(total)) fail('multi-fichas', 'con dos fuentes o más, la línea del Multi no acaba en su total');
+    if (visible(total) && visible(multiCuenta)) {
+      const [a, b] = [parseFloat(getComputedStyle(total).fontSize), parseFloat(getComputedStyle(multiCuenta).fontSize)];
+      const [ha, hb] = [total.getBoundingClientRect().height, multiCuenta.getBoundingClientRect().height];
+      if (Math.abs(a - b) > 0.5 || Math.abs(ha - hb) > 1.5) fail('multi-fichas', `el total del Multi (${f1(a)} px, caja de ${f1(ha)}) no es como el Multi de la cuenta (${f1(b)} px, caja de ${f1(hb)})`);
+      if ((total.textContent ?? '').trim() !== (multiCuenta.textContent ?? '').trim()) fail('multi-fichas', `la línea acaba en «${total.textContent}» y la cuenta dice «${multiCuenta.textContent}»`);
+      for (const x of textos(total)) if (x.k < 6.95) fail('multi-fichas', `el total «${x.txt}» va a ${f1(x.k)}:1 (mínimo 7:1)`);
+    }
+    const mas = lineaMulti.querySelector<HTMLElement>('.mpz-mas');
+    if (visible(mas) && !mas.dataset.tip) fail('multi-fichas', 'la ficha «+n más» no dice qué junta (data-tip)');
+    medidas.push(`multi: ${fichas.length} fichas en ${renglones} renglón(es), ${f1(pxMin)} px a ${f1(kMin)}:1, aire ${aireMin < Infinity ? f1(aireMin) : '—'} px, total ${visible(total) ? `${f1(parseFloat(getComputedStyle(total).fontSize))} px` : '—'}${visible(mas) ? ` · «${mas.textContent?.trim()}»` : ''}`);
+  }
+
+  // ── V38d · «descartar»: Descartar con el mismo ancho que Golpear y Mejor, y su mismo alto (≥ 44 px) ──
+  const descartar = document.querySelector<HTMLElement>('.actions #btn-discard:not([hidden])');
+  const golpe2 = document.querySelector<HTMLElement>('.actions #btn-strike:not([hidden])');
+  if (mesa && visible(descartar) && visible(golpe2)) {
+    const [rd, rg] = [descartar.getBoundingClientRect(), golpe2.getBoundingClientRect()];
+    if (rd.height < 43.95) fail('descartar', `Descartar mide ${f1(rd.height)} px de alto (mínimo 44)`);
+    if (Math.abs(rd.height - rg.height) > 1) fail('descartar', `Descartar mide ${f1(rd.height)} px de alto y Golpear ${f1(rg.height)} (han de ser iguales)`);
+    if (Math.abs(rd.width - rg.width) > 1) fail('descartar', `Descartar mide ${f1(rd.width)} px de ancho y Golpear ${f1(rg.width)} (han de ser iguales)`);
+    medidas.push(`descartar: ${Math.round(rd.width)}×${Math.round(rd.height)} (Golpear ${Math.round(rg.width)}×${Math.round(rg.height)})`);
+  }
+
+  // ── V38d · Ajustes en la barra: diana ≥ 44×44 y su rótulo a la vista (salvo con mando en el paso 6 de apretada) ──
+  const ajustes = document.querySelector<HTMLElement>('.table-screen .bar #btn-set');
+  if (mesa && visible(ajustes)) {
+    const r = ajustes.getBoundingClientRect();
+    const rot = textos(ajustes).filter((x) => !x.el.closest('.kh'));
+    const recogido = document.documentElement.dataset.input === 'pad' && !!ajustes.closest('.bar.apretada6');
+    if (r.width < 43.95 || r.height < 43.95) fail('ajustes', `Ajustes mide ${Math.round(r.width)}×${Math.round(r.height)} px (mínimo 44×44)`);
+    if (!rot.length && !recogido) fail('ajustes', 'Ajustes no enseña su rótulo (solo el icono)');
+    medidas.push(`ajustes: ${Math.round(r.width)}×${Math.round(r.height)} px, rótulo ${rot.length ? `«${rot.map((x) => x.txt).join(' ')}» ${f1(rot[0].px)} px` : '—'}`);
+  }
+
+  // ── V38d · «jefe»: lo del monarca a ≥ 7:1 (su chip de la barra, su ficha y su placa) y el retrato con filete claro ──
+  if (mesa) {
+    let kJ = Infinity;
+    for (const e of [...document.querySelectorAll<HTMLElement>('.bar .boss-chip, #monarch')].filter(visible)) {
+      for (const x of textos(e)) {
+        kJ = Math.min(kJ, x.k);
+        if (x.k < 6.95) fail('jefe', `«${x.txt}» del monarca va a ${f1(x.k)}:1 (mínimo 7:1)`);
+      }
+    }
+    const retrato = document.querySelector<HTMLElement>('#monarch .mon-port');
+    let filete = '—';
+    if (visible(retrato)) {
+      const cs = getComputedStyle(retrato);
+      const col = rgb(cs.borderTopColor);
+      const w = parseFloat(cs.borderTopWidth);
+      const k = col ? ratio(col, bgOf(retrato.parentElement!)) : 0;
+      filete = `${f1(w)} px a ${f1(k)}:1`;
+      if (w < 1.95 || k < 2.95) fail('jefe', `el retrato del monarca no lleva filete claro (${filete})`);
+    }
+    if (kJ < Infinity) medidas.push(`jefe: textos ${f1(kJ)}:1 · filete del retrato ${filete}`);
+  }
+
+  // ── V38d · «arbol-legible»: Comprar con filete y rótulo ≥ 7:1 que se lea como botón; rangos «r/n» ≥ 15 px, ≥ 7:1,
+  //    y apartados de su emblema ──
+  if (document.querySelector('.arbol-vista')) {
+    const comprar = document.getElementById('arbol-comprar');
+    if (visible(comprar)) {
+      const be = getComputedStyle(comprar, '::before');
+      const fil = parseFloat(be.borderTopWidth);
+      const colF = rgb(be.borderTopColor);
+      const fondoB = rgb(comprar.style.getPropertyValue('--bg') || getComputedStyle(comprar).getPropertyValue('--bg')) ?? rgb(be.backgroundColor);
+      const panelBg = bgOf(comprar.parentElement!);
+      const kF = colF ? ratio(colF, panelBg) : 0;
+      const tc = textos(comprar);
+      const kT = tc.length ? Math.min(...tc.map((x) => x.k)) : 0;
+      if (fil < 2.95 || kF < 2.95) fail('arbol-legible', `Comprar no lleva filete visible (${f1(fil)} px a ${f1(kF)}:1)`);
+      if (kT < 6.95) fail('arbol-legible', `el rótulo de Comprar va a ${f1(kT)}:1 (mínimo 7:1)`);
+      const kFondo = fondoB ? ratio(fondoB, panelBg) : 1;
+      medidas.push(`árbol: Comprar filete ${f1(fil)} px a ${f1(kF)}:1, rótulo ${f1(kT)}:1, fondo/panel ${f1(kFondo)}:1, ${tc.length ? f1(Math.min(...tc.map((x) => x.px))) : '—'} px`);
+    }
+    const vr = document.querySelector<HTMLElement>('.arbol-vista')!.getBoundingClientRect();
+    let pxR = Infinity;
+    let kR = Infinity;
+    let sep = Infinity;
+    for (const n of [...document.querySelectorAll<HTMLElement>('.arbol .nodo[data-nodo]')].filter(visible)) {
+      const nr = n.getBoundingClientRect();
+      if (nr.left < vr.left || nr.right > vr.right || nr.top < vr.top || nr.bottom > vr.bottom) continue;
+      const rango = n.querySelector<HTMLElement>('.nodo-rango');
+      const sello = n.querySelector<HTMLElement>('.nodo-sello');
+      if (!visible(rango)) continue;
+      for (const x of textos(rango)) {
+        pxR = Math.min(pxR, x.px);
+        kR = Math.min(kR, x.k);
+        if (x.px < 14.95) fail('arbol-legible', `el rango «${x.txt}» del nodo ${n.dataset.nodo} mide ${f1(x.px)} px (mínimo 15)`);
+        if (x.k < 6.95) fail('arbol-legible', `el rango «${x.txt}» del nodo ${n.dataset.nodo} va a ${f1(x.k)}:1 (mínimo 7:1)`);
+      }
+      if (visible(sello)) {
+        const [a, b] = [rango.getBoundingClientRect(), sello.getBoundingClientRect()];
+        const solapeX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        if (solapeX > 0) {
+          const hueco = a.top >= b.bottom ? a.top - b.bottom : b.top >= a.bottom ? b.top - a.bottom : -1;
+          sep = Math.min(sep, hueco);
+          if (hueco < 1.95) fail('arbol-legible', `el rango del nodo ${n.dataset.nodo} toca su emblema (${f1(hueco)} px; mínimo 2)`);
+        }
+      }
+    }
+    if (pxR < Infinity) medidas.push(`árbol: rangos ${f1(pxR)} px a ${f1(kR)}:1, separados del emblema ${sep < Infinity ? `${f1(sep)} px` : '—'}`);
   }
 
   // ── taberna-alto ──

@@ -168,7 +168,11 @@
   html[data-input='pad'] .table-screen .actions #btn-mejor .lbl { font-size: 17px; }
 }
 
-/* 4 · las barras de Vida y Escudo, más gruesas en las ventanas bajas: 20 px por casilla (antes 16 y 17) */
+/* 4 · las barras de Vida y Escudo, del mismo grosor en toda ventana apaisada (V38d: a 1080 la Vida iba en casillas
+   de 32 px y el Escudo de 22, «un hilo»); en las ventanas bajas, 20 px por casilla (antes 16 y 17) */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen .bunker :is(#int-blocks, #wall-blocks) i { aspect-ratio: auto; height: clamp(20px, 2.6vh, 28px); }
+}
 @media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
   .table-screen .bunker :is(#int-blocks, #wall-blocks) i { aspect-ratio: auto; height: 20px; }
 }
@@ -240,4 +244,64 @@
   /* con la insignia dentro, AUTO es más ancho: en el último paso de apretada (mando, monarca, 1280) suelta el engranaje
      y se queda en su luz y su insignia (el aria-label y el aviso siguen diciendo «AUTO») */
   html[data-input='pad'] .bar.apretada7 #btn-auto .ico-btn { display: none; }
+}
+
+/* ═════════════ V38d · 1080p y portátil: el Multi en fichas, el monarca, Descartar y el Árbol ═════════════
+   El panel: «la cadena de Multi es un muro de texto», «el contraste del jefe es pésimo», «Descartar es un clic fino»,
+   «la barra de escudo es un hilo», «el botón Comprar es invisible y los contadores son microscópicos». */
+
+/* 1 · la línea del Multi, en fichas: cada fuente en su ficha de tinta con filete claro (16 px, crema a ≥ 7:1), 6 px de
+   aire entre fichas y el total en una caja como la del Multi de la fórmula. Los «·» se quedan en el texto (lector de
+   pantalla y humo de la mesa) pero no se pintan: el filete ya separa. Si no caben, cuenta.ts junta las pequeñas en
+   «+n más» (su ayuda dice cuáles). */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  #score > .mde { gap: 6px; align-items: center; align-content: center; font-size: 16px; line-height: 1.2; color: var(--card-paper); }
+  #score > .mde [hidden] { display: none !important; }
+  #score > .mde .mde-s:not(.mde-igual) { display: none; }
+  #score > .mde .mde-t { font-size: 16px; color: var(--card-paper); letter-spacing: 0.03em; }
+  #score > .mde .mpz { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 8px 3px; background: var(--table-2); border: 2px solid var(--rotulo); color: var(--rotulo); font-size: 16px; line-height: 1.2; }
+  #score > .mde .mpz i, #score > .mde .mpz .mq { font-size: 16px; }
+  #score > .mde .mpz b { font-size: 18px; line-height: 1.1; padding: 0; color: var(--card-paper); }
+  #score > .mde .mpz-x { border-color: var(--hazard); }
+  #score > .mde .mpz-x b { color: var(--hazard); }
+  #score > .mde .mpz-mas { color: var(--card-paper); border-style: dashed; cursor: help; }
+  #score > .mde .mde-igual { font-family: var(--num); font-size: clamp(22px, 2.8vh, 26px); line-height: 1; color: var(--card-paper); padding: 0 2px; }
+  /* el total, la misma caja que el Multi de la fórmula (#score .calc .fr-r b) */
+  #score > .mde .mpz-tot { padding: 0; border: 0; background: none; }
+  #score > .mde .mpz-tot b { font-family: var(--num); font-weight: 400; font-size: clamp(24px, 3vh, 28px); line-height: 1.15; padding: 1px 9px; min-width: 2.2ch; text-align: center; border: 2px solid var(--pit); background: var(--blue); color: var(--card-paper); letter-spacing: 0; }
+}
+/* en las ventanas bajas la fila de fichas, con su caja de total, se lleva unos 12 px más que la línea de texto: salen
+   del aire entre la fórmula y las fichas (el de las placas de abajo sigue en 8) */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
+  #score > .mde { margin-top: -4px; }
+}
+
+/* 2 · el monarca: el chip de la barra en rojo hondo (7,7:1; antes 5,3) y el retrato con filete claro */
+.bar .chip.boss-chip { background: var(--red-deep); border-color: var(--red-deep); }
+#monarch .mon-port { border: 2px solid var(--rotulo); box-sizing: border-box; background: var(--table-2); }
+
+/* 3 · Descartar, del mismo alto que Golpear y Mejor en toda ventana apaisada (a 1366 era la de 44, «un clic fino») */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  #app .table-screen .actions #btn-discard { min-height: 56px; }
+}
+@media (min-width: 1300px) and (max-width: 1400px) and (max-height: 780px) {
+  #app .table-screen .actions #btn-discard { min-height: 48px; }
+  html[data-input='pad'] #app .table-screen .actions #btn-discard { min-height: 56px; }
+}
+
+/* 6 · el Árbol: «Comprar» en tinta con letra crema y filete de latón (se lee como el botón del panel, no como una
+   franja del pergamino) y los rangos de cada nodo a 15 px, apartados de su emblema */
+#arbol-comprar:not([aria-disabled='true']) { --bg: var(--ink); --bd: var(--pit); --bw: 4px; --sh: inset 0 0 0 2px var(--laton), 4px 4px 0 var(--laton); color: var(--card-paper); font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; }
+#arbol-comprar:not([aria-disabled='true']):hover { --bg: var(--laton); --sh: 4px 4px 0 var(--pit); color: var(--ink); }
+#arbol-comprar[aria-disabled='true'] { --bd: var(--ink); --bs: dashed; color: var(--ink); }
+.arbol .nodo-rango, .arbol-vista[data-lod] .nodo-rango { font-size: 15px; }
+.arbol .nodo.es-tope .nodo-rango, .arbol-vista[data-lod='sello'] .nodo.es-tope .nodo-rango { background: var(--red-deep); color: var(--card-paper); }
+.arbol-vista[data-lod='sello'] .nodo { gap: 4px; padding-top: 1px; }
+.arbol-vista[data-lod='sello'] .nodo-sello { width: 25px; height: 25px; }
+.arbol-vista[data-lod='sello'] .nodo-sello .nodo-glifo { width: 19px; height: 19px; }
+
+/* con mando, la insignia de Golpear en la línea «Golpe contra …» crecía la cuenta 4 px (y con ella estrechaba los
+   tronos): se queda en el renglón sin empujarlo */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  html[data-input='pad'] #score .calc .vs .kh { margin-block: -4px; }
 }
