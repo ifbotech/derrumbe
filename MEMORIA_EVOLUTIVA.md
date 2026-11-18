@@ -420,3 +420,21 @@ Todas las cifras de jugadores salen de un **panel simulado** (`..\panelAgentesGa
 - **Regla** (`panel_gaming/placebo.py`, `veredicto <cand> <placebo> --campeon <run>`): se acepta solo si se cumplen las tres. (1) F sube contra el placebo de sus mismas escenas. (2) F no baja contra el Campeón más de **5,0** (margen de ruido estricto: la deriva más chica que midió un placebo, la de la 33.0, −4,86). (3) Ningún piso clave se hunde contra el Campeón: claridad o diversión −0,10 con p < 0,05 (t pareada), aprobación −5 puntos, o críticos, impulsivos, Steam Deck o móvil con más de una persona neta perdida (100 / n puntos). Un piso hundido solo se perdona con compensación real: sigue en su meta del mandato y F gana al Campeón al menos 5,0.
 - **La 37.0 con la regla nueva**: RECHAZA (ΔF −11,1 contra la 36.0 y Steam Deck −33,3, tres personas de 9). Su código se queda en main, porque su guía en 3 jugadas es lo que más subió a los impulsivos (81 % contra 66,7 % del placebo), pero el listón absoluto de F y de pisos vuelve a ser el run de la 36.0 (`pulso-60-20261118-035957`, F 236,25) hasta que una versión lo bata. El placebo se sigue armando sobre el snapshot del código de base (hoy la 37.0).
 - **Hoja de ruta** V38 → V42+ (copia local en `artifacts/mision/HOJA-DE-RUTA-V38-V42.md`, fuera del repo) (V38 legibilidad en el Deck y el portátil; V39 sellos S/A/B y de sinergia; V40+ rasgos que escalan, Pactos Cruzados y clímax [6]).
+
+### V38 · Legibilidad en el Steam Deck y el portátil — rechazada con la regla endurecida (rama `candidata/v38`)
+
+Cinco variantes, todas sin reglas nuevas, con QA visual ES/EN sin fallos, humo, 60 fps y build. Todas se midieron con el placebo de las 19 escenas que tocan sobre el snapshot de la 37.0 (F 220,73) y contra el listón de la 36.0 (F 236,25; margen −5).
+
+| Variante | Qué añade | F | ΔF placebo | ΔF 36.0 | Aprobación | Críticos | Impulsivos | Deck | Claridad | Veredicto |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| V38 | banda «caen n» 16 px a 15,8:1, «+1 Furia», cuenta a 15 px, Taberna entera a 1280×800 y 1366×768, ♣ 7,4:1 sobre la mesa | 221,12 | +0,39* | −15,13 | 80,0 | 70 | 85,7 | 66,7 | 6,77 | rechaza |
+| V38b | placa del golpe a 7,7:1, Mazo y Descarte iguales, Mejor = Golpear, barras de 20 px, fórmula 17 px y Multi en su renglón | 224,27 | +3,54 | −11,98 | 81,7 | 60 | 76,2 | 88,9 | 6,87 | rechaza |
+| V38c | Mejor secundario (filete claro), aire en la barra de arriba, ♣ `#005442` a 7,2:1 sobre marfil, iconos de Reliquia a 7:1 | **228,87** | **+8,14** | −7,38 | — | 65 | 76,2 | 100 | 6,77 | rechaza |
+| V38d | Multi en fichas, monarca a 7:1, Descartar = Golpear, Árbol legible | 219,97 | −0,76 | −16,28 | — | 60 | — | 88,9 | — | rechaza (deshecha) |
+| V38e | código de V38c con las escenas mínimas (solo lo que dejó de ser verdad) | 228,17 | +7,44 | −8,08 | **85,0** | 70 | 71,4 | **100** | 6,72 | rechaza (solo por el margen) |
+
+\* contra el placebo de 18 escenas (F 220,73 con 19).
+
+- **Lo que se aprende**: lo de V38b–V38c recupera el Deck (100 %, 9 de 9) y bate a su placebo por +7 a +8 en dos medidas; las fichas del Multi (V38d) restan. La claridad baja contra el placebo en las cinco (−0,12 a −0,47), también con las escenas mínimas: la pantalla más cargada de cajas pesa en la nota de claridad.
+- **Por qué no entra**: el listón es una medida suelta de la 36.0. El mismo código de la 36.0 con una palabra cambiada en 15 escenas midió 219,40 (−16,85). A temperatura 0 otra semilla no cambia ninguna reseña, así que no hay réplicas baratas; el único ruido es el de reescribir el pedido, y es de ±8 o más. Con el margen de 5 contra una tirada alta, una candidata necesita también una tirada alta.
+- **Pendiente**: decisión del usuario sobre cómo medir el listón (ver la conversación del 2026-11-18).
