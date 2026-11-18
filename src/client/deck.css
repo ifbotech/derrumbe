@@ -1,0 +1,129 @@
+/* SANGRE Y PALO V38 — legibilidad en el Steam Deck (1280×800) y el portátil (1366×768).
+   Va la última: manda sobre duelo.css, cuenta.css, theme.css y juice.css. Nada de reglas de juego: tinta, tamaño
+   y aire. Las cuatro quejas del panel de la 37.0 a 1280×800, una por bloque:
+   · la placa del golpe («CAEN 2» chico, crema sobre rojo a 5,3:1 y girado);
+   · la Furia (etiqueta del ⚔ y ficha del monarca a 6,9:1, y la marca del Relojero solo con «+1»);
+   · la cuenta apretada (rótulos de 14 px a 6,5:1, cifras a 5,3:1, placas pegadas y la de Contraataque punteada en gris);
+   · La Taberna cortada por el borde de abajo (128 px de más a 800 de alto y 163 a 768).
+   Las comprueba scripts/visual-qa.ts: reglas «placa-golpe», «furia», «cuenta-aire» y «taberna-alto».
+   Nada baja de 14 px. Ninguna regla nueva anima nada. */
+
+:root {
+  /* rojo hondo: crema encima a 7,7:1 (el --red de serie, #ae2d24, se queda en 5,3:1) */
+  --red-deep: #84201a;
+  /* rótulos de la cuenta sobre la mesa: ≥ 8:1 sobre --table-2 (el --dim de serie se queda en 6,5:1) */
+  --rotulo: #c4baa5;
+  /* ♣ como tinta sobre la mesa oscura (cabecera del trono, poderes, píldoras): 7,4:1 sobre --table-3 y 8,7:1 sobre
+     --table (el #52b685 de la 11.0 se quedaba en 6,3:1 y 5,1:1 sobre --table-4). Solo la paleta de serie: la clásica,
+     dos tintas y Alto contraste traen la suya */
+  --suitd-C: #66c493;
+}
+:root.contraste {
+  --red-deep: #861a12;
+  --rotulo: #e2d9c6;
+}
+
+/* ═════════════ 1 · la placa del golpe ═════════════
+   La cifra sigue grande en su placa; la línea de caída («caen 2», «exacto», «de Vida») pasa a una banda propia de
+   tinta con letra crema de 16 px en negrita (15,8:1). Sin giro en las ventanas bajas. La placa de la fila (.espera)
+   no cambia: su línea va oculta. */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen .tower:not(.espera) > .floor-slot > .preview:not(.polvora) {
+    padding: 2px 8px 0;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .table-screen .tower:not(.espera) > .floor-slot > .preview:not(.polvora) > small {
+    display: block;
+    margin: 3px -8px 0;
+    padding: 2px 8px 3px;
+    background: var(--pit);
+    color: var(--card-paper);
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.15;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
+  .table-screen .tower:not(.espera) > .floor-slot > .preview:not(.polvora) { transform: none; }
+}
+
+/* ═════════════ 2 · la Furia ═════════════
+   La etiqueta de Furia del ⚔ va en rojo hondo (7,7:1); la del Rey sigue en tinta y ámbar (8,3:1). La marca del
+   monarca (el --curse de guia.css, ahora #5c2a6c: 8,5:1) sube a 15 px en apaisado y la del Relojero dice la palabra:
+   «+1 Furia». En el móvil no hay sitio: «+1». */
+.threat .furia { background: var(--red-deep); }
+.threat .curse-tag .ct-largo { display: inline; } /* theme.css retira los <span> del ⚔ («Ataque»): estos no */
+.threat .curse-tag .ct-corto { display: none; }
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  .threat .curse-tag .ct-largo { display: none; }
+  .threat .curse-tag .ct-corto { display: inline; }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .tower.activa > .threat .furia { font-size: 15px; font-weight: 700; padding: 2px 8px; }
+  .tower.activa > .threat .curse-tag { font-size: 15px; padding: 1px 7px 1px 6px; border-width: 2px; }
+  .tower.activa > .threat .curse-tag .ct-largo { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+}
+
+/* ═════════════ 3 · la cuenta ═════════════
+   Colores: en todas las ventanas (el contraste no estorba en ninguna). Tamaños y aire: solo en apaisado. */
+#score .calc .fr-f b { background: var(--red-deep); }
+.marks .m.red { background: var(--red-deep); color: var(--card-paper); }
+/* «Habrá Contraataque»: era gris punteado sobre la mesa (6,5:1). Ahora placa de tinta con letra crema y filete
+   discontinuo claro: sigue diciendo «previsto» con la forma, no con la tinta apagada */
+.marks .m.dim { background: var(--pit); color: var(--card-paper); border: 2px dashed var(--rotulo); }
+.marks .m.good { background: #17443c; color: var(--card-paper); }
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  #score { row-gap: 10px; }
+  #score:not(.live) .calc .vs { font-size: 15px; color: var(--rotulo); }
+  #score .calc .vs strong { font-size: clamp(16px, 2.1vh, 19px); }
+  #score .calc .fr i.lg { font-size: 15px; color: var(--rotulo); letter-spacing: 0.05em; }
+  /* la línea del Multi: 15 px, rótulos claros, cifras crema de 17 px y separadores que se ven */
+  #score > .mde { max-width: clamp(300px, 34vw, 520px); gap: 2px 7px; font-size: 15px; line-height: 1.3; color: var(--rotulo); }
+  #score > .mde i { font-size: 15px; }
+  #score > .mde .mde-t { color: var(--card-paper); }
+  #score > .mde .mpz b { font-size: 17px; }
+  #score > .mde .mde-s { color: var(--hazard); font-family: var(--num); font-size: 16px; padding: 0 1px; }
+  /* las placas de debajo: más grandes y con aire entre ellas */
+  #score .marks { gap: 8px 10px; }
+  #score .marks .m { font-size: 15px; line-height: 1.3; padding: 2px 9px; }
+}
+/* la mesa no se desplaza: en las ventanas bajas cada píxel de la bandeja sale del lateral y de los tronos. El aire
+   entre la fórmula y las placas se queda en 8 px y las placas, con su renglón justo, miden lo mismo que antes (26 px)
+   aunque la letra suba a 15 */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 820px) {
+  #score { row-gap: 8px; }
+  #score .marks .m { line-height: 1.2; }
+}
+/* con mando en un portátil de 768 px juice.css apretaba la cuenta a 3 px entre renglones: vuelve a 8 */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 779px) {
+  html[data-input='pad'] .table-screen #score { row-gap: 8px; }
+}
+/* el aviso de último turno va al lado de la cuenta y llena lo que quede (de 420 a 640 px): con los rótulos a 15 px la
+   cuenta crece unos píxeles, y con la base fija de 640 el aviso bajaba a un renglón propio y la bandeja crecía 70 px */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  #score > .omen { flex: 1 1 420px; max-width: 640px; }
+}
+
+/* ═════════════ 4 · La Taberna entera a la vista ═════════════
+   En las ventanas bajas el surtido de nueve va en dos filas y no cabía: el título y el arte de las piezas eran los que
+   comían el alto. Aquí se achican el título, la bolsa, el retrato del Tratante y el arte de cada pieza; ningún texto
+   baja de 14 px. Con el Tratante y la columna de servicios más estrechos, las descripciones ganan ancho y renglones. */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (max-height: 900px) {
+  .run:has(> .run-body.shop) { gap: 8px; padding-top: 8px; padding-bottom: 6px; }
+  .run:has(> .run-body.shop) .deck-head { padding-bottom: 4px; }
+  .run:has(> .run-body.shop) .deck-head h1 { font-size: min(6vw, 7.8vh); line-height: 1; margin-top: 0; }
+  .run:has(> .run-body.shop) .deck-head .purse b { font-size: min(5vw, 6.4vh); }
+  .run-body.shop { grid-template-columns: auto minmax(0, 1fr) minmax(220px, 268px); gap: clamp(12px, 1.4vw, 20px); padding-bottom: 2px; }
+  .run-body.shop .keeper { width: clamp(104px, 10vw, 140px); gap: 8px; }
+  .run-body.shop .keeper .card { --w: clamp(104px, 10vw, 140px); }
+  .run-body.shop .choice.hang .card { --w: min(100cqw, 11vh); }
+  .run-body.shop .hangers:has(> .choice:nth-child(8)) .choice.hang .card { --w: min(100cqw, 9.2vh); }
+  .run-body.shop .hangers:has(> .choice:nth-child(8)) { row-gap: 18px; }
+  .run-body.shop .choice.hang h4 { min-height: 0; margin-top: 4px; }
+  .run-body.shop .run-belt { margin-top: 6px; padding-top: 6px; }
+}

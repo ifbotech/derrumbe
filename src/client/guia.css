@@ -5,7 +5,7 @@
    · Lo que se anima solo cambia transform y opacity, y se calla con «Reducir movimiento». */
 
 :root {
-  --curse: #6d3580;
+  --curse: #5c2a6c; /* V38: 8,5:1 con el papel encima (el #6d3580 de antes se quedaba en 6,9:1) */
   --curse-lit: #c9a0d9;
 }
 
