@@ -5,7 +5,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //
 //   npm run analyze:meta              informe completo (≈ 52.000 campañas) → scripts/meta-report.json
 //   npm run analyze:meta -- rapido    todo menos el estudio pieza a pieza, con muestra pequeña
-//   npm run analyze:meta -- foco      solo los Reinados 1 y 8 (para afinar la dureza)
+//   npm run analyze:meta -- foco      solo los Reinados 1 y 8 (para afinar la dureza; --reinados=5,6,7 elige otros)
 //   npm run analyze:meta -- niveles   los 8 Reinados · barajas: las 6 barajas en el Reinado 1 · clasica: el Asalto único
 //   npm run analyze:meta -- regalos --piezas=clavos,ariete --n=600   unas pocas piezas, con muestra grande
 //   … --n=2000 cambia las campañas por celda; --barajas=truco,chancho mide solo esos Mazos.
@@ -94,7 +94,8 @@ function plan(): Spec[] {
     for (const id of onlyPieces) for (const seed of seeds(count, salt)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, ...(TOOLS.some((t) => t.id === id) ? { giveTool: id } : BENDICION[id] ? { giveBendicion: id } : { giveSpecial: id }) });
     return specs;
   }
-  if (mode === 'foco') return levels([0, 7], N || 1200), specs;
+  // --reinados=5,6,7: el foco mide esos Reinados en lugar del 1 y el 8 (V40 1c)
+  if (mode === 'foco') return levels(arg('reinados')?.split(',').map((r) => Number(r) - 1) ?? [0, 7], N || 1200), specs;
   if (mode === 'niveles') return levels(all, N || 800), specs;
   // --barajas=escoba,truco: solo esos Mazos (el inicial, con sus campañas del Reinado 1)
   if (mode === 'barajas') return (!onlyDecks || onlyDecks.includes(MAZO_INICIAL)) && levels([0], N || 800), decks(N || 800), specs;
