@@ -58,6 +58,14 @@ export const OBJETIVOS = {
   duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 12, turno: 18, mapa: { entreacto: 40, nodo: { pulperia: 40, santuario: 20, fogon: 10, bravo: 20 } } },
   /** Asalto único (partida clásica): victorias del bot con 1, 2, 3 y 4 jugadores. */
   clasica: [58, 65],
+  /**
+   * V40 1f · Ninguna muerte de un golpe con la Vida llena (lo comprueba tests/golpe-unico.test.ts con los números de
+   * balance-config.json): en el Reinado 1, el Contraataque de un guardia o de un Guardia Bravo, con la Furia típica de
+   * su asalto, quita como mucho `tope` de la Vida máxima del Mazo más frágil, y el Rey jefe no mata de un golpe con la
+   * Vida llena en sus `turnosRey` primeros turnos. `furiaTipica`: la mediana de la Furia en los Contraataques de los
+   * guardias de cada asalto (`npm run analyze:meta -- golpes`; el laboratorio avisa si la mediana medida la pasa).
+   */
+  golpeUnico: { tope: 0.6, turnosRey: 3, furiaTipica: [0, 0, 0, 0, 0] },
 } as const;
 
 /** Un número frente a su rango (`lo`/`hi` pueden faltar: sin límite por ese lado). */
@@ -92,6 +100,8 @@ export interface InformeMeta {
   mapa?: { nodos: Record<string, number>; bravoJugadas: number; muereBravo: number; gastoPulperia: number };
   /** % de campañas (Reinado 1, Árbol vacío) que caen en cada asalto. */
   deaths?: number[];
+  /** V40 1f · los Contraataques por asalto y por quién pega (modos con golpes: barajas, golpes, foco, niveles). */
+  golpes?: { filas: { asalto: number; quien: string; furia50: number; unGolpe: number; n: number }[]; porMazo: { deck: string; unGolpe: number; reyTemprano: number }[] };
   giftBaseline: number;
   giftBaselineN: number;
   classic?: { players: number; winrate: number; n: number }[];
@@ -224,6 +234,18 @@ export function revisar(r: InformeMeta): Comprobacion[] {
   // el asalto 1 (dos tronos) no mata a más del 8 % de las campañas
   const m1 = r.deaths?.[0];
   if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con el Altar vacío (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
+  // V40 1f · ninguna muerte de un golpe con la Vida llena: la Furia típica medida no pasa la de objetivos.ts y ningún
+  // guardia, Bravo o Rey jefe en sus primeros turnos mata de un golpe con la Vida llena
+  if (r.golpes) {
+    const GU = O.golpeUnico;
+    for (const f of r.golpes.filas) {
+      if (f.quien === 'rey') continue;
+      const tipica = GU.furiaTipica[f.asalto - 1] ?? 0;
+      out.push({ id: `golpe.furia.${f.asalto}.${f.quien}`, texto: `Asalto ${f.asalto} (${f.quien}): Furia mediana ${f.furia50} en los Contraataques (objetivos.ts supone ${tipica})`, ok: f.furia50 <= tipica, partes: [{ valor: f.furia50, hi: tipica }] });
+      out.push({ id: `golpe.unico.${f.asalto}.${f.quien}`, texto: `Asalto ${f.asalto} (${f.quien}): ${f.unGolpe} muertes de un golpe con la Vida llena en ${f.n} Contraataques`, ok: f.unGolpe === 0, partes: [{ valor: f.unGolpe, hi: 0 }] });
+    }
+    for (const m of r.golpes.porMazo) out.push({ id: `golpe.rey.${m.deck}`, texto: `${m.deck}: el Rey jefe mata de un golpe con la Vida llena en sus ${GU.turnosRey} primeros turnos en el ${m.reyTemprano} % de las campañas`, ok: m.reyTemprano === 0, partes: [{ valor: m.reyTemprano, hi: 0 }] });
+  }
   // duración estimada de la campaña con las medianas de turnos de los cinco asaltos
   const min = duracion(r);
   if (min !== null) out.push({ id: 'duracion', texto: `Duración estimada de la campaña: ${min} minutos (objetivo ${O.duracion.minutos.join('–')})`, ok: inRange(min, O.duracion.minutos), partes: [{ valor: min, lo: O.duracion.minutos[0], hi: O.duracion.minutos[1] }] });

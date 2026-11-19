@@ -24,7 +24,9 @@ export function cifrasEspecial(id: string): Record<string, number> {
 /** Cifras del rasgo de combate de un Rey jefe, para su descripción y su placa (como `BOSS_NUMS` de run.ts). */
 export function cifrasMonarca(id: string): Record<string, number> {
   const M = BALANCE.reyes as unknown as Record<string, Record<string, number>>;
-  return M[id] ?? {};
+  const c = M[id] ?? {};
+  // V40 1f · el dado del Rey de Oros va de +⌈caras/6⌉ a +caras (la cara 1 a 6, a escala: ver `threatOf`)
+  return c.dado ? { ...c, dadoMin: Math.ceil(c.dado / 6) } : c;
 }
 
 /** Cifras de los Reinados (como el relleno de `ASCENSIONS` en run.ts). */

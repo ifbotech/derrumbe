@@ -148,9 +148,9 @@ En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
 Antes de cada asalto (desde el 2) se elige un camino en el **Mapa**: dos filas de tres nodos y, arriba, el asalto. Cada tramo tiene seis caminos, todos llegan al asalto y todos pueden pasar por **La Pulpería**, que va siempre en el centro de la segunda fila. El Mapa sale de la semilla: la misma semilla da el mismo Mapa.
 
-- **Guardia Bravo** (al menos uno por tramo): un guardia solo, en una Casa de un palo que el Mapa enseña de antemano, con ${MAPA_CFG.bravo.vida !== 1 ? `Vida ×${n(MAPA_CFG.bravo.vida)} y ` : ''}+${MAPA_CFG.bravo.ataque} de Ataque sobre el asalto que viene. No cura al ganar. Paga ${MAPA_CFG.bravo.oro} de oro, un Amuleto Raro o mejor${MAPA_CFG.bravo.bendicion ? ` y una «Elegí una» Bendición de ${MAPA_CFG.bravo.bendicion} Reyes` : ''}.
+- **Guardia Bravo** (al menos uno por tramo): un guardia solo, en una Casa de un palo que el Mapa enseña de antemano, con ${[MAPA_CFG.bravo.vida !== 1 ? `Vida ×${n(MAPA_CFG.bravo.vida)}` : '', MAPA_CFG.bravo.ataque ? `+${MAPA_CFG.bravo.ataque} de Ataque` : ''].filter(Boolean).join(' y ') || 'la Vida y el Ataque'} sobre el asalto que viene. No cura al ganar. Paga ${MAPA_CFG.bravo.oro} de oro, ${MAPA_CFG.bravo.amuletos > 1 ? `una «Elegí una» entre ${MAPA_CFG.bravo.amuletos} Amuletos Raros o mejores` : 'un Amuleto Raro o mejor'}${MAPA_CFG.bravo.bendicion ? ` y una «Elegí una» Bendición de ${MAPA_CFG.bravo.bendicion} Reyes` : ''}.
 - **Santuario del Bufón**: un trato (los Secretos de abajo).
-- **Fogón**: Curar ${MAPA_CFG.fogon.curar} de Vida o Purgar una carta, gratis; uno de los dos (con el ${up('rutas')} del Altar, los dos).
+- **Fogón**: Curar ${MAPA_CFG.fogon.curar} de Vida o Purgar una carta, gratis; uno de los dos (con el ${up('rutas')} del Altar, los dos).${MAPA_CFG.fogon.bendicion ? ` Al dejarlo, su Botín: una «Elegí una» Bendición de ${MAPA_CFG.fogon.bendicion === 1 ? 'un Rey' : `${MAPA_CFG.fogon.bendicion} Reyes`}.` : ''}
 - **La Pulpería**: comprar, Purgar y Curar con oro.
 
 

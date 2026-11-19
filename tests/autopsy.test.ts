@@ -5,6 +5,7 @@ import { Action, Card, Config, DEFAULT_CONFIG, GameEvent, GameState, MATERIAL, S
 import { BOSS, Run, finishBattle, newRun, runAction, startStage, trackEvents } from '../src/rules/run';
 import { SPECIAL } from '../src/rules/specials';
 import { TOOL } from '../src/rules/tools';
+import { BALANCE } from '../src/rules/balance-config';
 
 const card = (id: string, extra: Partial<Card> = {}): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0, ...extra } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)), ...extra });
 const cfgWith = (extra: Partial<Config> = {}): Config => ({ ...structuredClone(DEFAULT_CONFIG), ...extra });
@@ -158,10 +159,11 @@ describe('autopsia de la derrota (contrato C1)', () => {
   // V40 1c · el suelo inestable del Relojero se fue con los monarcas viejos: queda la herida de la Nitroglicerina
   it('herida propia: la Nitroglicerina sale con su nombre', () => {
     const nitro: Card = { id: 'sp-nitro-9', suit: 'X', rank: 0, sp: 'nitro' };
-    const t = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), nitro, card('D3')], [card('X1')], [], { integrity: 2 });
+    const H = BALANCE.especiales.nitro.hurt;
+    const t = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), nitro, card('D3')], [card('X1')], [], { integrity: H });
     const b = lose(t, { type: 'attack', cards: ['S5', nitro.id], target: 'D' }).a;
-    expect(b).toMatchObject({ kind: 'herida', before: 2, taken: 2 });
-    expect(b.title).toBe(`${SPECIAL.nitro.name}: tu propio golpe te costó 2 de Vida`);
+    expect(b).toMatchObject({ kind: 'herida', before: H, taken: H });
+    expect(b.title).toBe(`${SPECIAL.nitro.name}: tu propio golpe te costó ${H} de Vida`);
     fits(b);
   });
 

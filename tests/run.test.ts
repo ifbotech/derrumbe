@@ -377,7 +377,7 @@ describe('ferretería', () => {
     run.integrity = 10;
     expect(healCost(run)).toBe(5);
     act(run, { t: 'heal' });
-    expect(run.integrity).toBe(Math.min(run.maxIntegrity, 16));
+    expect(run.integrity).toBe(Math.min(run.maxIntegrity, 10 + BALANCE.taberna.curar.vida));
     expect(healCost(run)).toBe(6);
   });
 
@@ -450,7 +450,7 @@ describe('cinturón', () => {
     const cfg = stageConfig(run);
     expect(cfg.wallCap).toBe(base.wallCap + 4);
     expect(cfg.handSize[1]).toBe(MANO0 + 1);
-    for (const r of [10, 11, 12]) expect(cfg.floorThreat[r]).toBe(Math.max(1, base.floorThreat[r] - 1));
+    for (const r of [10, 11, 12]) expect(cfg.floorThreat[r]).toBe(Math.max(1, base.floorThreat[r] - BALANCE.reliquias.sordina.ataque));
   });
 });
 
@@ -485,7 +485,7 @@ describe('hallazgos en los cimientos', () => {
     const run = newRun({}, 31);
     Object.assign(run, { phase: 'event', event: 'caja' });
     act(run, { t: 'event', i: 0 });
-    expect(run.integrity).toBe(VIDA0 - 5);
+    expect(run.integrity).toBe(VIDA0 - 20);
     expect(['capataz', 'reliquia']).toContain(TOOL[run.tools[0].id].rarity);
   });
 
@@ -510,7 +510,7 @@ describe('hallazgos en los cimientos', () => {
     Object.assign(run, { phase: 'event', event: 'contrato' });
     act(run, { t: 'event', i: 0 });
     expect(run).toMatchObject({ gold: 24, curse: true, stage: 4 });
-    expect(stageConfig(run).floorThreat[12]).toBe(threat + 1);
+    expect(stageConfig(run).floorThreat[12]).toBe(threat + 2);
     win(run);
     expect(run.curse).toBe(false);
   });
@@ -657,8 +657,8 @@ describe('niveles de obra y maestría', () => {
     // 6 · heridas viejas: menos Vida máxima
     expect(at(4).maxIntegrity - at(5).maxIntegrity).toBe(BALANCE.reinados.heridasViejas);
     // 7 · turno de noche: J y Q, no las K
-    expect(stageConfig(at(6, 3)).floorThreat[10]).toBe(base.floorThreat[10] + 1);
-    expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
+    expect(stageConfig(at(6, 3)).floorThreat[10]).toBe(base.floorThreat[10] + BALANCE.reinados.guardiaNoche);
+    expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + BALANCE.reinados.guardiaNoche);
     expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + BALANCE.reinados.reyColerico);
     // 8 · clausura: +{clausura.threat} de Ataque en todos los tronos, solo en los asaltos 4 y 5 (V40 1c; antes, solo el 5)
     expect(BALANCE.clausura.stages).toEqual([4, 5]);
@@ -671,9 +671,10 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(7, 4)).floorHp[10]).toBe(stageConfig(at(1, 4)).floorHp[10]);
   });
 
-  it('3 · Corte airada (V35): cada Mazo agotado sube la Furia más; La Taberna no cambia de precio; al terminar un asalto curas 4', () => {
-    for (const st of [1, 3, 5]) expect(stageConfig(at(2, st)).collapseSiege).toBe(stageConfig(at(1, st)).collapseSiege + BALANCE.reinados.furia);
-    expect(stageConfig(at(1, 3)).collapseSiege).toBe(stageConfig(at(0, 3)).collapseSiege);
+  it('3 · Corte airada (V40 1f): cada asalto empieza con Furia; La Pulpería no cambia de precio; al cerrar un asalto se cura lo de cobro.curaTrasAsalto', () => {
+    for (const st of [1, 3, 5]) expect(stageConfig(at(2, st)).furiaInicial ?? 0).toBe((stageConfig(at(1, st)).furiaInicial ?? 0) + BALANCE.reinados.furia);
+    for (const st of [1, 3, 5]) expect(stageConfig(at(2, st)).collapseSiege).toBe(stageConfig(at(1, st)).collapseSiege);
+    expect(stageConfig(at(1, 3)).furiaInicial ?? 0).toBe(stageConfig(at(0, 3)).furiaInicial ?? 0);
     const cheap = at(1);
     const dear = at(2);
     toShop(cheap);
@@ -681,7 +682,7 @@ describe('niveles de obra y maestría', () => {
     expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost));
     const healed = at(7);
     win(healed, (s) => (s.integrity = 8));
-    expect(healed.integrity).toBe(12);
+    expect(healed.integrity).toBe(8 + BALANCE.cobro.curaTrasAsalto);
   });
 
   it('ganar estampa el sello de maestría en la baraja y en cada herramienta del cinturón', () => {

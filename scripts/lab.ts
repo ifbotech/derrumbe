@@ -4,7 +4,7 @@
 import './balance-patch';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { FIGURAS, applyAction, currentPlayer } from '../src/rules/engine';
+import { DEFAULT_CONFIG, FIGURAS, applyAction, currentPlayer, esJefe } from '../src/rules/engine';
 import type { Seal, Treatment } from '../src/rules/engine';
 import { RunPolicy, chooseAction, chooseRunAction } from '../src/rules/bot';
 import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, tomaBendicion, trackEvents, BOSS, CLAUSURA, DECKS, FURIA, STAGES, TIMBRE } from '../src/rules/run';
@@ -64,6 +64,16 @@ export interface Log {
   bravoJugadas: number;
   diedBravo: boolean;
   gastoPulperia: number;
+  /**
+   * V40 1f · cada Contraataque que llegó: [asalto, quién (0 guardia, 1 Rey jefe, 2 Guardia Bravo), Ataque, Furia,
+   * Vida quitada, Vida máxima, Vida antes del golpe, turno del Rey jefe (1, 2, 3…; 0 si no es él)].
+   */
+  sirenas: number[][];
+  /** V40 1f · Contraataques por asalto y por cómo acabaron («3:strike», «3:clean», «3:sobrecarga», «3:huelga»). */
+  motivos: Record<string, number>;
+  /** V40 1f · Vida curada en combate (eventos `repair`) y Contraataque parado por el Escudo, en toda la campaña. */
+  curado: number;
+  parado: number;
 }
 
 // Mandos de ajuste (variables de entorno): valen para el laboratorio entero, también en sus procesos hijos.
@@ -99,6 +109,11 @@ if (env.VENTISCA) {
 if (env.CLAUSURA) {
   const [stages, threat] = env.CLAUSURA.split(':');
   Object.assign(CLAUSURA, { stages: stages.split(',').map(Number), threat: Number(threat ?? 1) });
+}
+// V40 1f · RELOJ=4:1  la Furia de la campaña sube 1 desde ese turno de cada asalto, y luego cada tantos turnos
+if (env.RELOJ) {
+  const [start, every] = env.RELOJ.split(':').map(Number);
+  Object.assign(DEFAULT_CONFIG, { fatigueStart: start, fatigueEvery: every || 1 });
 }
 if (env.FUR) {
   const [mazo, rey, jefeVida] = env.FUR.split(',').map(Number);
@@ -148,7 +163,7 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   if (spec.giveSpecial) addSpecial(run, spec.giveSpecial);
   // V40 1d · con su efecto inmediato (oro, Vida máxima…), como cuando se toma en la oferta
   if (spec.giveBendicion) tomaBendicion(run, spec.giveBendicion);
-  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0, bendEnd: [], nodos: {}, bravoJugadas: 0, diedBravo: false, gastoPulperia: 0 };
+  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0, bendEnd: [], nodos: {}, bravoJugadas: 0, diedBravo: false, gastoPulperia: 0, sirenas: [], motivos: {}, curado: 0, parado: 0 };
   let shop: unknown = null;
   let botin: unknown = null;
   for (let guard = 0; guard < 6000; guard++) {
@@ -166,11 +181,24 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
         };
       let state = startStage(run, players);
       let jugadas = 0;
+      let turnoRey = 0;
       for (; state.phase === 'playing'; jugadas++) {
         if (jugadas > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
+        const antes = state.integrity;
         const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
         trackEvents(run, res.events);
-        for (const ev of res.events) if (ev.e === 'impact') log.golpes++;
+        let vida = antes;
+        for (const ev of res.events) {
+          if (ev.e === 'impact') log.golpes++;
+          if (ev.e === 'repair') log.curado += ev.amount;
+          if (ev.e === 'siren') log.parado += ev.blocked;
+          if (ev.e === 'siren' && !bravo) bump(log.motivos, `${run.stage}:${ev.reason}`);
+          if (ev.e !== 'siren' || ev.reason !== 'strike' || !ev.tower) continue;
+          const jefe = !bravo && esJefe(res.state.config, res.state.towers[ev.tower]);
+          if (jefe) turnoRey++;
+          log.sirenas.push([run.stage, bravo ? 2 : jefe ? 1 : 0, ev.threat, ev.asedio ?? 0, ev.taken, res.state.config.maxIntegrity, vida, jefe ? turnoRey : 0]);
+          vida = ev.integrity;
+        }
         state = res.state;
       }
       if (bravo) log.bravoJugadas += jugadas;

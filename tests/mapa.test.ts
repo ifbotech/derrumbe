@@ -95,7 +95,7 @@ describe('V40 1e · la forma del Mapa', () => {
 });
 
 describe('V40 1e · el Guardia Bravo', () => {
-  it('un guardia solo, con más Ataque (Vida ×mapa.bravo.vida), sin jefe; paga oro, un Amuleto y una «Elegí una» Bendición; no cura', () => {
+  it('un guardia solo (Vida ×mapa.bravo.vida, Ataque +mapa.bravo.ataque), sin jefe; paga oro, Amuleto y la Bendición de mapa.bravo.bendicion Reyes; no cura', () => {
     const run = newRun({ seedText: 'BRAVO' }, 1);
     act(run, { t: 'begin' });
     alNodo(run, 0);
@@ -113,7 +113,8 @@ describe('V40 1e · el Guardia Bravo', () => {
     expect(cfg.orden).toEqual([nodo.palo]);
     const r = rangoBravo(2);
     expect(cfg.floorThreat[r]).toBe(asalto.floorThreat[r] + MAPA_CFG.bravo.ataque);
-    expect(cfg.floorHp[r]).toBeCloseTo(asalto.floorHp[r] * MAPA_CFG.bravo.vida, 0);
+    // la Vida se redondea a 5 después de multiplicar: a lo sumo 2,5 de diferencia
+    expect(Math.abs(cfg.floorHp[r] - asalto.floorHp[r] * MAPA_CFG.bravo.vida)).toBeLessThanOrEqual(2.5);
     run.integrity = 10;
     gana(run);
     expect(run.integrity).toBe(10); // sin la cura de asalto
@@ -199,7 +200,11 @@ describe('V40 1e · La Pulpería y el Fogón', () => {
     act(run, { t: 'fogon', que: 'curar' });
     expect(run.integrity).toBe(3 + MAPA_CFG.fogon.curar);
     expect(run.gold).toBe(gold);
-    expect(run.phase).toBe('map'); // usado: se vuelve al Mapa
+    // V40 1f · usado: su Botín (una «Elegí una» Bendición) y, al cerrarlo, de vuelta al Mapa
+    expect(run.phase).toBe(MAPA_CFG.fogon.bendicion ? 'reward' : 'map');
+    if (MAPA_CFG.fogon.bendicion) expect(run.botin).toMatchObject([{ k: 'elegi', tipo: 'bendicion', estado: 'abierta' }]);
+    if (run.phase === 'reward') cierraBotin(run);
+    expect(run.phase).toBe('map');
     expect(runAction(run, { t: 'fogon', que: 'purgar', card: 'S2' })).toMatch(/Fogón/);
 
     const otra = fogon({});
@@ -207,7 +212,7 @@ describe('V40 1e · La Pulpería y el Fogón', () => {
     act(otra, { t: 'fogon', que: 'purgar', card: 'S2' });
     expect(otra.deck.length).toBe(size - 1);
     expect(otra.removals).toBe(0); // gratis: no sube el precio de Purgar en La Pulpería
-    expect(otra.phase).toBe('map');
+    expect(otra.phase).toBe(MAPA_CFG.fogon.bendicion ? 'reward' : 'map');
 
     const ambos = fogon({ rutas: 1 });
     expect(serviciosFogon(ambos).ambos).toBe(true);
@@ -215,7 +220,23 @@ describe('V40 1e · La Pulpería y el Fogón', () => {
     expect(ambos.phase).toBe('fogon');
     expect(runAction(ambos, { t: 'fogon', que: 'curar' })).toMatch(/ya se usó/);
     act(ambos, { t: 'fogon', que: 'purgar', card: 'S3' });
-    expect(ambos.phase).toBe('map');
+    expect(ambos.phase).toBe(MAPA_CFG.fogon.bendicion ? 'reward' : 'map');
+  });
+
+  it('V40 1f · el Fogón da su Bendición también si se sale sin usarlo, y nunca en el Trono infinito', () => {
+    const run = newRun({ seedText: 'FOGON', up: {} }, 1);
+    act(run, { t: 'begin' });
+    alNodo(run, 0);
+    gana(run);
+    cierraBotin(run);
+    alTipo(run, 'fogon');
+    expect(botinPrevisto(run, 'fogon').elegi).toEqual(MAPA_CFG.fogon.bendicion ? ['bendicion'] : []);
+    act(run, { t: 'next' });
+    expect(run.phase).toBe(MAPA_CFG.fogon.bendicion ? 'reward' : 'map');
+    const b = run.botin[0];
+    if (MAPA_CFG.fogon.bendicion) expect(b && b.k === 'elegi' && b.tipo === 'bendicion' ? b.opciones.length : 0).toBeGreaterThan(0);
+    run.endless = true;
+    expect(botinPrevisto(run, 'fogon').elegi).toEqual([]);
   });
 });
 

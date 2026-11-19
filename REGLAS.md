@@ -94,8 +94,8 @@ Los dos desaparecen si cae el guardia.
 ### Reglas especiales
 
 - **Comodín · Motín**: se juega solo sobre un trono. Ese trono queda **Aturdido** y este turno no hay Contraataque. El comodín no vuelve en este asalto.
-- **Furia**: cada punto es **+1 de Ataque** en todos los Contraataques, y se ve junto al ⚔ del enemigo activo. En campaña sube **3** con cada Mazo agotado y, contra un monarca, **1** cada turno que sigue en pie (la **Furia del Rey**). En el Asalto único sube además sola, desde el turno 30 y cada 3 turnos.
-- **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no te quita Vida**, pero sube la **Furia** (3 en campaña): los asaltos no se pueden estirar sin fin.
+- **Furia**: cada punto es **+1 de Ataque** en todos los Contraataques, y se ve junto al ⚔ del enemigo activo. En campaña sube **6** con cada Mazo agotado y, contra un monarca, **2** cada turno que sigue en pie (la **Furia del Rey**). En el Asalto único sube además sola, desde el turno 30 y cada 3 turnos.
+- **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no te quita Vida**, pero sube la **Furia** (6 en campaña): los asaltos no se pueden estirar sin fin.
 - **As cómplice**: un As forma jugada con **cualquier otra carta** (×2 de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de Bastos para levantar Escudo, uno de Copas para curar, uno de Espadas para perforar.
 - **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
@@ -111,11 +111,11 @@ Los primeros asaltos tienen menos tronos: los palos que faltan se sortean al emp
 
 | Asalto | Sala | Tronos | Guardias por trono | Vida | Ataque | Monarca |
 |---|---|---|---|---|---|---|
-| 1 | El Puente levadizo | 2 | Sota | ×5,6 | +1 | — |
-| 2 | El Patio de armas | 3 | Sota, Caballo | ×4 | +3 | sí |
-| 3 | La Cripta | 4 | Sota, Caballo | ×5,2 | +9 | — |
-| 4 | La Galería real | 4 | Sota, Caballo, Rey | ×4 | +12 | sí |
-| 5 | El Salón del Trono | 4 | Sota, Caballo, Rey | ×5,9 | +13 | sí, Rey Tirano |
+| 1 | El Puente levadizo | 2 | Sota | ×5 | +8 | — |
+| 2 | El Patio de armas | 3 | Sota, Caballo | ×3,6 | +19 | sí |
+| 3 | La Cripta | 4 | Sota, Caballo | ×4,6 | +25 | — |
+| 4 | La Galería real | 4 | Sota, Caballo, Rey | ×3,6 | +27 | sí |
+| 5 | El Salón del Trono | 4 | Sota, Caballo, Rey | ×5,2 | +27 | sí, Rey Tirano |
 
 En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
@@ -123,26 +123,26 @@ En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
 Antes de cada asalto (desde el 2) se elige un camino en el **Mapa**: dos filas de tres nodos y, arriba, el asalto. Cada tramo tiene seis caminos, todos llegan al asalto y todos pueden pasar por **La Pulpería**, que va siempre en el centro de la segunda fila. El Mapa sale de la semilla: la misma semilla da el mismo Mapa.
 
-- **Guardia Bravo** (al menos uno por tramo): un guardia solo, en una Casa de un palo que el Mapa enseña de antemano, con +4 de Ataque sobre el asalto que viene. No cura al ganar. Paga 8 de oro, un Amuleto Raro o mejor y una «Elegí una» Bendición de 2 Reyes.
+- **Guardia Bravo** (al menos uno por tramo): un guardia solo, en una Casa de un palo que el Mapa enseña de antemano, con Vida ×1,3 sobre el asalto que viene. No cura al ganar. Paga 8 de oro, una «Elegí una» entre 2 Amuletos Raros o mejores.
 - **Santuario del Bufón**: un trato (los Secretos de abajo).
-- **Fogón**: Curar 7 de Vida o Purgar una carta, gratis; uno de los dos (con el Cartógrafo del Altar, los dos).
+- **Fogón**: Curar 8 de Vida o Purgar una carta, gratis; uno de los dos (con el Cartógrafo del Altar, los dos). Al dejarlo, su Botín: una «Elegí una» Bendición de un Rey.
 - **La Pulpería**: comprar, Purgar y Curar con oro.
 
 
-**Reyes jefe** (4; cada campaña sortea 3). El monarca de cada asalto con jefe es uno de los 4 Reyes: es el **último guardia** de la Casa de su palo (que va la última), llega con retrato, tiene ×2 de Vida y, mientras lo tienes delante, su **Furia del Rey** sube cada turno. Cada uno tiene además su **rasgo de combate**, y te habla según cómo lo trataste: como aliado si llevas alguna Bendición suya, como rival si solo llevas de otros. En el asalto 2 el Rey ocupa el sitio del Caballo, con ×0,8 de su Vida y -2 de Ataque. Al caer abre su **Cofre**: uno de tres Amuletos, Raros o mejores.
+**Reyes jefe** (4; cada campaña sortea 3). El monarca de cada asalto con jefe es uno de los 4 Reyes: es el **último guardia** de la Casa de su palo (que va la última), llega con retrato, tiene ×2 de Vida y, mientras lo tienes delante, su **Furia del Rey** sube cada turno. Cada uno tiene además su **rasgo de combate**, y te habla según cómo lo trataste: como aliado si llevas alguna Bendición suya, como rival si solo llevas de otros. En el asalto 2 el Rey ocupa el sitio del Caballo, con ×0,8 de su Vida y -4 de Ataque. Al caer abre su **Cofre**: uno de tres Amuletos, Raros o mejores.
 
 | Rey jefe | Rasgo | Efecto | Furia por turno |
 |---|---|---|---|
-| El Rey de Espadas | Filo del Rey | Mientras está al frente, su Contraataque atraviesa 4 de tu Escudo. | 3 |
-| El Rey de Bastos | Corteza de roble | Mientras está al frente, no queda Expuesto ni Aturdido. | 1 |
-| El Rey de Oros | Diezmo | Mientras está al frente, cada turno tira un dado: su Contraataque suma de +1 a +6. | 1 |
-| El Rey de Copas | Brindis del Rey | Cada turno que sigue al frente, se cura 12 de Vida. | 3 |
+| El Rey de Espadas | Filo del Rey | Mientras está al frente, su Contraataque atraviesa 4 de tu Escudo. | 6 |
+| El Rey de Bastos | Corteza de roble | Mientras está al frente, no queda Expuesto ni Aturdido. | 2 |
+| El Rey de Oros | Diezmo | Mientras está al frente, cada turno tira un dado: su Contraataque suma de +2 a +8. | 2 |
+| El Rey de Copas | Brindis del Rey | Cada turno que sigue al frente, se cura 12 de Vida. | 6 |
 
 ### El Botín
 
 Tras cada combate, el **Botín** se cobra por partes; cada una se toma o se salta, y lo que no se cobra se pierde al seguir:
 
-- **Oro**: asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada 5 de oro guardado. Tras un asalto recuperás 4 de Vida.
+- **Oro**: asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada 5 de oro guardado. Tras un asalto recuperás 0 de Vida.
 - **«Elegí una»**: tres opciones a la vista. Tras un asalto, dos Trampas del Bufón y una carta de baraja ya marcada con un sello de lacre o un acabado (saltarla paga 3 de oro); tras un asalto de Rey, también una Bendición y el **Cofre del Rey** (uno de tres Amuletos Raros o mejores).
 
 ### La Pulpería
@@ -154,58 +154,58 @@ Lo atiende el Tratante.
 - **Sobre a ciegas**: una especial sin verla, más barata.
 - **Mesa de lacre**: pone el sello de lacre o el acabado en oferta sobre la carta de tu Mazo que elijas.
 - **Pergamino**: sube de nivel una formación.
-- **Curar** (+6 de Vida), **Purgar** (saca una carta; el Mazo no baja de 12) y **Renovar mesa** (cambia lo que hay en oferta), los tres con coste creciente.
+- **Curar** (+8 de Vida), **Purgar** (saca una carta; el Mazo no baja de 12) y **Renovar mesa** (cambia lo que hay en oferta), los tres con coste creciente.
 
 ### Santuarios del Bufón
 
 En cada Santuario del Bufón del Mapa espera un trato: una apuesta de azar o un dilema con premio y precio. No se repiten hasta haber visto los 9:
 
 - **El cofre enterrado.** Entre dos tumbas asoma un cofre con candado. Forzarlo hará temblar media cripta.
-  - *Forzarlo*: Perdés 5 de Vida. Te llevás un Amuleto Noble o Regio.
+  - *Forzarlo*: Perdés 20 de Vida. Te llevás un Amuleto Noble o Regio.
   - *Vendérselo al Tratante*: +8 de oro.
 - **El caldero del alquimista.** Un caldero hierve solo en un rincón. Lo que entra, sale convertido en otra cosa.
   - *Fundir dos cartas*: Elegís dos: arden y nace una con el número más alto, en Lacre policromo y con el sello que llevaran.
-  - *Calentarse y seguir*: +4 de Vida.
+  - *Calentarse y seguir*: +16 de Vida.
 - **El decreto maldito.** Un decreto clavado en la puerta promete una cifra enorme. La letra pequeña habla del próximo asalto.
-  - *Firmar*: +20 de oro ahora. En el próximo asalto, el Ataque de los cuatro tronos sube 1.
+  - *Firmar*: +20 de oro ahora. En el próximo asalto, el Ataque de los cuatro tronos sube 2.
   - *Romperlo*: El papel arde bien: +3 de oro.
 - **Los lacradores ciegos.** Tres monjes sellan a la luz de una vela lo que les pongas delante, y no aceptan regateos.
-  - *Pagar con Vida*: Perdés 6 de Vida. Tres cartas al azar reciben un sello de lacre.
+  - *Pagar con Vida*: Perdés 24 de Vida. Tres cartas al azar reciben un sello de lacre.
   - *Pagar con oro*: 8 de oro. Tu carta más alta recibe Lacre policromo.
   - *Seguir de largo*: Nada cambia.
 - **Los mapas escondidos.** Tras una losa están los mapas del castillo. Arrancarlos hace crujir lo poco que los protege.
-  - *Arrancarlos*: Perdés 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.
+  - *Arrancarlos*: Perdés 12 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.
   - *Copiarlos a mano*: 5 de oro. Una formación al azar sube 1 nivel.
   - *Dejarlos donde están*: Nada cambia.
 - **La rueda de la fortuna.** Una rueda de carro cuelga del techo, pintada en cuatro gajos. Alguien dejó la manivela puesta.
-  - *Girar la rueda*: Sale un gajo al azar: +12 de oro, +6 de Vida, un Amuleto Raro o −4 de Vida.
+  - *Girar la rueda*: Sale un gajo al azar: +12 de oro, +24 de Vida, un Amuleto Raro o −16 de Vida.
   - *No tocarla*: Te llevás las monedas del suelo: +3 de oro.
 - **Los huesos del diablo.** Un tahúr sin rostro agita dos huesos en un cubilete. Mira tu bolsa de esquirlas y sonríe.
   - *Doble o nada*: Te jugás las esquirlas de esta campaña: 1 de cada 2 veces se doblan; si no, las perdés.
   - *Guardar la bolsa*: Nada cambia.
 - **El altar de sangre.** Un altar con cuatro coronas. El cuenco del centro pide algo tuyo antes de dar nada.
-  - *Ofrecer tu sangre*: Perdés 3 de Vida máxima para siempre. El Rey del que más Bendiciones llevás te da otra.
-  - *Rezar y seguir*: +3 de Vida.
+  - *Ofrecer tu sangre*: Perdés 12 de Vida máxima para siempre. El Rey del que más Bendiciones llevás te da otra.
+  - *Rezar y seguir*: +12 de Vida.
 - **El dado de dos caras.** Sobre una losa hay un dado de hueso: tres caras blancas, tres negras. Solo se puede tirar una vez.
-  - *Tirarlo*: Blanca: 2 formaciones suben 1 nivel. Negra: +10 de oro y +1 de Ataque en el próximo asalto.
-  - *Dejarlo quieto*: +2 de Vida.
+  - *Tirarlo*: Blanca: 2 formaciones suben 1 nivel. Negra: +10 de oro y +2 de Ataque en el próximo asalto.
+  - *Dejarlo quieto*: +8 de Vida.
 
 ### Trono infinito, semillas y Reinados
 
-- Después del asalto 5 puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un 45 % más resistente que el anterior (el primero, ×8,6).
+- Después del asalto 5 puedes seguir al **Trono infinito**: asaltos sin final, de cuatro tronos y siempre con monarca, cada uno un 45 % más resistente que el anterior (el primero, ×7,5).
 - **Semilla**: la misma semilla y las mismas decisiones dan exactamente la misma campaña. Puedes escribir la tuya al empezar.
 - **Reinados**: hay 8. Ganar una campaña abre el Reinado siguiente; cada uno añade **un giro** a todos los anteriores y sube un 25 % el cobro de la conjura (sin contar lo que cae a la mesa).
 
 | Reinado | Nombre | Giro |
 |---|---|---|
 | 1 | Reinado de paz | Las reglas de siempre. |
-| 2 | Corazas finas | Todos los guardias tienen un 35 % más de Vida. |
-| 3 | Corte airada | Cada Mazo agotado sube la Furia 2 más. |
+| 2 | Corazas finas | Todos los guardias tienen un 7 % más de Vida. |
+| 3 | Corte airada | Cada asalto empieza con 1 de Furia. |
 | 4 | Reyes acorazados | En los asaltos con monarca, los Reyes tienen un 30 % más de Vida. |
-| 5 | Rey colérico | El Ataque de los Reyes sube 2. |
-| 6 | Heridas viejas | Tu Vida máxima baja 1. |
-| 7 | Guardia de noche | El Ataque de las Sotas y los Caballos sube 1. |
-| 8 | Puertas selladas | En los asaltos 4 y 5, el Ataque de los cuatro tronos sube 2. |
+| 5 | Rey colérico | El Ataque de los Reyes sube 3. |
+| 6 | Heridas viejas | Tu Vida máxima baja 5. |
+| 7 | Guardia de noche | El Ataque de las Sotas y los Caballos sube 2. |
+| 8 | Puertas selladas | En los asaltos 4 y 5, el Ataque de los cuatro tronos sube 4. |
 
 - **Sellos de maestría**: al ganar, el Mazo usado y cada Amuleto que llevabas quedan marcados en la colección con el Reinado más alto que has ganado con ellas: sello de **bronce** (Reinados 1–3), de **hierro** (4–6) o de **oro** (7–8).
 - **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con el mismo Mazo y el mismo Reinado. La que dejas no cuenta como derrota ni da esquirlas.
@@ -220,24 +220,24 @@ Llevas hasta **4 Amuletos**, y uno más por nivel de la **Faja ancha** del Altar
 | Amuleto | Rey | Rareza | Tipo | Efecto | Sello | Surtido |
 |---|---|---|---|---|---|---|
 | Cuchillo criollo | Rey de Espadas | Común | +D suma Daño | +3 de Daño por cada carta de Espadas del golpe. | B | de salida |
-| Cortaplumas | Rey de Espadas | Raro | +D suma Daño | +14 de Daño si jugás una carta sola. | B | de salida |
-| Piedra de afilar | Rey de Espadas | Noble | • pasiva | Golpe exacto con margen: pasarte hasta 3 de la Vida del guardia también es exacto. | A | de salida |
+| Cortaplumas | Rey de Espadas | Raro | +D suma Daño | +14 de Daño si jugás una carta sola. | A | de salida |
+| Piedra de afilar | Rey de Espadas | Noble | • pasiva | Golpe exacto con margen: pasarte hasta 3 de la Vida del guardia también es exacto. | S | de salida |
 | Tijera de esquila | Rey de Espadas | Noble | • pasiva | Tras un Golpe exacto, el guardia siguiente pierde la mitad de su Vida. | B | arcón del Altar |
 | Facón de plata | Rey de Espadas | Regio | • pasiva | Abatir a un guardia de un solo golpe de 2 cartas o menos cuenta como Golpe exacto. | S | arcón del Altar |
-| Rebenque | Rey de Bastos | Común | +D suma Daño | +3 de Daño por cada carta de Bastos del golpe. | S | de salida |
-| Guardamonte | Rey de Bastos | Común | • pasiva | Cada carta de Bastos da +1 de Escudo más, y el tope del Escudo sube 4. | S | de salida |
+| Rebenque | Rey de Bastos | Común | +D suma Daño | +3 de Daño por cada carta de Bastos del golpe. | B | de salida |
+| Guardamonte | Rey de Bastos | Común | • pasiva | Cada carta de Bastos da +1 de Escudo más, y el tope del Escudo sube 4. | A | de salida |
 | Poncho | Rey de Bastos | Raro | • pasiva | Cada guardia abatido: +2 de Escudo. | S | de salida |
-| Talero | Rey de Bastos | Raro | • pasiva | Si el Escudo frena entero un Contraataque, ese guardia recibe 3 × lo frenado. | A | arcón del Altar |
-| Boleadoras | Rey de Bastos | Noble | • pasiva | El Ataque de todos los guardias baja 1. | S | arcón del Altar |
+| Talero | Rey de Bastos | Raro | • pasiva | Si el Escudo frena entero un Contraataque, ese guardia recibe 3 × lo frenado. | B | arcón del Altar |
+| Boleadoras | Rey de Bastos | Noble | • pasiva | El Ataque de todos los guardias baja 2. | A | arcón del Altar |
 | Moneda falsa | Rey de Oros | Común | +D suma Daño | +3 de Daño por cada carta de Oros del golpe. | A | de salida |
-| Alcancía | Rey de Oros | Común | • pasiva | +4 de oro al cerrar cada asalto ganado. | A | de salida |
+| Alcancía | Rey de Oros | Común | • pasiva | +4 de oro al cerrar cada asalto ganado. | S | de salida |
 | Naipes marcados | Rey de Oros | Raro | +M suma Multi | +1 de Multi con grupo, doble par, full o póker. | A | arcón del Altar |
 | Farol | Rey de Oros | Raro | • pasiva | Cada Comodín que jugás: +3 de oro y robás 2 cartas. | S | de salida |
 | Cubilete | Rey de Oros | Raro | +M suma Multi | Cada turno se tira un dado: con 5 o más, +1 de Multi. | A | arcón del Altar |
 | Cañita voladora | Rey de Oros | Noble | • pasiva | Cada guardia abatido: los otros tronos reciben 6. | A | arcón del Altar |
 | Mate curado | Rey de Copas | Común | +D suma Daño | +3 de Daño por cada carta de Copas del golpe. | B | de salida |
-| Bota de vino | Rey de Copas | Común | • pasiva | Cada carta de Copas cura +1 más. | B | de salida |
-| Asado | Rey de Copas | Raro | • pasiva | Cada guardia abatido: +1 de Vida. | A | de salida |
+| Bota de vino | Rey de Copas | Común | • pasiva | Cada carta de Copas cura +1 más. | A | de salida |
+| Asado | Rey de Copas | Raro | • pasiva | Cada guardia abatido: +1 de Vida. | S | de salida |
 | Guitarra | Rey de Copas | Raro | +M suma Multi | +1 de Multi con escalera o escalera de color. | B | arcón del Altar |
 | Último trago | Rey de Copas | Noble | ×M multiplica | ×2 de Multi si tu Vida está al 50 % o menos. | B | arcón del Altar |
 | Alpargatas | Rey de Copas | Regio | • pasiva | +1 carta en la mano. | S | arcón del Altar |
@@ -275,10 +275,10 @@ Cada palo tiene su **Rey**: el de Espadas (el filo: perforar, rematar, Golpe exa
 | Arcón del Rey | Rey de Oros | Ahora, +8 de oro, y el tope del interés sube 2. | Cada Golpe exacto: +1 de oro al cerrar cada asalto. |
 | Envite | Rey de Oros | +1 de Multi si el golpe mezcla 3 palos o más. | Cada guardia que abatís con 3 palos o más: +2 de Daño a esos golpes. |
 | Brindis | Rey de Copas | Tus golpes con Copas curan +1 más. | Cada golpe que te cura 4 o más: +1 de Vida al cerrar cada asalto. |
-| Porrón | Rey de Copas | Ahora, +4 de Vida máxima (y de Vida). | Cada guardia que abatís con Copas: +2 de Daño a tus golpes con Copas. |
+| Porrón | Rey de Copas | Ahora, +8 de Vida máxima (y de Vida). | Cada guardia que abatís con Copas: +2 de Daño a tus golpes con Copas. |
 | Otra ronda | Rey de Copas | Cada guardia que abatís con Copas: robás 1 carta. | Cada golpe de 4 cartas o más: +1 de Vida al cerrar cada asalto. |
 | Cáliz rebosante | Rey de Copas | La curación que no cabe: +2 de Daño por punto a tu golpe siguiente. | Cada golpe que cura de más: +1 de Daño a todos tus golpes. |
-| Sobremesa | Rey de Copas | Al cerrar cada asalto ganado, curás 3 de Vida. | Cada guardia que abatís con la Vida llena: +1 de Daño a todos tus golpes. |
+| Sobremesa | Rey de Copas | Al cerrar cada asalto ganado, curás 6 de Vida. | Cada guardia que abatís con la Vida llena: +1 de Daño a todos tus golpes. |
 | Hoja y broquel | Rey de Espadas y Rey de Bastos | Cada Golpe exacto: +2 de Escudo. | Cada Contraataque que el Escudo frena entero: +1 de Daño a todos tus golpes. |
 | Filo dorado | Rey de Espadas y Rey de Oros | Cada Golpe exacto: los otros tronos reciben 6. | Cada guardia que cae por salpicadura: +1 de Daño a todos tus golpes. |
 | Sangría | Rey de Espadas y Rey de Copas | Cada Golpe exacto te cura 2. | Cada Golpe exacto con la Vida llena: +2 de Daño a todos tus golpes. |
@@ -314,10 +314,10 @@ Las cartas especiales de la campaña son las 8 **Trampas del Bufón**: no tienen
 |---|---|---|
 | Cuento del tío | Cada carta del golpe vale lo que la de mayor número. | A |
 | Zancadilla | Este turno no hay Contraataque. | S |
-| Mano negra | ×2 de Multi, pero perdés 2 de Vida. | B |
-| Disfraz | Este golpe no respeta Inmune: tus cartas hacen su Daño contra cualquiera. | A |
+| Mano negra | ×2 de Multi, pero perdés 4 de Vida. | B |
+| Disfraz | Este golpe no respeta Inmune: tus cartas hacen su Daño contra cualquiera. | B |
 | Pase mágico | Robás 2 cartas más este turno. | S |
-| Mordida | Si el golpe abate a un guardia, +6 de oro. | B |
+| Mordida | Si el golpe abate a un guardia, +6 de oro. | A |
 | Puñal oculto | El golpe Perfora y suma +12 de Daño. | A |
 | ¡Retruco! | +1 de Multi. | A |
 
@@ -327,11 +327,11 @@ Cada campaña se juega con un **Mazo**: una fantasía de juego de naipes rioplat
 
 | Mazo | Lema | Vida · mano | Cómo cambia la campaña | Se desbloquea con |
 |---|---|---|---|---|
-| Escoba | Mesa barrida | 15 · 6 | Mano de 6. Si las cartas del golpe suman 15, ¡Escoba!: +1 de Multi y una carga de Daño. | — |
-| Truco | Envido y bravas | 9 · 8 | Del 1 al 7, mano de 8 y 9 de Vida. Los bravos pegan más; 2 del mismo palo cantan Envido. | Adiós, carcelero |
-| Chinchón | Pierna y escalera | 12 · 7 | Tríos y escaleras del palo pegan más; las manos largas cargan Daño. Empezás con 12 de Vida. | Medio castillo |
-| El Mentiroso | Cara de piedra | 13 · 7 | Mano de 7, 3 Comodines que no gastan el turno y un Engaño por asalto. 13 de Vida. | Fin del reinado |
-| Chancho Va | Mano al centro | 16 · 6 | Mano de 6 y 16 de Vida. Pasá 1 carta por turno y robá otra; el póker aturde en cadena. | De un solo golpe |
+| Escoba | Mesa barrida | 71 · 6 | Mano de 6. Si las cartas del golpe suman 15, ¡Escoba!: +1 de Multi y una carga de Daño. | — |
+| Truco | Envido y bravas | 59 · 7 | Del 1 al 7, mano de 7 y 59 de Vida. Los bravos pegan más; 2 del mismo palo cantan Envido. | Adiós, carcelero |
+| Chinchón | Pierna y escalera | 59 · 7 | Tríos y escaleras del palo pegan más; las manos largas cargan Daño. Empezás con 59 de Vida. | Medio castillo |
+| El Mentiroso | Cara de piedra | 63 · 7 | Mano de 7, 3 Comodines que no gastan el turno y un Engaño por asalto. 63 de Vida. | Fin del reinado |
+| Chancho Va | Mano al centro | 76 · 6 | Mano de 6 y 76 de Vida. Pasá 1 carta por turno y robá otra; el póker aturde en cadena. | De un solo golpe |
 
 | Regla | Mazo | Qué hace |
 |---|---|---|
@@ -345,7 +345,7 @@ Cada campaña se juega con un **Mazo**: una fantasía de juego de naipes rioplat
 | Engaño | El Mentiroso | Una vez por asalto, el golpe que no abatía cuenta como de un palo, de un número o sin Inmune. |
 | Pasar | Chancho Va | Una vez por turno, descartar 1 sola carta no gasta el turno: robás otra en el acto. |
 | Chancho | Chancho Va | Un póker (4 iguales): los 2 Contraataques siguientes no llegan. |
-| De arranque | Chancho Va | Abatir a un guardia en los 4 primeros turnos del asalto: +35 de Daño al golpe siguiente. |
+| De arranque | Chancho Va | Abatir a un guardia en los 2 primeros turnos del asalto: +15 de Daño al golpe siguiente. |
 
 ## El Altar
 

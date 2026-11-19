@@ -548,7 +548,7 @@ export function vidaTotal(t: Tower, cfg: Config): number {
 export function threatOf(env: { config: Config; fatigue?: number; dado?: number }, t: Tower): number {
   if (!t.floors.length) return 0;
   const j = esJefe(env.config, t) ? env.config.jefe! : null;
-  // V40 1c · el Rey de Oros suma el dado del turno, a escala de sus caras (de +1 a +caras)
+  // V40 1c · el Rey de Oros suma el dado del turno, a escala de sus caras (de +⌈caras/6⌉ a +caras)
   const dado = j?.dado && env.dado ? Math.ceil((env.dado * j.dado) / 6) : 0;
   // el Ataque de más o de menos del jefe nunca lo deja por debajo de 1 (un guardia sin Ataque sigue sin él)
   const base = env.config.floorThreat[t.floors[0]];

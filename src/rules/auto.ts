@@ -60,6 +60,9 @@ export function pasoAuto(ctx: AutoCtx, opts: AutoOpts): PasoAuto | null {
       return decide('bendicion', opts.saquear);
     case 'shop':
       return decide('taberna', opts.taberna);
+    // V40 1f · el Fogón es un servicio como La Pulpería: con Auto-taberna (antes no tenía caso y AUTO se quedaba quieto)
+    case 'fogon':
+      return decide('taberna', opts.taberna);
     case 'event':
       return decide('secreto', opts.taberna);
   }

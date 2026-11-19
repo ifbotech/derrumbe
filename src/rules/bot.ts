@@ -375,23 +375,27 @@ interface Supuesto {
   oro: number;
   hueco: boolean;
 }
+/** V40 1f · Lo que vale una «Elegí una» Bendición entre las de n Reyes (0: no hay). */
+const valorBendicion = (n: number): number => (n ? 2.5 + 1.5 * n : 0);
 /** Cuánto vale pasar por un nodo, según la política de ruta y lo que se supone que se lleva al llegar. */
 function valorNodo(n: NodoMapa, su: Supuesto, ruta: PoliticaRuta, run: Run): number {
   const tipo: TipoNodo = n.tipo;
   if (tipo === 'pulperia') {
     if (ruta === 'sinPulperia') return -50;
-    const v = su.oro >= 6 ? 2 + Math.min(4, su.oro / 5) : 0.5;
+    // V40 1f · La Pulpería vale según el oro que se lleva; menos que una Bendición del Fogón o del Bravo
+    const v = su.oro >= 6 ? 1 + Math.min(3, su.oro / 6) : 0.5;
     return ruta === 'prudente' ? v + 1 : v;
   }
   if (tipo === 'fogon') {
     const falta = 1 - su.vida;
-    const v = su.vida < 0.6 ? 3 + falta * 8 : 1.5;
+    // V40 1f · y su Botín: una Bendición a elegir entre las de `fogon.bendicion` Reyes
+    const v = (su.vida < 0.6 ? 3 + falta * 8 : 1.5) + valorBendicion(MAPA_CFG.fogon.bendicion);
     return ruta === 'prudente' ? v + 1 : v;
   }
   if (tipo === 'bravo') {
     if (ruta === 'prudente') return -50;
     // su Botín: un Amuleto (vale si hay hueco) y, con `bravo.bendicion`, una Bendición a elegir
-    const amuleto = (su.hueco ? 2.5 : 1) + (MAPA_CFG.bravo.bendicion ? 5 : 0);
+    const amuleto = (su.hueco ? 2.5 : 1) + valorBendicion(MAPA_CFG.bravo.bendicion);
     const umbral = ruta === 'brava' ? 0.45 : 0.7;
     // a partir del tramo 4 el Bravo es un Rey: pide más Vida
     const tarde = n.tramo >= 4 ? 0.1 : 0;

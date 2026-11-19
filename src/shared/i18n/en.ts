@@ -105,8 +105,8 @@ const MONARCAS: Record<string, MonarcaEn> = {
   oros: {
     nombre: 'The King of Coins',
     decreto: 'Tithe',
-    desc: 'While he leads, he rolls a die each turn: his Counterattack adds +1 to +{dado}.',
-    badge: 'A die of +1 to +{dado}',
+    desc: 'While he leads, he rolls a die each turn: his Counterattack adds +{dadoMin} to +{dado}.',
+    badge: 'A die of +{dadoMin} to +{dado}',
     entrada: 'Everything has a price at my table, even your luck. Bet?',
     contraataque: 'The house always collects, dear. Tonight I am the house.',
     caida: 'You emptied my chest... take the trump card, it is over.',
@@ -127,7 +127,7 @@ const ASALTOS = ['The Drawbridge', 'The Training Yard', 'The Crypt', 'The Royal 
 const REINADOS: [string, string][] = [
   ['Reign of Peace', 'The usual rules.'],
   ['Fine Armor', 'Every guard has {pct} % more Health.'],
-  ['Wrathful Court', 'Each Deck run-out raises the Fury {furia} more.'],
+  ['Wrathful Court', 'Each assault starts with {furia} Fury.'],
   ['Armored Kings', 'In assaults with a monarch, Kings have {reyes} % more Health.'],
   ['Wrathful King', "Kings' Attack rises by {rey}."],
   ['Old Wounds', 'Your max Health drops by {heridas}.'],
@@ -171,7 +171,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: 'The Buried Chest',
     texto: 'Between two tombs a padlocked chest peeks out. Forcing it open will shake half the crypt.',
     opciones: [
-      { etiqueta: 'Force it open', gana: 'Noble or Royal amulet', cuesta: '−5 Health', desc: 'You lose 5 Health. You take a Noble or Royal amulet.' },
+      { etiqueta: 'Force it open', gana: 'Noble or Royal amulet', cuesta: '−20 Health', desc: 'You lose 20 Health. You take a Noble or Royal amulet.' },
       { etiqueta: 'Sell it to the Storekeeper', gana: '+8 gold', desc: '+8 gold.' },
     ],
   },
@@ -180,14 +180,14 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     texto: 'A cauldron boils on its own in a corner. Whatever goes in comes out as something else.',
     opciones: [
       { etiqueta: 'Melt two cards', gana: 'Card in Prismatic Wax', cuesta: 'Two cards burn', desc: 'Pick two: they burn and one is born with the higher number, in Prismatic Wax, keeping their seals.' },
-      { etiqueta: 'Warm up and move on', gana: '+4 Health', desc: '+4 Health.' },
+      { etiqueta: 'Warm up and move on', gana: '+16 Health', desc: '+16 Health.' },
     ],
   },
   contrato: {
     nombre: 'The Cursed Decree',
     texto: 'A decree nailed to the door promises a huge sum. The fine print speaks of the next assault.',
     opciones: [
-      { etiqueta: 'Sign it', gana: '+20 gold', cuesta: '+1 Attack next assault', desc: '+20 gold now. In the next assault, the Attack of all four thrones rises by 1.' },
+      { etiqueta: 'Sign it', gana: '+20 gold', cuesta: '+2 Attack next assault', desc: '+20 gold now. In the next assault, the Attack of all four thrones rises by 2.' },
       { etiqueta: 'Tear it up', gana: '+3 gold', desc: 'The paper burns nicely: +3 gold.' },
     ],
   },
@@ -195,7 +195,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: 'The Blind Sealers',
     texto: 'Three monks seal whatever you set before them by candlelight, and they never haggle.',
     opciones: [
-      { etiqueta: 'Pay with Health', gana: '3 sealed cards', cuesta: '−6 Health', desc: 'You lose 6 Health. Three random cards get a wax seal.' },
+      { etiqueta: 'Pay with Health', gana: '3 sealed cards', cuesta: '−24 Health', desc: 'You lose 24 Health. Three random cards get a wax seal.' },
       { etiqueta: 'Pay with gold', gana: 'Prismatic best card', cuesta: '−8 gold', desc: '8 gold. Your highest card gets Prismatic Wax.' },
       { etiqueta: 'Walk on by', gana: 'Nothing changes', desc: 'Nothing changes.' },
     ],
@@ -204,7 +204,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: 'The Hidden Maps',
     texto: 'Behind a flagstone lie the castle maps. Tearing them out makes what little shelters you creak.',
     opciones: [
-      { etiqueta: 'Tear them out', gana: '2 formations +2 levels', cuesta: '−3 Max Health', desc: 'You lose 3 Max Health for good. Two random formations go up 2 levels.' },
+      { etiqueta: 'Tear them out', gana: '2 formations +2 levels', cuesta: '−12 Max Health', desc: 'You lose 12 Max Health for good. Two random formations go up 2 levels.' },
       { etiqueta: 'Copy them by hand', gana: '1 formation +1 level', cuesta: '−5 gold', desc: '5 gold. One random formation goes up 1 level.' },
       { etiqueta: 'Leave them be', gana: 'Nothing changes', desc: 'Nothing changes.' },
     ],
@@ -213,7 +213,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: 'The Wheel of Fortune',
     texto: 'A cartwheel hangs from the ceiling, painted in four wedges. Someone left the crank in place.',
     opciones: [
-      { etiqueta: 'Spin the wheel', gana: 'Gold, Health or amulet', cuesta: '1 in 4: −4 Health', desc: 'A random wedge comes up: +12 gold, +6 Health, a Rare amulet or −4 Health.' },
+      { etiqueta: 'Spin the wheel', gana: 'Gold, Health or amulet', cuesta: '1 in 4: −16 Health', desc: 'A random wedge comes up: +12 gold, +24 Health, a Rare amulet or −16 Health.' },
       { etiqueta: 'Leave it alone', gana: '+3 gold', desc: 'You pick up the coins on the floor: +3 gold.' },
     ],
   },
@@ -229,16 +229,16 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: 'The Altar of Blood',
     texto: 'An altar with four crowns. The bowl in the middle asks for something of yours before giving anything.',
     opciones: [
-      { etiqueta: 'Offer your blood', gana: 'Blessing of your King', cuesta: '−3 Max Health', desc: 'You lose 3 Max Health for good. The King you carry the most Blessings of gives you another.' },
-      { etiqueta: 'Pray and move on', gana: '+3 Health', desc: '+3 Health.' },
+      { etiqueta: 'Offer your blood', gana: 'Blessing of your King', cuesta: '−12 Max Health', desc: 'You lose 12 Max Health for good. The King you carry the most Blessings of gives you another.' },
+      { etiqueta: 'Pray and move on', gana: '+12 Health', desc: '+12 Health.' },
     ],
   },
   dado: {
     nombre: 'The Two-Faced Die',
     texto: 'On a flagstone lies a bone die: three white faces, three black. It can only be rolled once.',
     opciones: [
-      { etiqueta: 'Roll it', gana: '2 formations +1 level', cuesta: '1 in 2: +1 Attack', desc: 'White: 2 formations go up 1 level. Black: +10 gold and +1 Attack in the next assault.' },
-      { etiqueta: 'Leave it be', gana: '+2 Health', desc: '+2 Health.' },
+      { etiqueta: 'Roll it', gana: '2 formations +1 level', cuesta: '1 in 2: +2 Attack', desc: 'White: 2 formations go up 1 level. Black: +10 gold and +2 Attack in the next assault.' },
+      { etiqueta: 'Leave it be', gana: '+8 Health', desc: '+8 Health.' },
     ],
   },
 };
@@ -492,7 +492,7 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'suerte.dado.blanca.titulo': 'White face',
   'suerte.dado.blanca.texto': 'Two formations go up 1 level.',
   'suerte.dado.negra.titulo': 'Black face',
-  'suerte.dado.negra.texto': '+{n} gold. In the next assault, the Attack of the guards rises by 1.',
+  'suerte.dado.negra.texto': '+{n} gold. In the next assault, the Attack of the guards rises by 2.',
   'arbol.aviso': 'Your {coronas} Crowns are now {esquirlas} Crown Shards. Your {rangos} upgrades remain in the Armory.',
   'logro.desbloquea.carta': 'Legendary card: {nombre}',
   'logro.desbloquea.cartas': 'Legendary cards: {a} and {b}',

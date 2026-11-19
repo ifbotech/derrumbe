@@ -17,6 +17,7 @@ import { CIFRAS_MAZO, MANO_BASE, MAZO_INICIAL, MZ, TRUCO_MAX, esMazo } from './m
 import type { Cargas, MazoId, ReglaId } from './mazos';
 import { CABALLO, Card, Config, DEFAULT_CONFIG, FIGURAS, FORM, FORMATIONS, Formation, GameEvent, GameState, MAX_NUM, REY, SEALS, SOTA, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
+import { cifrasMonarca } from './cifras';
 import { COMBATE, Mapa, NodoMapa, TipoNodo, agregaTramo, alcanzables, asaltoDe, generaMapa } from './mapa';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, Rarity, TOOL, ToolInst, huecosAmuleto, toolPool, placeTool } from './tools';
@@ -48,7 +49,7 @@ const REIN = BALANCE.reinados;
 export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
   { name: 'Corazas finas', desc: 'Todos los guardias tienen un {pct} % más de Vida.' },
-  { name: 'Corte airada', desc: 'Cada Mazo agotado sube la Furia {furia} más.' },
+  { name: 'Corte airada', desc: 'Cada asalto empieza con {furia} de Furia.' },
   { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tu Vida máxima baja {heridas}.' },
@@ -166,9 +167,9 @@ export const BOSSES: Boss[] = [
     palo: 'D',
     who: 'El Rey de Oros',
     name: 'Diezmo',
-    desc: 'Mientras está al frente, cada turno tira un dado: su Contraataque suma de +1 a +{dado}.',
+    desc: 'Mientras está al frente, cada turno tira un dado: su Contraataque suma de +{dadoMin} a +{dado}.',
     barks: { entrada: 'Todo tiene precio en mi mesa, hasta tu suerte. ¿Apostamos?', contraataque: 'La casa siempre cobra, querido. Y hoy la casa soy yo.', caida: 'Me vaciaste el arcón... llevate el naipe bravo, ya fue.' },
-    curse: { mark: 'contraataque', badge: 'Dado de +1 a +{dado}' },
+    curse: { mark: 'contraataque', badge: 'Dado de +{dadoMin} a +{dado}' },
     apply: (c) => void (c.jefe && (c.jefe.dado = RY.oros.dado)),
   },
   {
@@ -185,7 +186,7 @@ export const BOSSES: Boss[] = [
 /** V40 1c · Los siete monarcas sueltos de antes (ya no existen): sus ids, para migrar trofeos y Colección. */
 export const MONARCAS_VIEJOS: Record<string, ReyId> = { doble: 'espadas', furia: 'espadas', blindaje: 'bastos', intemperie: 'bastos', escasez: 'oros', inestable: 'oros', sequia: 'copas' };
 /** Cifras de cada decreto para su texto y su placa. */
-const BOSS_NUMS: Record<string, Record<string, number>> = RY as unknown as Record<string, Record<string, number>>;
+const BOSS_NUMS: Record<string, Record<string, number>> = Object.fromEntries(Object.keys(RY).map((id) => [id, cifrasMonarca(id)]));
 for (const b of BOSSES) {
   b.desc = fill(b.desc, BOSS_NUMS[b.id] ?? {});
   b.curse.badge = fill(b.curse.badge, BOSS_NUMS[b.id] ?? {});
@@ -243,7 +244,7 @@ export const EVENTS: EventDef[] = [
     name: 'El cofre enterrado',
     text: 'Entre dos tumbas asoma un cofre con candado. Forzarlo hará temblar media cripta.',
     options: [
-      { label: 'Forzarlo', read: { gain: 'Amuleto Noble o Regio', cost: '−5 de Vida', glyph: 'contenedor' }, desc: 'Perdés 5 de Vida. Te llevás un Amuleto Noble o Regio.', can: (run) => run.integrity > 5 && run.tools.length < toolSlots(run), apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
+      { label: 'Forzarlo', read: { gain: 'Amuleto Noble o Regio', cost: '−20 de Vida', glyph: 'contenedor' }, desc: 'Perdés 20 de Vida. Te llevás un Amuleto Noble o Regio.', can: (run) => run.integrity > 20 && run.tools.length < toolSlots(run), apply: (run) => void ((run.integrity -= 20), grantTool(run, ['capataz', 'reliquia'])) },
       { label: 'Vendérselo al Tratante', read: { gain: '+8 de oro', cost: '', glyph: 'oro' }, desc: '+8 de oro.', apply: (run) => void (run.gold += 8) },
     ],
   },
@@ -253,7 +254,7 @@ export const EVENTS: EventDef[] = [
     text: 'Un caldero hierve solo en un rincón. Lo que entra, sale convertido en otra cosa.',
     options: [
       { label: 'Fundir dos cartas', read: { gain: 'Carta en Lacre policromo', cost: 'Dos cartas arden', glyph: 'crisol' }, desc: 'Elegís dos: arden y nace una con el número más alto, en Lacre policromo y con el sello que llevaran.', can: (run) => run.deck.filter(isPlain).length > MIN_DECK, apply: (run) => void (run.pending = { kind: 'fuse' }) },
-      { label: 'Calentarse y seguir', read: { gain: '+4 de Vida', cost: '', glyph: 'reparacion' }, desc: '+4 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 4)) },
+      { label: 'Calentarse y seguir', read: { gain: '+16 de Vida', cost: '', glyph: 'reparacion' }, desc: '+16 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 16)) },
     ],
   },
   {
@@ -261,7 +262,7 @@ export const EVENTS: EventDef[] = [
     name: 'El decreto maldito',
     text: 'Un decreto clavado en la puerta promete una cifra enorme. La letra pequeña habla del próximo asalto.',
     options: [
-      { label: 'Firmar', read: { gain: '+20 de oro', cost: '+1 Ataque próximo asalto', glyph: 'nitro' }, desc: '+20 de oro ahora. En el próximo asalto, el Ataque de los cuatro tronos sube 1.', apply: (run) => void ((run.gold += 20), (run.curse = true)) },
+      { label: 'Firmar', read: { gain: '+20 de oro', cost: '+2 Ataque próximo asalto', glyph: 'nitro' }, desc: '+20 de oro ahora. En el próximo asalto, el Ataque de los cuatro tronos sube 2.', apply: (run) => void ((run.gold += 20), (run.curse = true)) },
       { label: 'Romperlo', read: { gain: '+3 de oro', cost: '', glyph: 'retirar' }, desc: 'El papel arde bien: +3 de oro.', apply: (run) => void (run.gold += 3) },
     ],
   },
@@ -270,7 +271,7 @@ export const EVENTS: EventDef[] = [
     name: 'Los lacradores ciegos',
     text: 'Tres monjes sellan a la luz de una vela lo que les pongas delante, y no aceptan regateos.',
     options: [
-      { label: 'Pagar con Vida', read: { gain: '3 cartas con sello', cost: '−6 de Vida', glyph: 'sello' }, desc: 'Perdés 6 de Vida. Tres cartas al azar reciben un sello de lacre.', can: (run) => run.integrity > 6, apply: (run) => void ((run.integrity -= 6), stampRandom(run, 3)) },
+      { label: 'Pagar con Vida', read: { gain: '3 cartas con sello', cost: '−24 de Vida', glyph: 'sello' }, desc: 'Perdés 24 de Vida. Tres cartas al azar reciben un sello de lacre.', can: (run) => run.integrity > 24, apply: (run) => void ((run.integrity -= 24), stampRandom(run, 3)) },
       { label: 'Pagar con oro', read: { gain: 'Tu mejor carta policroma', cost: '−8 de oro', glyph: 'forja' }, desc: '8 de oro. Tu carta más alta recibe Lacre policromo.', can: (run) => run.gold >= 8, apply: (run) => void ((run.gold -= 8), treatBest(run, 'policromado')) },
       { label: 'Seguir de largo', read: { gain: 'Nada cambia', cost: '', glyph: 'atajo' }, desc: 'Nada cambia.', apply: () => {} },
     ],
@@ -280,7 +281,7 @@ export const EVENTS: EventDef[] = [
     name: 'Los mapas escondidos',
     text: 'Tras una losa están los mapas del castillo. Arrancarlos hace crujir lo poco que los protege.',
     options: [
-      { label: 'Arrancarlos', read: { gain: '2 formaciones +2 niveles', cost: '−3 de Vida máxima', glyph: 'plano' }, desc: 'Perdés 3 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 8, apply: (run) => void ((run.maxIntegrity -= 3), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
+      { label: 'Arrancarlos', read: { gain: '2 formaciones +2 niveles', cost: '−12 de Vida máxima', glyph: 'plano' }, desc: 'Perdés 12 de Vida máxima para siempre. Dos formaciones al azar suben 2 niveles.', can: (run) => run.maxIntegrity > 30, apply: (run) => void ((run.maxIntegrity -= 12), (run.integrity = Math.min(run.integrity, run.maxIntegrity)), pick(run, FORMATIONS, 2).forEach((f) => (run.levels[f] += 2))) },
       { label: 'Copiarlos a mano', read: { gain: '1 formación +1 nivel', cost: '−5 de oro', glyph: 'pergamino' }, desc: '5 de oro. Una formación al azar sube 1 nivel.', can: (run) => run.gold >= 5, apply: (run) => void ((run.gold -= 5), run.levels[pick(run, FORMATIONS, 1)[0]]++) },
       { label: 'Dejarlos donde están', read: { gain: 'Nada cambia', cost: '', glyph: 'atajo' }, desc: 'Nada cambia.', apply: () => {} },
     ],
@@ -296,16 +297,16 @@ EVENTS.push(
     options: [
       {
         label: 'Girar la rueda',
-        read: { gain: 'Oro, Vida o Amuleto', cost: '1 de 4: −4 de Vida', glyph: 'dados' },
-        desc: 'Sale un gajo al azar: +12 de oro, +6 de Vida, un Amuleto Raro o −4 de Vida.',
-        can: (run) => run.integrity > 4,
+        read: { gain: 'Oro, Vida o Amuleto', cost: '1 de 4: −16 de Vida', glyph: 'dados' },
+        desc: 'Sale un gajo al azar: +12 de oro, +24 de Vida, un Amuleto Raro o −16 de Vida.',
+        can: (run) => run.integrity > 16,
         apply: (run) => {
           const gajo = Math.floor(nextRandom(run) * 4);
           if (gajo === 0) (run.gold += 12), sale(run, 'rueda.oro', true, { n: 12 });
-          else if (gajo === 1) (run.integrity = Math.min(run.maxIntegrity, run.integrity + 6)), sale(run, 'rueda.vida', true, { n: 6 });
+          else if (gajo === 1) (run.integrity = Math.min(run.maxIntegrity, run.integrity + 24)), sale(run, 'rueda.vida', true, { n: 24 });
           else if (gajo === 2 && grantTool(run, ['oficio'])) sale(run, 'rueda.reliquia', true, {}, { reliquia: run.tools[run.tools.length - 1].id });
           else if (gajo === 2) (run.gold += 12), sale(run, 'rueda.lleno', true, { n: 12 });
-          else (run.integrity -= 4), sale(run, 'rueda.negro', false, { n: 4 });
+          else (run.integrity -= 16), sale(run, 'rueda.negro', false, { n: 16 });
         },
       },
       { label: 'No tocarla', read: { gain: '+3 de oro', cost: '', glyph: 'oro' }, desc: 'Te llevás las monedas del suelo: +3 de oro.', apply: (run) => void (run.gold += 3) },
@@ -337,13 +338,13 @@ EVENTS.push(
     options: [
       {
         label: 'Ofrecer tu sangre',
-        read: { gain: 'Bendición de tu Rey', cost: '−3 de Vida máxima', glyph: 'corazon' },
-        desc: 'Perdés 3 de Vida máxima para siempre. El Rey del que más Bendiciones llevás te da otra.',
-        can: (run) => run.maxIntegrity > 8 && !!reyMayor(run),
+        read: { gain: 'Bendición de tu Rey', cost: '−12 de Vida máxima', glyph: 'corazon' },
+        desc: 'Perdés 12 de Vida máxima para siempre. El Rey del que más Bendiciones llevás te da otra.',
+        can: (run) => run.maxIntegrity > 30 && !!reyMayor(run),
         apply: (run) => {
           const rey = reyMayor(run)!;
           const libres = bendicionesDe(rey).filter((b) => !run.bendiciones.some((x) => x.id === b.id));
-          run.maxIntegrity -= 3;
+          run.maxIntegrity -= 12;
           run.integrity = Math.min(run.integrity, run.maxIntegrity);
           if (libres.length) {
             const id = libres[Math.floor(nextRandom(run) * libres.length)].id;
@@ -352,7 +353,7 @@ EVENTS.push(
           } else (run.gold += 10), sale(run, 'altar.no', true, { n: 10 }, { rey });
         },
       },
-      { label: 'Rezar y seguir', read: { gain: '+3 de Vida', cost: '', glyph: 'reparacion' }, desc: '+3 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 3)) },
+      { label: 'Rezar y seguir', read: { gain: '+12 de Vida', cost: '', glyph: 'reparacion' }, desc: '+12 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 12)) },
     ],
   },
   {
@@ -362,8 +363,8 @@ EVENTS.push(
     options: [
       {
         label: 'Tirarlo',
-        read: { gain: '2 formaciones +1 nivel', cost: '1 de 2: +1 Ataque', glyph: 'dados' },
-        desc: 'Blanca: 2 formaciones suben 1 nivel. Negra: +10 de oro y +1 de Ataque en el próximo asalto.',
+        read: { gain: '2 formaciones +1 nivel', cost: '1 de 2: +2 Ataque', glyph: 'dados' },
+        desc: 'Blanca: 2 formaciones suben 1 nivel. Negra: +10 de oro y +2 de Ataque en el próximo asalto.',
         apply: (run) => {
           if (nextRandom(run) < 0.5) {
             for (const fo of pick(run, FORMATIONS, 2)) run.levels[fo] += 1;
@@ -375,7 +376,7 @@ EVENTS.push(
           }
         },
       },
-      { label: 'Dejarlo quieto', read: { gain: '+2 de Vida', cost: '', glyph: 'reparacion' }, desc: '+2 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 2)) },
+      { label: 'Dejarlo quieto', read: { gain: '+8 de Vida', cost: '', glyph: 'reparacion' }, desc: '+8 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 8)) },
     ],
   },
 );
@@ -616,7 +617,7 @@ export interface Run {
   mapa: Mapa;
   /** V40 1e · El combate en curso o el último (asalto del tramo o Guardia Bravo). */
   combate: Combate | null;
-  /** El decreto maldito: el próximo asalto tiene +1 de Ataque. */
+  /** El decreto maldito: el próximo asalto tiene +2 de Ataque. */
   curse: boolean;
   pack: string[];
   /** V29 · los tres Dones que ofrece la conjura al abrir la campaña (una campaña guardada antes de la 29.0 no los trae). */
@@ -1034,8 +1035,9 @@ export function stageConfig(run: Run, players = 1): Config {
   }
   // V35 · duelo Casa por Casa: se combate la primera en pie de `orden`. Sin reloj de turnos: la Furia sube con cada
   // Mazo agotado y, contra el monarca (el último guardia del asalto), con cada turno
-  // Corte airada (Reinado 3+): cada Mazo agotado sube la Furia un poco más
-  cfg.collapseSiege = FURIA.mazo + (a >= 2 ? REIN.furia : 0);
+  cfg.collapseSiege = FURIA.mazo;
+  // Corte airada (Reinado 3+): V40 1f, cada asalto (y cada Guardia Bravo) empieza con Furia
+  if (a >= 2) cfg.furiaInicial = (cfg.furiaInicial ?? 0) + REIN.furia;
   cfg.orden = bravo?.palo ? [bravo.palo] : ordenCasas(run);
   // V40 1c · el Rey jefe: su Vida (× la del monarca) y su Furia propia; en el asalto 2 ocupa el sitio del Caballo
   const rey = st.boss && !bravo ? BOSS[run.bosses[run.stage]] : undefined;
@@ -1066,7 +1068,7 @@ export function stageConfig(run: Run, players = 1): Config {
   if (escudo) cfg.wallStart = (cfg.wallStart ?? 0) + escudo;
   if (run.boss && !bravo) BOSS[run.boss]?.apply(cfg);
   // el decreto maldito de un Santuario pesa sobre el próximo asalto (no sobre un Guardia Bravo)
-  if (run.curse && !bravo) eachThreat(cfg, 1);
+  if (run.curse && !bravo) eachThreat(cfg, 2);
   return cfg;
 }
 
@@ -1190,7 +1192,10 @@ export function serviciosPulperia(run: Run): { purgar: Servicio & { paso: number
 }
 /** V40 1e · En qué bandeja de La Pulpería va cada oferta: la de Amuletos o la de cartas (Trampas, sellos y Pergaminos). */
 export const BANDEJA: Record<OfferKind, 'amuletos' | 'cartas'> = { tool: 'amuletos', sobre: 'cartas', clandestino: 'cartas', forja: 'cartas', plano: 'cartas' };
-/** V40 1e · Los servicios del Fogón: Curar `curar` de Vida o Purgar una carta, gratis; uno de los dos (con el Cartógrafo, los dos). */
+/**
+ * V40 1e · Los servicios del Fogón: Curar `curar` de Vida o Purgar una carta, gratis; uno de los dos (con el Cartógrafo,
+ * los dos). V40 1f: al salir, su Botín (una «Elegí una» Bendición, ver `saleFogon`).
+ */
 export function serviciosFogon(run: Run): { curar: Servicio & { vida: number }; purgar: Servicio; ambos: boolean } {
   const f = run.fogon;
   return {
@@ -1278,7 +1283,7 @@ export interface BotinPrevisto {
 }
 export function botinPrevisto(run: Run, tipo: TipoNodo, tramo = run.stage): BotinPrevisto {
   if (tipo === 'bravo') return { oro: MAPA_CFG.bravo.oro, elegi: [], amuleto: true };
-  if (tipo === 'fogon') return { oro: 0, elegi: [], amuleto: false, cura: MAPA_CFG.fogon.curar };
+  if (tipo === 'fogon') return { oro: 0, elegi: MAPA_CFG.fogon.bendicion && !run.endless ? ['bendicion'] : [], amuleto: false, cura: MAPA_CFG.fogon.curar };
   if (tipo === 'guardia' || tipo === 'rey') {
     const ultimo = tramo >= LAST_STAGE && !run.endless;
     const elegi: TipoElegi[] = ultimo ? [] : [...(!run.endless && tramo < LAST_STAGE ? (['bendicion'] as const) : []), 'trampa', ...(tipo === 'rey' ? (['amuleto'] as const) : [])];
@@ -1332,7 +1337,22 @@ function usaFogon(run: Run, que: 'curar' | 'purgar'): void {
   const f = run.fogon!;
   if (serviciosFogon(run).ambos) f[que] = false;
   else f.curar = f.purgar = false;
-  if (!f.curar && !f.purgar) toMap(run);
+  if (!f.curar && !f.purgar) saleFogon(run);
+}
+
+/**
+ * V40 1f · Al dejar el Fogón (usado o no), su Botín: una «Elegí una» Bendición entre las de `mapa.fogon.bendicion`
+ * Reyes (0: ninguna; nunca en el Trono infinito). Es lo que hace viable la ruta prudente, la que evita a los Bravos.
+ */
+function saleFogon(run: Run): void {
+  const n = MAPA_CFG.fogon.bendicion;
+  const op = n && !run.endless ? ofertaBendiciones(run.id ^ 0x5bd1e995, run.stage * 10 + run.stats.skips, run.bendiciones, n) : [];
+  if (!op.length) return toMap(run);
+  run.fogon = null;
+  run.pay = [];
+  run.botin = [{ k: 'elegi', tipo: 'bendicion', opciones: op, estado: 'abierta' }];
+  run.elegi = null;
+  run.phase = 'reward';
 }
 
 // ───────────────────────── V40 1e · El Botín ─────────────────────────
@@ -1355,12 +1375,13 @@ export function finishBattle(run: Run, state: GameState): void {
     run.phase = 'lost';
     return;
   }
-  // V40 1e · el Guardia Bravo: su oro y un Amuleto Raro o mejor; la Vida sigue como quedó (sin cura de asalto)
+  // V40 1e · el Guardia Bravo: su oro y un Amuleto Raro o mejor; la Vida sigue como quedó (sin cura de asalto).
+  // V40 1f: con `amuletos` 2, una «Elegí una» entre dos Amuletos, y sin Bendición (la del camino es la del Fogón)
   if (bravo) {
     run.integrity = Math.min(run.maxIntegrity, state.integrity);
     run.stats.contracts++;
     run.pay = [['Guardia Bravo', MAPA_CFG.bravo.oro]];
-    // el Amuleto del Bravo: uno suelto, o a elegir entre  (Raros o mejores)
+    // el Amuleto del Bravo: uno suelto, o a elegir entre `amuletos` (Raros o mejores)
     const ops = cofreDelMonarca(run, MAPA_CFG.bravo.amuletos);
     run.botin = [{ k: 'oro', n: MAPA_CFG.bravo.oro, estado: 'abierta' }];
     if (ops.length === 1) run.botin.push({ k: 'amuleto', id: ops[0], estado: 'abierta' });
@@ -1613,7 +1634,8 @@ export function runAction(run: Run, a: RunAction): string | null {
       // V40 1e · salir de La Pulpería o del Fogón (sin usarlo) y volver al Mapa
       if (run.phase !== 'shop' && run.phase !== 'fogon') return 'Aún no podés seguir.';
       if (run.sobre) return 'Antes elegí una carta del sobre abierto.';
-      toMap(run);
+      if (run.phase === 'fogon') saleFogon(run);
+      else toMap(run);
       return null;
     case 'event': {
       if (run.phase !== 'event' || !run.event) return 'No hay ningún Santuario.';

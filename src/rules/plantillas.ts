@@ -153,7 +153,7 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'suerte.dado.blanca.titulo': 'Cara blanca',
   'suerte.dado.blanca.texto': 'Dos formaciones suben 1 nivel.',
   'suerte.dado.negra.titulo': 'Cara negra',
-  'suerte.dado.negra.texto': '+{n} de oro. En el próximo asalto, el Ataque de los guardias sube 1.',
+  'suerte.dado.negra.texto': '+{n} de oro. En el próximo asalto, el Ataque de los guardias sube 2.',
   // V12 · la línea del Dado de oro en el cobro del asalto (run.ts, finishBattle)
   'cuenta.dado': 'Dado de oro ×{n}',
   // V12 · el aviso de la migración a la V12 (meta.aviso), que el Árbol enseña una vez

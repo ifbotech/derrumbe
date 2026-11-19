@@ -93,9 +93,10 @@ describe('Rey de Bastos: la defensa se cobra en daño', () => {
 
   it('el Talero devuelve el triple de lo que el Escudo frena entero, y nada si el Contraataque pasa', () => {
     const play = (wall: number) => {
-      const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 } });
+      // el Ataque de la Corte de antes de la 1f (3/4/6): la prueba mide el Escudo que frena entero, no la escala
+      const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 3, 11: 4, 12: 6 } });
       const s = table(cfg, ['contragolpe'], { wall });
-      // contraataca el enemigo activo: la Sota de PICAS (Ataque 3)
+      // contraataca el enemigo activo: la Sota de Espadas (Ataque 3)
       s.players[0].hand = [card('S2'), card('S3')];
       const out = applyAction(s, 'a', { type: 'discard', cards: ['S2'] }).state;
       return out.towers.S.damage;
@@ -127,7 +128,7 @@ describe('V40 1c · los 4 Reyes jefe en la mesa', () => {
   it('Oros: su dado suma de +1 a +caras a su Contraataque; sin dado, nada', () => {
     const s = conRey('oros', 'D');
     const base = threatOf({ config: s.config }, s.towers.D);
-    expect(threatOf({ config: s.config, dado: 1 }, s.towers.D)).toBe(base + 1);
+    expect(threatOf({ config: s.config, dado: 1 }, s.towers.D)).toBe(base + Math.ceil(BALANCE.reyes.oros.dado / 6));
     expect(threatOf({ config: s.config, dado: 6 }, s.towers.D)).toBe(base + BALANCE.reyes.oros.dado);
     for (let d = 1; d <= 6; d++) expect(Number.isInteger(threatOf({ config: s.config, dado: d }, s.towers.D))).toBe(true);
   });

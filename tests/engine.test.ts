@@ -200,7 +200,7 @@ describe('Amuletos de cada Rey', () => {
     const golpe = cards('S10', 'H10'); // (2 + 10 + 10) × 2 = 44: cae la Sota de Oros
     expect(strike(env(['encofrado']), golpe, 'D').wallGain).toBe(strike(env([]), golpe, 'D').wallGain + 2);
     const cfg = env(['sordina']).config;
-    for (const r of [10, 11, 12]) expect(cfg.floorThreat[r]).toBe(Math.max(1, DEFAULT_CONFIG.floorThreat[r] - 1));
+    for (const r of [10, 11, 12]) expect(cfg.floorThreat[r]).toBe(Math.max(1, DEFAULT_CONFIG.floorThreat[r] - B.reliquias.sordina.ataque));
   });
 
   it('Oros: los Naipes marcados suman Multi con grupos y el Cubilete con un 5 o más en el dado', () => {
@@ -382,7 +382,8 @@ describe('golpe limpio y estados de las torres', () => {
 
 describe('turno: sirena, muro, descartes, huelga y colapso', () => {
   it('la sirena golpea con la amenaza del piso y el muro la absorbe', () => {
-    const s = game(cards('C9', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'), cards('H9', 'D9'), [], { orden: ['S', 'D', 'H', 'C'] });
+    // el Ataque de la Corte de antes de la 1f (3/4/6): la prueba mide el reparto entre Escudo y Vida, no la escala
+    const s = game(cards('C9', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'), cards('H9', 'D9'), [], { orden: ['S', 'D', 'H', 'C'], floorThreat: { ...DEFAULT_CONFIG.floorThreat, 10: 3, 11: 4, 12: 6 } });
     const { state, events } = applyAction(s, 'a', { type: 'attack', cards: ['C9'], target: 'S' });
     expect(state.wall).toBe(0); // 2 de Escudo (un ♣), y contraataca el enemigo activo: la Sota de ♠, que ataca 3
     expect(of(events, 'siren')[0]).toMatchObject({ tower: 'S', threat: 3, blocked: 2, taken: 1 });

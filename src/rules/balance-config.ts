@@ -99,7 +99,7 @@ export interface BalanceConfig {
    * con su Vida × `vida` y `ataque` más de Ataque que los del asalto que viene; su Botín, `oro` y un Amuleto Raro o
    * mejor. Fogón: Curar `curar` de Vida, o Purgar una carta gratis.
    */
-  mapa: { bravo: { vida: number; ataque: number; oro: number; amuletos: number; bendicion: number }; fogon: { curar: number }; bendicionGuardia: number };
+  mapa: { bravo: { vida: number; ataque: number; oro: number; amuletos: number; bendicion: number }; fogon: { curar: number; bendicion: number }; bendicionGuardia: number };
   /**
    * Árbol de la Conjura (V12, sustituye a `orden`): esquirlas de cada rango de los nodos de combate (`costes`),
    * base de coste de los incrementales (rango r: base × crece^(r−1), a dos cifras significativas), oro inicial

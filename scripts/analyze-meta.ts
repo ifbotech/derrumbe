@@ -117,7 +117,9 @@ function plan(): Spec[] {
     // V40 1d · el Altar lleno sin cada grupo de nodos que toca el combate o La Pulpería, frente al vacío y al lleno
     const count = N || 600;
     const todos = UPGRADES.map((u) => u.id);
-    const each = (extra: Partial<Spec>) => seeds(count, 43).forEach((seed, i) => specs.push({ seed, deck: MAZO_IDS[i % MAZO_IDS.length], ascension: 0, full: true, ...extra }));
+    // --barajas=chancho: solo esos Mazos (V40 1f)
+    const mazos = onlyDecks ?? MAZO_IDS;
+    const each = (extra: Partial<Spec>) => seeds(count, 43).forEach((seed, i) => specs.push({ seed, deck: mazos[i % mazos.length], ascension: 0, full: true, ...extra }));
     each({ full: false, sinAltar: 'vacío' });
     each({ sinAltar: 'lleno' });
     for (const g of GRUPOS_ALTAR) each({ sinAltar: g.join(','), only: todos.filter((id) => !g.includes(id)) });
@@ -132,6 +134,12 @@ function plan(): Spec[] {
     return specs;
   }
   // --reinados=5,6,7: el foco mide esos Reinados en lugar del 1 y el 8 (V40 1c)
+  // V40 1f · los golpes: los 5 Mazos en el Reinado 1 con el Altar vacío (y --reinados=8 para otro Reinado)
+  if (mode === 'golpes') {
+    const a = Number(arg('reinados') ?? 1) - 1;
+    for (const deck of onlyDecks ?? MAZO_IDS) for (const full of fulls) for (const seed of seeds(N || 400, 0)) specs.push({ seed, deck, ascension: a, full });
+    return specs;
+  }
   if (mode === 'foco') return levels(arg('reinados')?.split(',').map((r) => Number(r) - 1) ?? [0, 7], N || 1200), specs;
   if (mode === 'niveles') return levels(all, N || 800), specs;
   // --barajas=escoba,truco: solo esos Mazos (el inicial, con sus campañas del Reinado 1)
@@ -152,12 +160,16 @@ function plan(): Spec[] {
 
 // ───────────────────────── Reparto entre procesos ─────────────────────────
 
+/** V40 1f · los modos que guardan cada Contraataque (para el informe de golpes). */
+const CON_SIRENAS = ['barajas', 'golpes', 'foco', 'niveles', 'rapido'];
 const shard = arg('shard');
 if (shard) {
   const [i, of] = shard.split('/').map(Number);
   const logs = plan()
     .filter((_, k) => k % of === i)
-    .map((spec) => playCampaign(spec).log);
+    .map((spec) => playCampaign(spec).log)
+    // V40 1f · los Contraataques uno por uno solo viajan en los modos que los informan (pesan mucho)
+    .map((l) => (CON_SIRENAS.includes(mode) ? l : { ...l, sirenas: [] }));
   writeFileSync(arg('out')!, JSON.stringify(logs));
   process.exit(0);
 }
@@ -338,8 +350,68 @@ function report(logs: Log[], confirm: Log[] = []) {
         gastoPulperia: media((l) => l.gastoPulperia ?? 0),
       }
     : undefined;
-  const body = { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, bendiciones, marks, bosses, avgLethality, pacing, pacingByDeck, mapa };
+  const golpes = informeGolpes(plain);
+  const body = { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, bendiciones, marks, bosses, avgLethality, pacing, pacingByDeck, mapa, ...(golpes ? { golpes } : {}) };
   return { ...body, flags: avisos(body) };
+}
+
+/**
+ * V40 1f · Los Contraataques que llegaron, por asalto y por quién pega (guardia, Rey jefe, Guardia Bravo): Furia y
+ * Ataque típicos, el Ataque frente a la Vida máxima y los golpes que matan de una vez con la Vida llena.
+ */
+function informeGolpes(logs: Log[]) {
+  const con = logs.filter((l) => l.sirenas?.length);
+  if (!con.length) return undefined;
+  const QUIEN = ['guardia', 'rey', 'bravo'];
+  const filas = [];
+  for (let s = 1; s <= LAST_STAGE; s++)
+    for (let k = 0; k < 3; k++) {
+      const xs = con.flatMap((l) => l.sirenas.filter((x) => x[0] === s && x[1] === k));
+      if (!xs.length) continue;
+      const llenos = xs.filter((x) => x[6] >= x[5]);
+      filas.push({
+        asalto: s,
+        quien: QUIEN[k],
+        n: xs.length,
+        furia50: quantile(xs.map((x) => x[3]), 0.5),
+        furia90: quantile(xs.map((x) => x[3]), 0.9),
+        ataque50: quantile(xs.map((x) => x[2]), 0.5),
+        ataque95: quantile(xs.map((x) => x[2]), 0.95),
+        ataqueMax: Math.max(...xs.map((x) => x[2])),
+        /** El Ataque frente a la Vida máxima, en %: mediana y percentil 95. */
+        ratio50: quantile(xs.map((x) => Math.round((100 * x[2]) / x[5])), 0.5),
+        ratio95: quantile(xs.map((x) => Math.round((100 * x[2]) / x[5])), 0.95),
+        /** Golpes con la Vida llena que la quitan entera (muerte de un golpe) y los que quitan ≥ 60 % de la máxima. */
+        unGolpe: llenos.filter((x) => x[4] >= x[6]).length,
+        sobre60: llenos.filter((x) => x[4] >= 0.6 * x[5]).length,
+        /** Vida quitada de media por golpe y por campaña que llegó a ese asalto (en % de la Vida máxima). */
+        quita: Math.round((xs.reduce((a, x) => a + x[4], 0) / xs.length) * 10) / 10,
+        quitaCampana: Math.round((xs.reduce((a, x) => a + (100 * x[4]) / x[5], 0) / Math.max(1, con.filter((l) => l.sirenas.some((x) => x[0] === s && x[1] === k)).length))),
+      });
+    }
+  const porMazo = MAZO_IDS.map((deck) => {
+    const de = con.filter((l) => l.spec.deck === deck);
+    const xs = de.flatMap((l) => l.sirenas);
+    return {
+      deck,
+      n: de.length,
+      vida: quantile(xs.filter((x) => x[0] === 1).map((x) => x[5]), 0.5),
+      /** Campañas en las que algún golpe con la Vida llena mató de una vez. */
+      unGolpe: pct(de.filter((l) => l.sirenas.some((x) => x[6] >= x[5] && x[4] >= x[6])).length, de.length),
+      /** Las del Rey jefe en sus turnos 1 a 3. */
+      reyTemprano: pct(de.filter((l) => l.sirenas.some((x) => x[1] === 1 && x[7] <= 3 && x[6] >= x[5] && x[4] >= x[6])).length, de.length),
+    };
+  }).filter((m) => m.n);
+  /** Cómo acaba cada Contraataque de los asaltos, por campaña que llegó: llega, Golpe exacto, Aturdido, no hay. */
+  const motivos = Array.from({ length: LAST_STAGE }, (_, i) => {
+    const s = i + 1;
+    const llegan = con.filter((l) => (l.stageTurns?.length ?? 0) >= s);
+    const m = (r: string) => Math.round((sum(llegan, (l) => l.motivos?.[`${s}:${r}`] ?? 0) / Math.max(1, llegan.length)) * 10) / 10;
+    return { asalto: s, llega: m('strike'), exacto: m('clean'), aturdido: m('sobrecarga'), huelga: m('huelga') };
+  });
+  const media = (f: (l: Log) => number) => Math.round(sum(con, f) / con.length);
+  const quitado = media((l) => l.sirenas.reduce((a, x) => a + x[4], 0));
+  return { filas, porMazo, motivos, quitado, curado: media((l) => l.curado ?? 0), parado: media((l) => l.parado ?? 0) };
 }
 
 function print(r: ReturnType<typeof report>): void {
@@ -372,6 +444,13 @@ function print(r: ReturnType<typeof report>): void {
   for (const p of r.pacing) if (p.n) console.log(`  ${p.stage} ${pad(p.name, 20)} ${num(p.p50, 3)} · ${num(p.p95, 3)}${p.j50 !== undefined ? `   jugadas ${num(p.j50, 3)}` : ''}`);
   if (r.mapa) console.log(`\nMapa (Reinado 1, por campaña): ${Object.entries(r.mapa.nodos).map(([k, v]) => `${k} ${v}`).join(' · ')} · jugadas en Bravos ${r.mapa.bravoJugadas} · muere en un Bravo ${r.mapa.muereBravo} % · gasto en La Pulpería ${r.mapa.gastoPulperia} de oro`);
   if (r.pacingByDeck.length) console.log(`  peor percentil 95 en los asaltos 1–${LAST_STAGE}, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}`);
+  if (r.golpes) {
+    console.log('\nContraataques (Furia mediana/p90 · Ataque mediano/p95/máximo · Ataque ÷ Vida máxima mediano/p95 · con la Vida llena: matan de un golpe · quitan ≥ 60 %)');
+    for (const f of r.golpes.filas) console.log(`  ${f.asalto} ${f.quien.padEnd(8)} Furia ${f.furia50}/${f.furia90} · Ataque ${f.ataque50}/${f.ataque95}/${f.ataqueMax} · ${f.ratio50} %/${f.ratio95} % · un golpe ${f.unGolpe} · ≥60 % ${f.sobre60} · quita ${f.quita} por golpe, ${f.quitaCampana} % por campaña   (${f.n})`);
+    console.log(`  por campaña: Vida quitada ${r.golpes.quitado} · curada en combate ${r.golpes.curado} · parada por el Escudo ${r.golpes.parado}`);
+    console.log(`  por asalto y campaña (llega · Golpe exacto · Aturdido o sin Contraataque · no hay): ${r.golpes.motivos.map((m) => `${m.asalto}: ${m.llega} · ${m.exacto} · ${m.aturdido} · ${m.huelga}`).join(' | ')}`);
+    console.log(`  por Mazo (Vida máxima en el asalto 1 · campañas con una muerte de un golpe con la Vida llena · del Rey en sus turnos 1–3):\n    ${r.golpes.porMazo.map((m) => `${m.deck} ${m.vida} · ${m.unGolpe} % · ${m.reyTemprano} %`).join(' | ')}`);
+  }
   console.log(r.flags.length ? `\nAVISOS (${r.flags.length})\n${r.flags.map((f) => `  ! ${f}`).join('\n')}` : '\nSin avisos: todo dentro de objetivo.');
 }
 
