@@ -2302,8 +2302,10 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
           if (Math.min(r.right, q.right) - Math.max(r.left, q.left) > 1 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 1) fail('polvora', `la vista previa de la pólvora pisa ${name(o)}`, p);
         }
       }
+      // V40 3b (mínimo texto en la mesa): la marca «Pólvora +n» salió de la línea de la cuenta; la dicen la vista previa
+      // del de al lado (arriba) y el recibo. En la mesa vieja (sin .m40) se sigue pidiendo.
       const m = [...document.querySelectorAll<HTMLElement>('#score .marks .m.polvora')].find(visible);
-      if (!m && opts.state === 'mesa-polvora') fail('polvora', 'la cuenta no enseña la marca «Pólvora +n»', document.querySelector('#score'));
+      if (!m && opts.state === 'mesa-polvora' && !document.querySelector('.table-screen.m40')) fail('polvora', 'la cuenta no enseña la marca «Pólvora +n»', document.querySelector('#score'));
     }
   }
 
