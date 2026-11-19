@@ -137,11 +137,11 @@
       "parpalo": { "f": 0, "r": 1, "lf": 3 },
       "quince": { "f": 6, "r": 1, "lf": 3 }
     },
-    "truco": { "vida": -7, "mano": 0, "bravo": { "S1": 20, "C1": 16, "S7": 12, "D7": 8 }, "envido": 5 },
+    "truco": { "vida": -7, "mano": 0, "bravo": { "S1": 25, "C1": 20, "S7": 15, "D7": 10 }, "envido": 10 },
     "escoba": { "vida": -3, "mano": -1, "multi": 1, "carga": 2 },
     "chinchon": { "vida": -6, "mano": 0, "pierna": 1, "escalera": 8, "cartas": 4, "carga": 1, "alivio": 1 },
     "mentiroso": { "vida": -5, "mano": 0, "comodines": 1, "dano": 15, "furia": 2 },
-    "chancho": { "vida": -9, "mano": 0, "cadena": 2, "turnos": 4, "dano": 30 }
+    "chancho": { "vida": -8, "mano": 0, "cadena": 2, "turnos": 4, "dano": 55 }
   },
   "formaciones": {
     "solo": { "f": 0, "r": 1, "lf": 4 },
