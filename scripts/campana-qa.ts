@@ -1,7 +1,8 @@
 // V11 · la campaña de cinco asaltos, entera, para la prueba de humo. El bot de referencia decide cada
 // jugada y la prueba la hace con el ratón, a 1×, sobre la mesa de verdad: el asalto de dos tronos, el de
-// tres, los Secretos de la cripta tras los asaltos 2 y 4 y el Salón del Trono con su Rey Tirano (o Reina
-// Tirana). Mide el **tiempo de jugada a 1×** (desde que se confirma la jugada hasta que la mano vuelve a
+// tres y, desde la V40 1e, el Mapa de caminos (prefiere La Pulpería, luego el Fogón y el Santuario del Bufón, y
+// evita los Guardias Bravos), el Botín por partes con su «Elegí una», Purgar en La Pulpería o el Fogón y el Rey
+// del Salón del Trono. Mide el **tiempo de jugada a 1×** (desde que se confirma la jugada hasta que la mano vuelve a
 // aceptar entrada) y el **tiempo de máquina de cada entreacto** (de que se levanta la mesa a que vuelve a
 // estar puesta, con los clics al instante: lo que se anima y se pinta, sin el tiempo de leer ni de decidir).
 // Son las constantes medidas de la duración de la campaña (SPECS/V11.md, apartado 1.10).
@@ -10,13 +11,13 @@
 // ?qa): el bot juega igual, nadie muere por el camino. La campaña no toca el guardado real.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { Browser, Page } from 'playwright';
-import { LOCALE, T } from './gamepad-qa';
+import { LOCALE } from './gamepad-qa';
 import { NAME_SHIM } from './web';
 
 type Check = (ok: unknown, what: string) => void;
 type BotAction = { type: string; cards?: string[]; card?: string; target?: string } | null;
 interface CampWin {
-  __qa: { seed(t: string): void; bot(): BotAction; run(): { phase: string; stage: number } | null };
+  __qa: { seed(t: string): void; bot(): BotAction; run(): { phase: string; stage: number; combate: string | null; deck: number; bendiciones: number; elegi: number | null } | null };
   __qaJuice: { heal(): boolean; thrones(): number; stage(): number };
 }
 
@@ -69,7 +70,12 @@ interface Arrastre {
   stages: CampaignTimes['stages'];
   between: number[];
   phases: string[];
-  tirano: string;
+  /** V40 1e · lo que se vio del Mapa y del Botín: nodos visitados, cobros, «Elegí una» elegidas, cartas purgadas, Rey. */
+  nodos: string[];
+  cobros: number;
+  elegidas: number;
+  purgas: number;
+  rey: number;
   total: number;
   /** Segundos del entreacto que ya iban corridos al cortar el tramo (de la mesa levantada al Mapa). */
   entreParcial: number | null;
@@ -116,18 +122,31 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
   const between: number[] = prev?.between ?? [];
   const phases: string[] = prev?.phases ?? [];
   let leftTable = prev?.entreParcial != null ? Date.now() - prev.entreParcial * 1000 : 0;
-  let tirano = prev?.tirano ?? '';
+  const nodos: string[] = prev?.nodos ?? [];
+  let cobros = prev?.cobros ?? 0;
+  let elegidas = prev?.elegidas ?? 0;
+  let purgas = prev?.purgas ?? 0;
+  let rey = prev?.rey ?? 0;
+  /** El tamaño del mazo antes de Purgar (para contar la carta que se fue) y dónde se purgó por última vez. */
+  let mazoAntes = -1;
+  let purgadoEn = '';
   let guard = 0;
-  for (; guard < 400; guard++) {
+  for (; guard < 500; guard++) {
     const r = await run();
     if (!r || r.phase === 'won' || r.phase === 'lost') break;
-    // fin del tramo: ya se ve el Mapa del asalto siguiente. Se deja lo guardado y lo medido para el tramo que sigue
-    if (tramo && tramo.n < tramo.de && r.phase === 'map' && r.stage > tramo.n) {
+    // la carta purgada se va al elegirla en la ventana del mazo: se cuenta cuando baja el mazo o se sale del servicio
+    if (mazoAntes >= 0 && r.deck < mazoAntes) {
+      purgas++;
+      mazoAntes = -1;
+    } else if (mazoAntes >= 0 && r.phase !== 'shop' && r.phase !== 'fogon') mazoAntes = -1;
+    // fin del tramo: en el Mapa del tramo siguiente, con el asalto ya al alcance (las paradas del camino van en este
+    // tramo). Se deja lo guardado y lo medido para el tramo que sigue
+    if (tramo && tramo.n < tramo.de && r.phase === 'map' && r.stage > tramo.n && (await has('#routes .choice.pick[data-tipo="guardia"], #routes .choice.pick[data-tipo="rey"]'))) {
       const guardado = await page.evaluate(() => {
         const p = (window as unknown as { __qaPlatform: () => { load(k: string): string | null; keys(pre: string): string[] } }).__qaPlatform();
         return Object.fromEntries(p.keys('derrumbe:').map((k) => [k, p.load(k) ?? '']));
       });
-      const deja: Arrastre = { guardado, plays, stages, between, phases, tirano, total: (prev?.total ?? 0) + (Date.now() - t0) / 1000, entreParcial: leftTable ? (Date.now() - leftTable) / 1000 : null };
+      const deja: Arrastre = { guardado, plays, stages, between, phases, nodos, cobros, elegidas, purgas, rey, total: (prev?.total ?? 0) + (Date.now() - t0) / 1000, entreParcial: leftTable ? (Date.now() - leftTable) / 1000 : null };
       writeFileSync(tramo.archivo, JSON.stringify(deja));
       const st = stages[stages.length - 1];
       console.log(`  tramo ${tramo.n} de ${tramo.de}: ${st ? `asalto ${st.stage} (${st.thrones} tronos) ${st.turns} turnos en ${st.secs.toFixed(0)} s` : 'sin asalto'} · sigue en el Mapa del asalto ${r.stage}`);
@@ -135,7 +154,7 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
       return null;
     }
     if (phases[phases.length - 1] !== `${r.phase}:${r.stage}`) phases.push(`${r.phase}:${r.stage}`);
-    // una ventana encima (premio del Juramento, carta sellada, elegir cartas de un Secreto): se resuelve o se cierra
+    // una ventana encima (Purgar, carta sellada, elegir cartas de un Santuario): se resuelve o se cierra
     if (await has('.modal')) {
       if (await has('.modal .card.pickable')) await page.locator('.modal .card.pickable').first().click();
       else if (await has('.modal #yes')) await page.locator('.modal #yes').click();
@@ -157,15 +176,45 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
       const b = page.locator('#bends .choice.pick').first();
       if (await b.count()) await b.click();
     } else if (r.phase === 'map') {
-      // el Mapa del Salón del Trono lleva la estampilla «Rey Tirano» (o «Reina Tirana») en su asalto
-      if (r.stage === 5) tirano = (await page.locator('.bp-node.tirano .s-tirano').first().textContent().catch(() => null)) ?? '';
-      const route = page.locator('#routes .choice.pick:not(.skip)').first();
-      if (await route.count()) await route.click();
+      // V40 1e · el Mapa de caminos: el Salón del Trono acaba en el nodo del Rey; la ruta prefiere las paradas
+      if (r.stage === 5) rey = Math.max(rey, await page.locator('.nodo-mapa.t-rey').count());
+      for (const tipo of ['pulperia', 'fogon', 'santuario', 'guardia', 'rey', 'bravo']) {
+        const route = page.locator(`#routes .choice.pick[data-tipo="${tipo}"]`).first();
+        if (!(await route.count())) continue;
+        nodos.push(tipo);
+        await route.click();
+        break;
+      }
     } else if (r.phase === 'reward') {
-      if (await has('#picks .choice.pick')) await page.locator('#picks .choice.pick').first().click();
-      else if (await has('#loot .choice.pick')) await page.locator('#loot .choice.pick').first().click();
-    } else if (r.phase === 'shop') await page.locator('#go').click();
-    else if (r.phase === 'event') {
+      // V40 1e · el Botín por partes: se cobra cada recompensa (la «Elegí una» se abre y se elige la primera)
+      if (await has('.elegi-una')) {
+        await page.waitForTimeout(300);
+        const op = page.locator('.elegi-una :is(#bends, #picks, #loot) .choice.pick').first();
+        if (await op.count()) {
+          await op.click();
+          elegidas++;
+        } else await page.locator('#saltar').click();
+      } else if (await has('.botin-fila.abierta .cobrar:not(:disabled)')) {
+        await page.locator('.botin-fila.abierta .cobrar:not(:disabled)').first().click();
+        cobros++;
+      } else if (await has('.botin-fila.abierta .saltar:not(:disabled)')) await page.locator('.botin-fila.abierta .saltar:not(:disabled)').first().click();
+      else await page.locator('#seguir').click();
+    } else if (r.phase === 'shop') {
+      // La Pulpería: Purgar una vez por visita, si llega el oro; luego, al Mapa
+      const aqui = `${r.stage}:${nodos.length}`;
+      if (purgadoEn !== aqui && (await has('#burn:not(:disabled)'))) {
+        purgadoEn = aqui;
+        mazoAntes = r.deck;
+        await page.locator('#burn').click();
+      } else await page.locator('#go').click();
+    } else if (r.phase === 'fogon') {
+      // el Fogón: Purgar gratis (o Curar si ya no se puede); sin el Cartógrafo se cierra solo
+      if (await has('#fogon-purgar.pick')) {
+        mazoAntes = r.deck;
+        await page.locator('#fogon-purgar').click();
+      } else if (await has('#fogon-curar.pick')) await page.locator('#fogon-curar').click();
+      else await page.locator('#go').click();
+    } else if (r.phase === 'event') {
       // la última opción de cada Secreto es la que no pide elegir cartas («Sigue tu camino», «Caliéntate y sigue»…)
       const opt = page.locator('#opts > button:not(:disabled)').last();
       await page.waitForTimeout(500); // las opciones se dan la vuelta de una en una
@@ -205,7 +254,8 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
         } else break;
         if (ms >= 0) plays.push(ms);
       }
-      stages.push({ stage: r.stage, thrones, turns, secs: (Date.now() - s0) / 1000 });
+      // los Guardias Bravos no son asaltos: cuentan sus jugadas y su entreacto, no su fila
+      if (r.combate !== 'bravo') stages.push({ stage: r.stage, thrones, turns, secs: (Date.now() - s0) / 1000 });
       await page.waitForFunction(() => !document.querySelector('.table-screen'), null, { timeout: 20_000 }).catch(() => undefined);
       leftTable = Date.now();
       continue;
@@ -218,11 +268,15 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
   const st = new Map(stages.map((s) => [s.stage, s]));
   check(won && stages.length === 5, `[campaña] el bot juega los cinco asaltos con el ratón y gana la campaña (${stages.map((s) => `${s.stage}: ${s.turns} t`).join(' · ')}${won ? '' : ` — fase «${end?.phase}»`})`);
   check(st.get(1)?.thrones === 2 && st.get(2)?.thrones === 3 && [3, 4, 5].every((n) => st.get(n)?.thrones === 4), `[campaña] tronos por asalto 2 / 3 / 4 / 4 / 4 (${stages.map((s) => s.thrones).join(' / ')})`);
-  const events = phases.filter((p) => p.startsWith('event:')).map((p) => Number(p.split(':')[1]));
-  check(events.join() === '2,4', `[campaña] Secretos de la cripta tras los asaltos 2 y 4 (${events.join(', ') || 'ninguno'})`);
-  const bends = phases.filter((p) => p.startsWith('bendicion:')).map((p) => Number(p.split(':')[1]));
-  check(bends.join() === '1,2,3,4,5', `[campaña] los Reyes ofrecen una Bendición antes de cada asalto (${bends.join(', ') || 'ninguna'})`);
-  check([T('asalto.tirano.m'), T('asalto.tirano.f')].includes(tirano.trim()), `[campaña] el Mapa del asalto 5 lleva la estampilla del Rey Tirano o la Reina Tirana («${tirano.trim()}»)`);
+  // V40 1e · el Mapa, el Botín y los servicios, con el ratón
+  const visto = (t: string) => nodos.filter((n) => n === t).length;
+  check(visto('pulperia') >= 4, `[campaña] el Mapa lleva a La Pulpería en cada tramo del 2 al 5 (${visto('pulperia')}; ruta: ${nodos.join(' · ')})`);
+  check(nodos.length > stages.length, `[campaña] la ruta pasa por paradas además de los asaltos (${nodos.length} nodos elegidos para ${stages.length} asaltos)`);
+  check(cobros >= 5 && elegidas >= 2, `[campaña] el Botín se cobra por partes y la «Elegí una» se elige (${cobros} cobros, ${elegidas} elegidas)`);
+  check(purgas >= 1, `[campaña] Purgar (en La Pulpería o el Fogón) saca cartas del mazo (${purgas})`);
+  const bends = phases.filter((p) => p.startsWith('bendicion:')).length;
+  check(bends >= 1 && ((end as { bendiciones?: number } | null)?.bendiciones ?? 1) >= 1, `[campaña] los Reyes ofrecen su Bendición (${bends} ofertas de entrada)`);
+  check(rey >= 1, `[campaña] el Mapa del asalto 5 acaba en el nodo del Rey (${rey})`);
   const play = median(plays) / 1000;
   check(plays.length >= 20 && play > 0 && play < 12, `[campaña] tiempo de jugada a 1× medido en ${plays.length} jugadas: mediana ${play.toFixed(2)} s`);
   console.log(`  campaña: ${total.toFixed(0)} s con los clics al instante · jugada a 1× (mediana) ${play.toFixed(2)} s · entreactos ${between.map((b) => b.toFixed(1)).join(' · ')} s`);

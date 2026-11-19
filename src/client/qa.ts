@@ -1038,7 +1038,7 @@ export function installQa(): void {
       /** Resumen de la campaña en curso, para comprobar lo que hizo el mando. */
       run: () => {
         const run = S.campaign?.run;
-        return run ? { phase: run.phase, stage: run.stage, gold: run.gold, tools: run.tools.map((t) => t.id), marks: run.deck.filter((c) => c.seal || c.tr).length, pending: run.pending?.kind ?? null, shop: run.shop.map((o) => o.kind) } : null;
+        return run ? { phase: run.phase, stage: run.stage, gold: run.gold, tools: run.tools.map((t) => t.id), marks: run.deck.filter((c) => c.seal || c.tr).length, pending: run.pending?.kind ?? null, shop: run.shop.map((o) => o.kind), combate: run.combate, deck: run.deck.length, bendiciones: run.bendiciones.length, elegi: run.elegi } : null;
       },
       /** En la Taberna: oro de sobra y dos reliquias, para probar las Reliquias y la Mesa de lacre sin depender del azar. */
       boost: () => {

@@ -928,11 +928,47 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       await B();
       await page.waitForTimeout(200);
     }
-    check((await count(page, '.modal')) === 0, 'B cierra la ventana del premio del Juramento (si la hay)');
-    check(await focusOn(page, '#picks .choice.pick'), 'en el Botín, el foco llega a la selección');
+    check((await count(page, '.modal')) === 0, 'B cierra la ventana que hubiera encima del Botín');
+    // V40 1e · el Botín por partes: A cobra cada recompensa (la «Elegí una» se abre y A elige la primera)
+    let cobradas = 0;
+    for (let i = 0; i < 8 && (await count(page, '.botin-fila.abierta .cobrar:not(:disabled), .elegi-una .choice.pick')) > 0; i++) {
+      const sel = (await count(page, '.elegi-una')) ? '.elegi-una .choice.pick' : '.botin-fila.abierta .cobrar:not(:disabled)';
+      if (!(await focusOn(page, sel))) break;
+      await A();
+      await page.waitForTimeout(300);
+      for (let j = 0; j < 3 && (await count(page, '.modal')) > 0; j++) {
+        await B();
+        await page.waitForTimeout(200);
+      }
+      cobradas++;
+    }
+    check(cobradas >= 1, `en el Botín, el foco llega a cada recompensa y A la cobra (${cobradas})`);
+    check(await focusOn(page, '#seguir'), 'el foco llega a «Seguir» del Botín');
     await A();
     await page.waitForTimeout(300);
-    check((await run(page))?.phase === 'shop', 'A elige la carta y abre La Taberna');
+    check((await run(page))?.phase === 'map', 'A sigue del Botín al Mapa de caminos');
+    // el Mapa: la cruceta llega a La Pulpería (en la fila A o en el centro de la fila B); si antes toca un Fogón o un
+    // Santuario, A lo atraviesa sin usarlo
+    for (let i = 0; i < 4 && (await run(page))?.phase !== 'shop'; i++) {
+      const fase = (await run(page))?.phase;
+      if (fase === 'map') {
+        let ok = false;
+        for (const t of ['pulperia', 'fogon', 'santuario']) {
+          if (!(await count(page, `#routes .choice.pick[data-tipo="${t}"]`))) continue;
+          ok = await focusOn(page, `#routes .choice.pick[data-tipo="${t}"]`);
+          break;
+        }
+        if (!ok) break;
+      } else if (fase === 'fogon') {
+        if (!(await focusOn(page, '#go'))) break;
+      } else if (fase === 'event') {
+        await page.waitForTimeout(500);
+        if (!(await focusOn(page, '#opts .opt:last-child'))) break;
+      } else break;
+      await A();
+      await page.waitForTimeout(400);
+    }
+    check((await run(page))?.phase === 'shop', 'por el Mapa, con la cruceta y A, se llega a La Pulpería');
   }
 
   // ── La Taberna: las reliquias (no se ordenan) y sellar una carta en la Mesa de lacre ──

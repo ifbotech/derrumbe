@@ -360,3 +360,37 @@ h3.sec, .camp-run h3.sec, .col-sec h3.sec { line-height: 1.22; }
   .run-body:has(.don) .end-row button { flex: 1 1 0; min-width: 0; }
   .run-body:has(.don) .lead, .run-body:has(.don) .choices, .run-body:has(.don) .wait-note { order: 3; }
 }
+
+/* ───────────── V40 1e · EL MAPA DE CAMINOS Y EL BOTÍN (mínimo; el arte lo afina arte-ui) ───────────── */
+.mapa-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(var(--filas, 4), minmax(56px, auto)); gap: clamp(6px, 1.2vh, 14px) clamp(8px, 2vw, 28px); padding: 4px 0; }
+.mapa-aristas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.mapa-aristas line { stroke: var(--card-paper); stroke-width: 2; stroke-dasharray: 5 5; opacity: 0.55; }
+.mapa-aristas line.hecha { stroke: var(--hazard); stroke-dasharray: none; stroke-width: 3; opacity: 1; }
+.nodo-mapa { position: relative; z-index: 1; justify-self: center; align-self: center; display: grid; justify-items: center; align-content: center; gap: 2px; min-width: 44px; min-height: 44px; width: min(100%, 150px); padding: 4px 6px; --bg: #141210; --bd: var(--card-paper); --bw: 2px; --sh: none; color: var(--card-paper); font-size: 14px; text-transform: none; cursor: default; }
+.nodo-mapa .stamp-ico { width: 26px; height: 26px; }
+.nodo-mapa b { font-size: 14px; line-height: 1.1; text-transform: uppercase; }
+.nodo-mapa small { font-size: 14px; }
+.nodo-mapa i { display: inline-block; width: 18px; height: 18px; }
+.nodo-mapa i svg { width: 100%; height: 100%; }
+.mapa-grid .nodo-mapa:disabled { opacity: 1; cursor: default; }
+.mapa-grid .nodo-mapa.alcanzable { --bd: var(--hazard); --bw: 3px; --sh: 3px 3px 0 var(--ink); color: var(--card-paper); cursor: pointer; }
+.mapa-grid .nodo-mapa.alcanzable:hover, .mapa-grid .nodo-mapa.alcanzable:focus-visible { --bg: var(--hazard); color: var(--ink); }
+.mapa-grid .nodo-mapa.aqui { --bg: var(--hazard); --bd: var(--ink); --bw: 3px; color: var(--ink); }
+.mapa-grid .nodo-mapa.hecho { --bs: dashed; }
+.mapa-grid .nodo-mapa.lejos { --bs: dotted; }
+.mapa-grid .nodo-mapa.t-bravo, .mapa-grid .nodo-mapa.t-rey { --bs: double; --bw: 4px; }
+.botin-lista { display: grid; gap: 8px; }
+.botin-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 8px; border: 2px solid var(--card-paper); position: relative; }
+.botin-fila .botin-tx { display: grid; gap: 2px; min-width: 0; }
+.botin-fila .botin-tx b { font-size: 15px; text-transform: uppercase; }
+.botin-fila .botin-tx small { font-size: 14px; }
+.botin-fila .botin-acc { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.botin-fila .botin-acc button { min-height: 44px; }
+.botin-fila.tomada, .botin-fila.saltada { border-style: dashed; }
+.elegi-una .end-row { flex-wrap: wrap; gap: 10px; }
+.botin-fila .inkstamp { position: static; transform: rotate(-4deg); }
+@media (max-width: 560px) {
+  .botin-fila { grid-template-columns: auto minmax(0, 1fr); }
+  .botin-fila .botin-acc { grid-column: 1 / -1; justify-content: stretch; }
+  .botin-fila .botin-acc button { flex: 1 1 0; }
+}
