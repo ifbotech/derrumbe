@@ -57,6 +57,8 @@
    monarca (el --curse de guia.css, ahora #5c2a6c: 8,5:1) sube a 15 px en apaisado y la del Relojero dice la palabra:
    «+1 Furia». En el móvil no hay sitio: «+1». */
 .threat .furia { background: var(--red-deep); }
+/* V40 1c · la marca del Rey jefe (el dado de Oros, la cura de Copas) va junto al ⚔ y la Furia detrás: con las dos, dos filas y no tres */
+.tower.activa > .threat .furia { order: 1; }
 .threat .curse-tag .ct-largo { display: inline; } /* theme.css retira los <span> del ⚔ («Ataque»): estos no */
 .threat .curse-tag .ct-corto { display: none; }
 @media (max-aspect-ratio: 1/1), (max-width: 640px) {

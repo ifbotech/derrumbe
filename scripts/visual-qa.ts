@@ -1683,7 +1683,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (!inside(mon.getBoundingClientRect())) fail('voz', 'el monarca se sale de la ventana', mon);
       }
       const mark = document.querySelector<HTMLElement>('.table-screen')?.dataset.curse;
-      const marked: Record<string, string> = { contraataque: '.pile .curse-tag', mano: '#hand > .curse-ghost', corazones: '#hand .card.s-H > .curse-chalice', escudo: '.stat .curse-tag', guardias: '.tower .curse-tag.sin-fx', ataque: '.tower .threat .curse-tag', asedio: '#fatigue .curse-tag' };
+      const marked: Record<string, string> = { contraataque: '.tower .threat .curse-tag', mano: '#hand > .curse-ghost', corazones: '#hand .card.s-H > .curse-chalice', escudo: '.stat .curse-tag', guardias: '.tower .curse-tag.sin-fx', ataque: '.tower .threat .curse-tag', asedio: '.tower .threat .curse-tag' };
       if (!mark || !marked[mark]) fail('voz', `la mesa no lleva la marca de la maldición (data-curse=${mark ?? 'nada'})`);
       else if (![...document.querySelectorAll(marked[mark])].some(visible)) fail('voz', `no se ve la marca de la maldición «${mark}» (${marked[mark]})`);
       const bark = document.getElementById('bark');

@@ -33,6 +33,7 @@ import { ICONO_AUTO, ICONO_MEJOR, INSIGNIA_EXACTA } from './grabado12';
 import { MejorJugada, cartasConExacto, mejorJugada } from '../rules/mejor-jugada';
 import type { GameState } from '../rules/engine';
 import { t } from '../shared/i18n';
+import { REY_IDS, type ReyId } from '../rules/reyes';
 import { noteAction, noteTurn } from './telemetry';
 import { reyesPills } from './reyes-ui';
 
@@ -314,7 +315,7 @@ export function renderHud(): void {
     const boss = c.run.boss ? BOSS[c.run.boss] : null;
     const contract = c.run.contract ? CONTRACT[c.run.contract] : null;
     obra.innerHTML = [
-      boss ? `<div class="chip boss-chip" data-lupa="boss:${boss.id}" data-tip="<b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}"><span>${L('ui.mesa.monarca')}</span><b>${monN(boss.id)}</b></div>` : '',
+      boss ? `<div class="chip boss-chip" data-lupa="boss:${boss.id}" data-tip="<b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}"><span>${L('ui.mesa.monarca')}</span><b>${REY_IDS.includes(boss.id as ReyId) ? t(`rey.${boss.id}.nombre`) : monN(boss.id)}</b></div>` : '',
       contract ? `<div class="chip contract-chip ${contract.risk ? 'risk' : ''}" data-tip="<b>${L('ui.mesa.juramento')} · ${juraN(contract.id)}</b>${juraD(contract.id)}<hr>${L('ui.mesa.premio', { x: juraP(contract.id) })}"><span>${contract.risk ? L('ui.mesa.riesgo') : L('ui.mesa.juramento')}</span><b>${juraN(contract.id)}</b></div>` : '',
       c.run.curse ? `<div class="chip boss-chip" data-tip="${L('ui.mesa.maldito.tip')}"><span>${L('ui.mesa.maldito')}</span><b>+1 ⚔</b></div>` : '',
       c.run.ascension ? `<div class="chip level-chip" data-tip="${L('ui.mesa.reinado.tip', { n: c.run.ascension + 1 })}"><span>${L('ui.mesa.reinado')}</span><b>${c.run.ascension + 1}</b></div>` : '',

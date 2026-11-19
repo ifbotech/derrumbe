@@ -90,6 +90,8 @@
 .choice.sold .price-tag { display: none; }
 .choice.sold .inkstamp { top: 26%; right: 6%; }
 .choice.hang p small { display: block; font-weight: 700; text-transform: uppercase; opacity: 0.6; font-size: max(14px, 0.85em); margin-top: 2px; }
+/* V40 1c · la oferta de Bendiciones: el Rey que la pone, legible (14 px como mínimo) */
+.choice.bend .bend-rey { font-weight: 700; font-size: max(14px, 0.9em); }
 .run-body.shop .choice p { height: auto; min-height: 4em; }
 .grid2 button { white-space: nowrap; }
 .grid2 button.primary { grid-column: 1 / -1; font-size: clamp(14px, 1.9vh, 19px); }
