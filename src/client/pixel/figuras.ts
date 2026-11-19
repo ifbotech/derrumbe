@@ -105,65 +105,82 @@ const SOTA_CUERPO = (() => {
   return contorno(pegar(cuerpo, ['...www', '..www.', '.www..', 'ww....'], 15, 0).map((r, i) => (i < 4 ? r : r)));
 })();
 
-// ── 11 · el Caballo: jinete con sombrero sobre un caballo blanco con gualdrapa, de perfil hacia la izquierda ──
+// ── 11 · el Caballo: jinete con sombrero sobre un caballo castaño con gualdrapa, de perfil hacia la izquierda; con el
+// brazo en alto levanta la pinta de su palo ──
 const JINETE = [
-  '....QQQQQ.....',
-  '...QQQQQQQ....',
-  '..AAAAAAAAA...',
-  '....hpppp.....',
-  '....pkpkp.....',
-  '....ppppp..pp.',
-  '.....pkp...PP.',
-  '.....ppp...PP.',
-  '...QPPPPPQPPP.',
-  '..QQPPAPPQQ...',
-  '..QQPPAPPQQ...',
-  '..QQPPAPPQQ...',
-  '..QQyyyyyQQ...',
-  '...PPPPPPP....',
-  '...PPPPPPPP...',
-  '.......PPP....',
-  '.......PPP....',
-  '.......NNNN...',
+  '...QQQQQQ.........',
+  '..QQQQQQQQ........',
+  'AAAAAAAAAAA.......',
+  '...pppphh.........',
+  '...pkppph.........',
+  '..pppppph......pp.',
+  '...ppppp......PP..',
+  '....ppp......PP...',
+  '..QPPPPPPPPPPP....',
+  '.QQPPAPPPPQ.......',
+  '.QQPPAPPPQQ.......',
+  '.QQPPAPPPQQ.......',
+  '.QQPPAPPPQQ.......',
+  '.QQyyyyyyQQ.......',
+  '..PPPPPPPPP.......',
+  '...QQPPPPP........',
+  '....QQPP..........',
+  '....QQPP..........',
+  '....QQPP..........',
+  '...NNNNN..........',
 ];
+/** El caballo castaño (n, con la crin, la cola y los cascos oscuros), la gualdrapa del palo y medias blancas. */
 const CABALLO_ANIMAL = [
-  '...Nw.............................',
-  '..Nwww............................',
-  '..wkwwN...........................',
-  '.wwwwwNN..........................',
-  'wwwwwwwNN.........................',
-  'ww..wwwwNN........................',
-  '.....wwwwNN.......................',
-  '.....wwwwwNN......................',
-  '......wwwwwN......................',
-  '......wwwwwwPPPPPPPPPPPPPPPPP.....',
-  '.......wwwwPPPPPPPPPPPPPPPPPPw....',
-  '.......wwwwPPPPPPPPPPPPPPPPPPww...',
-  '.......wwwwAAAAAAAAAAAAAAAAAAwwN..',
-  '.......wwwwwwwwwwwwwwwwwwwwwwwwNN.',
-  '........wwwwwwwwwwwwwwwwwwwwwwwN.N',
-  '........wwwwwwwwwwwwwwwwwwwwwww..N',
-  '........ww.ww...........ww.www...N',
-  '........ww..ww..........ww..ww....',
-  '........ww..ww..........ww..ww....',
-  '........ww...ww.........ww...ww...',
-  '.......kkk..kkk........kkk..kkk...',
-];
-const CABALLO_CUERPO = contorno(pegar(pegar(lienzo(34, 34), CABALLO_ANIMAL, 0, 13), JINETE, 10, 9));
+  '...NN',
+  '..NnnN',
+  '..nnnnNN',
+  '.nknnnnNN',
+  'nnnnnnnnNN',
+  'nnnnnnnnnNN',
+  'NnnnnnnnnnNN',
+  '.nn..nnnnnnNN',
+  '......nnnnnnNN',
+  '......nnnnnnnNN',
+  '.......nnnnnnnPPPPPPPPPPPPPn',
+  '.......nnnnnnnPPPPPPPPPPPPPnnN',
+  '.......nnnnnnnPPPPPPPPPPPPPnnnN',
+  '.......nnnnnnnPPPPPPPPPPPPPnnnNN',
+  '.......nnnnnnnPPPPPPPPPPPPPnnnnN',
+  '.......nnnnnnnAAAAAAAAAAAAAnnnnN',
+  '.......nnnnnnnnnnnnnnnnnnnnnnnnN',
+  '........nnnnnnnnnnnnnnnnnnnnnn.N',
+  '........nnnnnnnnnnnnnnnnnnnnnn.N',
+  '.........NnnnnnnnnnnnnnnnnnnnN.N',
+  '.........nnn...nnn...nnn...nnn.N',
+  '.........nnn...nnn...nnn...nnn.N',
+  '.........nn.....nn...nn.....nn.N',
+  '.........nn.....nn...nn.....nn..',
+  '.........nn.....nn...nn.....nn..',
+  '.........nn.....nn...nn.....nn..',
+  '.........ww.....ww...ww.....ww..',
+  '........kkk....kkk..kkk....kkk..',
+].map((r) => r.padEnd(32, '.'));
+/** Arriba queda lugar para la pinta en alto; el jinete se sienta sobre la gualdrapa (fila 10 del caballo). */
+const CABALLO_CUERPO = contorno(pegar(pegar(lienzo(32, 48), CABALLO_ANIMAL, 0, 20), JINETE, 12, 16));
 
-/** Dónde empuña cada figura su pinta: esquina del mapa de la pinta sobre el cuerpo. */
-const MANO: Record<10 | 11 | 12, { cuerpo: Mapa; x: number; y: number }> = {
+/**
+ * Dónde empuña cada figura su pinta. Sota y Rey: esquina de arriba a la izquierda del mapa de la pinta. Caballo
+ * (`puño`): la mano en alto; la pinta se centra sobre ella y apoya su pie en la mano.
+ */
+const MANO: Record<10 | 11 | 12, { cuerpo: Mapa; x: number; y: number; puño?: boolean }> = {
   10: { cuerpo: SOTA_CUERPO, x: 19, y: 4 },
-  11: { cuerpo: CABALLO_CUERPO, x: 20, y: 0 },
+  11: { cuerpo: CABALLO_CUERPO, x: 29, y: 22, puño: true },
   12: { cuerpo: REY_CUERPO, x: 21, y: 6 },
 };
 
 /** La figura entera de un palo y un rango (10, 11 o 12), con su pinta en la mano y sus colores. */
 export function figuraMapa(s: Suit, rango: 10 | 11 | 12): string[] {
-  const { cuerpo, x, y } = MANO[rango];
+  const { cuerpo, puño } = MANO[rango];
   const [w, h] = medida(cuerpo);
   const pinta = pintaMapa(s);
-  const [pw] = medida(pinta);
+  const [pw, ph] = medida(pinta);
+  const x = puño ? MANO[rango].x - Math.floor(pw / 2) : MANO[rango].x;
+  const y = puño ? Math.max(0, MANO[rango].y - ph + 1) : MANO[rango].y;
   // la pinta en la mano, delante del cuerpo; el lienzo crece a la derecha si hace falta
   const ancho = Math.max(w, x + pw);
   let m = pegar(lienzo(ancho, h), cuerpo, 0, 0);

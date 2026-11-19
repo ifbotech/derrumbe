@@ -58,21 +58,34 @@ export function filete(s: Suit): string {
   return `<path fill="${c}" d="${arriba}${abajo}${der}${izq}"/><path fill="${T.y}" d="${remate(12, 2)}${remate(2, 23)}${remate(37, 67)}${remate(47, 46)}"/>`;
 }
 
-/** Centros de las pintas del 2 al 9 (unidades del naipe) y el lado de su celda. */
+/**
+ * Las pintas del 2 al 9 en la disposición tradicional de la baraja española: todas del mismo tamaño dentro de un naipe,
+ * a celda entera (`k` unidades por píxel de la pinta) y sin pisarse, con aire entre ellas y hasta el filete. Las
+ * columnas van en x = 91 y 159 (la central en 125): a la izquierda del índice de arriba y a la derecha del de abajo
+ * queda libre la zona de la placa (ZONA_INDICE). Filas: 2 → 2; 3 → 3 en vertical; 4 → 2 × 2; 5 → cuatro esquinas y
+ * el centro; 6 → 3 × 2; 7 → 2-1-2-2; 8 → 4 × 2; 9 → 2-2-1-2-2 (más chicas, para que la del medio tenga su fila).
+ */
+const IZQ = 91;
+const DER = 159;
+const MED = 125;
+const par = (y: number): [number, number][] => [[IZQ, y], [DER, y]];
 const DISPOSICION: Record<number, { k: number; at: [number, number][] }> = {
-  2: { k: 4.6, at: [[125, 95], [125, 255]] },
-  3: { k: 3.8, at: [[125, 78], [125, 175], [125, 272]] },
-  4: { k: 3.7, at: [[89, 98], [161, 98], [89, 252], [161, 252]] },
-  5: { k: 3.5, at: [[89, 92], [161, 92], [125, 175], [89, 258], [161, 258]] },
-  6: { k: 3.3, at: [[89, 75], [161, 75], [89, 175], [161, 175], [89, 275], [161, 275]] },
-  7: { k: 3, at: [[87, 66], [163, 66], [125, 120], [87, 178], [163, 178], [87, 288], [163, 288]] },
-  8: { k: 2.9, at: [[87, 60], [163, 60], [87, 137], [163, 137], [87, 214], [163, 214], [87, 291], [163, 291]] },
-  9: { k: 2.8, at: [[84, 60], [166, 60], [84, 137], [166, 137], [125, 175], [84, 214], [166, 214], [84, 291], [166, 291]] },
+  2: { k: 5, at: [[MED, 92], [MED, 262]] },
+  3: { k: 4, at: [[MED, 70], [MED, 175], [MED, 280]] },
+  4: { k: 3, at: [...par(90), ...par(260)] },
+  5: { k: 3, at: [...par(80), [MED, 175], ...par(270)] },
+  6: { k: 3, at: [...par(70), ...par(175), ...par(280)] },
+  7: { k: 3, at: [...par(60), [MED, 136], ...par(212), ...par(288)] },
+  8: { k: 3, at: [...par(60), ...par(136), ...par(212), ...par(288)] },
+  9: { k: 2, at: [...par(58), ...par(117), [MED, 175], ...par(233), ...par(292)] },
 };
 
-/** Una pinta de la caja común centrada en (cx, cy) con celdas de `k` unidades. */
-const pintaEn = (s: Suit, cx: number, cy: number, k: number) =>
-  `<use href="#px-pinta-${s}" x="${(cx - (CAJA[0] * k) / 2).toFixed(1)}" y="${(cy - (CAJA[1] * k) / 2).toFixed(1)}" width="${CAJA[0] * k}" height="${CAJA[1] * k}"/>`;
+/** Una pinta de la caja común centrada en (cx, cy) con celdas de `k` unidades (todo entero). */
+const pintaEn = (s: Suit, cx: number, cy: number, k: number) => {
+  const w = CAJA[0] * k;
+  const h = CAJA[1] * k;
+  return `<use href="#px-pinta-${s}" x="${Math.round(cx - w / 2)}" y="${Math.round(cy - h / 2)}" width="${w}" height="${h}"/>`;
+};
 
 /** Un mapa centrado en (cx, cy) con celdas de `k` unidades. */
 const mapaEn = (m: Mapa, cx: number, cy: number, k: number) => {
@@ -107,7 +120,7 @@ export function numeroCara(s: Suit, rango: number): string {
   if (!d) return '';
   // dos tiradas: las pintas en su disposición y, para la carta diminuta del móvil (pixel.css), una sola pinta grande
   // en la mitad libre de abajo, bajo el índice
-  return `<g class="px-pintas">${d.at.map(([x, y]) => pintaEn(s, x, y, d.k)).join('')}</g><g class="px-solo">${pintaEn(s, 125, 236, 7)}</g>`;
+  return `<g class="px-pintas">${d.at.map(([x, y]) => pintaEn(s, x, y, d.k)).join('')}</g><g class="px-solo" display="none">${pintaEn(s, 125, 236, 7)}</g>`;
 }
 
 /** La cara de una figura (10, 11 o 12): de cuerpo entero, apoyada en el filete de abajo. */

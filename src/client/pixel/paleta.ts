@@ -34,6 +34,8 @@ export const PX = {
   pielSombra: '#d2c3ab',
   madera: '#9a6430',
   maderaOsc: '#4a2c12',
+  maderaCastana: '#603b14',
+  maderaVeta: '#d8b67c',
   lacre: '#c4462a',
 } as const;
 
@@ -52,7 +54,7 @@ export const OSC: Record<Suit, string> = {
  *   r carmesí · R carmesí oscuro · v vino · e lacre
  *   c acero · C acero claro · b acero medio · B acero oscuro
  *   g oliva · l oliva claro · G oliva oscuro
- *   t azul de cinta · T cinta oscura · p piel · s sombra de la piel · n madera · N madera oscura
+ *   t azul de cinta · T cinta oscura · p piel · s sombra de la piel · n madera · N madera oscura · d madera castaña · x su veta
  *   1 2 3 4: la tinta oscura de Espadas, Bastos, Oros y Copas (sigue a la paleta elegida en Ajustes)
  */
 export const BASE: Tintas = {
@@ -81,6 +83,8 @@ export const BASE: Tintas = {
   s: PX.pielSombra,
   n: PX.madera,
   N: PX.maderaOsc,
+  d: PX.maderaCastana,
+  x: PX.maderaVeta,
   '1': OSC.S,
   '2': OSC.C,
   '3': OSC.D,

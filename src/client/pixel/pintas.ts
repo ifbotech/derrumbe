@@ -33,29 +33,34 @@ const ESPADA = contorno(
   '1',
 );
 
-/** Basto: garrote de madera nudosa, ancho arriba, con un muñón de corte dorado, un brote y el lacre del puño. */
+/**
+ * Basto: garrote de madera nudosa, grueso arriba y afinado hacia el puño. Madera castaña oscura (d, ≥ 7:1 sobre el
+ * marfil) con su veta clara (x) a la izquierda; los muñones de rama cortados asoman a los lados con la cara del corte
+ * clara, y los nudos son puntos claros. Arriba, un brote de dos hojas; abajo, el puño envuelto en lacre y la virola de
+ * oro.
+ */
 const BASTO = contorno(
   [
-    '....G.G....',
-    '....GGG....',
-    '...lllll...',
-    '..lwllllll.',
-    '..lwllllll.',
-    '.Ylwlllll..',
-    '..lwllllll.',
-    '..lwlllllY.',
-    '...wlllll..',
-    '...wllll...',
-    '..Ywllll...',
-    '...wllll...',
-    '...wllllY..',
-    '...wllll...',
-    '....wlll...',
-    '....wlll...',
-    '....RRRR...',
-    '....wlll...',
-    '....yyyy...',
-    '....yyyy...',
+    '.ll......ll.',
+    '.lGl....lGl.',
+    '..llG..Gll..',
+    '....dddd....',
+    '...dxdddd...',
+    '..ddxddddd..',
+    '..dxdddddddx',
+    '..dxddxdddd.',
+    'xddxdddddd..',
+    '..dxddddxd..',
+    '...dxddddd..',
+    '...dxdddddx.',
+    '...dxdddd...',
+    '...dxdxdd...',
+    '...dxdddd...',
+    '...rrrrrr...',
+    '...dxdddd...',
+    '...rrrrrr...',
+    '...yyyyyy...',
+    '....yYyy....',
   ],
   '2',
 );
