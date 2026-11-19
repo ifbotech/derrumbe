@@ -1,193 +1,282 @@
-// V40 · fase 2 · La Corte de la baraja española en pixel-art, de cuerpo entero: 10 Sota (de pie), 11 Caballo (a
-// caballo) y 12 Rey (con corona). Un cuerpo por figura, vestido con los colores de cada palo, y en la mano la pinta de
-// su palo (la espada, el basto, el oro o la copa). Dibujos originales; sin texto.
+// V40 · fase 2b · La Corte de la baraja española en pixel-art «sin línea», de cuerpo entero sobre la rejilla del naipe
+// (96 × 140): 10 Sota (paje de pie), 11 Caballo (jinete sobre un caballo gris con gualdrapa) y 12 Rey (corona, barba,
+// esclavina y manto con armiño). Figuras altas y estilizadas, con masa: mangas abullonadas con franjas, faldón
+// acampanado, calzas partidas de dos colores, capa a la espalda. Caras pálidas simples de tres cuartos mirando a la
+// izquierda, pliegues en dos tonos y la luz de arriba a la izquierda. Cada palo viste sus colores y empuña su pinta.
+// Dibujos originales; sin texto.
 //
-// Letras propias de los cuerpos (se tiñen por palo): P ropa · Q ropa en sombra · A adorno.
+// El dibujo deja libres las zonas del índice de dos cifras: arriba a la izquierda (x ≤ 27, y ≤ 32) y abajo a la
+// derecha (x ≥ 69, y ≥ 107).
 import type { Suit } from '../../rules/engine';
-import { pintaMapa } from './pintas';
-import { contorno, espejo, lienzo, medida, pegar, simetrico, type Mapa } from './rejilla';
+import { RAMPA, type Material } from './paleta';
+import { Lienzo, recortar } from './pincel';
+import { pintaNaipe } from './pintas';
 
-/** Ropa, sombra y adorno de cada palo (letras de la paleta común). */
-export const ROPA: Record<Suit, { P: string; Q: string; A: string }> = {
-  S: { P: 'b', Q: 'B', A: 'y' },
-  C: { P: 'g', Q: 'G', A: 'e' },
-  D: { P: 'y', Q: 'o', A: 'R' },
-  H: { P: 'r', Q: 'R', A: 'Y' },
+export const FIG_W = 96;
+export const FIG_H = 140;
+
+/** Ropa de cada palo: túnica, capa y adorno (materiales de la paleta). */
+export const ROPA: Record<Suit, { tunica: Material; capa: Material; adorno: Material }> = {
+  S: { tunica: 'acero', capa: 'rojo', adorno: 'oro' },
+  C: { tunica: 'oliva', capa: 'rojo', adorno: 'oro' },
+  D: { tunica: 'rojo', capa: 'acero', adorno: 'oro' },
+  H: { tunica: 'rojo', capa: 'oliva', adorno: 'oro' },
 };
 
-// ── 12 · el Rey: corona, barba blanca, cuello de armiño, manto y túnica larga hasta los pies ──
-const REY_CUERPO = contorno(
-  simetrico([
-    '.........Y..Y.',
-    '.........YyYyY',
-    '.........yyRyy',
-    '.........yyyyy',
-    '........hhpppp',
-    '........hppkpp',
-    '........hppppp',
-    '........hwppps',
-    '........wwwwwk',
-    '.........wwwww',
-    '..........wwww',
-    '.....QQQQwkwww',
-    '....QQQQwwwwkw',
-    '...QQQQQwkwwww',
-    '...QQQQPPPPPPA',
-    '..QQQQQPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '..QQQQyyyyyyyy',
-    '..QQQQPPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '..QQQQPPPPPPPA',
-    '.QQQQQPPPPPPPA',
-    '.QQQQQPPPPPPPA',
-    '.QQQQQPPPPPPPA',
-    '.QQQQQPPPPPPPA',
-    '.QQQQPPPPPPPPA',
-    'QQQQQPPPPPPPPA',
-    'QQQQQPPPPPPPPA',
-    'QQQQQPPPPPPPPA',
-    'QQQQQPPPPPPPPA',
-    'QQQQPPPPPPPPPA',
-    'QQQQPPPPPPPPPA',
-    'QQQQAAAAAAAAAA',
-    '......NNNN....',
-    '.....NNNNN....',
-  ]),
-);
+// letras provisionales del dibujo (se tiñen al final por palo): 1-4 túnica (honda, sombra, base, luz), 5-8 capa
+const TUN = '1234';
+const CAP = '5678';
 
-// ── 10 · la Sota: paje de pie con bonete y pluma, jubón con cinto, calzas y zapatos ──
-const SOTA_CUERPO = (() => {
-  const cuerpo = simetrico([
-    '......QQQQQQ',
-    '.....QQQQQQQ',
-    '....AAAAAAAA',
-    '......hhpppp',
-    '......hppkpp',
-    '......hppppp',
-    '.......pppps',
-    '........pppk',
-    '.........ppp',
-    '.....QQQAAAA',
-    '....QQQPPPPP',
-    '...QQQPPPPPA',
-    '...QQPPPPPPA',
-    '...QQPPPPPPA',
-    '...QQPPPPPPA',
-    '...QQPPPPPPA',
-    '...QQPPPPPPA',
-    '...QQPPPPPPA',
-    '...QQyyyyyyy',
-    '...QQPPPPPPA',
-    '...QQPPPPPPA',
-    '..QQQPPPPPPA',
-    '..QQPPPPPPPA',
-    '..QAAAAAAAAA',
-    '......QQQ...',
-    '......QQQ...',
-    '......PPP...',
-    '......PPP...',
-    '......PPP...',
-    '......PPP...',
-    '......PPP...',
-    '......PPP...',
-    '......PPP...',
-    '......PPP...',
-    '.....NNNN...',
-    '....NNNNN...',
-  ]);
-  // la pluma del bonete, a un lado
-  return contorno(pegar(cuerpo, ['...www', '..www.', '.www..', 'ww....'], 15, 0).map((r, i) => (i < 4 ? r : r)));
-})();
-
-// ── 11 · el Caballo: jinete con sombrero sobre un caballo castaño con gualdrapa, de perfil hacia la izquierda; con el
-// brazo en alto levanta la pinta de su palo ──
-const JINETE = [
-  '...QQQQQQ.........',
-  '..QQQQQQQQ........',
-  'AAAAAAAAAAA.......',
-  '...pppphh.........',
-  '...pkppph.........',
-  '..pppppph......pp.',
-  '...ppppp......PP..',
-  '....ppp......PP...',
-  '..QPPPPPPPPPPP....',
-  '.QQPPAPPPPQ.......',
-  '.QQPPAPPPQQ.......',
-  '.QQPPAPPPQQ.......',
-  '.QQPPAPPPQQ.......',
-  '.QQyyyyyyQQ.......',
-  '..PPPPPPPPP.......',
-  '...QQPPPPP........',
-  '....QQPP..........',
-  '....QQPP..........',
-  '....QQPP..........',
-  '...NNNNN..........',
-];
-/** El caballo castaño (n, con la crin, la cola y los cascos oscuros), la gualdrapa del palo y medias blancas. */
-const CABALLO_ANIMAL = [
-  '...NN',
-  '..NnnN',
-  '..nnnnNN',
-  '.nknnnnNN',
-  'nnnnnnnnNN',
-  'nnnnnnnnnNN',
-  'NnnnnnnnnnNN',
-  '.nn..nnnnnnNN',
-  '......nnnnnnNN',
-  '......nnnnnnnNN',
-  '.......nnnnnnnPPPPPPPPPPPPPn',
-  '.......nnnnnnnPPPPPPPPPPPPPnnN',
-  '.......nnnnnnnPPPPPPPPPPPPPnnnN',
-  '.......nnnnnnnPPPPPPPPPPPPPnnnNN',
-  '.......nnnnnnnPPPPPPPPPPPPPnnnnN',
-  '.......nnnnnnnAAAAAAAAAAAAAnnnnN',
-  '.......nnnnnnnnnnnnnnnnnnnnnnnnN',
-  '........nnnnnnnnnnnnnnnnnnnnnn.N',
-  '........nnnnnnnnnnnnnnnnnnnnnn.N',
-  '.........NnnnnnnnnnnnnnnnnnnnN.N',
-  '.........nnn...nnn...nnn...nnn.N',
-  '.........nnn...nnn...nnn...nnn.N',
-  '.........nn.....nn...nn.....nn.N',
-  '.........nn.....nn...nn.....nn..',
-  '.........nn.....nn...nn.....nn..',
-  '.........nn.....nn...nn.....nn..',
-  '.........ww.....ww...ww.....ww..',
-  '........kkk....kkk..kkk....kkk..',
-].map((r) => r.padEnd(32, '.'));
-/** Arriba queda lugar para la pinta en alto; el jinete se sienta sobre la gualdrapa (fila 10 del caballo). */
-const CABALLO_CUERPO = contorno(pegar(pegar(lienzo(32, 48), CABALLO_ANIMAL, 0, 20), JINETE, 12, 16));
-
-/**
- * Dónde empuña cada figura su pinta. Sota y Rey: esquina de arriba a la izquierda del mapa de la pinta. Caballo
- * (`puño`): la mano en alto; la pinta se centra sobre ella y apoya su pie en la mano.
- */
-const MANO: Record<10 | 11 | 12, { cuerpo: Mapa; x: number; y: number; puño?: boolean }> = {
-  10: { cuerpo: SOTA_CUERPO, x: 19, y: 4 },
-  11: { cuerpo: CABALLO_CUERPO, x: 29, y: 22, puño: true },
-  12: { cuerpo: REY_CUERPO, x: 21, y: 6 },
-};
-
-/** La figura entera de un palo y un rango (10, 11 o 12), con su pinta en la mano y sus colores. */
-export function figuraMapa(s: Suit, rango: 10 | 11 | 12): string[] {
-  const { cuerpo, puño } = MANO[rango];
-  const [w, h] = medida(cuerpo);
-  const pinta = pintaMapa(s);
-  const [pw, ph] = medida(pinta);
-  const x = puño ? MANO[rango].x - Math.floor(pw / 2) : MANO[rango].x;
-  const y = puño ? Math.max(0, MANO[rango].y - ph + 1) : MANO[rango].y;
-  // la pinta en la mano, delante del cuerpo; el lienzo crece a la derecha si hace falta
-  const ancho = Math.max(w, x + pw);
-  let m = pegar(lienzo(ancho, h), cuerpo, 0, 0);
-  m = pegar(m, pinta, x, y);
-  const ropa = ROPA[s];
-  return m.map((r) => [...r].map((c) => (c === 'P' ? ropa.P : c === 'Q' ? ropa.Q : c === 'A' ? ropa.A : c)).join(''));
+/** Una masa en volumen: sombra a la derecha (n celdas) y brillo de una celda a la izquierda, dentro de su rampa. */
+function volumen(l: Lienzo, prov: string, n: number, brillo = true): void {
+  l.sombra(prov[2], prov[1], 1, 0, n, prov);
+  if (brillo) l.sombra(prov[2], prov[3], -1, 0, 1, prov);
 }
 
-/** Para el Caballo mirando a la derecha, si alguna pantalla lo necesita. */
-export const figuraEspejo = (s: Suit, rango: 10 | 11 | 12) => espejo(figuraMapa(s, rango));
+/**
+ * Cabeza de tres cuartos mirando a la izquierda: óvalo pálido, sombra a la derecha, oreja, ojos de dos celdas, ceja,
+ * nariz que asoma, boca y mejilla. `pelo` y su sombra enmarcan la cara.
+ */
+function cabeza(l: Lienzo, cx: number, cy: number, pelo: [string, string], opts: { barba?: boolean; boca?: string } = {}): void {
+  // pelo de atrás (melena hasta la nuca)
+  l.elipse(cx + 1.5, cy - 1, 8, 9, pelo[0]);
+  l.rect(cx + 2, cy, 7, 8, pelo[0]);
+  l.sombra(pelo[0], pelo[1], 1, 1, 2, pelo[0] + pelo[1]);
+  // cara
+  l.elipse(cx - 0.5, cy + 0.5, 6.5, 8, 'p');
+  l.rect(cx - 7, cy + 1, 1, 2, 'p'); // la nariz asoma por el perfil
+  l.sombra('p', 's', 1, 0, 2);
+  l.rect(cx + 4, cy, 2, 3, 's'); // oreja
+  // flequillo
+  l.poli([[cx - 7, cy - 4], [cx - 5, cy - 8], [cx + 2, cy - 9], [cx + 7, cy - 6], [cx + 6, cy - 2], [cx + 1, cy - 5], [cx - 4, cy - 4]], pelo[0]);
+  l.sombra(pelo[0], pelo[1], 1, 1, 1, pelo[0] + pelo[1]);
+  // ojos, cejas, nariz y boca
+  l.rect(cx - 5, cy - 1, 1, 2, 'k').rect(cx - 1, cy - 1, 1, 2, 'k');
+  l.rect(cx - 6, cy - 3, 2, 1, pelo[1]).rect(cx - 1, cy - 3, 3, 1, pelo[1]);
+  l.rect(cx - 4, cy + 2, 1, 2, 's');
+  l.rect(cx - 3, cy + 5, 3, 1, opts.boca ?? 'R');
+  l.rect(cx - 6, cy + 3, 2, 1, 'e');
+  if (opts.barba) {
+    l.poli([[cx - 7, cy + 4], [cx + 5, cy + 2], [cx + 5, cy + 9], [cx + 1, cy + 15], [cx - 4, cy + 14], [cx - 7, cy + 9]], 'w');
+    l.rect(cx - 6, cy + 4, 8, 1, 'h'); // bigote
+    l.rect(cx - 3, cy + 6, 3, 1, 'R');
+    l.sombra('w', 'h', 1, 1, 2, 'wh');
+  }
+}
+
+/** Colorea las letras provisionales con los materiales del palo. */
+function vestir(m: string[], s: Suit): string[] {
+  const r = ROPA[s];
+  const tun = RAMPA[r.tunica];
+  const cap = RAMPA[r.capa];
+  const mapa: Record<string, string> = {};
+  for (let i = 0; i < 4; i++) {
+    mapa[TUN[i]] = tun[i];
+    mapa[CAP[i]] = cap[i];
+  }
+  return m.map((f) => [...f].map((k) => mapa[k] ?? k).join(''));
+}
+
+/** Pega la pinta del palo con su centro en (x, y). */
+function empuñar(l: Lienzo, s: Suit, x: number, y: number, v = 0): void {
+  const p = pintaNaipe(s, 'chica', v);
+  l.pegar(p, Math.round(x - p[0].length / 2), Math.round(y - p.length / 2));
+}
+/** Una mano pálida. */
+const mano = (l: Lienzo, x: number, y: number) => {
+  l.elipse(x, y, 2.8, 2.6, 'p');
+  l.sombra('p', 's', 1, 1, 1, 'ps');
+};
+
+/** Manga abullonada de (x0, y0) a (x1, y1), con franjas de oro. */
+function manga(l: Lienzo, x0: number, y0: number, x1: number, y1: number, r: number, k: string): void {
+  l.trazo(x0, y0, x1, y1, r, k);
+  for (const t of [0.35, 0.7]) {
+    const x = x0 + (x1 - x0) * t;
+    const y = y0 + (y1 - y0) * t;
+    l.trazo(x - r, y - 0.5, x + r, y + 0.5, 0.7, 'y', k);
+  }
+}
+
+// ───────────── 10 · Sota ─────────────
+function sota(s: Suit): string[] {
+  const l = new Lienzo(FIG_W, FIG_H);
+  const cx = 50;
+  // capa a la espalda: cae del hombro derecho hasta las corvas, abierta
+  l.poli([[cx + 6, 40], [cx + 17, 42], [cx + 19, 96], [cx + 10, 102], [cx + 8, 70]], '7');
+  volumen(l, CAP, 3);
+  // calzas partidas y zapatos
+  l.poli([[cx - 9, 86], [cx - 1, 86], [cx - 2, 126], [cx - 8, 126]], '7');
+  l.poli([[cx + 1, 86], [cx + 9, 86], [cx + 8, 126], [cx + 2, 126]], '3');
+  l.sombra('7', '6', 1, 0, 2, '76').sombra('3', '2', 1, 0, 2, '32');
+  l.rect(cx - 2, 96, 1, 22, '6');
+  l.poli([[cx - 12, 126], [cx - 2, 125], [cx - 2, 130], [cx - 12, 130]], 'N').poli([[cx + 1, 125], [cx + 10, 125], [cx + 10, 130], [cx + 1, 130]], 'N');
+  l.rect(cx - 11, 126, 4, 1, 'n').rect(cx + 2, 126, 3, 1, 'n');
+  // jubón: hombros anchos, talle y faldón acampanado
+  l.poli([[cx - 14, 41], [cx + 14, 41], [cx + 11, 66], [cx + 16, 88], [cx - 16, 88], [cx - 11, 66]], '3');
+  volumen(l, TUN, 5);
+  for (const x of [cx - 8, cx + 2]) l.trazo(x, 70, x - 2, 87, 0.5, '2', TUN); // pliegues del faldón
+  l.rect(cx - 16, 86, 33, 2, 'y').rect(cx - 16, 87, 33, 1, 'o');
+  // pechera de oro, botones y cinto
+  l.poli([[cx - 4, 42], [cx + 4, 42], [cx + 2, 64], [cx - 2, 64]], '4');
+  for (let y = 46; y < 63; y += 4) l.rect(cx - 1, y, 2, 2, 'y');
+  l.rect(cx - 12, 64, 24, 3, 'n').rect(cx - 2, 64, 4, 3, 'y').set(cx - 1, 65, 'o');
+  // cuello de lechuguilla
+  l.elipse(cx, 41, 8, 2.5, 'w');
+  l.sombra('w', 'h', 1, 1, 1);
+  // brazo derecho (el del fondo) caído, con la mano sobre el cinto
+  manga(l, cx + 13, 45, cx + 15, 62, 3.6, '2');
+  mano(l, cx + 14, 66);
+  // brazo izquierdo (el de delante), doblado hacia afuera con la pinta
+  manga(l, cx - 12, 45, cx - 20, 58, 3.8, '3');
+  l.sombra('3', '4', -1, -1, 1, TUN);
+  // cabeza con bonete de pluma
+  cabeza(l, cx - 1, 29, ['y', 'o']);
+  l.poli([[cx - 10, 22], [cx - 7, 15], [cx + 6, 14], [cx + 10, 21]], '7');
+  l.sombra('7', '6', 1, 0, 3, CAP);
+  l.rect(cx - 10, 21, 21, 2, 'y').rect(cx - 10, 22, 21, 1, 'o');
+  l.trazo(cx + 6, 16, cx + 16, 8, 1.5, 'w');
+  l.trazo(cx + 8, 15, cx + 17, 10, 0.6, 'h', 'w');
+  // la pinta, en la mano izquierda
+  const prop: Record<Suit, [number, number]> = { S: [cx - 22, 49], C: [cx - 22, 52], D: [cx - 24, 58], H: [cx - 24, 55] };
+  empuñar(l, s, prop[s][0], prop[s][1], 1);
+  mano(l, cx - 21.5, 62);
+  return vestir(l.mapa(), s);
+}
+
+// ───────────── 11 · Caballo ─────────────
+function caballo(s: Suit): string[] {
+  const l = new Lienzo(FIG_W, FIG_H);
+  // la cola, que cae del anca
+  l.poli([[62, 84], [70, 86], [72, 98], [68, 104], [64, 96]], 'j');
+  l.sombra('j', 'i', 1, 0, 2);
+  // patas: de atrás, la delantera alzada y la de apoyo
+  const pata = (x0: number, y0: number, xr: number, yr: number, x1: number, y1: number, k: string) => {
+    l.trazo(x0, y0, xr, yr, 2.4, k);
+    l.trazo(xr, yr, x1, y1, 1.6, k);
+    l.poli([[x1 - 2.5, y1], [x1 + 2.5, y1], [x1 + 2.5, y1 + 3], [x1 - 2.5, y1 + 3]], 'i');
+  };
+  pata(60, 96, 62, 112, 61, 124, 'j'); // trasera del fondo
+  pata(56, 96, 54, 112, 56, 125, 'J'); // trasera
+  pata(34, 96, 36, 112, 37, 125, 'j'); // delantera del fondo
+  // delantera alzada: el caballo manotea
+  l.trazo(30, 94, 22, 104, 2.4, 'J');
+  l.trazo(22, 104, 24, 113, 1.6, 'J');
+  l.poli([[21, 113], [26, 112], [27, 115], [22, 116]], 'i');
+  // cuerpo: pecho, barril y anca
+  l.elipse(47, 90, 18, 10, 'J');
+  l.elipse(31, 87, 8, 10, 'J');
+  l.elipse(60, 89, 9, 10, 'J');
+  // cuello arqueado y cabeza
+  l.poli([[24, 84], [36, 82], [32, 66], [26, 56], [18, 58], [20, 70]], 'J');
+  l.poli([[18, 56], [26, 54], [28, 62], [20, 72], [12, 76], [8, 74], [9, 68]], 'J');
+  l.poli([[20, 54], [22, 48], [25, 54]], 'J'); // oreja
+  l.sombra('J', 'j', 1, 1, 3, 'Jju');
+  l.sombra('J', 'u', -1, -1, 1, 'Jju');
+  // crin, ojo, ollar y riendas
+  for (let i = 0; i < 6; i++) l.trazo(26 + i * 1.2, 56 + i * 4, 31 + i * 1.2, 58 + i * 4, 1.2, 'i');
+  l.rect(17, 62, 2, 2, 'k').set(17, 62, 'u');
+  l.rect(9, 72, 2, 1, 'i');
+  l.trazo(12, 68, 20, 66, 0.6, 'v');
+  l.trazo(20, 66, 39, 68, 0.6, 'v');
+  // gualdrapa del palo, con su ribete y sus flecos de oro
+  l.poli([[34, 78], [66, 80], [70, 100], [52, 104], [30, 100]], '6');
+  l.sombra('6', '5', 1, 1, 3, CAP);
+  l.sombra('6', '7', -1, -1, 1, CAP);
+  l.trazo(30, 100, 52, 104, 0.8, 'y').trazo(52, 104, 70, 100, 0.8, 'y');
+  for (let x = 31; x < 69; x += 3) l.rect(x, x < 52 ? 101 + Math.round((x - 30) * 0.2) : 104 - Math.round((x - 52) * 0.24), 1, 3, 'o');
+  for (let x = 38; x < 64; x += 8) l.rect(x, 90, 3, 3, 'y');
+  // silla y estribo
+  l.poli([[40, 76], [58, 76], [56, 81], [42, 81]], 'n');
+  l.sombra('n', 'N', 1, 1, 1);
+  // el jinete: pierna con bota, torso, brazo en alto, cabeza y sombrero con pluma
+  l.poli([[44, 74], [54, 74], [52, 94], [46, 94]], '3');
+  l.sombra('3', '2', 1, 0, 2, TUN);
+  l.poli([[44, 93], [53, 93], [55, 100], [42, 100]], 'N');
+  l.rect(43, 94, 3, 1, 'n');
+  l.poli([[41, 50], [59, 50], [57, 76], [43, 76]], '3');
+  volumen(l, TUN, 4);
+  l.rect(43, 72, 14, 3, 'y').rect(43, 74, 14, 1, 'o');
+  l.elipse(50, 50, 7, 2.2, 'w');
+  l.sombra('w', 'h', 1, 1, 1);
+  // el brazo del fondo, en alto con la pinta; el de delante lleva las riendas
+  manga(l, 57, 54, 62, 40, 3.2, '2');
+  manga(l, 43, 53, 39, 65, 3.4, '3');
+  l.sombra('3', '4', -1, -1, 1, TUN);
+  cabeza(l, 49, 38, ['n', 'N']);
+  l.poli([[38, 31], [41, 25], [56, 24], [60, 30]], '7');
+  l.sombra('7', '6', 1, 0, 3, CAP);
+  l.rect(36, 30, 26, 2, 'y').rect(36, 31, 26, 1, 'o');
+  l.trazo(40, 28, 31, 22, 1.6, 'Y');
+  l.trazo(39, 27, 32, 23, 0.7, 'y', 'Y');
+  // la pinta, en alto
+  const prop: Record<Suit, [number, number]> = { S: [63, 22], C: [63, 23], D: [63, 29], H: [63, 28] };
+  empuñar(l, s, prop[s][0], prop[s][1]);
+  mano(l, 62.5, 38);
+  mano(l, 39, 67);
+  return vestir(l.mapa(), s);
+}
+
+// ───────────── 12 · Rey ─────────────
+function rey(s: Suit): string[] {
+  const l = new Lienzo(FIG_W, FIG_H);
+  const cx = 47;
+  // manto largo, abierto por delante, que se abre hasta el suelo
+  l.poli([[cx - 15, 40], [cx + 15, 40], [cx + 20, 100], [cx + 21, 129], [cx - 24, 129], [cx - 21, 90]], '7');
+  volumen(l, CAP, 6);
+  for (const x of [cx - 14, cx + 13]) l.trazo(x, 70, x + (x > cx ? 3 : -4), 126, 0.6, '6', CAP);
+  // túnica larga con pliegues, cinto y orla de oro
+  l.poli([[cx - 9, 46], [cx + 9, 46], [cx + 12, 129], [cx - 12, 129]], '3');
+  volumen(l, TUN, 4);
+  for (const x of [cx - 4, cx + 3]) l.trazo(x, 76, x + (x > cx ? 1 : -2), 126, 0.5, '2', TUN);
+  l.rect(cx - 12, 124, 25, 3, 'y').rect(cx - 12, 126, 25, 1, 'o');
+  l.rect(cx - 9, 70, 19, 3, 'y').rect(cx - 9, 72, 19, 1, 'o');
+  l.rect(cx - 2, 69, 4, 5, 'r');
+  // armiño: los bordes del manto y el ruedo, con sus motas
+  l.trazo(cx - 14, 52, cx - 22, 128, 1.8, 'w');
+  l.trazo(cx + 14, 52, cx + 19, 128, 1.8, 'h');
+  l.rect(cx - 25, 129, 47, 3, 'w');
+  for (let y = 58; y < 126; y += 8) {
+    l.rect(Math.round(cx - 14 - (y - 52) * 0.105), y, 1, 2, 'k');
+    l.rect(Math.round(cx + 14 + (y - 52) * 0.066), y + 4, 1, 2, 'k');
+  }
+  for (let x = cx - 22; x < cx + 20; x += 6) l.rect(x, 130, 1, 2, 'k');
+  l.rect(cx - 10, 132, 8, 3, 'N').rect(cx + 2, 132, 8, 3, 'N');
+  // esclavina (la capa corta de los hombros) con su cadena de oro
+  l.poli([[cx - 17, 41], [cx + 17, 41], [cx + 21, 56], [cx, 62], [cx - 21, 56]], '6');
+  l.sombra('6', '5', 1, 1, 3, CAP);
+  l.sombra('6', '7', -1, -1, 1, CAP);
+  for (let x = cx - 15; x <= cx + 15; x += 4) l.rect(x, 50 + Math.round((15 - Math.abs(x - cx)) * 0.38), 2, 2, 'y');
+  // cuello de armiño
+  l.elipse(cx, 41, 10, 3, 'w');
+  l.sombra('w', 'h', 1, 1, 1);
+  l.set(cx - 5, 41, 'k').set(cx + 1, 42, 'k').set(cx + 6, 41, 'k');
+  // brazos: el de la pinta, hacia afuera; el otro, con la mano en el cinto
+  manga(l, cx - 17, 46, cx - 23, 62, 4, '6');
+  l.sombra('6', '7', -1, -1, 1, CAP);
+  mano(l, cx + 11, 72);
+  // cabeza con barba y corona
+  cabeza(l, cx, 30, ['w', 'h'], { barba: true });
+  l.poli([[cx - 9, 20], [cx + 9, 20], [cx + 9, 15], [cx + 6, 18], [cx + 3, 11], [cx, 17], [cx - 3, 11], [cx - 6, 18], [cx - 9, 15]], 'y');
+  for (const x of [cx - 9, cx - 3, cx + 3, cx + 9]) l.elipse(x + 0.5, x === cx - 9 || x === cx + 9 ? 14.5 : 10.5, 1.4, 1.4, 'Y');
+  l.rect(cx - 9, 20, 19, 3, 'y').rect(cx - 9, 22, 19, 1, 'o');
+  l.rect(cx - 1, 20, 2, 2, 'r').rect(cx - 6, 20, 2, 2, 't').rect(cx + 4, 20, 2, 2, 't');
+  l.sombra('y', 'o', 1, 0, 1, 'yoY');
+  // la pinta
+  const prop: Record<Suit, [number, number]> = { S: [cx - 24, 51], C: [cx - 24, 54], D: [cx - 26, 60], H: [cx - 26, 58] };
+  empuñar(l, s, prop[s][0], prop[s][1]);
+  mano(l, cx - 23.5, 66);
+  return vestir(l.mapa(), s);
+}
+
+const DIBUJO: Record<10 | 11 | 12, (s: Suit) => string[]> = { 10: sota, 11: caballo, 12: rey };
+const cache = new Map<string, string[]>();
+/** La figura en su lienzo de 96 × 140 (la cara del naipe la coloca tal cual). */
+export function figuraLienzo(s: Suit, rango: 10 | 11 | 12): string[] {
+  const k = `${s}${rango}`;
+  let m = cache.get(k);
+  if (!m) cache.set(k, (m = DIBUJO[rango](s)));
+  return m;
+}
+/** La figura entera de un palo y un rango (10, 11 o 12), recortada a su silueta. */
+export const figuraMapa = (s: Suit, rango: 10 | 11 | 12): string[] => recortar(figuraLienzo(s, rango));

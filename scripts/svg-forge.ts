@@ -18,11 +18,17 @@ guardian('forja', 300); // tope duro: ver scripts/guardian.ts
 // mancha. Los Amuletos (grupo «herramientas») y las Bendiciones son más estrictos: fallan con la tinta a 300 px fuera
 // de 22–58 % o con la silueta a 24 px por debajo del 55 %.
 // Lo demás son avisos para mirar la hoja.
+//
+// V40 · fase 2b: antes de abrir el navegador pasa el linter del pixel-art (scripts/pixel-lint.ts) por todo el catálogo
+// de src/client/pixel/: huérfanos, jaggies, almohada, bandas, contorno negro pesado, paleta, rejilla entera y la
+// silueta de las pintas sin contorno (≥ 60 % del borde a 3:1 sobre el papel del naipe, WCAG 1.4.11). Un fallo del
+// linter es un fallo de la forja. El índice y el glifo del palo siguen a 7:1.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
+import { SILUETA, imprimir, lintCatalogo } from './pixel-lint';
 
 /** FORJA_OUT=artifacts/svg-forge-loquesea: dos celdas forjando a la vez no se pisan las hojas. */
 const OUT = resolve(process.env.FORJA_OUT?.trim() || 'artifacts/svg-forge');
@@ -32,7 +38,7 @@ const SIZES = [24, 300] as const;
  * ancho): a 24 px no se le mide la silueta, solo la tinta.
  */
 const SOLO_GRANDE = ['piezas/tajo'];
-const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'bendiciones', 'servicios', 'jefes', 'monarcas', 'bufon', 'piezas'];
+const GROUPS = ['palos', 'pintas', 'tramas', 'cartas', 'herramientas', 'especiales', 'bendiciones', 'servicios', 'jefes', 'monarcas', 'bufon', 'piezas'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const groups = wanted.length ? GROUPS.filter((g) => wanted.includes(g)) : GROUPS;
 
@@ -265,6 +271,10 @@ interface Forja {
 }
 
 async function main(): Promise<number> {
+  // el linter del pixel-art, sobre los mapas (sin navegador)
+  const lint = lintCatalogo();
+  const lintMalas = imprimir(lint);
+  console.log(lintMalas ? `✗ linter: ${lintMalas} piezas con fallo` : `Linter del pixel-art limpio (${lint.length} piezas; silueta de las pintas a ${SILUETA.contraste}:1 en ≥ ${SILUETA.fraccion * 100} % del borde).`);
   ensureBuilt();
   const site = await serveWeb();
   const browser = await chromium.launch();
@@ -374,7 +384,7 @@ async function main(): Promise<number> {
         const antes = root.classList.contains('contraste');
         root.classList.toggle('contraste', alto);
         const cs = getComputedStyle(root);
-        const out = { papel: cs.getPropertyValue('--card-paper').trim(), S: '', C: '', D: '', H: '' } as Record<string, string>;
+        const out = { papel: (cs.getPropertyValue('--naipe-papel') || cs.getPropertyValue('--card-paper')).trim(), S: '', C: '', D: '', H: '' } as Record<string, string>;
         for (const s of ['S', 'C', 'D', 'H']) out[s] = cs.getPropertyValue(`--suit-${s}`).trim();
         root.classList.toggle('contraste', antes);
         return out;
@@ -415,8 +425,9 @@ async function main(): Promise<number> {
   for (const f of fails) console.log(`✗ ${f}`);
   for (const e of [...new Set(errors)]) console.log(`✗ error de página: ${e}`);
   console.log(`\n${rows.length} piezas × ${SIZES.length} tamaños en ${OUT} (hoja.png y hoja-gris.png para mirarlas juntas)`);
-  console.log(fails.length || errors.length ? `${fails.length} fallos, ${warns.length} avisos` : `Forja limpia${warns.length ? ` (${warns.length} avisos para mirar)` : ''}.`);
-  return fails.length || errors.length ? 1 : 0;
+  if (lintMalas) console.log(`✗ linter del pixel-art: ${lintMalas} piezas con fallo (arriba, «lint …»)`);
+  console.log(fails.length || errors.length || lintMalas ? `${fails.length + lintMalas} fallos, ${warns.length} avisos` : `Forja limpia${warns.length ? ` (${warns.length} avisos para mirar)` : ''}.`);
+  return fails.length || errors.length || lintMalas ? 1 : 0;
   } finally {
     await Promise.race([browser.close(), new Promise((ok) => setTimeout(ok, 10_000).unref())]);
     site.close();

@@ -1,6 +1,7 @@
-// Baraja del juego. V40 · fase 2: la baraja española en pixel-art (src/client/pixel/): del 1 al 9 con sus pintas en
-// la disposición tradicional, el 1 ornamentado, la Corte de cuerpo entero (Sota, Caballo y Rey), el Comodín (el
-// Bufón), las pintas del marco (cortes del filete: 1 Oros, 2 Copas, 3 Espadas, 4 Bastos) y los dorsos de cada Mazo.
+// Baraja del juego. V40 · fase 2b: la baraja española en pixel-art «sin línea» (src/client/pixel/, rejilla de 96 × 140):
+// del 1 al 9 con sus pintas grandes en la disposición tradicional, el 1 ornamentado, la Corte de cuerpo entero (Sota,
+// Caballo y Rey), el Comodín (el Bufón), las pintas del marco (puntitos en las esquinas libres: 1 Oros, 2 Copas,
+// 3 Espadas, 4 Bastos), el índice arriba a la izquierda y abajo a la derecha, y los dorsos de cada Mazo.
 // Los retratos viejos (el Tratante y los monarcas de la 38.0) siguen en grabado hasta que la fase 3 los retire.
 // Lienzo de cada carta: 250 × 350.
 import { ARTE_REY } from './arte-rey';
@@ -338,7 +339,7 @@ const PORTRAIT: Record<string, Portrait> = {
 function portraitBody(rid: string): string {
   // V40 · fase 2: el Rey jefe ('j-espadas'…) tiene su busto pixel-art, sobre el marfil y con el filete de su palo
   const rey = rid.startsWith('j-') ? rid.slice(2) : '';
-  if (esReyPx(rey)) return `<rect x="10" y="10" width="230" height="302" fill="#efe6d5"/><g shape-rendering="crispEdges">${reyRects(rey, 10, 82, 5.75)}</g>`;
+  if (esReyPx(rey)) return `<rect x="10" y="10" width="230" height="302" fill="#f8f3e9"/><g shape-rendering="crispEdges">${reyRects(rey, 13, 88, 3.5)}</g>`;
   // V40 1c · el resto de retratos (el Tratante) sigue en grabado
   const id = rid.startsWith('j-') && ARTE_REY[rid.slice(2)] ? `j-${ARTE_REY[rid.slice(2)]}` : rid;
   const p = PORTRAIT[id];
@@ -439,14 +440,14 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
   if (tip) el.dataset.tip = tip;
   // V40 · fase 2: cara pixel-art (pintas del 1 al 9, la Corte de cuerpo entero, el Bufón en el Comodín)
   const art = card.sp ? specialArt(card) : card.suit === 'X' ? caraComodin() : caraPalo(card.suit, card.rank);
-  // las numeradas llevan un solo índice (arriba a la izquierda): sus pintas ya dicen el palo
-  const limpia = kind === 'number' || kind === 'ace';
+  // V40 · fase 2b: todas llevan el índice arriba a la izquierda y abajo a la derecha (girado), como la baraja española;
+  // en la mano del móvil, theme.css retira el de abajo
   el.innerHTML = `
     <div class="card-in">
       <div class="card-front">
         <div class="ly paper"></div>
         ${art}
-        <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + (limpia ? '' : corner(card.suit, card.rank, 'br'))}</div>
+        <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + corner(card.suit, card.rank, 'br')}</div>
         ${card.tr ? treatLayer(card.tr) + foilLayer(card.tr) : ''}${card.seal ? sealLayer(card.seal) : ''}
         <div class="ly glare"></div>
       </div>

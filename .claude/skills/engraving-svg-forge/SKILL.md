@@ -5,7 +5,7 @@ description: Forja pixel-art de SANGRE Y PALO (desde la V40; antes, de grabado).
 
 # Forja pixel-art
 
-El nombre de la carpeta (`engraving-svg-forge`) es un identificador y no cambia: desde la V40 es la forja **pixel-art**. Todo el arte de SANGRE Y PALO es SVG dibujado en código (`src/client/card.ts`, `art.ts`, `glyphs.ts`, `engraving.ts`, `grabado12.ts`, `arte-rey.ts`): pixel-art geométrico y limpio sobre naipe marfil (`SPECS/V40-REFUNDACION.md`, apartado 8). El grabado oscuro ya no es el estilo dominante. Una pieza está bien cuando funciona en sus dos tamaños extremos: **24 px** (icono en una ficha o en el HUD, miniatura del Mazo) y **300 px** (la Lupa). Esta skill es un bucle: dibujar → renderizar → medir → mirar → corregir.
+El nombre de la carpeta (`engraving-svg-forge`) es un identificador y no cambia: desde la V40 es la forja **pixel-art**. Todo el arte de SANGRE Y PALO es SVG dibujado en código (`src/client/card.ts`, `art.ts`, `glyphs.ts`, `engraving.ts`, `grabado12.ts`, `arte-rey.ts`): pixel-art geométrico y limpio sobre naipe marfil (`SPECS/V40-REFUNDACION.md`, apartado 8). El grabado oscuro ya no es el estilo dominante. Una pieza está bien cuando funciona en sus dos tamaños extremos: **24 px** (icono en una ficha o en el HUD, miniatura del Mazo) y **300 px** (la Lupa). Esta skill es un bucle: dibujar → renderizar → medir → mirar → corregir. **Las reglas de dibujo del pixel-art «sin línea» (fase 2b) están en la skill `pixel-art-sprites`**: léela antes de tocar `src/client/pixel/`. La forja corre primero su linter (`scripts/pixel-lint.ts`) y cuenta sus fallos como fallos de la forja.
 
 ## El bucle
 
@@ -57,7 +57,7 @@ Los palos se distinguen **sin color**: cada uno tiene su silueta y su pinta del 
 Reglas:
 
 1. Nada va por debajo del índice ni de la pinta de la esquina: ahí va la placa de respaldo.
-2. La pinta lleva contorno de tinta de un píxel: separa la figura del papel aunque el relleno sea claro.
+2. Sin contorno negro (fase 2b): la pinta se separa del papel por sus propios tonos oscuros; al menos el 60 % de su borde llega a 3:1 sobre el marfil (`SILUETA` de `scripts/pixel-lint.ts`) y el índice y su glifo, a 7:1.
 3. Prueba de daltonismo: la hoja de contacto en escala de grises (`hoja-gris.png`) tiene que dejar los cuatro palos inconfundibles por la silueta y las pintas del marco.
 4. Hasta que la fase 2 las retire, las tramas de palo viven en los patrones `pat-S`, `pat-D`, `pat-H` y `pat-C` (enemigos y poderes) y se miden dos a dos; si cambian de id, cambia también `retal()` en `forja-qa.ts`.
 
@@ -71,9 +71,9 @@ Reglas:
 ## Cómo se dibuja una pieza nueva
 
 1. **Silueta primero**: una forma cerrada que se reconozca rellena de un solo color. Si la silueta no dice qué es, los detalles no lo arreglan.
-2. **Rejilla de píxeles entera**: `<rect>` o `<path>` con coordenadas enteras en la rejilla de la pieza y `shape-rendering="crispEdges"`. Nada de coordenadas medias, antialias, degradados, desenfoque ni filtros. Un icono no pasa de unas 24 celdas de lado, para que a 24 px cada píxel del dibujo sea al menos un píxel de pantalla.
-3. **Contorno de un píxel** de tinta alrededor de cada masa; nada más fino.
-4. **Paleta plana**: los colores de la constitución (acero azul, oro, carmesí, verde oliva, azul de cinta) sobre marfil; una sombra en bloque de un solo tono, siempre del mismo lado dentro de una pieza. El grano del papel, si lo hay, lo pone el lienzo, no la pieza.
+2. **Rejilla de píxeles entera**: `<path>` con coordenadas enteras en la rejilla de la pieza (naipe 96 × 140, Bufón 80 × 100, Reyes 64 × 64, iconos 40 × 40) y `shape-rendering="crispEdges"`. Nada de coordenadas medias, antialias, degradados, desenfoque ni filtros.
+3. **Sin línea**: nada de contorno de tinta alrededor de cada masa (el linter falla si más del 35 % del borde es tinta oscura neutra).
+4. **Rampas de 3 o 4 tonos con corrimiento de matiz** (`RAMPA` de `pixel/paleta.ts`), luz arriba a la izquierda y sombra abajo a la derecha, sin almohada ni bandas. Detalle en `pixel-art-sprites`.
 5. `viewBox` cuadrado para iconos y el del naipe para cartas, en múltiplos del lado del píxel.
 6. Sin `<text>` en un icono: una letra a 24 px no se lee. En cartas, el texto obedece a `brutalist-print-ui` (≥ 14 px efectivos; en miniatura, versión simplificada).
 
@@ -81,6 +81,7 @@ Reglas:
 
 - Trama más oscura que el número: el número desaparece. Nunca bajo la cifra.
 - Iconos de las reliquias con líneas de 1 px de pantalla: a 24 px eran «basura visual». Menos líneas y más gruesas; en pixel-art, menos celdas y más grandes.
-- El rojo claro sobre crema: 3,1:1. Con contorno de tinta y un carmesí más oscuro, pasa de 7:1.
+- El rojo claro sobre crema: 3,1:1. Con un carmesí más oscuro en el borde (no un contorno negro), la silueta pasa de 3:1 y el índice, de 7:1.
+- La fase 2 de la V40 con rejilla de 20 × 30 y contorno negro de un píxel: «Paint» y figuras de Atari. Se rehízo sin línea en 96 × 140 (fase 2b).
 - Un `<filter>` de ruido en un nodo que se anima: tira los fotogramas. El ruido se hornea una vez en el lienzo.
 - Un SVG pixel-art sin `crispEdges` o con coordenadas medias se ve borroso al escalar: el píxel deja de ser píxel.

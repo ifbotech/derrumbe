@@ -12,16 +12,17 @@ import { BENDICIONES } from '../rules/reyes';
 import { bendicionSvg } from './pixel/iconos';
 import { EXPRESIONES, bufonSvg, type Expresion } from './pixel/bufon';
 import { REYES_PX } from './pixel/reyes';
+import { pintaNaipeSvg } from './pixel/pintas';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import type { Seal } from '../rules/engine';
 
 export interface Pieza {
-  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'bendiciones' | 'servicios' | 'jefes' | 'monarcas' | 'bufon' | 'piezas';
+  grupo: 'palos' | 'pintas' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'bendiciones' | 'servicios' | 'jefes' | 'monarcas' | 'bufon' | 'piezas';
   id: string;
 }
 
-/** El papel sobre el que se mide todo: el de las cartas. */
-const PAPEL = '#efe6d5';
+/** El papel sobre el que se mide todo: el del naipe (V40 · fase 2b: marfil luminoso). */
+const PAPEL = '#f8f3e9';
 /** V40 · todos los naipes: del 1 al 9 y la Corte (10 Sota, 11 Caballo, 12 Rey) de cada palo, el Comodín y los dorsos. */
 const RANGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const DORSOS = ['escoba', 'truco', 'chinchon', 'mentiroso', 'chancho'];
@@ -78,6 +79,8 @@ const retal = (s: Suit) => `<svg viewBox="0 0 96 96" width="96" height="96" aria
 function lista(): Pieza[] {
   return [
     ...SUITS.map((s): Pieza => ({ grupo: 'palos', id: s })),
+    // V40 · fase 2b: las pintas del naipe, la chica (4 a 9) y la grande (2 y 3)
+    ...SUITS.flatMap((s) => (['chica', 'grande'] as const).map((t): Pieza => ({ grupo: 'pintas', id: `${s}-${t}` }))),
     ...SUITS.map((s): Pieza => ({ grupo: 'tramas', id: s })),
     ...SUITS.flatMap((s) => RANGOS.map((r): Pieza => ({ grupo: 'cartas', id: `${s}${r}` }))),
     { grupo: 'cartas', id: 'X1' },
@@ -111,6 +114,12 @@ function nodo(p: Pieza): HTMLElement {
     const svg = box.firstElementChild as SVGElement;
     svg.style.width = '220px';
     svg.style.height = '230px';
+  } else if (p.grupo === 'pintas') {
+    const [s, t] = p.id.split('-') as [Suit, 'chica' | 'grande'];
+    box.innerHTML = pintaNaipeSvg(s, t);
+    const svg = box.firstElementChild as SVGElement;
+    svg.style.height = '230px';
+    svg.style.width = 'auto';
   } else if (p.grupo === 'tramas') box.innerHTML = retal(p.id as Suit);
   else if (p.grupo === 'monarcas') {
     const [id, mood] = p.id.split('-') as [string, MonarchMood];

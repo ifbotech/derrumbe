@@ -1,12 +1,17 @@
-// V40 · fase 2 — la forja pixel-art en código (src/client/pixel/): cada mapa es una rejilla entera, cada pieza del
-// motor tiene su dibujo y el naipe guarda las reglas de la baraja española (pintas del marco, figuras de cuerpo entero).
-// La forja (npm run forja) mide los píxeles; esta prueba vigila que nada se quede sin dibujar ni salga torcido.
+// V40 · fase 2b — la forja pixel-art «sin línea» en código (src/client/pixel/): cada mapa es una rejilla entera, cada
+// pieza del motor tiene su dibujo, el naipe guarda las reglas de la baraja española (pintas del marco, índice libre,
+// pintas grandes y del mismo tamaño sin pisarse, figuras de cuerpo entero) y el linter del pixel-art (adaptado de pxl)
+// no encuentra fallos. La forja (npm run forja) mide además los píxeles renderizados.
 import { describe, expect, it } from 'vitest';
+import { lintCatalogo, lintMapa, siluetaDe, contraste, SILUETA } from '../scripts/pixel-lint';
 import { EXPRESIONES, bufonMapa, bufonSvg } from '../src/client/pixel/bufon';
-import { figuraMapa } from '../src/client/pixel/figuras';
+import { caraMapa } from '../src/client/pixel/catalogo';
+import { MAZOS, dorsoMapa, dorsoSvg } from '../src/client/pixel/dorsos';
+import { figuraLienzo, figuraMapa } from '../src/client/pixel/figuras';
 import { MOTIVO_AMULETO, MOTIVO_BENDICION, amuletoMapa, amuletoSvg, bendicionMapa, bendicionSvg, trampaMapa, trampaSvg } from '../src/client/pixel/iconos';
-import { CORTES, caraComodin, caraPalo, dorsoSvg } from '../src/client/pixel/naipes';
-import { CAJA, pintaEnCaja, pintaMapa, pintaSvg } from '../src/client/pixel/pintas';
+import { CORTES, NAIPE_H, NAIPE_W, ZONA_INDICE, caraComodin, caraPalo, disposicion, pintasColocadas } from '../src/client/pixel/naipes';
+import { PX } from '../src/client/pixel/paleta';
+import { pintaMapa, pintaNaipe, pintaSvg } from '../src/client/pixel/pintas';
 import { celdas, cuadra, medida } from '../src/client/pixel/rejilla';
 import { REYES_PX, esReyPx, reyMapa, reySvg } from '../src/client/pixel/reyes';
 import { BENDICIONES, REY_IDS } from '../src/rules/reyes';
@@ -15,7 +20,7 @@ import { TOOLS } from '../src/rules/tools';
 
 const PALOS = ['S', 'C', 'D', 'H'] as const;
 
-/** Un mapa sano: rectangular, con dibujo y sin celdas de letra desconocida (la paleta las pinta transparentes). */
+/** Un mapa sano: rectangular, con dibujo. */
 function sano(m: readonly string[] | null, quien: string) {
   expect(m, quien).not.toBeNull();
   expect(cuadra(m!), `${quien}: filas de distinto largo`).toBe(true);
@@ -31,55 +36,132 @@ function pixel(svg: string, quien: string) {
   expect(d, `${quien}: coordenada no entera`).not.toMatch(/\d\.\d/);
 }
 
-describe('V40 fase 2 · pintas', () => {
-  it('las cuatro pintas son rejillas sanas que caben en la caja del naipe', () => {
+/** ¿Hay alguna celda pintada dentro de la caja [x0, y0, x1, y1] (inclusiva)? */
+const pisa = (m: readonly string[], [x0, y0, x1, y1]: number[]) => m.slice(y0, y1 + 1).some((r) => [...r.slice(x0, x1 + 1)].some((k) => k !== '.'));
+
+describe('V40 fase 2b · pintas', () => {
+  it('los glifos de los cuatro palos son rejillas sanas con siluetas distintas', () => {
+    const formas = new Set<string>();
     for (const s of PALOS) {
       sano(pintaMapa(s), s);
-      const [w, h] = medida(pintaMapa(s));
-      expect(w, s).toBeLessThanOrEqual(CAJA[0]);
-      expect(h, s).toBeLessThanOrEqual(CAJA[1]);
-      expect(medida(pintaEnCaja(s)), s).toEqual(CAJA);
       pixel(pintaSvg(s), s);
+      formas.add(pintaMapa(s).map((r) => r.replace(/[^.]/g, '#')).join('\n'));
+    }
+    expect(formas.size).toBe(4);
+  });
+
+  it('cada palo tiene su pinta chica (4 a 9) y grande (2 y 3), y todas las variantes miden lo mismo', () => {
+    for (const s of PALOS)
+      for (const t of ['chica', 'grande'] as const) {
+        const base = medida(pintaNaipe(s, t, 0));
+        for (const v of [0, 1, 2]) {
+          sano(pintaNaipe(s, t, v), `${s} ${t} ${v}`);
+          expect(medida(pintaNaipe(s, t, v)), `${s} ${t} ${v}`).toEqual(base);
+        }
+      }
+  });
+
+  it('las pintas son grandes: la chica mide al menos un cuarto del alto del naipe o un cuarto de su ancho', () => {
+    for (const s of PALOS) {
+      const [w, h] = medida(pintaNaipe(s, 'chica'));
+      expect(h >= NAIPE_H / 4 || w >= NAIPE_W / 4, `${s}: ${w} × ${h}`).toBe(true);
     }
   });
 
-  it('las siluetas son distintas entre sí (no se distinguen solo por el color)', () => {
-    const forma = (s: (typeof PALOS)[number]) => pintaEnCaja(s).map((r) => r.replace(/[^.]/g, '#')).join('\n');
-    const vistas = new Set(PALOS.map(forma));
-    expect(vistas.size).toBe(4);
+  it('sin contorno, la silueta la da el tono: ≥ 60 % del borde a 3:1 sobre el papel del naipe', () => {
+    for (const s of PALOS)
+      for (const t of ['chica', 'grande'] as const)
+        for (const v of [0, 1, 2]) expect(siluetaDe(pintaNaipe(s, t, v)), `${s} ${t} ${v}`).toBeGreaterThanOrEqual(SILUETA.fraccion);
   });
 
-  it('pintas del marco de la baraja española: 1 Oros, 2 Copas, 3 Espadas, 4 Bastos', () => {
-    expect(CORTES).toEqual({ D: 1, H: 2, S: 3, C: 4 });
+  it('las tintas de palo del índice y de las pintas del marco pasan de 7:1 sobre el papel del naipe', () => {
+    for (const c of ['#1d3a66', '#34481a', '#633f06', '#8e1424']) expect(contraste(c, PX.papel), c).toBeGreaterThanOrEqual(7);
   });
 });
 
-describe('V40 fase 2 · naipes', () => {
-  it('del 1 al 12 de cada palo hay cara pixel-art, y las figuras son de cuerpo entero', () => {
+describe('V40 fase 2b · naipes', () => {
+  it('pintas del marco de la baraja española: 1 Oros, 2 Copas, 3 Espadas, 4 Bastos', () => {
+    expect(CORTES).toEqual({ D: 1, H: 2, S: 3, C: 4 });
+    for (const s of PALOS) expect((caraPalo(s, 5).match(/class="px-marco"[^>]*d="([^"]+)"/)?.[1].match(/M/g) ?? []).length, s).toBe(2 * CORTES[s]);
+  });
+
+  it('del 1 al 12 de cada palo hay cara pixel-art en la rejilla de 96 × 140', () => {
     for (const s of PALOS)
       for (let r = 1; r <= 12; r++) {
         const cara = caraPalo(s, r);
         pixel(cara, `${s}${r}`);
-        expect(cara, `${s}${r}`).toContain('viewBox="0 0 250 350"');
-        if (r >= 10) sano(figuraMapa(s, r as 10 | 11 | 12), `${s}${r}`);
+        expect(cara, `${s}${r}`).toContain('viewBox="-2 0 100 140"');
+      }
+    pixel(caraComodin(), 'comodín');
+  });
+
+  it('del 1 al 9, nada se dibuja en las zonas del índice (arriba a la izquierda, abajo a la derecha)', () => {
+    for (const s of PALOS)
+      for (let r = 1; r <= 9; r++) {
+        const m = caraMapa(s, r);
+        expect(medida(m), `${s}${r}`).toEqual([NAIPE_W, NAIPE_H]);
+        for (const z of ZONA_INDICE) expect(pisa(m, z), `${s}${r} pisa el índice ${z}`).toBe(false);
       }
   });
 
-  it('cada figura tiene su silueta: la Sota, el Caballo y el Rey no son el mismo dibujo', () => {
+  it('las pintas del 2 al 9 son del mismo tamaño dentro de cada naipe, caben y no se pisan', () => {
+    for (const s of PALOS)
+      for (let r = 2; r <= 9; r++) {
+        const ps = pintasColocadas(s, r);
+        expect(ps.length, `${s}${r}`).toBe(r);
+        const cajas = ps.map((p) => {
+          const [w, h] = medida(p.m);
+          return [p.x, p.y, p.x + w - 1, p.y + h - 1];
+        });
+        const lados = new Set(ps.map((p) => medida(p.m).slice().sort((a, b) => a - b).join('×')));
+        expect(lados.size, `${s}${r}: pintas de distinto tamaño`).toBe(1);
+        for (const [x0, y0, x1, y1] of cajas) expect(x0 >= 0 && y0 >= 0 && x1 < NAIPE_W && y1 < NAIPE_H, `${s}${r} se sale`).toBe(true);
+        // ninguna celda pintada de una cae sobre una celda pintada de otra
+        const ocupado = new Set<string>();
+        for (const p of ps)
+          p.m.forEach((f, y) =>
+            [...f].forEach((k, x) => {
+              if (k === '.') return;
+              const clave = `${p.x + x},${p.y + y}`;
+              expect(ocupado.has(clave), `${s}${r}: pintas que se pisan en ${clave}`).toBe(false);
+              ocupado.add(clave);
+            }),
+          );
+      }
+  });
+
+  it('del 4 al 9 cada palo usa la misma pinta chica; el 2 y el 3, la grande', () => {
     for (const s of PALOS) {
-      const formas = new Set(([10, 11, 12] as const).map((r) => figuraMapa(s, r).join('\n')));
-      expect(formas.size, s).toBe(3);
+      for (let r = 4; r <= 9; r++) expect(disposicion(s, r).talla, `${s}${r}`).toBe('chica');
+      for (const r of [2, 3]) expect(disposicion(s, r).talla, `${s}${r}`).toBe('grande');
     }
   });
 
-  it('el Comodín y los dorsos de los cinco Mazos', () => {
-    pixel(caraComodin(), 'comodín');
-    for (const m of ['escoba', 'truco', 'chinchon', 'mentiroso', 'chancho']) pixel(dorsoSvg(m), m);
+  it('la Corte es de cuerpo entero, cada figura con su silueta, y deja libre el índice de dos cifras', () => {
+    for (const s of PALOS) {
+      const formas = new Set(([10, 11, 12] as const).map((r) => figuraMapa(s, r).join('\n')));
+      expect(formas.size, s).toBe(3);
+      for (const r of [10, 11, 12] as const) {
+        const m = figuraLienzo(s, r);
+        sano(m, `${s}${r}`);
+        expect(medida(m)).toEqual([NAIPE_W, NAIPE_H]);
+        // de cuerpo entero: la figura ocupa más de tres cuartos del alto del naipe
+        const filas = m.map((f, y) => (/[^.]/.test(f) ? y : -1)).filter((y) => y >= 0);
+        expect(filas[filas.length - 1] - filas[0], `${s}${r}`).toBeGreaterThan(NAIPE_H * 0.75);
+        expect(pisa(m, [0, 0, 27, 32]), `${s}${r} pisa el índice de arriba`).toBe(false);
+        expect(pisa(m, [69, 107, 95, 139]), `${s}${r} pisa el índice de abajo`).toBe(false);
+      }
+    }
+  });
+
+  it('los dorsos de los cinco Mazos: cada uno con su dibujo, distinto de los demás', () => {
+    expect(new Set(MAZOS.map((m) => dorsoMapa(m).join('\n'))).size).toBe(5);
+    for (const m of MAZOS) pixel(dorsoSvg(m), m);
   });
 });
 
-describe('V40 fase 2 · el Bufón', () => {
-  it('cinco expresiones, cada una con su cuadro distinto', () => {
+describe('V40 fase 2b · el Bufón', () => {
+  it('cinco expresiones, cada una con su cuadro distinto y sus capas para animar', () => {
     expect(EXPRESIONES).toEqual(['reposo', 'risa', 'burla', 'brillo', 'sombria']);
     const cuadros = new Set<string>();
     for (const e of EXPRESIONES) {
@@ -87,14 +169,13 @@ describe('V40 fase 2 · el Bufón', () => {
       cuadros.add(bufonMapa(e).join('\n'));
       const svg = bufonSvg(e, 'x');
       pixel(svg, e);
-      expect(svg).toContain(`bf-${e}`);
-      expect(svg).toContain('bf-cuerpo');
+      for (const c of [`bf-${e}`, 'bf-cuerpo', 'bf-palo', 'bf-cascabel']) expect(svg, `${e}: ${c}`).toContain(c);
     }
     expect(cuadros.size).toBe(EXPRESIONES.length);
   });
 });
 
-describe('V40 fase 2 · los cuatro Reyes jefe', () => {
+describe('V40 fase 2b · los cuatro Reyes jefe', () => {
   it('cada Rey del motor tiene retrato en calma y vencido', () => {
     expect([...REYES_PX].sort()).toEqual([...REY_IDS].sort());
     for (const id of REY_IDS) {
@@ -108,13 +189,12 @@ describe('V40 fase 2 · los cuatro Reyes jefe', () => {
   });
 });
 
-describe('V40 fase 2 · iconos de Amuletos, Trampas y Bendiciones', () => {
+describe('V40 fase 2b · iconos de Amuletos, Trampas y Bendiciones', () => {
   it('cada Amuleto tiene icono, de la familia de su Rey', () => {
     for (const t of TOOLS) {
       sano(amuletoMapa(t.id), t.id);
       pixel(amuletoSvg(t.id), t.id);
-      const lado = medida(amuletoMapa(t.id)!);
-      expect(Math.max(...lado), `${t.id}: más de 24 celdas`).toBeLessThanOrEqual(24);
+      expect(Math.max(...medida(amuletoMapa(t.id)!)), `${t.id}: más de 48 celdas`).toBeLessThanOrEqual(48);
       if (t.arch && (REY_IDS as string[]).includes(t.arch)) expect(MOTIVO_AMULETO[t.id].fam, t.id).toBe(t.arch);
     }
   });
@@ -138,5 +218,34 @@ describe('V40 fase 2 · iconos de Amuletos, Trampas y Bendiciones', () => {
     expect(amuletoSvg('no-existe')).toBe('');
     expect(trampaSvg('no-existe')).toBe('');
     expect(bendicionSvg('no-existe')).toBe('');
+  });
+});
+
+describe('V40 fase 2b · el linter del pixel-art', () => {
+  it('el catálogo entero pasa sin fallos', () => {
+    const malas = lintCatalogo().filter((i) => i.hallazgos.some((h) => h.grave));
+    expect(malas.map((i) => `${i.pieza.grupo}/${i.pieza.id}: ${i.hallazgos.filter((h) => h.grave).map((h) => h.msg).join('; ')}`)).toEqual([]);
+  });
+
+  it('caza el contorno negro «de Paint»', () => {
+    const m = ['kkkkkkkk', 'kyyyyyyk', 'kyyyyyyk', 'kyyyyyyk', 'kyyyyyyk', 'kkkkkkkk'];
+    expect(lintMapa(m).map((h) => h.regla)).toContain('contorno');
+  });
+
+  it('caza el sombreado de almohada y las bandas concéntricas', () => {
+    const n = 21;
+    const m = Array.from({ length: n }, (_, y) =>
+      Array.from({ length: n }, (_, x) => {
+        const d = Math.hypot(x - 10, y - 10);
+        return d > 10 ? '.' : d > 8.5 ? 'R' : d > 6.5 ? 'r' : 'e';
+      }).join(''),
+    );
+    const reglas = lintMapa(m).map((h) => h.regla);
+    expect(reglas.some((r) => r === 'almohada' || r === 'bandas')).toBe(true);
+  });
+
+  it('caza los dientes de sierra de una línea de un píxel', () => {
+    const m = ['b.........', '.b........', '.bb.......', '...b......', '....b.....', '....bb....', '......b...', '.......b..'];
+    expect(lintMapa(m).map((h) => h.regla)).toContain('jaggy');
   });
 });
