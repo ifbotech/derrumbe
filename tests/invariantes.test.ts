@@ -14,7 +14,8 @@ import { FORMATION_NAME, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '..
 import { KEYWORDS, TERMS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FURIA, TAGS, UPGRADES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
-import { RARITY, RASGOS, TOOLS, UMBRALES } from '../src/rules/tools';
+import { RARITY, TOOLS } from '../src/rules/tools';
+import { BENDICIONES, BONOS_REY, DUALES, REY_IDS, UMBRALES_REY, bendicionesDe } from '../src/rules/reyes';
 
 const MAX_DESC = 100;
 
@@ -29,6 +30,9 @@ const DESCS: [string, string][] = [
   ...TREATMENTS.map((t): [string, string] => [`tratamiento ${t}`, TREATMENT[t].desc]),
   ...Object.entries(TOWER_FX).map(([k, v]): [string, string] => [`estado ${k}`, v.desc]),
   ...TAGS.map((t): [string, string] => [`etiqueta ${t.id}`, t.desc]),
+  // V40 1c · las Bendiciones: su efecto y su condición de carga
+  ...BENDICIONES.map((b): [string, string] => [`bendición ${b.id}`, b.desc]),
+  ...BENDICIONES.map((b): [string, string] => [`carga de ${b.id}`, b.carga]),
 ];
 
 describe('constitución anticomplejidad', () => {
@@ -97,13 +101,22 @@ describe('constitución anticomplejidad', () => {
     expect(Number.isInteger(FURIA.mazo) && FURIA.mazo >= 1).toBe(true);
   });
 
-  it('V35 · cinco rasgos, cada Reliquia con el suyo, y tres bonos por rasgo (con 2, 4 y 6) de ≤ 100 caracteres', () => {
-    expect(RASGOS.map((r) => r.id)).toEqual(['sangre', 'tahur', 'verdugo', 'bastion', 'horda']);
-    expect(UMBRALES).toEqual([2, 4, 6]);
-    for (const t of TOOLS) expect(RASGOS.some((r) => r.id === t.rasgo), t.id).toBe(true);
-    // con seis huecos, cada rasgo tiene Reliquias de sobra para llegar a su bono de 6
-    for (const r of RASGOS) expect(TOOLS.filter((t) => t.rasgo === r.id).length, r.id).toBeGreaterThanOrEqual(8);
-    for (const r of RASGOS) for (const b of r.bonos) {
+  it('V40 1c · 4 Reyes, de 5 a 6 Bendiciones por Rey, de 4 a 6 Duales y dos bonos por Rey (con 2 y 4) de ≤ 100 caracteres', () => {
+    expect(REY_IDS).toEqual(['espadas', 'bastos', 'oros', 'copas']);
+    expect([...UMBRALES_REY]).toEqual([2, 4]);
+    expect(BOSSES.map((b) => b.id).sort()).toEqual([...REY_IDS].sort());
+    for (const r of REY_IDS) {
+      expect(bendicionesDe(r).length, r).toBeGreaterThanOrEqual(5);
+      expect(bendicionesDe(r).length, r).toBeLessThanOrEqual(6);
+    }
+    expect(DUALES.length).toBeGreaterThanOrEqual(4);
+    expect(DUALES.length).toBeLessThanOrEqual(6);
+    // una Dual es de dos Reyes distintos, y no hay dos Duales del mismo par
+    for (const d of DUALES) expect(d.duo && d.duo !== d.rey, d.id).toBe(true);
+    expect(new Set(DUALES.map((d) => [d.rey, d.duo].sort().join('+'))).size).toBe(DUALES.length);
+    expect(new Set(BENDICIONES.map((b) => b.id)).size).toBe(BENDICIONES.length);
+    expect(new Set(BENDICIONES.map((b) => b.name)).size).toBe(BENDICIONES.length);
+    for (const r of REY_IDS) for (const b of BONOS_REY[r]) {
       expect(b.length, b).toBeLessThanOrEqual(100);
       expect(b.endsWith('.'), b).toBe(true);
       expect(b, b).not.toMatch(/\{\w+\}/);

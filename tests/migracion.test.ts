@@ -7,10 +7,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ASALTOS_10, abonoCampanaVieja, dondeActa, recortaMeta10 } from '../src/rules/migracion';
-import { ESQUIRLAS_POR_CORONA, META_38, META_40, RUN_11, RUN_38, RUN_40, abonoFrancesa, campanaFrancesa, mazoDe, migraMeta38, migraMeta40 } from '../src/rules/migracion';
+import { ESQUIRLAS_POR_CORONA, META_38, META_40, RUN_11, RUN_38, RUN_40, abonoFrancesa, campanaFrancesa, campanaSinReyes, mazoDe, migraMeta38, migraMeta40, migraMeta40c } from '../src/rules/migracion';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { applyAction, currentPlayer } from '../src/rules/engine';
-import { DECK, LAST_STAGE, META_VERSION, Meta, RUN_VERSION, Run, cargaRun, finishBattle, loadMeta, newMeta, newRun, runAction, settle, startStage, trackEvents } from '../src/rules/run';
+import { DECK, LAST_STAGE, META_VERSION, MONARCAS_VIEJOS, Meta, RUN_VERSION, Run, cargaRun, finishBattle, loadMeta, newMeta, newRun, runAction, settle, startStage, trackEvents } from '../src/rules/run';
 import { errorFor } from '../src/rules/textos';
 import { PROTOCOL_VERSION } from '../src/shared/protocol';
 
@@ -44,11 +44,13 @@ describe('una Meta de la 10.0 en la V12: se conserva todo el progreso (y sus Cor
 
   it('La Orden (mejoras), logros, colección, maestrías y contadores, intactos; Coronas × 100', () => {
     expect(meta.v).toBe(META_VERSION);
-    expect(META_VERSION).toBe(6);
+    expect(META_VERSION).toBe(7);
     expect(meta.renown).toBe(old.renown * ESQUIRLAS_POR_CORONA); // no se devuelve nada: las mejoras siguen compradas
     expect(meta.up).toEqual(old.up);
-    expect(meta.ach).toEqual(old.ach);
-    expect(meta.seen).toEqual(old.seen);
+    // V40 1c · los trofeos y los monarcas vistos de los siete monarcas viejos pasan al Rey de su palo
+    const conReyes = migraMeta40c(structuredClone({ ach: old.ach, seen: old.seen }), MONARCAS_VIEJOS);
+    expect(meta.ach).toEqual(conReyes.ach);
+    expect(meta.seen).toEqual(conReyes.seen);
     // V40 (1b): la maestría de cada baraja vieja pasa a su Mazo
     expect(meta.mastery).toEqual(migraMeta40(structuredClone({ mastery: old.mastery })).mastery);
     expect(meta).toMatchObject({ runs: old.runs, wins: old.wins, ascMax: old.ascMax, last: old.last });
@@ -86,7 +88,7 @@ describe('un perfil de antes de la 2: se devuelven las Coronas y se vacían las 
 describe('la campaña a medias de la 10.0 se cierra y cobra lo superado', () => {
   it('su versión ya no es la de ahora: no se puede continuar', () => {
     expect(G.campaign.run.v).not.toBe(RUN_VERSION);
-    expect(RUN_VERSION).toBe(7);
+    expect(RUN_VERSION).toBe(8);
     expect(cargaRun(structuredClone(G.campaign.run))).toBeNull();
   });
 
@@ -147,8 +149,10 @@ describe('un perfil de la 11.0 en la V12: Coronas → Esquirlas de Corona, mejor
     expect(meta.renown).toBe(old.renown * 100);
     const rangos = Object.values(old.up).reduce((a, b) => a + b, 0);
     expect(meta.aviso).toEqual({ id: 'arbol-v12', coronas: old.renown, esquirlas: old.renown * 100, rangos });
-    expect(meta.ach).toEqual(old.ach);
-    expect(meta.seen).toEqual(old.seen);
+    // V40 1c · los trofeos y los monarcas vistos de los siete monarcas viejos pasan al Rey de su palo
+    const conReyes = migraMeta40c(structuredClone({ ach: old.ach, seen: old.seen }), MONARCAS_VIEJOS);
+    expect(meta.ach).toEqual(conReyes.ach);
+    expect(meta.seen).toEqual(conReyes.seen);
     expect(meta).toMatchObject({ runs: old.runs, wins: old.wins, best: old.best, ascMax: old.ascMax });
   });
 
@@ -239,15 +243,15 @@ describe('V40 (tramo 1b) · de las seis barajas de inicio a los 5 Mazos', () => 
     expect(migraMeta40({ mastery: { decks: { ases: '3' as unknown as number, mentiroso: 2 } } }).mastery.decks).toEqual({ mentiroso: 3 });
   });
 
-  it('la campaña a medias del tramo 1a sigue, con su Mazo y las cargas a cero', () => {
+  it('la campaña a medias del tramo 1a ya no sigue (V40 1c: llegaron los 4 Reyes); la Meta la cobra al abrir', () => {
     const run = newRun({ seedText: 'ACERO', deck: 'truco' }, 9) as Run & { cargas?: unknown };
     const vieja = JSON.parse(JSON.stringify({ ...run, v: RUN_40, deckId: 'acero' }));
     delete vieja.cargas;
-    const cargada = cargaRun(vieja)!;
-    expect(cargada).not.toBeNull();
-    expect(cargada.v).toBe(RUN_VERSION);
-    expect(cargada.deckId).toBe('truco');
-    expect(cargada.cargas).toEqual({});
+    expect(cargaRun(vieja)).toBeNull();
+    expect(campanaSinReyes(vieja)).toBe(true);
+    expect(abonoFrancesa({ ...vieja, esquirlas: 340 })).toBe(340);
+    // el Mazo de una baraja de inicio vieja sigue resolviéndose (lo usa la Meta y la preparación)
+    expect(mazoDe('acero')).toBe('truco');
     // y la de la baraja francesa (antes del tramo 1a) no se continúa
     expect(campanaFrancesa({ v: RUN_38 }, RUN_40)).toBe(true);
     expect(campanaFrancesa({ v: RUN_40 }, RUN_40)).toBe(false);

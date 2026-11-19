@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer, seedFrom } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
-import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FURIA, rasgoMayor } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FURIA } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
@@ -11,6 +11,11 @@ import { muestra } from './muestra';
 /** V40 · Vida y mano de la campaña por defecto (la Escoba, el Mazo inicial: −1 de Vida y una carta menos). */
 const VIDA0 = BALANCE.inicio.vida + BALANCE.mazos.escoba.vida;
 const MANO0 = 7 + BALANCE.mazos.escoba.mano;
+
+// V40 1c · estas pruebas son de la campaña sin las ofertas de los Reyes (las prueba tests/reyes.test.ts): con 0 Reyes
+// en la oferta no hay fase de Bendición y se pasa del Sobre al Mapa como antes. Vitest aísla cada archivo.
+BALANCE.oferta.inicio = 0;
+BALANCE.oferta.entre = 0;
 
 const P = [{ id: 'a', name: 'A' }];
 const act = (run: Run, a: RunAction) => expect(runAction(run, a), JSON.stringify(a)).toBeNull();
@@ -303,15 +308,14 @@ describe('cobro y selección', () => {
     expect(runAction(run, { t: 'draft', i: 0 })).toMatch(/selección/);
   });
 
-  it('V35 · el Cofre del monarca: una de tres Reliquias (la de tu rasgo puede ser de cualquier rareza)', () => {
+  it('V35 · el Cofre del monarca: una de tres Reliquias, Raras o mejores', () => {
     const run = newRun({}, 11);
     run.stage = 2;
     win(run);
     expect(run.loot.length).toBe(3);
     expect(new Set(run.loot).size).toBe(3);
     expect(run.beaten).toEqual([run.bosses[2]]);
-    // sin Reliquias en la tira no hay rasgo que favorecer: las tres son Raras o mejores
-    if (!rasgoMayor(run)) for (const id of run.loot) expect(TOOL[id].rarity).not.toBe('comun');
+    for (const id of run.loot) expect(TOOL[id].rarity).not.toBe('comun');
     act(run, { t: 'draft', i: null });
     expect(run.phase).toBe('reward'); // falta el botín
     act(run, { t: 'loot', id: run.loot[0] });
@@ -719,7 +723,10 @@ describe('final, cimientos abisales y gremio', () => {
     const got = claim(meta).map((a) => a.id);
     for (const id of ['primera', 'capataz', 'media', 'madre', 'golpe100', `j-${run.bosses[LAST_STAGE]}`]) expect(got).toContain(id);
     expect(deckUnlocked(meta, 'mentiroso')).toBe(true);
-    expect(unlockedPool(meta)).toContain(`j-${run.bosses[LAST_STAGE]}`);
+    // V40 1c · el trofeo de un Rey abre sus cartas legendarias (las de los monarcas viejos de su palo)
+    const suyas = SPECIALS.filter((x) => x.locked === `j-${run.bosses[LAST_STAGE]}`).map((x) => x.id);
+    expect(suyas.length).toBeGreaterThan(0);
+    for (const id of suyas) expect(unlockedPool(meta)).toContain(id);
     expect(claim(meta)).toEqual([]);
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
     for (const d of DECKS) if (d.unlock) expect(ACHIEVEMENTS.some((a) => a.id === d.unlock), d.id).toBe(true);

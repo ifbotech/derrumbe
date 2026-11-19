@@ -7,7 +7,7 @@ import { GameEvent, SEALS, SUITS, TREATMENTS, activo, applyAction, currentPlayer
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS } from '../src/rules/achievements';
 import { KEYWORDS } from '../src/rules/keywords';
-import { BOSSES, EVENT_AFTER, LAST_STAGE, Run, STAGES, UPGRADES, addSpecial, finishBattle, newMeta, newRun, ordenCasas, runAction, stageConfig, stageDef, startStage, tiranoKey, trackEvents } from '../src/rules/run';
+import { BOSSES, EVENT_AFTER, LAST_STAGE, MONARCAS_VIEJOS, Run, STAGES, UPGRADES, addSpecial, finishBattle, newMeta, newRun, ordenCasas, runAction, stageConfig, stageDef, startStage, tiranoKey, trackEvents } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 import { ES } from '../src/shared/i18n/es';
@@ -127,9 +127,9 @@ describe('V11 · la campaña de cinco asaltos', () => {
       expect(EN[`asalto.${i + 1}.nombre`]).toBeTruthy();
     });
     expect([ES['asalto.tirano.m'], ES['asalto.tirano.f'], EN['asalto.tirano.m'], EN['asalto.tirano.f']]).toEqual(['Rey Tirano', 'Reina Tirana', 'Tyrant King', 'Tyrant Queen']);
-    expect(BOSSES.filter((b) => b.fem).map((b) => b.id)).toEqual(['sequia', 'intemperie']);
-    expect(tiranoKey('intemperie')).toBe('asalto.tirano.f');
-    expect(tiranoKey('furia')).toBe('asalto.tirano.m');
+    // V40 1c · los 4 Reyes jefe son Reyes: siempre «Rey Tirano»
+    expect(BOSSES.filter((b) => b.fem).map((b) => b.id)).toEqual([]);
+    for (const b of BOSSES) expect(tiranoKey(b.id)).toBe('asalto.tirano.m');
     // el Trono infinito empieza tras el asalto 5, sobre él: cuatro tronos y siempre con monarca
     expect(stageDef(6)).toMatchObject({ thrones: 4, boss: true, atajo: false, floors: [10, 11, 12] });
   });
@@ -142,7 +142,9 @@ describe('V11 · la campaña de cinco asaltos', () => {
         const state = startStage(Object.assign(structuredClone(run), { stage: n, phase: 'battle' as const }), [{ id: 'a', name: 'A' }]);
         const present = Object.values(state.towers).filter((t) => !t.away);
         expect(present.map((t) => t.suit)).toEqual(run.palos[n]);
-        for (const t of present) expect(t.floors).toEqual(STAGES[n - 1].floors);
+        // V40 1c · en el asalto con monarca, la Casa de su palo acaba en el Rey (12) en vez de en su último guardia
+        const jefe = STAGES[n - 1].boss ? state.config.jefe?.suit : undefined;
+        for (const t of present) expect(t.floors).toEqual(t.suit === jefe ? [...STAGES[n - 1].floors.slice(0, -1), 12] : STAGES[n - 1].floors);
         for (const t of Object.values(state.towers).filter((x) => x.away)) expect(t.floors).toEqual([]);
       }
       // en los cinco asaltos y en el Trono infinito, con 1 a 4 jugadores
@@ -218,9 +220,11 @@ describe('V11 · los 36 logros de la 10.0, con los mismos id', () => {
     'j-doble', 'j-escasez', 'j-sequia', 'j-intemperie', 'j-blindaje', 'j-furia', 'j-inestable', 'jefes',
   ];
 
-  it('siguen siendo 36 y con los mismos id, menos «diaria» (V40: se fue el Asalto diario)', () => {
+  it('siguen siendo 36 y con los mismos id, menos «diaria» (V40: se fue el Asalto diario) y los trofeos de los monarcas (V40 1c: los de los 4 Reyes)', () => {
     expect(IDS_10).toHaveLength(36);
-    expect(ACHIEVEMENTS.map((a) => a.id).sort()).toEqual(IDS_10.filter((id) => id !== 'diaria').sort());
+    const viejos = Object.keys(MONARCAS_VIEJOS).map((m) => `j-${m}`);
+    const reyes = BOSSES.map((b) => `j-${b.id}`);
+    expect(ACHIEVEMENTS.map((a) => a.id).sort()).toEqual([...IDS_10.filter((id) => id !== 'diaria' && !viejos.includes(id)), ...reyes].sort());
   });
 
   it('«Adiós, carcelero» pide el asalto 2 y «Medio castillo» el asalto 3, en los dos idiomas', () => {

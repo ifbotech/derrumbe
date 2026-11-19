@@ -65,6 +65,7 @@ describe('lo que cae es lo que se abona', () => {
     for (const seed of [11, 23, 37, 41, 59]) {
       const run = newRun({}, seed);
       runAction(run, { t: 'begin' });
+      runAction(run, { t: 'bendicion', i: 0 }); // V40 1c · la oferta de los Reyes
       runAction(run, { t: 'route', i: 0 });
       let state = startStage(run, [{ id: 'p', name: 'p' }]);
       const total = { oro: 0, esquirlas: 0, gotas: 0 };

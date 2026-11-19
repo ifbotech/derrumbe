@@ -166,19 +166,8 @@ describe('autopsia de la derrota (contrato C1)', () => {
     fits(a);
   });
 
-  it('herida propia: el suelo inestable del Topo y la Nitroglicerina salen con su nombre', () => {
-    const topo = cfgWith({ floorHp: { 10: 20, 11: 30, 12: 40 }, orden: ['D', 'S', 'H', 'C'] });
-    BOSS.inestable.apply(topo);
-    // pareja de dieces sin corazones (nada repara): tira la J de vidrio con daño de sobra, no es limpio y el suelo cobra 1
-    const s = table(topo, [card('C10'), card('S10'), card('D3')], [card('X1')], [], { integrity: 1 });
-    const out = applyAction(s, 'a', { type: 'attack', cards: ['C10', 'S10'], target: 'D' });
-    expect(out.events.some((e) => e.e === 'floorDown' && !e.clean)).toBe(true);
-    expect(out.state.phase).toBe('lost');
-    const a = autopsy(out.events, topo)!;
-    expect(a).toMatchObject({ kind: 'herida', before: 1, taken: 1 });
-    expect(a.title).toBe(`${BOSS.inestable.name}: tu propio golpe te costó 1 de Vida`);
-    fits(a);
-
+  // V40 1c · el suelo inestable del Relojero se fue con los monarcas viejos: queda la herida de la Nitroglicerina
+  it('herida propia: la Nitroglicerina sale con su nombre', () => {
     const nitro: Card = { id: 'sp-nitro-9', suit: 'X', rank: 0, sp: 'nitro' };
     const t = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), nitro, card('D3')], [card('X1')], [], { integrity: 2 });
     const b = lose(t, { type: 'attack', cards: ['S5', nitro.id], target: 'D' }).a;
@@ -225,6 +214,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const P = [{ id: 'a', name: 'A' }];
     const run: Run = newRun({}, 77);
     expect(runAction(run, { t: 'begin' })).toBeNull();
+    expect(runAction(run, { t: 'bendicion', i: 0 })).toBeNull(); // V40 1c · la oferta de los Reyes
     expect(runAction(run, { t: 'route', i: 0 })).toBeNull();
     let state = startStage(run, P);
     expect(run.death).toBeNull();

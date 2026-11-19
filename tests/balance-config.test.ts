@@ -60,24 +60,31 @@ describe('balance-config.json: esquema y rangos', () => {
     expect(ent(RAW.furia.mazo) && RAW.furia.mazo >= 1).toBe(true);
     expect(ent(RAW.furia.rey) && RAW.furia.rey >= 1).toBe(true);
     expect(RAW.furia.jefeVida).toBeGreaterThan(1);
-    // V35 · los bonos de los cinco rasgos: enteros y positivos (los multiplicadores, de 2 en adelante)
-    for (const [rasgo, cifras] of Object.entries(RAW.rasgos)) for (const [k, v] of Object.entries(cifras)) expect(ent(v) && v >= (k === 'x' ? 2 : 1), `${rasgo}.${k}`).toBe(true);
-    expect(RAW.rasgos.verdugo.pct2).toBeGreaterThan(RAW.rasgos.verdugo.pct);
-    expect(RAW.rasgos.bastion.dano2).toBeGreaterThan(RAW.rasgos.bastion.dano);
+    // V40 1c · los bonos de nivel de los 4 Reyes y las cifras de las Bendiciones: enteros y positivos (los
+    // multiplicadores, de 2 en adelante)
+    for (const [rey, cifras] of Object.entries(RAW.niveles)) for (const [k, v] of Object.entries(cifras)) expect(ent(v) && v >= (k === 'x' ? 2 : 1), `niveles.${rey}.${k}`).toBe(true);
+    for (const [id, cifras] of Object.entries(RAW.bendiciones)) for (const [k, v] of Object.entries(cifras)) expect(ent(v) && v >= (k === 'x' ? 2 : 1), `bendiciones.${id}.${k}`).toBe(true);
+    expect(ent(RAW.oferta.inicio) && ent(RAW.oferta.entre) && RAW.oferta.inicio >= 2 && RAW.oferta.entre <= 3).toBe(true);
+    expect(RAW.oferta.dual).toBeGreaterThanOrEqual(0);
+    expect(RAW.oferta.dual).toBeLessThanOrEqual(1);
     expect(RAW.reinados.reyesAcorazados).toBeGreaterThan(1);
     for (const s of RAW.clausura.stages) expect(ent(s) && s >= 1 && s <= 8).toBe(true);
     expect(RAW.clausura.threat).toBeGreaterThanOrEqual(1);
     expect(ent(RAW.timbre.stamps) && RAW.timbre.stamps >= 1).toBe(true);
   });
 
-  it('monarcas: cifras de decreto en rango', () => {
-    const m = RAW.monarcas;
-    expect(m.doble.contraataques).toBeGreaterThanOrEqual(2);
-    expect(m.doble.ataque).toBeGreaterThan(0);
-    expect(m.doble.ataque).toBeLessThan(1);
-    expect(m.escasez.cartas).toBeGreaterThanOrEqual(1);
-    expect(m.intemperie.escudoTope).toBeGreaterThanOrEqual(1);
-    for (const v of [m.furia.ataque, m.inestable.furia, m.inestable.vida]) expect(ent(v) && v >= 1).toBe(true);
+  it('los 4 Reyes jefe: cifras de su rasgo en rango', () => {
+    const m = RAW.reyes;
+    for (const r of ['espadas', 'bastos', 'oros', 'copas'] as const) {
+      expect(m[r].vida, r).toBeGreaterThan(0.5);
+      expect(m[r].vida, r).toBeLessThan(2);
+      expect(ent(m[r].furia) && m[r].furia >= 1, r).toBe(true);
+    }
+    for (const v of [m.espadas.perfora, m.copas.cura]) expect(ent(v) && v >= 1).toBe(true);
+    expect(ent(m.oros.dado) && m.oros.dado >= 2).toBe(true);
+    expect(m.asalto2.vida).toBeGreaterThan(0);
+    expect(m.asalto2.vida).toBeLessThanOrEqual(1);
+    expect(ent(m.asalto2.ataque)).toBe(true);
   });
 
   it('La Taberna, el cobro y la Orden: precios ≥ 0, enteros; pesos > 0', () => {
@@ -183,7 +190,9 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     for (const t of tools.TOOLS) for (const v of Object.values(B.reliquias[t.id] ?? {})) expect(t.desc, t.id).toContain(num(v));
     expect(engine.TREATMENT.forjado.desc).toContain(num(B.acabados.forjado));
     expect(engine.SEAL.jornal.desc).toContain(num(B.sellos.jornal));
-    expect(run.BOSS.furia.curse.badge).toContain(num(B.monarcas.furia.ataque));
+    expect(run.BOSS.espadas.curse.badge).toContain(num(B.reyes.espadas.perfora));
+    expect(run.BOSS.oros.desc).toContain(num(B.reyes.oros.dado));
+    expect(run.BOSS.copas.desc).toContain(num(B.reyes.copas.cura));
     expect(run.ASCENSIONS[2].desc).toContain(num(B.reinados.furia));
     // V40 · la Vida con que se empieza en cada Mazo está en su texto (Escoba: la mano y el Multi)
     for (const id of ['truco', 'chinchon', 'mentiroso', 'chancho'] as const) expect(run.DECK[id].desc, id).toContain(num(B.inicio.vida + B.mazos[id].vida));
@@ -223,31 +232,25 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(ca.floorThreat[10]).toBe(B.mesa.floorThreat[10] + B.asaltos[0].threat + B.reinados.guardiaNoche);
   });
 
-  it('decretos de los monarcas', async () => {
+  it('rasgos de los 4 Reyes jefe', async () => {
     const { B, engine, run } = await patched();
-    const base = () => structuredClone(engine.DEFAULT_CONFIG);
-    const furia = base();
-    run.BOSS.furia.apply(furia);
-    expect(furia.floorThreat[10]).toBe(B.mesa.floorThreat[10] + B.monarcas.furia.ataque);
-    const helada = base();
-    run.BOSS.intemperie.apply(helada);
-    expect(helada.wallCap).toBe(Math.min(B.mesa.wallCap, B.monarcas.intemperie.escudoTope));
-    const doble = base();
-    run.BOSS.doble.apply(doble);
-    expect(doble.sirenCount).toBe(B.monarcas.doble.contraataques);
-    expect(doble.floorThreat[12]).toBe(Math.max(1, Math.ceil(B.mesa.floorThreat[12] * B.monarcas.doble.ataque)));
-    const usurero = base();
-    run.BOSS.escasez.apply(usurero);
-    expect(usurero.handSize[2]).toBe(B.mesa.handSize[2] - B.monarcas.escasez.cartas);
-    const inq = base();
-    run.BOSS.blindaje.apply(inq);
-    expect(inq.noFx).toBe('sobrecarga');
-    // V35: el Inquisidor quita el Aturdido y, a cambio, sus guardias pegan menos
-    for (const r of [10, 11, 12] as const) expect(inq.floorThreat[r]).toBe(Math.max(1, B.mesa.floorThreat[r] - B.monarcas.blindaje.ataque));
-    const rel = base();
-    run.BOSS.inestable.apply(rel);
-    expect(rel.furiaInicial).toBe(B.monarcas.inestable.furia);
-    expect(rel.crumbleHurt).toBe(B.monarcas.inestable.vida);
+    const conJefe = () => ({ ...structuredClone(engine.DEFAULT_CONFIG), jefe: { suit: 'S' as const, vida: 2, furia: 1 } as NonNullable<import('../src/rules/engine').Config['jefe']> });
+    const esp = conJefe();
+    run.BOSS.espadas.apply(esp);
+    expect(esp.jefe.perfora).toBe(B.reyes.espadas.perfora);
+    const bas = conJefe();
+    run.BOSS.bastos.apply(bas);
+    expect(bas.jefe.sinFx).toBe(true);
+    const oro = conJefe();
+    run.BOSS.oros.apply(oro);
+    expect(oro.jefe.dado).toBe(B.reyes.oros.dado);
+    const cop = conJefe();
+    run.BOSS.copas.apply(cop);
+    expect(cop.jefe.cura).toBe(B.reyes.copas.cura);
+    // sin jefe (una mesa sin Rey), el rasgo no se aplica
+    const sin = structuredClone(engine.DEFAULT_CONFIG);
+    for (const b of run.BOSSES) b.apply(sin);
+    expect(sin.jefe).toBeUndefined();
   });
 
   it('reliquias, acabados y especiales en un golpe', async () => {

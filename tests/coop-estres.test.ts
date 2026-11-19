@@ -251,6 +251,9 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
     const phase = (p: Run['phase']) => Promise.all(clients.map((c) => c.next((m) => m.t === 'run' && m.run.phase === p, `campaña en ${p}`)));
     await phase('pack');
     host.send({ t: 'run', action: { t: 'begin' } });
+    // V40 1c · la oferta de los Reyes: la decide el anfitrión
+    await phase('bendicion');
+    host.send({ t: 'run', action: { t: 'bendicion', i: 0 } });
     await phase('map');
     const signal = async (target: string) => {
       for (const c of clients) c.send({ t: 'ping', target });

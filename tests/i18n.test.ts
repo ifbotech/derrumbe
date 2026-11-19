@@ -136,13 +136,13 @@ describe('glosario obligatorio (SPECS/V10.md, 1.3)', () => {
   it('Health, Shield, Counterattack, Damage × Mult y Up the Sleeve donde toca', () => {
     expect(en['reliquia.casco.desc']).toContain('Health');
     expect(en['reliquia.encofrado.desc']).toContain('Shield');
-    expect(en['monarca.doble.desc']).toContain('Counterattack');
+    expect(en['monarca.oros.desc']).toContain('Counterattack');
     expect(en['palabra.resonancia.desc']).toContain('Damage × Mult');
     expect(en['bufon.cuenta']).toContain('Damage × Mult');
     expect(en['reliquia.pasarela.desc']).toContain('Up the Sleeve');
     // V37 · la partida guiada ya no tiene paso de La Manga: el nombre se comprueba en la ayuda de su hueco
     expect(en['ui.mesa.manga.hueco.tip']).toContain('<b>Up the Sleeve</b>');
-    expect(en['monarca.inestable.desc']).toContain('Exact Hit');
+    expect(en['bendicion.filo.carga']).toContain('Exact Hit');
   });
 
   it('las palabras clave se reconocen y se marcan en inglés con el mismo data-kw', () => {

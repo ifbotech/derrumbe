@@ -43,8 +43,13 @@ describe('pasoAuto', () => {
   }, 120_000);
 
   it('sin ellas: se para en el Botín y en La Taberna (y juega los asaltos)', () => {
-    const r1 = juega(newRun({}, 7919), { saquear: false, taberna: true });
-    expect(['botin', 'fin']).toContain(r1.pausa);
+    // V40 1c · sin Auto-saquear, la primera pausa es la oferta de los Reyes (la Bendición se elige como el Botín)
+    const r0 = juega(newRun({}, 7919), { saquear: false, taberna: true });
+    expect(r0.pausa).toBe('bendicion');
+    expect(r0.run.phase).toBe('bendicion');
+    expect(runAction(r0.run, { t: 'bendicion', i: 0 })).toBeNull();
+    const r1 = juega(r0.run, { saquear: false, taberna: true });
+    expect(['botin', 'bendicion', 'fin']).toContain(r1.pausa);
     if (r1.pausa === 'botin') expect(r1.run.phase).toBe('reward');
     const r2 = juega(newRun({}, 7919), { saquear: true, taberna: false });
     expect(['taberna', 'fin', 'mapa']).toContain(r2.pausa);
@@ -63,7 +68,7 @@ describe('pasoAuto', () => {
   });
 
   it('cada pausa tiene su aviso de una línea en los dos idiomas', () => {
-    for (const m of ['botin', 'taberna', 'mapa', 'secreto', 'fin', 'coop'] as const)
+    for (const m of ['botin', 'bendicion', 'taberna', 'mapa', 'secreto', 'fin', 'coop'] as const)
       for (const lang of ['es', 'en'] as const) {
         const t = DICCIONARIOS[lang][avisoPausa(m)];
         expect(t, `${lang} ${m}`).toBeTruthy();

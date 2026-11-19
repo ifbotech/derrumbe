@@ -81,6 +81,11 @@ const PROHIBIDAS: [string, RegExp][] = [
   ['Baraja corta (hoy Chancho Va)', /\bbaraja corta\b/],
   ['Baraja del caos', /\bbaraja del caos\b/],
   ['las barajas de inicio en inglés (hoy los Decks)', /\b(?:conspiracy|black|moneylender'?s|chaos|short) deck\b|\bdeck of aces\b/],
+  // V40 (1c): los siete monarcas sueltos y los cinco rasgos de build se fueron; los sustituyen los 4 Reyes y sus Bendiciones
+  ['los siete monarcas (hoy los 4 Reyes)', /\b(?:rey de dos caras|usurero|dama del caliz|reina helada|inquisidor|verdugo|relojero)\b/],
+  ['los siete monarcas en inglés (hoy the 4 Kings)', /\b(?:two-faced king|usurer|chalice lady|frost queen|inquisitor|butcher|clockmaker)\b/],
+  ['los rasgos de build (hoy las Bendiciones)', /\b(?:rasgos? de build|dado del tahur|bastion|horda)\b/],
+  ['los rasgos de build en inglés (hoy the Blessings)', /\b(?:build traits?|gambler'?s die|executioner|bastion|horde)\b/],
 ];
 
 /**

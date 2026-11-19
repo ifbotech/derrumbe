@@ -79,6 +79,7 @@ describe('tirada', () => {
   it('finishBattle tira al ganar, abona el Dado de oro con su línea y no toca el azar de la campaña', () => {
     const run = newRun({}, 77);
     runAction(run, { t: 'begin' });
+    runAction(run, { t: 'bendicion', i: 0 }); // V40 1c · la oferta de los Reyes
     runAction(run, { t: 'route', i: 0 });
     const state = startStage(run, [{ id: 'p', name: 'p' }]);
     run.caida = { oro: 5, esquirlas: 20, gotas: 0 };
