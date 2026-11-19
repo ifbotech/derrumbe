@@ -14,7 +14,7 @@ import { MAX_SPECIALS, SPECIAL } from './specials';
 import { ENGANO_MODOS, MZ, REGLA, bravoDe, enganoCambia, enganoCartas, esEnvido, esEscoba, formacionMazo } from './mazos';
 import type { Cargas, EnganoEstado, EnganoModo, MazoId } from './mazos';
 import { TOOL, espejada } from './tools';
-import { BENDICION, REY_NOMBRE, nivelesAfter, nivelesReyes, nivelesStrike, usaDado } from './reyes';
+import { BENDICION, REY_NOMBRE, dadoSalva, nivelesAfter, nivelesReyes, nivelesStrike, usaDado } from './reyes';
 import type { BendInst, ReyId } from './reyes';
 import type { ToolInst } from './tools';
 
@@ -1216,6 +1216,12 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   if ((state.cadena ?? 0) > 0) {
     state.cadena = state.cadena! - 1;
     events.push({ e: 'step', src: 'mazo', id: 'chancho', label: `${REGLA.chancho.name}: quedan ${state.cadena}`, fuerza: 0, res: 0 });
+    return say(t.suit, 'sobrecarga');
+  }
+  // V40 1c · el Rey de Oros [2] y [4]: con el dado del turno alto, el Contraataque no llega
+  const suerte = dadoSalva(state.bendiciones, state.dado);
+  if (suerte) {
+    events.push({ e: 'step', src: 'rey', id: 'oros', label: `${REY_NOMBRE.oros}: el dado sacó ${state.dado}`, fuerza: 0, res: 0 });
     return say(t.suit, 'sobrecarga');
   }
   // V40 · Mano larga (Chinchón): el Contraataque de este turno llega más flojo

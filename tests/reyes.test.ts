@@ -3,7 +3,7 @@
 // Furia y su frase) y la migración de los perfiles con los siete monarcas viejos.
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../src/rules/balance-config';
-import { Card, Config, DEFAULT_CONFIG, REY, Suit, applyAction, createGame, newTowers, previewStrike, siegeLevel, type StrikeEnv } from '../src/rules/engine';
+import { Card, Config, DEFAULT_CONFIG, GameState, REY, Suit, applyAction, createGame, newTowers, previewStrike, siegeLevel, strike, type StrikeEnv } from '../src/rules/engine';
 import { META_40B, campanaSinReyes, migraMeta40c } from '../src/rules/migracion';
 import {
   BENDICION,
@@ -15,8 +15,10 @@ import {
   type ReyId,
   bendicionesDe,
   bendicionesVisibles,
+  dadoSalva,
   esDe,
   fraseRey,
+  nivelesCfg,
   nivelesReyes,
   ofertaBendiciones,
   relacionRey,
@@ -220,14 +222,56 @@ describe('V40 1c · niveles de los Reyes con 2 y 4 piezas', () => {
     expect(nivelesReyes({}).copas).toEqual({ n: 0, nivel: 0, falta: 2 });
   });
 
-  it('con 2 piezas de Espadas su bono entra en los golpes con Espadas (paso propio del Rey en el desglose)', () => {
-    const [a, b] = bendicionesDe('espadas').filter((d) => !d.strike || d.id === 'tajo').map((d) => ({ id: d.id, n: 0 }));
-    const dos = [a, b ?? { id: bendicionesDe('espadas')[1].id, n: 0 }];
-    const conNivel = previewStrike(env(dos), [card('S5')], 'D');
-    const sinNivel = previewStrike(env(dos.slice(0, 1)), [card('S5')], 'D');
-    expect(conNivel.events.some((e) => e.e === 'step' && e.src === 'rey' && e.id === 'espadas')).toBe(true);
-    expect(sinNivel.events.some((e) => e.e === 'step' && e.src === 'rey')).toBe(false);
-    expect(conNivel.res).toBeGreaterThanOrEqual(sinNivel.res + BALANCE.niveles.espadas.multi);
+  const piezas = (rey: ReyId, n: number) => bendicionesDe(rey).slice(0, n).map((d) => ({ id: d.id, n: 0 }));
+
+  it('Espadas [2]: el Golpe exacto (y la caída) admite quedarse corto o pasarse por la tolerancia', () => {
+    const tol = BALANCE.niveles.espadas.tol;
+    const con = { ...structuredClone(DEFAULT_CONFIG) };
+    nivelesCfg(con, nivelesReyes({ bendiciones: piezas('espadas', 2) }));
+    expect(con.cleanTol).toBe(tol);
+    const sin = { ...structuredClone(DEFAULT_CONFIG) };
+    nivelesCfg(sin, nivelesReyes({ bendiciones: piezas('espadas', 1) }));
+    expect(sin.cleanTol ?? 0).toBe(0);
+  });
+
+  it('Espadas [4]: con 2 cartas de Espadas o más, ×Multi y el enemigo queda Aturdido (con su paso en el desglose)', () => {
+    const escalera = [card('S2'), card('S3'), card('C4')];
+    const de4 = env(piezas('espadas', 4));
+    const r = strike(de4, escalera, 'D');
+    expect(r.events.some((e) => e.e === 'step' && e.src === 'rey' && e.id === 'espadas')).toBe(true);
+    expect(de4.towers.D.fx.sobrecarga).toBe(true);
+    const de3 = env(piezas('espadas', 3));
+    const r3 = strike(de3, escalera, 'D');
+    expect(r3.events.some((e) => e.e === 'step' && e.src === 'rey')).toBe(false);
+    expect(r.res).toBe(r3.res * BALANCE.niveles.espadas.x);
+  });
+
+  it('Oros [2] y [4]: el dado alto hace que el Contraataque del turno no llegue', () => {
+    expect(dadoSalva(piezas('oros', 1), 6)).toBe(false);
+    expect(dadoSalva(piezas('oros', 2), BALANCE.niveles.oros.cara)).toBe(true);
+    expect(dadoSalva(piezas('oros', 2), BALANCE.niveles.oros.cara - 1)).toBe(false);
+    expect(dadoSalva(piezas('oros', 4), BALANCE.niveles.oros.cara4)).toBe(true);
+    expect(dadoSalva(piezas('oros', 4), BALANCE.niveles.oros.cara4 - 1)).toBe(false);
+    expect(dadoSalva(piezas('oros', 4), undefined)).toBe(false);
+    // y en la mesa: con el dado salvador, el Contraataque se anuncia como que no llega
+    const config: Config = { ...structuredClone(DEFAULT_CONFIG), floorHp: { 10: 900, 11: 900, 12: 900 } };
+    let st: GameState = { ...createGame(P, 7, config), towers: newTowers([10, 11], config), bendiciones: piezas('oros', 2), dado: 6 };
+    st.players[0].hand = [card('C2'), card('C3')];
+    const antes = st.integrity;
+    const res = applyAction(st, 'a', { type: 'discard', cards: ['C2'] });
+    st = res.state;
+    expect(res.events.some((e) => e.e === 'siren' && e.reason === 'sobrecarga')).toBe(true);
+    expect(st.integrity).toBe(antes);
+  });
+
+  it('Bastos [4] y Copas [2]/[4]: Escudo y curación por guardia abatido', () => {
+    const facil = (bend: BendInst[]) => env(bend, { config: { ...structuredClone(DEFAULT_CONFIG), floorHp: { 10: 2, 11: 900, 12: 900 }, orden: ['D', 'C', 'H', 'S'] } });
+    const golpe = (bend: BendInst[], c: string) => strike(facil(bend), [card(c)], 'D');
+    expect(golpe(piezas('bastos', 4), 'C5').wallGain).toBe(golpe(piezas('bastos', 3), 'C5').wallGain + BALANCE.niveles.bastos.escudo2);
+    const cura = (bend: BendInst[], c: string) => golpe(bend, c).events.some((e) => e.e === 'step' && e.src === 'rey' && e.id === 'copas');
+    expect(cura(piezas('copas', 2), 'H5')).toBe(true);
+    expect(cura(piezas('copas', 2), 'C5')).toBe(false);
+    expect(cura(piezas('copas', 4), 'C5')).toBe(true);
   });
 });
 

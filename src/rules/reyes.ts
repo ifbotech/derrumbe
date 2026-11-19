@@ -509,46 +509,50 @@ export function nivelesReyes(f: FuentesRey): Record<ReyId, NivelInfo> {
 const NV = BALANCE.niveles;
 /** Los dos bonos de cada Rey: con 2 piezas y con 4 (plantillas rellenas con `niveles.<rey>`). */
 export const BONOS_REY: Record<ReyId, [string, string]> = {
-  espadas: ['+{multi} de Multi en tus golpes con Espadas.', '×{x} de Multi en tus golpes con 2 cartas de Espadas o más.'],
-  bastos: ['Empezás cada asalto con {escudo} de Escudo.', '+{dano} de Daño por cada punto de Escudo en pie, y su tope sube {tope}.'],
-  oros: ['+{oro} de oro al cerrar cada asalto ganado.', 'Cada turno se tira un dado: tu golpe suma de +1 a +{caras} de Multi.'],
-  copas: ['Cada guardia abatido te cura {vida}.', '+{cartas} carta en la mano, y cada carta de Copas cura +{cura} más.'],
+  espadas: ['El guardia cae con Golpe exacto aunque te quedes corto o te pases por {tol} o menos.', 'Tus golpes con 2 cartas de Espadas o más hacen ×{x} de Multi y dejan Aturdido.'],
+  bastos: ['Empezás cada asalto con {escudo} de Escudo.', 'El tope del Escudo sube {tope}, y cada guardia que abatís te da +{escudo2} de Escudo.'],
+  oros: ['Cada turno se tira un dado: con un {cara}, el Contraataque de ese turno no llega.', 'Con un {cara4} o más ya no llega, y +{oro} de oro al cerrar cada asalto ganado.'],
+  copas: ['Cada guardia que abatís con Copas te cura {vida}.', 'Cada guardia abatido te cura {vida}, lleve Copas o no el golpe.'],
 };
 for (const r of REY_IDS) BONOS_REY[r] = BONOS_REY[r].map((t) => fill(t, NV[r])) as [string, string];
 
 /** Las reglas fijas del asalto que ponen los niveles. */
 export function nivelesCfg(c: Config, nv: Record<ReyId, NivelInfo>): void {
+  if (nv.espadas.nivel >= 1) c.cleanTol = (c.cleanTol ?? 0) + NV.espadas.tol;
   if (nv.bastos.nivel >= 2) c.wallCap += NV.bastos.tope;
-  if (nv.copas.nivel >= 2) {
-    c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, v + NV.copas.cartas]));
-    c.curaPorCarta += NV.copas.cura;
-  }
 }
 type Marca = (rey: ReyId, nivel: NivelRey) => void;
 /** Lo que los niveles suman a un golpe (antes de los multiplicadores). */
 export function nivelesStrike(x: Strike, nv: Record<ReyId, NivelInfo>, marca: Marca): void {
-  const espadas = palo(x, 'S');
-  if (nv.espadas.nivel >= 1 && espadas > 0) {
-    marca('espadas', nv.espadas.nivel);
-    x.R(NV.espadas.multi);
-    if (nv.espadas.nivel >= 2 && espadas >= 2) x.X(NV.espadas.x);
-  }
-  if (nv.bastos.nivel >= 2 && x.env.wall > 0) {
-    marca('bastos', 2);
-    x.F(NV.bastos.dano * x.env.wall);
-  }
-  if (nv.oros.nivel >= 2 && x.env.dado) {
-    marca('oros', 2);
-    x.R(Math.min(NV.oros.caras, x.env.dado));
+  // Espadas [4]: con 2 cartas de Espadas o más, ×Multi y el enemigo queda Aturdido (su Contraataque no llega)
+  if (nv.espadas.nivel >= 2 && palo(x, 'S') >= 2) {
+    marca('espadas', 2);
+    x.X(NV.espadas.x);
+    x.disarm = true;
   }
 }
 /** Lo que los niveles hacen según cómo quedó el golpe. */
 export function nivelesAfter(x: Strike, r: Outcome, nv: Record<ReyId, NivelInfo>, marca: Marca): void {
-  if (nv.copas.nivel >= 1 && r.fallen > 0) {
+  // Bastos [4]: cada guardia abatido da Escudo
+  if (nv.bastos.nivel >= 2 && r.fallen > 0) {
+    marca('bastos', 2);
+    x.wall += NV.bastos.escudo2 * r.fallen;
+  }
+  // Copas [2]: cura cada guardia que abatís con Copas; [4]: cada guardia, lleve Copas o no el golpe
+  if (nv.copas.nivel >= 1 && r.fallen > 0 && (nv.copas.nivel >= 2 || palo(x, 'H') > 0)) {
     marca('copas', nv.copas.nivel);
     x.heal += NV.copas.vida * r.fallen;
     x.note(`+${NV.copas.vida * r.fallen} de Vida`);
   }
+}
+/**
+ * Oros [2] y [4]: la suerte del dado. Con un `cara` o más (en [4], con un `cara4` o más) en el dado del turno, el
+ * Contraataque de ese turno no llega. Pura: true si el dado salva.
+ */
+export function dadoSalva(bend: readonly BendInst[] | undefined, dado: number | undefined): boolean {
+  if (!dado || !bend?.length) return false;
+  const nivel = nivelesReyes({ bendiciones: bend }).oros.nivel;
+  return nivel > 0 && dado >= (nivel >= 2 ? NV.oros.cara4 : NV.oros.cara);
 }
 /** Escudo con el que empieza cada asalto, por las Bendiciones y el nivel de Bastos. */
 export function escudoInicial(bend: readonly BendInst[]): number {
@@ -560,7 +564,7 @@ export function escudoInicial(bend: readonly BendInst[]): number {
 /** ¿Hace falta tirar el dado cada turno? (la Taba cargada o Oros [4]) */
 export function usaDado(bend: readonly BendInst[] | undefined): boolean {
   if (!bend?.length) return false;
-  return bend.some((b) => BENDICION[b.id]?.dado) || nivelesReyes({ bendiciones: bend }).oros.nivel >= 2;
+  return bend.some((b) => BENDICION[b.id]?.dado) || nivelesReyes({ bendiciones: bend }).oros.nivel >= 1;
 }
 /** Lo que se cobra al cerrar un asalto ganado: por Bendición (con su nombre) y por el nivel de Oros. */
 export function cierreBendiciones(bend: readonly BendInst[]): { id: string; label: string; oro: number; vida: number }[] {
@@ -570,7 +574,7 @@ export function cierreBendiciones(bend: readonly BendInst[]): { id: string; labe
     const c = d?.cierre?.(b);
     if (c && ((c.oro ?? 0) > 0 || (c.vida ?? 0) > 0)) out.push({ id: b.id, label: d.name, oro: c.oro ?? 0, vida: c.vida ?? 0 });
   }
-  if (nivelesReyes({ bendiciones: bend }).oros.nivel >= 1) out.push({ id: 'rey-oros', label: REY_NOMBRE.oros, oro: NV.oros.oro, vida: 0 });
+  if (nivelesReyes({ bendiciones: bend }).oros.nivel >= 2) out.push({ id: 'rey-oros', label: REY_NOMBRE.oros, oro: NV.oros.oro, vida: 0 });
   return out;
 }
 

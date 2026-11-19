@@ -324,7 +324,7 @@ const REYES_EN: Record<ReyId, { nombre: string; palo: string; bonos: [string, st
   espadas: {
     nombre: 'King of Swords',
     palo: 'Swords',
-    bonos: ['+{multi} Mult on your hits with Swords.', '×{x} Mult on your hits with 2 Swords cards or more.'],
+    bonos: ['A guard falls to an Exact Hit even if you fall short or go over by {tol} or less.', 'Your hits with 2 Swords cards or more deal ×{x} Mult and leave the enemy Stunned.'],
     frases: {
       aliado: 'You carry my edge and still dare to cross it with mine. I like that.',
       rival: 'You chose other kings? My sword never forgets a snub.',
@@ -334,7 +334,7 @@ const REYES_EN: Record<ReyId, { nombre: string; palo: string; bonos: [string, st
   bastos: {
     nombre: 'King of Clubs',
     palo: 'Clubs',
-    bonos: ['You start each assault with {escudo} Shield.', '+{dano} Damage for each point of Shield standing, and its cap rises by {tope}.'],
+    bonos: ['You start every assault with {escudo} Shield.', 'Your Shield cap rises by {tope}, and each guard you defeat gives you +{escudo2} Shield.'],
     frases: {
       aliado: 'My club covered you all the way. Now see if it holds against me.',
       rival: 'You scorned my club for jewels and cups. You will feel the wood.',
@@ -344,7 +344,7 @@ const REYES_EN: Record<ReyId, { nombre: string; palo: string; bonos: [string, st
   oros: {
     nombre: 'King of Coins',
     palo: 'Coins',
-    bonos: ['+{oro} gold at the close of each assault won.', 'Each turn a die is rolled: your hit adds +1 to +{caras} Mult.'],
+    bonos: ['Each turn a die is rolled: on a {cara}, that turn’s Counterattack does not land.', 'On a {cara4} or more it does not land, and +{oro} gold at the close of each assault won.'],
     frases: {
       aliado: 'I lent you my luck; now I have come to collect, with interest.',
       rival: 'You turned your back on my gold. A miser at heart, that is you.',
@@ -354,7 +354,7 @@ const REYES_EN: Record<ReyId, { nombre: string; palo: string; bonos: [string, st
   copas: {
     nombre: 'King of Cups',
     palo: 'Cups',
-    bonos: ['Each guard defeated heals you {vida}.', '+{cartas} card in hand, and each Cups card heals +{cura} more.'],
+    bonos: ['Each guard you defeat with Cups heals you {vida}.', 'Each guard defeated heals you {vida}, with or without Cups in the hit.'],
     frases: {
       aliado: 'We toasted together, remember? This last drink is on me.',
       rival: 'You refused my cup and drank from others. Such a snub, such thirst.',
