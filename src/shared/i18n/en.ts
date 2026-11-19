@@ -141,7 +141,7 @@ const BARAJAS: Record<string, [string, string, string]> = {
   truco: ['Truco', 'Envido and bravos', '1 to 7, hand of {mano} and {vida} Health. Bravos hit harder; 2 of one suit call Envido.'],
   chinchon: ['Chinchón', 'Sets and runs', 'Sets and suited runs hit harder; long hands store Damage. You start with {vida} Health.'],
   mentiroso: ['The Liar', 'Poker face', 'Hand of {mano}, {n} Jokers that do not spend the turn and one Bluff per assault. {vida} Health.'],
-  chancho: ['Chancho Va', 'Pass it on', 'Pass 1 card per turn and draw another; four of a kind stuns in a chain. {vida} Health.'],
+  chancho: ['Chancho Va', 'Pass it on', 'Hand of {mano} and {vida} Health. Pass 1 card per turn and draw another; four of a kind stuns in a chain.'],
 };
 
 /** V40 · The rules of the 5 Decks: [name, description template]. Figures from CIFRAS_REGLA (mazos.ts). */

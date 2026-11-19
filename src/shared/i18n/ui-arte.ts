@@ -723,7 +723,7 @@ export const UI_ARTE = {
   'ui.mapa.tipo.fogon': ['Fogón', 'Campfire'],
   'ui.mapa.tipo.rey': ['Rey', 'King'],
   'ui.mapa.desc.guardia': ['El asalto: hay que pasarlo.', 'The assault: you must clear it.'],
-  'ui.mapa.desc.bravo': ['Un guardia solo de {palo}: Vida ×{v} y +{a} de Ataque. No cura al ganar.', 'A lone {palo} guard: Health ×{v} and +{a} Attack. No healing when you win.'],
+  'ui.mapa.desc.bravo': ['Un guardia solo de {palo}, con +{a} de Ataque. No cura al ganar.', 'A lone {palo} guard, with +{a} Attack. No healing when you win.'],
   'ui.mapa.desc.pulperia': ['Comprá, Purgá una carta o Curá con oro.', 'Buy, Purge a card or Heal with gold.'],
   'ui.mapa.desc.santuario': ['El Bufón te tienta con un trato.', 'The Jester tempts you with a deal.'],
   'ui.mapa.desc.fogon': ['Curá {n} de Vida o Purgá una carta, gratis.', 'Heal {n} Health or Purge a card, for free.'],

@@ -851,7 +851,7 @@ export const DECKS: DeckDef[] = [
     id: 'chancho',
     name: 'Chancho Va',
     lema: 'Mano al centro',
-    desc: fill('Pasá 1 carta por turno y robá otra; el póker aturde en cadena. Empezás con {vida} de Vida.', CIFRAS_MAZO.chancho),
+    desc: fill('Mano de {mano} y {vida} de Vida. Pasá 1 carta por turno y robá otra; el póker aturde en cadena.', CIFRAS_MAZO.chancho),
     unlock: 'golpe100',
     reglas: ['pasar', 'chancho', 'arranque'],
     build: (run) => vidaMazo(run, MZ.chancho.vida),
@@ -1023,7 +1023,7 @@ export function stageConfig(run: Run, players = 1): Config {
   cfg.handSize = { [players]: MANO_BASE + run.handBonus + manoMazo };
   // en cuadrilla hay más manos entre las que elegir: las obras aguantan más
   const a = run.ascension;
-  // V40 1e · el Guardia Bravo: más Vida y más Ataque que los guardias del asalto que viene
+  // V40 1e · el Guardia Bravo: más Ataque (y la Vida ×`mapa.bravo.vida`) que los guardias del asalto que viene
   const scale = st.hp * (a >= 1 ? REIN.corazas : 1) * COOP_HP[Math.min(players, 4) - 1] * (bravo ? MAPA_CFG.bravo.vida : 1);
   for (const r of FIGURAS) {
     // Reinado 4 «Reyes acorazados»: en los asaltos con monarca, los Reyes tienen más Vida

@@ -95,7 +95,7 @@ describe('V40 1e · la forma del Mapa', () => {
 });
 
 describe('V40 1e · el Guardia Bravo', () => {
-  it('un guardia solo, con más Vida y Ataque, sin jefe; paga oro, un Amuleto y una «Elegí una» Bendición; no cura', () => {
+  it('un guardia solo, con más Ataque (Vida ×mapa.bravo.vida), sin jefe; paga oro, un Amuleto y una «Elegí una» Bendición; no cura', () => {
     const run = newRun({ seedText: 'BRAVO' }, 1);
     act(run, { t: 'begin' });
     alNodo(run, 0);
@@ -113,7 +113,7 @@ describe('V40 1e · el Guardia Bravo', () => {
     expect(cfg.orden).toEqual([nodo.palo]);
     const r = rangoBravo(2);
     expect(cfg.floorThreat[r]).toBe(asalto.floorThreat[r] + MAPA_CFG.bravo.ataque);
-    expect(cfg.floorHp[r]).toBeGreaterThan(asalto.floorHp[r]);
+    expect(cfg.floorHp[r]).toBeCloseTo(asalto.floorHp[r] * MAPA_CFG.bravo.vida, 0);
     run.integrity = 10;
     gana(run);
     expect(run.integrity).toBe(10); // sin la cura de asalto
