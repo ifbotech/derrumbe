@@ -5,7 +5,7 @@
 //     figures are `{campo}` templates filled with `fillFor('en', …)` and the very same numbers of `BALANCE`,
 //     so the English figure can never drift from the engine. tests/i18n.test.ts checks every key.
 //
-// Proper names (relics, specials, monarchs, assaults, Reigns, decks, Oaths, Shortcuts, Secrets, upgrades,
+// Proper names (amulets, tricks, monarchs, assaults, Reigns, decks, Oaths, Shortcuts, Secrets, upgrades,
 // achievements): dark court, conspiracy, card table; never gore, never a name from another commercial game;
 // each one 24 characters at most.
 import { ACHIEVEMENTS, TOOL_GOAL } from '../../rules/achievements';
@@ -29,100 +29,45 @@ export const EN_UI: Record<ClaveUi, string> = { ...columna(1), ...columnaJuice(1
 
 const f = (tpl: string, v: Record<string, number | string> = {}) => fillFor('en', tpl, v);
 
-/** Relics: [name, description template]. */
+/** V40 1d · Amulets: [name, description template]. */
 const RELIQUIAS: Record<string, [string, string]> = {
-  piqueta: ['Sword Dagger', '+{dano} Damage for each Swords card you play.'],
-  cortavidrios: ['Coin Ring', '+{dano} Damage for each Coins card you play.'],
-  paleta: ['Chalice of Cups', '+{dano} Damage for each Cups card you play.'],
-  maza: ['Club Mace', '+{dano} Damage for each Clubs card you play.'],
-  cincel: ['Stiletto', '+{dano} Damage if you play a single card.'],
-  gemelos: ['Twin Daggers', '+{multi} Mult with a group, two pair, full house or four of a kind.'],
-  cinta: ['Royal Straight', '+{multi} Mult with a straight or straight flush.'],
-  sacos: ['Great Shield', 'Each Clubs card gives +{escudo} more Shield, and the Shield cap rises +{tope}.'],
-  botiquin: ['Balm', 'Each Cups card heals +{vida} more.'],
-  encofrado: ['Buckler', 'Each guard defeated: +{escudo} Shield.'],
-  casco: ['Helm', 'Each guard defeated: +{vida} Health.'],
-  puntales: ['False Bottom', '{gratis} Deck run-out per assault does not raise the Fury.'],
-  hucha: ['Coin Purse', '+{oro} gold at the end of each assault.'],
-  taladro: ['Lance', 'All your hits Pierce, with or without Swords.'],
-  estandarte: ['Banner', '+{multi} Mult with a flush or straight flush.'],
-  dados: ['Loaded Dice', '+{multi} Mult with two pair or a full house.'],
-  dinamita: ['Powder Keg', 'Each guard defeated: the other thrones take {dano}.'],
-  acido: ['Drop of Poison', 'No throne is Immune: against the throne of their suit, your cards deal their Damage.'],
-  andamio: ['Gauntlet', '+{cartas} card in your hand.'],
-  pasarela: ['Double Sleeve', '+1 slot Up the Sleeve: you keep two cards aside from your hand.'],
-  contrapeso: ["Traitor's Mask", 'Immune is reversed: against the throne of their suit, your cards deal double Damage.'],
-  sordina: ['Sleeping Draught', 'The Attack of every guard drops by {ataque}.'],
-  plano_maestro: ['Master Key', '×{multi} Mult on the first hit against each guard.'],
-  plomada: ['Pendulum', 'Each Exact Hit: +{vida} Health.'],
-  nivel: ['Scales', 'Exact Hit allows a margin of ±{margen}.'],
-  tiralineas: ['Lockpick', 'Each Exact Hit: +{oro} gold.'],
-  calibre: ['Compass', 'Gains +{dano} Damage for good with each Exact Hit.'],
-  cizalla: ["Tailor's Shears", 'After an Exact Hit, the next guard loses half its Health.'],
-  metralla: ['Broken Necklace', 'Each Coins card splashes +{dano} more to the other thrones.'],
-  percutor: ['Bell', 'Triggers the first card of the hit again.'],
-  resonador: ['War Horn', '×{multi} Mult if you play {cartas} cards or more.'],
-  diapason: ['Hand Mirror', 'Copies your latest relic that is not passive.'],
-  vibrador: ['War Drum', 'With a group, two pair, full house or four of a kind, half the Hit splashes the other thrones.'],
-  timbre: ['Signet Ring', 'At the start of each assault, seals {sellos} random card of your Deck. Seals trigger twice.'],
-  prisma: ['Prism', '+{multi} Mult for each card in the hit that shares a suit with another (up to +{tope}).'],
-  mosaico: ['Stained Glass', '+{dano} Damage if the hit mixes 3 suits or more.'],
-  crisol: ['Cauldron', 'Exposed deals ×{multi} Damage instead of ×{base}, and 3-suit hits also leave Exposed.'],
-  catalizador: ["Alchemist's Stone", '+{multi} Mult for each throne that is Exposed or Stunned.'],
-  sismografo: ['Spent Candle', '+{dano} Damage for each point of Health you are missing.'],
-  megafono: ['Thorned Rose', 'When a Counterattack takes your Health, the throne that attacked takes {dano}.'],
-  piquete: ['Torch', 'Each Mutiny (Joker): +{oro} gold and you draw {cartas} cards.'],
-  ultimo: ['Last Breath', '×{multi} Mult if your Health is at 50 % or less.'],
-  corazon: ['Heart of Stone', '×{multi} Mult. If the hit defeats no guard, you lose {vida} Health.'],
-  trituradora: ['Brazier', 'When you discard, the first card burns: it leaves your Deck for good.'],
-  montacargas: ['Ash Urn', '+{dano} Damage for each card burned this campaign.'],
-  horno: ['Bellows', '+{oro} gold each time a card burns in an assault (Brazier, Cursed Glass).'],
-  contenedor: ['Locked Chest', 'Discards do not come back this assault, and each card gives +{dano} Damage to your next hit.'],
-  prensa: ['Ash Scepter', '×{multi} Mult if {cartas} cards or more have burned this campaign.'],
-  ariete: ['Battering Ram', '+{dano} Damage for each point of Shield standing.'],
-  contragolpe: ['Spiked Shield', 'If Shield fully stops a Counterattack, its throne takes {factor} × the amount. E.g.: stops 4 → takes {ej}.'],
-  rebosadero: ['Brimming Cup', 'Overflow Shield: every {escudo} heals 1. Overflow healing: +{dano} Damage per point to your next hit.'],
-  bastion: ['Bulwark', '+{multi} Mult if your Shield is at half its cap or above.'],
+  piqueta: ['Gaucho Knife', '+{dano} Damage for each Swords card in the hit.'],
+  cincel: ['Penknife', '+{dano} Damage if you play a single card.'],
+  calibre: ['Whetstone', 'Each Exact Hit adds +{dano} Damage to it for good.'],
+  cizalla: ['Shearing Shears', 'After an Exact Hit, the next guard loses half its Health.'],
+  plano_maestro: ['Silver Knife', '×{multi} Mult on the first hit against each guard.'],
+  maza: ['Riding Whip', '+{dano} Damage for each Clubs card in the hit.'],
+  sacos: ['Saddle Guard', 'Each Clubs card gives +{escudo} more Shield, and the Shield cap rises by {tope}.'],
+  encofrado: ['Poncho', 'Each guard defeated: +{escudo} Shield.'],
+  contragolpe: ['Quirt', 'If Shield fully stops a Counterattack, that guard takes {factor} × the amount stopped.'],
+  sordina: ['Bolas', 'The Attack of every guard drops by {ataque}.'],
+  cortavidrios: ['Fake Coin', '+{dano} Damage for each Coins card in the hit.'],
+  hucha: ['Piggy Bank', '+{oro} gold at the close of each assault you win.'],
+  gemelos: ['Marked Deck', '+{multi} Mult with a group, two pair, full house or four of a kind.'],
+  piquete: ['Bluff', 'Each Joker you play: +{oro} gold and you draw {cartas} cards.'],
+  dados: ['Dice Cup', 'Each turn a die is rolled: on {cara} or more, +{multi} Mult.'],
+  dinamita: ['Skyrocket', 'Each guard defeated: the other thrones take {dano}.'],
+  paleta: ['Cured Mate', '+{dano} Damage for each Cups card in the hit.'],
+  botiquin: ['Wineskin', 'Each Cups card heals +{vida} more.'],
+  casco: ['Barbecue', 'Each guard defeated: +{vida} Health.'],
+  cinta: ['Guitar', '+{multi} Mult with a straight or straight flush.'],
+  ultimo: ['Last Drink', '×{multi} Mult if your Health is at 50 % or less.'],
+  andamio: ['Espadrilles', '+{cartas} card in your hand.'],
 };
 
 const RAREZAS: Record<Rarity, string> = { comun: 'Common', oficio: 'Rare', capataz: 'Noble', reliquia: 'Royal' };
-const ARQUETIPOS: Record<Arch, string> = {
-  base: 'The Arsenal',
-  precision: 'Steady Hand',
-  sismo: 'Echo and Repeat',
-  alquimia: 'Suit Alchemy',
-  limite: 'Life on the Edge',
-  trituradora: 'Fire and Ash',
-  aguante: 'Shield and Riposte',
-};
+const ARQUETIPOS: Record<Arch, string> = { espadas: 'Swords', bastos: 'Clubs', oros: 'Coins', copas: 'Cups' };
 
-/** Special cards: [name, description template]. */
+/** V40 1d · The Jester's Tricks (special cards): [name, description template]. */
 const ESPECIALES: Record<string, [string, string]> = {
-  barreno: ['Crossbow', 'The hit Pierces and adds +{flat} Damage.'],
-  martillo: ['War Hammer', 'The highest card in the hit counts 2 times.'],
-  saboteador: ['The Spy', 'The throne you hit is Stunned.'],
-  palanca: ['Grappling Hook', '+{flatPerCard} Damage for each card in the hit.'],
-  grua: ['Carrier Pigeon', 'You draw {draw} extra cards this turn.'],
-  mordaza: ['Truce', 'No Counterattack this turn.'],
-  clavos: ['Rain of Arrows', '{splash} points to each of the other thrones.'],
-  chatarrero: ['Pickpocket', '+{gold} gold.'],
-  pico: ['Ransom', 'If the hit defeats a guard, +{goldOnKill} gold.'],
-  botica: ['Elixir', '+{heal} Health.'],
-  gemelo: ['Marked Card', 'Every card in the hit is worth as much as the highest one.'],
-  nitro: ['Dark Pact', '×{strikeMult} Mult, but you lose {hurt} Health.'],
-  bola: ['Bugle', '+{multi} Mult.'],
-  hormigonera: ['Barred Door', '+{wall} Shield.'],
-  cemento: ['Chain Mail', '+{wallPerCard} Shield for each card in the hit.'],
-  embestida: ['Onslaught', '+{flat} Damage, and +{wallForce} more for each point of Shield standing.'],
-  sierra: ['Secret Passage', 'This hit ignores Immune: your cards deal their Damage against any throne.'],
-  ferretero: ['The Storekeeper', '+{gold} gold and you draw {draw} extra card.'],
-  'j-doble': ["The King's Jug", 'No Counterattack and you draw {draw} extra card.'],
-  'j-escasez': ["The King's Purse", '+{gold} gold.'],
-  'j-sequia': ["The King's Cup", '+{heal} Health.'],
-  'j-intemperie': ["The King's Club", '+{wall} Shield and no Counterattack.'],
-  'j-blindaje': ['The Crown of Swords', '×{strikeMult} Mult.'],
-  'j-furia': ["The King's Sword", '+{flat} Damage and the hit Pierces.'],
-  'j-inestable': ['Rain of Coins', '{splash} points to each of the other thrones.'],
+  gemelo: ['Swindle', 'Every card in the hit is worth as much as the highest number.'],
+  mordaza: ['Trip', 'No Counterattack this turn.'],
+  nitro: ['Dirty Deal', '×{strikeMult} Mult, but you lose {hurt} Health.'],
+  sierra: ['Disguise', 'This hit ignores Immune: your cards deal their Damage against anyone.'],
+  grua: ['Sleight', 'You draw {draw} more cards this turn.'],
+  pico: ['Kickback', 'If the hit defeats a guard, +{goldOnKill} gold.'],
+  barreno: ['Hidden Dagger', 'The hit Pierces and adds +{flat} Damage.'],
+  bola: ['Raise!', '+{multi} Mult.'],
 };
 
 interface MonarcaEn {
@@ -187,7 +132,7 @@ const REINADOS: [string, string][] = [
   ['Wrathful King', "Kings' Attack rises by {rey}."],
   ['Old Wounds', 'Your max Health drops by {heridas}.'],
   ['Night Watch', "Knaves' and Knights' Attack rises by {noche}."],
-  ['Sealed Gates', 'In assaults {asaltos}, the Attack of all four thrones rises by {clausura}.'],
+  ['Sealed Gates', 'In {asaltos}, the Attack of all four thrones rises by {clausura}.'],
 ];
 
 /** V40 · The 5 Decks: [name, motto, description template]. */
@@ -223,13 +168,13 @@ const JURAMENTOS: Record<string, [string, string, string]> = {
   austero: ['No Mutinies', 'Do not play any Joker.', 'A random finish'],
   maestra: ['Master Play', 'Play a flush, a full house, four of a kind or a straight flush.', 'A random Scroll'],
   horas: ['Long Night', 'The Attack of every throne rises by 1.', '+10 gold'],
-  sinred: ['No Shield', 'Shield cannot go above 2.', 'A Rare relic or better'],
+  sinred: ['No Shield', 'Shield cannot go above 2.', 'A Rare amulet or better'],
   corta: ['Short Conspiracy', 'Everyone plays with 1 fewer card in hand.', '+12 gold'],
 };
 
 const ATAJOS: Record<string, [string, string]> = {
-  vale: ['Store Key', 'At the next General Store, relics, packs and the Wax Table are free.'],
-  envio: ['Contraband', 'You get a Noble or Royal relic right now.'],
+  vale: ['Store Key', 'At the next General Store, amulets, packs and the Wax Table are free.'],
+  envio: ['Contraband', 'You get a Noble or Royal amulet right now.'],
   molde: ['Wax Mold', 'Duplicate the card of your Deck that you choose.'],
   liquidacion: ['Hidden Loot', '+15 gold.'],
   timbrado: ['Double Wax', 'Two random cards of your Deck get a wax seal.'],
@@ -247,7 +192,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: 'The Buried Chest',
     texto: 'Between two tombs a padlocked chest peeks out. Forcing it open will shake half the crypt.',
     opciones: [
-      { etiqueta: 'Force it open', gana: 'Noble or Royal relic', cuesta: '−5 Health', desc: 'You lose 5 Health. You take a Noble or Royal relic.' },
+      { etiqueta: 'Force it open', gana: 'Noble or Royal amulet', cuesta: '−5 Health', desc: 'You lose 5 Health. You take a Noble or Royal amulet.' },
       { etiqueta: 'Sell it to the Storekeeper', gana: '+8 gold', desc: '+8 gold.' },
     ],
   },
@@ -289,7 +234,7 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
     nombre: 'The Wheel of Fortune',
     texto: 'A cartwheel hangs from the ceiling, painted in four wedges. Someone left the crank in place.',
     opciones: [
-      { etiqueta: 'Spin the wheel', gana: 'Gold, Health or relic', cuesta: '1 in 4: −4 Health', desc: 'A random wedge comes up: +12 gold, +6 Health, a Rare relic or −4 Health.' },
+      { etiqueta: 'Spin the wheel', gana: 'Gold, Health or amulet', cuesta: '1 in 4: −4 Health', desc: 'A random wedge comes up: +12 gold, +6 Health, a Rare amulet or −4 Health.' },
       { etiqueta: 'Leave it alone', gana: '+3 gold', desc: 'You pick up the coins on the floor: +3 gold.' },
     ],
   },
@@ -324,7 +269,7 @@ const REYES_EN: Record<ReyId, { nombre: string; palo: string; bonos: [string, st
   espadas: {
     nombre: 'King of Swords',
     palo: 'Swords',
-    bonos: ['A guard falls to an Exact Hit even if you fall short or go over by {tol} or less.', 'Your hits with 2 Swords cards or more deal ×{x} Mult and leave the enemy Stunned.'],
+    bonos: ['A guard falls to an Exact Hit even if you fall short or go over by {tol} or less.', 'Your hits with 2 Swords cards or more deal ×{x} Mult.'],
     frases: {
       aliado: 'You carry my edge and still dare to cross it with mine. I like that.',
       rival: 'You chose other kings? My sword never forgets a snub.',
@@ -334,7 +279,7 @@ const REYES_EN: Record<ReyId, { nombre: string; palo: string; bonos: [string, st
   bastos: {
     nombre: 'King of Clubs',
     palo: 'Clubs',
-    bonos: ['You start every assault with {escudo} Shield.', 'Your Shield cap rises by {tope}, and each guard you defeat gives you +{escudo2} Shield.'],
+    bonos: ['You start every assault with {escudo} Shield.', 'Your Shield cap rises by {tope}.'],
     frases: {
       aliado: 'My club covered you all the way. Now see if it holds against me.',
       rival: 'You scorned my club for jewels and cups. You will feel the wood.',
@@ -402,26 +347,24 @@ const BUFON_BENDICION_EN: string[] = [
   'The more of one King you carry, the more he loves you. And the more it hurts if you switch.',
 ];
 
-/** Upgrades of the Order. The chests list the relics they add (with their English names). */
+/** Upgrades of the Order. The chests list the amulets they add (with their English names). */
 /**
  * Nodes of the Conspiracy Tree (V12): [name, description or template]. A template has `{campo}` and is filled
  * with `cifraDe(id, rango)`: rank 1 for `mejora.<id>.desc`, and kept as `mejora.<id>.plantilla` for the screen.
- * The six chests are built from their relics.
+ * The four chests (one per King) are built from their amulets.
  */
 const MEJORAS: Record<string, [string, string?]> = {
-  caja_precision: ['Chest of Precision'],
-  caja_sismo: ['Chest of Echoes'],
-  caja_alquimia: ['Chest of Alchemy'],
-  caja_limite: ['Chest of Blades'],
-  caja_trituradora: ['Chest of Ashes'],
-  caja_aguante: ['Chest of the Shield'],
+  caja_espadas: ['Chest of Swords'],
+  caja_bastos: ['Chest of Clubs'],
+  caja_oros: ['Chest of Coins'],
+  caja_copas: ['Chest of Cups'],
   tampones: ['New Seals', 'The Wax Table also offers the powder and sleeve seals.'],
   bronce: ['Crown Jeweler', 'The Wax Table also offers Prismatic Wax and Cursed Glass.'],
   vale: ["Keeper's Favor", 'One free Refresh Table at each General Store, per level.'],
-  tienda: ['Black Market', 'Per level: +1 relic at the General Store, and 2 of those offered are Rare or better.'],
+  tienda: ['Wide Sash', 'Per level: +1 amulet slot (from 4 to 6).'],
   caja: ['Conspiracy Purse', '+{oro} starting gold per rank.'],
   rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
-  tasador: ["Appraiser's Eye", 'Relics at the General Store cost {n} gold less (minimum 1).'],
+  tasador: ["Appraiser's Eye", 'Amulets at the General Store cost {n} gold less (minimum 1).'],
   manga: ['Deep Sleeve', 'On the Endless Throne, the Sleeve holds 2 cards instead of 1.'],
   gracia: ['Keen Eye', 'On the Endless Throne, Exact Hit also counts if you go over by {n} or less.'],
   piedra_iman: ['Lodestone', 'The magnet reaches {pct}% farther and collects {s} s sooner.'],
@@ -471,12 +414,12 @@ const LOGROS: Record<string, [string, string]> = {
   pisos500: ['Scourge of the Court', 'Defeat 500 guards.'],
   intacto: ['Not a Scratch', 'Finish an assault with full Health.'],
   rico: ['Miser', 'Hold 30 gold at once.'],
-  cinturon: ['Full Reliquary', 'Carry {n} relics at once.'],
+  cinturon: ['Full Sash', 'Carry {n} amulets at once.'],
   forja: ['Sealmaker', 'Stamp 10 wax seals or finishes.'],
   contratos: ['Word of Honor', 'Fulfill 10 Oaths.'],
   atajo: ['Through the Back Door', 'Skip 3 assaults.'],
-  coleccion: ['Collector', 'Get the {n} common special cards, across all your campaigns.'],
-  ferretero: ["The Keeper's Regular", 'Carry {n} different relics, across all your campaigns.'],
+  coleccion: ['Collector', "Get the {n} Jester's Tricks, across all your campaigns."],
+  ferretero: ["The Keeper's Regular", 'Carry {n} different amulets, across all your campaigns.'],
   jefes: ['No King Left Standing', 'Defeat all {n} Kings.'],
 };
 /** Figures of the achievements whose Spanish text is built in achievements.ts. */
@@ -489,7 +432,7 @@ const CIFRAS_LOGRO: Record<string, Record<string, number>> = {
 
 const PALABRAS: Record<string, [string, string]> = {
   fuerza: ['Damage', 'What your cards add up to: their number, 1 to 9 (Ace: 11). Against the throne of their suit, 0: it is Immune.'],
-  resonancia: ['Mult', 'What multiplies Damage: Damage × Mult = Hit. Always a whole number. The formation sets it; relics and finishes raise it.'],
+  resonancia: ['Mult', 'What multiplies Damage: Damage × Mult = Hit. Always a whole number. The formation sets it; amulets and finishes raise it.'],
   limpio: [
     'Exact Hit',
     'Defeating a guard with the exact Hit: no Counterattack, +{oro} gold, draw 1, Momentum (the next one loses {impulso} of its Health) and Streak (+{racha} Mult on the next hit, up to +{tope}).',
@@ -542,6 +485,11 @@ const BUFON: Record<string, string> = {
 /** Texts the rules build on the fly: same keys and `{campo}` as `ES_PLANTILLAS`. */
 export const EN_PLANTILLAS: Record<string, string> = {
   'asalto.infinito.nombre': 'Endless Throne {n}',
+  // V40 1d
+  'amuletos.aviso': 'The Amulets are here: your {n} old chests were refunded as {esquirlas} ✦.',
+  'sinergia.nivel': '★ {palo} [{n}]',
+  'sinergia.mazo': '★ For {mazo}',
+  'sinergia.acerca': '★ {palo} {k}/{n}',
   // V12
   'cuenta.dado': 'Gold Die ×{n}',
   'suerte.rueda.oro.titulo': 'Golden wedge',
@@ -551,7 +499,7 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'suerte.rueda.reliquia.titulo': 'Treasure wedge',
   'suerte.rueda.reliquia.texto': 'You take “{x}”.',
   'suerte.rueda.lleno.titulo': 'Treasure wedge',
-  'suerte.rueda.lleno.texto': 'No room for another relic: +{n} gold.',
+  'suerte.rueda.lleno.texto': 'No room for another amulet: +{n} gold.',
   'suerte.rueda.negro.titulo': 'Black wedge',
   'suerte.rueda.negro.texto': '−{n} Health.',
   'suerte.doble.si.titulo': 'Double',
@@ -601,7 +549,6 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'paso.otros': '{n} to the other thrones',
   'paso.oro_si_cae': '+{n} gold if a guard falls',
   'paso.robas': 'you draw {n}',
-  'paso.pierdes': 'you lose {n} Health',
   'paso.escudo': '+{n} Shield',
   'paso.vida': '+{n} Health',
   'paso.oro': '+{n} gold',
@@ -615,7 +562,6 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'paso.destruye': 'destroys {carta}',
   'paso.crece': 'grows',
   'paso.corta': 'cuts the next guard',
-  'paso.salpica': 'half splashes',
   'paso.rebosa_escudo': '{n} overflow Shield ÷ {d} = heals {c}',
   'paso.rebosa_cura': '{n} overflow healing × {d} = +{c} stored Damage',
   // V40 · the rules of the 5 Decks (engine.ts)
@@ -651,9 +597,9 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.sin_seleccion': 'There is no pending pick.',
   'error.no_en_seleccion': 'That card is not in the pick.',
   'error.sin_botin': 'There are no Spoils to choose.',
-  'error.no_en_botin': 'That relic is not in the Spoils.',
-  'error.caben': 'Only {n} relics fit.',
-  'error.caben.vende': 'Only {n} relics fit. Sell one first.',
+  'error.no_en_botin': 'That amulet is not in the Spoils.',
+  'error.caben': 'Only {n} amulets fit.',
+  'error.caben.vende': 'Only {n} amulets fit. Sell one first.',
   'error.oferta': 'That offer is gone.',
   'error.sobre_abierto': 'Choose a card from the open pack first.',
   'error.oro': 'You cannot afford it.',
@@ -667,7 +613,7 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.solo_taberna': 'Only in the General Store.',
   'error.vida_llena': 'Your Health is already full.',
   'error.no_vender': 'No selling in the middle of an assault.',
-  'error.no_llevas': 'You do not carry that relic.',
+  'error.no_llevas': 'You do not carry that amulet.',
   'error.no_seguir': 'You cannot move on yet.',
   'error.sin_bendicion': 'There are no Blessings to choose.',
   'error.no_en_bendicion': 'That Blessing is not in the offer.',

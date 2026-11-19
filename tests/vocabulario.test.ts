@@ -86,6 +86,10 @@ const PROHIBIDAS: [string, RegExp][] = [
   ['los siete monarcas en inglés (hoy the 4 Kings)', /\b(?:two-faced king|usurer|chalice lady|frost queen|inquisitor|butcher|clockmaker)\b/],
   ['los rasgos de build (hoy las Bendiciones)', /\b(?:rasgos? de build|dado del tahur|bastion|horda)\b/],
   ['los rasgos de build en inglés (hoy the Blessings)', /\b(?:build traits?|gambler'?s die|executioner|bastion|horde)\b/],
+  // V40 (1d): las 52 Reliquias pasaron a ser los 22 Amuletos (y las 25 especiales, las 8 Trampas del Bufón)
+  ['Reliquia (hoy Amuleto)', /\breliquias?\b/],
+  ['Relic (hoy Amulet)', /\brelics?\b/],
+  ['relicario (hoy la faja)', /\brelicario|\breliquary\b/],
 ];
 
 /**
@@ -96,6 +100,12 @@ const EXCEPCIONES: [string, string, string][] = [
   // V40: las causas que guardaron las crónicas de la V8 llevan el signo ♣; esta plantilla solo se lee para reconocerlas y
   // traducirlas (lo que se enseña en inglés ya dice «Clubs card»)
   ['src/client/causa.ts', 'Un ♣ más o un Golpe exacto', 'legado: así lo guardaron las actas de la V8'],
+  // V40 1d: las claves de diccionario de los Amuletos conservan su prefijo (`reliquia.<id>.nombre`); son claves, no texto
+  ['src/rules/textos.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/shared/i18n/en.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/shared/i18n/es.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/client/fx.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/client/lengua.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
 ];
 
 const llano = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();

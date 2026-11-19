@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { FIGURAS, applyAction, currentPlayer } from '../src/rules/engine';
 import type { Seal, Treatment } from '../src/rules/engine';
 import { RunPolicy, chooseAction, chooseRunAction } from '../src/rules/bot';
-import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, BOSS, CLAUSURA, DECKS, FURIA, STAGES, TIMBRE } from '../src/rules/run';
+import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, tomaBendicion, trackEvents, BOSS, CLAUSURA, DECKS, FURIA, STAGES, TIMBRE } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 
 export interface Spec {
@@ -29,6 +29,8 @@ export interface Spec {
   policy?: RunPolicy;
   /** Rangos del Árbol tal cual (manda sobre `full`/`only`): para medir nodos sueltos, p. ej. los incrementales. */
   up?: Record<string, number>;
+  /** V40 1d · el grupo de nodos del Altar que falta (modo «altar» del laboratorio): solo etiqueta la campaña. */
+  sinAltar?: string;
 }
 
 /** Lo que se apunta de cada campaña. */
@@ -102,7 +104,7 @@ const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec
 
 /** Archivos cuyas reglas decide el laboratorio: si cambian, el informe publicado deja de valer. */
 // V12: también el Árbol, lo que cae y los huesos (mueven el oro y los nodos de combate de la campaña).
-const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos', 'mazos', 'reyes'];
+const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos', 'mazos', 'reyes', 'piezas'];
 /** Y los números con que juegan: balance-config.json (sin espacios: solo cuentan sus valores). */
 const RULE_DATA = 'balance-config.json';
 /**
@@ -139,7 +141,8 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   const run = newRun(optsFor(spec), spec.seed);
   if (spec.giveTool) run.tools.push({ id: spec.giveTool, n: 0 });
   if (spec.giveSpecial) addSpecial(run, spec.giveSpecial);
-  if (spec.giveBendicion) run.bendiciones.push({ id: spec.giveBendicion, n: 0 });
+  // V40 1d · con su efecto inmediato (oro, Vida máxima…), como cuando se toma en la oferta
+  if (spec.giveBendicion) tomaBendicion(run, spec.giveBendicion);
   const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0, bendEnd: [] };
   let shop: unknown = null;
   let rewardFor = 0;

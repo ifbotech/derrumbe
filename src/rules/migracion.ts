@@ -223,3 +223,56 @@ export function migraRun40<R extends { v: number; deckId?: string; cargas?: unkn
   run.v = version;
   return run;
 }
+
+// ───────────────────────── V40 (tramo 1d): de las Reliquias a los Amuletos ─────────────────────────
+// Las 52 Reliquias pasan a 22 Amuletos en cuatro familias (una por Rey) y las 25 especiales a 8 Trampas del Bufón. Los
+// Amuletos y las Trampas reusan el `id` de la pieza de antes con la misma mecánica: lo que la Colección y la maestría
+// guardaban de esos `id` sigue valiendo; el resto se va (no hay equivalente). Los seis arcones del Altar (uno por
+// arquetipo) pasan a cuatro (uno por Rey): los rangos de los viejos se devuelven en esquirlas. Las campañas del tramo
+// 1c (con Reliquias) no se siguen: se cierran y se abonan las esquirlas juntadas, como en la 1c.
+
+/** Versión de Meta y de campaña guardada del tramo 1c de la V40 (los 4 Reyes, aún con Reliquias). */
+export const META_40C = 7;
+export const RUN_40C = 8;
+/** Los seis arcones de arquetipo del Altar hasta el tramo 1c y lo que costaba cada uno (esquirlas). */
+export const ARCONES_40C: Record<string, number> = { caja_precision: 400, caja_sismo: 400, caja_alquimia: 400, caja_limite: 400, caja_trituradora: 400, caja_aguante: 400 };
+
+/** ¿Es una campaña del tramo 1c de la V40 (con Reliquias)? */
+export function campanaConReliquias(raw: unknown): boolean {
+  return (raw as { v?: unknown } | null)?.v === RUN_40C;
+}
+
+/** El aviso que el Altar enseña una vez tras migrar: cuántos arcones viejos se devolvieron y cuántas esquirlas. */
+export interface AvisoAmuletos {
+  id: 'amuletos-v40';
+  arcones: number;
+  esquirlas: number;
+}
+
+/**
+ * Una Meta del tramo 1c (o anterior) con los Amuletos: la Colección y la maestría guardan solo los `id` que siguen
+ * (`amuletos`, `trampas`: los que existen ahora) y los arcones viejos se devuelven en esquirlas. Muta y devuelve.
+ */
+export function migraMeta40d<M extends { renown: number; up: Record<string, number>; seen?: { tools?: string[]; specials?: string[] }; mastery?: { tools?: Record<string, number> }; avisoAmuletos?: AvisoAmuletos }>(
+  meta: M,
+  amuletos: (id: string) => boolean,
+  trampas: (id: string) => boolean,
+): M {
+  if (meta.seen?.tools) meta.seen.tools = meta.seen.tools.filter(amuletos);
+  if (meta.seen?.specials) meta.seen.specials = meta.seen.specials.filter(trampas);
+  if (meta.mastery?.tools) meta.mastery.tools = Object.fromEntries(Object.entries(meta.mastery.tools).filter(([id]) => amuletos(id)));
+  let arcones = 0;
+  let esquirlas = 0;
+  for (const [id, coste] of Object.entries(ARCONES_40C)) {
+    if (Math.floor(Number(meta.up[id]) || 0) > 0) {
+      arcones++;
+      esquirlas += coste;
+    }
+    delete meta.up[id];
+  }
+  if (arcones) {
+    meta.renown = Math.max(0, Math.floor(Number(meta.renown) || 0)) + esquirlas;
+    meta.avisoAmuletos = { id: 'amuletos-v40', arcones, esquirlas };
+  }
+  return meta;
+}

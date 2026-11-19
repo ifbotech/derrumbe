@@ -12,7 +12,8 @@ import { fraccion } from '../src/rules/cifras';
 import { KEYWORDS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECK, DECKS, EVENTS, EVENT_AFTER, FURIA, LAST_STAGE, MIN_DECK, STAGES, TAGS, TIRANO, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
-import { RARITY, TOOL, TOOLS, TOOL_SLOTS } from '../src/rules/tools';
+import { RARITY, TOOL, TOOLS, TOOL_SLOTS, huecosAmuleto } from '../src/rules/tools';
+import { selloDe } from '../src/rules/piezas';
 import { BENDICIONES, BONOS_REY, DUALES, REY_IDS, REY_NOMBRE, UMBRALES_REY, bendicionesDe } from '../src/rules/reyes';
 import { TITLE, SUBTITLE } from '../src/shared/brand';
 import { ARBOL, RAIZ, RAMAS } from '../src/rules/arbol';
@@ -81,8 +82,8 @@ Todo golpe se calcula igual:
 
 **El orden no importa.** La mesa hace la cuenta y te la enseña antes de golpear:
 
-1. **Daño**: se suma todo. La base de la formación, el número de cada carta (0 contra el trono de su palo: es **Inmune**), el Daño cargado y lo que añadan acabados, cartas especiales (hasta ${MAX_SPECIALS} por golpe) y reliquias. Si el trono está **${TOWER_FX.fractura.name}**, ese Daño vale ×${BALANCE.golpe.expuesto}.
-2. **Multi**: se suma todo (la base de la formación, la Racha de Golpes exactos y lo que añadan acabados, especiales, reliquias y rasgos) y, al final, se aplican los multiplicadores (×2, ×3…).
+1. **Daño**: se suma todo. La base de la formación, el número de cada carta (0 contra el trono de su palo: es **Inmune**), el Daño cargado y lo que añadan acabados, Trampas del Bufón (hasta ${MAX_SPECIALS} por golpe) y Amuletos. Si el trono está **${TOWER_FX.fractura.name}**, ese Daño vale ×${BALANCE.golpe.expuesto}.
+2. **Multi**: se suma todo (la base de la formación, la Racha de Golpes exactos y lo que añadan acabados, Trampas, Amuletos y Bendiciones) y, al final, se aplican los multiplicadores (×2, ×3…).
 
 El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (8-9-A).
 
@@ -127,7 +128,7 @@ Los dos desaparecen si cae el guardia.
 - **Furia**: cada punto es **+1 de Ataque** en todos los Contraataques, y se ve junto al ⚔ del enemigo activo. En campaña sube **${FURIA.mazo}** con cada Mazo agotado y, contra un monarca, **${FURIA.rey}** cada turno que sigue en pie (la **Furia del Rey**). En el Asalto único sube además sola, desde el turno ${(cfg.fatigueStart ?? 0) + 1} y cada ${cfg.fatigueEvery} turnos.
 - **Mazo agotado**: si el Mazo se acaba, el Descarte se baraja y vuelve a ser Mazo. **Barajar no te quita Vida**, pero sube la **Furia** (${FURIA.mazo} en campaña): los asaltos no se pueden estirar sin fin.
 - **${FORMATION_NAME.compania}**: un As forma jugada con **cualquier otra carta** (×${n(FORM.compania.r)} de Multi) y aporta el poder de su palo. Es la manera de colar un poder en un golpe: un As de ${PALO_NOMBRE.C} para levantar Escudo, uno de ${PALO_NOMBRE.H} para curar, uno de ${PALO_NOMBRE.S} para perforar.
-- **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano. La reliquia *${tool('pasarela')}* añade un segundo hueco.
+- **La Manga**: junto a la mano hay un hueco aparte. Una vez por turno, y sin gastar el turno, puedes guardarte en la manga una carta de tu mano: no cuenta para el tamaño de la mano (robas hasta completarla igual) y se juega desde ahí como si estuviera en ella. Si el hueco está ocupado, la carta guardada vuelve a la mano.
 - **Rebobinar** (↩ Deshacer; solo en campaña en solitario): una vez por asalto puedes **deshacer tu última jugada**. La mesa vuelve a como estaba y el Mazo se baraja de nuevo, así que lo que viste salir ya no vale. Usar la Manga no gasta el rebobinado. En sala no se rebobina: toda jugada es definitiva, y la mesa lo indica.
 - Las cartas de baraja nunca bajan de 12 en el Mazo: lo que las quema deja de hacerlo al llegar a ese mínimo.
 - **Victoria** (*Corte vencida*): todos los tronos caídos (en los primeros asaltos de la campaña hay menos de cuatro). **Derrota** (*Conjura deshecha*): tu Vida llega a 0.
@@ -135,7 +136,7 @@ Los dos desaparecen si cae el guardia.
 
 ## Campaña
 
-Un roguelike de construcción de mazo: **${LAST_STAGE} asaltos** cada vez más duros, una sala del castillo cada uno, ${STAGES.filter((s) => s.boss).length} de ellos con **monarca** (el del último es el **${TIRANO.m}** o la **${TIRANO.f}**). Empiezas con un Sobre lacrado de ${BALANCE.inicio.sobre} cartas especiales, ${BALANCE.inicio.oro} de oro y un **Don de la Conjura** que eliges entre tres (una Reliquia común, un sello de lacre en una carta de tu Mazo o una bolsa de ${BALANCE.inicio.donOro} de oro); entre asalto y asalto mejoras el Mazo y tus reliquias. La Vida base de los guardias es ${[11, 12, 13].map((r) => BALANCE.mesa.floorHp[r]).join(' / ')}; cada asalto la multiplica y la Vida final se redondea al múltiplo de 5 más cercano.
+Un roguelike de construcción de mazo: **${LAST_STAGE} asaltos** cada vez más duros, una sala del castillo cada uno, ${STAGES.filter((s) => s.boss).length} de ellos con **monarca** (el del último es el **${TIRANO.m}** o la **${TIRANO.f}**). Empiezas con un Sobre lacrado de ${BALANCE.inicio.sobre} cartas especiales, ${BALANCE.inicio.oro} de oro y un **Don de la Conjura** que eliges entre tres (un Amuleto común, un sello de lacre en una carta de tu Mazo o una bolsa de ${BALANCE.inicio.donOro} de oro); entre asalto y asalto mejoras el Mazo y tus Amuletos. La Vida base de los guardias es ${[11, 12, 13].map((r) => BALANCE.mesa.floorHp[r]).join(' / ')}; cada asalto la multiplica y la Vida final se redondea al múltiplo de 5 más cercano.
 
 Los primeros asaltos tienen menos tronos: los palos que faltan se sortean al empezar la campaña y el Mapa los enseña desde el principio.
 
@@ -158,7 +159,7 @@ ${table(['Juramento', 'Condición', 'Premio', 'Tipo'], CONTRACTS.map((c) => [c.n
 
 ${table(['Atajo', 'Efecto'], TAGS.map((t) => [t.name, t.desc]))}
 
-**Reyes jefe** (${BOSSES.length}; cada campaña sortea ${STAGES.filter((s) => s.boss).length}). El monarca de cada asalto con jefe es uno de los 4 Reyes: es el **último guardia** de la Casa de su palo (que va la última), llega con retrato, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tienes delante, su **Furia del Rey** sube cada turno. Cada uno tiene además su **rasgo de combate**, y te habla según cómo lo trataste: como aliado si llevas alguna Bendición suya, como rival si solo llevas de otros. En el asalto ${STAGES.findIndex((s) => s.boss) + 1} el Rey ocupa el sitio del Caballo, con ×${n(BALANCE.reyes.asalto2.vida)} de su Vida y ${BALANCE.reyes.asalto2.ataque} de Ataque. Al caer abre su **Cofre**: una de tres Reliquias, Raras o mejores.
+**Reyes jefe** (${BOSSES.length}; cada campaña sortea ${STAGES.filter((s) => s.boss).length}). El monarca de cada asalto con jefe es uno de los 4 Reyes: es el **último guardia** de la Casa de su palo (que va la última), llega con retrato, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tienes delante, su **Furia del Rey** sube cada turno. Cada uno tiene además su **rasgo de combate**, y te habla según cómo lo trataste: como aliado si llevas alguna Bendición suya, como rival si solo llevas de otros. En el asalto ${STAGES.findIndex((s) => s.boss) + 1} el Rey ocupa el sitio del Caballo, con ×${n(BALANCE.reyes.asalto2.vida)} de su Vida y ${BALANCE.reyes.asalto2.ataque} de Ataque. Al caer abre su **Cofre**: uno de tres Amuletos, Raros o mejores.
 
 ${table(['Rey jefe', 'Rasgo', 'Efecto', 'Furia por turno'], BOSSES.map((b) => [b.who, b.name, b.desc, String(BALANCE.reyes[b.id].furia)]))}
 
@@ -170,7 +171,7 @@ Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda
 
 Lo atiende el Tratante.
 
-- **Reliquias** (su precio depende de la rareza: ${(Object.keys(RARITY) as (keyof typeof RARITY)[]).map((r) => `${RARITY[r].name.toLowerCase()} ~${RARITY[r].cost}`).join(', ')}). Se pueden vender por la mitad.
+- **Amuletos** (su precio depende de la rareza: ${(Object.keys(RARITY) as (keyof typeof RARITY)[]).map((r) => `${RARITY[r].name.toLowerCase()} ~${RARITY[r].cost}`).join(', ')}). Se pueden vender por la mitad.
 - **Sobre lacrado**: lo abres ahí mismo y te quedas con 1 de 3.
 - **Sobre a ciegas**: una especial sin verla, más barata.
 - **Mesa de lacre**: pone el sello de lacre o el acabado en oferta sobre la carta de tu Mazo que elijas.
@@ -191,14 +192,17 @@ ${EVENTS.map((e) => `- **${e.name}.** ${e.text}\n${e.options.map((o) => `  - *${
 
 ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), a.name, a.desc]))}
 
-- **Sellos de maestría**: al ganar, el Mazo usado y cada reliquia que llevabas quedan marcadas en la colección con el Reinado más alto que has ganado con ellas: sello de **bronce** (Reinados 1–3), de **hierro** (4–6) o de **oro** (7–8).
+- **Sellos de maestría**: al ganar, el Mazo usado y cada Amuleto que llevabas quedan marcados en la colección con el Reinado más alto que has ganado con ellas: sello de **bronce** (Reinados 1–3), de **hierro** (4–6) o de **oro** (7–8).
 - **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con el mismo Mazo y el mismo Reinado. La que dejas no cuenta como derrota ni da esquirlas.
 
-## Reliquias
+## Amuletos
 
-Llevas hasta **${TOOL_SLOTS} reliquias**. **No se ordenan**: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Altar.
+Llevas hasta **${TOOL_SLOTS} Amuletos**, y uno más por nivel de la **${ARBOL.find((u) => u.id === 'tienda')!.name}** del Altar (hasta ${huecosAmuleto(2)}). **No se ordenan**: cada uno nuevo va al final de la tira y ninguno depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay ${TOOLS.length}, en ${REY_IDS.length} familias, una por Rey: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Altar (uno por Rey). **Cada Amuleto cuenta como pieza de su Rey** para los niveles [${UMBRALES_REY.join('/')}], igual que una Bendición.
 
-${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Altar' : 'de salida']))}
+- **Sello de nivel** (S · A · B): lo calcula el laboratorio (\`npm run analyze:meta -- sellos\`) con cada pieza dada de salida frente a las mismas campañas sin ella: el tercio que más sube la victoria lleva **S**, el que menos **B** y el resto **A**. Lo llevan los Amuletos, las Trampas del Bufón y las Bendiciones.
+- **★ Sinergia**: la pieza lleva una estrella cuando enciende un nivel de su Rey («★ Bastos [4]»), cuando está hecha para tu Mazo («★ Para Escoba») o cuando acerca el [4] («★ Copas 3/4»).
+
+${table(['Amuleto', 'Rey', 'Rareza', 'Tipo', 'Efecto', 'Sello', 'Surtido'], TOOLS.map((t) => [t.name, REY_NOMBRE[t.arch], RARITY[t.rarity].name, KIND[t.kind], t.desc, selloDe({ tipo: 'amuleto', id: t.id }) ?? '—', t.box ? 'arcón del Altar' : 'de salida']))}
 
 ## Los 4 Reyes y sus Bendiciones
 
@@ -220,13 +224,13 @@ ${table(['Sello de lacre', 'Efecto'], SEALS.map((s) => [SEAL[s].name, SEAL[s].de
 
 ${table(['Acabado', 'Efecto'], TREATMENTS.map((t) => [TREATMENT[t].name, TREATMENT[t].desc]))}
 
-Las cartas que arden (de ${TREATMENT.agrietado.name} que se hacen añicos, quemadas en la hoguera o fundidas) salen del Mazo para siempre; algunas reliquias (la familia del ${tool('trituradora')}) se ceban con cada carta quemada.
+Las cartas que arden (de ${TREATMENT.agrietado.name} que se hacen añicos, quemadas en la hoguera o fundidas) salen del Mazo para siempre.
 
-## Cartas especiales
+## Trampas del Bufón
 
-No tienen palo ni número: acompañan a cualquier golpe (hasta ${MAX_SPECIALS} por golpe) o se juegan solas. Las legendarias salen cuatro veces menos y hay que desbloquearlas con su logro.
+Las cartas especiales de la campaña son las ${SPECIALS.length} **Trampas del Bufón**: no tienen palo ni número, acompañan a cualquier golpe (hasta ${MAX_SPECIALS} por golpe) o se juegan solas. Salen en los Sobres lacrados, en el Botín y en La Pulpería, y todas están desde el principio.
 
-${table(['Carta', 'Efecto', 'Tipo'], SPECIALS.map((s) => [s.name, s.desc, s.locked ? 'legendaria' : 'común']))}
+${table(['Trampa', 'Efecto', 'Sello'], SPECIALS.map((s) => [s.name, s.desc, selloDe({ tipo: 'trampa', id: s.id }) ?? '—']))}
 
 ## Los 5 Mazos
 
@@ -250,13 +254,13 @@ ${table(['Qué pasa', 'Monedas', 'Esquirlas', 'Gotas de lacre'], [
 - Con **${BALANCE.caida.gotasPorSello} gotas de lacre**, la Mesa de lacre te sella gratis.
 - **Tirada de huesos**: al ganar cada asalto se tiran dos dados. El **Dado de oro** (caras ${BALANCE.huesos.oro.map((x) => `×${x}`).join(' ')}) multiplica las monedas que cayeron en ese asalto; el **Dado de la Corona** (caras ${BALANCE.huesos.corona.map((x) => `×${x}`).join(' ')}) multiplica sus esquirlas. Al perder no hay tirada.
 
-Las esquirlas se gastan en el Altar, que crece desde su raíz, «${RAIZ.name}», en cuatro ramas. Un nodo pide tener antes su padre. Solo **el Arsenal** cambia la campaña de cinco asaltos; la Bolsa y los Huesos solo dan más esquirlas, y la Corona de hierro solo actúa en el Trono infinito. El surtido de salida es corto a propósito (${TOOLS.filter((t) => !t.box).length} reliquias); los arcones del Arsenal abren las otras ${TOOLS.filter((t) => t.box).length}, cada uno con su manera de jugar.
+Las esquirlas se gastan en el Altar, que crece desde su raíz, «${RAIZ.name}», en cuatro ramas. Un nodo pide tener antes su padre. Solo **el Arsenal** cambia la campaña de cinco asaltos; la Bolsa y los Huesos solo dan más esquirlas, y la Corona de hierro solo actúa en el Trono infinito. El surtido de salida es corto a propósito (${TOOLS.filter((t) => !t.box).length} Amuletos); los arcones del Arsenal, uno por Rey, abren los otros ${TOOLS.filter((t) => t.box).length}.
 
 ${RAMAS.map((r) => `### ${r.name}\n\n${r.desc}\n\n${table(['Nodo', 'Efecto', 'Rangos', 'Coste de cada rango'], ARBOL.filter((u) => u.rama === r.id).map((u) => [u.name, u.desc, String(u.rangos), u.costs.map((c) => `${c} ✦`).join(' · ')]))}`).join('\n\n')}
 
 ### Archivo de crónicas y copia de seguridad
 
-- El archivo guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué asalto y ante qué monarca, turnos, mayor Golpe, reliquias y semilla. Desde ahí se puede **copiar la Crónica** o **rejugar la semilla** con el mismo Mazo y el mismo Reinado.
+- El archivo guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué asalto y ante qué monarca, turnos, mayor Golpe, Amuletos y semilla. Desde ahí se puede **copiar la Crónica** o **rejugar la semilla** con el mismo Mazo y el mismo Reinado.
 - En **Ajustes**, *Exportar progreso* guarda el Altar, la colección, las crónicas y los ajustes en un archivo .json, e *Importar progreso* lo recupera en otro navegador, otro equipo o la versión de escritorio.
 
 ### Logros
@@ -275,7 +279,7 @@ ${CONTROLS_TABLE}
 
 Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón (A, B, X, Y, LB, RB, LT, RT, L3, R3) si lo último que tocaste fue un mando, y nada con ratón o pantalla táctil. Cada trono lleva a la vista la placa de su palo: es **Inmune** a las cartas de ese palo.
 
-La **Lupa** abre cualquier carta, reliquia, guardia o monarca a tamaño de lámina, con la cuenta exacta de lo que aporta en ese momento. En sala, pulsar un trono cuando no es tu turno (o cualquier ruta, oferta o carta con Alt) deja una **seña** con tus iniciales para la conjura: no decide nada, solo señala.
+La **Lupa** abre cualquier carta, Amuleto, guardia o monarca a tamaño de lámina, con la cuenta exacta de lo que aporta en ese momento. En sala, pulsar un trono cuando no es tu turno (o cualquier ruta, oferta o carta con Alt) deja una **seña** con tus iniciales para la conjura: no decide nada, solo señala.
 `;
 
 writeFileSync(new URL('../REGLAS.md', import.meta.url), md);
@@ -306,7 +310,7 @@ function balanceMd(r: Report): string {
     return `${cuales} de ${t.mediana[0]} a ${t.mediana[1]}${i === 0 ? ' turnos de mediana' : ''} (P95 ≤ ${t.p95})`;
   });
   return [
-    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
+    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de los Amuletos). El informe completo —cada Amuleto, Trampa, Bendición, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
     `Campañas ganadas por Reinado (con la ${DECK[MAZO_INICIAL].name}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con el Altar vacío y ${entre(O.reinado1.lleno)} con el Altar lleno; Reinado 8 ${entre(O.reinado8.vacio)} con el Altar vacío y ${entre(O.reinado8.lleno)} con el Altar lleno; y cada Reinado, más difícil que el anterior.`,
     '',

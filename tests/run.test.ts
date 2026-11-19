@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GameState, SEALS, TREATMENTS, applyAction, currentPlayer, seedFrom } from '../src/rules/engine';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS, claim, deckUnlocked, noteEvents, noteRun, unlockedPool } from '../src/rules/achievements';
-import { ASCENSIONS, BOSSES, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FURIA } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, toolSlots, CONTRACT, DECKS, EVENT, EVENTS, EVENT_AFTER, LAST_STAGE, META_VERSION, roundHp, MAX_ASCENSION, RUN_VERSION, Run, RunAction, STAGES, TAGS, UPGRADES, buyUpgrade, cleanUp, depthOf, finishBattle, healCost, loadMeta, mvpTool, newMeta, newRun, publicRun, removeCost, renownFor, rerollCost, runAction, sellValue, settle, stageConfig, stageDef, stagesCleared, startStage, trackEvents, FURIA } from '../src/rules/run';
 import { BASE_POOL, SPECIAL, SPECIALS } from '../src/rules/specials';
 import { TOOL, TOOL_SLOTS, toolPool } from '../src/rules/tools';
 import { BALANCE } from '../src/rules/balance-config';
@@ -356,9 +356,13 @@ describe('ferretería', () => {
     const sobre = run.shop.find((o) => o.kind === 'sobre')!;
     const blind = run.shop.find((o) => o.kind === 'clandestino')!;
     expect(blind.cost).toBeLessThan(sobre.cost + 1);
+    // V40 1d · la Faja ancha (nodo `tienda`) no cambia el surtido: suma huecos de Amuleto
     const guild = newRun({ up: { tienda: 1 } }, 21);
     toShop(guild);
-    expect(guild.shop.filter((o) => o.kind === 'tool').length).toBe(BALANCE.taberna.reliquias + 1);
+    expect(guild.shop.filter((o) => o.kind === 'tool').length).toBe(BALANCE.taberna.reliquias);
+    expect(toolSlots(guild)).toBe(TOOL_SLOTS + 1);
+    expect(toolSlots(newRun({ up: { tienda: 2 } }, 21))).toBe(TOOL_SLOTS + 2);
+    expect(toolSlots(run)).toBe(TOOL_SLOTS);
   });
 
   it('sobre de especiales: se abre y eliges 1 de 3; mientras tanto no puedes irte', () => {
@@ -462,7 +466,7 @@ describe('ferretería', () => {
     run.integrity = 10;
     expect(healCost(run)).toBe(5);
     act(run, { t: 'heal' });
-    expect(run.integrity).toBe(16);
+    expect(run.integrity).toBe(Math.min(run.maxIntegrity, 16));
     expect(healCost(run)).toBe(6);
   });
 
@@ -544,11 +548,11 @@ describe('cinturón', () => {
   it('las herramientas cambian las reglas de la obra', () => {
     const run = newRun({}, 4);
     const base = stageConfig(run);
-    run.tools = ['sacos', 'andamio', 'nivel'].map((id) => ({ id, n: 0 }));
+    run.tools = ['sacos', 'andamio', 'sordina'].map((id) => ({ id, n: 0 }));
     const cfg = stageConfig(run);
     expect(cfg.wallCap).toBe(base.wallCap + 4);
     expect(cfg.handSize[1]).toBe(MANO0 + 1);
-    expect(cfg.cleanTol).toBe(1);
+    for (const r of [10, 11, 12]) expect(cfg.floorThreat[r]).toBe(Math.max(1, base.floorThreat[r] - 1));
   });
 });
 
@@ -723,10 +727,9 @@ describe('final, cimientos abisales y gremio', () => {
     const got = claim(meta).map((a) => a.id);
     for (const id of ['primera', 'capataz', 'media', 'madre', 'golpe100', `j-${run.bosses[LAST_STAGE]}`]) expect(got).toContain(id);
     expect(deckUnlocked(meta, 'mentiroso')).toBe(true);
-    // V40 1c · el trofeo de un Rey abre sus cartas legendarias (las de los monarcas viejos de su palo)
-    const suyas = SPECIALS.filter((x) => x.locked === `j-${run.bosses[LAST_STAGE]}`).map((x) => x.id);
-    expect(suyas.length).toBeGreaterThan(0);
-    for (const id of suyas) expect(unlockedPool(meta)).toContain(id);
+    // V40 1d · las 8 Trampas del Bufón no se desbloquean: todas están en el surtido desde el principio
+    expect(SPECIALS.filter((x) => x.locked)).toEqual([]);
+    expect(unlockedPool(meta)).toEqual([]);
     expect(claim(meta)).toEqual([]);
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
     for (const d of DECKS) if (d.unlock) expect(ACHIEVEMENTS.some((a) => a.id === d.unlock), d.id).toBe(true);

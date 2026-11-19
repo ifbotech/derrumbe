@@ -234,12 +234,12 @@ describe('V40 1c · niveles de los Reyes con 2 y 4 piezas', () => {
     expect(sin.cleanTol ?? 0).toBe(0);
   });
 
-  it('Espadas [4]: con 2 cartas de Espadas o más, ×Multi y el enemigo queda Aturdido (con su paso en el desglose)', () => {
+  it('Espadas [4]: con 2 cartas de Espadas o más, ×Multi (con su paso en el desglose; V40 1d: ya no deja Aturdido)', () => {
     const escalera = [card('S2'), card('S3'), card('C4')];
     const de4 = env(piezas('espadas', 4));
     const r = strike(de4, escalera, 'D');
     expect(r.events.some((e) => e.e === 'step' && e.src === 'rey' && e.id === 'espadas')).toBe(true);
-    expect(de4.towers.D.fx.sobrecarga).toBe(true);
+    expect(de4.towers.D.fx.sobrecarga).toBeFalsy();
     const de3 = env(piezas('espadas', 3));
     const r3 = strike(de3, escalera, 'D');
     expect(r3.events.some((e) => e.e === 'step' && e.src === 'rey')).toBe(false);
@@ -264,10 +264,15 @@ describe('V40 1c · niveles de los Reyes con 2 y 4 piezas', () => {
     expect(st.integrity).toBe(antes);
   });
 
-  it('Bastos [4] y Copas [2]/[4]: Escudo y curación por guardia abatido', () => {
+  it('Bastos [4]: el tope del Escudo sube; Copas [2]/[4]: curación por guardia abatido', () => {
+    const tope = (n: number) => {
+      const c = structuredClone(DEFAULT_CONFIG);
+      nivelesCfg(c, nivelesReyes({ bendiciones: piezas('bastos', n) }));
+      return c.wallCap;
+    };
+    expect(tope(4)).toBe(tope(3) + BALANCE.niveles.bastos.tope);
     const facil = (bend: BendInst[]) => env(bend, { config: { ...structuredClone(DEFAULT_CONFIG), floorHp: { 10: 2, 11: 900, 12: 900 }, orden: ['D', 'C', 'H', 'S'] } });
     const golpe = (bend: BendInst[], c: string) => strike(facil(bend), [card(c)], 'D');
-    expect(golpe(piezas('bastos', 4), 'C5').wallGain).toBe(golpe(piezas('bastos', 3), 'C5').wallGain + BALANCE.niveles.bastos.escudo2);
     const cura = (bend: BendInst[], c: string) => golpe(bend, c).events.some((e) => e.e === 'step' && e.src === 'rey' && e.id === 'copas');
     expect(cura(piezas('copas', 2), 'H5')).toBe(true);
     expect(cura(piezas('copas', 2), 'C5')).toBe(false);

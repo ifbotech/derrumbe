@@ -1,7 +1,8 @@
 // Sello de pólvora entre tronos presentes (V12, SPECS/V12.md 1.8, fila 4). Los vecinos del golpeado son los
 // tronos que están en el asalto (no los ausentes) a su izquierda y a su derecha en la fila ♠ ♦ ♥ ♣.
 //   · con 4 tronos no cambia nada: 2.000 golpes con semilla dan lo mismo que la regla de la 11.0
-//     (tests/fixtures/polvora-4-tronos.json se grabó con el código de la 11.0, con GRABAR_POLVORA=1)
+//     (tests/fixtures/polvora-4-tronos.json se grabó con el código de la 11.0 y se regrabó en la V40 1d, con los
+//     Amuletos nuevos, con GRABAR_POLVORA=1)
 //   · con 2 tronos el vecino es el otro; con 3, uno o dos
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';

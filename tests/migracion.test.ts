@@ -7,7 +7,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ASALTOS_10, abonoCampanaVieja, dondeActa, recortaMeta10 } from '../src/rules/migracion';
-import { ESQUIRLAS_POR_CORONA, META_38, META_40, RUN_11, RUN_38, RUN_40, abonoFrancesa, campanaFrancesa, campanaSinReyes, mazoDe, migraMeta38, migraMeta40, migraMeta40c } from '../src/rules/migracion';
+import { ARCONES_40C, ESQUIRLAS_POR_CORONA, META_38, META_40, META_40C, RUN_11, RUN_38, RUN_40, RUN_40C, abonoFrancesa, campanaConReliquias, campanaFrancesa, campanaSinReyes, mazoDe, migraMeta38, migraMeta40, migraMeta40c, migraMeta40d } from '../src/rules/migracion';
+import { TOOL } from '../src/rules/tools';
+import { SPECIAL } from '../src/rules/specials';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { applyAction, currentPlayer } from '../src/rules/engine';
 import { DECK, LAST_STAGE, META_VERSION, MONARCAS_VIEJOS, Meta, RUN_VERSION, Run, cargaRun, finishBattle, loadMeta, newMeta, newRun, runAction, settle, startStage, trackEvents } from '../src/rules/run';
@@ -23,6 +25,12 @@ const G = JSON.parse(readFileSync(new URL('./fixtures/guardado-10.0.json', impor
   campaign: { run: { v: number; stage: number; phase: string }; key: string };
   acta: { stage: number; de?: number };
 };
+
+/** V40 1d · los rangos del Altar sin los seis arcones viejos, y las esquirlas con que se devuelven. */
+const sinArcones = (up: Record<string, number>) => Object.fromEntries(Object.entries(up).filter(([id]) => !(id in ARCONES_40C)));
+const abonoArcones = (up: Record<string, number>) => Object.entries(ARCONES_40C).reduce((a, [id, c]) => a + ((up[id] ?? 0) > 0 ? c : 0), 0);
+/** V40 1d · lo visto en la Colección, sin las Reliquias ni las especiales que se fueron. */
+const vistos = <S extends { tools: string[]; specials: string[] }>(seen: S): S => ({ ...seen, tools: seen.tools.filter((id) => TOOL[id]), specials: seen.specials.filter((id) => SPECIAL[id]) });
 
 describe('el guardado es de verdad de la 10.0', () => {
   it('versiones y marcas de la 10.0', () => {
@@ -44,15 +52,18 @@ describe('una Meta de la 10.0 en la V12: se conserva todo el progreso (y sus Cor
 
   it('La Orden (mejoras), logros, colección, maestrías y contadores, intactos; Coronas × 100', () => {
     expect(meta.v).toBe(META_VERSION);
-    expect(META_VERSION).toBe(7);
-    expect(meta.renown).toBe(old.renown * ESQUIRLAS_POR_CORONA); // no se devuelve nada: las mejoras siguen compradas
-    expect(meta.up).toEqual(old.up);
+    expect(META_VERSION).toBe(8);
+    // no se devuelve nada salvo los arcones viejos (V40 1d): las demás mejoras siguen compradas
+    expect(meta.renown).toBe(old.renown * ESQUIRLAS_POR_CORONA + abonoArcones(old.up));
+    expect(meta.up).toEqual(sinArcones(old.up));
     // V40 1c · los trofeos y los monarcas vistos de los siete monarcas viejos pasan al Rey de su palo
     const conReyes = migraMeta40c(structuredClone({ ach: old.ach, seen: old.seen }), MONARCAS_VIEJOS);
     expect(meta.ach).toEqual(conReyes.ach);
-    expect(meta.seen).toEqual(conReyes.seen);
+    expect(meta.seen).toEqual(vistos(conReyes.seen));
     // V40 (1b): la maestría de cada baraja vieja pasa a su Mazo
-    expect(meta.mastery).toEqual(migraMeta40(structuredClone({ mastery: old.mastery })).mastery);
+    const maestria = migraMeta40(structuredClone({ mastery: old.mastery })).mastery;
+    // V40 1d · y la de las Reliquias que se fueron se va con ellas
+    expect(meta.mastery).toEqual({ ...maestria, tools: Object.fromEntries(Object.entries(maestria.tools ?? {}).filter(([id]) => TOOL[id])) });
     expect(meta).toMatchObject({ runs: old.runs, wins: old.wins, ascMax: old.ascMax, last: old.last });
     const { reach: _r, dailies: _d, ...stats } = old.stats as typeof old.stats & { dailies?: number }; // V40: sin Asalto diario
     expect(meta.stats).toMatchObject(stats);
@@ -88,7 +99,7 @@ describe('un perfil de antes de la 2: se devuelven las Coronas y se vacían las 
 describe('la campaña a medias de la 10.0 se cierra y cobra lo superado', () => {
   it('su versión ya no es la de ahora: no se puede continuar', () => {
     expect(G.campaign.run.v).not.toBe(RUN_VERSION);
-    expect(RUN_VERSION).toBe(8);
+    expect(RUN_VERSION).toBe(9);
     expect(cargaRun(structuredClone(G.campaign.run))).toBeNull();
   });
 
@@ -145,14 +156,15 @@ describe('un perfil de la 11.0 en la V12: Coronas → Esquirlas de Corona, mejor
 
   it('0 rangos perdidos, saldo × 100 y el aviso para el Árbol', () => {
     expect(meta.v).toBe(META_VERSION);
-    expect(meta.up).toEqual(old.up);
-    expect(meta.renown).toBe(old.renown * 100);
-    const rangos = Object.values(old.up).reduce((a, b) => a + b, 0);
-    expect(meta.aviso).toEqual({ id: 'arbol-v12', coronas: old.renown, esquirlas: old.renown * 100, rangos });
+    expect(meta.up).toEqual(sinArcones(old.up));
+    expect(meta.renown).toBe(old.renown * 100 + abonoArcones(old.up));
+    // V40 1d · el arcón viejo ya no existe en el Árbol: la migración de la V12 lo devuelve al pasar (y no cuenta como rango)
+    const rangos = Object.values(sinArcones(old.up)).reduce((a, b) => a + b, 0);
+    expect(meta.aviso).toEqual({ id: 'arbol-v12', coronas: old.renown, esquirlas: old.renown * 100 + abonoArcones(old.up), rangos });
     // V40 1c · los trofeos y los monarcas vistos de los siete monarcas viejos pasan al Rey de su palo
     const conReyes = migraMeta40c(structuredClone({ ach: old.ach, seen: old.seen }), MONARCAS_VIEJOS);
     expect(meta.ach).toEqual(conReyes.ach);
-    expect(meta.seen).toEqual(conReyes.seen);
+    expect(meta.seen).toEqual(vistos(conReyes.seen));
     expect(meta).toMatchObject({ runs: old.runs, wins: old.wins, best: old.best, ascMax: old.ascMax });
   });
 
@@ -256,5 +268,44 @@ describe('V40 (tramo 1b) · de las seis barajas de inicio a los 5 Mazos', () => 
     expect(campanaFrancesa({ v: RUN_38 }, RUN_40)).toBe(true);
     expect(campanaFrancesa({ v: RUN_40 }, RUN_40)).toBe(false);
     expect(cargaRun({ ...vieja, v: RUN_38 })).toBeNull();
+  });
+});
+
+describe('V40 (tramo 1d) · de las 52 Reliquias a los 22 Amuletos y de las 25 especiales a las 8 Trampas', () => {
+  it('la Meta del tramo 1c se queda con lo que sigue existiendo y cobra los arcones viejos en esquirlas', () => {
+    const vieja = {
+      ...structuredClone(newMeta()),
+      v: META_40C,
+      renown: 100,
+      up: { caja: 2, caja_precision: 1, caja_aguante: 1, tasador: 1 },
+      seen: { ...newMeta().seen, tools: ['piqueta', 'ariete', 'andamio', 'rebosadero'], specials: ['gemelo', 'embestida', 'bola'] },
+      mastery: { tools: { piqueta: 3, ariete: 5 }, decks: { escoba: 2 } },
+    };
+    const meta = loadMeta(structuredClone(vieja));
+    expect(meta.v).toBe(META_VERSION);
+    expect(meta.up).toEqual({ caja: 2, tasador: 1 });
+    expect(meta.renown).toBe(100 + 800);
+    expect(meta.seen.tools).toEqual(['piqueta', 'andamio']);
+    expect(meta.seen.specials).toEqual(['gemelo', 'bola']);
+    expect(meta.mastery.tools).toEqual({ piqueta: 3 });
+    expect(meta.mastery.decks).toEqual({ escoba: 2 });
+    expect(meta.avisoAmuletos).toEqual({ id: 'amuletos-v40', arcones: 2, esquirlas: 800 });
+    // migrar dos veces no cambia nada (y el aviso se queda para que el cliente lo enseñe una vez)
+    expect(loadMeta(JSON.parse(JSON.stringify(meta)))).toEqual(meta);
+  });
+
+  it('sin nada que devolver, no hay aviso', () => {
+    const m = migraMeta40d({ renown: 5, up: { caja: 1 } }, (id) => !!TOOL[id], (id) => !!SPECIAL[id]);
+    expect(m).toEqual({ renown: 5, up: { caja: 1 } });
+  });
+
+  it('la campaña a medias del tramo 1c (con Reliquias) ya no sigue y se cobra', () => {
+    const run = newRun({ seedText: 'RELIQUIA', deck: 'escoba' }, 9);
+    const vieja = JSON.parse(JSON.stringify({ ...run, v: RUN_40C, tools: [{ id: 'ariete', n: 0 }] }));
+    expect(RUN_VERSION).toBeGreaterThan(RUN_40C);
+    expect(campanaConReliquias(vieja)).toBe(true);
+    expect(campanaConReliquias(JSON.parse(JSON.stringify(run)))).toBe(false);
+    expect(cargaRun(vieja)).toBeNull();
+    expect(abonoFrancesa({ ...vieja, esquirlas: 120 })).toBe(120);
   });
 });

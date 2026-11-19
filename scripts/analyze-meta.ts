@@ -13,6 +13,10 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //   npm run analyze:meta -- --tramo=1/5 … --tramo=5/5 y luego -- --juntar   el informe completo por tramos (< 300 s cada uno)
 //     (V40 1c: antes de --juntar, -- --previo=clasica:1,2 · --previo=clasica:3,4 · --previo=confirmar, cada uno < 170 s)
 //   npm run analyze:meta -- --fast  certificación rápida del bucle (6.000 campañas, < 90 s; 0 s si la huella no cambió)
+//   npm run analyze:meta -- altar     (V40 1d) el Altar lleno quitando un grupo de nodos cada vez (los 5 Mazos por
+//     turno, --n=600 por grupo): qué parte del Altar suma y cuál resta
+//   npm run analyze:meta -- sellos --tramo=1/3 … --tramo=3/3 y luego -- sellos --juntar   (V40 1d) los sellos S · A · B de
+//     cada Amuleto, Trampa y Bendición (regalo de salida frente a control, --n=800 por pieza) → balance-config.json
 //
 // Qué mide:
 //   · porcentaje de campañas ganadas por baraja y por Reinado, con el Árbol vacío y lleno
@@ -34,14 +38,15 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAction } from '../src/rules/bot';
 import { DIFFICULTY, SEAL, SEALS, TREATMENT, TREATMENTS, applyAction, createGame, currentPlayer } from '../src/rules/engine';
-import { MAZO_INICIAL } from '../src/rules/mazos';
-import { ASCENSIONS, BOSS, BOSSES, DECKS, LAST_STAGE, STAGES } from '../src/rules/run';
+import { MAZO_IDS, MAZO_INICIAL } from '../src/rules/mazos';
+import { ASCENSIONS, BOSS, BOSSES, DECKS, LAST_STAGE, STAGES, UPGRADES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
 import { TITLE } from '../src/shared/brand';
 import { Log, Spec, fingerprint, playCampaign } from './lab';
 import { BENDICION, BENDICIONES, REY_NOMBRE } from '../src/rules/reyes';
 import { OBJETIVOS, avisos, noise, revisarClasica } from './objetivos';
+import { Medida, bloqueSellos, conSellos, repartoSellos } from './sellos';
 
 const args = process.argv.slice(2);
 // V12 · certificación rápida: 6.000 campañas en hilos de trabajo, o nada si la huella no cambió (scripts/lab-rapido.ts)
@@ -72,6 +77,9 @@ const GIFT_MAX = OBJETIVOS.regalo.maximo;
 const onlyPieces = arg('piezas')?.split(',') ?? [];
 // El umbral de ruido de cada pieza (`noise`) vive con los objetivos, en scripts/objetivos.ts.
 
+/** V40 1d · los grupos de nodos del Altar que mide el modo «altar» (los que tocan el combate o La Pulpería). */
+const GRUPOS_ALTAR: string[][] = [['caja_espadas'], ['caja_bastos'], ['caja_oros'], ['caja_copas'], ['tienda'], ['tasador', 'vale', 'caja'], ['rutas'], ['tampones', 'bronce'], ['hueso_tallado', 'cara_rey', 'segundo_hueso']];
+
 // ───────────────────────── Plan de campañas ─────────────────────────
 
 function plan(): Spec[] {
@@ -86,6 +94,27 @@ function plan(): Spec[] {
   };
   const all = ASCENSIONS.map((_, a) => a);
   if (mode === 'clasica') return specs;
+  if (mode === 'sellos') {
+    // V40 1d · cada pieza de regalo al empezar, en las mismas campañas que el control: los 5 Mazos por turno y el Altar
+    // vacío y lleno a medias (Reinado 1)
+    const count = N || 800;
+    const each = (extra: Partial<Spec>) => seeds(count, 41).forEach((seed, i) => specs.push({ seed, deck: MAZO_IDS[i % MAZO_IDS.length], ascension: 0, full: i % 2 === 1, ...extra }));
+    each({ control: 'tool' });
+    for (const t of TOOLS) each({ giveTool: t.id });
+    for (const x of SPECIALS) each({ giveSpecial: x.id });
+    for (const b of BENDICIONES) each({ giveBendicion: b.id });
+    return specs;
+  }
+  if (mode === 'altar') {
+    // V40 1d · el Altar lleno sin cada grupo de nodos que toca el combate o La Pulpería, frente al vacío y al lleno
+    const count = N || 600;
+    const todos = UPGRADES.map((u) => u.id);
+    const each = (extra: Partial<Spec>) => seeds(count, 43).forEach((seed, i) => specs.push({ seed, deck: MAZO_IDS[i % MAZO_IDS.length], ascension: 0, full: true, ...extra }));
+    each({ full: false, sinAltar: 'vacío' });
+    each({ sinAltar: 'lleno' });
+    for (const g of GRUPOS_ALTAR) each({ sinAltar: g.join(','), only: todos.filter((id) => !g.includes(id)) });
+    return specs;
+  }
   if (mode === 'regalos') {
     // unas pocas piezas con muestra grande, para saber si un aviso del informe es ruido o no
     const count = N || 600;
@@ -126,7 +155,7 @@ if (shard) {
 }
 
 /** V35 · tramos: dónde deja cada tramo sus registros hasta que `--juntar` los lee. */
-const TRAMOS = join(tmpdir(), 'derrumbe-meta-tramos');
+const TRAMOS = join(tmpdir(), mode === 'altar' ? 'derrumbe-altar-tramos' : mode === 'sellos' ? 'derrumbe-sellos-tramos' : 'derrumbe-meta-tramos');
 const tramo = arg('tramo')?.split('/').map(Number) as [number, number] | undefined;
 
 async function runAll(argv: string[] = args): Promise<Log[]> {
@@ -371,6 +400,43 @@ if (previo) {
     writeFileSync(CONFIRMAR, JSON.stringify(sus.length ? await runAll(['regalos', `--piezas=${sus.join(',')}`, `--n=${CONFIRM_N}`, '--sal=37']) : []));
   } else throw new Error(`--previo=${previo}: se espera clasica:<jugadores> o confirmar`);
   console.log(`Previo «${previo}» hecho · ${Math.round((Date.now() - started) / 1000)} s.`);
+  process.exit(0);
+}
+if (mode === 'altar') {
+  const logs = args.includes('--juntar') ? await juntados() : await runAll();
+  const grupos = [...new Set(logs.map((l) => l.spec.sinAltar!))];
+  const ref = wr(logs.filter((l) => l.spec.sinAltar === 'lleno'));
+  console.log(`\n${TITLE} · el Altar por partes · Reinado 1, los 5 Mazos por turno · ${logs.length} campañas`);
+  for (const g of grupos) {
+    const de = logs.filter((l) => l.spec.sinAltar === g);
+    const v = wr(de);
+    console.log(`  ${(g === 'vacío' || g === 'lleno' ? g : `lleno sin ${g}`).padEnd(64)} ${String(v).padStart(5)} %   ${g === 'lleno' ? '' : `(${v - ref > 0 ? '+' : ''}${Math.round((v - ref) * 10) / 10} frente al lleno)`}   (${de.length})`);
+  }
+  console.log(`  diferencia que se puede creer entre dos filas: ±${noise(N || 600, N || 600, ref)}`);
+  process.exit(0);
+}
+if (mode === 'sellos') {
+  // V40 1d · los sellos S · A · B: el efecto de cada pieza dada de salida frente al control, repartido por tercios
+  const logs = args.includes('--juntar') ? await juntados() : await runAll();
+  const control = logs.filter((l) => l.spec.control);
+  const ref = wr(control);
+  const medir = (given: Log[], id: string): Medida => ({ id, delta: Math.round((wr(given) - ref) * 10) / 10, n: given.length });
+  const clases = {
+    amuletos: TOOLS.map((t) => medir(logs.filter((l) => l.spec.giveTool === t.id), t.id)),
+    trampas: SPECIALS.map((x) => medir(logs.filter((l) => l.spec.giveSpecial === x.id), x.id)),
+    bendiciones: BENDICIONES.map((b) => medir(logs.filter((l) => l.spec.giveBendicion === b.id), b.id)),
+  };
+  const sellos = { amuletos: repartoSellos(clases.amuletos), trampas: repartoSellos(clases.trampas), bendiciones: repartoSellos(clases.bendiciones) };
+  const ruido = noise(control.length, control.length, ref);
+  console.log(`\n${TITLE} · sellos de nivel · ${logs.length} campañas · control ${ref} % en ${control.length} (diferencia que se puede creer: ±${ruido})`);
+  for (const [k, filas] of Object.entries(clases)) {
+    console.log(`\n${k}`);
+    for (const f of [...filas].sort((a, b) => b.delta - a.delta)) console.log(`  ${sellos[k as keyof typeof sellos][f.id]}  ${f.id.padEnd(14)} ${String(f.delta).padStart(6)}   (${f.n})`);
+  }
+  const cfg = fileURLToPath(new URL('../src/rules/balance-config.json', import.meta.url));
+  writeFileSync(cfg, conSellos(readFileSync(cfg, 'utf8'), bloqueSellos(sellos)));
+  writeFileSync(fileURLToPath(new URL('./sellos-report.json', import.meta.url)), JSON.stringify({ generated: 'npm run analyze:meta -- sellos', control: { winrate: ref, n: control.length }, ruido, ...clases, sellos }, null, 1) + '\n');
+  console.log(`\nbalance-config.json (sellosNivel) y scripts/sellos-report.json · ${Math.round((Date.now() - started) / 1000)} s`);
   process.exit(0);
 }
 const juntar = args.includes('--juntar');

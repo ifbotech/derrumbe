@@ -1,7 +1,8 @@
 // Constitución anticomplejidad del juego. Si un cambio rompe una de estas pruebas, el cambio está mal:
 // no se sube el límite, se simplifica otra cosa.
 //
-//   · como mucho 5 palabras clave (V11) y 56 reliquias (TOOLS), con identificadores únicos
+//   · como mucho 5 palabras clave (V11); de 20 a 24 Amuletos (TOOLS) en 4 familias de 5 o 6, una por Rey, y 8 Trampas
+//     del Bufón (SPECIALS) (V40 1d; antes, 56 reliquias como mucho), con identificadores únicos
 //   · toda descripción cabe en 100 caracteres (V12; antes 115) y no inventa palabras clave
 //   · el informe publicado del laboratorio (scripts/meta-report.json) es de estas reglas, no trae avisos,
 //     ningún asalto (los cinco) pasa del tope de turnos de su tramo en el percentil 95 con ninguna baraja, y los Reinados 1 y 8
@@ -41,8 +42,12 @@ describe('constitución anticomplejidad', () => {
     expect(new Set(KEYWORDS.map((k) => k.id)).size).toBe(KEYWORDS.length);
   });
 
-  it('como mucho 56 herramientas, con identificadores únicos', () => {
-    expect(TOOLS.length).toBeLessThanOrEqual(56);
+  it('V40 1d · de 20 a 24 Amuletos en 4 familias de 5 o 6 (una por Rey) y 8 Trampas del Bufón, con identificadores únicos', () => {
+    expect(TOOLS.length).toBeGreaterThanOrEqual(20);
+    expect(TOOLS.length).toBeLessThanOrEqual(24);
+    for (const rey of REY_IDS) expect(TOOLS.filter((t) => t.arch === rey).length, rey).toBeGreaterThanOrEqual(5);
+    for (const rey of REY_IDS) expect(TOOLS.filter((t) => t.arch === rey).length, rey).toBeLessThanOrEqual(6);
+    expect(SPECIALS).toHaveLength(8);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
     expect(new Set(TOOLS.map((t) => t.name)).size).toBe(TOOLS.length);
     expect(new Set(SPECIALS.map((s) => s.id)).size).toBe(SPECIALS.length);

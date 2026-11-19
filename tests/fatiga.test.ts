@@ -86,31 +86,12 @@ describe('fatiga de cimientos', () => {
   });
 });
 
-describe('aguante: la defensa se cobra en daño', () => {
-  it('la caja de aguante trae sus cuatro remates', () => {
-    expect(TOOLS.filter((t) => t.arch === 'aguante').map((t) => t.id)).toEqual(['ariete', 'contragolpe', 'rebosadero', 'bastion']);
+describe('Rey de Bastos: la defensa se cobra en daño', () => {
+  it('V40 1d · la familia del Rey de Bastos trae sus cinco Amuletos', () => {
+    expect(TOOLS.filter((t) => t.arch === 'bastos').map((t) => t.id)).toEqual(['maza', 'sacos', 'encofrado', 'contragolpe', 'sordina']);
   });
 
-  it('Ariete suma Fuerza por cada punto de muro, y la Embestida también', () => {
-    const cfg = cfgWith();
-    const bare = previewStrike(table(cfg, [], { wall: 6 }), [card('S5')], 'D').fuerza;
-    expect(previewStrike(table(cfg, ['ariete'], { wall: 6 }), [card('S5')], 'D').fuerza).toBe(bare + 24);
-    expect(previewStrike(table(cfg, ['ariete'], { wall: 0 }), [card('S5')], 'D').fuerza).toBe(bare);
-    expect(SPECIAL.embestida.fx.wallForce).toBe(3);
-    const rider: Card = { id: 'sp-e', suit: 'X', rank: 0, sp: 'embestida' };
-    expect(previewStrike(table(cfg, [], { wall: 4 }), [card('S5'), rider], 'D').fuerza).toBe(bare + 4 + 12);
-    // sin muro no es una carta muerta: su Fuerza fija sigue ahí
-    expect(previewStrike(table(cfg, [], { wall: 0 }), [card('S5'), rider], 'D').fuerza).toBe(bare + 4);
-  });
-
-  it('Baluarte suma Multi con el Escudo a la mitad de su tope o más', () => {
-    const cfg = cfgWith();
-    const low = previewStrike(table(cfgWith(), ['bastion'], { wall: 3 }), [card('S5')], 'D').res;
-    const high = previewStrike(table(cfg, ['bastion'], { wall: 4 }), [card('S5')], 'D').res;
-    expect(high).toBe(low + BALANCE.reliquias.bastion.multi);
-  });
-
-  it('Contragolpe devuelve el triple de lo que el muro frena entero, y nada si la sirena pasa', () => {
+  it('el Talero devuelve el triple de lo que el Escudo frena entero, y nada si el Contraataque pasa', () => {
     const play = (wall: number) => {
       const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 } });
       const s = table(cfg, ['contragolpe'], { wall });
@@ -121,18 +102,6 @@ describe('aguante: la defensa se cobra en daño', () => {
     };
     expect(play(5)).toBe(9);
     expect(play(1)).toBe(0);
-  });
-
-  it('Rebosadero: el muro que sobra repara, y lo que sobra de reparar carga Fuerza', () => {
-    // guardias que no pegan: lo que se mide es lo que rebosa
-    const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 0, 11: 0, 12: 0 } });
-    const s = table(cfg, ['rebosadero'], { wall: cfg.wallCap - 1, integrity: cfg.maxIntegrity - 1 });
-    s.players[0].hand = [card('C8'), card('C9'), card('C10')];
-    // escalera de tréboles: tres ♣, +6 de Escudo; cabe 1 y sobran 5 → cura 2; cabe 1 y sobra 1 → +3 de Daño cargado
-    const out = applyAction(s, 'a', { type: 'attack', cards: ['C8', 'C9', 'C10'], target: 'S' }).state;
-    expect(out.wall).toBe(cfg.wallCap);
-    expect(out.integrity).toBe(cfg.maxIntegrity);
-    expect(out.charge).toBe(3);
   });
 });
 

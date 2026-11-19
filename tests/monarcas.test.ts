@@ -117,21 +117,9 @@ describe('F1 · el factor de palo que lleva el sello de cada carta', () => {
     expect(pairs.filter(([c, t]) => multiplier(c, t) > 1)).toHaveLength(0);
   });
 
-  it('con la Gota de veneno (acido) nadie es Inmune: ×1 contra el propio trono', () => {
-    const cfg = withTool('acido');
-    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(1);
-  });
-
-  it('con la Máscara de traidor (contrapeso) el propio palo hace el doble contra su trono', () => {
-    const cfg = withTool('contrapeso');
-    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(c === t ? 2 : 1);
-  });
-
   it('un comodín (o una carta especial, palo X) no lleva factor: 0 contra cualquier trono', () => {
     for (const t of SUITS) {
       expect(multiplier('X' as CardSuit, t, DEFAULT_CONFIG)).toBe(0);
-      expect(multiplier('X', t, withTool('acido'))).toBe(0);
-      expect(multiplier('X', t, withTool('contrapeso'))).toBe(0);
     }
   });
 });

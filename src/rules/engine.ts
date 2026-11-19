@@ -6,7 +6,7 @@
 //     Golpe = Daño × Multi      (en el código: fuerza × res; los dos, siempre enteros)
 //
 // La formación pone la base; cada carta suma su Daño (0 contra el trono de su palo: Inmune); acabados,
-// sellos de lacre, cartas especiales y reliquias suman Daño, suman Multi o lo multiplican, en ese orden.
+// sellos de lacre, Trampas del Bufón y Amuletos suman Daño, suman Multi o lo multiplican, en ese orden.
 // Al final, si el trono estaba Expuesto, el Daño se multiplica.
 // Cada aportación sale en el flujo de eventos como un `step`, para que el cliente la anime.
 import { BALANCE, fill } from './balance-config';
@@ -14,7 +14,7 @@ import { MAX_SPECIALS, SPECIAL } from './specials';
 import { ENGANO_MODOS, MZ, REGLA, bravoDe, enganoCambia, enganoCartas, esEnvido, esEscoba, formacionMazo } from './mazos';
 import type { Cargas, EnganoEstado, EnganoModo, MazoId } from './mazos';
 import { TOOL, espejada } from './tools';
-import { BENDICION, REY_NOMBRE, dadoSalva, nivelesAfter, nivelesReyes, nivelesStrike, usaDado } from './reyes';
+import { BENDICION, REY_NOMBRE, dadoSalva, fuentesDe, nivelesAfter, nivelesReyes, nivelesStrike, usaDado } from './reyes';
 import type { BendInst, ReyId } from './reyes';
 import type { ToolInst } from './tools';
 
@@ -918,7 +918,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     const def = TOOL[t.id];
     if (!def) return;
     if (def.kind === 'copy') {
-      // V34: copia la Reliquia más reciente que no sea pasiva (antes, la de su derecha): el hueco ya no cuenta
+      // V34: copia el Amuleto más reciente que no sea pasiva (antes, la de su derecha): el hueco ya no cuenta
       const next = espejada(env.tools);
       const copied = next && TOOL[next.id];
       if (!next || !copied?.strike) return;
@@ -938,7 +938,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     cur = { src: 'bendicion', id: b.id, label: def.name };
     def.strike(x, b);
   });
-  const nv = nivelesReyes({ bendiciones: bend });
+  const nv = nivelesReyes(fuentesDe(bend, env.tools));
   const marca = (rey: ReyId) => void (cur = { src: 'rey', id: rey, label: REY_NOMBRE[rey] });
   nivelesStrike(x, nv, marca);
 
@@ -982,7 +982,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     applyDamage(t, amount, false, true, cfg, tally);
   }
 
-  // 9 · las reliquias reaccionan a cómo quedó el golpe
+  // 9 · los Amuletos reaccionan a cómo quedó el golpe
   const outcome = (): Outcome => ({ total, fallen: tally.fell.length, clean: tally.fell.some((f) => f.clean), fell: tally.fell });
   const seen = outcome();
   env.tools.forEach((t, slot) => {
@@ -1085,7 +1085,7 @@ function hookFor(turn: Turn, slot: number): Hook {
   return hookCon(turn, (label, proc) => turn.events.push({ e: 'step', src: 'tool', id: t.id, slot, label: `${TOOL[t.id]?.name ?? t.id}: ${label}`, fuerza: 0, res: 0, ...(proc ? { proc } : {}) }));
 }
 
-/** V40 1c · El gancho de la Bendición i (como el de una Reliquia, con sus pasos a nombre de la Bendición). */
+/** V40 1c · El gancho de la Bendición i (como el de un Amuleto, con sus pasos a nombre de la Bendición). */
 function hookBend(turn: Turn, i: number): Hook {
   const b = turn.state.bendiciones![i];
   return hookCon(turn, (label, proc) => turn.events.push({ e: 'step', src: 'bendicion', id: b.id, label: `${BENDICION[b.id]?.name ?? b.id}: ${label}`, fuerza: 0, res: 0, ...(proc ? { proc } : {}) }));
@@ -1219,7 +1219,7 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
     return say(t.suit, 'sobrecarga');
   }
   // V40 1c · el Rey de Oros [2] y [4]: con el dado del turno alto, el Contraataque no llega
-  const suerte = dadoSalva(state.bendiciones, state.dado);
+  const suerte = dadoSalva(state.bendiciones, state.dado, state.tools);
   if (suerte) {
     events.push({ e: 'step', src: 'rey', id: 'oros', label: `${REY_NOMBRE.oros}: el dado sacó ${state.dado}`, fuerza: 0, res: 0 });
     return say(t.suit, 'sobrecarga');
@@ -1338,8 +1338,8 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
       const mend = state.config.overwallRepair ? Math.floor(spill / state.config.overwallRepair) : 0;
       if (mend > 0) {
         repair += mend;
-        const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
-        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `${TOOL.rebosadero?.name ?? 'Rebosadero'}: ${spill} de Escudo que no cabe ÷ ${state.config.overwallRepair} = cura ${mend}`, fuerza: 0, res: 0, proc: { what: 'repara', n: mend } });
+        // V40 1d · lo pone el Fogón (Bendición de Bastos y Copas)
+        events.push({ e: 'step', src: 'bendicion', id: 'fogon', label: `${BENDICION.fogon?.name ?? 'Fogón'}: ${spill} de Escudo que no cabe ÷ ${state.config.overwallRepair} = cura ${mend}`, fuerza: 0, res: 0, proc: { what: 'repara', n: mend } });
       }
     }
     if (repair > 0) {
@@ -1351,8 +1351,8 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
       if (over > 0 && state.config.overhealCharge) {
         const gain = over * state.config.overhealCharge;
         state.charge += gain;
-        const slot = state.tools.findIndex((t) => t.id === 'rebosadero');
-        events.push({ e: 'step', src: 'tool', id: 'rebosadero', slot: slot < 0 ? undefined : slot, label: `${TOOL.rebosadero?.name ?? 'Rebosadero'}: ${over} de curación que no cabe × ${state.config.overhealCharge} = +${gain} de Daño cargado`, fuerza: 0, res: 0, proc: { what: 'carga', n: gain } });
+        // V40 1d · lo pone el Cáliz rebosante (Bendición de Copas)
+        events.push({ e: 'step', src: 'bendicion', id: 'caliz', label: `${BENDICION.caliz?.name ?? 'Cáliz rebosante'}: ${over} de curación que no cabe × ${state.config.overhealCharge} = +${gain} de Daño cargado`, fuerza: 0, res: 0, proc: { what: 'carga', n: gain } });
       }
     }
     if (res.hurt > 0) {
@@ -1498,7 +1498,7 @@ function mazoTrasGolpe(turn: Turn, res: StrikeResult, target: Suit, engano: Enga
 
 /** Tira el dado para el turno que empieza (solo con la Taba cargada o con Oros [4]: sin ellos no se gasta azar). */
 export function tiraDado(state: GameState): void {
-  if (usaDado(state.bendiciones) || state.config.jefe?.dado) state.dado = 1 + Math.floor(nextRandom(state) * 6);
+  if (usaDado(state.bendiciones, state.tools) || state.config.jefe?.dado) state.dado = 1 + Math.floor(nextRandom(state) * 6);
   else delete state.dado;
 }
 

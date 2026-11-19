@@ -1,4 +1,4 @@
-// V12 · el Árbol de la Conjura (SPECS/V12.md, apartados 1.5 y 1.12): 30 nodos y la raíz, costes, textos,
+// V12 · el Árbol de la Conjura (SPECS/V12.md, apartados 1.5 y 1.12; V40 1d: 28 nodos, con 4 arcones): 28 nodos y la raíz, costes, textos,
 // compras y la neutralidad de los 17 nodos que no son del Arsenal en la campaña de cinco asaltos (V12-C: Manga
 // honda y Buen ojo solo actúan en el Trono infinito; los otros 15 no cambian ningún combate).
 import { describe, expect, it } from 'vitest';
@@ -14,34 +14,35 @@ import { DICCIONARIOS, tFor } from '../src/shared/i18n';
 import { playCampaign } from '../scripts/lab';
 import { muestra } from './muestra';
 
-const ORDEN_11 = ['caja_precision', 'caja_sismo', 'caja_alquimia', 'caja_limite', 'caja_trituradora', 'caja_aguante', 'tampones', 'bronce', 'vale', 'tienda', 'caja', 'rutas'];
+const ARCONES = ['caja_espadas', 'caja_bastos', 'caja_oros', 'caja_copas'];
+const ORDEN_11 = [...ARCONES, 'tampones', 'bronce', 'vale', 'tienda', 'caja', 'rutas'];
 const INCREMENTALES = ARBOL.filter((n) => !n.combate);
 const PUROS = ARBOL.filter((n) => !n.combate && !n.infinito);
 
 describe('la forma del Árbol', () => {
-  it('30 nodos y la raíz; 13 de combate, 2 del Trono infinito y 15 incrementales puros; 14 de 5 rangos', () => {
-    expect(ARBOL).toHaveLength(30);
+  it('V40 1d · 28 nodos y la raíz; 11 de combate, 2 del Trono infinito y 15 incrementales puros; 14 de 5 rangos', () => {
+    expect(ARBOL).toHaveLength(28);
     expect(RAIZ.id).toBe('raiz');
     expect(nodo('raiz')).toBeUndefined();
-    expect(new Set(ARBOL.map((n) => n.id)).size).toBe(30);
-    expect(ARBOL.filter((n) => n.combate)).toHaveLength(13);
+    expect(new Set(ARBOL.map((n) => n.id)).size).toBe(28);
+    expect(ARBOL.filter((n) => n.combate)).toHaveLength(11);
     expect(INCREMENTALES).toHaveLength(17);
     expect(PUROS).toHaveLength(15);
     expect(ARBOL.filter((n) => n.infinito).map((n) => n.id).sort()).toEqual(['gracia', 'manga']);
     expect(ARBOL.filter((n) => n.rangos === 5)).toHaveLength(14);
     expect(ARBOL.filter((n) => n.rangos === 2 || n.rangos === 3).map((n) => n.id).sort()).toEqual(['gracia', 'tasador', 'tienda', 'vale']);
-    expect(ARBOL.filter((n) => n.rangos === 1)).toHaveLength(12);
+    expect(ARBOL.filter((n) => n.rangos === 1)).toHaveLength(10);
     expect(UPGRADES).toBe(ARBOL);
   });
 
-  it('las 12 mejoras de La Orden siguen con su id en el Arsenal, con sus costes de hoy × 100 (la Bolsa, con 5 rangos)', () => {
+  it('las mejoras de La Orden siguen con su id en el Arsenal (V40 1d: los 4 arcones de los Reyes), con sus costes × 100', () => {
     for (const id of ORDEN_11) expect(nodo(id)?.rama, id).toBe('arsenal');
     // V12-C: los rangos 3 a 5 (nuevos) bajan para que el Arsenal lleno cueste unas 7 campañas (criterio 7)
     expect(nodo('caja')!.costs).toEqual([300, 600, 700, 800, 900]);
     expect(nodo('tasador')!.costs).toEqual([200, 300, 400]);
     expect(nodo('vale')!.costs).toEqual([400, 800]);
     expect(nodo('tienda')!.costs).toEqual([800, 1200]);
-    for (const id of ['caja_precision', 'caja_sismo', 'caja_alquimia', 'caja_limite', 'caja_trituradora', 'caja_aguante']) expect(nodo(id)!.costs).toEqual([400]);
+    for (const id of ARCONES) expect(nodo(id)!.costs).toEqual([400]);
     // V40 1c: 1 de oro por rango (5 con la Bolsa llena; la V35 daba 2: con más oro el bot del laboratorio rendía menos)
     expect(BALANCE.arbol.oroPorNivel).toBe(1);
   });
@@ -162,7 +163,7 @@ describe('comprar', () => {
 
   it('cleanUp recorta a los rangos nuevos (la Bolsa, hasta 5)', () => {
     expect(cleanUp({ caja: 9, vale: 99, gracia: 2, inventada: 3, pendon: -1 })).toMatchObject({ caja: 5, vale: 2, gracia: 2, pendon: 0 });
-    expect(Object.keys(cleanUp({})).length).toBe(30);
+    expect(Object.keys(cleanUp({})).length).toBe(28);
   });
 });
 

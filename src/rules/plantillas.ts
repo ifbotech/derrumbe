@@ -49,7 +49,6 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'paso.otros': '{n} a los otros tronos',
   'paso.oro_si_cae': '+{n} de oro si cae un guardia',
   'paso.robas': 'robás {n}',
-  'paso.pierdes': 'perdés {n} de Vida',
   'paso.escudo': '+{n} de Escudo',
   'paso.vida': '+{n} de Vida',
   'paso.oro': '+{n} de oro',
@@ -60,7 +59,6 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'paso.destruye': 'destruye {carta}',
   'paso.crece': 'crece',
   'paso.corta': 'corta al guardia siguiente',
-  'paso.salpica': 'la mitad salpica',
   'paso.rebosa_escudo': '{n} de Escudo que no cabe ÷ {d} = cura {c}',
   'paso.rebosa_cura': '{n} de curación que no cabe × {d} = +{c} de Daño cargado',
   // V40 · las reglas de los 5 Mazos (engine.ts)
@@ -98,9 +96,9 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'error.sin_seleccion': 'No hay selección pendiente.',
   'error.no_en_seleccion': 'Esa carta no está en la selección.',
   'error.sin_botin': 'No hay botín que elegir.',
-  'error.no_en_botin': 'Esa reliquia no está en el botín.',
-  'error.caben': 'Solo caben {n} reliquias.',
-  'error.caben.vende': 'Solo caben {n} reliquias. Vendé una antes.',
+  'error.no_en_botin': 'Ese Amuleto no está en el botín.',
+  'error.caben': 'Solo caben {n} Amuletos.',
+  'error.caben.vende': 'Solo caben {n} Amuletos. Vendé uno antes.',
   'error.oferta': 'Esa oferta ya no está.',
   'error.sobre_abierto': 'Antes elige una carta del sobre abierto.',
   'error.oro': 'No te alcanza el oro.',
@@ -114,7 +112,7 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'error.solo_taberna': 'Solo en la Pulpería.',
   'error.vida_llena': 'Tu Vida ya está al máximo.',
   'error.no_vender': 'En pleno asalto no se vende.',
-  'error.no_llevas': 'No llevás esa reliquia.',
+  'error.no_llevas': 'No llevás ese Amuleto.',
   'error.no_seguir': 'Aún no podés seguir.',
   'error.sin_bendicion': 'No hay Bendiciones que elegir.',
   'error.no_en_bendicion': 'Esa Bendición no está en la oferta.',
@@ -136,7 +134,7 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'suerte.rueda.reliquia.titulo': 'Gajo del tesoro',
   'suerte.rueda.reliquia.texto': 'Te llevás «{x}».',
   'suerte.rueda.lleno.titulo': 'Gajo del tesoro',
-  'suerte.rueda.lleno.texto': 'No te cabe otra Reliquia: +{n} de oro.',
+  'suerte.rueda.lleno.texto': 'No te cabe otro Amuleto: +{n} de oro.',
   'suerte.rueda.negro.titulo': 'Gajo negro',
   'suerte.rueda.negro.texto': '−{n} de Vida.',
   'suerte.doble.si.titulo': 'Doble',
@@ -155,4 +153,10 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'cuenta.dado': 'Dado de oro ×{n}',
   // V12 · el aviso de la migración a la V12 (meta.aviso), que el Árbol enseña una vez
   'arbol.aviso': 'Tus {coronas} Coronas son ahora {esquirlas} Esquirlas de Corona. Tus {rangos} mejoras siguen en el Arsenal.',
+  // V40 1d · el aviso de la migración a los Amuletos (meta.avisoAmuletos), una vez
+  'amuletos.aviso': 'Llegaron los Amuletos: tus {n} arcones viejos se devolvieron en {esquirlas} ✦.',
+  // V40 1d · la ★ Sinergia de una pieza (piezas.ts): enciende un nivel, encaja con el Mazo o acerca el [4]
+  'sinergia.nivel': '★ {palo} [{n}]',
+  'sinergia.mazo': '★ Para {mazo}',
+  'sinergia.acerca': '★ {palo} {k}/{n}',
 };

@@ -12,25 +12,26 @@ import { BALANCE, fill } from './balance-config';
 import { ARBOL, Nodo, cifraDe, cleanUp as limpiaArbol, comprarNodo, rangoDe } from './arbol';
 import { Caida, Pieza, caidaDe, caidaVacia, sumaPiezas } from './caida';
 import { Tirada, multiplicadores, tirarHuesos } from './huesos';
-import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, META_38, META_40, META_40B, RUN_11, mazoDe, migraMeta11, migraMeta38, migraMeta40, migraMeta40c, migraRun11, recortaMeta10 } from './migracion';
+import { AvisoAmuletos, AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, META_38, META_40, META_40B, META_40C, RUN_11, mazoDe, migraMeta11, migraMeta38, migraMeta40, migraMeta40c, migraMeta40d, migraRun11, recortaMeta10 } from './migracion';
 import { CIFRAS_MAZO, MANO_BASE, MAZO_INICIAL, MZ, TRUCO_MAX, esMazo } from './mazos';
 import type { Cargas, MazoId, ReglaId } from './mazos';
 import { CABALLO, Card, Config, DEFAULT_CONFIG, FIGURAS, FORM, FORMATIONS, Formation, GameEvent, GameState, MAX_NUM, REY, SEALS, SOTA, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
-import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool } from './tools';
-import { BENDICION, PALO_DE_REY, REY_IDS, REY_NOMBRE, bendicionesDe, cierreBendiciones, escudoInicial, esDe, nivelesCfg, nivelesReyes, ofertaBendiciones, reyesEnOferta } from './reyes';
+import { Arch, BOXES, RARITY, Rarity, TOOL, ToolInst, huecosAmuleto, toolPool, placeTool } from './tools';
+import { BENDICION, PALO_DE_REY, REY_IDS, REY_NOMBRE, bendicionesDe, cierreBendiciones, escudoInicial, esDe, fuentesDe, nivelesCfg, nivelesReyes, ofertaBendiciones, reyesEnOferta } from './reyes';
 import type { BendInst, OpcionBend, ReyId } from './reyes';
 
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
 /**
- * Versión del formato de campaña guardada. 8 desde el tramo 1c de la V40 (los 4 Reyes: `bendiciones`, `oferta`, y los
- * monarcas son Reyes). Una de la 6 o la 7 (tramos 1a y 1b, con rasgos y monarcas viejos) no se puede seguir: se
+ * Versión del formato de campaña guardada. 9 desde el tramo 1d de la V40 (Amuletos y Trampas del Bufón en lugar de
+ * Reliquias y especiales: una de la 8 se cierra con su abono, `campanaConReliquias`). 8 desde el tramo 1c (los 4 Reyes:
+ * `bendiciones`, `oferta`, y los monarcas son Reyes). Una de la 6 o la 7 (tramos 1a y 1b, con rasgos y monarcas viejos) no se puede seguir: se
  * descarta con un aviso (`campanaSinReyes`). Una de antes (5, o la 4 de la 11.0) se jugaba con la baraja francesa: se
  * descarta igual (`campanaFrancesa`).
  */
-export const RUN_VERSION = 8;
+export const RUN_VERSION = 9;
 
 /**
  * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
@@ -50,7 +51,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tu Vida máxima baja {heridas}.' },
   { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y los Caballos sube {noche}.' },
-  { name: 'Puertas selladas', desc: 'En los asaltos {asaltos}, el Ataque de los cuatro tronos sube {clausura}.' },
+  { name: 'Puertas selladas', desc: 'En {asaltos}, el Ataque de los cuatro tronos sube {clausura}.' },
 ];
 export const MAX_ASCENSION = ASCENSIONS.length - 1;
 
@@ -239,7 +240,7 @@ export const CONTRACTS: Contract[] = [
   { id: 'austero', name: 'Sin motines', desc: 'No juegues ningún Comodín.', reward: 'Un acabado al azar', done: (b) => b.jokers === 0, pay: (run) => void treatRandom(run) },
   { id: 'maestra', name: 'Jugada maestra', desc: 'Jugá un color, un full, un póker o una escalera de color.', reward: 'Un Pergamino al azar', done: (b) => b.forms.some((f) => ['color', 'full', 'poker', 'escaleracolor'].includes(f)), pay: (run) => void run.levels[pick(run, FORMATIONS, 1)[0]]++ },
   { id: 'horas', name: 'Noche larga', desc: 'El Ataque de todos los tronos sube 1.', reward: '+10 de oro', risk: true, cfg: (c) => eachThreat(c, 1), pay: (run) => void (run.gold += 10) },
-  { id: 'sinred', name: 'Sin escudo', desc: 'El Escudo no puede pasar de 2.', reward: 'Una reliquia Rara o mejor', risk: true, cfg: (c) => void (c.wallCap = Math.min(c.wallCap, 2)), pay: (run) => void grantTool(run, ['oficio', 'capataz', 'reliquia']) },
+  { id: 'sinred', name: 'Sin escudo', desc: 'El Escudo no puede pasar de 2.', reward: 'Un Amuleto Raro o mejor', risk: true, cfg: (c) => void (c.wallCap = Math.min(c.wallCap, 2)), pay: (run) => void grantTool(run, ['oficio', 'capataz', 'reliquia']) },
   { id: 'corta', name: 'Conjura corta', desc: 'Juegan con 1 carta menos en la mano.', reward: '+12 de oro', risk: true, cfg: (c) => eachHand(c, -1), pay: (run) => void (run.gold += 12) },
 ];
 export const CONTRACT: Record<string, Contract> = Object.fromEntries(CONTRACTS.map((c) => [c.id, c]));
@@ -253,8 +254,8 @@ export interface Tag {
   apply(run: Run): void;
 }
 export const TAGS: Tag[] = [
-  { id: 'vale', name: 'Llave de la Pulpería', desc: 'En la próxima Pulpería, reliquias, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
-  { id: 'envio', name: 'Contrabando', desc: 'Recibís ya una reliquia Noble o Regia.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
+  { id: 'vale', name: 'Llave de la Pulpería', desc: 'En la próxima Pulpería, Amuletos, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
+  { id: 'envio', name: 'Contrabando', desc: 'Recibís ya un Amuleto Noble o Regio.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
   { id: 'molde', name: 'Molde de cera', desc: 'Duplicas la carta de tu Mazo que elijas.', apply: (run) => void (run.pending = { kind: 'dup' }) },
   { id: 'liquidacion', name: 'Botín escondido', desc: '+15 de oro.', apply: (run) => void (run.gold += 15) },
   { id: 'timbrado', name: 'Lacre doble', desc: 'Dos cartas al azar de tu Mazo reciben un sello de lacre.', apply: (run) => void stampRandom(run, 2) },
@@ -289,7 +290,7 @@ export const EVENTS: EventDef[] = [
     name: 'El cofre enterrado',
     text: 'Entre dos tumbas asoma un cofre con candado. Forzarlo hará temblar media cripta.',
     options: [
-      { label: 'Forzarlo', read: { gain: 'Reliquia Noble o Regia', cost: '−5 de Vida', glyph: 'contenedor' }, desc: 'Perdés 5 de Vida. Te llevás una reliquia Noble o Regia.', can: (run) => run.integrity > 5 && run.tools.length < TOOL_SLOTS, apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
+      { label: 'Forzarlo', read: { gain: 'Amuleto Noble o Regio', cost: '−5 de Vida', glyph: 'contenedor' }, desc: 'Perdés 5 de Vida. Te llevás un Amuleto Noble o Regio.', can: (run) => run.integrity > 5 && run.tools.length < toolSlots(run), apply: (run) => void ((run.integrity -= 5), grantTool(run, ['capataz', 'reliquia'])) },
       { label: 'Vendérselo al Tratante', read: { gain: '+8 de oro', cost: '', glyph: 'oro' }, desc: '+8 de oro.', apply: (run) => void (run.gold += 8) },
     ],
   },
@@ -342,8 +343,8 @@ EVENTS.push(
     options: [
       {
         label: 'Girar la rueda',
-        read: { gain: 'Oro, Vida o Reliquia', cost: '1 de 4: −4 de Vida', glyph: 'dados' },
-        desc: 'Sale un gajo al azar: +12 de oro, +6 de Vida, una Reliquia Rara o −4 de Vida.',
+        read: { gain: 'Oro, Vida o Amuleto', cost: '1 de 4: −4 de Vida', glyph: 'dados' },
+        desc: 'Sale un gajo al azar: +12 de oro, +6 de Vida, un Amuleto Raro o −4 de Vida.',
         can: (run) => run.integrity > 4,
         apply: (run) => {
           const gajo = Math.floor(nextRandom(run) * 4);
@@ -394,7 +395,7 @@ EVENTS.push(
           if (libres.length) {
             const id = libres[Math.floor(nextRandom(run) * libres.length)].id;
             tomaBendicion(run, id);
-            sale(run, 'altar.si', true, { n: nivelesReyes({ bendiciones: run.bendiciones })[rey].n }, { rey, bendicion: id });
+            sale(run, 'altar.si', true, { n: nivelesReyes(fuentesDe(run.bendiciones, run.tools))[rey].n }, { rey, bendicion: id });
           } else (run.gold += 10), sale(run, 'altar.no', true, { n: 10 }, { rey });
         },
       },
@@ -459,12 +460,15 @@ export interface Meta {
   mastery: { tools: Record<string, number>; decks: Record<string, number> };
   /** Aviso de la migración a la V12 (Coronas → Esquirlas): el Árbol lo enseña una vez y lo borra. */
   aviso?: AvisoArbol;
+  /** V40 1d · Aviso de la migración a los Amuletos (arcones viejos devueltos): se enseña una vez y se borra. */
+  avisoAmuletos?: AvisoAmuletos;
 }
 /**
+ * 8 desde los Amuletos de la V40 (Colección y maestría sin las Reliquias que se fueron; los arcones viejos se devuelven);
  * 7 desde los 4 Reyes de la V40 (los trofeos y la Colección de monarcas pasan a los Reyes); 6 desde los 5 Mazos de la V40 (la maestría va por Mazo); 5 desde la V40 (sin Asalto diario: se van `daily` y `stats.dailies`); 4 desde la V12 (Árbol de la Conjura, `renown`
  * en Esquirlas de Corona). Ver `loadMeta` y src/rules/migracion.ts.
  */
-export const META_VERSION = 7;
+export const META_VERSION = 8;
 export const newMeta = (): Meta => ({
   v: META_VERSION,
   renown: 0,
@@ -504,6 +508,8 @@ export function loadMeta(saved: unknown): Meta {
   if (v <= META_40) migraMeta40(meta);
   // perfiles del tramo 1b de la V40: los trofeos y los monarcas vistos pasan a los 4 Reyes
   if (v <= META_40B) migraMeta40c(meta, MONARCAS_VIEJOS);
+  // perfiles del tramo 1c de la V40 (versión 7): las Reliquias pasan a Amuletos y los arcones viejos se devuelven
+  if (v <= META_40C) migraMeta40d(meta, (id) => !!TOOL[id], (id) => !!SPECIAL[id]);
   meta.v = META_VERSION;
   delete (meta.seen as { relics?: unknown }).relics;
   return meta;
@@ -542,7 +548,7 @@ export interface MapNode {
 }
 
 /**
- * V29 · El Don de la Conjura: lo que se elige (uno de tres) al abrir la campaña. Una Reliquia común, un sello de lacre
+ * V29 · El Don de la Conjura: lo que se elige (uno de tres) al abrir la campaña. Un Amuleto común, un sello de lacre
  * sobre una carta numerada del Mazo o una bolsa de oro. Se sortea con la semilla de la campaña, aparte del resto
  * (no mueve ningún otro sorteo), así que la misma semilla ofrece siempre los mismos tres.
  */
@@ -654,7 +660,7 @@ export interface Run {
   events: string[];
   /**
    * V35 · Lo que salió en el último santuario de azar (la pantalla siguiente lo enseña una vez): la clave de sus textos
-   * (`suerte.<clave>.titulo` y `.texto` de plantillas.ts), sus cifras y, si los hay, la Reliquia, el Rey y la
+   * (`suerte.<clave>.titulo` y `.texto` de plantillas.ts), sus cifras y, si los hay, el Amuleto, el Rey y la
    * Bendición que nombra.
    */
   suerte?: { clave: string; datos: Record<string, number>; reliquia?: string; rey?: ReyId; bendicion?: string; buena: boolean } | null;
@@ -691,6 +697,8 @@ export interface Run {
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
 const lvl = (run: Run, id: string) => run.up[id] ?? 0;
+/** V40 1d · Cuántos Amuletos caben en esta campaña: 4, y uno más por nivel de la Faja ancha del Altar (`tienda`). */
+export const toolSlots = (run: Pick<Run, 'up'>): number => huecosAmuleto(rangoDe(run.up, 'tienda'));
 function pick<T>(run: Run, pool: T[], n: number): T[] {
   const copy = [...pool];
   shuffle(copy, run);
@@ -745,7 +753,7 @@ export function tomaBendicion(run: Run, id: string): void {
   d.toma?.(run);
 }
 
-/** El Cofre del monarca: tres Reliquias a elegir una, Raras, Nobles o Regias al azar. */
+/** El Cofre del Rey jefe: tres Amuletos a elegir uno, Raros, Nobles o Regios al azar. */
 function cofreDelMonarca(run: Run): string[] {
   const out: string[] = [];
   while (out.length < 3) {
@@ -757,7 +765,7 @@ function cofreDelMonarca(run: Run): string[] {
 }
 
 function grantTool(run: Run, rarities: Rarity[]): boolean {
-  if (run.tools.length >= TOOL_SLOTS) return false;
+  if (run.tools.length >= toolSlots(run)) return false;
   const id = rollTool(run, rarities) ?? rollTool(run, ALL_RARITIES);
   if (!id) return false;
   placeTool(run.tools, { id, n: 0 });
@@ -1013,7 +1021,7 @@ export function ordenCasas(run: Pick<Run, 'id' | 'stage' | 'palos'> & { bosses?:
 export const TIMBRE: { stamps: number } = BALANCE.timbre;
 /** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
 export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
-ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), furia: REIN.furia, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(' y '), clausura: CLAUSURA.threat })));
+ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), furia: REIN.furia, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.length > 1 ? `los asaltos ${CLAUSURA.stages.join(' y ')}` : `el asalto ${CLAUSURA.stages[0]}`, clausura: CLAUSURA.threat })));
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
@@ -1062,8 +1070,8 @@ export function stageConfig(run: Run, players = 1): Config {
   // V40 1c · las Bendiciones, los niveles de los Reyes y el Escudo con que se empieza
   const bend = run.bendiciones ?? [];
   for (const b of bend) BENDICION[b.id]?.cfg?.(cfg, b);
-  nivelesCfg(cfg, nivelesReyes({ bendiciones: bend }));
-  const escudo = escudoInicial(bend);
+  nivelesCfg(cfg, nivelesReyes(fuentesDe(bend, run.tools)));
+  const escudo = escudoInicial(bend, run.tools);
   if (escudo) cfg.wallStart = (cfg.wallStart ?? 0) + escudo;
   if (run.boss) BOSS[run.boss]?.apply(cfg);
   if (run.contract) CONTRACT[run.contract]?.cfg?.(cfg);
@@ -1177,12 +1185,11 @@ function generateShop(run: Run): Offer[] {
 function stock(run: Run): Offer[] {
   const offers: Offer[] = [];
   const seen: string[] = [];
-  // el Puesto grande (Árbol): por nivel, una Reliquia más, y dos de las ofrecidas son Raras o mejores
-  for (let i = 0; i < BALANCE.taberna.reliquias + lvl(run, 'tienda'); i++) {
-    const id = (i < 2 * lvl(run, 'tienda') ? rollTool(run, ['oficio', 'capataz', 'reliquia'], seen) : null) ?? rollTool(run, ALL_RARITIES, seen);
+  for (let i = 0; i < BALANCE.taberna.reliquias; i++) {
+    const id = rollTool(run, ALL_RARITIES, seen);
     if (!id) break;
     seen.push(id);
-    // Ojo del tasador (Árbol): las reliquias cuestan menos, nunca menos de 1
+    // Ojo del tasador (Altar): los Amuletos cuestan menos, nunca menos de 1
     offers.push({ kind: 'tool', id, cost: Math.max(1, vary(run, RARITY[TOOL[id].rarity].cost) - cifraDe('tasador', lvl(run, 'tasador')).n) });
   }
   offers.push({ kind: 'sobre', cost: vary(run, BALANCE.taberna.sobre) }, { kind: 'clandestino', cost: vary(run, BALANCE.taberna.sobreCiego) });
@@ -1278,7 +1285,7 @@ export function finishBattle(run: Run, state: GameState): void {
   ];
   if (run.tools.some((t) => t.id === 'hucha')) lines.push([TOOL.hucha?.name ?? 'Hucha', BALANCE.reliquias.hucha.oro]);
   // V40 1c · lo que cobran las Bendiciones (y el nivel de Oros): el oro, a la cuenta; la Vida, tras curar
-  const cierre = cierreBendiciones(run.bendiciones ?? []);
+  const cierre = cierreBendiciones(run.bendiciones ?? [], run.tools);
   for (const c of cierre) if (c.oro > 0) lines.push([c.label, c.oro]);
   const vidaBend = cierre.reduce((a, c) => a + c.vida, 0);
   // la tirada de huesos (azar propio: no toca run.rng): el Dado de oro multiplica las monedas que cayeron en el
@@ -1373,8 +1380,8 @@ export function runAction(run: Run, a: RunAction): string | null {
     case 'loot':
       if (run.phase !== 'reward' || run.looted) return 'No hay botín que elegir.';
       if (a.id !== null) {
-        if (!run.loot.includes(a.id)) return 'Esa reliquia no está en el botín.';
-        if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias.`;
+        if (!run.loot.includes(a.id)) return 'Ese Amuleto no está en el botín.';
+        if (run.tools.length >= toolSlots(run)) return `Solo caben ${toolSlots(run)} Amuletos.`;
         placeTool(run.tools, { id: a.id, n: 0 });
       }
       run.looted = true;
@@ -1392,7 +1399,7 @@ export function runAction(run: Run, a: RunAction): string | null {
         return null;
       }
       if (o.kind === 'tool') {
-        if (run.tools.length >= TOOL_SLOTS) return `Solo caben ${TOOL_SLOTS} reliquias. Vendé una antes.`;
+        if (run.tools.length >= toolSlots(run)) return `Solo caben ${toolSlots(run)} Amuletos. Vendé uno antes.`;
         placeTool(run.tools, { id: o.id!, n: 0 });
       } else if (o.kind === 'sobre') run.sobre = rollSpecials(run, 3);
       else if (o.kind === 'clandestino') addSpecial(run, rollSpecials(run, 1)[0]);
@@ -1440,7 +1447,7 @@ export function runAction(run: Run, a: RunAction): string | null {
     case 'sell': {
       if (run.phase === 'battle') return 'En pleno asalto no se vende.';
       const t = run.tools[a.i];
-      if (!t) return 'No llevás esa reliquia.';
+      if (!t) return 'No llevás ese Amuleto.';
       run.gold += sellValue(t.id);
       run.tools.splice(a.i, 1);
       return null;
@@ -1573,8 +1580,9 @@ export function cobroAbismo(meta: Meta, run: Run): number {
 
 /**
  * Una campaña guardada lista para seguir: la de esta versión tal cual; si no, null. Las de antes de la V40 (la 11.0
- * y la 12.0 a la 38.0) eran de la baraja francesa, y las de los tramos 1a y 1b (6 y 7) tenían rasgos y monarcas
- * viejos: no se continúan (el cliente las retira con `campanaFrancesa` y `campanaSinReyes`).
+ * y la 12.0 a la 38.0) eran de la baraja francesa, las de los tramos 1a y 1b (6 y 7) tenían rasgos y monarcas
+ * viejos y las del 1c (8), Reliquias: no se continúan (el cliente las retira con `campanaFrancesa`, `campanaSinReyes`
+ * y `campanaConReliquias`).
  */
 export function cargaRun(raw: unknown): Run | null {
   const r = raw as Run | null;

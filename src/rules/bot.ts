@@ -1,13 +1,15 @@
 // Bot: juega asaltos (chooseAction) y dirige campañas enteras (chooseRunAction).
 // Se usa para balancear las reglas por simulación y para jugar el turno de un jugador
-// desconectado en partidas online. Entiende las reliquias (las ordena), los sellos de lacre,
-// los acabados, la selección de cartas y las sinergias entre reliquias.
+// desconectado en partidas online. Entiende los Amuletos (los compra por sinergia, sello y rareza), los sellos de
+// lacre, los acabados, la selección de cartas y las Bendiciones de los Reyes.
 import { AS_ALTO, Action, CABALLO, Card, Config, GameState, MAX_NUM, SOTA, SUITS, StrikeEnv, Suit, Tower, activo, cardValue, classify, currentPlayer, eligeEngano, standing, strike, threatOf, vidaTotal } from './engine';
 import { ESCOBA_SUMA, MZ } from './mazos';
-import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
+import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef, toolSlots } from './run';
 import { SPECIAL } from './specials';
-import { RARITY, TOOL, TOOL_SLOTS } from './tools';
-import { BENDICION, OpcionBend, PALO_DE_REY, ReyId, UMBRALES_REY, esDe, nivelesReyes, reyesDe } from './reyes';
+import { RARITY, TOOL } from './tools';
+import { BENDICION, OpcionBend, PALO_DE_REY, ReyId, UMBRALES_REY, esDe, fuentesDe, nivelesReyes, reyesDe } from './reyes';
+import { selloDe, sinergia } from './piezas';
+import type { SelloNivel } from './balance-config';
 
 // ───────────────────────── La obra ─────────────────────────
 
@@ -81,9 +83,9 @@ const danger = (env: { config: Config; fatigue?: number; towers: Record<Suit, To
   return t && !t.fx.sobrecarga ? threatOf(env, t) : 0;
 };
 /** Herramientas que solo rinden con cartas de un palo. */
-const SUIT_TOOL: Record<string, Suit> = { piqueta: 'S', cortavidrios: 'D', metralla: 'D', paleta: 'H', botiquin: 'H', maza: 'C', sacos: 'C' };
-/** Herramientas que cobran la defensa: con ellas el muro (o reparar de más) vale el doble. */
-const WALL_PAYOFF = ['ariete', 'contragolpe', 'bastion'];
+const SUIT_TOOL: Record<string, Suit> = { piqueta: 'S', cortavidrios: 'D', paleta: 'H', botiquin: 'H', maza: 'C', sacos: 'C' };
+/** Amuletos que cobran la defensa: con ellos el Escudo vale más. */
+const WALL_PAYOFF = ['contragolpe'];
 
 /** Cuánto vale una jugada: demolición útil, pisos caídos, defensa del búnker y lo que cuesta. */
 function evaluate(state: GameState, cards: Card[], target: Suit): number {
@@ -198,50 +200,50 @@ export interface RunPolicy {
   rey?: ReyId;
 }
 
-const SPECIAL_VALUE: Record<string, number> = { bola: 8, nitro: 6, martillo: 7, sierra: 7, gemelo: 6, barreno: 6, palanca: 6, mordaza: 5, botica: 5, hormigonera: 5, cemento: 4, clavos: 4, grua: 4, saboteador: 4, pico: 4, chatarrero: 3 };
-const specialValue = (id: string) => SPECIAL_VALUE[id] ?? (SPECIAL[id]?.locked ? 9 : 4);
+/** V40 1d · Las Trampas del Bufón: un valor propio más su sello de nivel. */
+const SPECIAL_VALUE: Record<string, number> = { bola: 7, nitro: 5.5, sierra: 5.5, gemelo: 5.5, barreno: 5.5, mordaza: 5, grua: 4, pico: 4 };
+const specialValue = (id: string) => (SPECIAL_VALUE[id] ?? (SPECIAL[id] ? 4 : 0)) + selloValue(selloDe({ tipo: 'trampa', id }));
 const TREAT_VALUE = { forjado: 2, templado: 2, policromado: 4, agrietado: 3 } as const;
 const SEAL_VALUE = { eco: 3, dinamita: 2, sindical: 2, jornal: 1 } as const;
 const cardWorth = (c: Card) => (c.sp ? specialValue(c.sp) : c.suit === 'X' ? 3 : cardValue(c) / 2 + (c.tr ? TREAT_VALUE[c.tr] : 0) + (c.seal ? SEAL_VALUE[c.seal] : 0));
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
 
-/** Cuánto le interesa una herramienta a esta campaña: rareza, tipo y lo que ya lleva en el cinturón. */
-export function toolValue(id: string, run: Run): number {
+/** Lo que suma el sello de nivel del laboratorio (sin sello todavía, como uno A). */
+const SELLO_VALUE: Record<SelloNivel, number> = { S: 3, A: 1.5, B: 0 };
+const selloValue = (s: SelloNivel | null) => (s ? SELLO_VALUE[s] : SELLO_VALUE.A);
+
+/**
+ * V40 1d · Cuánto le interesa un Amuleto a esta campaña: su rareza y lo que hace, su sello de nivel (del laboratorio),
+ * su ★ Sinergia (enciende un nivel [2/4] de su Rey, encaja con el Mazo o acerca el [4]), las piezas que ya lleva de su
+ * Rey y el peso en el mazo del palo al que está atado. Un Amuleto que ya lleva se valora como si no lo llevara (para
+ * comparar al vender). `rey`: el Rey que sigue el bot (laboratorio), que suma lo suyo.
+ */
+export function toolValue(id: string, run: Run, rey?: ReyId): number {
   const def = TOOL[id];
   if (!def) return 0;
-  const has = (other: string) => run.tools.some((t) => t.id === other);
-  let v = { comun: 3, oficio: 5, capataz: 7, reliquia: 9 }[def.rarity] + { f: 0.5, r: 1, x: 3, copy: 0, p: 0 }[def.kind];
-  const mults = run.tools.filter((t) => TOOL[t.id]?.kind === 'x').length;
-  if (id === 'diapason') v += mults ? 4 : run.tools.some((t) => TOOL[t.id]?.strike) ? 1 : -2;
-  if (def.arch === 'precision' && id !== 'nivel') v += has('nivel') ? 2.5 : 0;
-  if (id === 'nivel') v += 1 + run.tools.filter((t) => TOOL[t.id]?.arch === 'precision').length;
-  if (id === 'montacargas' || id === 'prensa') v += Math.min(4, run.scrap * 0.5) + (has('trituradora') ? 2 : 0) - 1.5;
-  if (id === 'horno') v += has('trituradora') ? 2 : -0.5;
-  if (id === 'trituradora') v += has('montacargas') || has('prensa') ? 2 : -1;
-  if (id === 'contenedor') v -= 1;
-  if (id === 'catalizador') v += has('crisol') ? 2 : 0;
-  // sella por su cuenta desde la primera obra: ya no depende de los sellos que traiga el mazo, pero con ellos rinde antes
-  if (id === 'timbre') v += Math.min(3, run.deck.filter((c) => c.seal).length * 0.5);
-  if (id === 'corazon') v += run.tools.some((t) => t.id === 'casco' || t.id === 'plomada' || t.id === 'botiquin') ? 1 : -1;
-  if (id === 'andamio' || id === 'sordina' || id === 'dinamita' || id === 'pasarela') v += 1.5;
-  // aguante: rinde con muro abundante (tréboles, sacos, encofrado) y con sus compañeras de caja
-  if (def.arch === 'aguante') {
+  const otros = run.tools.filter((t) => t.id !== id);
+  const has = (other: string) => otros.some((t) => t.id === other);
+  let v = { comun: 3, oficio: 3.5, capataz: 4, reliquia: 4.5 }[def.rarity] + { f: 0.5, r: 1, x: 1.5, copy: 0, p: 0 }[def.kind];
+  v += selloValue(selloDe({ tipo: 'amuleto', id }));
+  const s = sinergia({ tipo: 'amuleto', id }, { mazo: run.deckId, bendiciones: run.bendiciones, tools: otros });
+  if (s) v += s.tipo === 'nivel' ? (s.umbral >= 4 ? 4 : 3) : s.tipo === 'mazo' ? 2.5 : 1.5;
+  const nv = nivelesReyes(fuentesDe(run.bendiciones, otros));
+  v += Math.min(2.4, 0.8 * nv[def.arch].n);
+  if (rey && def.arch === rey) v += 4;
+  // Bastos: el Escudo rinde con Bastos en el mazo y con los que cobran la defensa
+  if (def.arch === 'bastos' && id !== 'sordina') {
     const clubs = run.deck.filter((c) => !c.sp && c.suit === 'C').length / Math.max(1, run.deck.length);
-    const hearts = run.deck.filter((c) => !c.sp && c.suit === 'H').length / Math.max(1, run.deck.length);
-    const wallers = ['sacos', 'encofrado', ...WALL_PAYOFF].filter((o) => o !== id && has(o)).length;
     const builds = clubs > 0.3 || has('sacos') || has('encofrado');
-    if (id === 'andamio') v += 0;
-    else if (id === 'rebosadero') v += builds ? (clubs > 0.3 ? 5 : 2) + (has('sacos') ? 2 : 0) : hearts > 0.3 ? 0 : -3;
-    else v += builds ? (clubs > 0.3 ? 2.5 : 1) + wallers * 1.2 : -3;
+    if (id === 'contragolpe') v += builds ? 2 : -2;
+    if ((id === 'sacos' || id === 'encofrado') && WALL_PAYOFF.some(has)) v += 1.5;
   }
-  if ((id === 'sacos' || id === 'encofrado') && WALL_PAYOFF.some(has)) v += 2;
-  // una herramienta atada a un palo vale según cuánto de ese palo lleva el mazo (y nada si no lleva ninguno)
+  // un Amuleto atado a un palo vale según cuánto de ese palo lleva el mazo (y nada si no lleva ninguno)
   const plain = run.deck.filter((c) => !c.sp && c.suit !== 'X');
-  const share = (s: Suit) => plain.filter((c) => c.suit === s).length / Math.max(1, plain.length);
+  const share = (x: Suit) => plain.filter((c) => c.suit === x).length / Math.max(1, plain.length);
   const suit = SUIT_TOOL[id];
   if (suit) v += share(suit) < 0.08 ? -20 : (share(suit) - 0.25) * 10;
-  if (id === 'mosaico' && SUITS.filter((s) => share(s) >= 0.08).length < 3) v -= 20;
-  if (id === 'hucha') v += run.stage <= 3 ? 1.5 : -1;
+  if (id === 'hucha') v += run.stage <= 3 ? 1 : -1.5;
+  if (id === 'ultimo') v += run.tools.some((t) => t.id === 'casco' || t.id === 'botiquin') ? -1 : 0;
   return v;
 }
 
@@ -264,7 +266,7 @@ export function bendicionValue(o: OpcionBend, run: Run): number {
   if (!def) return -99;
   let v = BEND_VALUE[o.id] ?? 4;
   const plain = run.deck.filter((c) => !c.sp && c.suit !== 'X');
-  const nv = nivelesReyes({ bendiciones: run.bendiciones });
+  const nv = nivelesReyes(fuentesDe(run.bendiciones, run.tools));
   // una Dual reparte su peso entre sus dos Reyes: cuenta la media, no la suma
   const reyes = reyesDe(def) as ReyId[];
   for (const rey of reyes) {
@@ -296,18 +298,18 @@ function pendingTarget(run: Run): RunAction {
   return high && low && run.deck.length - 1 >= MIN_DECK ? { t: 'target', cards: [high.id, low.id] } : { t: 'cancel' };
 }
 
-function shopAction(run: Run): RunAction {
+function shopAction(run: Run, rey?: ReyId): RunAction {
   if (run.sobre) return { t: 'open', i: run.sobre.reduce((best, id, i) => (specialValue(id) > specialValue(run.sobre![best]) ? i : best), 0) };
   if (run.integrity <= run.maxIntegrity * 0.6 && run.gold >= healCost(run)) return { t: 'heal' };
 
   const open = run.shop.map((o, i) => ({ o, i, cost: offerCost(run, o) })).filter((x) => !x.o.sold && x.cost <= run.gold);
   // herramientas: la mejor que se pueda pagar; con el cinturón lleno, se vende la peor si compensa
-  const tools = open.filter((x) => x.o.kind === 'tool').sort((a, b) => toolValue(b.o.id!, run) - toolValue(a.o.id!, run));
+  const tools = open.filter((x) => x.o.kind === 'tool').sort((a, b) => toolValue(b.o.id!, run, rey) - toolValue(a.o.id!, run, rey));
   if (tools.length) {
     const want = tools[0];
-    if (run.tools.length < TOOL_SLOTS) return { t: 'buy', i: want.i };
-    const worst = run.tools.reduce((w, t, i) => (toolValue(t.id, run) < toolValue(run.tools[w].id, run) ? i : w), 0);
-    if (toolValue(want.o.id!, run) > toolValue(run.tools[worst].id, run) + 2.5) return { t: 'sell', i: worst };
+    if (run.tools.length < toolSlots(run)) return { t: 'buy', i: want.i };
+    const worst = run.tools.reduce((w, t, i) => (toolValue(t.id, run, rey) < toolValue(run.tools[w].id, run, rey) ? i : w), 0);
+    if (toolValue(want.o.id!, run, rey) > toolValue(run.tools[worst].id, run, rey) + 2.5) return { t: 'sell', i: worst };
   }
   const reserve = run.freeShop ? 0 : 5;
   const spare = (x: { cost: number }) => run.gold - x.cost >= reserve;
@@ -320,14 +322,8 @@ function shopAction(run: Run): RunAction {
   if (plano) return { t: 'buy', i: plano.i };
   const blind = open.find((x) => x.o.kind === 'clandestino' && spare(x));
   if (blind) return { t: 'buy', i: blind.i };
-  // la chatarra solo interesa si hay herramientas que la aprovechan
-  const scrapper = run.tools.some((t) => ['montacargas', 'prensa', 'horno'].includes(t.id));
-  if (scrapper && run.deck.length > MIN_DECK + 12 && run.gold >= removeCost(run) + reserve) {
-    const victim = run.deck.filter((c) => isPlain(c) && !c.tr && !c.seal).sort((a, b) => cardValue(a) - cardValue(b))[0];
-    if (victim) return { t: 'burn', card: victim.id };
-  }
   const unsold = run.shop.some((o) => !o.sold && o.kind === 'tool');
-  if (run.tools.length < TOOL_SLOTS && !unsold && run.rerolls < 2 && run.gold >= rerollCost(run) + RARITY.oficio.cost) return { t: 'reroll' };
+  if (run.tools.length < toolSlots(run) && !unsold && run.rerolls < 2 && run.gold >= rerollCost(run) + RARITY.oficio.cost) return { t: 'reroll' };
   return { t: 'next' };
 }
 
@@ -368,14 +364,14 @@ export function chooseRunAction(run: Run, policy: RunPolicy = {}): RunAction | n
     }
     case 'reward': {
       if (!run.looted) {
-        if (run.tools.length >= TOOL_SLOTS) return { t: 'loot', id: null };
-        return { t: 'loot', id: [...run.loot].sort((a, b) => toolValue(b, run) - toolValue(a, run))[0] ?? null };
+        if (run.tools.length >= toolSlots(run)) return { t: 'loot', id: null };
+        return { t: 'loot', id: [...run.loot].sort((a, b) => toolValue(b, run, policy.rey) - toolValue(a, run, policy.rey))[0] ?? null };
       }
       const best = run.draft.reduce((b, o, i) => (draftValue(o) > draftValue(run.draft[b]) ? i : b), 0);
       return { t: 'draft', i: run.draft.length ? best : null };
     }
     case 'shop':
-      return shopAction(run);
+      return shopAction(run, policy.rey);
     case 'event':
       return eventAction(run);
     default:

@@ -12,6 +12,7 @@
 import { DICCIONARIOS, type Lang, tFor } from '../shared/i18n';
 import { type Autopsy, type Omen, type TextosAutopsia, TEXTOS_ES, autopsyWith, omenWith } from './autopsy';
 import type { Config, GameEvent, PlayerView } from './engine';
+import type { Sinergia } from './piezas';
 import { ES_PLANTILLAS } from './plantillas';
 
 type Paso = Extract<GameEvent, { e: 'step' }>;
@@ -138,3 +139,10 @@ export const autopsyFor = (lang: Lang, events: GameEvent[], cfg: Config): Autops
 
 /** El aviso de último turno en `lang` (ver `omen`). */
 export const omenFor = (lang: Lang, v: PlayerView): Omen | null => omenWith(textosAutopsia(lang), v);
+
+/** V40 1d · La etiqueta ★ Sinergia de una pieza (ver `sinergia` en piezas.ts) en `lang`: «★ Bastos [4]», «★ For Escoba». */
+export function sinergiaFor(lang: Lang, s: Sinergia): string {
+  if (lang === 'es') return s.texto;
+  if (s.tipo === 'mazo') return tFor(lang, s.clave, { mazo: tFor(lang, `baraja.${s.mazo}.nombre`) });
+  return tFor(lang, s.clave, { ...s.datos, palo: tFor(lang, `rey.${s.rey}.palo`) });
+}

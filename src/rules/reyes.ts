@@ -1,5 +1,5 @@
 // V40 · Los 4 Reyes y sus Bendiciones (SPECS/V40-REFUNDACION.md, apartado 4). Sustituyen a los cinco rasgos [2/4/6]
-// de las Reliquias y a los siete monarcas sueltos.
+// de antes y a los siete monarcas sueltos. Desde el tramo 1d, los Amuletos de cada familia cuentan para los niveles.
 //
 //   Rey de Espadas  filo: perforar, rematar, Golpe exacto          sus cargas suman Daño
 //   Rey de Bastos   aguante: Escudo, frenar el Contraataque        sus cargas suman Escudo al empezar o Daño
@@ -13,9 +13,11 @@
 // Puro y sin estado: datos, textos (con `{campo}` que salen de `bendiciones`, `niveles`, `reyes` y `oferta` de
 // balance-config.json) y las cuentas. El motor (engine.ts) llama a los ganchos de cada Bendición dentro del golpe y del
 // Contraataque; la campaña (run.ts) guarda las Bendiciones con sus cargas en `run.bendiciones`, arma la oferta y paga
-// lo que se cobra al cerrar cada asalto. Solo importa tipos del motor: engine.ts importa este módulo.
+// lo que se cobra al cerrar cada asalto. Solo importa tipos del motor (engine.ts importa este módulo) y los Amuletos
+// (tools.ts, que solo importa de aquí tipos).
 import { BALANCE, fill } from './balance-config';
 import type { Config, Hook, Outcome, Strike, Suit } from './engine';
+import { TOOL } from './tools';
 
 // ───────────────────────── Los 4 Reyes ─────────────────────────
 
@@ -64,7 +66,7 @@ export interface BendDef {
   /** Lo que suma cada carga, y cuánto (para la píldora y el desglose). */
   aporte: Aporte;
   porCarga: number;
-  /** Regla fija de cada asalto (como las Reliquias). */
+  /** Regla fija de cada asalto (como los Amuletos). */
   cfg?(c: Config, self: BendInst): void;
   /** Su turno en el golpe, antes de los multiplicadores. */
   strike?(x: Strike, self: BendInst): void;
@@ -474,14 +476,20 @@ export type NivelRey = 0 | 1 | 2;
 export const nivelDe = (n: number): NivelRey => (n >= UMBRALES_REY[1] ? 2 : n >= UMBRALES_REY[0] ? 1 : 0);
 
 /**
- * Lo que cuenta para los niveles de los Reyes. Por ahora, las Bendiciones (`bendiciones`); en el tramo 1d también
- * contarán los Amuletos de la familia de cada Rey (`amuletos`: pares id → Rey, ya resueltos por quien los conoce).
+ * Lo que cuenta para los niveles de los Reyes: las Bendiciones (`bendiciones`; las Duales, para sus dos Reyes) y, desde
+ * el tramo 1d, los Amuletos de la familia de cada Rey (`amuletos`: el Rey de cada uno; ver `reyesDeAmuletos`).
  */
 export interface FuentesRey {
   bendiciones?: readonly BendInst[];
-  /** V40 1d · el Rey de cada Amuleto que se lleva (aún no hay Amuletos: siempre vacío). */
+  /** V40 1d · el Rey de cada Amuleto que se lleva (uno por Amuleto). */
   amuletos?: readonly ReyId[];
 }
+/** Lo que se lleva de Amuletos, tal como lo guardan la campaña y la mesa (`run.tools`, `state.tools`). */
+type Amuletos = readonly { id: string }[] | undefined;
+/** V40 1d · El Rey de cada Amuleto que se lleva (los que no existen no cuentan). */
+export const reyesDeAmuletos = (tools: Amuletos): ReyId[] => (tools ?? []).flatMap((t) => (TOOL[t.id] ? [TOOL[t.id].arch] : []));
+/** Las dos fuentes de los niveles a la vez: Bendiciones y Amuletos. */
+export const fuentesDe = (bend: readonly BendInst[] | undefined, tools?: Amuletos): FuentesRey => ({ bendiciones: bend ?? [], amuletos: reyesDeAmuletos(tools) });
 export interface NivelInfo {
   /** Piezas que cuentan para este Rey. */
   n: number;
@@ -509,8 +517,8 @@ export function nivelesReyes(f: FuentesRey): Record<ReyId, NivelInfo> {
 const NV = BALANCE.niveles;
 /** Los dos bonos de cada Rey: con 2 piezas y con 4 (plantillas rellenas con `niveles.<rey>`). */
 export const BONOS_REY: Record<ReyId, [string, string]> = {
-  espadas: ['El guardia cae con Golpe exacto aunque te quedes corto o te pases por {tol} o menos.', 'Tus golpes con 2 cartas de Espadas o más hacen ×{x} de Multi y dejan Aturdido.'],
-  bastos: ['Empezás cada asalto con {escudo} de Escudo.', 'El tope del Escudo sube {tope}, y cada guardia que abatís te da +{escudo2} de Escudo.'],
+  espadas: ['El guardia cae con Golpe exacto aunque te quedes corto o te pases por {tol} o menos.', 'Tus golpes con 2 cartas de Espadas o más hacen ×{x} de Multi.'],
+  bastos: ['Empezás cada asalto con {escudo} de Escudo.', 'El tope del Escudo sube {tope}.'],
   oros: ['Cada turno se tira un dado: con un {cara}, el Contraataque de ese turno no llega.', 'Con un {cara4} o más ya no llega, y +{oro} de oro al cerrar cada asalto ganado.'],
   copas: ['Cada guardia que abatís con Copas te cura {vida}.', 'Cada guardia abatido te cura {vida}, lleve Copas o no el golpe.'],
 };
@@ -524,20 +532,14 @@ export function nivelesCfg(c: Config, nv: Record<ReyId, NivelInfo>): void {
 type Marca = (rey: ReyId, nivel: NivelRey) => void;
 /** Lo que los niveles suman a un golpe (antes de los multiplicadores). */
 export function nivelesStrike(x: Strike, nv: Record<ReyId, NivelInfo>, marca: Marca): void {
-  // Espadas [4]: con 2 cartas de Espadas o más, ×Multi y el enemigo queda Aturdido (su Contraataque no llega)
+  // Espadas [4]: con 2 cartas de Espadas o más, ×Multi (V40 1d: ya no deja Aturdido; con los Amuletos el [4] llega antes)
   if (nv.espadas.nivel >= 2 && palo(x, 'S') >= 2) {
     marca('espadas', 2);
     x.X(NV.espadas.x);
-    x.disarm = true;
   }
 }
 /** Lo que los niveles hacen según cómo quedó el golpe. */
 export function nivelesAfter(x: Strike, r: Outcome, nv: Record<ReyId, NivelInfo>, marca: Marca): void {
-  // Bastos [4]: cada guardia abatido da Escudo
-  if (nv.bastos.nivel >= 2 && r.fallen > 0) {
-    marca('bastos', 2);
-    x.wall += NV.bastos.escudo2 * r.fallen;
-  }
   // Copas [2]: cura cada guardia que abatís con Copas; [4]: cada guardia, lleve Copas o no el golpe
   if (nv.copas.nivel >= 1 && r.fallen > 0 && (nv.copas.nivel >= 2 || palo(x, 'H') > 0)) {
     marca('copas', nv.copas.nivel);
@@ -549,32 +551,32 @@ export function nivelesAfter(x: Strike, r: Outcome, nv: Record<ReyId, NivelInfo>
  * Oros [2] y [4]: la suerte del dado. Con un `cara` o más (en [4], con un `cara4` o más) en el dado del turno, el
  * Contraataque de ese turno no llega. Pura: true si el dado salva.
  */
-export function dadoSalva(bend: readonly BendInst[] | undefined, dado: number | undefined): boolean {
-  if (!dado || !bend?.length) return false;
-  const nivel = nivelesReyes({ bendiciones: bend }).oros.nivel;
+export function dadoSalva(bend: readonly BendInst[] | undefined, dado: number | undefined, tools?: Amuletos): boolean {
+  if (!dado || (!bend?.length && !tools?.length)) return false;
+  const nivel = nivelesReyes(fuentesDe(bend, tools)).oros.nivel;
   return nivel > 0 && dado >= (nivel >= 2 ? NV.oros.cara4 : NV.oros.cara);
 }
-/** Escudo con el que empieza cada asalto, por las Bendiciones y el nivel de Bastos. */
-export function escudoInicial(bend: readonly BendInst[]): number {
-  const nv = nivelesReyes({ bendiciones: bend });
+/** Escudo con el que empieza cada asalto, por las Bendiciones y el nivel de Bastos (con sus Amuletos). */
+export function escudoInicial(bend: readonly BendInst[], tools?: Amuletos): number {
+  const nv = nivelesReyes(fuentesDe(bend, tools));
   let n = nv.bastos.nivel >= 1 ? NV.bastos.escudo : 0;
   for (const b of bend) n += BENDICION[b.id]?.escudo?.(b) ?? 0;
   return n;
 }
-/** ¿Hace falta tirar el dado cada turno? (la Taba cargada o Oros [4]) */
-export function usaDado(bend: readonly BendInst[] | undefined): boolean {
-  if (!bend?.length) return false;
-  return bend.some((b) => BENDICION[b.id]?.dado) || nivelesReyes({ bendiciones: bend }).oros.nivel >= 1;
+/** ¿Hace falta tirar el dado cada turno? (la Taba cargada, el Cubilete o Oros [2]) */
+export function usaDado(bend: readonly BendInst[] | undefined, tools?: Amuletos): boolean {
+  if (!bend?.length && !tools?.length) return false;
+  return (bend ?? []).some((b) => BENDICION[b.id]?.dado) || (tools ?? []).some((t) => TOOL[t.id]?.dado) || nivelesReyes(fuentesDe(bend, tools)).oros.nivel >= 1;
 }
 /** Lo que se cobra al cerrar un asalto ganado: por Bendición (con su nombre) y por el nivel de Oros. */
-export function cierreBendiciones(bend: readonly BendInst[]): { id: string; label: string; oro: number; vida: number }[] {
+export function cierreBendiciones(bend: readonly BendInst[], tools?: Amuletos): { id: string; label: string; oro: number; vida: number }[] {
   const out: { id: string; label: string; oro: number; vida: number }[] = [];
   for (const b of bend) {
     const d = BENDICION[b.id];
     const c = d?.cierre?.(b);
     if (c && ((c.oro ?? 0) > 0 || (c.vida ?? 0) > 0)) out.push({ id: b.id, label: d.name, oro: c.oro ?? 0, vida: c.vida ?? 0 });
   }
-  if (nivelesReyes({ bendiciones: bend }).oros.nivel >= 2) out.push({ id: 'rey-oros', label: REY_NOMBRE.oros, oro: NV.oros.oro, vida: 0 });
+  if (nivelesReyes(fuentesDe(bend, tools)).oros.nivel >= 2) out.push({ id: 'rey-oros', label: REY_NOMBRE.oros, oro: NV.oros.oro, vida: 0 });
   return out;
 }
 
@@ -674,10 +676,10 @@ export interface InfoOpcion {
   dual: boolean;
   reyes: { rey: ReyId; antes: NivelRey; despues: NivelRey; n: number; enciende: boolean }[];
 }
-export function infoOpcion(bend: readonly BendInst[], o: OpcionBend): InfoOpcion {
+export function infoOpcion(bend: readonly BendInst[], o: OpcionBend, tools?: Amuletos): InfoOpcion {
   const d = BENDICION[o.id];
-  const antes = nivelesReyes({ bendiciones: bend });
-  const despues = nivelesReyes({ bendiciones: [...bend, { id: o.id, n: 0 }] });
+  const antes = nivelesReyes(fuentesDe(bend, tools));
+  const despues = nivelesReyes(fuentesDe([...bend, { id: o.id, n: 0 }], tools));
   return {
     id: o.id,
     rey: o.rey,

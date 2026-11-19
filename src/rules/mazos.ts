@@ -22,6 +22,8 @@ export const MAZO_IDS: MazoId[] = ['escoba', 'truco', 'chinchon', 'mentiroso', '
  */
 export const MAZO_INICIAL: MazoId = 'escoba';
 export const esMazo = (id: unknown): id is MazoId => typeof id === 'string' && (MAZO_IDS as string[]).includes(id);
+/** El nombre de cada Mazo (el mismo que `DECKS` de run.ts y `baraja.<id>.nombre`; lo comprueba tests/piezas.test.ts). */
+export const MAZO_NOMBRE: Record<MazoId, string> = { escoba: 'Escoba', truco: 'Truco', chinchon: 'Chinchón', mentiroso: 'El Mentiroso', chancho: 'Chancho Va' };
 
 /** Cifras de los Mazos (`mazos` de balance-config.json). */
 export const MZ = BALANCE.mazos;

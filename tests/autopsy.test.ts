@@ -131,9 +131,9 @@ describe('autopsia de la derrota (contrato C1)', () => {
     expect(segundo).toMatchObject({ tower: 'S', threat: 1 + cfg.collapseSiege, asedio: cfg.collapseSiege });
   });
 
-  it('V35 · con la Baraja de reserva, el primer Mazo agotado del asalto no sube la Furia', () => {
-    const cfg = cfgWith({ floorHp: TOUGH });
-    const s = table(cfg, [card('H2'), card('H3')], [], ['puntales'], { integrity: 20 });
+  it('V35 · con un Mazo agotado de gracia (collapseFree), el primero del asalto no sube la Furia', () => {
+    const cfg = cfgWith({ floorHp: TOUGH, collapseFree: 1 });
+    const s = table(cfg, [card('H2'), card('H3')], [], [], { integrity: 20 });
     s.discard = s.deck;
     s.deck = [];
     const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
@@ -153,17 +153,6 @@ describe('autopsia de la derrota (contrato C1)', () => {
     expect(out.state.collapses).toBe(2);
     expect(out.state.fatigue).toBe(2 * cfg.collapseSiege);
     expect(threatOf(out.state, out.state.towers.S)).toBe(antes + cfg.collapseSiege);
-  });
-
-  it('herida propia: Corazón de la torre cobra su punto cuando el golpe no tira nada', () => {
-    const cfg = cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] });
-    const s = table(cfg, [card('S5'), card('H3')], [card('X1')], ['corazon'], { integrity: 1, wall: 8 });
-    const { a } = lose(s, { type: 'attack', cards: ['S5'], target: 'D' });
-    expect(a).toMatchObject({ kind: 'herida', before: 1, threat: 1, blocked: 0, taken: 1 });
-    expect(a.title).toBe(`${TOOL.corazon.name}: tu propio golpe te costó 1 de Vida`);
-    expect(a.detail).toContain('quedaba 1 de Vida.');
-    expect(a.detail).toContain('El Escudo no frena');
-    fits(a);
   });
 
   // V40 1c · el suelo inestable del Relojero se fue con los monarcas viejos: queda la herida de la Nitroglicerina
@@ -347,51 +336,13 @@ describe('aviso de último turno', () => {
 describe('avisos de herramienta que dispara (contrato C2)', () => {
   const steps = (events: GameEvent[], id: string) => events.filter((e): e is Extract<GameEvent, { e: 'step' }> => e.e === 'step' && e.id === id);
 
-  it('Ariete marca la Fuerza que suma, y solo cuando suma', () => {
-    const cfg = cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] });
-    const s = table(cfg, [card('S5'), card('H3')], [card('X1')], ['ariete'], { wall: 5 });
-    const [st] = steps(applyAction(s, 'a', { type: 'attack', cards: ['S5'], target: 'D' }).events, 'ariete');
-    expect(st.df).toBe(20);
-    expect(st.proc).toEqual({ what: 'fuerza', n: 20 });
-    const dry = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), card('H3')], [card('X1')], ['ariete'], { wall: 0 });
-    expect(steps(applyAction(dry, 'a', { type: 'attack', cards: ['S5'], target: 'D' }).events, 'ariete')).toHaveLength(0);
-  });
-
-  it('el Diapasón que copia al Ariete también lo anuncia; una herramienta callada no', () => {
-    const s = table(cfgWith({ floorHp: TOUGH, orden: ['D', 'S', 'H', 'C'] }), [card('S5'), card('H3')], [card('X1')], ['piqueta', 'diapason', 'ariete'], { wall: 2 });
-    const events = applyAction(s, 'a', { type: 'attack', cards: ['S5'], target: 'D' }).events;
-    expect(steps(events, 'diapason')[0].proc).toEqual({ what: 'fuerza', n: 8 });
-    expect(steps(events, 'ariete')[0].proc).toEqual({ what: 'fuerza', n: 8 });
-    expect(steps(events, 'piqueta')[0].proc).toBeUndefined();
-  });
-
-  it('Contragolpe marca el daño devuelto y su torre, con la cuenta en el texto de mesa', () => {
+  it('el Talero marca el daño devuelto y su enemigo, con la cuenta en el texto de mesa', () => {
     const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 10: 4, 11: 4, 12: 4 } });
     const s = table(cfg, [card('H2'), card('H3')], [card('S9')], ['contragolpe'], { wall: 6 });
     const out = applyAction(s, 'a', { type: 'discard', cards: ['H2'] });
     const [st] = steps(out.events, 'contragolpe');
     expect(st.proc).toEqual({ what: 'dano', n: 12, tower: 'S' });
-    expect(st.label).toBe('Rodela de púas: 3 × 4 frenado = 12 a ESPADAS');
+    expect(st.label).toBe(`${TOOL.contragolpe.name}: 3 × 4 frenado = 12 a ESPADAS`);
     expect(out.state.towers.S.damage).toBe(12);
-  });
-
-  it('Rebosadero marca lo que repara con el muro que no cabe y la Fuerza que carga, con la cuenta en el texto', () => {
-    const cfg = cfgWith({ floorHp: TOUGH });
-    const s = table(cfg, [card('C8'), card('C9'), card('C10')], [card('X1')], ['rebosadero'], { wall: cfg.wallCap - 1, integrity: cfg.maxIntegrity - 1 });
-    // escalera de tréboles: tres ♣ dan +6 de Escudo; cabe 1 y no caben 5 → cura 2; cabe 1 y no cabe 1 → +3 de Daño cargado
-    const st = steps(applyAction(s, 'a', { type: 'attack', cards: ['C8', 'C9', 'C10'], target: 'S' }).events, 'rebosadero');
-    expect(st.map((x) => x.proc)).toEqual([
-      { what: 'repara', n: 2 },
-      { what: 'carga', n: 3 },
-    ]);
-    expect(st.map((x) => x.label)).toEqual(['Copa rebosante: 5 de Escudo que no cabe ÷ 2 = cura 2', 'Copa rebosante: 1 de curación que no cabe × 3 = +3 de Daño cargado']);
-  });
-
-  it('Megáfono (cualquier gancho que pega) también lleva su aviso', () => {
-    const cfg = cfgWith({ floorHp: TOUGH, floorThreat: { 10: 4, 11: 4, 12: 4 } });
-    const s = table(cfg, [card('H2'), card('H3')], [card('S9')], ['megafono'], { wall: 0 });
-    const [st] = steps(applyAction(s, 'a', { type: 'discard', cards: ['H2'] }).events, 'megafono');
-    expect(st.proc).toEqual({ what: 'dano', n: 8, tower: 'S' });
-    expect(st.label).toBe('Rosa de espinas: 8 a ESPADAS');
   });
 });

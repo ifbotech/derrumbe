@@ -73,7 +73,7 @@ export interface BalanceConfig {
   /** V40 1c · Cifras de los bonos de nivel [2/4] de cada Rey. */
   niveles: {
     espadas: { tol: number; x: number };
-    bastos: { escudo: number; tope: number; escudo2: number };
+    bastos: { escudo: number; tope: number };
     oros: { cara: number; cara4: number; oro: number };
     copas: { vida: number };
   };
@@ -82,7 +82,7 @@ export interface BalanceConfig {
   /** Precios de La Taberna. */
   taberna: {
     rarezas: Record<'comun' | 'oficio' | 'capataz' | 'reliquia', { cost: number; weight: number }>;
-    /** Reliquias en oferta (más las del Puesto grande). */
+    /** Amuletos en oferta en La Pulpería (V40 1d: la Faja ancha ya no suma surtido, suma huecos). */
     reliquias: number;
     sobre: number;
     sobreCiego: number;
@@ -128,16 +128,23 @@ export interface BalanceConfig {
     obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; collapseSiege: number; cuadrilla: number[]; fatigueStart: number; fatigueEvery: number };
     brutal: { maxIntegrity: number; collapseSiege: number };
   };
-  /** Cifras de cada reliquia, por `id`. */
+  /** Cifras de cada Amuleto, por `id` (la clave guarda su nombre de antes: `reliquias`). */
   reliquias: Record<string, Record<string, number>>;
-  /** Efecto de cada carta especial, por `id`. */
+  /** Efecto de cada Trampa del Bufón (carta especial), por `id`. */
   especiales: Record<string, FxConfig>;
+  /**
+   * V40 1d · Sellos de nivel S · A · B de cada Amuleto, Trampa y Bendición. Los escribe el laboratorio
+   * (`npm run analyze:meta -- sellos`), nunca a mano: salen del efecto de cada pieza en la tasa de victoria.
+   */
+  sellosNivel: Record<'amuletos' | 'trampas' | 'bendiciones', Record<string, SelloNivel>>;
 }
+/** Sello de nivel de una pieza: S (de lo mejor), A o B. */
+export type SelloNivel = 'S' | 'A' | 'B';
 
 /** Los números del balance. Lo que lee el motor; se puede leer, no se debe escribir fuera del afinador. */
 export const BALANCE: BalanceConfig = raw as BalanceConfig;
 
-/** Cifras de una reliquia (vacío si no tiene). */
+/** Cifras de un Amuleto (vacío si no tiene). */
 export const relic = (id: string): Record<string, number> => BALANCE.reliquias[id] ?? {};
 
 /** Un número como lo lee el jugador: coma decimal y como mucho dos decimales («0,15», «1,5», «12»). */

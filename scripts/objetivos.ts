@@ -16,8 +16,11 @@ export const OBJETIVOS = {
    * (`dispersion`: el mejor menos el peor); con el Altar lleno, ≤ 50 (avisa por debajo de 40) y el Altar suma ≥ 6.
    */
   mazos: { lleno: [40, 50], llenoObjetivo: '42–50', vacio: [28, 34], vacioObjetivo: '28–34', dispersion: 5, sumaMinima: 6 },
-  /** Reliquias y especiales dados de salida: trampa por debajo, victoria regalada por encima. */
-  regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40 },
+  /**
+   * Amuletos y Trampas del Bufón dados de salida: trampa por debajo, victoria regalada por encima. V40 1d: ningún
+   * Amuleto elegido más de `sobreMedia` veces la media de elección (con al menos `ofertasMinimas` ofertas).
+   */
+  regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40, sobreMedia: 2 },
   /** Letalidad de cada Rey jefe respecto a la media (con al menos `enfrentados` encuentros). V40 1c: 0,8×–1,25×. */
   monarcas: { ratio: [0.8, 1.25], enfrentados: 150 },
   /**
@@ -59,7 +62,7 @@ export interface Parte {
   hi?: number;
 }
 export interface Comprobacion {
-  /** Estable: `reinado1.vacio`, `ritmo.4`, `monarca.furia`, `reliquia.horno.trampa`… */
+  /** Estable: `reinado1.vacio`, `ritmo.4`, `monarca.furia`, `amuleto.horno.trampa`… */
   id: string;
   /** El texto del aviso tal como sale en el informe (si no se cumple). */
   texto: string;
@@ -165,19 +168,26 @@ export function revisar(r: InformeMeta): Comprobacion[] {
     out.push({ id: `${kind.toLowerCase()}.${x.id}.empeora`, completo: true, texto: `${kind} ${x.name}: llevarla de salida empeora el resultado (${delta} puntos en ${n} campañas; ruido ±${ruido})`, ok: !(delta <= -ruido), partes: [{ valor: delta, lo: -ruido }] });
   };
   const G = O.regalo;
+  const amuOfrecidos = r.tools.filter((t) => t.offered >= G.ofertasMinimas);
+  const mediaAmu = amuOfrecidos.length ? amuOfrecidos.reduce((a, b) => a + b.pick, 0) / amuOfrecidos.length : 0;
+  const topeAmu = Math.round(mediaAmu * G.sobreMedia * 10) / 10;
   for (const t of r.tools) {
     const [won, n] = final(t);
     if (won !== null) {
-      out.push({ id: `reliquia.${t.id}.regalada`, completo: true, texto: `Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo}: victoria regalada)`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
-      out.push({ id: `reliquia.${t.id}.trampa`, completo: true, texto: `Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${G.trampa}: trampa)`, ok: !(won < G.trampa), partes: [{ valor: won, lo: G.trampa }] });
+      out.push({ id: `amuleto.${t.id}.regalada`, completo: true, texto: `Amuleto ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo}: victoria regalada)`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
+      out.push({ id: `amuleto.${t.id}.trampa`, completo: true, texto: `Amuleto ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${G.trampa}: trampa)`, ok: !(won < G.trampa), partes: [{ valor: won, lo: G.trampa }] });
     }
-    if (t.offered >= G.ofertasMinimas) out.push({ id: `reliquia.${t.id}.eleccion`, completo: true, texto: `Reliquia ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`, ok: !(t.pick < G.eleccionMinima && (t.delta ?? 0) <= 0), partes: [{ valor: t.pick, lo: G.eleccionMinima }] });
-    worse('Reliquia', t);
+    if (t.offered >= G.ofertasMinimas) {
+      out.push({ id: `amuleto.${t.id}.eleccion`, completo: true, texto: `Amuleto ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`, ok: !(t.pick < G.eleccionMinima && (t.delta ?? 0) <= 0), partes: [{ valor: t.pick, lo: G.eleccionMinima }] });
+      out.push({ id: `amuleto.${t.id}.favorito`, completo: true, texto: `Amuleto ${t.name}: el bot lo elige el ${t.pick} % de las veces (más de ${G.sobreMedia}× la media: ${topeAmu} %)`, ok: t.pick <= topeAmu, partes: [{ valor: t.pick, hi: topeAmu }] });
+    }
+    worse('Amuleto', t);
   }
   for (const sp of r.specials) {
     const [won, n] = final(sp);
-    if (won !== null) out.push({ id: `especial.${sp.id}.regalada`, completo: true, texto: `Especial ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo})`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
-    worse('Especial', sp);
+    if (won !== null) out.push({ id: `trampa.${sp.id}.regalada`, completo: true, texto: `Trampa ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo})`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
+    if (won !== null) out.push({ id: `trampa.${sp.id}.trampa`, completo: true, texto: `Trampa ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${G.trampa}: trampa)`, ok: !(won < G.trampa), partes: [{ valor: won, lo: G.trampa }] });
+    worse('Trampa', sp);
   }
   // V40 1c · Bendiciones: ninguna se elige más del doble de la media, y ninguna empeora el resultado dada de salida
   const bend = r.bendiciones ?? [];

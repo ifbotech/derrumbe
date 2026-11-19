@@ -254,11 +254,11 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(sin.jefe).toBeUndefined();
   });
 
-  it('reliquias, acabados y especiales en un golpe', async () => {
+  it('Amuletos, acabados y Trampas en un golpe', async () => {
     const { B, engine, tools } = await patched();
     type Card = import('../src/rules/engine').Card;
     const card = (id: string, extra: Partial<Card> = {}): Card => ({ id, suit: id[0] as Card['suit'], rank: Number(id.slice(1)), ...extra });
-    const env = (ids: string[] = [], over: Partial<{ integrity: number; wall: number; scrap: number }> = {}) => {
+    const env = (ids: string[] = [], over: Partial<{ integrity: number; wall: number; scrap: number; dado: number }> = {}) => {
       const config = structuredClone(engine.DEFAULT_CONFIG);
       for (const id of ids) tools.TOOL[id].cfg?.(config);
       return { config, towers: engine.newTowers([10, 11, 12], config), tools: ids.map((id) => ({ id, n: 0 })), chain: 0, charge: 0, scrap: 0, integrity: 20, wall: 0, ...over };
@@ -270,20 +270,18 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     const V = B.reliquias;
     expect(df('piqueta', [card('S7')])).toBe(V.piqueta.dano);
     expect(df('cincel', [card('S7')])).toBe(V.cincel.dano);
-    expect(df('ariete', [card('S7')], { wall: 3 })).toBe(V.ariete.dano * 3);
-    expect(df('montacargas', [card('S7')], { scrap: 2 })).toBe(V.montacargas.dano * 2);
-    expect(df('mosaico', [card('S2'), card('H3'), card('C4')])).toBe(V.mosaico.dano);
+    expect(df('maza', [card('C7')])).toBe(V.maza.dano);
+    expect(df('cortavidrios', [card('D7')])).toBe(V.cortavidrios.dano);
+    expect(df('paleta', [card('H7')])).toBe(V.paleta.dano);
     expect(dr('gemelos', [card('S7'), card('H7')])).toBe(V.gemelos.multi);
-    expect(dr('dados', [card('S4'), card('H4'), card('C9'), card('H9')])).toBe(V.dados.multi);
-    expect(df('sismografo', [card('S7')], { integrity: 10 })).toBe(V.sismografo.dano * (B.mesa.maxIntegrity - 10));
-    expect(dr('bastion', [card('S7')], { wall: B.mesa.wallCap })).toBe(V.bastion.multi);
+    expect(dr('cinta', [card('S2'), card('H3'), card('C4')])).toBe(V.cinta.multi);
+    expect(dr('dados', [card('S7')], { dado: V.dados.cara })).toBe(V.dados.multi);
     expect(rx('plano_maestro', [card('S7')])).toBe(V.plano_maestro.multi);
-    expect(rx('resonador', [card('S2'), card('S3'), card('S4'), card('S5'), card('S6')])).toBe(V.resonador.multi); // V.resonador.cartas (+1) = 5
     expect(rx('ultimo', [card('S7')], { integrity: 5 })).toBe(V.ultimo.multi);
     const sacos = env(['sacos']).config;
     expect(sacos.wallCap).toBe(B.mesa.wallCap + V.sacos.tope);
     expect(env(['sordina']).config.floorThreat[11]).toBe(Math.max(1, B.mesa.floorThreat[11] - V.sordina.ataque));
-    expect(env(['puntales']).config.collapseFree).toBe(V.puntales.gratis);
+    expect(env(['andamio']).config.handSize[1]).toBe(engine.DEFAULT_CONFIG.handSize[1] + V.andamio.cartas);
     // acabados y especiales
     const forjado = engine.strike(env(), [card('S7', { tr: 'forjado' })], 'D').fuerza - engine.strike(env(), [card('S7')], 'D').fuerza;
     expect(forjado).toBe(B.acabados.forjado);

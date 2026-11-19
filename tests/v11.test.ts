@@ -39,7 +39,7 @@ describe('V11 · Multi siempre entero', () => {
     };
     conMulti('reliquia', BALANCE.reliquias as unknown as Record<string, Record<string, unknown>>);
     conMulti('especial', BALANCE.especiales as unknown as Record<string, Record<string, unknown>>);
-    expect(multis.length).toBeGreaterThan(30);
+    expect(multis.length).toBeGreaterThan(15);
     for (const [id, n] of multis) expect(Number.isInteger(n), `${id} = ${n}`).toBe(true);
   });
 
