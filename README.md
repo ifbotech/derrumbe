@@ -228,7 +228,7 @@ Es para pruebas con gente de confianza: no hay cuentas, ni clasificaciones, ni f
 ## Balance
 
 <!-- balance:inicio -->
-Medido con `npm run analyze:meta`: **45.280 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de los Amuletos). El informe completo —cada Amuleto, Trampa, Bendición, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
+Medido con `npm run analyze:meta`: **45.280 campañas** con semilla jugadas por el bot de referencia (camino en el Mapa, Botín y «Elegí una», la Pulpería, Mesa de lacre, Santuarios del Bufón, la Manga y orden de los Amuletos). El informe completo —cada Amuleto, Trampa, Bendición, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
 
 Campañas ganadas por Reinado (con la Escoba, 1500 campañas por celda). Objetivos: Reinado 1 entre el 28 y el 34 % con el Altar vacío y entre el 42 y el 50 % con el Altar lleno; Reinado 8 entre el 6 y el 10 % con el Altar vacío y entre el 12 y el 18 % con el Altar lleno; y cada Reinado, más difícil que el anterior.
 
