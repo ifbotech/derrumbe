@@ -14,5 +14,5 @@ export function marcaPieza(p: Pieza, ctx?: ContextoSinergia): string {
   const s = selloDe(p);
   const sin = ctx ? sinergia(p, ctx) : null;
   const partes = [s ? `<b class="sello-nivel s-${s}" data-sello="${s}">${L('ui.pieza.sello', { s })}</b>` : '', sin ? `<span class="sinergia" data-sinergia="${sin.tipo}">${sinergiaFor(getLang(), sin)}</span>` : ''].filter(Boolean);
-  return partes.length ? ` <small class="pieza-marca">${partes.join(' · ')}</small>` : '';
+  return partes.length ? ` <span class="pieza-marca">${partes.join(' · ')}</span>` : '';
 }

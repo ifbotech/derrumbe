@@ -37,7 +37,9 @@ import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving'
 import { feedbackShow, showRules, showSettings } from './widgets';
 import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
 
-const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'cinta'];
+// V40 1d: tres de Espadas (el Rey de la Bendición que toma la QA, Remate) y dos de Bastos; sin la Piedra ni el Facón,
+// que llenan la mano de coronas de Golpe exacto
+const TOOLKIT = ['piqueta', 'cincel', 'cizalla', 'sacos', 'encofrado'];
 const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
   ['S', 7, { seal: 'dinamita' }],
   ['D', 7, { seal: 'eco' }],
@@ -127,6 +129,8 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   if (boss) run.bosses[at] = boss;
   runAction(run, { t: 'route', i: 0 });
   let state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
+  // V40 1d: la Manga de dos huecos que daba la Pasarela (retirada); las medidas de la mesa de la QA son con ella
+  state.config.reserveSize = 2;
   // la mano que se quiere ver: trío de sietes, cartas marcadas, un as, una especial y el comodín
   const p = state.players[0];
   const all = [...p.hand, ...state.deck];
@@ -360,6 +364,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
     if (!c || !state) return;
     c.run.gold = 1234;
     state.chain = 8;
+    // V40 1d: sin los multiplicadores de antes en la tira, una carga de Daño lleva el golpe a 4 cifras
+    state.charge = 200;
     for (const x of SUITS) if (!state.towers[x].away) state.towers[x].fx = { fractura: true };
     const keep = [...S.selected];
     S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });

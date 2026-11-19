@@ -1,7 +1,7 @@
 // Piezas de interfaz que se repiten en varias pantallas: la opción-carta, las Reliquias, el visor
 // de mazos, las reglas y los ajustes.
 import { Card, SUITS, sortCards } from '../rules/engine';
-import { TOOL, TOOL_SLOTS, ToolInst } from '../rules/tools';
+import { TOOL, TOOL_SLOTS, ToolInst, huecosAmuleto } from '../rules/tools';
 import { isLang, onLangChange, setLang, t as tr, tFor } from '../shared/i18n';
 import { L, Ln, archN, espD, espN, getLang, palo, rarN, relD, relN } from './lengua';
 import { Volume, getVolume, setVolume, sfx } from './audio';
@@ -60,7 +60,7 @@ export function toolTile(id: string): HTMLDivElement {
 }
 
 export interface BeltOpts {
-  /** Huecos que se pintan (V40 1d: 4 y uno más por nivel de la Faja ancha; ver `toolSlots`). */
+  /** Huecos abiertos (V40 1d: 4 y uno más por nivel de la Faja ancha; ver `toolSlots`); los demás, cerrados. */
   slots?: number;
   /** Se puede vender: recibe el hueco. */
   onSell?: (slot: number) => void;
@@ -75,12 +75,13 @@ export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'belt';
   let picked = -1;
-  const huecos = opts.slots ?? Math.max(TOOL_SLOTS, tools.length);
-  for (let i = 0; i < huecos; i++) {
+  // la tira tiene siempre los 6 huecos de la Faja ancha entera (la mesa no cambia de medida); los cerrados, apagados
+  const abiertos = opts.slots ?? Math.max(TOOL_SLOTS, tools.length);
+  for (let i = 0; i < huecosAmuleto(2); i++) {
     const t = tools[i];
     const slot = document.createElement('div');
     if (!t || !TOOL[t.id]) {
-      slot.className = 'belt-slot empty';
+      slot.className = `belt-slot empty${i >= abiertos ? ' locked' : ''}`;
       slot.innerHTML = `<span>${i + 1}</span>`;
       el.appendChild(slot);
       continue;

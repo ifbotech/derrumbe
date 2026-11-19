@@ -2290,7 +2290,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     else {
       if (vista.getAttribute('data-lienzo') === null) fail('arbol', 'el pergamino no se declara lienzo (data-lienzo)', vista);
       if (getComputedStyle(vista).touchAction !== 'none') fail('arbol', 'el pergamino no captura el dedo (touch-action: none): no se podría arrastrar ni pellizcar', vista);
-      if (nodos.length !== 30) fail('arbol', `el Árbol tiene ${nodos.length} nodos (30)`);
+      // V40 1d: 28 (los seis arcones de antes son hoy cuatro, uno por Rey)
+      if (nodos.length !== 28) fail('arbol', `el Árbol tiene ${nodos.length} nodos (28)`);
       const banderas = [...document.querySelectorAll<HTMLElement>('.arbol .estandarte')];
       if (banderas.length !== 4) fail('arbol', `el Árbol tiene ${banderas.length} estandartes de rama (4)`);
       for (const b of banderas) if (!b.querySelector('b')?.textContent?.trim()) fail('arbol', 'un estandarte no dice el nombre de su rama', b);
