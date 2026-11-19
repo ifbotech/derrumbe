@@ -2,9 +2,18 @@
 //   npx tsx scripts/sonda-mapa.ts [n] [mazo] [vacio|lleno]
 import { Spec, playCampaign } from './lab';
 import { POLITICAS_RUTA } from '../src/rules/bot';
+import { DECK } from '../src/rules/run';
 const n = Number(process.argv[2] ?? 200);
 const deck = process.argv[3] ?? 'escoba';
 const full = process.argv[4] === 'lleno';
+// SIN_COMODIN=1: el Mazo sin su segundo Comodín (para medir cuánto le cuesta al bot llevarlo)
+if (process.env.SIN_COMODIN) {
+  const build = DECK[deck].build;
+  DECK[deck].build = (run) => {
+    build(run);
+    run.deck = run.deck.filter((c) => c.id !== 'X2');
+  };
+}
 const med = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : 0);
 for (const ruta of POLITICAS_RUTA.filter((r) => !process.env.RUTAS || process.env.RUTAS.split(",").includes(r))) {
   const t0 = Date.now();

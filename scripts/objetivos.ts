@@ -49,8 +49,13 @@ export const OBJETIVOS = {
    * jugadas pesan mucho más (Chancho Va: 36 turnos y 84 jugadas). `jugada` (12 s) deja la baraja española de la 1a
    * en los mismos minutos que daba el supuesto viejo (Σ turnos 42 × 18 s ≈ Σ jugadas 62 × 12 s). `turno` (18 s) es
    * ese supuesto viejo, para los informes que no traen las jugadas.
+   *
+   * V40 1e · con el Mapa de caminos, el entreacto (`entreacto`: el Botín por partes y elegir camino) se separa de lo
+   * que se hace en cada nodo (`nodo`: La Pulpería, un Santuario del Bufón, el Fogón y el Botín de un Guardia Bravo),
+   * contado con la media de nodos por campaña del informe (`mapa.nodos`), y las jugadas de los Guardias Bravos
+   * (`mapa.bravoJugadas`, media por campaña) se suman a las de los asaltos. Sin `mapa`, el supuesto de la 1b.
    */
-  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 12, turno: 18 },
+  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 12, turno: 18, mapa: { entreacto: 40, nodo: { pulperia: 40, santuario: 20, fogon: 10, bravo: 20 } } },
   /** Asalto único (partida clásica): victorias del bot con 1, 2, 3 y 4 jugadores. */
   clasica: [58, 65],
 } as const;
@@ -83,6 +88,8 @@ export interface InformeMeta {
   /** `j50`: mediana de jugadas del asalto (los turnos más las jugadas que abaten o no gastan el turno; V40 1b). */
   pacing: { stage: number; name: string; p50: number; p95: number; n: number; j50?: number }[];
   pacingByDeck: { deck: string; name: string; worstP95: number; n: number }[];
+  /** V40 1e · el Mapa (Reinado 1, todos los Mazos): media de nodos por campaña por tipo y de jugadas en Guardias Bravos. */
+  mapa?: { nodos: Record<string, number>; bravoJugadas: number; muereBravo: number; gastoPulperia: number };
   /** % de campañas (Reinado 1, Árbol vacío) que caen en cada asalto. */
   deaths?: number[];
   giftBaseline: number;
@@ -224,13 +231,18 @@ export function revisar(r: InformeMeta): Comprobacion[] {
 }
 
 /** Minutos estimados de una campaña (con un decimal), o null si el informe no trae el ritmo de los cinco asaltos. */
-export function duracion(r: Pick<InformeMeta, 'pacing'>): number | null {
+export function duracion(r: Pick<InformeMeta, 'pacing' | 'mapa'>): number | null {
   const D = OBJETIVOS.duracion;
   const p = r.pacing.filter((x) => x.n > 0 && x.stage <= 5);
   if (p.length < 5) return null;
   // con las jugadas de cada asalto si el informe las trae; si no, el supuesto viejo sobre los turnos
   const jugadas = p.every((x) => typeof x.j50 === 'number');
   const juego = jugadas ? D.jugada * p.reduce((a, x) => a + x.j50!, 0) : D.turno * p.reduce((a, x) => a + x.p50, 0);
+  if (jugadas && r.mapa) {
+    const M = D.mapa;
+    const nodos = Object.entries(M.nodo).reduce((a, [k, s]) => a + s * (r.mapa!.nodos[k] ?? 0), 0);
+    return Math.round(((D.inicio + 4 * M.entreacto + nodos + 5 * D.ritual + juego + D.jugada * r.mapa.bravoJugadas) / 60) * 10) / 10;
+  }
   return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual + juego) / 60) * 10) / 10;
 }
 

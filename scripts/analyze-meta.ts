@@ -17,6 +17,8 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //     turno, --n=600 por grupo): qué parte del Altar suma y cuál resta
 //   npm run analyze:meta -- sellos --tramo=1/3 … --tramo=3/3 y luego -- sellos --juntar   (V40 1d) los sellos S · A · B de
 //     cada Amuleto, Trampa y Bendición (regalo de salida frente a control, --n=800 por pieza) → balance-config.json
+//   npm run analyze:meta -- rutas     (V40 1e) victorias por política de ruta del bot en el Mapa (equilibrada, brava,
+//     prudente, sinPulperia, azar; --n=800 por celda, --barajas=truco para otro Mazo) y lo que recorre cada una
 //
 // Qué mide:
 //   · porcentaje de campañas ganadas por baraja y por Reinado, con el Árbol vacío y lleno
@@ -39,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { chooseAction } from '../src/rules/bot';
 import { DIFFICULTY, SEAL, SEALS, TREATMENT, TREATMENTS, applyAction, createGame, currentPlayer } from '../src/rules/engine';
 import { MAZO_IDS, MAZO_INICIAL } from '../src/rules/mazos';
+import { POLITICAS_RUTA } from '../src/rules/bot';
 import { ASCENSIONS, BOSS, BOSSES, DECKS, LAST_STAGE, STAGES, UPGRADES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
@@ -94,6 +97,11 @@ function plan(): Spec[] {
   };
   const all = ASCENSIONS.map((_, a) => a);
   if (mode === 'clasica') return specs;
+  if (mode === 'rutas') {
+    // V40 1e · cada política de ruta del bot en el Mapa, con las mismas semillas (Reinado 1; --barajas=truco: ese Mazo)
+    for (const ruta of POLITICAS_RUTA) for (const deck of onlyDecks ?? [MAZO_INICIAL]) for (const full of fulls) for (const seed of seeds(N || 800, 0)) specs.push({ seed, deck, ascension: 0, full, policy: { ruta } });
+    return specs;
+  }
   if (mode === 'sellos') {
     // V40 1d · cada pieza de regalo al empezar, en las mismas campañas que el control: los 5 Mazos por turno y el Altar
     // vacío y lleno a medias (Reinado 1)
@@ -203,7 +211,7 @@ const quantile = (xs: number[], q: number) => (xs.length ? [...xs].sort((a, b) =
 const sum = (logs: Log[], pick: (l: Log) => number) => logs.reduce((a, l) => a + pick(l), 0);
 
 function report(logs: Log[], confirm: Log[] = []) {
-  const plain = logs.filter((l) => !l.spec.giveTool && !l.spec.giveSpecial && !l.spec.giveBendicion && !l.spec.control);
+  const plain = logs.filter((l) => !l.spec.giveTool && !l.spec.giveSpecial && !l.spec.giveBendicion && !l.spec.control && !l.spec.policy);
   const group = (deck: string, a: number, full: boolean) => plain.filter((l) => l.spec.deck === deck && l.spec.ascension === a && l.spec.full === full);
 
   const winrate = {
@@ -319,7 +327,18 @@ function report(logs: Log[], confirm: Log[] = []) {
   const pieces = [...tools, ...specials, ...bendiciones];
   const suspects = pieces.filter(suspect).map((x) => x.id);
   const confirmations = pieces.filter((x) => x.confirmN).map((x) => ({ id: x.id, name: x.name, first: x.delta, n: x.confirmN, winrate: x.confirm, delta: x.confirmDelta }));
-  const body = { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, bendiciones, marks, bosses, avgLethality, pacing, pacingByDeck };
+  // V40 1e · el Mapa (Reinado 1, todos los Mazos, vacío y lleno): nodos por campaña, jugadas y muertes en Bravos, gasto
+  const r1 = plain.filter((l) => l.spec.ascension === 0);
+  const media = (pick: (l: Log) => number) => (r1.length ? Math.round((sum(r1, pick) / r1.length) * 100) / 100 : 0);
+  const mapa = r1.length
+    ? {
+        nodos: Object.fromEntries(['guardia', 'rey', 'bravo', 'pulperia', 'santuario', 'fogon'].map((k) => [k, media((l) => l.nodos?.[k] ?? 0)])),
+        bravoJugadas: media((l) => l.bravoJugadas ?? 0),
+        muereBravo: pct(r1.filter((l) => l.diedBravo).length, r1.length),
+        gastoPulperia: media((l) => l.gastoPulperia ?? 0),
+      }
+    : undefined;
+  const body = { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, bendiciones, marks, bosses, avgLethality, pacing, pacingByDeck, mapa };
   return { ...body, flags: avisos(body) };
 }
 
@@ -351,6 +370,7 @@ function print(r: ReturnType<typeof report>): void {
   for (const b of r.bosses) if (b.faced) console.log(`  ${pad(b.who, 14)} ${num(b.lethality)} %  (${b.deaths}/${b.faced})  ×${(b.lethality / (r.avgLethality || 1)).toFixed(2)}`);
   if (r.pacing.some((p) => p.n)) console.log('\nTurnos por asalto (mediana · percentil 95)');
   for (const p of r.pacing) if (p.n) console.log(`  ${p.stage} ${pad(p.name, 20)} ${num(p.p50, 3)} · ${num(p.p95, 3)}${p.j50 !== undefined ? `   jugadas ${num(p.j50, 3)}` : ''}`);
+  if (r.mapa) console.log(`\nMapa (Reinado 1, por campaña): ${Object.entries(r.mapa.nodos).map(([k, v]) => `${k} ${v}`).join(' · ')} · jugadas en Bravos ${r.mapa.bravoJugadas} · muere en un Bravo ${r.mapa.muereBravo} % · gasto en La Pulpería ${r.mapa.gastoPulperia} de oro`);
   if (r.pacingByDeck.length) console.log(`  peor percentil 95 en los asaltos 1–${LAST_STAGE}, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}`);
   console.log(r.flags.length ? `\nAVISOS (${r.flags.length})\n${r.flags.map((f) => `  ! ${f}`).join('\n')}` : '\nSin avisos: todo dentro de objetivo.');
 }
@@ -400,6 +420,26 @@ if (previo) {
     writeFileSync(CONFIRMAR, JSON.stringify(sus.length ? await runAll(['regalos', `--piezas=${sus.join(',')}`, `--n=${CONFIRM_N}`, '--sal=37']) : []));
   } else throw new Error(`--previo=${previo}: se espera clasica:<jugadores> o confirmar`);
   console.log(`Previo «${previo}» hecho · ${Math.round((Date.now() - started) / 1000)} s.`);
+  process.exit(0);
+}
+if (mode === 'rutas') {
+  // V40 1e · la ruta como decisión: victorias por política de ruta, con lo que recorre cada una
+  const logs = args.includes('--juntar') ? await juntados() : await runAll();
+  const ruido = Math.round(Math.sqrt(0.25 / (N || 800)) * 1000) / 10;
+  console.log(`\n${TITLE} · el Mapa por políticas de ruta · Reinado 1 · ${logs.length} campañas (una desviación por celda: ±${ruido})`);
+  const filas: Record<string, unknown>[] = [];
+  for (const ruta of POLITICAS_RUTA)
+    for (const full of fulls) {
+      const de = logs.filter((l) => l.spec.policy?.ruta === ruta && l.spec.full === full);
+      if (!de.length) continue;
+      const media = (pick: (l: Log) => number) => Math.round((sum(de, pick) / de.length) * 100) / 100;
+      const nodos = Object.fromEntries(['bravo', 'pulperia', 'santuario', 'fogon'].map((k) => [k, media((l) => l.nodos?.[k] ?? 0)]));
+      const fila = { ruta, altar: full ? 'lleno' : 'vacío', victorias: wr(de), n: de.length, nodos, bravoJugadas: media((l) => l.bravoJugadas), muereBravo: pct(de.filter((l) => l.diedBravo).length, de.length), gasto: media((l) => l.gastoPulperia) };
+      filas.push(fila);
+      console.log(`  ${ruta.padEnd(12)} ${fila.altar.padEnd(6)} ${String(fila.victorias).padStart(5)} %   Bravo ${nodos.bravo} · Pulpería ${nodos.pulperia} · Santuario ${nodos.santuario} · Fogón ${nodos.fogon} · jugadas en Bravos ${fila.bravoJugadas} · muere en Bravo ${fila.muereBravo} % · gasto ${fila.gasto}   (${de.length})`);
+    }
+  writeFileSync(join(tmpdir(), 'derrumbe-meta-rutas.json'), JSON.stringify({ rules: fingerprint(), filas }, null, 1));
+  console.log(`\n${Math.round((Date.now() - started) / 1000)} s`);
   process.exit(0);
 }
 if (mode === 'altar') {
