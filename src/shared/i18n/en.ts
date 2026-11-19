@@ -187,7 +187,7 @@ const REINADOS: [string, string][] = [
   ['Wrathful King', "Kings' Attack rises by {rey}."],
   ['Old Wounds', 'Your max Health drops by {heridas}.'],
   ['Night Watch', "Knaves' and Knights' Attack rises by {noche}."],
-  ['Sealed Gates', 'Only in assault {asaltos}, the Attack of all four thrones rises by {clausura}.'],
+  ['Sealed Gates', 'In assaults {asaltos}, the Attack of all four thrones rises by {clausura}.'],
 ];
 
 /** V40 · The 5 Decks: [name, motto, description template]. */

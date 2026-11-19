@@ -37,7 +37,7 @@ export function cifrasReinado(): Record<string, number | string> {
     rey: R.reyColerico,
     heridas: R.heridasViejas,
     noche: R.guardiaNoche,
-    asaltos: BALANCE.clausura.stages.join(', '),
+    asaltos: BALANCE.clausura.stages.join(' and '),
     clausura: BALANCE.clausura.threat,
   };
 }

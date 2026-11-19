@@ -759,9 +759,9 @@ describe('niveles de obra y maestría', () => {
     expect(stageConfig(at(6, 3)).floorThreat[10]).toBe(base.floorThreat[10] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[11]).toBe(base.floorThreat[11] + 1);
     expect(stageConfig(at(6, 3)).floorThreat[12]).toBe(base.floorThreat[12] + BALANCE.reinados.reyColerico);
-    // 8 · clausura: +{clausura.threat} de Ataque en todos los tronos, solo en el asalto 5 (ni en el 4 ni en los otros con monarca)
-    for (const r of [10, 11, 12]) expect(stageConfig(at(7, 5)).floorThreat[r]).toBe(stageConfig(at(6, 5)).floorThreat[r] + BALANCE.clausura.threat);
-    expect(stageConfig(at(7, 4)).floorThreat[10]).toBe(stageConfig(at(6, 4)).floorThreat[10]);
+    // 8 · clausura: +{clausura.threat} de Ataque en todos los tronos, solo en los asaltos 4 y 5 (V40 1c; antes, solo el 5)
+    expect(BALANCE.clausura.stages).toEqual([4, 5]);
+    for (const st of [4, 5]) for (const r of [10, 11, 12]) expect(stageConfig(at(7, st)).floorThreat[r]).toBe(stageConfig(at(6, st)).floorThreat[r] + BALANCE.clausura.threat);
     expect(stageConfig(at(7, 2)).floorThreat[10]).toBe(stageConfig(at(6, 2)).floorThreat[10]);
     expect(stageConfig(at(7, 3)).floorThreat[10]).toBe(stageConfig(at(6, 3)).floorThreat[10]);
     // en los asaltos con monarca solo alargan las corazas y los Reyes acorazados (V11), con la Vida redondeada a 5

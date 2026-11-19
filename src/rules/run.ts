@@ -50,7 +50,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tu Vida máxima baja {heridas}.' },
   { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y los Caballos sube {noche}.' },
-  { name: 'Puertas selladas', desc: 'Solo en el asalto {asaltos}, el Ataque de los cuatro tronos sube {clausura}.' },
+  { name: 'Puertas selladas', desc: 'En los asaltos {asaltos}, el Ataque de los cuatro tronos sube {clausura}.' },
 ];
 export const MAX_ASCENSION = ASCENSIONS.length - 1;
 
@@ -1013,7 +1013,7 @@ export function ordenCasas(run: Pick<Run, 'id' | 'stage' | 'palos'> & { bosses?:
 export const TIMBRE: { stamps: number } = BALANCE.timbre;
 /** Nivel 8 «Clausura»: obras en las que sube la amenaza de todas las torres, y cuánto. */
 export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
-ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), furia: REIN.furia, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(', '), clausura: CLAUSURA.threat })));
+ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), furia: REIN.furia, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.join(' y '), clausura: CLAUSURA.threat })));
 
 /** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
 export function stageConfig(run: Run, players = 1): Config {
