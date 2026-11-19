@@ -2,7 +2,7 @@
 import { ACHIEVEMENTS, deckUnlocked, unlockedPool } from '../rules/achievements';
 import { ASCENSIONS, BOSSES, DECKS, LAST_STAGE, STAGES, newRun } from '../rules/run';
 import { MAZO_INICIAL } from '../rules/mazos';
-import { hero, waxSeal } from './art';
+import { waxSeal } from './art';
 import { backEl } from './card';
 import { masteryBadge } from './engraving';
 import { Locale } from '../shared/brand';
@@ -17,9 +17,14 @@ import { hasServer, sendMsg, updateConn } from './net';
 import { setScreen } from './router';
 import { bindLangSwitch, langSwitch, showRules, showSettings } from './widgets';
 import { platform } from './platform';
+import { bufonSvg } from './pixel/bufon';
+import { dorsoSvg } from './pixel/dorsos';
+import { nodoSvg } from './pixel/nodos';
 
-const stamp = (id: string, glyph: string, title: string, sub: string, cls = '') =>
-  `<button class="stamp-btn ${cls}" id="${id}">${glyphSvg(glyph, 'stamp-ico')}<span><b>${title}</b><small>${sub}</small></span></button>`;
+/** V40 · fase 3a: botón de la portada mínima, icono grande y una palabra; el detalle va en el globo (data-tip). */
+const stamp40 = (id: string, ico: string, title: string, tip: string, cls = '', cifra40 = '') =>
+  `<button class="stamp-btn st40 ${cls}" id="${id}" data-tip="<b>${esc(title)}</b>${esc(tip)}"><span class="st40-ico">${ico}</span><b>${title}</b>${cifra40 ? `<em class="st40-n">${cifra40}</em>` : ''}</button>`;
+
 
 /**
  * Candado de la marca: el título del idioma en grande (primera palabra en un renglón, el resto en
@@ -60,22 +65,24 @@ export function renderHome(face: Locale = getLang()): void {
   const done = ACHIEVEMENTS.filter((a) => meta.ach[a.id]).length;
   const wonRun = saved?.run.phase === 'won';
   const resumeSub = saved ? (wonRun ? L('ui.home.resume.ganada') : `${L('ui.home.resume.sub', { n: saved.run.stage, oro: cifra(saved.run.gold), baraja: barN(saved.run.deckId) })}`) : '';
+  // V40 · fase 3a · portada mínima: el Bufón y el título; cuatro botones grandes de icono y una palabra (Jugar · Altar ·
+  // Colección · Ajustes; el detalle, en el globo) y, aparte y discreto, el cooperativo y las reglas. Sin cajas de texto.
   app.innerHTML = `
-  <div class="home">
+  <div class="home m40">
     <section class="home-left">
-      ${hero()}
+      <div class="bufon-portada" aria-hidden="true">${bufonSvg('brillo')}</div>
       ${brandLockup(face)}
       ${langSwitch('home-lang')}
     </section>
     <section class="home-right">
-      ${saved ? `<button class="resume" id="resume"><small>${wonRun ? L('ui.home.resume.small.ganada') : L('ui.home.resume.small')}</small><b>${wonRun ? L('ui.home.resume.b.ganada') : L('ui.home.resume.b')}</b><span>${resumeSub}</span></button>` : ''}
+      ${saved ? `<button class="resume" id="resume" data-tip="${esc(resumeSub)}"><b>${wonRun ? L('ui.home.resume.b.ganada') : L('ui.home40.seguir')}</b><span>${resumeSub}</span></button>` : ''}
       <nav class="menu">
-        ${stamp('m-camp', 'estandarte', L('ui.home.camp'), L('ui.home.camp.sub'), 'primary')}
-        ${stamp('m-guild', 'engranaje', L('ui.home.orden'), L('ui.home.orden.sub', { coronas: cifra(meta.renown), hechos: done, total: ACHIEVEMENTS.length }))}
-        ${stamp('m-col', 'relicario', L('ui.home.coleccion'), L('ui.home.coleccion.sub'))}
-        ${stamp('m-set', 'pergamino', L('ui.ajustes'), L('ui.home.ajustes.sub'))}
+        ${stamp40('m-camp', nodoSvg('rey'), L('ui.home.camp'), L('ui.home.camp.sub'), 'primary')}
+        ${stamp40('m-guild', nodoSvg('santuario'), L('ui.home.orden'), L('ui.home.orden.sub', { coronas: cifra(meta.renown), hechos: done, total: ACHIEVEMENTS.length }), '', `${cifra(meta.renown)} ✦`)}
+        ${stamp40('m-col', `<span class="dorso40">${dorsoSvg(prefs.deck)}</span>`, L('ui.home.coleccion'), L('ui.home.coleccion.sub'))}
+        ${stamp40('m-set', glyphSvg('engranaje', 'stamp-ico'), L('ui.ajustes'), L('ui.home.ajustes.sub'))}
       </nav>
-      <div class="row foot"><button class="ghost" id="m-coop">${L('ui.home.coop')}</button><button class="ghost" id="m-rules">${L('ui.reglas')}</button><p class="conn"></p></div>
+      <div class="row foot"><button class="ghost" id="m-coop">${L('ui.home40.coop')}</button><button class="ghost" id="m-rules">${L('ui.reglas')}</button><p class="conn"></p></div>
     </section>
   </div>`;
   const resume = $('#resume');
