@@ -1,6 +1,6 @@
 ---
 name: autonomous-sprint-loop
-description: Bucle autónomo de versiones de SANGRE Y PALO (V7 a V10). Explica scripts/estudio-autonomo.ps1 y ROADMAP_V5_V10.md, cómo se escribe una especificación con celdas, las puertas de CPU y de GPU, y cuándo una versión se etiqueta o se aparta. Úsala para lanzar el bucle, retomarlo, preparar la especificación de una versión o entender por qué una se rechazó.
+description: Bucle autónomo de versiones de SANGRE Y PALO. Desde la V40, la refundación hasta `v40.0.0` sin panel y luego el bucle V41 → V50 con el panel y su listón promediado; explica cómo se escribe una especificación con celdas, las puertas técnicas y la del panel, y cuándo una versión se corona y se publica o se aparta a `rechazado/vXX`. Incluye el orquestador histórico de la V7–V10 (scripts/estudio-autonomo.ps1). Úsala para lanzar el bucle, retomarlo, preparar la especificación de una versión o entender por qué una se rechazó.
 ---
 
 # Bucle autónomo de sprints
@@ -9,81 +9,76 @@ Una versión de SANGRE Y PALO es un sprint con tema. El bucle las construye una 
 
 | Pieza | Dónde |
 |---|---|
-| Hoja de ruta | `ROADMAP_V5_V10.md` |
+| Constitución vigente | `SPECS/V40-REFUNDACION.md` (manda sobre las especificaciones anteriores donde choquen) |
+| Mandato del bucle | `artifacts/mision/v40/MANDATO-NOCTURNO.md` |
 | Especificación de cada versión | `SPECS/V{n}.md` |
-| Orquestador | `scripts/estudio-autonomo.ps1` |
 | Subagentes (celdas) | `.claude/agents/{director,reglas-balance,arte-ui,juice-ux}.md` |
 | Panel simulado (puerta de GPU) | `..\panelAgentesGaming` |
-| Rastro de cada versión | `artifacts/estudio/v{n}/` |
+| Lección de cada versión | `MEMORIA_EVOLUTIVA.md` |
+| Rastro de cada versión | `artifacts/mision/v{n}/` (bitácoras por tramo) |
+| Orquestador histórico (V7–V10) | `scripts/estudio-autonomo.ps1` y `ROADMAP_V5_V10.md` |
 
 ## Los sprints
 
 | Versión | Tema |
 |---|---|
-| V7 | Enseñanza interactiva de 60 segundos y personalidad de los monarcas |
-| V8 | Jugo de la caída de un trono, sellos de lacre con brillo y variaciones de audio de corte |
-| V9 | Cooperativo pulido, `balance-config.json` con autoajuste y telemetría con la privacidad primero |
-| V10 | Candidata a lanzamiento con funciones congeladas: accesibilidad, preparación para traducir y empaquetado para Steam / Tauri v2 |
+| V40 · fase 1 (1a–1e) | Reglas y poda: baraja española (1 a 9, 2 Comodines, Corte de 10 Sota, 11 Caballo y 12 Rey), 5 Mazos, 4 Reyes con Bendiciones, cargas, niveles [2/4] y Duales, Amuletos y Trampas del Bufón, sellos S · A · B, fuera Asalto diario y Partida guiada; 1e, reglas del mapa ramificado, el botín y los servicios de La Pulpería |
+| V40 · fase 2 | Forja pixel-art y el Bufón: naipes, pintas del marco, Reyes, iconos de Amuletos, Bufón animado |
+| V40 · fase 3 | Interfaz mínima y jugo: HUD superior único, mapa ramificado, botín y «ELEGÍ UNA», La Pulpería en bandejas, Bendiciones con sellos, frases y reacciones del Bufón, mínimo texto |
+| V40 · fase 4 | Puertas, documentos y despliegue: `v40.0.0` y GitHub Pages |
+| V41 → V50 | Una hipótesis cohesiva por versión, en orden: claridad ≥ 8,2 y cero fricción visual; diversión ≥ 8,5 y jugo del Bufón (¡Escoba!, ¡Envido!, ¡Chancho!, Golpe exacto, sinergias); Steam Deck ≥ 85 % y móvil ≥ 85 % |
 
-La V6 (el cambio de tema, de obra y demolición a la conjura) ya está hecha; desde la 6.1 el juego se llama SANGRE Y PALO · BLOOD & SUITS y la tienda, La Taberna: el bucle arranca en la V7. Su ley está en `SPECS/V6-normas-y-glosario.md`, y las especificaciones nuevas escriben con ese vocabulario.
+Historia: la V6 cambió el tema de obra y demolición a la conjura; de la V7 a la V10 corrió el orquestador de abajo; de la 11.0 a la 38.0, bucles a mano con el panel; la 38.0 (baraja francesa) queda intacta en `legado/baraja-francesa-v38` (`v38.0.0`). Las especificaciones nuevas escriben con el vocabulario de la V40: Espadas, Bastos, Oros y Copas; La Pulpería; el Altar.
 
-## Lanzarlo
+## El bucle vigente (mandato del 2026-11-18)
 
-```powershell
-.\scripts\estudio-autonomo.ps1 -Ensayo                     # qué haría, sin tocar nada
-.\scripts\estudio-autonomo.ps1                             # V7 a V10; etiqueta, no publica
-.\scripts\estudio-autonomo.ps1 -Publicar -ReiniciarOllama  # y publica cada versión aceptada
-.\scripts\estudio-autonomo.ps1 -Desde 7 -Hasta 7           # solo una versión
-.\scripts\estudio-autonomo.ps1 -SinGpu                     # solo puertas de CPU (sin panel)
-```
+Lo orquesta el Director en la sesión, **en primer plano y en serie**, sin preguntas: decide con los números.
 
-Antes: rama `main`, árbol de trabajo limpio y `claude`, `node`, `npm` y `git` en el PATH. Para la puerta de GPU, el entorno del panel creado (`..\panelAgentesGaming\.venv`) y Ollama con sus dos modelos. Una versión completa tarda varias horas: las celdas, el laboratorio (unos 25 minutos) y el panel (unos 90–105 minutos).
-
-Parámetros que importan:
-
-- `-Intentos` (2): rondas de reparación por puerta de CPU antes de apartar la versión.
-- `-MargenAprobacion` (3) y `-MargenClaridad` (0,15): cuánto puede bajar el panel sin contarse como regresión.
-- `-BasePanel <run_id>`: corrida del panel con la que se compara la primera versión.
-- `-Permisos` (`acceptEdits`): modo de permisos de las sesiones sin ventana. Llevan una lista corta de órdenes permitidas (npm, node, npx y git de solo lectura); no pueden hacer commit.
-- `-Publicar`: `git push origin main --follow-tags` tras cada versión aceptada (publica en GitHub Pages).
-
-## Qué hace con cada versión
-
-1. **Rama** `estudio/v{n}` desde `main`.
-2. **Celdas de trabajo**: por cada bloque `### Celda: <subagente>` de `SPECS/V{n}.md`, en orden y de una en una, una sesión `claude -p --agent <subagente>` con el encargo por la entrada estándar. Antes pone `DUNGEON_HERO=<Sala>`: los ganchos globales de Pixel Dungeon encienden la sala de ese subagente (`Reglas-Balance`, `Arte-UI`, `Juice-UX`) mientras trabaja.
-3. **Puertas de CPU**, en orden. La primera que falla manda el final de su registro a la celda responsable:
-
-   | Puerta | Orden | Pasa si | Responsable |
-   |---|---|---|---|
-   | tipos | `npm run typecheck` | sale con 0 | según el archivo del error |
-   | pruebas | `npm test` | sale con 0 (incluye las invariantes anticomplejidad) | `reglas-balance` |
-   | laboratorio | `npm run analyze:meta` | `scripts/meta-report.json` sin avisos | `reglas-balance` |
-   | documentos | `npm run docs` | sale con 0 | `reglas-balance` |
-   | capturas | `npm run qa:visual` | cero fallos en las cuatro ventanas | `arte-ui` |
-   | humo | `npm run qa:smoke` | «Todo en orden», mando virtual incluido | `juice-ux` |
-
-4. **Cierre**: las celdas `director` corren ahora, con las medidas de las puertas delante, y escriben el registro de cambios.
-5. **Commit candidato** `SANGRE Y PALO {n}.0: <tema>`, con la autoría de quien lanza el bucle.
-6. **Puerta de GPU**: snapshot del commit y corrida del panel (`python -m panel_gaming run --preset v6-completo --commit-esperado <sha> --comparar-con <corrida anterior>`). Mientras corre, la sala `QA-3090` enseña la última línea de su avance (`node %USERPROFILE%\.claude\dungeon_hook.mjs set QA-3090 working "…"`), y al acabar queda en `done` con la aprobación y la claridad.
-7. **Veredicto**: compara **aprobación por persona** y **claridad media** con la versión anterior.
-   - Sin regresión: `git merge --ff-only`, etiqueta `v{n}.0.0` (con el veredicto en su nota) y, con `-Publicar`, push.
-   - Con regresión, o con una puerta de CPU que no pasa tras los reintentos: `main` queda como estaba, la rama se renombra a `rechazado/v{n}-<fecha>` y **el bucle se detiene** (la versión siguiente parte de la anterior).
+1. **V40 sin panel**: tema, baraja, modos e interfaz cambian enteros, y medir contra placebos de la V35–V38 no tiene sentido. Mandan las puertas técnicas y el UAT del usuario en la web. Cada tramo trabaja en `refundacion/v40`; al cerrar la fase 4, fusión a `main`, etiqueta `v40.0.0` y `git push origin main --tags`.
+2. **Paso A** (tras `v40.0.0`): `escenas_v40.py` en `..\panelAgentesGaming` (lector del juego y pytest al día, fiel y con guardia de honestidad); línea base `pulso-60` de la V40 y 2–3 **placebos nulos** para el listón promediado.
+3. **Paso B**: una hipótesis por versión (tabla de arriba), en la rama `estudio/v{n}`.
+4. **Puertas** (abajo) en verde.
+5. **Veredicto** contra el listón promediado y el placebo emparejado (abajo).
+6. **Coronada**: CHANGELOG y `MEMORIA_EVOLUTIVA.md`, fusión a `main`, etiqueta `v{n}.0.0` y `git push origin main --tags` en el acto. **Rechazada**: la rama queda como `rechazado/v{n}`, la lección va a `MEMORIA_EVOLUTIVA.md` y se pasa a la hipótesis siguiente desde el Campeón.
+7. Al final: `main` limpio y subido, y un **Resumen Ejecutivo Matutino** (versiones que entraron, métricas, qué probar primero).
 
 Nunca reescribe `main`: ni `reset --hard` ni `push --force`. «Revertir» aquí es no fusionar.
 
+### Puertas
+
+| Puerta | Orden | Pasa si | Responsable |
+|---|---|---|---|
+| tipos | `npm run typecheck` | sale con 0 | según el archivo del error |
+| pruebas | `npm test` (dos pasadas: todo y el cooperativo aparte, que se repite solo si Node cae con `0xC0000409`) | sale con 0 (incluye vocabulario, marca e invariantes anticomplejidad) | `reglas-balance` |
+| textos | `npm run i18n:check` | sale con 0 | `reglas-balance` |
+| laboratorio | `npm run analyze:meta` por tramos (`--tramo=k/n`, `--previo=…`, `--juntar`); en el bucle, `-- --fast` si cambian números | `scripts/meta-report.json` sin avisos | `reglas-balance` |
+| documentos | `npm run docs` | sale con 0 | `reglas-balance` |
+| forja | `npm run forja` | sin fallos | `arte-ui` |
+| capturas | `npm run qa:visual` y `-- --lang=en` | cero fallos en las cuatro ventanas, texto ≥ 14 px | `arte-ui` |
+| humo | `npm run qa:smoke:todo` y `-- --lang=en` (en cada vuelta, `qa:smoke -- --fast`) | «Todo en orden», mando virtual incluido | `juice-ux` |
+| fluidez | `npm run qa:fps` | 60 fps | `juice-ux` |
+| web | `npm run build:web` | sale con 0 | `arte-ui` |
+
+### Veredicto del panel
+
+- Snapshot del commit candidato (con las capturas de `npm run qa:visual` en español rehechas justo antes: el snapshot lee `artifacts/visual-qa`) y corrida `pulso-60` por tramos de ≤ 600 s (`run --resume`).
+- `python -m panel_gaming placebo --campeon snapshots/<campeón> --candidata snapshots/<cand>` arma el placebo emparejado (un sinónimo por escena tocada), que se mide igual que la candidata.
+- `python -m panel_gaming veredicto <run cand> <run placebo> --campeon <run_campeón> <nulo_1> …` acepta solo si (1) la candidata bate a su placebo, (2) ΔF contra el **listón** (la media del Campeón y sus placebos nulos) ≥ −5,0 y (3) ningún piso se hunde: claridad o diversión −0,10 con p < 0,05, aprobación −5, críticos, impulsivos, Steam Deck o móvil más de una persona neta; salvo que siga en su meta y ΔF ≥ +5.
+- También se corona la versión que resuelve un P0 visual real (medido en la captura, no dicho por la síntesis) sin hundir pisos.
+
 ## Leer el veredicto
 
-- La aprobación del panel con 240 personas tiene un intervalo de confianza de unos ±6 puntos. El margen por defecto (3 puntos) es más estricto a propósito: aparta versiones dudosas. Si una versión cae entre −3 y −6, mira el informe antes de darla por mala; puede ser ruido y merecer otra corrida.
-- Una subida menor de 6 puntos tampoco es mejora probada. Lo que una versión demuestra de verdad son sus puertas de CPU.
+- El voto del panel se mueve casi solo por azar: el mismo juego dio F 162 y 140 en dos corridas, y un placebo nulo ya baja F unos 5 puntos. Por eso el listón se promedia y cada candidata lleva su placebo.
+- Una subida menor que la deriva de los placebos no es mejora probada. Lo que una versión demuestra de verdad son sus puertas técnicas.
 - El panel es una **simulación** con modelos locales: ordena prioridades y encuentra fricciones probables. No sustituye a jugadores.
-- Los objetivos por estrato de una especificación (claridad del casual, fatiga a las 4 h) se leen en `salidas\<run_id>\INFORME_EJECUTIVO.md`; no bloquean solos.
+- Los objetivos por estrato (claridad del casual, Steam Deck, móvil) se leen en `salidas\<run_id>\INFORME_EJECUTIVO.md`; los estratos de 9–12 personas son orientativos.
 
 ## Escribir la especificación de una versión
 
-La escribe `director`. El orquestador solo entiende esto:
+La escribe `director`. El formato (el orquestador histórico lo lee igual):
 
 ```markdown
-# V7 · Enseñanza interactiva de 60 segundos y personalidad de los monarcas
+# V41 · <tema en una frase>
 
 ## 1. Tema y evidencia
 …
@@ -109,19 +104,28 @@ Reglas:
 - Nombres válidos de celda: `reglas-balance`, `arte-ui`, `juice-ux`, `director`. Un bloque termina en la celda siguiente o en un `## `.
 - Las celdas corren **en serie** y comparten rama: la que expone un dato (reglas) va antes que la que lo pinta (arte, juice). Las de `director` siempre van al cierre, estén donde estén.
 - Cada encargo se entiende solo: quien lo lee no ha visto nada más. Di los archivos, el contrato con las otras celdas y la orden que lo comprueba.
-- Constitución anticomplejidad en cada versión (la de la 11.0): ≤ 5 palabras clave, ≤ 56 reliquias, descripciones ≤ 115 caracteres en los dos idiomas, Multi siempre entero, P95 ≤ 15 turnos en los cinco asaltos.
-- Cada encargo pide lo que la misión demostró: Bitácora al día al cerrar **cada bloque**, no solo al final (una sesión cortada se retoma desde ella); los trabajos largos se lanzan en segundo plano y se **esperan en primer plano** (`node artifacts/mision/esperar.mjs`): nunca se cede el turno con uno vivo. Una versión no añade un sistema sin retirar o simplificar otro.
-- Vocabulario de la V6 en cada encargo: el título del juego solo se escribe en `src/shared/brand.ts` y ninguna palabra del tema viejo puede aparecer en lo que lee el jugador (`tests/vocabulario.test.ts` y la regla «jerga» de `npm run qa:visual`).
+- Constitución anticomplejidad en cada versión: ≤ 5 palabras clave; 20–24 Amuletos y 8 Trampas del Bufón (tramo 1d; hasta entonces, ≤ 56 Reliquias); descripciones ≤ 115 caracteres en los dos idiomas y frases del Bufón y de los Reyes ≤ 90; Multi siempre entero; P95 de turnos dentro de los topes de `scripts/objetivos.ts` (hoy 8 · 16 · 19, y 19 por Mazo); los 5 Mazos a ±5 puntos; sellos S · A · B sacados del laboratorio.
+- Cada encargo pide lo que las misiones demostraron: Bitácora al día al cerrar **cada bloque**, no solo al final (una sesión cortada se retoma desde ella); todo en **primer plano** y en serie, sin órdenes en segundo plano ni esperas de archivos de señal; topes duros de **300 s** por orden de Node o Playwright y **600 s** por orden del panel (`node scripts/con-tope.mjs <segundos> <orden…>`), y lo que no cabe va en tramos; nunca `git worktree` ni enlaces (junctions) a `node_modules`. Una versión no añade un sistema sin retirar o simplificar otro.
+- Vocabulario en cada encargo: el título del juego solo se escribe en `src/shared/brand.ts`, y ninguna palabra del tema viejo ni de la baraja francesa puede aparecer en lo que lee el jugador (`tests/vocabulario.test.ts` y la regla «jerga» de `npm run qa:visual`).
+- Commits solo con la autoría del usuario, sin coautoría ni menciones a asistentes.
+
+## El orquestador histórico (V7–V10)
+
+`scripts/estudio-autonomo.ps1` lanzaba una sesión `claude -p --agent <subagente>` por celda, pasaba las puertas de CPU y luego el panel (`--preset v6-completo`, con márgenes de aprobación y claridad que ya no se usan). Sigue en el repositorio, pero sus esperas largas en sesiones sin ventana chocan con la regla de primer plano: el bucle vigente lo lleva el Director a mano.
+
+```powershell
+.\scripts\estudio-autonomo.ps1 -Ensayo                     # qué haría, sin tocar nada
+.\scripts\estudio-autonomo.ps1 -Desde 7 -Hasta 7 -SinGpu   # una versión, solo puertas de CPU
+```
 
 ## Cuando algo se tuerce
 
 | Síntoma | Qué mirar | Qué hacer |
 |---|---|---|
-| «Hay cambios sin guardar» al lanzar | `git status` | commit o descartar antes; el bucle no pisa trabajo a medias |
-| Una celda sale con error | `artifacts/estudio/v{n}/celda-*.log` | suele ser permisos (una orden fuera de la lista) o falta de sesión de `claude` |
-| Una puerta no pasa tras los reintentos | `artifacts/estudio/v{n}/puerta-*.log` y `arreglo-*.log` | la rama apartada conserva el trabajo: se puede retomar a mano |
-| El panel se corta | `artifacts/estudio/v{n}/panel.log` | en `..\panelAgentesGaming`: `python -m panel_gaming run --resume <run_id>`, y relanzar con `-Desde {n} -BasePanel <run anterior>` |
-| Ollama atiende de a uno (panel 40 % más lento) | log de `ollama serve` | `-ReiniciarOllama` |
-| Versión rechazada por el panel | `veredicto.json` y el informe del panel | corregir la especificación y relanzar `-Desde {n}` |
-
-Para retomar tras un rechazo: borra o renombra la rama apartada si ya no hace falta, ajusta `SPECS/V{n}.md` y lanza `-Desde {n}`. La línea base del panel de cada versión aceptada queda en `artifacts/estudio/estado.json`.
+| «Hay cambios sin guardar» al empezar | `git status` | commit o descartar antes; el bucle no pisa trabajo a medias |
+| Una orden pasa del tope | `scripts/con-tope.mjs` la mata con su árbol | partirla en tramos (`--tramo`, `--solo`, `VIEW=`, lista de estados) |
+| Una puerta no pasa tras dos intentos | la bitácora del tramo | la versión se aparta; la rama conserva el trabajo y se puede retomar a mano |
+| `node_modules` vacío o roto | ¿hubo un `git worktree` o un enlace? | `npm ci` (mismo `package-lock.json`); no volver a usar worktrees ni junctions |
+| El panel se corta | el registro de la corrida | en `..\panelAgentesGaming`: `python -m panel_gaming run --resume <run_id>` |
+| Ollama atiende de a uno (panel 40 % más lento) | log de `ollama serve` | reiniciarlo con sus variables antes de cada corrida |
+| Versión rechazada por el panel | el veredicto y el informe del panel | lección en `MEMORIA_EVOLUTIVA.md`, rama `rechazado/v{n}` y siguiente hipótesis |
