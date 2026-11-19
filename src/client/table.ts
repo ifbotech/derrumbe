@@ -324,7 +324,7 @@ export function renderHud(): void {
     const bravo = c.run.combate === 'bravo';
     obra.innerHTML = [
       boss ? `<div class="chip boss-chip" data-lupa="boss:${boss.id}" data-tip="<b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}"><span>${L('ui.mesa.monarca')}</span><b>${REY_IDS.includes(boss.id as ReyId) ? t(`rey.${boss.id}.nombre`) : monN(boss.id)}</b></div>` : '',
-      bravo ? `<div class="chip contract-chip risk" data-tip="${L('ui.mapa.bravo.tip', { a: MAPA_CFG.bravo.ataque })}"><span>${L('ui.mapa.tipo.bravo')}</span><b>+${MAPA_CFG.bravo.ataque} ⚔</b></div>` : '',
+      bravo ? `<div class="chip contract-chip risk" data-tip="${L('ui.mapa.bravo.tip', { v: num(MAPA_CFG.bravo.vida), k: MAPA_CFG.bravo.amuletos, o: MAPA_CFG.bravo.oro })}"><span>${L('ui.mapa.tipo.bravo')}</span><b>×${num(MAPA_CFG.bravo.vida)}</b></div>` : '',
       c.run.curse ? `<div class="chip boss-chip" data-tip="${L('ui.mesa.maldito.tip')}"><span>${L('ui.mesa.maldito')}</span><b>+1 ⚔</b></div>` : '',
       c.run.ascension ? `<div class="chip level-chip" data-tip="${L('ui.mesa.reinado.tip', { n: c.run.ascension + 1 })}"><span>${L('ui.mesa.reinado')}</span><b>${c.run.ascension + 1}</b></div>` : '',
     ].join('');
@@ -1270,7 +1270,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
     case 'hurt':
       v.integrity = ev.integrity;
       renderBunker();
-      shake($('#bunker'), 0.4, 1, 0);
+      shake($('.table-screen .hud-vida') ?? $('#bunker'), 0.4, 1, 0);
       floatText($('#bunker'), `−${ev.amount}`);
       logLine(L('ui.log.cuesta', { n: ev.amount }), 'red');
       await wait(280);
@@ -1311,7 +1311,7 @@ async function animate(ev: GameEvent, batch: GameEvent[]): Promise<void> {
         if (ev.taken) {
           flash();
           platform.vibrate(60, Math.min(1, ev.taken / 8));
-          shake($('#bunker'), Math.min(1, ev.taken / 6), 1, 0.4);
+          shake($('.table-screen .hud-vida') ?? $('#bunker'), Math.min(1, ev.taken / 6), 1, 0.4);
           floatText($('#bunker'), `−${ev.taken}`);
           if (ev.taken >= 4 && v.reserveSize > 0 && v.reserve.length === 0) whisper('andamio');
         }

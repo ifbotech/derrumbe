@@ -3,7 +3,7 @@
    enemigo activo y la fila compacta de los que esperan; al medio, una sola barra de la cuenta y las píldoras de los
    Reyes; abajo, la mano grande con Golpear y Descartar. Fondo de mesa sereno: liso, sin grano. */
 
-.table-screen.m40 { grid-template-rows: auto minmax(0, 1fr) auto; background: #18201c; background-image: none; }
+.table-screen.m40 { grid-template-rows: auto minmax(0, 1fr) auto; }
 
 /* ── el HUD de la mesa ── */
 .table-screen.m40 > .bar.hud { display: flex; flex-wrap: nowrap; gap: 10px; padding: 6px 16px; min-height: 58px; background: var(--pit); border-bottom: 2px solid var(--table-4); }
@@ -31,7 +31,11 @@
 .table-screen.m40 .bufon-mesa > svg { width: 100%; height: auto; display: block; image-rendering: pixelated; }
 .table-screen.m40 .field > .towers { grid-column: 2; grid-row: 1 / span 2; width: 100%; max-width: 1120px; justify-self: center; min-height: 0; }
 .table-screen.m40 .field > .side { display: contents; }
-.table-screen.m40 .side > .bunker, .table-screen.m40 .side > .log { display: none; }
+.table-screen.m40 .side > .log { display: none; }
+/* el búnker viejo ya no se ve, pero su caja queda encima de la ficha de Vida del HUD: los números que flotan al
+   curarte o al recibir daño (fx.ts, table.ts) salen de ahí */
+.table-screen.m40 .side > .bunker { display: block; position: absolute; top: 12px; left: 16px; width: 108px; height: 44px; margin: 0; padding: 0; overflow: hidden; visibility: hidden; pointer-events: none; z-index: 0; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) { .table-screen.m40 .side > .bunker { top: 8px; width: 59px; } }
 .table-screen.m40 .side > #monarch { grid-column: 1; grid-row: 2; align-self: end; max-width: 150px; }
 .table-screen.m40 .side > #monarch .mon-port { display: none; }
 /* el enemigo activo: menos marco, sin la trama del rótulo ni el pie */
@@ -40,7 +44,7 @@
 .table-screen.m40 .tower.espera { --bw: 2px; --bd: var(--table-4); --sh: none; }
 
 /* ── al medio: la cuenta y las píldoras ── */
-.table-screen.m40 .tray { background: var(--table-2); background-image: none; border-top: 2px solid var(--table-4); box-shadow: none; gap: 8px; padding: 8px 16px 14px; }
+.table-screen.m40 .tray { background: rgba(9, 7, 15, 0.72); background-image: none; border-top: 2px solid var(--table-4); box-shadow: none; gap: 8px; padding: 8px 16px 14px; }
 .table-screen.m40 .tray > .score { order: 1; }
 .table-screen.m40 .tray > .hudrow { order: 2; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; min-height: 0; }
 .table-screen.m40 .tray > .hudrow > .powers { display: none; }
@@ -86,11 +90,13 @@
 .table-screen.m40 .tower .storey > b, .table-screen.m40 .tower .storey > span { font-size: 15px; background: none; color: var(--card-paper); padding: 0; }
 /* la cuenta: la fórmula y, como mucho, el golpe exacto, lo que cae y el Contraataque */
 .table-screen.m40 #score .mde { display: none; }
-.table-screen.m40 #score .marks > .m:not(.red):not(.gold):not(.dim):not(.good), .table-screen.m40 #score .marks > .m.inm, .table-screen.m40 #score .marks > .m.polvora, .table-screen.m40 #score .marks > .m.mas { display: none; }
+.table-screen.m40 #score .marks > .m:not(.red):not(.gold):not(.dim):not(.good):not(.polvora), .table-screen.m40 #score .marks > .m.inm, .table-screen.m40 #score .marks > .m.mas { display: none; }
 
 /* ── tercera pasada ── */
 .hud .bolsa-c b, .table-screen.m40 .hud .bolsa-c b { background: var(--ink); color: var(--hazard); padding: 1px 5px; }
-.table-screen.m40 #btn-speed, .table-screen.m40 #btn-rules { display: none; }
+.table-screen.m40 #btn-speed { display: none; }
+/* Reglas («?») queda en el HUD de escritorio, discreto (el mando llega a ella); en el móvil no cabe y vive en Ajustes */
+@media (max-width: 640px), (max-aspect-ratio: 1/1) { .table-screen.m40 #btn-rules { display: none; } }
 .table-screen.m40 .actions > button { grid-area: auto; }
 .table-screen.m40 .side > #monarch { overflow: visible; }
 @media (max-width: 640px), (max-aspect-ratio: 1/1) {
@@ -214,14 +220,14 @@ html[data-input='pad'] .table-screen.m40 #btn-set { min-width: 68px; }
 /* ── novena pasada: naipes grandes en la mano (índice a 0,22 del ancho: ≥ 20 px en 1280, ≥ 34 en 1920); si no caben,
    se solapan dejando al menos 44 px de cada uno a la vista ── */
 @media (min-width: 641px) and (min-aspect-ratio: 1/1) {
-  .table-screen.m40 { --hand-h: clamp(150px, 13.5vw, 270px); }
+  .table-screen.m40 { --hand-h: clamp(150px, calc(10vw + 32px), 270px); }
   .table-screen.m40 .playrow { min-width: 0; }
   .table-screen.m40 .handrow { flex: 1 1 auto; min-width: 0; }
   .table-screen.m40 .hand { flex: 1 1 0; min-width: 0; container-type: inline-size; justify-content: safe center; gap: 0; }
   /* con mando, la carta enfocada crece 1,3× hacia la izquierda: la primera deja ese hueco para no pisar La Manga */
   html[data-input='pad'] .table-screen.m40 .hand > .card:first-child { margin-left: calc(var(--w) * 0.3); }
   /* las cartas elegidas suben 0,14 de la mano: la fila de las píldoras de los Reyes les deja ese aire */
-  .table-screen.m40 .tray > .hudrow:has(> .rasgos:not([hidden])) { margin-bottom: calc(var(--hand-h) * 0.14 - 8px); }
+  .table-screen.m40 .tray > .hudrow:has(> .rasgos:not([hidden])) { margin-bottom: 8px; }
   .table-screen.m40 .hand .card, .table-screen.m40.is-run .hand .card { --w: calc(var(--hand-h) * 0.84 / 1.4); flex: none; }
   .table-screen.m40 .hand > .card + .card { margin-left: clamp(calc(44px - var(--w)), calc((100cqw - (var(--n, 8) + 0.3) * var(--w)) / (var(--n, 8) - 1)), 10px); }
 }
@@ -247,7 +253,7 @@ html[data-input='pad'] .table-screen.m40 #btn-set { min-width: 68px; }
 .table-screen.m40 .hudrow > .carries { display: flex; align-items: center; gap: 8px; }
 .table-screen.m40 .hudrow > .carries:empty { display: none; }
 .table-screen.m40 .hudrow > .carries .carry { font-size: 15px; white-space: nowrap; padding: 4px 8px; }
-.table-screen.m40 .tray > .hudrow:has(> .carries:not(:empty)) { margin-bottom: calc(var(--hand-h) * 0.14 - 8px); }
+.table-screen.m40 .tray > .hudrow:has(> .carries:not(:empty)) { margin-bottom: 8px; }
 @media (max-width: 640px), (max-aspect-ratio: 1/1) {
   .table-screen.m40 .tray > .hudrow:has(> .carries:not(:empty)) { margin-bottom: 0; }
 }
@@ -305,6 +311,68 @@ html[data-input='pad'] .table-screen.m40 #btn-set { min-width: 68px; }
 @media (max-width: 640px), (max-aspect-ratio: 1/1) {
   /* segunda fila del HUD: Mazo y cinco botones de 48 px, sin estirarse */
   #app .table-screen.m40 .hud-der .hud-btn { width: 48px; min-width: 48px; padding: 0; justify-content: center; }
-  #app .table-screen.m40 .hud-der #btn-leave { width: auto; padding: 0 6px; font-size: 14px; }
+  #app .table-screen.m40 .hud-der #btn-leave { width: auto; padding: 0 4px; font-size: 14px; letter-spacing: 0; }
   .table-screen.m40 .hud-mazo { padding: 2px 6px 2px 4px; gap: 4px; }
 }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .towers > .tower:not(.activa) { padding-bottom: 24px; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* el móvil cuida cada píxel de alto del campo: Bufón de 40, monarca en una línea fina, franjas de caída de 18 */
+  .table-screen.m40 .field { padding: 4px 16px 2px; gap: 6px 8px; }
+  .table-screen.m40 .bufon-mesa { max-width: 40px; }
+  .table-screen.m40 .side > #monarch:not([hidden]) { padding: 2px 6px; gap: 6px; min-height: 0; }
+  .table-screen.m40 .side > #monarch .mon-who { font-size: 14px; }
+  .table-screen.m40 .towers > .tower:not(.activa) { padding-bottom: 18px; }
+  .table-screen.m40 .towers { gap: 8px; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* lo que cae del enemigo activo se posa a sus pies: la franja libre va bajo él, no bajo la fila */
+  .table-screen.m40 .towers > .tower:not(.activa) { padding-bottom: 6px; }
+  .table-screen.m40 .towers > .tower.activa { padding-bottom: 24px; }
+}
+/* las marcas de la cuenta en fila (se parten solo si no caben) */
+.table-screen.m40 #score .marks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* el Mazo abre siempre la segunda fila del HUD: un salto de línea invisible entre la bolsa y él */
+  .table-screen.m40 > .bar.hud { row-gap: 4px; }
+  .table-screen.m40 > .bar.hud::before { content: ''; order: 4; flex: 0 0 100%; height: 0; }
+  .table-screen.m40 .hud-mazo { break-before: auto; }
+  .table-screen.m40 .hud-tira { margin-top: 4px; }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  /* la carta elegida sube poco (16 px) y la mano no pisa la fila de las píldoras; en ventanas altas, naipes mayores */
+  .table-screen.m40 .hand .card.sel { transform: translateY(-16px) rotate(0deg); }
+  .table-screen.m40 .hand .card:hover:not(.sel), .table-screen.m40 .hand .card.hint:not(.sel), .table-screen.m40 .hand .card[data-foco]:not(.sel) { transform: translateY(-8px) rotate(0deg); }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) and (min-height: 1000px) {
+  .table-screen.m40 { --hand-h: clamp(150px, 24vh, 280px); }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  /* con mando, la enfocada crece 1,22× anclada abajo (la más grande de la fila, humo V19) sin subir sobre las píldoras */
+  html[data-input='pad'] .table-screen.m40 #hand .card[data-foco] { transform: scale(1.22) rotate(0deg); transform-origin: 50% 100%; }
+  /* con el recibo abierto, el salto vuelve a 1,1×: el recibo conserva su lugar entre los enemigos y la mano */
+  html[data-input='pad'] .table-screen.m40:has(#recibo.abre) #hand .card[data-foco] { transform: scale(1.1) rotate(0deg); }
+  html[data-input='pad'] .table-screen.m40 .hand > .card:first-child { margin-left: calc(var(--w) * 0.06); }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* las marcas de la cuenta caben en una sola fila del móvil: sin tracking y con menos relleno */
+  .table-screen.m40 #score .marks > .m { letter-spacing: 0; padding: 2px 5px; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* la segunda fila del HUD cabe en inglés también: sin márgenes heredados (el aire lo da el hueco de 8 px) */
+  .table-screen.m40 .hud-der > .hud-btn:not(#btn-leave) { margin-left: 0; flex-grow: 0; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* la fórmula de la cuenta cabe a 390 px con totales grandes: sin tracking (el tamaño de 14 px no se toca) */
+  .table-screen.m40 #score .calc-txt, .table-screen.m40 #score .calc-txt * { letter-spacing: 0; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* a lo angosto, la fórmula usa las letras de las píldoras (D × M), como +D y ×M en los Amuletos */
+  .table-screen.m40 #score .calc .fr .lg { display: none; }
+  .table-screen.m40 #score .calc .fr .sh { display: inline; }
+}
+/* con mando, la insignia «Select» de AUTO va debajo del botón como las demás (en línea lo ensanchaba y la tira de
+   Amuletos y Bendiciones se cortaba a 1280 px) */
+html[data-input='pad'] .table-screen.m40 #btn-auto .kh.pd { position: absolute; top: auto; left: 50%; right: auto; transform: translateX(-50%); bottom: -12px; margin: 0; z-index: 2; }
+html[data-input='pad'] .table-screen.m40 #btn-auto { min-width: 66px; }
