@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fingerprint } from '../scripts/lab';
-import { OBJETIVOS } from '../scripts/objetivos';
+import { OBJETIVOS, duracion } from '../scripts/objetivos';
 import { FORMATION_NAME, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { KEYWORDS, TERMS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FURIA, TAGS, UPGRADES } from '../src/rules/run';
@@ -118,7 +118,7 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     rules?: string;
     flags: string[];
     winrate: { levels: Cell[]; decks: Cell[] };
-    pacing: { stage: number; p50: number; p95: number; n: number }[];
+    pacing: { stage: number; name: string; p50: number; p95: number; n: number; j50?: number }[];
     pacingByDeck: { deck: string; name: string; worstP95: number; n: number }[];
     tools: { id: string; given: number | null; confirm: number | null; confirmN: number }[];
     bosses: { id: string; lethality: number; faced: number }[];
@@ -157,7 +157,7 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     expect(r.flags).toEqual([]);
   });
 
-  it.runIf(vigente)('ningún asalto de los cinco pasa del tope de turnos de su tramo en el percentil 95, con ninguna de las seis barajas', () => {
+  it.runIf(vigente)('ningún asalto de los cinco pasa del tope de turnos de su tramo en el percentil 95, con ninguno de los cinco Mazos', () => {
     expect(r.pacingByDeck.map((d) => d.deck).sort()).toEqual(DECKS.map((d) => d.id).sort());
     for (const d of r.pacingByDeck) {
       expect(d.n, d.name).toBeGreaterThan(0);
@@ -165,6 +165,25 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     }
     expect(r.pacing.map((p) => p.stage)).toEqual([1, 2, 3, 4, 5]);
     for (const p of r.pacing) expect(p.p95, `asalto ${p.stage}`).toBeLessThanOrEqual(OBJETIVOS.ritmo.find((t) => p.stage <= t.hasta)!.p95);
+  });
+
+  // V40 1b · la duración se estima con las jugadas (un turno no cuenta la jugada que abate ni las que no gastan el turno)
+  it.runIf(vigente)('trae las jugadas de cada asalto (nunca menos que sus turnos) y la duración estimada está en rango', () => {
+    for (const p of r.pacing) {
+      expect(typeof p.j50, `asalto ${p.stage}`).toBe('number');
+      expect(p.j50!, `asalto ${p.stage}`).toBeGreaterThanOrEqual(p.p50);
+    }
+    const min = duracion(r)!;
+    expect(min).toBeGreaterThanOrEqual(OBJETIVOS.duracion.minutos[0]);
+    expect(min).toBeLessThanOrEqual(OBJETIVOS.duracion.minutos[1]);
+  });
+
+  it('la duración de un informe sin jugadas usa el supuesto viejo de los turnos', () => {
+    const D = OBJETIVOS.duracion;
+    const fijo = D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual;
+    const p = [5, 9, 9, 10, 9].map((p50, i) => ({ stage: i + 1, name: '', p50, p95: 0, n: 1 }));
+    expect(duracion({ pacing: p })).toBe(Math.round(((fijo + D.turno * 42) / 60) * 10) / 10);
+    expect(duracion({ pacing: p.map((x) => ({ ...x, j50: 13 })) })).toBe(Math.round(((fijo + D.jugada * 65) / 60) * 10) / 10);
   });
 
   it.runIf(vigente)('el Reinado 1 y el Reinado 8 están en rango, y del 1 al 8 cada Reinado gana menos que el anterior', () => {

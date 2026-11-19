@@ -40,6 +40,8 @@ export interface Log {
   /** Jefes a los que se llegó a enfrentar. */
   faced: string[];
   stageTurns: number[];
+  /** V40 · jugadas de cada asalto: los turnos más las que no gastan el turno (Pasar, Comodín de El Mentiroso, andamio). */
+  stageJugadas: number[];
   /** Cinturón y mazo al entrar a la obra 5 (null si no se llegó). */
   mid: { tools: string[]; specials: string[]; seals: Seal[]; treats: Treatment[] } | null;
   toolsEnd: string[];
@@ -133,7 +135,7 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   const run = newRun(optsFor(spec), spec.seed);
   if (spec.giveTool) run.tools.push({ id: spec.giveTool, n: 0 });
   if (spec.giveSpecial) addSpecial(run, spec.giveSpecial);
-  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0 };
+  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0 };
   let shop: unknown = null;
   let rewardFor = 0;
   for (let guard = 0; guard < 6000; guard++) {
@@ -149,13 +151,15 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
           treats: [...new Set(run.deck.filter((c) => c.tr).map((c) => c.tr!))],
         };
       let state = startStage(run, players);
-      for (let turns = 0; state.phase === 'playing'; turns++) {
-        if (turns > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
+      let jugadas = 0;
+      for (; state.phase === 'playing'; jugadas++) {
+        if (jugadas > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
         const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
         trackEvents(run, res.events);
         for (const ev of res.events) if (ev.e === 'impact') log.golpes++;
         state = res.state;
       }
+      log.stageJugadas.push(jugadas);
       const boss = run.boss;
       const stage = run.stage;
       finishBattle(run, state);

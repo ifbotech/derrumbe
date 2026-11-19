@@ -33,10 +33,16 @@ export const OBJETIVOS = {
   muertesAsalto1: 8,
   /**
    * Duración estimada de una campaña, en minutos: (inicio + 4 entreactos + 2 Secretos + 5 tiradas de huesos +
-   * jugada × Σ medianas de turnos de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado
+   * jugada × Σ medianas de jugadas de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado
    * (SPECS/V11.md 1.10; la tirada, SPECS/V12.md 1.12).
+   *
+   * V40 1b · se cuentan jugadas, no turnos: un turno es una jugada que recibe el Contraataque, y no cuenta la que
+   * abate ni las que no gastan el turno (Pasar de Chancho Va, el Comodín de El Mentiroso). Con los 5 Mazos esas
+   * jugadas pesan mucho más (Chancho Va: 36 turnos y 84 jugadas). `jugada` (12 s) deja la baraja española de la 1a
+   * en los mismos minutos que daba el supuesto viejo (Σ turnos 42 × 18 s ≈ Σ jugadas 62 × 12 s). `turno` (18 s) es
+   * ese supuesto viejo, para los informes que no traen las jugadas.
    */
-  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 18 },
+  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 12, turno: 18 },
   /** Asalto único (partida clásica): victorias del bot con 1, 2, 3 y 4 jugadores. */
   clasica: [58, 65],
 } as const;
@@ -65,7 +71,8 @@ export interface InformeMeta {
   specials: Pieza[];
   bosses: { id: string; who: string; faced: number; deaths: number; lethality: number }[];
   avgLethality: number;
-  pacing: { stage: number; name: string; p50: number; p95: number; n: number }[];
+  /** `j50`: mediana de jugadas del asalto (los turnos más las jugadas que abaten o no gastan el turno; V40 1b). */
+  pacing: { stage: number; name: string; p50: number; p95: number; n: number; j50?: number }[];
   pacingByDeck: { deck: string; name: string; worstP95: number; n: number }[];
   /** % de campañas (Reinado 1, Árbol vacío) que caen en cada asalto. */
   deaths?: number[];
@@ -195,8 +202,10 @@ export function duracion(r: Pick<InformeMeta, 'pacing'>): number | null {
   const D = OBJETIVOS.duracion;
   const p = r.pacing.filter((x) => x.n > 0 && x.stage <= 5);
   if (p.length < 5) return null;
-  const turnos = p.reduce((a, x) => a + x.p50, 0);
-  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual + D.jugada * turnos) / 60) * 10) / 10;
+  // con las jugadas de cada asalto si el informe las trae; si no, el supuesto viejo sobre los turnos
+  const jugadas = p.every((x) => typeof x.j50 === 'number');
+  const juego = jugadas ? D.jugada * p.reduce((a, x) => a + x.j50!, 0) : D.turno * p.reduce((a, x) => a + x.p50, 0);
+  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual + juego) / 60) * 10) / 10;
 }
 
 /** La partida clásica: del 58 al 65 % con 1, 2, 3 y 4 jugadores. */
