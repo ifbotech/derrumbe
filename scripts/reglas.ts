@@ -5,7 +5,7 @@ guardian('docs', 120); // tope duro: ver scripts/guardian.ts
 // De paso pone al día en README.md las tablas de balance (desde scripts/meta-report.json) y la de
 // controles, que van entre marcas <!-- …:inicio --> y <!-- …:fin -->.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { DIFFICULTY, FIGURAS, FIGURA_NOMBRE, FORM, FORMATIONS, FORMATION_NAME, Formation, MATERIAL, MAX_NUM, PALO_NOMBRE, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
+import { DIFFICULTY, FIGURAS, FIGURA_NOMBRE, FORM, FORMACIONES_MAZO, FORMATIONS, baseDe, FORMATION_NAME, Formation, MATERIAL, MAX_NUM, PALO_NOMBRE, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { ACHIEVEMENTS, unlocksOf } from '../src/rules/achievements';
 import { BALANCE } from '../src/rules/balance-config';
 import { fraccion } from '../src/rules/cifras';
@@ -16,6 +16,7 @@ import { RARITY, RASGOS, TOOL, TOOLS, TOOL_SLOTS, UMBRALES } from '../src/rules/
 import { TITLE, SUBTITLE } from '../src/shared/brand';
 import { ARBOL, RAIZ, RAMAS } from '../src/rules/arbol';
 import { ESQUIRLAS_POR_CORONA } from '../src/rules/migracion';
+import { MAZO_INICIAL, REGLAS, perfilMazo } from '../src/rules/mazos';
 import { CONTROL_ROWS } from '../src/client/prompts';
 
 const cfg = DIFFICULTY.obra;
@@ -31,6 +32,8 @@ const FORM_CARDS: Record<Formation, string> = {
   full: 'un trío y una pareja',
   escaleracolor: '3 o más seguidas del mismo palo',
   poker: '4 del mismo número',
+  parpalo: '2 del mismo palo (solo en el Truco)',
+  quince: '2 o más que suman 15 (solo en la Escoba)',
 };
 const KIND = { f: '+D suma Daño', r: '+M suma Multi', x: '×M multiplica', copy: '⇉ copia', p: '• pasiva' } as const;
 /** Nombre de una pieza por su id, para que la prosa no se desincronice de la biblia. */
@@ -80,9 +83,9 @@ Todo golpe se calcula igual:
 1. **Daño**: se suma todo. La base de la formación, el número de cada carta (0 contra el trono de su palo: es **Inmune**), el Daño cargado y lo que añadan acabados, cartas especiales (hasta ${MAX_SPECIALS} por golpe) y reliquias. Si el trono está **${TOWER_FX.fractura.name}**, ese Daño vale ×${BALANCE.golpe.expuesto}.
 2. **Multi**: se suma todo (la base de la formación, la Racha de Golpes exactos y lo que añadan acabados, especiales, reliquias y rasgos) y, al final, se aplican los multiplicadores (×2, ×3…).
 
-El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (9-10-A).
+El **As** vale **11** y enlaza escaleras por abajo (A-2-3) y por arriba (8-9-A).
 
-${table(['Formación', 'Cartas', 'Daño base', 'Multi', 'Por nivel de Pergamino'], FORMATIONS.map((f) => [FORMATION_NAME[f], FORM_CARDS[f], `+${FORM[f].f}`, `×${FORM[f].r}`, `+${FORM[f].lf} de Daño`]))}
+${table(['Formación', 'Cartas', 'Daño base', 'Multi', 'Por nivel de Pergamino'], [...FORMATIONS, ...FORMACIONES_MAZO].map((f) => [FORMATION_NAME[f], FORM_CARDS[f], `+${baseDe(f).f}`, `×${baseDe(f).r}`, `+${baseDe(f).lf} de Daño`]))}
 
 ### Inmune a su propio palo
 
@@ -187,8 +190,8 @@ ${EVENTS.map((e) => `- **${e.name}.** ${e.text}\n${e.options.map((o) => `  - *${
 
 ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), a.name, a.desc]))}
 
-- **Sellos de maestría**: al ganar, la baraja usada y cada reliquia que llevabas quedan marcadas en la colección con el Reinado más alto que has ganado con ellas: sello de **bronce** (Reinados 1–3), de **hierro** (4–6) o de **oro** (7–8).
-- **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con la misma baraja y el mismo Reinado. La que dejas no cuenta como derrota ni da esquirlas.
+- **Sellos de maestría**: al ganar, el Mazo usado y cada reliquia que llevabas quedan marcadas en la colección con el Reinado más alto que has ganado con ellas: sello de **bronce** (Reinados 1–3), de **hierro** (4–6) o de **oro** (7–8).
+- **Reinicio rápido**: mantén pulsada la **R** (o Select en el mando) 0,7 segundos para volver a empezar la campaña con el mismo Mazo y el mismo Reinado. La que dejas no cuenta como derrota ni da esquirlas.
 
 ## Reliquias
 
@@ -220,9 +223,13 @@ No tienen palo ni número: acompañan a cualquier golpe (hasta ${MAX_SPECIALS} p
 
 ${table(['Carta', 'Efecto', 'Tipo'], SPECIALS.map((s) => [s.name, s.desc, s.locked ? 'legendaria' : 'común']))}
 
-## Barajas iniciales
+## Los 5 Mazos
 
-${table(['Baraja', 'Cómo cambia la campaña', 'Se desbloquea con'], DECKS.map((d) => [d.name, d.desc, d.unlock ? (ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name ?? d.unlock) : '—']))}
+Cada campaña se juega con un **Mazo**: una fantasía de juego de naipes rioplatense con sus reglas propias, que se suman a las de siempre. La **${DECK[MAZO_INICIAL].name}** está desde el principio; los demás se desbloquean con logros. Las cargas (de la Escoba y de la Mano larga) duran toda la campaña.
+
+${table(['Mazo', 'Lema', 'Vida · mano', 'Cómo cambia la campaña', 'Se desbloquea con'], DECKS.map((d) => [d.name, d.lema, `${perfilMazo(d.id).vida} · ${perfilMazo(d.id).mano}`, d.desc, d.unlock ? (ACHIEVEMENTS.find((a) => a.id === d.unlock)?.name ?? d.unlock) : '—']))}
+
+${table(['Regla', 'Mazo', 'Qué hace'], REGLAS.map((r) => [r.name, DECK[r.mazo].name, r.desc]))}
 
 ## El Altar
 
@@ -244,7 +251,7 @@ ${RAMAS.map((r) => `### ${r.name}\n\n${r.desc}\n\n${table(['Nodo', 'Efecto', 'Ra
 
 ### Archivo de crónicas y copia de seguridad
 
-- El archivo guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué asalto y ante qué monarca, turnos, mayor Golpe, reliquias y semilla. Desde ahí se puede **copiar la Crónica** o **rejugar la semilla** con la misma baraja y el mismo Reinado.
+- El archivo guarda las **25 últimas campañas terminadas**: cómo acabaron, en qué asalto y ante qué monarca, turnos, mayor Golpe, reliquias y semilla. Desde ahí se puede **copiar la Crónica** o **rejugar la semilla** con el mismo Mazo y el mismo Reinado.
 - En **Ajustes**, *Exportar progreso* guarda el Altar, la colección, las crónicas y los ajustes en un archivo .json, e *Importar progreso* lo recupera en otro navegador, otro equipo o la versión de escritorio.
 
 ### Logros
@@ -274,12 +281,12 @@ interface Report {
   winrate: { levels: { level: number; name: string; vacio: number; lleno: number; n: number }[]; decks: { name: string; vacio: number; lleno: number; n: number }[] };
   bosses: { who: string; lethality: number; faced: number }[];
   avgLethality: number;
-  pacing: { stage: number; name: string; p50: number; p95: number }[];
+  pacing: { stage: number; name: string; p50: number; p95: number; n: number; j50?: number }[];
   pacingByDeck?: { name: string; worstP95: number }[];
   classic?: { players: number; winrate: number; turns: number; n: number }[];
   flags: string[];
 }
-import { OBJETIVOS } from './objetivos';
+import { OBJETIVOS, duracion } from './objetivos';
 const p = (x: number) => `${n(Math.round(x * 10) / 10)} %`;
 function balanceMd(r: Report): string {
   const levels = r.winrate.levels.filter((l) => l.n);
@@ -296,23 +303,27 @@ function balanceMd(r: Report): string {
   return [
     `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
-    `Campañas ganadas por Reinado (${DECK.obra.name.toLowerCase()}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con el Altar vacío y ${entre(O.reinado1.lleno)} con el Altar lleno; Reinado 8 ${entre(O.reinado8.vacio)} con el Altar vacío y ${entre(O.reinado8.lleno)} con el Altar lleno; y cada Reinado, más difícil que el anterior.`,
+    `Campañas ganadas por Reinado (con la ${DECK[MAZO_INICIAL].name}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con el Altar vacío y ${entre(O.reinado1.lleno)} con el Altar lleno; Reinado 8 ${entre(O.reinado8.vacio)} con el Altar vacío y ${entre(O.reinado8.lleno)} con el Altar lleno; y cada Reinado, más difícil que el anterior.`,
     '',
     table(['Reinado', 'Altar vacío', 'Altar lleno'], levels.map((l) => [`${l.level} · ${l.name}`, p(l.vacio), p(l.lleno)])),
     '',
-    `Por baraja inicial (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el ${O.barajas.vacioObjetivo} % con el Altar vacío y entre el ${O.barajas.llenoObjetivo} % con el Altar lleno (el informe avisa fuera de ${O.barajas.vacio[0]}–${O.barajas.vacio[1]} y de ${O.barajas.lleno[0]}–${O.barajas.lleno[1]}).`,
+    `Por Mazo (Reinado 1, ${decks[1]?.n ?? 0} campañas por celda). Objetivo: todas entre el ${O.mazos.vacioObjetivo} % con el Altar vacío y entre el ${O.mazos.llenoObjetivo} % con el Altar lleno (el informe avisa fuera de ${O.mazos.vacio[0]}–${O.mazos.vacio[1]} y de ${O.mazos.lleno[0]}–${O.mazos.lleno[1]}).`,
     '',
-    table(['Baraja', 'Altar vacío', 'Altar lleno', 'Lo que suma el Altar'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
+    table(['Mazo', 'Altar vacío', 'Altar lleno', 'Lo que suma el Altar'], decks.map((d) => [d.name, p(d.vacio), p(d.lleno), `+${n(Math.round((d.lleno - d.vacio) * 10) / 10)}`])),
     '',
     `Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media ${p(r.avgLethality)}). Objetivo: todos entre ${n(O.monarcas.ratio[0])}× y ${n(O.monarcas.ratio[1])}× de la media.`,
     '',
     table(['Monarca', 'Letalidad', 'Frente a la media'], r.bosses.map((b) => [b.who, p(b.lethality), `×${n(Math.round((b.lethality / (r.avgLethality || 1)) * 100) / 100)}`])),
     '',
-    `Turnos por asalto. Objetivo: ${tramos.join('; ')}, con cualquier baraja (peor P95 ≤ ${O.ritmoBaraja}).`,
+    `Turnos por asalto. Objetivo: ${tramos.join('; ')}, con cualquier Mazo (peor P95 ≤ ${O.ritmoBaraja}).`,
     '',
-    table(['Asalto', 'Mediana', 'P95'], r.pacing.map((x) => [`${x.stage} · ${x.name}`, String(x.p50), String(x.p95)])),
+    r.pacing.every((x) => typeof x.j50 === 'number')
+      ? table(['Asalto', 'Mediana', 'P95', 'Jugadas (mediana)'], r.pacing.map((x) => [`${x.stage} · ${x.name}`, String(x.p50), String(x.p95), String(x.j50)]))
+      : table(['Asalto', 'Mediana', 'P95'], r.pacing.map((x) => [`${x.stage} · ${x.name}`, String(x.p50), String(x.p95)])),
     '',
-    r.pacingByDeck?.length ? `Peor percentil 95 de los ${r.pacing.length} asaltos, por baraja: ${r.pacingByDeck.map((d) => `${d.name.replace('Baraja ', '')} ${d.worstP95}`).join(' · ')}.` : '',
+    duracion(r) !== null ? `Un turno es una jugada que recibe el Contraataque; las jugadas cuentan también la que abate y las que no gastan el turno. Duración estimada de la campaña: ${n(duracion(r)!)} minutos (objetivo ${O.duracion.minutos.join('–')}; ${O.duracion.jugada} s por jugada).` : '',
+    '',
+    r.pacingByDeck?.length ? `Peor percentil 95 de los ${r.pacing.length} asaltos, por Mazo: ${r.pacingByDeck.map((d) => `${d.name} ${d.worstP95}`).join(' · ')}.` : '',
     '',
     r.classic?.length ? `Asalto único (${r.classic[0].n} partidas por celda; objetivo ${O.clasica[0]}–${O.clasica[1]} %): ${r.classic.map((c) => `${c.players} jugador${c.players > 1 ? 'es' : ''} ${p(c.winrate)}`).join(' · ')}.` : '',
     '',
