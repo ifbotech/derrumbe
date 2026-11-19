@@ -1,11 +1,11 @@
 {
-  "inicio": { "vida": 18, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
+  "inicio": { "vida": 19, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
   "asaltos": [
     { "hp": 5.6, "threat": 1 },
     { "hp": 5.0, "threat": 2 },
     { "hp": 6.5, "threat": 5 },
-    { "hp": 5.8, "threat": 8 },
-    { "hp": 8, "threat": 10 }
+    { "hp": 5.0, "threat": 9 },
+    { "hp": 7.4, "threat": 10 }
   ],
   "tronoInfinito": { "hpCrece": 1.45 },
   "cuadrilla": [1, 1.3, 1.4, 1.48],
@@ -135,11 +135,11 @@
       "parpalo": { "f": 0, "r": 1, "lf": 3 },
       "quince": { "f": 6, "r": 1, "lf": 3 }
     },
-    "truco": { "vida": -9, "mano": 1, "bravo": { "S1": 25, "C1": 20, "S7": 15, "D7": 10 }, "envido": 10 },
-    "escoba": { "vida": -3, "mano": -1, "multi": 1, "carga": 2 },
-    "chinchon": { "vida": -6, "mano": 0, "pierna": 1, "escalera": 8, "cartas": 4, "carga": 1, "alivio": 1 },
-    "mentiroso": { "vida": -5, "mano": 0, "comodines": 1, "dano": 18, "furia": 2 },
-    "chancho": { "vida": -9, "mano": 0, "cadena": 2, "turnos": 4, "dano": 55 }
+    "truco": { "vida": -10, "mano": 1, "bravo": { "S1": 25, "C1": 20, "S7": 15, "D7": 10 }, "envido": 10 },
+    "escoba": { "vida": -4, "mano": -1, "multi": 1, "carga": 2 },
+    "chinchon": { "vida": -6, "mano": 0, "pierna": 1, "escalera": 8, "cartas": 4, "carga": 1, "alivio": 2 },
+    "mentiroso": { "vida": -5, "mano": 0, "comodines": 1, "dano": 28, "furia": 2 },
+    "chancho": { "vida": -9, "mano": 0, "cadena": 2, "turnos": 4, "dano": 35 }
   },
   "formaciones": {
     "solo": { "f": 0, "r": 1, "lf": 4 },
@@ -181,8 +181,8 @@
   "reliquias": {
     "piqueta": { "dano": 3 },
     "cincel": { "dano": 14 },
-    "calibre": { "dano": 2 },
-    "plano_maestro": { "multi": 2 },
+    "calibre": { "margen": 3 },
+    "plano_maestro": { "cartas": 2 },
     "maza": { "dano": 3 },
     "sacos": { "escudo": 1, "tope": 4 },
     "encofrado": { "escudo": 2 },
@@ -212,8 +212,8 @@
     "bola": { "multi": 1 }
   },
   "sellosNivel": {
-    "amuletos": { "andamio": "S", "botiquin": "B", "calibre": "A", "casco": "A", "cincel": "B", "cinta": "A", "cizalla": "B", "contragolpe": "A", "cortavidrios": "A", "dados": "S", "dinamita": "B", "encofrado": "S", "gemelos": "S", "hucha": "B", "maza": "S", "paleta": "B", "piqueta": "A", "piquete": "S", "plano_maestro": "B", "sacos": "S", "sordina": "A", "ultimo": "A" },
-    "trampas": { "barreno": "A", "bola": "A", "gemelo": "B", "grua": "S", "mordaza": "S", "nitro": "A", "pico": "A", "sierra": "B" },
-    "bendiciones": { "aguante": "S", "arcon": "B", "brindis": "B", "caliz": "A", "convite": "S", "duelo": "B", "empalizada": "S", "envite": "S", "estocada": "B", "filo": "B", "filodorado": "A", "fogon": "A", "garrote": "S", "hoja": "S", "lluvia": "A", "moneda": "B", "peaje": "S", "porra": "A", "porron": "S", "remate": "B", "replica": "A", "ronda": "A", "sangria": "A", "sobremesa": "A", "taba": "B", "tajo": "A" }
+    "amuletos": { "andamio": "S", "botiquin": "A", "calibre": "B", "casco": "A", "cincel": "A", "cinta": "B", "cizalla": "B", "contragolpe": "A", "cortavidrios": "A", "dados": "A", "dinamita": "A", "encofrado": "S", "gemelos": "S", "hucha": "B", "maza": "A", "paleta": "B", "piqueta": "B", "piquete": "S", "plano_maestro": "S", "sacos": "S", "sordina": "S", "ultimo": "B" },
+    "trampas": { "barreno": "S", "bola": "A", "gemelo": "A", "grua": "A", "mordaza": "S", "nitro": "A", "pico": "B", "sierra": "B" },
+    "bendiciones": { "aguante": "S", "arcon": "A", "brindis": "B", "caliz": "B", "convite": "A", "duelo": "B", "empalizada": "S", "envite": "S", "estocada": "B", "filo": "B", "filodorado": "A", "fogon": "A", "garrote": "S", "hoja": "A", "lluvia": "A", "moneda": "A", "peaje": "S", "porra": "S", "porron": "S", "remate": "B", "replica": "A", "ronda": "A", "sangria": "B", "sobremesa": "A", "taba": "S", "tajo": "B" }
   }
 }

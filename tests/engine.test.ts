@@ -3,6 +3,7 @@ import { Card, Config, DEFAULT_CONFIG, DIFFICULTY, GameEvent, GameState, StrikeE
 import { chooseAction, formations } from '../src/rules/bot';
 import { ARCH, BOXES, RARITY, TOOL, TOOLS, placeTool, toolPool } from '../src/rules/tools';
 import { REY_IDS } from '../src/rules/reyes';
+import { BALANCE as B } from '../src/rules/balance-config';
 import { muestra } from './muestra';
 
 const card = (id: string, extra: Partial<Card> = {}): Card => (id[0] === 'X' ? { id, suit: 'X', rank: 0, ...extra } : { id, suit: id[0] as Suit, rank: Number(id.slice(1)), ...extra });
@@ -123,10 +124,16 @@ describe('cinturón: el orden no cambia la cuenta (V31)', () => {
   const run = cards('S5', 'S6', 'S7'); // escalera de color contra Oros: 10 + 18 de Daño, ×3
 
   it('primero se suma todo el Multi y al final se multiplica, vayan como vayan los Amuletos', () => {
-    expect(strike(env(['cinta', 'plano_maestro']), run, 'D')).toMatchObject({ fuerza: 28, res: 8, total: 224 }); // (3 + 1) × 2
-    expect(strike(env(['plano_maestro', 'cinta']), run, 'D')).toMatchObject({ fuerza: 28, res: 8, total: 224 }); // lo mismo
+    // el Último trago (×2 de Multi con la Vida a la mitad o menos) y la Guitarra (+1 con escalera)
+    const herido = (ids: string[]) => {
+      const e = env(ids);
+      e.integrity = Math.floor(e.config.maxIntegrity / 2);
+      return e;
+    };
+    expect(strike(herido(['cinta', 'ultimo']), run, 'D')).toMatchObject({ fuerza: 28, res: 8, total: 224 }); // (3 + 1) × 2
+    expect(strike(herido(['ultimo', 'cinta']), run, 'D')).toMatchObject({ fuerza: 28, res: 8, total: 224 }); // lo mismo
     // en la cuenta, los pasos que multiplican van siempre después de los que suman
-    const pasos = of(strike(env(['plano_maestro', 'cinta']), run, 'D').events, 'step');
+    const pasos = of(strike(herido(['ultimo', 'cinta']), run, 'D').events, 'step');
     const ultimoQueSuma = pasos.map((p) => p.dr !== undefined || p.df !== undefined).lastIndexOf(true);
     const primeroQueMultiplica = pasos.findIndex((p) => p.mr !== undefined);
     expect(primeroQueMultiplica).toBeGreaterThan(ultimoQueSuma);
@@ -161,14 +168,25 @@ describe('cinturón: el orden no cambia la cuenta (V31)', () => {
 });
 
 describe('Amuletos de cada Rey', () => {
-  it('Espadas: el Cortaplumas premia la carta sola, la Piedra de afilar crece con cada Golpe exacto y la Tijera corta al siguiente', () => {
+  it('Espadas: el Cortaplumas premia la carta sola, la Piedra de afilar da margen al exacto, el Facón cuenta el golpe de una vez y la Tijera corta al siguiente', () => {
     expect(strike(env(['cincel']), cards('S5'), 'D').fuerza).toBe(5 + 14);
     expect(strike(env(['cincel']), cards('S5', 'H5'), 'D').fuerza).toBe(strike(env([]), cards('S5', 'H5'), 'D').fuerza);
-    const e = env(['calibre']);
-    e.towers.D.damage = 15;
-    expect(strike(e, cards('S5'), 'D').clean).toBe(true); // 20 de 20
-    expect(e.tools[0].n).toBe(1);
-    expect(strike(e, cards('H2'), 'S').fuerza).toBe(2 + 2); // la Piedra ya suma +2 de Daño
+    // la Piedra: pasarse hasta 3 de la Vida del guardia también es exacto (sin ella, no)
+    const margen = B.reliquias.calibre.margen;
+    const pasado = (ids: string[]) => {
+      const e = env(ids);
+      e.towers.D.damage = 20 - 5 + margen - 1; // con 5 de golpe se pasa margen − 1 de sus 20 de Vida
+      return strike(e, cards('S5'), 'D').clean;
+    };
+    expect(pasado(['calibre'])).toBe(true);
+    expect(pasado([])).toBe(false);
+    // el Facón: un guardia sin Daño que cae de un golpe que se pasa, cae con Golpe exacto (sin Espadas: no perfora)
+    const deUno = (ids: string[]) => strike(env(ids), cards('H9', 'C9'), 'D');
+    expect(deUno([]).clean).toBe(false);
+    expect(deUno(['plano_maestro']).clean).toBe(true);
+    const tocado = env(['plano_maestro']);
+    tocado.towers.D.damage = 1;
+    expect(strike(tocado, cards('H9', 'C9'), 'D').clean).toBe(false); // ya tenía Daño: no fue de un golpe
     const con = env(['cizalla']);
     const sin = env([]);
     con.towers.D.damage = 15;

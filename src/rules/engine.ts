@@ -208,6 +208,8 @@ export interface Config {
   cleanTol?: number;
   /** Gracia del Golpe exacto por arriba (V12, Buen ojo): también es exacto si el Daño se pasa por cleanTol + cleanOver o menos. */
   cleanOver?: number;
+  /** V40 1d · Facón de plata: el guardia que cae de un solo golpe (sin Daño de antes) de hasta tantas cartas, cae con Golpe exacto. */
+  deUnGolpe?: number;
   /** Todo golpe perfora, lleve o no Espadas. */
   alwaysPierce?: boolean;
   /** Niveles de plano por formación. */
@@ -663,9 +665,12 @@ function setFx(t: Tower, fx: keyof TowerFx, events: GameEvent[], cfg?: Config): 
   events.push({ e: 'state', tower: t.suit, fx, on: true });
 }
 
-function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean, cfg: Config, out: Tally): void {
+function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean, cfg: Config, out: Tally, cartas?: number): void {
   if (amount <= 0 || !standing(t)) return;
   const tol = cfg.cleanTol ?? 0;
+  // el guardia que entra sin Daño de antes y cae con este golpe, cae de un solo golpe (los que siguen, también)
+  const corto = !splash && cartas !== undefined && cartas <= (cfg.deUnGolpe ?? 0);
+  let deUno = corto && t.damage === 0;
   out.dealt[t.suit] = (out.dealt[t.suit] ?? 0) + amount;
   t.damage += amount;
   out.events.push({ e: 'hit', tower: t.suit, amount, splash, damage: t.damage, hp: floorHp(t, cfg) });
@@ -675,8 +680,11 @@ function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean,
     const hp = floorHp(t, cfg);
     const exec = t.damage < hp - tol;
     // exacto a ±cleanTol; por arriba, también hasta cleanTol + cleanOver (Buen ojo). Una ejecución lo es si la mesa lo dice
-    const clean = exec ? !!cfg.ejecutaExacta : t.damage - hp >= -tol && t.damage - hp <= tol + (cfg.cleanOver ?? 0);
-    const excess = clean || exec ? 0 : t.damage - hp;
+    const justo = t.damage - hp >= -tol && t.damage - hp <= tol + (cfg.cleanOver ?? 0);
+    const clean = exec ? !!cfg.ejecutaExacta : justo || deUno;
+    // lo que sobra sigue perforando aunque el Facón lo cuente como exacto
+    const excess = justo || exec ? 0 : t.damage - hp;
+    deUno = corto;
     const rank = t.floors.shift()!;
     out.fallenBy[t.suit] = (out.fallenBy[t.suit] ?? 0) + 1;
     out.fell.push({ tower: t.suit, rank, clean, ...(exec ? { exec: true as const } : {}) });
@@ -961,7 +969,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
   // 7 · Daño × Multi = Golpe, todo entero
   const total = Math.max(0, x.fuerza * x.res);
   tally.events.push({ e: 'impact', tower: target, fuerza: x.fuerza, res: x.res, total });
-  applyDamage(tower, total, x.pierce, false, cfg, tally);
+  applyDamage(tower, total, x.pierce, false, cfg, tally, x.cards.length);
   const shards = power.D * cfg.salpicaPorCarta + x.splash + Math.round(total * x.splashPct);
   const vecinos = adjacent ? vecinosPresentes(env.towers, target) : [];
   SUITS.forEach((s) => {

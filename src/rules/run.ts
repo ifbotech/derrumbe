@@ -1065,7 +1065,7 @@ export function stageConfig(run: Run, players = 1): Config {
   // Árbol (Corona de hierro), solo en el Trono infinito: Manga honda guarda 2 cartas; Buen ojo da Golpe exacto
   // pasándose por poco (solo por arriba). En los cinco asaltos no tocan la mesa (V12-C).
   if (run.endless && rangoDe(run.up, 'manga') > 0) cfg.reserveSize = 2;
-  if (run.endless && rangoDe(run.up, 'gracia') > 0) cfg.cleanOver = cifraDe('gracia', rangoDe(run.up, 'gracia')).n;
+  if (run.endless && rangoDe(run.up, 'gracia') > 0) cfg.cleanOver = (cfg.cleanOver ?? 0) + cifraDe('gracia', rangoDe(run.up, 'gracia')).n;
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
   // V40 1c · las Bendiciones, los niveles de los Reyes y el Escudo con que se empieza
   const bend = run.bendiciones ?? [];

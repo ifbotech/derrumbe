@@ -80,17 +80,16 @@ export const TOOLS: ToolDef[] = ([
   // ───────── Rey de Espadas: filo, carta sola y Golpe exacto ─────────
   { id: 'piqueta', name: 'Cuchillo criollo', desc: '+{dano} de Daño por cada carta de Espadas del golpe.', rarity: 'comun', arch: 'espadas', kind: 'f', mazos: ['truco'], strike: perSuit('S', V.piqueta.dano) },
   { id: 'cincel', name: 'Cortaplumas', desc: '+{dano} de Daño si jugás una carta sola.', rarity: 'oficio', arch: 'espadas', kind: 'f', strike: (x) => x.cards.length === 1 && x.F(V.cincel.dano) },
+  // V40 1d: antes sumaba +2 de Daño por Golpe exacto y restaba (el Daño suelto rompe el exacto): hoy da margen
   {
     id: 'calibre',
     name: 'Piedra de afilar',
-    desc: 'Cada Golpe exacto le suma +{dano} de Daño para siempre.',
+    desc: 'Golpe exacto con margen: pasarte hasta {margen} de la Vida del guardia también es exacto.',
     rarity: 'capataz',
     arch: 'espadas',
-    kind: 'f',
+    kind: 'p',
     mazos: ['escoba'],
-    strike: (x, self) => x.F(V.calibre.dano * self.n),
-    after: (x, self, r) => r.clean && ++self.n && x.note('crece'),
-    count: (self) => `+${V.calibre.dano * self.n}`,
+    cfg: (c) => void (c.cleanOver = (c.cleanOver ?? 0) + V.calibre.margen),
   },
   {
     id: 'cizalla',
@@ -106,7 +105,8 @@ export const TOOLS: ToolDef[] = ([
       if (r.clean) x.note('corta al guardia siguiente');
     },
   },
-  { id: 'plano_maestro', name: 'Facón de plata', desc: '×{multi} de Multi en el primer golpe contra cada guardia.', rarity: 'reliquia', arch: 'espadas', box: 'espadas', kind: 'x', strike: (x) => x.env.towers[x.target].damage === 0 && x.X(V.plano_maestro.multi) },
+  // V40 1d: antes ×2 de Multi en el primer golpe, que pasaba de largo y perdía el exacto: hoy el golpe de una vez es exacto
+  { id: 'plano_maestro', name: 'Facón de plata', desc: 'Abatir a un guardia de un solo golpe de {cartas} cartas o menos cuenta como Golpe exacto.', rarity: 'reliquia', arch: 'espadas', box: 'espadas', kind: 'p', cfg: (c) => void (c.deUnGolpe = Math.max(c.deUnGolpe ?? 0, V.plano_maestro.cartas)) },
 
   // ───────── Rey de Bastos: Escudo y frenar el Contraataque ─────────
   { id: 'maza', name: 'Rebenque', desc: '+{dano} de Daño por cada carta de Bastos del golpe.', rarity: 'comun', arch: 'bastos', kind: 'f', mazos: ['truco'], strike: perSuit('C', V.maza.dano) },

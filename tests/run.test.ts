@@ -782,8 +782,8 @@ describe('niveles de obra y maestría', () => {
     toShop(dear);
     expect(dear.shop.map((o) => o.cost)).toEqual(cheap.shop.map((o) => o.cost));
     const healed = at(7);
-    win(healed, (s) => (s.integrity = 10));
-    expect(healed.integrity).toBe(14);
+    win(healed, (s) => (s.integrity = 8));
+    expect(healed.integrity).toBe(12);
   });
 
   it('ganar estampa el sello de maestría en la baraja y en cada herramienta del cinturón', () => {

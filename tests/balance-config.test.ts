@@ -276,7 +276,6 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
     expect(dr('gemelos', [card('S7'), card('H7')])).toBe(V.gemelos.multi);
     expect(dr('cinta', [card('S2'), card('H3'), card('C4')])).toBe(V.cinta.multi);
     expect(dr('dados', [card('S7')], { dado: V.dados.cara })).toBe(V.dados.multi);
-    expect(rx('plano_maestro', [card('S7')])).toBe(V.plano_maestro.multi);
     expect(rx('ultimo', [card('S7')], { integrity: 5 })).toBe(V.ultimo.multi);
     const sacos = env(['sacos']).config;
     expect(sacos.wallCap).toBe(B.mesa.wallCap + V.sacos.tope);

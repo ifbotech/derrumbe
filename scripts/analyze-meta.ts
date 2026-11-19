@@ -20,7 +20,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //
 // Qué mide:
 //   · porcentaje de campañas ganadas por baraja y por Reinado, con el Árbol vacío y lleno
-//   · cada reliquia, carta especial, sello de lacre y acabado: cuánto se elige, cuánto se activa y
+//   · cada Amuleto, Trampa del Bufón, sello de lacre y acabado: cuánto se elige, cuánto se activa y
 //     cuánto cambia el resultado (dada de salida frente a las campañas sin regalo, y llevándola a
 //     media campaña)
 //   · letalidad de cada monarca y duración de cada asalto (mediana y percentil 95 de turnos)
@@ -135,7 +135,7 @@ function plan(): Spec[] {
   // y, de control, las mismas semillas sin regalo: se suman a la referencia (nivel 1, Árbol lleno)
   for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'tool' });
   for (const t of TOOLS) for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveTool: t.id });
-  // V40 1c · cada Bendición de regalo al empezar (con las semillas de control de las Reliquias)
+  // V40 1c · cada Bendición de regalo al empezar (con las semillas de control de los Amuletos)
   for (const b of BENDICIONES) for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveBendicion: b.id });
   for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'special' });
   for (const s of SPECIALS) for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveSpecial: s.id });
@@ -335,11 +335,11 @@ function print(r: ReturnType<typeof report>): void {
   if (r.winrate.levels[0]?.n) console.log(`\nDónde se pierde (Altar vacío, % de campañas por asalto): ${r.deaths.join(' · ')}`);
   const gifts = !quick || mode === 'regalos';
   const shown = <T extends { givenN: number }>(rows: T[]) => (mode === 'regalos' ? rows.filter((x) => x.givenN) : rows);
-  if (gifts) console.log(`\nReliquias (de regalo al empezar; sin regalo: ${r.giftBaseline} % en ${r.giftBaselineN} campañas; por debajo de ±${r.giftNoise} puntos es ruido)`);
+  if (gifts) console.log(`\nAmuletos (de regalo al empezar; sin regalo: ${r.giftBaseline} % en ${r.giftBaselineN} campañas; por debajo de ±${r.giftNoise} puntos es ruido)`);
   if (gifts) console.log(`  ${pad('', 22)} ${pad('rareza', 9)} elige%  salida%  Δ      a media  sin    activ.`);
   for (const t of !gifts ? [] : shown([...r.tools]).sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0)))
     console.log(`  ${pad(t.name, 22)} ${pad(t.rarity, 9)} ${num(t.pick)} ${num(t.given, 8)} ${num(t.delta, 6)} ${num(t.withMid, 8)} ${num(t.withoutMid, 6)} ${num(t.activations, 8)}`);
-  if (gifts) console.log('\nCartas especiales (misma referencia)');
+  if (gifts) console.log('\nTrampas del Bufón (misma referencia)');
   for (const s of !gifts ? [] : shown([...r.specials]).sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0))) console.log(`  ${pad(s.name, 22)} ${pad(s.legendary ? 'legend.' : 'común', 9)} ${num(s.pick)} ${num(s.given, 8)} ${num(s.delta, 6)} ${num(s.withMid, 8)} ${num(s.withoutMid, 6)}`);
   if (r.confirmations.length) console.log(`\nSegunda vuelta (${r.confirmations[0].n} campañas por pieza, semillas nuevas): ${r.confirmations.map((c) => `${c.name} ${c.winrate} % (${(c.delta ?? 0) > 0 ? '+' : ''}${c.delta}; antes ${c.first})`).join(' · ')}`);
   const conBend = r.bendiciones.filter((b) => b.offered || b.givenN);

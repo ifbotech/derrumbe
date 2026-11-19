@@ -33,9 +33,9 @@ const f = (tpl: string, v: Record<string, number | string> = {}) => fillFor('en'
 const RELIQUIAS: Record<string, [string, string]> = {
   piqueta: ['Gaucho Knife', '+{dano} Damage for each Swords card in the hit.'],
   cincel: ['Penknife', '+{dano} Damage if you play a single card.'],
-  calibre: ['Whetstone', 'Each Exact Hit adds +{dano} Damage to it for good.'],
+  calibre: ['Whetstone', 'Exact Hit with leeway: going up to {margen} over the guard’s Health is still exact.'],
   cizalla: ['Shearing Shears', 'After an Exact Hit, the next guard loses half its Health.'],
-  plano_maestro: ['Silver Knife', '×{multi} Mult on the first hit against each guard.'],
+  plano_maestro: ['Silver Knife', 'Felling a guard with a single hit of {cartas} cards or fewer counts as an Exact Hit.'],
   maza: ['Riding Whip', '+{dano} Damage for each Clubs card in the hit.'],
   sacos: ['Saddle Guard', 'Each Clubs card gives +{escudo} more Shield, and the Shield cap rises by {tope}.'],
   encofrado: ['Poncho', 'Each guard defeated: +{escudo} Shield.'],
