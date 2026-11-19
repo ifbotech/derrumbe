@@ -2,9 +2,10 @@
 // clandestino, los Secretos de la cripta y la Crónica final.
 import { whisper } from './whispers';
 import { Card, FORM } from '../rules/engine';
-import { BOSS, CONTRACT, Don, DraftOpt, EVENT, EVENT_AFTER, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared } from '../rules/run';
+import { BOSS, CONTRACT, Don, DraftOpt, EVENT, EVENT_AFTER, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared, toolSlots } from '../rules/run';
 import { BALANCE } from '../rules/balance-config';
-import { TOOL, TOOL_SLOTS } from '../rules/tools';
+import { TOOL } from '../rules/tools';
+import { contextoDe, marcaPieza } from './piezas-ui';
 import { cobroFor } from '../rules/textos';
 import { rubble, skyline } from './art';
 import { setScene, sfx } from './audio';
@@ -135,9 +136,10 @@ function beltStrip(run: Run, sell = false): HTMLElement {
   const ids = run.tools.map((t) => t.id);
   const nuevas = beltAntes ? ids.filter((id) => !beltAntes!.includes(id)) : [];
   beltAntes = ids;
-  wrap.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')} <small>${L('ui.run.reliquias.orden', { n: run.tools.length, total: TOOL_SLOTS })}</small></span>`;
+  wrap.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')} <small>${L('ui.run.reliquias.orden', { n: run.tools.length, total: toolSlots(run) })}</small></span>`;
   wrap.appendChild(
     beltEl(run.tools, {
+      slots: toolSlots(run),
       onSell: sell && host() ? (i) => confirmSell(run, i) : undefined,
       sellValue,
     }),
@@ -216,7 +218,7 @@ function packScreen(run: Run): void {
  */
 function bendicionScreen(run: Run): void {
   const op = run.oferta ?? [];
-  const mias = reyesPills(run.bendiciones);
+  const mias = reyesPills(run.bendiciones, run.tools);
   app.innerHTML = `<div class="run">${head(run, L('ui.run.bend.titulo'), `${L('ui.run.bend.sub')} · ${asaltoN(run.stage)}`)}
     <div class="run-body"><p class="lead">${L('ui.run.bend.texto')}</p>
     <p class="bufon-dice"><i>${t(fraseBufonOferta(run.id, run.stage))}</i></p>
@@ -224,7 +226,7 @@ function bendicionScreen(run: Run): void {
     ${mias ? `<section class="bend-mias"><h3 class="sec">${L('ui.run.bend.llevas')}</h3><div class="rasgos">${mias}</div></section>` : ''}${waitNote()}
     <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button></div></div></div>`;
   op.forEach((o, i) => {
-    const tx = opcionTexto(run.bendiciones, o);
+    const tx = opcionTexto(run.bendiciones, o, run.tools, marcaPieza({ tipo: 'bendicion', id: o.id }, contextoDe(run)));
     const box = choice(tileEl('jefe', tx.titulo, 'service'), tx.titulo, tx.desc, L('ui.run.bend.tomar'), host() ? () => runDo({ t: 'bendicion', i }) : null, `bend r-${o.rey}${tx.info.dual ? ' dual' : ''}`);
     box.dataset.bend = o.id;
     box.dataset.i = String(i);
@@ -293,7 +295,7 @@ function mapScreen(run: Run): void {
 
 function draftChoice(run: Run, o: DraftOpt, i: number): HTMLElement {
   const click = host() ? () => runDo({ t: 'draft', i }) : null;
-  if (o.kind === 'special') return choice(cardEl(spCard(o.id)), espN(o.id), espD(o.id), L('ui.run.llevar'), click);
+  if (o.kind === 'special') return choice(cardEl(spCard(o.id)), espN(o.id), `${espD(o.id)}${marcaPieza({ tipo: 'trampa', id: o.id }, contextoDe(run))}`, L('ui.run.llevar'), click);
   const c = o.card;
   const what = [c.tr ? `<b>${acabN(c.tr)}.</b> ${acabD(c.tr)}` : '', c.seal ? `<b>${selloN(c.seal)}.</b> ${selloD(c.seal)}` : ''].filter(Boolean).join(' ');
   return choice(cardEl(c), cartaN(c), what, L('ui.run.llevar'), click);
@@ -332,14 +334,14 @@ function rewardScreen(run: Run): void {
   }
   const loot = $('#loot');
   if (loot && !run.looted) {
-    const full = run.tools.length >= TOOL_SLOTS;
+    const full = run.tools.length >= toolSlots(run);
     loot.classList.add('cofre');
     run.loot.forEach((id, i) => {
-      const box = choice(toolTile(id), relN(id), relD(id), full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null);
+      const box = choice(toolTile(id), relN(id), `${relD(id)}${marcaPieza({ tipo: 'amuleto', id }, contextoDe(run))}`, full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null);
       box.style.setProperty('--i', String(i));
       loot.appendChild(box);
     });
-    loot.appendChild(choice(tileEl('retirar', L('ui.run.ninguna'), 'service'), L('ui.run.pasar'), full ? L('ui.run.caben.llenas', { n: TOOL_SLOTS }) : L('ui.run.caben', { n: TOOL_SLOTS, m: run.tools.length }), L('ui.run.pasar'), host() ? () => runDo({ t: 'loot', id: null }) : null));
+    loot.appendChild(choice(tileEl('retirar', L('ui.run.ninguna'), 'service'), L('ui.run.pasar'), full ? L('ui.run.caben.llenas', { n: toolSlots(run) }) : L('ui.run.caben', { n: toolSlots(run), m: run.tools.length }), L('ui.run.pasar'), host() ? () => runDo({ t: 'loot', id: null }) : null));
   }
 }
 
@@ -358,7 +360,7 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   if (o.kind === 'tool') {
     el = toolTile(o.id!);
     title = relN(o.id!);
-    desc = `${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>`;
+    desc = `${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>${marcaPieza({ tipo: 'amuleto', id: o.id! }, contextoDe(run))}`;
   } else if (o.kind === 'sobre') {
     el = tileEl('sobre', L('ui.run.sobre'), 'service');
     title = L('ui.run.sobre');

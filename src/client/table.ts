@@ -3,7 +3,7 @@
 import { CABALLO, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, REY, SOTA, SUITS, StrikeResult, Suit, TOWER_FX, TowerFx, activo, cardLabel, cardValue, classify, esJefe, floorHp, multiplier, ordenDe, previewStrike, threatOf, vecinosPresentes } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
 import { BALANCE } from '../rules/balance-config';
-import { BOSS, CONTRACT, FURIA, LAST_STAGE, stageDef } from '../rules/run';
+import { BOSS, CONTRACT, FURIA, LAST_STAGE, stageDef, toolSlots } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
 import type { ClientMsg } from '../shared/protocol';
 import { bunkerArt, rubble, skyline } from './art';
@@ -360,7 +360,7 @@ export function renderBelt(): void {
   if (bar.hidden) return;
   hideTip();
   bar.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')}</span>`;
-  bar.appendChild(beltEl(tools));
+  bar.appendChild(beltEl(tools, { slots: S.campaign ? toolSlots(S.campaign.run) : undefined }));
   const carry: string[] = [];
   if (v?.chain) carry.push(`<em class="carry chain" data-tip="${Ln(v.chain, 'ui.mesa.racha.tip.1', 'ui.mesa.racha.tip.n', { m: racha(v.chain) })}">${L('ui.mesa.racha', { m: racha(v.chain) })}</em>`);
   if (v?.charge) carry.push(`<em class="carry charge" data-tip="${L('ui.mesa.carga.tip')}">${L('ui.mesa.carga', { n: v.charge })}</em>`);
@@ -923,7 +923,7 @@ export function renderRasgos(): void {
   const el = $('#rasgos');
   const v = S.shown;
   if (!el || !v) return;
-  const html = reyesPills(v.bendiciones) + (v.dado ? `<span class="rasgo dado on" data-tip="${L('ui.mesa.dado.tip', { n: v.dado })}"><i class="cara" data-cara="${v.dado}">${v.dado}</i></span>` : '');
+  const html = reyesPills(v.bendiciones, v.tools) + (v.dado ? `<span class="rasgo dado on" data-tip="${L('ui.mesa.dado.tip', { n: v.dado })}"><i class="cara" data-cara="${v.dado}">${v.dado}</i></span>` : '');
   el.hidden = !html;
   if (el.hidden) return;
   el.innerHTML = html;

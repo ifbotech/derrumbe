@@ -1870,7 +1870,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
 
   // ── jerga: ninguna palabra de la obra vieja en lo que lee una persona (normas V6, red 2) ──
   // sin distinguir mayúsculas ni tildes; las raíces cogen sus derivadas, las palabras corrientes van enteras
-  const ROOTS = ['derrumbe', 'bunker', 'escombrera', 'cantera', 'ferreteri', 'ferretero', 'andamio', 'hormigon', 'ladrillo', 'vidrio', 'sirena', 'demoli', 'demoler', 'capataz', 'gremio', 'sindical', 'cimiento', 'tiza', 'forja', 'quemador', 'integridad', 'resonancia', 'fractura', 'apuntalad', 'huelga', 'herramienta', 'cinturon', 'regicid'];
+  const ROOTS = ['derrumbe', 'bunker', 'escombrera', 'cantera', 'ferreteri', 'ferretero', 'andamio', 'hormigon', 'ladrillo', 'vidrio', 'sirena', 'demoli', 'demoler', 'capataz', 'gremio', 'sindical', 'cimiento', 'tiza', 'forja', 'quemador', 'integridad', 'resonancia', 'fractura', 'apuntalad', 'huelga', 'herramienta', 'cinturon', 'regicid', 'reliqui', 'relic'];
+  // V40 1d: las Reliquias son hoy Amuletos («reliqui» y «relic» cogen reliquia, relicario, relic y reliquary)
   // desde la 6.1, también el título viejo y el nombre viejo de la tienda (hoy La Taberna)
   const WORDS = ['acero', 'obras?', 'pisos?', 'torres?', 'muros?', 'fuerza', 'golpes? limpios?', 'corona rota', 'mercado clandestino'];
   const JERGA = new RegExp(`(?<![\\p{L}\\p{N}])(?:(?:${ROOTS.join('|')})\\p{L}*|(?:${WORDS.join('|')})(?![\\p{L}\\p{N}]))`, 'iu');

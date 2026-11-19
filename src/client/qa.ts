@@ -37,7 +37,7 @@ import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving'
 import { feedbackShow, showRules, showSettings } from './widgets';
 import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
 
-const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'pasarela', 'resonador'];
+const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'cinta'];
 const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
   ['S', 7, { seal: 'dinamita' }],
   ['D', 7, { seal: 'eco' }],
@@ -285,7 +285,7 @@ function arbol(): void {
   setMode('pointer');
   meta.renown = 12345;
   for (const a of ACHIEVEMENTS.slice(0, 9)) meta.ach[a.id] = true;
-  meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 2, tasador: 1, caja_sismo: 1, caja_precision: 1, tampones: 1, piedra_iman: 1, esq_golpe: 3, esq_guardia: 2, esq_monarca: 1, esq_derrota: 1, hueso_tallado: 2, cara_rey: 1, corona_hierro: 1, pendon: 1 };
+  meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 2, tasador: 1, caja_espadas: 1, caja_bastos: 1, tampones: 1, piedra_iman: 1, esq_golpe: 3, esq_guardia: 2, esq_monarca: 1, esq_derrota: 1, hueso_tallado: 2, cara_rey: 1, corona_hierro: 1, pendon: 1 };
   openGuild('ups');
 }
 
@@ -492,7 +492,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
   'arbol-aviso': () => {
     clean();
     meta.renown = 3700;
-    meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 1, rutas: 1, tampones: 1, caja_sismo: 1, caja_precision: 1, bronce: 1 };
+    meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 1, rutas: 1, tampones: 1, caja_espadas: 1, caja_bastos: 1, bronce: 1 };
     meta.aviso = { id: 'arbol-v12', coronas: 37, esquirlas: 3700, rangos: 9 };
     setMode('pointer');
     openGuild('ups');
@@ -507,9 +507,9 @@ const STATES: Record<string, () => void | Promise<void>> = {
   coleccion: () => {
     clean();
     meta.seen.tools = TOOLS.slice(0, 30).map((t) => t.id);
-    meta.seen.specials = ['barreno', 'martillo', 'palanca', 'grua', 'mordaza', 'bola', 'nitro', 'gemelo'];
+    meta.seen.specials = ['barreno', 'sierra', 'pico', 'grua', 'mordaza', 'bola', 'nitro', 'gemelo'];
     meta.seen.bosses = ['espadas', 'bastos', 'oros'];
-    meta.mastery = { tools: { piqueta: 2, gemelos: 5, dinamita: 8, calibre: 1, resonador: 4 }, decks: { escoba: 3, truco: 7 } };
+    meta.mastery = { tools: { piqueta: 2, gemelos: 5, dinamita: 8, calibre: 1, cinta: 4 }, decks: { escoba: 3, truco: 7 } };
     openGuild('col');
   },
   acta: () => {
@@ -608,7 +608,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
       death,
     });
     archive.push(
-      sample(0, true, 5, 'El Rey de Espadas', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'escoba', 2),
+      sample(0, true, 5, 'El Rey de Espadas', ['piqueta', 'gemelos', 'calibre', 'contragolpe', 'sacos', 'dinamita'], 'ALBA-7', 'escoba', 2),
       sample(1, false, 4, 'El Rey de Bastos', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'chinchon', 1, {
         kind: 'sirena',
         title: 'Contraataque de BASTOS: ⚔ 18 contra Escudo 4 → entran 14',
@@ -619,7 +619,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
         taken: 14,
         tower: 'C',
       }),
-      sample(2, false, 5, 'El Rey de Copas', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'truco', 3, {
+      sample(2, false, 5, 'El Rey de Copas', ['cincel', 'calibre', 'cizalla', 'plano_maestro'], 'PLOMO', 'truco', 3, {
         kind: 'colapso',
         title: 'Mazo agotado: te quitó 4 de Vida y el Escudo no lo frena',
         detail: 'Te quedaba 3 de Vida. Cada vez que se agota el Mazo quita 1 más: cuenta el Mazo antes de robar.',
@@ -628,7 +628,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
         blocked: 0,
         taken: 4,
       }),
-      sample(3, true, 5, 'El Rey de Oros', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'mentiroso', 1),
+      sample(3, true, 5, 'El Rey de Oros', ['paleta', 'botiquin', 'casco', 'cinta', 'ultimo', 'andamio'], 'Z81MM0', 'mentiroso', 1),
       sample(4, false, 7, 'El Rey de Oros', ['hucha', 'cinta'], '4HH2PA', 'chancho', 1, null, undefined),
     );
     openGuild('arc');

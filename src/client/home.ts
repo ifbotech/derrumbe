@@ -165,7 +165,7 @@ export function renderCamp(): void {
           <li>${glyphSvg('forja', 'ico')}<div><b>${L('ui.camp.kit.acabados')}</b><span>${probe.treats.map((t) => acabN(t)).join(', ')}.</span></div></li>
           <li>${glyphSvg('incognita', 'ico')}<div><b>${L('ui.camp.kit.especiales', { n: probe.pool.length })}</b><span>${legends ? L('ui.camp.kit.legendarias', { n: legends }) : L('ui.camp.kit.legendarias.no')}</span></div></li>
           <li>${glyphSvg('jefe', 'ico')}<div><b>${L('ui.camp.kit.monarcas')}</b><span>${L('ui.camp.kit.monarcas.sub', { n: BOSSES.length })}</span></div></li>
-          <li>${glyphSvg('oro', 'ico')}<div><b>${L('ui.oro.n', { n: probe.gold })}</b><span>${L('ui.camp.kit.oro')}${probe.up.vale ? L('ui.camp.kit.vale', { n: probe.up.vale }) : ''}${probe.up.tienda ? L('ui.camp.kit.tienda') : ''}${probe.up.rutas ? L('ui.camp.kit.rutas') : ''}.</span></div></li>
+          <li>${glyphSvg('oro', 'ico')}<div><b>${L('ui.oro.n', { n: probe.gold })}</b><span>${L('ui.camp.kit.oro')}${probe.up.vale ? L('ui.camp.kit.vale', { n: probe.up.vale }) : ''}${probe.up.tienda ? L('ui.camp.kit.tienda', { n: probe.up.tienda }) : ''}${probe.up.rutas ? L('ui.camp.kit.rutas') : ''}.</span></div></li>
         </ul>
         </div>
         <div class="row"><button id="guild">${L('ui.camp.orden')}</button></div>

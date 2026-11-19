@@ -346,14 +346,14 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
   check((await count(page, '.whisper')) === 0 && (await whispers(page, (x) => x.off())), '«No mostrar más» lo borra a un clic y queda guardado');
   await whispers(page, (x) => x.reset());
 
-  // ── insignias de reliquia: «+12 Daño · Ariete» junto a la cuenta, «−12 · Rodela de púas» sobre el trono ──
+  // ── insignias de Amuleto: «+12 Daño · Cuchillo criollo» junto a la cuenta, «−12 · Talero» sobre el trono ──
   await go(page, 'mesa');
   const badges = await page.evaluate(() => {
     const fire = (window as unknown as { __qaProc: (ev: unknown) => void }).__qaProc;
     const step = (id: string, label: string, proc: unknown) => ({ e: 'step', src: 'tool', id, label, fuerza: 0, res: 0, proc });
-    fire(step('ariete', 'Ariete: +12 de Daño', { what: 'fuerza', n: 12 }));
-    fire(step('contragolpe', 'Rodela de púas: devuelve 12', { what: 'dano', n: 12, tower: 'S' }));
-    fire(step('rebosadero', 'Copa rebosante: cura 2', { what: 'repara', n: 2 }));
+    fire(step('piqueta', 'Cuchillo criollo: +12 de Daño', { what: 'fuerza', n: 12 }));
+    fire(step('contragolpe', 'Talero: devuelve 12', { what: 'dano', n: 12, tower: 'S' }));
+    fire(step('botiquin', 'Bota de vino: cura 2', { what: 'repara', n: 2 }));
     const read = (cls: string) => {
       const el = document.querySelector<HTMLElement>(`.proc-badge.${cls}`);
       if (!el) return null;
@@ -365,10 +365,10 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
     const bunker = document.querySelector('#bunker')!.getBoundingClientRect();
     return { f: read('fuerza'), d: read('dano'), r: read('repara'), tower: [tower.left, tower.right], bunker: [bunker.left, bunker.right] };
   });
-  const [ariete, rodela, dano, vida] = [T('reliquia.ariete.nombre'), T('reliquia.contragolpe.nombre'), T('ui.proc.dano'), T('ui.proc.vida')];
+  const [ariete, rodela, dano, vida] = [T('reliquia.piqueta.nombre'), T('reliquia.contragolpe.nombre'), T('ui.proc.dano'), T('ui.proc.vida')];
   check(badges.f?.text.includes('+12') && badges.f.text.includes(dano) && badges.f.text.includes(ariete), `${ariete} enseña «+12 ${dano} · ${ariete}» (${badges.f?.text})`);
   check(badges.d?.text.includes('−12') && badges.d.text.includes(rodela) && badges.d.x >= badges.tower[0] && badges.d.x <= badges.tower[1], `${rodela} enseña «−12 · ${rodela}» sobre su trono`);
-  check(badges.r?.text.includes(`+2 ${vida}`) && badges.r.x >= badges.bunker[0] - 60 && badges.r.x <= badges.bunker[1] + 60, `la reliquia que cura enseña «+2 ${vida}» sobre tu Vida`);
+  check(badges.r?.text.includes(`+2 ${vida}`) && badges.r.x >= badges.bunker[0] - 60 && badges.r.x <= badges.bunker[1] + 60, `el Amuleto que cura enseña «+2 ${vida}» sobre tu Vida`);
   check([badges.f, badges.d, badges.r].every((b) => b && b.size >= 14 && !/Unifraktur|Grenze/i.test(b.font)), 'la cifra de las insignias va en sans de peso alto (≥ 14 px, nunca gótica)');
   check(badges.f?.dur === '1.2s', 'cada insignia dura 1,2 s a velocidad normal');
   check((await sounds(page)).filter((x) => x === 'proc').length >= 3, 'cada insignia trae su sonido');

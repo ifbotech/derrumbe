@@ -94,8 +94,8 @@ function rulesEs(cfg: Config): string {
   <h3>Daño × Multi = Golpe</h3>
   <p>Cada jugada se cuenta igual: <b>Golpe = Daño × Multi</b>, y el Multi siempre es entero. <b>El orden no importa</b>: la mesa hace la cuenta y te la enseña antes de golpear.</p>
   <ul>
-    <li><b>Daño</b>: se suma todo. La base de la formación, el número de cada carta y lo que añadan <b>acabados</b>, <b>cartas especiales</b> y <b>Reliquias</b>. El <b>As</b> (el 1) vale <b>11</b> y enlaza escaleras por abajo (1-2-3) y por arriba (8-9-1).</li>
-    <li><b>Multi</b>: se suma todo (la formación, la Racha y lo que añadan acabados, especiales y Reliquias) y, al final, se aplican los multiplicadores (×2, ×3…).</li>
+    <li><b>Daño</b>: se suma todo. La base de la formación, el número de cada carta y lo que añadan <b>acabados</b>, <b>Trampas del Bufón</b> y <b>Amuletos</b>. El <b>As</b> (el 1) vale <b>11</b> y enlaza escaleras por abajo (1-2-3) y por arriba (8-9-1).</li>
+    <li><b>Multi</b>: se suma todo (la formación, la Racha y lo que añadan acabados, Trampas y Amuletos) y, al final, se aplican los multiplicadores (×2, ×3…).</li>
   </ul>
   <table>
     <tr><th>Formación</th><th>Cartas</th><th>Daño</th><th>Multi</th></tr>
@@ -142,12 +142,12 @@ function rulesEs(cfg: Config): string {
   </ul>
 
   <h3>Campaña</h3>
-  <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro; ${MONARCAS} con <b>monarca</b>, y el último, en el Salón del Trono, con el <b>Rey Tirano</b>. Empezás con un <b>Sobre lacrado</b> de cartas especiales y con un <b>Don de la Conjura</b> que elegís entre tres (una Reliquia, un sello de lacre o una bolsa de oro) y, entre asalto y asalto, mejoras el mazo y tus Reliquias.</p>
+  <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro; ${MONARCAS} con <b>monarca</b>, y el último, en el Salón del Trono, con el <b>Rey Tirano</b>. Empezás con un <b>Sobre lacrado</b> de cartas especiales y con un <b>Don de la Conjura</b> que elegís entre tres (un Amuleto, un sello de lacre o una bolsa de oro) y, entre asalto y asalto, mejorás el mazo y tus Amuletos.</p>
   <ul>
     <li><b>El Mapa del castillo</b> enseña desde el principio qué monarca espera en cada asalto y su <b>decreto</b>. En los asaltos sin monarca elegís <b>ruta</b>: cada una trae un <b>Juramento</b> (una condición con premio; los de riesgo endurecen el asalto y pagan siempre). En el asalto ${STAGES.findIndex((s) => s.atajo) + 1} también podés tomar el <b>Atajo</b>: te saltas el asalto (sin Botín ni Pulpería) a cambio de un <b>Atajo de conspirador</b>.</li>
-    <li><b>En el Botín</b> elegís una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasás por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: elegís una de tres Reliquias, Raras o mejores.</li>
+    <li><b>En el Botín</b> elegís una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasás por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: elegís uno de tres Amuletos, Raros o mejores.</li>
     <li><b>Monarcas</b>: el monarca es uno de los <b>4 Reyes</b>, el último guardia de la Casa de su palo. Llega con retrato y rasgo propio, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tenés delante, su <b>Furia del Rey</b> sube cada turno: hay que tumbarlo deprisa. Te habla según las Bendiciones que llevás.</li>
-    <li><b>La Pulpería</b> del Tratante vende reliquias, Sobres lacrados (abrís uno y elegís 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
+    <li><b>La Pulpería</b> del Tratante vende Amuletos, Sobres lacrados (abrís uno y elegís 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
     <li>Tras cada monarca intermedio hay un <b>Santuario de la cripta</b>: una apuesta (la Rueda del destino, doble o nada de esquirlas, un dado bendito o maldito, el altar de sangre que cambia Vida por una Bendición) o un dilema con premio y precio.</li>
     <li>Después del último asalto podés seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
     <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña.</li>
@@ -157,15 +157,15 @@ function rulesEs(cfg: Config): string {
   ${caeEs()}
 
   <h3>Reinados</h3>
-  <p>Ganar una campaña abre el Reinado siguiente. Cada uno añade un giro a todos los anteriores y da un 25 % más de <b>esquirlas</b> ✦. Al ganar, la baraja y tus Reliquias reciben su <b>sello de maestría</b> (bronce, hierro u oro) en la colección.</p>
+  <p>Ganar una campaña abre el Reinado siguiente. Cada uno añade un giro a todos los anteriores y da un 25 % más de <b>esquirlas</b> ✦. Al ganar, la baraja y tus Amuletos reciben su <b>sello de maestría</b> (bronce, hierro u oro) en la colección.</p>
   <table>
     <tr><th>Reinado</th><th>Nombre</th><th>Giro</th></tr>
     ${ASCENSIONS.map((a, i) => `<tr><td>${i + 1}</td><td>${a.name}</td><td>${a.desc}</td></tr>`).join('')}
   </table>
 
-  <h3>Reliquias</h3>
-  <p>Llevás hasta <b>${TOOL_SLOTS} reliquias</b>. <b>No se ordenan</b>: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica.
-  Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a otra y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
+  <h3>Amuletos</h3>
+  <p>Llevás hasta <b>${TOOL_SLOTS} Amuletos</b> (uno más por nivel de la <b>Faja ancha</b> del Altar). <b>No se ordenan</b>: cada uno nuevo va al final de la tira y ninguno depende de su hueco. En la cuenta primero se suma todo y al final se multiplica.
+  Cada uno es de la familia de un Rey y cuenta como pieza suya para los niveles [2/4]. Su letra <b>S</b>, <b>A</b> o <b>B</b> es su sello de nivel (lo mide el laboratorio) y <b>★</b> avisa de que encaja con tu Mazo o con un nivel. <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado y <b>•</b> es pasivo.</p>
 
   <h3>Los 4 Reyes y sus Bendiciones</h3>
   <p>Al empezar la campaña ofrecen ${B.oferta.inicio} Reyes y, antes de cada asalto, ${B.oferta.entre}: cada uno pone una <b>Bendición</b> suya y te quedás con una. Cada Bendición tiene un efecto y una <b>condición de carga</b>: cada vez que se cumple suma una carga para toda la campaña (la mesa lo enseña como «Espadas +6»). Con <b>${UMBRALES_REY.join(' y ')}</b> piezas de un mismo Rey se encienden sus bonos. Las <b>Duales</b> son de dos Reyes y solo salen si ya llevás una de cada uno.</p>
@@ -178,7 +178,7 @@ function rulesEs(cfg: Config): string {
     <tr><th colspan="2">Acabados (esquina de arriba a la derecha)</th></tr>
     ${TREATMENTS.map((t) => `<tr><td><b>${TREATMENT[t].name}</b></td><td>${TREATMENT[t].desc}</td></tr>`).join('')}
   </table>
-  <p>Una carta puede llevar un sello y un acabado a la vez. Las cartas destruidas (las de cristal que se hacen añicos o las quemadas) salen del mazo para siempre; algunas reliquias se ceban con cada carta destruida.</p>
+  <p>Una carta puede llevar un sello y un acabado a la vez. Las cartas destruidas (las de cristal que se hacen añicos o las quemadas) salen del mazo para siempre.</p>
 
   <h3>Las ${KEYWORDS.length === 5 ? 'cinco' : KEYWORDS.length} palabras clave</h3>
   <p>Solo estas palabras tienen significado propio; van en negrita y los globos de ayuda encadenan su definición.</p>
@@ -188,7 +188,7 @@ function rulesEs(cfg: Config): string {
 
   <h3>Controles</h3>
   <p><b>1–9</b> eligen carta · <b>flechas</b> mueven el foco · <b>Enter</b> elige · <b>Espacio</b> golpea al enemigo activo · <b>Y</b> guarda en la manga · <b>Z</b> rebobina · <b>Q</b> Mejor jugada · <b>A</b> AUTO · <b>Supr</b> descarta · <b>Esc</b> suelta o vuelve atrás · <b>Tab</b> abre el mazo · <b>F</b> pantalla completa.</p>
-  <p><b>Lupa</b>: clic derecho, pulsación larga o <b>L</b> sobre cualquier carta, reliquia, guardia o monarca. Con mando: cruceta o palanca, A elegir, X golpear, Y manga, B atrás, LB mazo, RB lupa, LT rebobinar, RT velocidad, Start ajustes. Los botones de la mesa enseñan su atajo según juegues con teclado o con mando. La tabla completa está en Ajustes.</p>
+  <p><b>Lupa</b>: clic derecho, pulsación larga o <b>L</b> sobre cualquier carta, Amuleto, guardia o monarca. Con mando: cruceta o palanca, A elegir, X golpear, Y manga, B atrás, LB mazo, RB lupa, LT rebobinar, RT velocidad, Start ajustes. Los botones de la mesa enseñan su atajo según juegues con teclado o con mando. La tabla completa está en Ajustes.</p>
 
   <h3>Consejos de la conjura</h3>
   <ul>
@@ -252,8 +252,8 @@ function rulesEn(cfg: Config): string {
   <h3>Damage × Mult = Hit</h3>
   <p>Every play is counted the same way: <b>Hit = Damage × Mult</b>, and Mult is always a whole number. <b>Order does not matter</b>: the table does the count and shows it before you strike.</p>
   <ul>
-    <li><b>Damage</b>: everything is added up. The formation’s base, the number on each card and whatever <b>finishes</b>, <b>special cards</b> and <b>Relics</b> add. The <b>Ace</b> (the 1) is worth <b>11</b> and links straights at the bottom (1-2-3) and at the top (8-9-1).</li>
-    <li><b>Mult</b>: everything is added up (the formation, the Streak and whatever finishes, specials and Relics add) and, at the end, the multipliers apply (×2, ×3…).</li>
+    <li><b>Damage</b>: everything is added up. The formation’s base, the number on each card and whatever <b>finishes</b>, <b>Jester’s Tricks</b> and <b>Amulets</b> add. The <b>Ace</b> (the 1) is worth <b>11</b> and links straights at the bottom (1-2-3) and at the top (8-9-1).</li>
+    <li><b>Mult</b>: everything is added up (the formation, the Streak and whatever finishes, Tricks and Amulets add) and, at the end, the multipliers apply (×2, ×3…).</li>
   </ul>
   <table>
     <tr><th>Formation</th><th>Cards</th><th>Damage</th><th>Mult</th></tr>
@@ -300,12 +300,12 @@ function rulesEn(cfg: Config): string {
   </ul>
 
   <h3>Campaign</h3>
-  <p>A deck-building roguelike: <b>${LAST_STAGE} assaults</b>, each one a hall of the castle and each harder than the last; ${MONARCAS} of them with a <b>monarch</b>, and the last one, in the Throne Room, with the <b>Tyrant King</b>. You start with a <b>Sealed Pack</b> of special cards and a <b>Conspiracy’s Gift</b> you choose from three (a Relic, a wax seal or a purse of gold) and, between assaults, you improve your deck and your Relics.</p>
+  <p>A deck-building roguelike: <b>${LAST_STAGE} assaults</b>, each one a hall of the castle and each harder than the last; ${MONARCAS} of them with a <b>monarch</b>, and the last one, in the Throne Room, with the <b>Tyrant King</b>. You start with a <b>Sealed Pack</b> of special cards and a <b>Conspiracy’s Gift</b> you choose from three (an Amulet, a wax seal or a purse of gold) and, between assaults, you improve your deck and your Amulets.</p>
   <ul>
     <li><b>The Castle Map</b> shows from the start which monarch awaits in each assault and their <b>decree</b>. In assaults without a monarch you pick a <b>route</b>: each one brings an <b>Oath</b> (a condition with a reward; risky ones make the assault harder and always pay). In assault ${STAGES.findIndex((s) => s.atajo) + 1} you can also take the <b>Shortcut</b>: you skip the assault (no Spoils or General Store) in exchange for a <b>conspirator Shortcut</b>.</li>
-    <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. When a monarch falls it opens its <b>Chest</b>: you pick one of three Relics, Rare or better.</li>
+    <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. When a monarch falls it opens its <b>Chest</b>: you pick one of three Amulets, Rare or better.</li>
     <li><b>Monarchs</b>: the monarch is one of the <b>4 Kings</b>, the last guard of the House of his suit. He arrives with a portrait and his own trait, has ×${FURIA.jefeVida} Health and, while he is in front of you, his <b>King’s Fury</b> rises every turn: bring him down fast. He speaks to you according to the Blessings you carry.</li>
-    <li>In <b>The General Store</b>, the Storekeeper sells relics, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
+    <li>In <b>The General Store</b>, the Storekeeper sells amulets, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
     <li>After each middle monarch there is a <b>Crypt Shrine</b>: a gamble (the Wheel of Fate, double or nothing on shards, a blessed or cursed die, the Altar of Blood that trades Health for a Blessing) or a dilemma with a reward and a price.</li>
     <li>After the last assault you can go on to the <b>Endless Throne</b>: assaults without end, each one harder.</li>
     <li><b>Seed</b>: the same seed and the same choices give the same campaign.</li>
@@ -315,15 +315,15 @@ function rulesEn(cfg: Config): string {
   ${caeEn()}
 
   <h3>Reigns</h3>
-  <p>Winning a campaign opens the next Reign. Each one adds a twist to all the previous ones and gives 25 % more <b>shards</b> ✦. When you win, the deck and your Relics get their <b>mastery seal</b> (bronze, iron or gold) in the collection.</p>
+  <p>Winning a campaign opens the next Reign. Each one adds a twist to all the previous ones and gives 25 % more <b>shards</b> ✦. When you win, the deck and your Amulets get their <b>mastery seal</b> (bronze, iron or gold) in the collection.</p>
   <table>
     <tr><th>Reign</th><th>Name</th><th>Twist</th></tr>
     ${ASCENSIONS.map((_, i) => `<tr><td>${i + 1}</td><td>${reinN(i)}</td><td>${reinD(i)}</td></tr>`).join('')}
   </table>
 
-  <h3>Relics</h3>
-  <p>You carry up to <b>${TOOL_SLOTS} relics</b>. <b>You never sort them</b>: each new one goes to the end of the row and none depends on its slot. In the count everything is added first and multiplied at the end.
-  Each one says what it does: <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far, <b>⇉</b> copies another and <b>•</b> is passive. Golden rule: what adds first, what multiplies at the end.</p>
+  <h3>Amulets</h3>
+  <p>You carry up to <b>${TOOL_SLOTS} amulets</b> (one more per level of the Altar’s <b>Wide Sash</b>). <b>You never sort them</b>: each new one goes to the end of the row and none depends on its slot. In the count everything is added first and multiplied at the end.
+  Each one belongs to a King’s family and counts as one of his pieces for the [2/4] levels. Its letter <b>S</b>, <b>A</b> or <b>B</b> is its tier seal (measured by the lab) and <b>★</b> warns that it fits your Deck or a level. <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far and <b>•</b> is passive.</p>
 
   <h3>The 4 Kings and their Blessings</h3>
   <p>At the start of the campaign ${B.oferta.inicio} Kings make an offer and, before each assault, ${B.oferta.entre}: each one puts forward a <b>Blessing</b> of his and you keep one. Each Blessing has an effect and a <b>charge condition</b>: every time it is met it adds a charge for the whole campaign (the table shows it as “Swords +6”). With <b>${UMBRALES_REY.join(' and ')}</b> pieces of the same King his bonuses light up. <b>Dual</b> Blessings belong to two Kings and only appear once you carry one of each.</p>
@@ -336,7 +336,7 @@ function rulesEn(cfg: Config): string {
     <tr><th colspan="2">Finishes (top right corner)</th></tr>
     ${TREATMENTS.map((t) => `<tr><td><b>${acabN(t)}</b></td><td>${acabD(t)}</td></tr>`).join('')}
   </table>
-  <p>A card can carry a seal and a finish at once. Destroyed cards (glass ones that shatter or burnt ones) leave the deck for good; some relics feed on every destroyed card.</p>
+  <p>A card can carry a seal and a finish at once. Destroyed cards (glass ones that shatter or burnt ones) leave the deck for good.</p>
 
   <h3>The ${KEYWORDS.length === 5 ? 'five' : KEYWORDS.length} keywords</h3>
   <p>Only these words have a meaning of their own; they go in bold and the help bubbles chain their definition.</p>
@@ -346,7 +346,7 @@ function rulesEn(cfg: Config): string {
 
   <h3>Controls</h3>
   <p><b>1–9</b> pick a card · <b>arrows</b> move the focus · <b>Enter</b> picks · <b>Space</b> hits the active enemy · the Y key keeps a card Up the Sleeve · <b>Z</b> rewinds · <b>Q</b> Best Play · the A key turns AUTO on or off · <b>Delete</b> discards · <b>Esc</b> drops or goes back · <b>Tab</b> opens the deck · <b>F</b> full screen.</p>
-  <p><b>Loupe</b>: right click, long press or <b>L</b> on any card, relic, guard or monarch. With a controller: d-pad or stick, A picks, X hits, the Y button keeps Up the Sleeve, B back, LB deck, RB loupe, LT rewind, RT speed, Start settings. The table buttons show their shortcut for keyboard or controller. The full table is in Settings.</p>
+  <p><b>Loupe</b>: right click, long press or <b>L</b> on any card, amulet, guard or monarch. With a controller: d-pad or stick, A picks, X hits, the Y button keeps Up the Sleeve, B back, LB deck, RB loupe, LT rewind, RT speed, Start settings. The table buttons show their shortcut for keyboard or controller. The full table is in Settings.</p>
 
   <h3>Crew tips</h3>
   <ul>

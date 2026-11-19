@@ -60,20 +60,23 @@ export function toolTile(id: string): HTMLDivElement {
 }
 
 export interface BeltOpts {
+  /** Huecos que se pintan (V40 1d: 4 y uno más por nivel de la Faja ancha; ver `toolSlots`). */
+  slots?: number;
   /** Se puede vender: recibe el hueco. */
   onSell?: (slot: number) => void;
   sellValue?: (id: string) => number;
 }
 
 /**
- * Las Reliquias, en el orden en que llegaron. No se ordenan (V34): ninguna depende de su hueco. En La Taberna,
+ * Los Amuletos, en el orden en que llegaron. No se ordenan (V34): ninguna depende de su hueco. En La Taberna,
  * pulsar una dos veces la vende.
  */
 export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'belt';
   let picked = -1;
-  for (let i = 0; i < TOOL_SLOTS; i++) {
+  const huecos = opts.slots ?? Math.max(TOOL_SLOTS, tools.length);
+  for (let i = 0; i < huecos; i++) {
     const t = tools[i];
     const slot = document.createElement('div');
     if (!t || !TOOL[t.id]) {

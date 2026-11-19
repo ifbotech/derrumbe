@@ -2,7 +2,8 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { ESQUIRLAS_POR_CORONA, RUN_40, abonoCampanaVieja, abonoFrancesa, campanaFrancesa, campanaSinReyes, mazoDe } from '../rules/migracion';
+import { ESQUIRLAS_POR_CORONA, RUN_40, abonoCampanaVieja, abonoFrancesa, campanaConReliquias, campanaFrancesa, campanaSinReyes, mazoDe } from '../rules/migracion';
+import { t } from '../shared/i18n';
 import { MAZO_INICIAL } from '../rules/mazos';
 import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
@@ -55,9 +56,26 @@ export const forgetSaved = () => platform.remove(RUN_KEY);
  * la 10.0 o anterior, se da por cerrada y se cobra lo superado, como siempre. Ajustes y Altar no se tocan.
  */
 export function retireOldSave(): void {
+  // V40 1d · el aviso de la llegada de los Amuletos (los arcones viejos devueltos en esquirlas), una sola vez
+  const av = meta.avisoAmuletos;
+  if (av) {
+    delete meta.avisoAmuletos;
+    saveMeta();
+    setTimeout(() => toast(t('amuletos.aviso', { n: av.arcones, esquirlas: av.esquirlas })), 1200);
+  }
   const old = loadJson<{ run?: { stage?: number; phase?: string; v?: number } }>(RUN_KEY);
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
+  // V40 1d · una campaña del tramo 1c (con Reliquias) no sigue: se cobra lo juntado
+  if (campanaConReliquias(old.run)) {
+    const abono = abonoFrancesa(old.run);
+    if (abono > 0) {
+      meta.renown += abono;
+      saveMeta();
+    }
+    setTimeout(() => toast(abono > 0 ? L('ui.camp.reliquias.abono', { n: abono }) : L('ui.camp.reliquias')), 600);
+    return;
+  }
   // V40 1c · una campaña de los tramos 1a o 1b (con rasgos y monarcas viejos) no sigue: se cobra lo juntado
   if (campanaSinReyes(old.run)) {
     const abono = abonoFrancesa(old.run);

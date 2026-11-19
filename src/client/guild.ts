@@ -24,6 +24,7 @@ import { glyphSvg } from './glyphs';
 import { deathIn, validDeath } from './causa';
 import { setScreen } from './router';
 import { choice, toolTile } from './widgets';
+import { marcaPieza } from './piezas-ui';
 import { platform } from './platform';
 import { whisper } from './whispers';
 
@@ -342,7 +343,7 @@ function collection(list: HTMLElement): void {
   const boxes = (Object.keys(ARCH) as Arch[]).flatMap((a) => TOOLS.filter((t) => t.arch === a));
   for (const t of boxes) {
     const locked = t.box && !meta.up[`caja_${t.box}`];
-    const box = tools.appendChild(have(meta.seen.tools, t.id) ? choice(toolTile(t.id), relN(t.id), relD(t.id), archN(t.arch), null) : hidden('???', locked ? L('ui.orden.arcon', { x: archN(t.box!) }) : L('ui.orden.no.llevada', { x: archN(t.arch) })));
+    const box = tools.appendChild(have(meta.seen.tools, t.id) ? choice(toolTile(t.id), relN(t.id), `${relD(t.id)}${marcaPieza({ tipo: 'amuleto', id: t.id })}`, archN(t.arch), null) : hidden('???', locked ? L('ui.orden.arcon', { x: archN(t.box!) }) : L('ui.orden.no.llevada', { x: archN(t.arch) })));
     box.insertAdjacentHTML('beforeend', masteryBadge(meta.mastery.tools[t.id] ?? 0));
   }
 

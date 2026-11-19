@@ -5,7 +5,7 @@ import { Card, DEFAULT_CONFIG, RANK_LABEL, SUITS, Suit, TOWER_FX, TowerFx, esFig
 import { keywordsInFor } from '../rules/keywords';
 import { BOSS, DECK, sellValue } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
-import { TOOL, TOOL_SLOTS } from '../rules/tools';
+import { TOOL } from '../rules/tools';
 import { L, acabD, acabN, archN, barD, barN, espD, espN, fxD, fxN, getLang, monDec, monD, monN, palabraD, palabraN, paloN, cartaN, guardiaN, rarN, relD, relN, selloD, selloN } from './lengua';
 import { sfx } from './audio';
 import { backEl, cardEl, cardOf, portraitEl, suitSvg } from './card';
