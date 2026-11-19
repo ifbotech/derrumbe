@@ -88,7 +88,7 @@ function markTable(mark: CurseMark, v: PlayerView | null): void {
   if (mark === 'contraataque') tag(document.querySelector('.tower.activa .threat'), `+1–${MON.oros.dado}`, 'mini');
   // el Inquisidor: ningún trono queda Aturdido; cada trono en pie lo dice con «Aturdido» tachado
   if (mark === 'guardias') for (const t of document.querySelectorAll('.tower:not([hidden]):not(.fallen) .tower-fx')) tag(t, `<s>${fxN('sobrecarga')}</s>`, 'sin-fx');
-  if (mark === 'escudo') tag(document.getElementById('wall-num')?.closest('.stat') ?? null, `−${MON.espadas.perfora}`);
+  if (mark === 'escudo') tag(document.getElementById('wall-num')?.closest('.stat, .hud-c') ?? null, `−${MON.espadas.perfora}`);
   // V38 · la marca del Relojero dice la palabra («+1 Furia»); en el móvil, donde no cabe, queda «+1» (guia.css)
   // el Rey de Copas se cura cada turno que sigue al frente
   if (mark === 'asedio') tag(document.querySelector('.tower.activa .threat'), `<span class="ct-largo">${L('ui.mesa.rey.cura', { n: MON.copas.cura })}</span><span class="ct-corto">+${MON.copas.cura}</span>`, 'mini furia-mas');
@@ -162,7 +162,7 @@ export function showBark(text: string): void {
   barkWatch?.disconnect();
   const bark = el;
   barkWatch = new ResizeObserver(() => !bark.hidden && placeBark(bark));
-  for (const sel of ['#monarch', '.table-screen .side', '#towers', '.tray .hudrow']) {
+  for (const sel of ['#bufon-mesa', '#monarch', '.table-screen .side', '#towers', '.tray .hudrow']) {
     const n = document.querySelector(sel);
     if (n) barkWatch.observe(n);
   }
@@ -181,6 +181,30 @@ export function hideBark(): void {
 function placeBark(el: HTMLElement): void {
   const W = innerWidth;
   const H = innerHeight;
+  // V40 · fase 3a: en la mesa mínima habla el Bufón. En escritorio, el bocadillo va en su columna, debajo de él; en el
+  // móvil, a su derecha, en la franja de arriba del campo. Nunca sobre la mano, el enemigo ni los botones.
+  const buf = box(document.getElementById('bufon-mesa'));
+  if (buf) {
+    const narrowB = W < 641 || W / H < 1;
+    if (narrowB) {
+      const left = Math.round(buf.right + 10);
+      el.style.maxWidth = `${Math.max(160, W - left - 16)}px`;
+      el.dataset.pico = 'izquierda';
+      el.style.left = `${left}px`;
+      el.style.top = `${Math.round(buf.top)}px`;
+      el.style.setProperty('--pico-y', `${Math.round(Math.min(24, buf.height / 2))}px`);
+      return;
+    }
+    const col = box(document.querySelector('.table-screen .field'));
+    const w = Math.max(160, Math.round(buf.width + 40));
+    el.style.maxWidth = `${w}px`;
+    el.dataset.pico = 'arriba';
+    const left = Math.max(col?.left ?? 8, Math.round(buf.left + buf.width / 2 - w / 2));
+    el.style.left = `${Math.max(8, left)}px`;
+    el.style.top = `${Math.round(buf.bottom + 12)}px`;
+    el.style.setProperty('--pico-x', `${Math.round(buf.left + buf.width / 2 - Math.max(8, left))}px`);
+    return;
+  }
   const port = box(document.querySelector('#monarch .mon-port')) ?? box(document.querySelector('.boss-chip'));
   const score = box(document.getElementById('score'));
   const hand = handBox();

@@ -1,0 +1,310 @@
+/* V40 · fase 3a · La mesa mínima (constitución, apartado 7). Va la última: manda sobre styles, theme, duelo, deck y
+   pixel. Arriba el HUD único (campana40.css lo viste; aquí, lo propio de la mesa); en el campo, el Bufón junto al
+   enemigo activo y la fila compacta de los que esperan; al medio, una sola barra de la cuenta y las píldoras de los
+   Reyes; abajo, la mano grande con Golpear y Descartar. Fondo de mesa sereno: liso, sin grano. */
+
+.table-screen.m40 { grid-template-rows: auto minmax(0, 1fr) auto; background: #18201c; background-image: none; }
+
+/* ── el HUD de la mesa ── */
+.table-screen.m40 > .bar.hud { display: flex; flex-wrap: nowrap; gap: 10px; padding: 6px 16px; min-height: 58px; background: var(--pit); border-bottom: 2px solid var(--table-4); }
+.table-screen.m40 > .bar.hud > .brand { display: none; }
+.table-screen.m40 .hud-vida > b, .table-screen.m40 .hud-escudo > b { background: none; padding: 0; font-size: 22px; color: var(--card-paper); }
+.table-screen.m40 .hud-mazo { gap: 6px; padding: 2px 10px 2px 6px; min-height: 44px; }
+.table-screen.m40 .hud-mazo > b { background: none; padding: 0; font-size: 22px; color: var(--card-paper); font-family: var(--num); }
+.table-screen.m40 .hud-dorso { position: relative; width: 26px; height: 36px; overflow: hidden; }
+.table-screen.m40 .hud-dorso > .card { --w: 26px; position: absolute; inset: 0; margin: 0; pointer-events: none; }
+.table-screen.m40 .hud-tira > .beltbar { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+.table-screen.m40 .hud-tira > .beltbar[hidden] { display: none; }
+.table-screen.m40 .hud-tira .carries { display: flex; gap: 6px; }
+.table-screen.m40 .hud-tira .carry { font-size: 14px; white-space: nowrap; }
+.table-screen.m40 .hud-der { gap: 6px; }
+.table-screen.m40 .hud-der > .room { font-family: var(--num); font-size: 15px; color: var(--paper-2); white-space: nowrap; }
+.table-screen.m40 .hud-der > .room .room-nombre { display: none; }
+.table-screen.m40 .hud-der .hud-btn { --bg: var(--table-2); --bd: var(--table-4); --bw: 2px; --sh: none; color: var(--card-paper); min-height: 44px; min-width: 44px; padding: 0 10px; font-size: 15px; }
+.table-screen.m40 .hud-der .hud-btn:hover:not(:disabled) { --bg: var(--table-4); color: var(--card-paper); }
+.table-screen.m40 #btn-mejor .lbl, .table-screen.m40 #btn-auto .lbl { font-size: 14px; }
+.table-screen.m40 #btn-rules { font-family: var(--num); font-size: 20px; }
+
+/* ── el campo: el Bufón, el enemigo activo y la fila ── */
+.table-screen.m40 .field { display: grid; grid-template-columns: minmax(96px, 150px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 8px 18px; padding: 10px 24px 4px; align-items: stretch; background: none; container-type: normal; }
+.table-screen.m40 .bufon-mesa { grid-column: 1; grid-row: 1; align-self: start; justify-self: center; width: 100%; max-width: 150px; }
+.table-screen.m40 .bufon-mesa > svg { width: 100%; height: auto; display: block; image-rendering: pixelated; }
+.table-screen.m40 .field > .towers { grid-column: 2; grid-row: 1 / span 2; width: 100%; max-width: 1120px; justify-self: center; min-height: 0; }
+.table-screen.m40 .field > .side { display: contents; }
+.table-screen.m40 .side > .bunker, .table-screen.m40 .side > .log { display: none; }
+.table-screen.m40 .side > #monarch { grid-column: 1; grid-row: 2; align-self: end; max-width: 150px; }
+.table-screen.m40 .side > #monarch .mon-port { display: none; }
+/* el enemigo activo: menos marco, sin la trama del rótulo ni el pie */
+.table-screen.m40 .tower-tag .tag-weave, .table-screen.m40 .tower > .footing { display: none; }
+.table-screen.m40 .tower.activa { --bw: 2px; --bd: var(--table-4); --sh: 0 6px 0 var(--pit); --bg: var(--table-2); }
+.table-screen.m40 .tower.espera { --bw: 2px; --bd: var(--table-4); --sh: none; }
+
+/* ── al medio: la cuenta y las píldoras ── */
+.table-screen.m40 .tray { background: var(--table-2); background-image: none; border-top: 2px solid var(--table-4); box-shadow: none; gap: 8px; padding: 8px 16px 14px; }
+.table-screen.m40 .tray > .score { order: 1; }
+.table-screen.m40 .tray > .hudrow { order: 2; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; min-height: 0; }
+.table-screen.m40 .tray > .hudrow > .powers { display: none; }
+.table-screen.m40 .tray > .playrow { order: 3; }
+.table-screen.m40 .tray > .stage, .table-screen.m40 .tray > .coach { order: 0; }
+
+/* ── abajo: la mano grande y los dos botones ── */
+.table-screen.m40 .playrow { width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 24px; }
+.table-screen.m40 .actions { display: flex; flex-direction: column; gap: 12px; width: clamp(150px, 15vw, 220px); grid-template-areas: none; }
+.table-screen.m40 .actions > button { width: 100%; min-height: 52px; }
+.table-screen.m40 #btn-strike { min-height: 72px; font-size: 22px; }
+.table-screen.m40 #btn-discard { min-height: 48px; }
+
+/* ── móvil: HUD en dos filas, el Bufón chico junto al enemigo, la barra del pulgar abajo ── */
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 > .bar.hud { flex-wrap: wrap; gap: 6px; padding: 6px 16px; }
+  .table-screen.m40 .hud-tira { order: 3; flex: 1 0 100%; }
+  .table-screen.m40 .hud-der > .room, .table-screen.m40 .hud-der > .obra-chips .chip > span { display: none; }
+  .table-screen.m40 .field { grid-template-columns: 64px minmax(0, 1fr); padding: 6px 16px 2px; gap: 6px 8px; }
+  .table-screen.m40 .bufon-mesa { max-width: 64px; }
+  .table-screen.m40 .side > #monarch { display: none; }
+  .table-screen.m40 .playrow { flex-direction: column; align-items: stretch; gap: 10px; }
+  .table-screen.m40 .actions { flex-direction: row; width: 100%; }
+  .table-screen.m40 .actions > button { flex: 1 1 0; min-height: 48px; }
+  .table-screen.m40 #btn-strike { min-height: 48px; font-size: 19px; }
+}
+
+/* ── segunda pasada: la barra de arriba sin ruido, el enemigo limpio y la cuenta en una línea ── */
+.table-screen.m40 .hud-der > .players:not(:has(.chip + .chip)) { display: none; }
+.table-screen.m40 .obra-chips > .boss-chip, .table-screen.m40 .obra-chips > .level-chip { display: none; }
+.table-screen.m40 .obra-chips:not(:has(> .chip:not(.boss-chip):not(.level-chip))) { display: none; }
+.table-screen.m40 .hud-der .hud-btn > .lbl { display: none; }
+.table-screen.m40 .hud-der .hud-btn > svg { width: 20px; height: 20px; }
+.table-screen.m40 .hud-der .hud-btn .kh { font-size: 14px; margin-left: 4px; }
+.table-screen.m40 #btn-undo::after { content: '↩'; font-size: 20px; }
+.table-screen.m40 #btn-leave { font-size: 14px; }
+.table-screen.m40 .hud-tira { min-width: 120px; }
+/* el enemigo: ni la fachada de ladrillo ni los muros de los que esperan detrás; su Vida y su ⚔ grandes */
+.table-screen.m40 .floor-slot > .facade { display: none; }
+.table-screen.m40 .tower .storeys { display: flex; flex-wrap: wrap; gap: 6px; align-content: start; }
+.table-screen.m40 .tower .storey { display: inline-flex; align-items: center; gap: 4px; height: auto; padding: 2px 8px; background: var(--table-3); color: var(--card-paper); border: 2px solid var(--table-4); }
+.table-screen.m40 .tower .storey > svg { display: none; }
+.table-screen.m40 .tower .storey > b, .table-screen.m40 .tower .storey > span { font-size: 15px; background: none; color: var(--card-paper); padding: 0; }
+/* la cuenta: la fórmula y, como mucho, el golpe exacto, lo que cae y el Contraataque */
+.table-screen.m40 #score .mde { display: none; }
+.table-screen.m40 #score .marks > .m:not(.red):not(.gold):not(.dim):not(.good), .table-screen.m40 #score .marks > .m.inm, .table-screen.m40 #score .marks > .m.polvora, .table-screen.m40 #score .marks > .m.mas { display: none; }
+
+/* ── tercera pasada ── */
+.hud .bolsa-c b, .table-screen.m40 .hud .bolsa-c b { background: var(--ink); color: var(--hazard); padding: 1px 5px; }
+.table-screen.m40 #btn-speed, .table-screen.m40 #btn-rules { display: none; }
+.table-screen.m40 .actions > button { grid-area: auto; }
+.table-screen.m40 .side > #monarch { overflow: visible; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .hud-c { min-height: 44px; padding: 2px 6px 2px 4px; gap: 4px; }
+  .table-screen.m40 .hud-c .icono { width: 20px; }
+  .table-screen.m40 .hud-vida > b, .table-screen.m40 .hud-escudo > b, .table-screen.m40 .hud-mazo > b { font-size: 18px; }
+  .table-screen.m40 .hud .chip.bolsa { padding: 2px 6px; }
+  .table-screen.m40 .hud .bolsa-c b { font-size: 18px; }
+  .table-screen.m40 .hud-dorso { width: 20px; height: 28px; }
+  .table-screen.m40 .hud-dorso > .card { --w: 20px; }
+  .table-screen.m40 .hud-der { flex: 1 0 100%; justify-content: space-between; margin: 0; }
+  .table-screen.m40 .hud-der .hud-btn .kh { display: none; }
+  .table-screen.m40 .actions { display: grid; grid-template-columns: 1.3fr 1fr; grid-template-areas: none; gap: 10px; }
+  /* el campo: el enemigo activo a lo ancho y los que esperan en una fila debajo */
+  .table-screen.m40 .field > .towers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr) auto; width: 100%; }
+  .table-screen.m40 .towers > .tower.activa { grid-column: 1 / -1; grid-row: 1; }
+  .table-screen.m40 .towers > .tower:not(.activa) { grid-column: auto; grid-row: 2; }
+  /* la mano: en filas de cinco, sin pisarse */
+  .table-screen.m40 .handrow { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
+  .table-screen.m40 .hand { display: contents; }
+  .table-screen.m40 .hand .card, .table-screen.m40.is-run .hand .card { --w: calc((100vw - 32px - 4 * 8px) / 5); margin: 0; }
+}
+
+/* ── cuarta pasada: los ids viejos tienen su área de rejilla; la mano del móvil, en filas de seis ── */
+.table-screen.m40 #btn-strike, .table-screen.m40 #btn-pass, .table-screen.m40 #btn-discard { grid-area: auto; }
+.table-screen.m40 .hud-der { gap: 8px; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 > .bar.hud { gap: 8px; padding: 8px 16px 6px; }
+  .table-screen.m40 .hud-izq { gap: 8px; }
+  .table-screen.m40 .hud-tira .carries { display: none; }
+  .table-screen.m40 .handrow { gap: 6px; }
+  .table-screen.m40 .hand .card, .table-screen.m40.is-run .hand .card { --w: calc((100vw - 32px - 5 * 6px) / 6 - 2px); }
+  .table-screen.m40 .reserve { margin: 0; padding: 0; gap: 4px; }
+  .table-screen.m40 .reserve .card { --w: calc((100vw - 32px - 5 * 6px) / 6 - 2px); }
+  .table-screen.m40 .reserve-label { display: none; }
+}
+
+/* ── quinta pasada ── */
+.table-screen.m40 .field > .side { overflow: visible; }
+.table-screen.m40 .tower.espera .storeys { display: none; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .tower.activa .storeys { display: none; }
+  .table-screen.m40 .tower.activa .floor-slot .card { --w: 92px; }
+  /* la mano y la barra del pulgar en una sola rejilla: dos filas de naipes y, abajo, La Manga, Golpear y Descartar */
+  .table-screen.m40 .playrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px 6px; align-items: end; }
+  .table-screen.m40 .playrow > .handrow, .table-screen.m40 .handrow > .hand { display: contents; }
+  .table-screen.m40 .hand .card, .table-screen.m40.is-run .hand .card { justify-self: center; }
+  .table-screen.m40 .playrow .reserve { grid-row: 3; grid-column: 1 / span 2; align-self: end; }
+  .table-screen.m40 .playrow > .actions { grid-row: 3; grid-column: 3 / -1; align-self: end; }
+  .table-screen.m40 .playrow:not(:has(.reserve:not([hidden]))) > .actions { grid-column: 1 / -1; }
+}
+
+/* ── sexta pasada: el Rey jefe con su retrato; la barra de arriba en una fila ── */
+.table-screen.m40 .floor-slot:has(> .rey-retrato) > .card { display: none; }
+.table-screen.m40 .rey-retrato { grid-row: 2; width: min(100%, 240px); aspect-ratio: 1; border: 3px solid var(--laton); background: var(--table-3); box-shadow: 0 6px 0 var(--pit); }
+.table-screen.m40 .rey-retrato > svg { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.table-screen.m40 .tower.activa .storeys { display: none; }
+.table-screen.m40 .hud-tira .belt, .table-screen.m40 .hud-tira > .beltbar { flex-wrap: nowrap; }
+html:not([data-input='pad']) .table-screen.m40 .hud-der .kh { display: none; }
+.table-screen.m40 .hud-der .hud-btn { padding: 0 8px; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .actions { grid-template-columns: 1.15fr 1fr; gap: 8px; }
+  .table-screen.m40 .actions > button { font-size: 15px; padding-inline: 4px; }
+  .table-screen.m40 .rey-retrato { width: 96px; }
+}
+/* el móvil: el Bufón chico arriba a la izquierda y su bocadillo a la derecha; debajo, el enemigo a lo ancho */
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .field { grid-template-columns: 48px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .table-screen.m40 .bufon-mesa { grid-column: 1; grid-row: 1; max-width: 48px; }
+  .table-screen.m40 .field > .towers { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen.m40 .field { grid-template-columns: clamp(150px, 16vw, 250px) minmax(0, 1fr); }
+}
+
+/* ── séptima pasada: el bocadillo del Bufón (los Susurros de la mesa) va junto a él, en la rejilla del campo; en el
+   móvil, el naipe del enemigo activo cabe en su torre con las placas encima ── */
+.table-screen.m40 .side > .whisper { position: relative; inset: auto; z-index: 6; grid-column: 1; grid-row: 2; align-self: start; margin: 4px 0 0; max-width: 100%; transform: none; box-shadow: none; background: var(--pit, #0d0c0b); font-size: 14px; border-radius: 10px; }
+.table-screen.m40 .side > .whisper::before { content: ''; position: absolute; left: 50%; top: -9px; width: 14px; height: 14px; margin-left: -7px; background: inherit; border-left: 2px dashed rgba(240, 228, 200, 0.5); border-top: 2px dashed rgba(240, 228, 200, 0.5); transform: rotate(45deg); }
+.table-screen.m40 .side:has(> .whisper:not(.out)) > #monarch { visibility: hidden; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* el monarca, en el móvil, en la franja del Bufón (a su derecha) mientras el Bufón no habla */
+  .table-screen.m40 .side > #monarch:not([hidden]) { display: flex; grid-column: 2; grid-row: 1; align-self: center; justify-self: start; max-width: 100%; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .side > .whisper { grid-column: 2; grid-row: 1; align-self: center; margin: 0; padding: 6px 10px; gap: 2px 8px; flex-wrap: nowrap; align-items: center; }
+  .table-screen.m40 .side > .whisper::before { left: -9px; top: 50%; margin: -7px 0 0; transform: rotate(-45deg); }
+  .table-screen.m40 .side > .whisper p { flex: 1 1 auto; }
+  .table-screen.m40 .side > .whisper .whisper-off { min-height: 48px; max-width: 96px; white-space: normal; line-height: 1.1; padding: 2px 8px; }
+  .table-screen.m40 .tower.activa .floor-slot { display: grid; grid-template-areas: 'x'; align-items: start; justify-items: center; }
+  .table-screen.m40 .tower.activa .floor-slot > * { grid-area: x; }
+  .table-screen.m40 .tower.activa .floor-slot > .plates { z-index: 2; margin-top: 4px; }
+  .table-screen.m40 .tower.activa .floor-slot .card { --w: 72px; }
+}
+
+/* ── octava pasada: la barra de arriba deja sitio a la tira (el asalto va en el Mapa; con mando, las teclas van en
+   una esquina del botón, sin ancho propio); en el móvil, 8 px entre naipes y 16 entre Golpear y Descartar ── */
+.table-screen.m40 > .bar.hud { padding-top: 8px; }
+.table-screen.m40 .hud-der > .room { display: none; }
+.table-screen.m40 .hud-der .hud-btn { position: relative; }
+html[data-input='pad'] .table-screen.m40 .hud-der .hud-btn .kh { position: absolute; left: 50%; right: auto; transform: translateX(-50%); bottom: -12px; margin: 0; z-index: 2; }
+html[data-input='pad'] .table-screen.m40 .hud-mazo .kh { position: absolute; left: 50%; right: auto; transform: translateX(-50%); bottom: -12px; margin: 0; z-index: 2; }
+.table-screen.m40 .hud-mazo { position: relative; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .playrow { gap: 8px; }
+  .table-screen.m40 .hand .card, .table-screen.m40.is-run .hand .card, .table-screen.m40 .reserve .card { --w: calc((100vw - 32px - 5 * 8px) / 6 - 2px); }
+  .table-screen.m40 .reserve { gap: 8px; }
+  .table-screen.m40 .actions { gap: 16px; }
+}
+/* la marca del Rey de Espadas (perfora el Escudo) va en la ficha del Escudo */
+.table-screen.m40 .hud-c > .curse-tag { margin: 0 0 0 2px; padding: 1px 4px; font-family: var(--num); font-style: normal; font-weight: 800; font-size: 14px; color: #f3e6cf; background: #7a1a24; border-radius: 3px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.table-screen.m40 .hud-c > .curse-tag svg { width: 14px; height: 14px; }
+html[data-input='pad'] .table-screen.m40 #btn-set { min-width: 68px; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .hud-c > .curse-tag svg { display: none; }
+  .table-screen.m40 .hud-c > .curse-tag { padding: 0 3px; }
+  .table-screen.m40 .hud-c { padding: 2px 4px; }
+  .table-screen.m40 .hud-c .icono { width: 18px; }
+}
+
+/* ── novena pasada: naipes grandes en la mano (índice a 0,22 del ancho: ≥ 20 px en 1280, ≥ 34 en 1920); si no caben,
+   se solapan dejando al menos 44 px de cada uno a la vista ── */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen.m40 { --hand-h: clamp(150px, 13.5vw, 270px); }
+  .table-screen.m40 .playrow { min-width: 0; }
+  .table-screen.m40 .handrow { flex: 1 1 auto; min-width: 0; }
+  .table-screen.m40 .hand { flex: 1 1 0; min-width: 0; container-type: inline-size; justify-content: safe center; gap: 0; }
+  /* con mando, la carta enfocada crece 1,3× hacia la izquierda: la primera deja ese hueco para no pisar La Manga */
+  html[data-input='pad'] .table-screen.m40 .hand > .card:first-child { margin-left: calc(var(--w) * 0.3); }
+  /* las cartas elegidas suben 0,14 de la mano: la fila de las píldoras de los Reyes les deja ese aire */
+  .table-screen.m40 .tray > .hudrow:has(> .rasgos:not([hidden])) { margin-bottom: calc(var(--hand-h) * 0.14 - 8px); }
+  .table-screen.m40 .hand .card, .table-screen.m40.is-run .hand .card { --w: calc(var(--hand-h) * 0.84 / 1.4); flex: none; }
+  .table-screen.m40 .hand > .card + .card { margin-left: clamp(calc(44px - var(--w)), calc((100cqw - (var(--n, 8) + 0.3) * var(--w)) / (var(--n, 8) - 1)), 10px); }
+}
+/* Golpear siempre es el grande; Descartar, de una línea; la tira de arriba más justa en 1280 */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen.m40 .actions { justify-content: flex-end; }
+  #app .table-screen.m40 .actions > #btn-strike { flex: none; min-height: 72px; height: auto; }
+  #app .table-screen.m40 .actions > #btn-discard { flex: none; min-height: 52px; height: 52px; }
+  .table-screen.m40 .hud-c { padding-inline: 6px 8px; }
+  .table-screen.m40 .hud-izq, .table-screen.m40 > .bar.hud { column-gap: 8px; }
+}
+/* el móvil, mientras habla el Bufón: el bocadillo en dos pisos (la frase y, abajo a la derecha, «No mostrar más» en una
+   línea) y la fila de los que esperan se aparta para que el enemigo activo quepa entero */
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .side > .whisper { flex-wrap: wrap; justify-content: flex-end; }
+  .table-screen.m40 .side > .whisper p { flex: 1 1 100%; }
+  .table-screen.m40 .side > .whisper .whisper-off { max-width: none; white-space: nowrap; min-height: 44px; }
+  .table-screen.m40 .field:has(.whisper:not(.out)) .towers > .tower:not(.activa) { display: none; }
+  .table-screen.m40 .tower.activa .floor-slot .card { --w: 64px; }
+}
+/* lo que arrastra la mesa (Racha, Carga…) va al medio, con las píldoras de los Reyes; la tira de arriba, con aire para
+   el salto del foco */
+.table-screen.m40 .hudrow > .carries { display: flex; align-items: center; gap: 8px; }
+.table-screen.m40 .hudrow > .carries:empty { display: none; }
+.table-screen.m40 .hudrow > .carries .carry { font-size: 15px; white-space: nowrap; padding: 4px 8px; }
+.table-screen.m40 .tray > .hudrow:has(> .carries:not(:empty)) { margin-bottom: calc(var(--hand-h) * 0.14 - 8px); }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .tray > .hudrow:has(> .carries:not(:empty)) { margin-bottom: 0; }
+}
+.table-screen.m40 #btn-discard:not(:disabled) { --bg: #10359c; }
+.hud .belt, .hud .hud-tira-in.run-belt, .table-screen.m40 .hud-tira > .beltbar, .table-screen.m40 .hud-tira .belt { gap: 10px; }
+.hud-tira { padding-block: 4px; }
+.run.m40 > .hud { padding-top: 10px; }
+/* si la bolsa crece (esquirlas y gotas), se aprieta en el escritorio; en el móvil, la fila de la izquierda se parte */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .table-screen.m40 .hud .chip.bolsa { padding: 2px 6px; gap: 12px; }
+  .table-screen.m40 .hud .bolsa-svg { width: 20px; height: 20px; }
+  .table-screen.m40 .hud .bolsa-c { gap: 6px; }
+  .table-screen.m40 .hud-dorso { width: 20px; height: 28px; }
+  .table-screen.m40 .hud-c .icono { width: 22px; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .hud-izq { flex: 1 1 100%; min-width: 0; flex-wrap: wrap; row-gap: 8px; }
+  #app .table-screen.m40 .hud-der .hud-btn { min-height: 48px; min-width: 48px; }
+  .table-screen.m40 > .bar.hud { row-gap: 10px; }
+}
+
+/* ── décima pasada: el HUD del móvil en tres filas fijas. Las cajas de la izquierda y la derecha se deshacen
+   (display: contents) y sus fichas se ordenan: 1) Vida · Escudo · Oro; 2) Mazo y los botones discretos; 3) la tira ── */
+.table-screen.m40 .hud-c > .hud-max { font-family: var(--num); font-size: 15px; color: #cbb9a4; font-variant-numeric: tabular-nums; align-self: flex-end; margin-bottom: 4px; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 > .bar.hud { flex-wrap: wrap; column-gap: 8px; }
+  .table-screen.m40 .hud-izq, .table-screen.m40 .hud-der { display: contents; }
+  .table-screen.m40 .hud-c > .hud-max { display: none; }
+  .table-screen.m40 .hud-vida { order: 1; }
+  .table-screen.m40 .hud-escudo { order: 2; }
+  .table-screen.m40 .hud .chip.bolsa { order: 3; padding: 2px 6px; margin-left: auto; }
+  .table-screen.m40 .hud .bolsa-svg { width: 18px; height: 18px; }
+  .table-screen.m40 .hud-mazo { order: 4; flex-basis: auto; margin-left: 0; }
+  .table-screen.m40 .hud-mazo .kh { display: none; }
+  .table-screen.m40 .hud-der > * { order: 5; }
+  .table-screen.m40 .hud-der > #btn-leave { margin-left: auto; }
+  .table-screen.m40 .hud-tira { order: 6; flex: 1 0 100%; }
+  /* el salto de fila: un elemento fantasma no hace falta; la bolsa empuja a la derecha y el Mazo abre la segunda */
+  .table-screen.m40 .hud-mazo { break-before: always; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* el pie de cada trono deja una franja libre donde caen las monedas, esquirlas y gotas (caida.ts) */
+  .table-screen.m40 .towers > .tower { padding-bottom: 14px; }
+  .table-screen.m40 .tower.activa .floor-slot .card { --w: 52px; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* la bolsa llena la primera fila del HUD: el Mazo abre siempre la segunda */
+  .table-screen.m40 .hud .chip.bolsa { flex: 1 0 auto; justify-content: flex-end; }
+  .table-screen.m40 .hud-der .hud-btn { flex: 0 0 auto; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* las insignias (Expuesto, Aturdido) con su propia altura: nunca encima de la barra de Vida */
+  .table-screen.m40 .tower.activa .tower-fx:not(:empty) { min-height: 20px; flex: none; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* segunda fila del HUD: Mazo y cinco botones de 48 px, sin estirarse */
+  #app .table-screen.m40 .hud-der .hud-btn { width: 48px; min-width: 48px; padding: 0; justify-content: center; }
+  #app .table-screen.m40 .hud-der #btn-leave { width: auto; padding: 0 6px; font-size: 14px; }
+  .table-screen.m40 .hud-mazo { padding: 2px 6px 2px 4px; gap: 4px; }
+}

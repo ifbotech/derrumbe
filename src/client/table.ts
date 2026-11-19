@@ -10,6 +10,10 @@ import { bunkerArt, rubble, skyline } from './art';
 import { setPressure, setScene, sfx } from './audio';
 import { afterBatch, campaignAct, isRunHost, routeRun, runDo, stageIntro } from './campaign';
 import { backEl, cardEl, pipPath, setDeckBack, suitSvg } from './card';
+import { bufonSvg } from './pixel/bufon';
+import { esReyPx, reySvg } from './pixel/reyes';
+import { hudSvg } from './pixel/nodos';
+import { bendTira, marcaCeros } from './hud';
 import { causeHtml } from './causa';
 import { aportes, contraataqueTras, liveHtml, Preview, closeReceipt, paintScore, polvoraDe, previewHtml, stageOver } from './cuenta';
 import { L, Ln, asaltoN, espN, formN, fxD, fxN, marca, monD, monDec, monN, paloN } from './lengua';
@@ -71,50 +75,57 @@ export function buildTable(): void {
   cardEls.clear();
   S.selected.length = 0;
   aim = null;
+  // V40 · fase 3a · la mesa mínima: el HUD único arriba (Vida · Escudo · Oro · Mazo · tira de Amuletos y Bendiciones;
+  // Deshacer, Mejor jugada, AUTO y el resto, discretos a la derecha), el Bufón junto al enemigo activo y su fila, una sola
+  // barra de la cuenta con las píldoras de los Reyes al medio, y abajo la mano grande con Golpear y Descartar. El búnker
+  // viejo (las casillas de Vida y Escudo, el descarte) queda en el DOM, oculto, para el jugo y la Lupa.
   $('#app').innerHTML = `
-  <div class="table-screen ${c ? 'is-run' : ''}">
-    <header class="bar">
-      <div class="brand">${marca().title}</div>
-      <div class="room" id="room"></div>
-      ${c ? bolsaHtml(c.run.gold, c.run.esquirlas, c.run.gotas) : ''}
-      <div class="obra-chips" id="obra"></div>
-      <div class="players" id="players"></div>
-      <button id="btn-deck" data-tip="${L('ui.mesa.mazo.tip')}">${L('ui.mesa.mazo')}${hint('deck')}</button>
-      <button id="btn-speed" class="ritmo" data-tip="${L('ui.mesa.velocidad.tip')}"></button>
-      ${`<button id="btn-auto" class="ritmo" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span>${hint('auto')}</button>`}
-      <button id="btn-set">${L('ui.ajustes')}${hint('settings')}</button>
-      <button id="btn-rules">${L('ui.reglas')}</button>
-      <button id="btn-leave">${L('ui.salir')}</button>
+  <div class="table-screen m40 ${c ? 'is-run' : ''}">
+    <header class="bar hud">
+      <div class="hud-izq">
+        <span class="hud-c hud-vida" tabindex="0" data-tip="${L('ui.mesa.vida.tip40')}">${hudSvg('vida')}<b id="int-num"></b><small class="hud-max" id="int-max"></small></span>
+        <span class="hud-c hud-escudo" tabindex="0" data-tip="${L('ui.hud.escudo.mesa')}">${hudSvg('escudo')}<b id="wall-num"></b><small class="hud-max" id="wall-max"></small></span>
+        ${c ? bolsaHtml(c.run.gold, c.run.esquirlas, c.run.gotas) : ''}
+        <button id="btn-deck" class="hud-c hud-mazo" data-tip="${L('ui.mesa.mazo.tip')}" aria-label="${L('ui.mesa.mazo')}"><span class="hud-dorso" id="deck-slot"></span><b id="deck-n"></b>${hint('deck')}</button>
+      </div>
+      <div class="hud-tira" role="group" aria-label="${L('ui.hud.tira')}"><div class="beltbar" id="beltbar" hidden></div></div>
+      <div class="hud-der">
+        <div class="room" id="room"></div>
+        <div class="obra-chips" id="obra"></div>
+        <div class="players" id="players"></div>
+        <button id="btn-undo" class="hud-btn" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${rotuloDeshacer('ui.mesa.deshacer')}</span>${hint('undo')}</button>
+        <button id="btn-mejor" class="hud-btn secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span>${hint('best')}</button>
+        <button id="btn-speed" class="ritmo hud-btn" data-tip="${L('ui.mesa.velocidad.tip')}"></button>
+        ${`<button id="btn-auto" class="ritmo hud-btn" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span>${hint('auto')}</button>`}
+        <button id="btn-set" class="hud-btn" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">⚙${hint('settings')}</button>
+        <button id="btn-rules" class="hud-btn" aria-label="${L('ui.reglas')}" data-tip="${L('ui.reglas')}">?</button>
+        <button id="btn-leave" class="hud-btn">${L('ui.salir')}</button>
+      </div>
     </header>
     <div class="field">
+      <div class="bufon-mesa" id="bufon-mesa" aria-label="${L('ui.mesa40.bufon')}">${bufonSvg('reposo')}</div>
       <section class="towers" id="towers"></section>
       <aside class="side">
-        <div class="panel bunker" id="bunker">
+        <div class="monarch" id="monarch" hidden></div>
+        <div class="panel bunker" id="bunker" aria-hidden="true">
           <h3><span>${L('ui.mesa.vida.tuya')}</span><span id="collapses"></span></h3>
           ${bunkerArt()}
-          <!-- V9 · V8-2: cada rótulo va encima de su barra (leído de arriba abajo, «Vida» y luego sus celdas) -->
-          <div class="stat"><span>${L('ui.mesa.vida')}</span><b id="int-num"></b></div>
           <div class="blocks" id="int-blocks"></div>
-          <div class="stat stat-wall"><span>${L('ui.mesa.escudo')}</span><b id="wall-num"></b></div>
           <div class="blocks wall" id="wall-blocks"></div>
-          <div class="piles">
-            <div class="pile"><div class="slot" id="deck-slot"></div>${L('ui.mesa.mazo')} <b id="deck-n"></b></div>
-            <div class="pile"><div class="slot" id="disc-slot"><span class="count" id="disc-n"></span></div>${L('ui.mesa.descarte')}</div>
-          </div>
+          <div class="piles"><div class="pile"><div class="slot" id="disc-slot"><span class="count" id="disc-n"></span></div>${L('ui.mesa.descarte')}</div></div>
         </div>
-        <div class="monarch" id="monarch" hidden></div>
         <div class="panel log" id="log"></div>
       </aside>
     </div>
     <footer class="tray">
       <div class="stage" id="stage"></div>
       <div class="coach" id="coach" hidden></div>
-      <div class="hudrow">
-        <div class="beltbar" id="beltbar" hidden></div>
-        <div class="powers" id="powers"></div>
-        <div class="rasgos" id="rasgos" hidden></div>
-      </div>
       <div class="status score" id="score"></div>
+      <div class="hudrow">
+        <div class="carries" id="carries"></div>
+        <div class="rasgos" id="rasgos" hidden></div>
+        <div class="powers" id="powers"></div>
+      </div>
       <div class="playrow">
       <div class="handrow">
         <div class="reserve" id="reserve" hidden></div>
@@ -122,8 +133,6 @@ export function buildTable(): void {
       </div>
       <div class="actions">
         <button id="btn-strike" class="primary" data-tip="${L('ui.mesa.golpear.tip')}"><span class="lbl">${L('ui.mesa.golpear')}</span>${hint('strike')}</button>
-        <button id="btn-mejor" class="secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span>${hint('best')}</button>
-        <button id="btn-undo" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${rotuloDeshacer('ui.mesa.deshacer')}</span>${hint('undo')}</button>
         <button id="btn-discard"><span class="lbl">${L('ui.mesa.descartar')}</span><b class="sel-n" id="discard-n" hidden></b>${hint('discard')}</button>
         <button id="btn-pass" hidden>${L('ui.mesa.pasar')}${hint('strike')}</button>
       </div>
@@ -172,7 +181,6 @@ export function buildTable(): void {
   $('#btn-rules').onclick = showRules;
   $('#btn-deck').onclick = toggleInspector;
   vigilaBarra();
-  $('#deck-slot').onclick = toggleInspector;
   $('#disc-slot').onclick = toggleInspector;
   const leave = $('#btn-leave');
   leave.onclick = () => {
@@ -321,6 +329,7 @@ export function renderHud(): void {
       c.run.ascension ? `<div class="chip level-chip" data-tip="${L('ui.mesa.reinado.tip', { n: c.run.ascension + 1 })}"><span>${L('ui.mesa.reinado')}</span><b>${c.run.ascension + 1}</b></div>` : '',
     ].join('');
   }
+  marcaCeros();
   pintaBolsa(); // juice-ux V12: la bolsa cuenta lo que ya llegó (lo que vuela sube al llegar)
   ajustaBarra();
 }
@@ -359,13 +368,18 @@ export function renderBelt(): void {
   bar.hidden = !S.campaign && tools.length === 0;
   if (bar.hidden) return;
   hideTip();
-  bar.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')}</span>`;
+  // V40 · fase 3a: la tira del HUD, sin rótulo: los Amuletos y, detrás, las Bendiciones con sus cargas
+  bar.innerHTML = '';
   bar.appendChild(beltEl(tools, { slots: S.campaign ? toolSlots(S.campaign.run) : undefined }));
+  bar.insertAdjacentHTML('beforeend', `<span class="hud-bends">${bendTira(v?.bendiciones ?? S.campaign?.run.bendiciones)}</span>`);
   const carry: string[] = [];
   if (v?.chain) carry.push(`<em class="carry chain" data-tip="${Ln(v.chain, 'ui.mesa.racha.tip.1', 'ui.mesa.racha.tip.n', { m: racha(v.chain) })}">${L('ui.mesa.racha', { m: racha(v.chain) })}</em>`);
   if (v?.charge) carry.push(`<em class="carry charge" data-tip="${L('ui.mesa.carga.tip')}">${L('ui.mesa.carga', { n: v.charge })}</em>`);
   if (v?.scrap) carry.push(`<em class="carry scrap" data-tip="${L('ui.mesa.destruidas.tip')}">${L('ui.mesa.destruidas', { n: v.scrap })}</em>`);
-  bar.insertAdjacentHTML('beforeend', `<span class="carries">${carry.join('')}</span>`);
+  // lo que la mesa arrastra (Racha, Carga, destruidas) va al medio, junto a la cuenta y las píldoras de los Reyes
+  const arrastre = $('#carries');
+  if (arrastre) arrastre.innerHTML = carry.join('');
+  else bar.insertAdjacentHTML('beforeend', `<span class="carries">${carry.join('')}</span>`);
 }
 
 function renderPlayers(): void {
@@ -440,6 +454,9 @@ function renderTower(s: Suit): void {
         dealIn(c, 0);
         $('.card-front', c).insertAdjacentHTML('beforeend', CRACKS);
         slot.insertBefore(c, $('.plates', slot));
+        // V40 · fase 3a: el Rey jefe se ve con su retrato pixel-art (el naipe sigue debajo para el jugo y la Lupa)
+        slot.querySelector('.rey-retrato')?.remove();
+        if (esJefe(cfg, t) && boss && esReyPx(boss)) slot.insertAdjacentHTML('afterbegin', `<div class="rey-retrato" aria-hidden="true">${reySvg(boss)}</div>`);
       }
     }
     // los guardias que esperan detrás en esta Casa (el último puede ser el monarca)
@@ -495,8 +512,13 @@ function renderBunker(): void {
   // la fila del Escudo mide siempre 8 casillas: con un tope menor (Escarcha, Sin escudo) se acorta, no engorda
   wall.style.setProperty('--cols', String(Math.max(8, cfg.wallCap)));
   wall.innerHTML = Array.from({ length: cfg.wallCap }, (_, i) => `<i class="${i < v.wall ? '' : 'off'}"></i>`).join('');
-  setNum('#int-num', `${int}/${cfg.maxIntegrity}`);
-  setNum('#wall-num', `${v.wall}/${cfg.wallCap}`);
+  // V40 · fase 3a: la cifra grande sola; el máximo, aparte y más chico (en el móvil, solo en el globo)
+  setNum('#int-num', `${int}`);
+  setNum('#wall-num', `${v.wall}`);
+  const maxV = $('#int-max');
+  if (maxV) maxV.textContent = `/${cfg.maxIntegrity}`;
+  const maxE = $('#wall-max');
+  if (maxE) maxE.textContent = `/${cfg.wallCap}`;
   setNum('#deck-n', String(Math.max(0, v.deckCount)));
   setNum('#disc-n', String(Math.max(0, v.discardCount)));
   $('#collapses').textContent = v.collapses ? L('ui.mesa.agotado', { n: v.collapses }) : '';
@@ -872,11 +894,9 @@ const MOVIL = '(max-aspect-ratio: 1/1), (max-width: 640px)';
 function colocaMejor(): void {
   const b = document.getElementById('btn-mejor');
   if (!b) return;
-  const movil = matchMedia(MOVIL).matches;
-  const sitio = movil ? $('.handrow') : $('.actions');
-  if (!sitio) return;
-  if (movil) $('#hand').after(b);
-  else $('#btn-strike').after(b);
+  // V40 · fase 3a: Mejor jugada va discreta en el HUD, a la derecha (la mesa mínima solo tiene Golpear y Descartar)
+  const der = $('.table-screen .hud-der');
+  if (der && b.parentElement !== der) der.insertBefore(b, $('#btn-speed'));
 }
 matchMedia(MOVIL).addEventListener('change', colocaMejor);
 
