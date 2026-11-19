@@ -637,6 +637,8 @@ function warmTable(): void {
     const once = first;
     first = false;
     idle(() => {
+      // V40 4 · cada mesa nueva calienta el primer foco escalado del mando (calientaFoco)
+      calientaFoco(el);
       if (settings.calm || !el.isConnected) return;
       // una centésima de píxel: con 0 px el navegador se salta la animación y no prepara la capa
       el.animate([{ transform: 'translate(0px, 0.01px)' }, { transform: 'none' }], { duration: 60 });
@@ -739,6 +741,50 @@ function warmSeals(tries: number): void {
       slashFree.push(halves);
     }, 240);
   }
+}
+/**
+ * V40 4 · con mando, el naipe enfocado de la mano crece 1,22× en su sitio (mesa40.css). La primera vez que un naipe de
+ * la mano se veía a esa escala, el navegador pagaba un fotograma de ~60 ms (1280×800, en frío). Una copia fuera de la
+ * mano no lo calienta: tiene que ser un naipe de la mano, en su sitio y de cara. Con cada mesa nueva (lo ya calentado
+ * se pierde entre pantallas), en cuanto se posa, el naipe más cargado de la mano pasa unos
+ * fotogramas a 1,22× y a opacidad 0,01 mientras una copia suya, idéntica y en su mismo sitio, lo tapa: no se ve nada y
+ * el primer foco de la cruceta ya no lo paga. Sin reescalar capas ni desenfocar el pixel-art.
+ */
+function calientaFoco(mesa: Element, intentos = 0): void {
+  if (!mesa.isConnected || matchMedia('(max-width: 640px), (max-aspect-ratio: 1/1)').matches) return;
+  // el naipe más cargado de la mano que esté quieto (ni elegido, ni enfocado, ni repartiéndose)
+  const libres = [...mesa.querySelectorAll<HTMLElement>('#hand .card')].filter((x) => !x.classList.contains('sel') && !x.hasAttribute('data-foco'));
+  const c = libres.sort((a, b) => b.getElementsByTagName('*').length - a.getElementsByTagName('*').length)[0];
+  if (!c) return;
+  // si todavía se está repartiendo, se espera a que se pose y a que la pantalla quede quieta
+  const vuelo = c.getAnimations({ subtree: true }).filter((a) => a.playState === 'running' || a.pending);
+  if (vuelo.length) {
+    if (intentos < 3) Promise.all(vuelo.map((a) => a.finished.catch(() => undefined))).then(() => cuandoQuieta(() => calientaFoco(mesa, intentos + 1)));
+    return;
+  }
+  // la caja del naipe sin su abanico (sin transición: se lee y se devuelve en la misma tarea, sin pintar nada)
+  const cs = getComputedStyle(c);
+  const giro = cs.transform;
+  const origen = cs.transformOrigin;
+  const ancho = cs.getPropertyValue('--w');
+  c.style.transition = 'none';
+  c.style.transform = 'none';
+  const r = c.getBoundingClientRect();
+  c.style.transform = '';
+  void c.offsetWidth;
+  c.style.transition = '';
+  // la tapa: una copia idéntica, en el mismo sitio y con el mismo giro, dentro de la mesa (hereda sus tintas)
+  const m = (mesa as HTMLElement).getBoundingClientRect();
+  const tapa = c.cloneNode(true) as HTMLElement;
+  tapa.removeAttribute('id');
+  tapa.removeAttribute('tabindex');
+  tapa.setAttribute('aria-hidden', 'true');
+  tapa.style.cssText = `position:fixed;left:${r.left - m.left}px;top:${r.top - m.top}px;width:${r.width}px;height:${r.height}px;margin:0;z-index:60;pointer-events:none;transition:none;animation:none;transform:${giro};transform-origin:${origen};${ancho ? `--w:${ancho};` : ''}`;
+  mesa.appendChild(tapa);
+  const quieto = { opacity: 0.01, transform: 'scale(1.22)', transformOrigin: '50% 100%' };
+  c.animate([quieto, quieto], { duration: 120 });
+  c.querySelector<HTMLElement>('.card-in')?.animate([{ transform: 'none' }, { transform: 'none' }], { duration: 120 });
+  window.setTimeout(() => tapa.remove(), 140);
 }
 // la reserva se calienta en cuanto la página pinta su primer fotograma
 requestAnimationFrame(() => requestAnimationFrame(() => (warmUp(), warmTable())));
