@@ -1,0 +1,161 @@
+/* V40 · fase 3b (juice-ux) · el Bufón vivo, los momentos grandes de la mesa y los pendientes de la 3a. Va detrás de
+   mesa40.css: lo que se cambia de la maqueta de la 3a lleva su comentario. Solo se anima transform y opacity; con
+   «Reducir movimiento» (.calm o prefers-reduced-motion) nada se mueve: los sellos aparecen y se van, el Bufón queda en
+   su cuadro. */
+
+/* ═════════════ el Bufón vivo en la mesa ═════════════ */
+.table-screen.m40 .bufon-mesa { position: relative; }
+/* un saltito al reaccionar (risa, burla o brillo): el cuadro pixel de la cara ya lo pone bufon-vivo.ts */
+.bufon-mesa.bv-salta > svg { animation: bv-salta 0.32s steps(4, end); }
+@keyframes bv-salta { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-6%) scale(1.06); } 70% { transform: translateY(1%) scale(0.99); } 100% { transform: none; } }
+
+/* su bocadillo: debajo de él en el escritorio (la columna del Bufón está libre hasta la placa del monarca) */
+.bufon-dicho {
+  position: absolute; z-index: 7; top: calc(100% + 12px); left: 50%; width: clamp(150px, 16vw, 250px); margin: 0 0 0 calc(clamp(150px, 16vw, 250px) / -2);
+  padding: 8px 12px 9px; font-family: var(--mono); font-style: italic; font-weight: 700; font-size: 15px; line-height: 1.3; text-transform: none; letter-spacing: 0;
+  color: #f4efe2; background: #120a24; border: 3px solid #b0247a; box-shadow: 4px 4px 0 #0b0711; pointer-events: none;
+  animation: bv-dice 0.22s steps(3, end) both;
+}
+.bufon-dicho::before { content: ''; position: absolute; left: calc(50% - 7px); top: -10px; width: 14px; height: 14px; background: #120a24; border-left: 3px solid #b0247a; border-top: 3px solid #b0247a; transform: rotate(45deg); }
+.bufon-dicho[data-motivo='contra'], .bufon-dicho[data-motivo='derrota'], .bufon-dicho[data-motivo='sombria'] { border-color: #e0263c; }
+.bufon-dicho[data-motivo='contra']::before, .bufon-dicho[data-motivo='derrota']::before, .bufon-dicho[data-motivo='sombria']::before { border-color: #e0263c; }
+.bufon-dicho[data-motivo='exacto'], .bufon-dicho[data-motivo='escoba'], .bufon-dicho[data-motivo='nivel'], .bufon-dicho[data-motivo='victoria'] { border-color: #ffd500; }
+.bufon-dicho[data-motivo='exacto']::before, .bufon-dicho[data-motivo='escoba']::before, .bufon-dicho[data-motivo='nivel']::before, .bufon-dicho[data-motivo='victoria']::before { border-color: #ffd500; }
+.bufon-dicho.out { opacity: 0; transition: opacity 0.28s; }
+@keyframes bv-dice { 0% { opacity: 0; transform: translateY(-6px); } 100% { opacity: 1; transform: none; } }
+/* mientras habla, la placa del monarca (debajo, en su columna) se aparta: un solo bocadillo a la vez */
+.table-screen.m40 .field.con-dicho .side > #monarch { visibility: hidden; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* en el móvil, a su derecha, en la franja del Bufón: dos renglones como mucho, sin bajar al enemigo */
+  .bufon-dicho { top: 50%; left: calc(100% + 12px); width: calc(100vw - 32px - 40px - 14px); margin: -22px 0 0; min-height: 44px; display: flex; align-items: center; padding: 4px 10px; font-size: 14px; line-height: 1.25; }
+  .bufon-dicho::before { left: -10px; top: calc(50% - 7px); border: 0; border-left: 3px solid #b0247a; border-bottom: 3px solid #b0247a; }
+  .bufon-dicho[data-motivo]::before { border-top: 0; }
+  @keyframes bv-dice { 0% { opacity: 0; transform: translateX(-6px); } 100% { opacity: 1; transform: none; } }
+}
+.calm .bufon-dicho, .calm .bufon-mesa.bv-salta > svg { animation: none; }
+@media (prefers-reduced-motion: reduce) { .bufon-dicho, .bufon-mesa.bv-salta > svg { animation: none; } }
+
+/* ═════════════ los momentos grandes: el sello pixel ═════════════ */
+.momento40 {
+  --c: #ffd500; --t: #0b0711;
+  position: fixed; z-index: 72; left: var(--x); top: var(--y); display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 18px 8px; transform: translate(-50%, -50%) rotate(-5deg);
+  background-color: var(--c); color: var(--t);
+  /* tramado 2 × 2 a celda entera, encima del color (sin degradados de verdad: paradas duras) */
+  background-image: repeating-conic-gradient(rgba(11, 7, 17, 0.16) 0 25%, transparent 0 50%); background-size: 4px 4px;
+  border: 4px solid #0b0711; box-shadow: 6px 6px 0 #0b0711, inset 0 0 0 3px rgba(244, 239, 226, 0.55);
+  pointer-events: none; white-space: nowrap; animation: momento40 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.momento40 > b { font-family: var(--display); font-size: clamp(26px, 5vh, 46px); line-height: 1; text-transform: uppercase; letter-spacing: 0.03em; }
+.momento40 > small { font-family: var(--num); font-size: clamp(16px, 2.4vh, 22px); font-weight: 800; line-height: 1.1; padding: 1px 8px; background: #0b0711; color: var(--c); }
+.momento40.m-escoba { --c: #ffd500; }
+.momento40.m-envido { --c: #ff2d55; --t: #f4efe2; }
+.momento40.m-chancho { --c: #22d95b; }
+.momento40.m-bravo { --c: #00c8ff; }
+.momento40.m-engano { --c: #b45cff; --t: #f4efe2; }
+.momento40.m-jugada { --c: #ff7b00; }
+.momento40.m-nivel { --c: #f2cf7a; }
+.momento40.m-envido > small, .momento40.m-engano > small { color: #f4efe2; }
+@keyframes momento40 {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.9) rotate(-12deg); }
+  16% { opacity: 1; transform: translate(-50%, -50%) scale(0.94) rotate(-4deg); }
+  28% { transform: translate(-50%, -50%) scale(1.04) rotate(-5deg); }
+  40%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-5deg); }
+  100% { opacity: 0; transform: translate(-50%, -64%) scale(1) rotate(-5deg); }
+}
+.calm .momento40 { animation-name: calmfade; animation-timing-function: linear; }
+@media (prefers-reduced-motion: reduce) { .momento40 { animation-name: calmfade; animation-timing-function: linear; } }
+
+/* la cifra de la cuenta que salta (Daño o Multi) y la píldora de la Bendición que suma su carga */
+#score .calc b.salta, #rasgos .rasgo.salta { animation: salta40 0.3s steps(5, end); }
+@keyframes salta40 { 0% { transform: scale(1); } 30% { transform: scale(1.38) rotate(-3deg); } 60% { transform: scale(0.94); } 100% { transform: none; } }
+.calm #score .calc b.salta, .calm #rasgos .rasgo.salta { animation: none; }
+.stepchip.carga { background: #f2cf7a; color: #0b0711; font-family: var(--num); font-size: 16px; }
+
+/* ═════════════ mínimo texto en la mesa (pendiente de la 3a) ═════════════
+   La línea de la cuenta enseña solo lo que cambia la decisión de este golpe: el Contraataque previsto (o que no lo hay)
+   y lo excepcional (Golpe exacto, la Vida que cuesta). Lo que cae ya lo dice la placa del enemigo («−312 · caen 2»); el
+   oro y la pólvora, el recibo (cuenta.ts). */
+.table-screen.m40 #score .marks > .m.cae, .table-screen.m40 #score .marks > .m.oro, .table-screen.m40 #score .marks > .m.polvora { display: none; }
+
+/* ═════════════ 390 × 844: el naipe del enemigo activo a la vista (pendiente de la 3a) ═════════════
+   En el móvil la placa Inmune y la del golpe («−312 · caen 2») iban encima del naipe y lo tapaban. Ahora la placa Inmune
+   va arriba y, debajo, el naipe entero con la placa del golpe a su derecha, al pie: nada se pisa y el enemigo activo cabe
+   en su franja aunque la fila de los que esperan y un HUD de dos pisos le quiten alto (mesa-cifras). */
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40 .tower.activa .floor-slot { grid-template-areas: 'pl pl' 'x pv'; grid-template-columns: auto auto; grid-template-rows: auto auto; align-content: start; align-items: end; justify-items: start; column-gap: 6px; row-gap: 4px; }
+  .table-screen.m40 .tower.activa .floor-slot > .plates { grid-area: pl; margin: 0; z-index: 2; }
+  .table-screen.m40 .tower.activa .floor-slot > .card, .table-screen.m40 .tower.activa .floor-slot > .facade, .table-screen.m40 .tower.activa .floor-slot > .rey-retrato { grid-area: x; }
+  .table-screen.m40 .tower.activa .floor-slot > .preview { grid-area: pv; position: relative; inset: auto; transform: none; margin: 0; z-index: 2; }
+  .table-screen.m40 .tower.activa .floor-slot .card { --w: 60px; }
+  /* la columna del retrato crece con la placa del golpe al lado del naipe (60 + 6 + 72: la ranura es un contenedor de
+     consultas y no se mide por su contenido); las barras se quedan con el resto */
+  .table-screen.m40:not(.hoja-abierta) .towers > .tower.activa:has(.floor-slot > .preview:not([hidden])):not(:has(.rey-retrato)) { grid-template-columns: 140px minmax(0, 1fr); }
+}
+
+/* ═════════════ 390 × 844: el recibo de la cuenta, hoja sobre el campo (pendiente de la 3a) ═════════════
+   Mientras está abierta, el enemigo activo se queda en su nombre, su placa Inmune y la del golpe (lo que explica la
+   cuenta); su naipe, sus barras y la fila de los que esperan se recogen, y cuenta.ts abre la hoja justo debajo, hasta la
+   cuenta. Las fichas plegadas enseñan su renglón de cabecera («+ Cartas 21»); un toque despliega otra. */
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .table-screen.m40.hoja-abierta .field > .towers { grid-template-rows: auto; align-content: start; }
+  .table-screen.m40.hoja-abierta .towers > .tower:not(.activa) { display: none; }
+  .table-screen.m40.hoja-abierta .tower.activa > :is(.tower-fx, .hp, .threat, .storeys) { display: none; }
+  .table-screen.m40.hoja-abierta .towers > .tower.activa { grid-template-areas: 'tag slot' 'foot foot'; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; padding-bottom: 4px; }
+  .table-screen.m40.hoja-abierta .tower.activa > .floor-slot { container-type: normal; align-self: center; }
+  .table-screen.m40.hoja-abierta .tower.activa .floor-slot > :is(.card, .facade, .rey-retrato) { display: none; }
+  .table-screen.m40.hoja-abierta .tower.activa .floor-slot { grid-template-areas: 'pl pv'; grid-template-rows: auto; align-items: center; justify-content: start; column-gap: 12px; }
+  /* plegada, una ficha enseña igual lo excepcional: la carta que se queda en 0 por Inmune */
+  .recibo.hoja .ficha.plegada li:not(.inmune) { display: none; }
+  .recibo.hoja .ficha.plegada { cursor: pointer; }
+  .recibo.hoja .ficha.plegada h4::after { content: '›'; font-family: var(--num); font-size: 16px; line-height: 17px; }
+}
+
+/* ═════════════ La Pulpería: el Pulpero (el Bufón) grande, a la izquierda de las bandejas ═════════════
+   En el escritorio sobraba aire a los lados de las bandejas y el Pulpero medía 52 px sobre ellas. Ahora va en esa franja,
+   de cuerpo entero (≈ 190 px en 1280), con su bocadillo debajo; las bandejas suben a ocupar su renglón. En el móvil
+   sigue arriba, más grande que antes. */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .pulp40 .run-body.shop { position: relative; grid-template-rows: minmax(0, 1fr) auto; }
+  .pulp40 .run-body.shop > .pulp-cab { position: absolute; z-index: 2; left: 16px; top: 8px; width: calc((100% - 860px) / 2 - 16px); min-width: 170px; max-width: 300px; flex-direction: column; align-items: center; gap: 12px; }
+  .pulp40 .pulp-cab .pulpero { width: min(100%, clamp(150px, 20vh, 240px)); }
+  .pulp40 .pulp-cab .say { max-width: 100%; text-align: center; }
+  .pulp40 .pulp-cab .say::before { content: ''; position: absolute; left: calc(50% - 7px); top: -9px; width: 14px; height: 14px; background: var(--paper); border: 0; border-left: 2px solid var(--ink); border-top: 2px solid var(--ink); transform: rotate(45deg); }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .pulp40 .pulp-cab .pulpero { width: 76px; }
+}
+
+/* ═════════════ «Elegí una»: tres opciones grandes y el sello S · A · B (o ★) nativo y rotundo ═════════════
+   A 1280 × 800 sobraba media pantalla abajo: las opciones crecen con la altura (icono, nombre y efecto más grandes). El
+   sello deja el círculo plano: es un lacre cuadrado pixel, girado, con canto de tinta, trama y sombra dura. */
+@media (min-width: 641px) and (min-aspect-ratio: 1/1) {
+  .elegi-una .op-fila { gap: clamp(28px, 3.4vw, 56px); padding-top: 28px; }
+  .elegi-una .op-fila > .op40 { width: clamp(260px, 27vw, 420px); min-height: clamp(300px, 44vh, 540px); padding: 34px 22px 22px; gap: 14px; justify-content: center; }
+  .elegi-una .op-fila > .op40 .ico40 { width: clamp(112px, 17vh, 210px); }
+  .elegi-una .op-fila > .op40 > .card { --w: clamp(120px, 19vh, 210px); }
+  .elegi-una .op40.choice > h4 { font-size: clamp(22px, 3.1vh, 34px); }
+  .elegi-una .op40.choice > p { font-size: clamp(16px, 2.1vh, 20px); max-width: 32ch; }
+  .elegi-una .elegi-pie > button { min-height: 52px; font-size: 17px; }
+  .elegi-una .sello40 { width: 76px; height: 76px; top: -22px; left: -22px; }
+  .elegi-una .sello40 > b { font-size: 44px; }
+  .elegi-una .sello40.estrella > b { font-size: 46px; }
+  .elegi-una .sin40 { font-size: 17px; padding: 4px 12px; }
+}
+.sello40 {
+  border-radius: 0; border: 4px solid #0b0711; transform: rotate(-8deg);
+  box-shadow: 5px 5px 0 #0b0711, inset 0 0 0 3px rgba(244, 239, 226, 0.35);
+  background-image: repeating-conic-gradient(rgba(11, 7, 17, 0.2) 0 25%, transparent 0 50%); background-size: 4px 4px;
+}
+.sello40 > b { font-weight: 900; text-shadow: 2px 2px 0 #0b0711; }
+.sello40.estrella { transform: rotate(8deg); }
+.sello40.estrella > b { text-shadow: 2px 2px 0 rgba(244, 239, 226, 0.6); }
+.sin40 { border: 2px solid var(--acc-D-hi, #ffd500); box-shadow: 3px 3px 0 #0b0711; }
+
+/* ═════════════ los iconos nuevos de la barra y la portada (pixel/ui-iconos.ts) ═════════════ */
+.hud-btn > svg.ic-ui, .hud .hud-btn > svg.ic-ui { width: 22px; height: 22px; image-rendering: pixelated; flex: none; }
+.table-screen.m40 #btn-undo::after { content: none; }
+.table-screen.m40 #btn-undo > .lbl { display: none; }
+.home.m40 .st40-ico > svg.u-engranaje { width: 76%; height: 76%; }
+/* el Bufón que tienta en «Elegí una» y en los santuarios, a un tamaño que se lee */
+.bufon-tienta .bufon-mini { width: clamp(56px, 8vh, 72px); }

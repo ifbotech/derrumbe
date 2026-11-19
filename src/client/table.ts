@@ -16,7 +16,7 @@ import { hudSvg } from './pixel/nodos';
 import { bendTira, marcaCeros } from './hud';
 import { causeHtml } from './causa';
 import { aportes, contraataqueTras, liveHtml, Preview, closeReceipt, paintScore, polvoraDe, previewHtml, stageOver } from './cuenta';
-import { L, Ln, asaltoN, espN, formN, fxD, fxN, marca, monD, monDec, monN, paloN } from './lengua';
+import { L, Ln, asaltoN, espN, formN, fxD, fxN, guardiaN, marca, monD, monDec, monN, paloN } from './lengua';
 import { $, $$, RUN_PLAYER, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, settings, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
 import { CRACKS, exactChain, sealStep, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, guardFall, hitstop, pop, quake, restart, ribbon, shake, procBadge, stampOn, tear, throneFall, wait } from './fx';
@@ -28,12 +28,14 @@ import { hint } from './prompts';
 import { setScreen } from './router';
 import { paintMonarch } from './guia';
 import { voiceOn } from './voces';
+import { bufonVe } from './bufon-vivo';
 import { beltEl, deckModal, showRules, showSettings } from './widgets';
 import { tableWhispers, whisper } from './whispers';
 import { cifra, cifraEl, marcaCifra } from './cifra';
 import { bolsaHtml, capaCaida, recogerCaida } from './caida';
 import { caeDe, pintaBolsa } from './iman';
-import { ICONO_AUTO, ICONO_MEJOR, INSIGNIA_EXACTA } from './grabado12';
+import { INSIGNIA_EXACTA } from './grabado12';
+import { uiIconoSvg } from './pixel/ui-iconos';
 import { MejorJugada, cartasConExacto, mejorJugada } from '../rules/mejor-jugada';
 import type { GameState } from '../rules/engine';
 import { t } from '../shared/i18n';
@@ -93,11 +95,11 @@ export function buildTable(): void {
         <div class="room" id="room"></div>
         <div class="obra-chips" id="obra"></div>
         <div class="players" id="players"></div>
-        <button id="btn-undo" class="hud-btn" hidden data-tip="${L('ui.mesa.deshacer.tip')}"><span class="lbl">${rotuloDeshacer('ui.mesa.deshacer')}</span>${hint('undo')}</button>
-        <button id="btn-mejor" class="hud-btn secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${ICONO_MEJOR}<span class="lbl">${L('ui.mesa.mejor.corto')}</span>${hint('best')}</button>
+        <button id="btn-undo" class="hud-btn" hidden data-tip="${L('ui.mesa.deshacer.tip')}">${uiIconoSvg('deshacer')}<span class="lbl">${rotuloDeshacer('ui.mesa.deshacer')}</span>${hint('undo')}</button>
+        <button id="btn-mejor" class="hud-btn secundario" aria-label="${L('ui.mesa.mejor')}" data-tip="<b>${L('ui.mesa.mejor')}</b>${tx('regla.mejor')}">${uiIconoSvg('mejor')}<span class="lbl">${L('ui.mesa.mejor.corto')}</span>${hint('best')}</button>
         <button id="btn-speed" class="ritmo hud-btn" data-tip="${L('ui.mesa.velocidad.tip')}"></button>
-        ${`<button id="btn-auto" class="ritmo hud-btn" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${ICONO_AUTO}<span class="lbl">${tx('auto.nombre')}</span>${hint('auto')}</button>`}
-        <button id="btn-set" class="hud-btn" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">⚙${hint('settings')}</button>
+        ${`<button id="btn-auto" class="ritmo hud-btn" aria-pressed="false"><span class="luz" aria-hidden="true"></span>${uiIconoSvg('auto')}<span class="lbl">${tx('auto.nombre')}</span>${hint('auto')}</button>`}
+        <button id="btn-set" class="hud-btn" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">${uiIconoSvg('engranaje')}${hint('settings')}</button>
         <button id="btn-rules" class="hud-btn" aria-label="${L('ui.reglas')}" data-tip="${L('ui.reglas')}">?</button>
         <button id="btn-leave" class="hud-btn">${L('ui.salir')}</button>
       </div>
@@ -427,7 +429,8 @@ function renderTower(s: Suit): void {
   el.classList.toggle('jefe', top !== undefined && esJefe(cfg, t));
   el.classList.toggle('con-jefe', top !== undefined && cfg.jefe?.suit === s);
   el.style.order = String(top === undefined ? 20 + orden.indexOf(s) : frente === t ? 0 : 1 + orden.indexOf(s));
-  $('.tower-tag', el).dataset.frente = frente === t ? L(esJefe(cfg, t) ? 'ui.mesa.frente.jefe' : 'ui.mesa.frente') : '';
+  // V40 3b: el rótulo «Enemigo» sobraba (el título ya dice quién es); al Rey jefe se le sigue llamando así
+  $('.tower-tag', el).dataset.frente = frente === t && esJefe(cfg, t) ? L('ui.mesa.frente.jefe') : '';
   // todas las torres reservan sitio para los mismos pisos: así sus cartas miden igual
   el.parentElement?.style.setProperty('--below', String(Math.max(0, ...SUITS.map((x) => v.towers[x].floors.length - 1))));
   const boss = S.campaign?.run.boss ?? null;
@@ -468,10 +471,12 @@ function renderTower(s: Suit): void {
         return `<div class="storey${jefe ? ' es-jefe' : ''}" data-tip="${L('ui.mesa.guardia.tip', { guardia: nombre, casa: HOUSE(s), vida: vidas[i + 1], ataque: cfg.floorThreat[r] })}">${storeySvg(s, r)}<b>${jefe ? L('ui.mesa.monarca') : FLOOR(r)}</b>${cifraEl(vidas[i + 1], 'guardia')}</div>`;
       })
       .join('');
-    // el nombre del que está al frente: el guardia o, si es el último del asalto con monarca, el monarca
-    const quien = $('.tower-tag span', el);
-    if (quien) quien.textContent = top !== undefined && esJefe(cfg, t) && boss ? monN(boss) : paloN(s);
   }
+  // el nombre del que está al frente: el monarca si es el Rey jefe; si no, el enemigo activo por su figura («Caballo de
+  // Copas», guardiaN) y los que esperan por su palo (V40 3b, juice-ux: el título decía solo el palo)
+  const quien = $('.tower-tag span', el);
+  const nombre = top !== undefined && esJefe(cfg, t) && boss ? monN(boss) : top !== undefined && frente === t ? guardiaN({ id: `${s}${top}`, suit: s, rank: top }) : paloN(s);
+  if (quien && quien.textContent !== nombre) quien.textContent = nombre;
   // V11: dos estados, Expuesto y Aturdido; la insignia no se parte nunca y no lleva cifra
   const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => top !== undefined && t.fx?.[k]);
   $('.tower-fx', el).innerHTML = fx.map((k) => `<em class="fx fx-${k}" data-tip="<b>${fxN(k)}</b>${fxD(k)}">${fxN(k)}</em>`).join('');
@@ -1377,6 +1382,7 @@ export async function pump(): Promise<void> {
       for (const ev of batch.events) {
         try {
           voiceOn(ev); // juice-ux: la voz del monarca (Contraataque, caída)
+          bufonVe(ev); // juice-ux V40 3b: el Bufón reacciona y los momentos grandes (Escoba, Envido…) tienen su jugo
           await animate(ev, batch.events);
           caeDe(ev, batch.events); // juice-ux V12: las piezas que suelta este evento saltan y vuelan a la bolsa (iman.ts)
         } catch (err) {

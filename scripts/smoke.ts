@@ -546,6 +546,77 @@ async function seccionBufon({ browser, site }: Sesion): Promise<void> {
   }
   await page.screenshot({ path: join(OUT, 'bufon.png') });
 
+  // ── V40 · 3b · el Bufón vivo: su cara y su frase corta en cada momento, sin repetirse ni tapar la mano; y el sello
+  // de los momentos grandes (Escoba, Envido…) con su sonido, en ≤ 600 ms y sin tapar la mano ──
+  {
+    await go(page, 'mesa');
+    await page.waitForTimeout(300);
+    type BV = { __bufonVivo: { frases(on: boolean): void; reacciona(m: string): void; estado(): { cara: string | null; frase: string | null; expresiones: number }; dichas(): string[] } };
+    const reaccion = (m: string) => page.evaluate(async (m) => {
+      const w = window as unknown as BV;
+      // los Susurros de la mesa de QA callan al Bufón vivo (uno de uno en uno): se cierran para esta prueba
+      document.querySelectorAll('.side > .whisper').forEach((e) => e.remove());
+      w.__bufonVivo.frases(true);
+      w.__bufonVivo.reacciona(m);
+      await new Promise((r) => setTimeout(r, 120));
+      const host = document.getElementById('bufon-mesa');
+      const dicho = host?.querySelector<HTMLElement>('.bufon-dicho:not(.out)');
+      const r = dicho?.getBoundingClientRect();
+      const pisa = (sel: string) => !!r && [...document.querySelectorAll(sel)].some((o) => {
+        const q = o.getBoundingClientRect();
+        return q.width > 0 && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top;
+      });
+      return {
+        ...w.__bufonVivo.estado(),
+        tapa: pisa('#hand .card') || pisa('#score') || pisa('.tower.activa') || pisa('.actions button'),
+        modales: document.querySelectorAll('.modal').length,
+        anim: host ? getComputedStyle(host.querySelector('.bf-cuerpo') ?? host).animationName : 'sin bufón',
+      };
+    }, m);
+    const caras: [string, string][] = [['escoba', 'risa'], ['contra', 'burla'], ['tienta', 'brillo']];
+    const vistas: string[] = [];
+    for (const [m, cara] of caras) {
+      const e = await reaccion(m);
+      check(e.cara === cara, `[bufón vivo] con «${m}» pone cara de ${cara} (${e.cara}; ${e.expresiones} caras)`);
+      check(!!e.frase && e.frase.length <= 90 && !e.tapa && e.modales === 0, `[bufón vivo] y dice una línea de ≤ 90 caracteres que no tapa mano, cuenta, enemigo ni botones («${e.frase}»)`);
+      if (e.frase) vistas.push(e.frase);
+      await page.waitForTimeout(3000);
+    }
+    const otra = await reaccion('escoba');
+    check(otra.cara === 'risa' && otra.anim !== 'none' && otra.anim !== 'sin bufón', `[bufón vivo] respira (anima su cuerpo: ${otra.anim})`);
+    await page.waitForTimeout(3000);
+    const tercera = await reaccion('escoba');
+    check(!!otra.frase && !!tercera.frase && otra.frase !== tercera.frase && !vistas.includes(tercera.frase), `[bufón vivo] no repite la misma línea seguida («${otra.frase}» → «${tercera.frase}»)`);
+    await page.waitForTimeout(3000);
+    // el sello de un momento grande: se ve, suena, no tapa la mano y se va en ≤ 600 ms
+    const sello = await page.evaluate(async () => {
+      const w = window as unknown as { __qaFx: { momento(m: string, ev: null): void }; __qaSounds: string[] };
+      const desde = w.__qaSounds.length;
+      const t0 = performance.now();
+      w.__qaFx.momento('envido', null);
+      await new Promise((r) => setTimeout(r, 60));
+      const s = document.querySelector<HTMLElement>('.momento40');
+      const r = s?.getBoundingClientRect();
+      const tapa = !!r && [...document.querySelectorAll('#hand .card')].some((o) => {
+        const q = o.getBoundingClientRect();
+        return r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top;
+      });
+      let fin = 0;
+      while (document.querySelector('.momento40') && performance.now() - t0 < 2000) await new Promise((r) => setTimeout(r, 25));
+      fin = performance.now() - t0;
+      return { visto: !!s, texto: s?.textContent ?? '', tapa, fin: Math.round(fin), sonidos: w.__qaSounds.slice(desde) };
+    });
+    check(sello.visto && !sello.tapa, `[momento] ¡Envido! estampa su sello sobre el enemigo sin tapar la mano («${sello.texto}»)`);
+    check(sello.sonidos.includes('envido'), `[momento] y suena con su sonido propio (${sello.sonidos.join(', ')})`);
+    check(sello.fin <= 700, `[momento] y se va en ≤ 600 ms (${sello.fin} ms, con el margen del reloj)`);
+    // con «Reducir movimiento», el Bufón queda en un cuadro fijo
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const quieto = await reaccion('chancho');
+    check(quieto.anim === 'none', `[bufón vivo] con «Reducir movimiento» queda en un cuadro fijo (${quieto.anim})`);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => (window as unknown as BV).__bufonVivo.frases(false));
+  }
+
   // ── V11 · con el teclado: dos tronos, las flechas solo pisan los presentes y la placa Inmune se ve ──
   await immuneCheck(page, 'keys', check);
 

@@ -86,6 +86,78 @@ export const UI_JUICE = {
   'ui.bufon.ajuste': ['Consejos del Bufón', 'Jester tips'],
   'ui.bufon.ajuste.texto': ['En los 3 primeros golpes de tu primera campaña, el Bufón te dice una frase.', 'In the first 3 hits of your first campaign, the Jester says one line.'],
   'ui.bufon.quien': ['El Bufón', 'The Jester'],
+  // V40 · 3b · los sellos de los momentos grandes de la mesa (fx.ts, momento)
+  'ui.momento.escoba': ['¡Escoba!', 'Escoba!'],
+  'ui.momento.envido': ['¡Envido!', 'Envido!'],
+  'ui.momento.chancho': ['¡Chancho!', 'Chancho!'],
+  'ui.momento.bravo': ['¡Bravo!', 'Bravo!'],
+  'ui.momento.engano': ['¡Engaño!', 'Bluff!'],
+  'ui.momento.nivel': ['¡Nivel del Rey!', 'King’s level!'],
+  'ui.momento.carga': ['+1 · carga {n}', '+1 · charge {n}'],
+  'ui.momento.multi': ['+{n} Multi', '+{n} Multi'],
+  'ui.momento.dano': ['+{n} Daño', '+{n} Damage'],
+  // V40 · 3b · lo que dice el Bufón cuando la mesa le da motivo (bufon-vivo.ts): varias por momento, separadas por «|»;
+  // cada una ≤ 64 caracteres (cabe en dos renglones junto a él en el móvil). Pícaro y ambiguo: nunca se sabe de qué lado está.
+  'ui.bufon.r.exacto': [
+    '¡Justito en cero! Así me gusta.|Ni un punto de más. Qué prolijo.|Cero redondo. Hasta me dio envidia.|Exacto. Sospechosamente exacto.',
+    'Dead on zero! That’s how I like it.|Not a point wasted. How tidy.|Exactly zero. I’m almost jealous.|Precise. Suspiciously precise.',
+  ],
+  'ui.bufon.r.escoba': [
+    '¡Escoba! Barriste la mesa, pícaro.|Quince justos. ¿Quién te enseñó?|¡Escoba! Y yo que te daba por perdido.',
+    'Escoba! Swept clean, you rascal.|Fifteen on the nose. Who taught you?|Escoba! And I had written you off.',
+  ],
+  'ui.bufon.r.envido': [
+    '¡Envido! Mirá vos, se anima.|Dos del mismo palo… ¿quiero o no quiero?|Envido cantado. Que tiemble la mesa.',
+    'Envido! Look who’s feeling brave.|Two of a suit… shall I call it?|Envido sung. Let the table tremble.',
+  ],
+  'ui.bufon.r.chancho': [
+    '¡Chancho! Cuatro iguales y nadie respira.|¡Chancho va! Y se quedaron quietitos.|Cuatro mellizos. Qué asco. Qué lindo.',
+    'Chancho! Four alike and no one breathes.|The pig goes! And they all froze.|Four twins. Revolting. Lovely.',
+  ],
+  'ui.bufon.r.bravo': [
+    'Un bravo en la mano… eso es tener cara.|¡Bravo! El ancho no perdona.|Esa carta pega con ganas. Yo sé.',
+    'A bravo in hand… what nerve.|Bravo! The high card shows no mercy.|That card bites with relish. I’d know.',
+  ],
+  'ui.bufon.r.engano': [
+    '¿Engaño? Yo no vi nada. Seguí.|Mentís con cara de piedra. Me encanta.|Ese palo no era tuyo… shh.',
+    'A bluff? I saw nothing. Carry on.|Lying with a stone face. Delicious.|That suit wasn’t yours… hush.',
+  ],
+  'ui.bufon.r.jugada': [
+    'Bien servida. Seguí, seguí.|Así se juega al Chinchón, ¿viste?|Prolijo. Demasiado prolijo para vos.',
+    'Neatly served. Go on, go on.|That’s how Chinchón is played, see?|Tidy. Too tidy for you.',
+  ],
+  'ui.bufon.r.carga': [
+    'Otra carga. El Rey anota todo.|Suma y sigue. Alguien va a cobrar esto.|Más para la cuenta del Rey.',
+    'Another charge. The King keeps score.|It adds up. Someone will collect.|More on the King’s tab.',
+  ],
+  'ui.bufon.r.nivel': [
+    '¡Se encendió el Rey! Ahora te mira distinto.|Un Rey de tu lado… por ahora.|Otra vela para el Rey. Que no se te apague.',
+    'The King lights up! He sees you differently now.|A King on your side… for now.|Another candle for the King. Keep it lit.',
+  ],
+  'ui.bufon.r.contra': [
+    '¡Ay! Eso dolió. A mí no, claro.|Te dieron. Yo avisé… ¿avisé?|Sangre. Ahora se pone lindo.|Mirá que no perdonan, ¿eh?',
+    'Ouch! That hurt. Not me, of course.|You got hit. I warned you… did I?|Blood. Now it gets interesting.|They don’t forgive, you know.',
+  ],
+  'ui.bufon.r.salvo': [
+    'Ni un rasguño. Qué aburrido.|El Escudo aguantó. Por esta vez.|¿Nada? Pegale más fuerte, che… a vos no, a él.',
+    'Not a scratch. How dull.|The Shield held. This time.|Nothing? Hit harder… not you, him.',
+  ],
+  'ui.bufon.r.sombria': [
+    'Te queda poco. Elegí bien… o no.|¿Último turno? Qué emoción.|Mirá que el Caballo no perdona.',
+    'Not much left. Choose well… or don’t.|Last turn? How thrilling.|Mind you, the Knight won’t forgive.',
+  ],
+  'ui.bufon.r.victoria': [
+    'Ganaste. Esta vez.|Bien jugado. No se lo digas a nadie.|Mirá vos. El naipe te quiere.',
+    'You won. This time.|Well played. Don’t tell anyone.|Well, well. The cards like you.',
+  ],
+  'ui.bufon.r.derrota': [
+    'Y así termina. Yo me río igual.|Otra vez será. Yo te espero.|Se acabó el baile. Barajá y volvé.',
+    'And so it ends. I’ll laugh anyway.|Next time, then. I’ll be waiting.|The dance is over. Shuffle and come back.',
+  ],
+  'ui.bufon.r.tienta': [
+    'Mirá sin miedo. Bueno, con un poco.|Elegí una. Las otras no te querían.|Todas brillan. Alguna muerde.',
+    'Look without fear. Well, a little.|Choose one. The others didn’t love you.|They all shine. One of them bites.',
+  ],
 
   // ── la barra y el reinicio (main.ts) ──
   'ui.main.reiniciar': ['Reiniciar campaña', 'Restart campaign'],

@@ -74,6 +74,21 @@ describe('V40 · el Bufón', () => {
       }
   });
 
+  it('el Bufón vivo (3b): cada motivo tiene al menos tres réplicas cortas por idioma, sin HTML ni repetidas', () => {
+    const motivos = ['exacto', 'escoba', 'envido', 'chancho', 'bravo', 'engano', 'jugada', 'carga', 'nivel', 'contra', 'salvo', 'sombria', 'victoria', 'derrota', 'tienta'];
+    for (const m of motivos)
+      for (const lang of ['es', 'en'] as const) {
+        const lineas = tFor(lang, `ui.bufon.r.${m}`).split('|');
+        expect(lineas.length, `${lang} ${m}`).toBeGreaterThanOrEqual(3);
+        expect(new Set(lineas).size, `${lang} ${m}: repetidas`).toBe(lineas.length);
+        for (const t of lineas) {
+          expect(t.trim().length, `${lang} ${m}: «${t}»`).toBeGreaterThan(0);
+          expect(t.length, `${lang} ${m}: «${t}»`).toBeLessThanOrEqual(BUFON_MAX);
+          expect(t).not.toMatch(/[<>{}]/);
+        }
+      }
+  });
+
   it('habla solo en los tres primeros golpes del Asalto 1 de la primera campaña, y se puede apagar', () => {
     const base = { campanas: 0, asalto: 1, jugadas: 0, apagado: false };
     expect([0, 1, 2, 3].map((jugadas) => consejoBufon({ ...base, jugadas }))).toEqual(['palo', 'cuenta', 'exacto', null]);

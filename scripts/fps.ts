@@ -4,7 +4,7 @@ guardian('qa:fps', 300); // tope duro: ver scripts/guardian.ts
 // Lanza Chromium con los mismos argumentos que usaba GPU=1 en la prueba de humo y, si el renderizador de
 // WebGL es por software (SwiftShader, llvmpipe) o no hay WebGL, falla: la medida no valdría.
 //
-// En 1920×1080, 1280×800 y 390×844 (es-ES, velocidad 1×) mide cinco escenarios pesados: golpe con tajo,
+// En 1920×1080, 1280×800 y 390×844 (es-ES, velocidad 1×) mide los escenarios pesados: golpe con tajo, ¡Escoba! con el Bufón,
 // caída de un trono con esquirlas, sello caliente en la cuenta, monedas en La Taberna y barrido del foco
 // por la mano con el mando virtual. Sonda: los deltas de requestAnimationFrame desde que empieza el efecto
 // hasta que acaba su última animación, sin los 2 primeros; al menos 60 fotogramas (si no, se repite).
@@ -174,6 +174,29 @@ const SCENARIOS: { name: string; label: string; views?: string[]; prep: (p: Page
           w.__qaFx.sealStep('treat', foil());
           w.__qaSfx.tick(4);
         }, 1150);
+      }),
+  },
+  {
+    // V40 3b · juice-ux: un momento grande (¡Escoba!: sello tramado, sacudida, chispas y la cifra que salta) con el Bufón
+    // que se ríe y dice su línea, como en la mesa
+    name: 'momento',
+    label: '¡Escoba! con la risa del Bufón',
+    prep: async (p) => {
+      await go(p, 'mesa');
+      await p.evaluate(() => document.querySelectorAll('.side > .whisper').forEach((w) => w.remove()));
+    },
+    run: (p) =>
+      p.evaluate(() => {
+        const w = window as unknown as Q & { __bufonVivo: { frases(on: boolean): void; reacciona(m: string): void } };
+        w.__bufonVivo.frases(true);
+        return w.__fpsMeasure(
+          () => {
+            w.__qaFx.momento('escoba', null);
+            w.__bufonVivo.reacciona('escoba');
+          },
+          900,
+          () => document.querySelectorAll('.momento40, .bufon-dicho').forEach((n) => n.remove()),
+        );
       }),
   },
   {

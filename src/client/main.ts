@@ -23,6 +23,7 @@ import './deck.css'; // V38 · legibilidad en el Steam Deck y el portátil (va l
 import './pixel.css'; // V40 · fase 2: el naipe y las piezas en pixel-art (detrás de deck.css)
 import './campana40.css'; // V40 · fase 3a: el HUD único y las pantallas de campaña mínimas
 import './mesa40.css'; // V40 · fase 3a: la mesa mínima (va la última)
+import './jugo40.css'; // V40 · fase 3b (juice-ux): el Bufón vivo, los momentos grandes y los pendientes de la 3a
 import './tinta';
 import { sfx, startMusic } from './audio';
 import { canRestart, isRunHost, restartCampaign, retireOldSave } from './campaign';

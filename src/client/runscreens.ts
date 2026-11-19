@@ -33,6 +33,8 @@ import { ritualDelBotin } from './ritual';
 import { opcionTexto, reyesPills } from './reyes-ui';
 import { fraseBufonOferta } from '../rules/reyes';
 import { bufonSvg } from './pixel/bufon';
+import { alElegirBend, bufonTientaHtml } from './bufon-vivo';
+import { uiIconoSvg } from './pixel/ui-iconos';
 import { amuletoSvg, bendicionSvg, trampaSvg } from './pixel/iconos';
 import { hudSvg, nodoSvg } from './pixel/nodos';
 import { pintaHalo } from './pixel/pintas';
@@ -126,7 +128,7 @@ const hudDe = (run: Run): HudDatos => ({ vida: run.integrity, vidaMax: run.maxIn
  * Fuera los subtítulos: lo que decían (Vida, Mazo, oro) ya está en el HUD. `sub` queda para el lector de pantalla.
  */
 function head(run: Run, h1: string, sub = ''): string {
-  return `${hudHtml(hudDe(run), { mazoId: 'deck-view', derecha: `<button type="button" class="hud-btn" id="btn-set" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">⚙</button>` })}<header class="deck-head pant-cab"><h1 class="pant-t"${sub ? ` aria-description="${esc(sub.replace(/<[^>]+>/g, ''))}"` : ''}>${h1}</h1></header>`;
+  return `${hudHtml(hudDe(run), { mazoId: 'deck-view', derecha: `<button type="button" class="hud-btn" id="btn-set" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">${uiIconoSvg('engranaje')}</button>` })}<header class="deck-head pant-cab"><h1 class="pant-t"${sub ? ` aria-description="${esc(sub.replace(/<[^>]+>/g, ''))}"` : ''}>${h1}</h1></header>`;
 }
 /** V27 · las Reliquias que había la última vez que se pintó la tira: la que llega nueva se marca y se dice dónde se colocó. */
 let beltAntes: string[] | null = null;
@@ -279,7 +281,7 @@ function bendTarjetas(run: Run, op: OpcionBend[], host_: HTMLElement, pick: ((i:
     ico.className = 'ico40 ico-bend';
     ico.innerHTML = `<span class="rey40" aria-hidden="true">${info.reyes.map((r) => reySvg(r.rey as ReyPx)).join('')}</span>${bendicionSvg(o.id)}`;
     ico.dataset.tip = `<b>${t(`rey.${o.rey}.nombre`)}</b>${L('ui.elegi40.rey')}: ${nombre}`;
-    const box = opcion40(ico, nombre, [t(`bendicion.${o.id}.desc`), `<small class="carga40">${t(`bendicion.${o.id}.carga`)}</small>`, nivel], { tipo: 'bendicion', id: o.id }, run, pick ? () => pick(i) : null, `bend r-${o.rey}${info.dual ? ' dual' : ''}`);
+    const box = opcion40(ico, nombre, [t(`bendicion.${o.id}.desc`), `<small class="carga40">${t(`bendicion.${o.id}.carga`)}</small>`, nivel], { tipo: 'bendicion', id: o.id }, run, pick ? () => (alElegirBend(box), pick(i)) : null, `bend r-${o.rey}${info.dual ? ' dual' : ''}`);
     box.dataset.bend = o.id;
     box.dataset.i = String(i);
     box.style.setProperty('--i', String(i));
@@ -352,7 +354,8 @@ function mapScreen(run: Run): void {
   const ficha = $('#mapa-ficha');
   const enseña = (n: NodoMapa) => {
     const b = nodoBotin(run, n);
-    ficha.innerHTML = `<div class="ficha-ico">${nodoSvg(n.tipo)}</div><div class="ficha-tx"><b>${tipoN(n.tipo)}${n.asalto ? ` · ${L('ui.mapa40.tramo', { n: n.tramo })}` : ''}</b>${b ? `<span>${b.replace(/^[^:]*:\s*/, '')}</span>` : ''}</div>`;
+    // V40 · 3b (juice-ux): lo que decía el globo flotante (tapaba otro nodo) va aquí, en el panel lateral
+    ficha.innerHTML = `<div class="ficha-ico">${nodoSvg(n.tipo)}</div><div class="ficha-tx"><b>${tipoN(n.tipo)}${n.asalto ? ` · ${L('ui.mapa40.tramo', { n: n.tramo })}` : ''}</b><span class="ficha-desc">${nodoTexto(run, n)}</span>${b ? `<span class="ficha-botin">${b.replace(/^[^:]*:\s*/, '')}</span>` : ''}</div>`;
     ficha.dataset.tipo = n.tipo;
   };
   for (const n of m.nodos) {
@@ -369,7 +372,6 @@ function mapScreen(run: Run): void {
     b.disabled = !(estado === 'alcanzable' && can);
     if (estado === 'aqui') b.setAttribute('aria-current', 'step');
     const botin = nodoBotin(run, n);
-    b.dataset.tip = `<b>${tipoN(n.tipo)}</b>${nodoTexto(run, n)}${botin ? `<hr>${botin}` : ''}`;
     b.setAttribute('aria-label', `${tipoN(n.tipo)}${n.asalto ? ` ${n.tramo}` : ''}. ${botin}`);
     b.innerHTML = `${nodoSvg(n.tipo)}${n.palo ? `<i class="nodo-palo s-${n.palo}">${suitSvg(n.palo)}</i>` : ''}${estado === 'aqui' ? `<i class="nodo-aqui" aria-hidden="true">${bufonSvg('reposo')}</i>` : ''}`;
     if (estado === 'alcanzable' && can) b.onclick = () => ir(n.id);
@@ -479,7 +481,7 @@ function elegiScreen(run: Run): void {
   const can = host();
   const id = r.tipo === 'bendicion' ? 'bends' : r.tipo === 'amuleto' ? 'loot' : 'picks';
   const saltar = r.tipo === 'trampa' ? L('ui.elegi.saltar.oro', { n: BALANCE.cobro.sinSeleccion }) : L('ui.elegi.saltar');
-  app.innerHTML = elegiHtml(run, id, `<button id="volver" class="discreto" ${can ? '' : 'disabled'}>${L('ui.elegi.volver')}</button><button id="saltar" ${can ? '' : 'disabled'}>${saltar}</button>`);
+  app.innerHTML = elegiHtml(run, id, `<button id="volver" class="discreto" ${can ? '' : 'disabled'}>${L('ui.elegi.volver')}</button><button id="saltar" ${can ? '' : 'disabled'}>${saltar}</button>`, bufonTientaHtml());
   montaHud(run);
   if (r.tipo === 'bendicion') bendTarjetas(run, r.opciones, $('#bends'), can ? (j) => runDo({ t: 'elegir', j }) : null);
   else if (r.tipo === 'trampa')
@@ -692,7 +694,7 @@ function eventScreen(run: Run): void {
   app.innerHTML = `<div class="run m40 event">${head(run, L('ui.run.secreto'), L('ui.run.secreto.sub', { n: run.stage }))}
     <div class="run-body"><div class="event-box">
       <div class="event-art">${glyphSvg(EVENT_GLYPH[ev.id] ?? 'incognita', 'event-ico')}</div>
-      <div class="event-txt"><h3 class="sec">${secN(ev.id)}</h3><p class="lead">${secT(ev.id)}</p>
+      <div class="event-txt"><h3 class="sec">${secN(ev.id)}</h3><p class="lead">${secT(ev.id)}</p>${bufonTientaHtml()}
         <div class="event-opts" id="opts"></div>${waitNote()}</div>
     </div></div></div>`;
   montaHud(run);

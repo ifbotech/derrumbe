@@ -24,6 +24,7 @@ import { S, topModal } from './core';
 import { meta } from './guild';
 import { loadJson, saveJson } from './platform';
 import { hint } from './prompts';
+import { bufonAnimo } from './bufon-vivo';
 import { L, monN, paloN } from './lengua';
 import type { ClaveUi } from '../shared/i18n/es';
 
@@ -179,6 +180,7 @@ export function bufonSays(id: ConsejoBufon): boolean {
   const side = document.querySelector('.table-screen .side');
   if (!side || topModal()) return false;
   document.querySelector('.whisper')?.remove();
+  document.querySelector('.bufon-dicho')?.remove();
   const el = document.createElement('div');
   el.className = 'whisper bufon';
   el.dataset.w = `bufon-${id}`;
@@ -219,6 +221,7 @@ function bufon(): boolean {
  * final, Mazo bajo). La mesa lo llama al repintarse, justo después de enseñar el estado nuevo.
  */
 export function tableWhispers(): void {
+  bufonAnimo(); // V40 3b: la cara de fondo del Bufón (sombría con poca Vida o en el último turno)
   const v = S.shown;
   if (!v || v.phase !== 'playing' || S.screen !== 'table') return;
   if (bufon()) return;
