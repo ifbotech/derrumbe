@@ -4,7 +4,8 @@
 // lacre, los acabados, la selección de cartas y las Bendiciones de los Reyes.
 import { AS_ALTO, Action, CABALLO, Card, Config, GameState, MAX_NUM, SOTA, SUITS, StrikeEnv, Suit, Tower, activo, cardValue, classify, currentPlayer, eligeEngano, standing, strike, threatOf, vidaTotal } from './engine';
 import { ESCOBA_SUMA, MZ } from './mazos';
-import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef, toolSlots } from './run';
+import { DraftOpt, EVENT, MAPA_CFG, MIN_DECK, Run, RunAction, healCost, offerCost, rerollCost, toolSlots } from './run';
+import { NodoMapa, TipoNodo, alcanzables, asaltoDe, caminos } from './mapa';
 import { SPECIAL } from './specials';
 import { RARITY, TOOL } from './tools';
 import { BENDICION, OpcionBend, PALO_DE_REY, ReyId, UMBRALES_REY, esDe, fuentesDe, nivelesReyes, reyesDe } from './reyes';
@@ -189,11 +190,17 @@ export function chooseAction(state: GameState): Action {
 // ───────────────────────── La campaña ─────────────────────────
 
 /** Cómo se comporta el bot de campaña en las decisiones que se pueden discutir. */
+/**
+ * V40 1e · Cómo elige el bot su camino en el Mapa: `equilibrada` (la de serie: Bravo con la Vida alta, Fogón con la
+ * Vida baja, Pulpería con oro), `brava` (busca los Guardias Bravos aunque vaya tocado), `prudente` (nunca un Bravo;
+ * prefiere Fogón y Pulpería) y `sinPulperia` (solo laboratorio: evita La Pulpería, para medir lo que vale gastar).
+ */
+export type PoliticaRuta = 'equilibrada' | 'brava' | 'prudente' | 'sinPulperia' | 'azar';
+export const POLITICAS_RUTA: PoliticaRuta[] = ['equilibrada', 'brava', 'prudente', 'sinPulperia', 'azar'];
+
 export interface RunPolicy {
-  /** Salta las obras que ofrecen estas etiquetas. */
-  skip?: string[];
-  /** Acepta contratos de riesgo si el búnker está sano. */
-  risk?: boolean;
+  /** V40 1e · Cómo elige el camino en el Mapa (de serie, `equilibrada`). */
+  ruta?: PoliticaRuta;
   /** V40 1c · Toma esta Bendición siempre que se ofrezca (para medir cuánto vale). */
   bendicion?: string;
   /** V40 1c · Sigue a este Rey: toma una suya (o una Dual suya) siempre que se ofrezca (para medir cada línea). */
@@ -278,6 +285,12 @@ export function bendicionValue(o: OpcionBend, run: Run): number {
 }
 
 const draftValue = (o: DraftOpt) => (o.kind === 'special' ? specialValue(o.id) : 2.5 + cardWorth(o.card));
+/**
+ * V40 1e · Las Trampas del Bufón que ya lleva el mazo, y cuántas compra como mucho: más atascan la mano (sonda, n=600:
+ * sin comprar Trampas 44,7 %; con tope 5, 40,3; sin tope, 29,2). En la «Elegí una» acepta una más.
+ */
+const trampasEn = (run: Run) => run.deck.filter((c) => c.sp).length;
+const TOPE_TRAMPAS = 4;
 
 function pendingTarget(run: Run): RunAction {
   const p = run.pending!;
@@ -311,16 +324,18 @@ function shopAction(run: Run, rey?: ReyId): RunAction {
     const worst = run.tools.reduce((w, t, i) => (toolValue(t.id, run, rey) < toolValue(run.tools[w].id, run, rey) ? i : w), 0);
     if (toolValue(want.o.id!, run, rey) > toolValue(run.tools[worst].id, run, rey) + 2.5) return { t: 'sell', i: worst };
   }
-  const reserve = run.freeShop ? 0 : 5;
+  const reserve = 5;
   const spare = (x: { cost: number }) => run.gold - x.cost >= reserve;
   // con gotas de lacre la Mesa de lacre sella gratis: se usa aunque no sobre oro
   const forja = open.find((x) => x.o.kind === 'forja' && (x.cost === 0 || spare(x)));
   if (forja && run.deck.some((c) => isPlain(c) && (forja.o.seal ? !c.seal : !c.tr))) return { t: 'buy', i: forja.i };
-  const sobre = open.find((x) => x.o.kind === 'sobre' && spare(x));
+  // V40 1e · las Trampas atascan la mano: el bot no compra más con el mazo ya cargado de ellas
+  const pocas = trampasEn(run) < TOPE_TRAMPAS;
+  const sobre = open.find((x) => x.o.kind === 'sobre' && spare(x) && pocas);
   if (sobre) return { t: 'buy', i: sobre.i };
   const plano = open.find((x) => x.o.kind === 'plano' && spare(x) && ['solo', 'grupo', 'escalera', 'doblepar'].includes(x.o.form!));
   if (plano) return { t: 'buy', i: plano.i };
-  const blind = open.find((x) => x.o.kind === 'clandestino' && spare(x));
+  const blind = open.find((x) => x.o.kind === 'clandestino' && spare(x) && pocas);
   if (blind) return { t: 'buy', i: blind.i };
   const unsold = run.shop.some((o) => !o.sold && o.kind === 'tool');
   if (run.tools.length < toolSlots(run) && !unsold && run.rerolls < 2 && run.gold >= rerollCost(run) + RARITY.oficio.cost) return { t: 'reroll' };
@@ -341,6 +356,114 @@ function eventAction(run: Run): RunAction {
   return { t: 'event', i: i ?? def.options.length - 1 };
 }
 
+// ───────────────────────── V40 1e · El Mapa, el Botín y el Fogón ─────────────────────────
+
+/** Lo que el bot va suponiendo de sí mismo al recorrer un camino (Vida en fracción, oro y huecos libres). */
+interface Supuesto {
+  vida: number;
+  oro: number;
+  hueco: boolean;
+}
+/** Cuánto vale pasar por un nodo, según la política de ruta y lo que se supone que se lleva al llegar. */
+function valorNodo(n: NodoMapa, su: Supuesto, ruta: PoliticaRuta, run: Run): number {
+  const tipo: TipoNodo = n.tipo;
+  if (tipo === 'pulperia') {
+    if (ruta === 'sinPulperia') return -50;
+    const v = su.oro >= 6 ? 2 + Math.min(4, su.oro / 5) : 0.5;
+    return ruta === 'prudente' ? v + 1 : v;
+  }
+  if (tipo === 'fogon') {
+    const falta = 1 - su.vida;
+    const v = su.vida < 0.6 ? 3 + falta * 8 : 1.5;
+    return ruta === 'prudente' ? v + 1 : v;
+  }
+  if (tipo === 'bravo') {
+    if (ruta === 'prudente') return -50;
+    // su Botín: un Amuleto (vale si hay hueco) y, con `bravo.bendicion`, una Bendición a elegir
+    const amuleto = (su.hueco ? 2.5 : 1) + (MAPA_CFG.bravo.bendicion ? 5 : 0);
+    const umbral = ruta === 'brava' ? 0.45 : 0.7;
+    // a partir del tramo 4 el Bravo es un Rey: pide más Vida
+    const tarde = n.tramo >= 4 ? 0.1 : 0;
+    return su.vida >= umbral + tarde ? amuleto + (ruta === 'brava' ? 3 : 0) : su.vida >= umbral - 0.15 + tarde ? amuleto - 4 : -8;
+  }
+  if (tipo === 'santuario') return 2;
+  return 0;
+}
+/** Cómo cambia lo que se supone al salir de un nodo. */
+function trasNodo(n: NodoMapa, su: Supuesto, run: Run): Supuesto {
+  if (n.tipo === 'fogon') return { ...su, vida: Math.min(1, su.vida + MAPA_CFG.fogon.curar / Math.max(1, run.maxIntegrity)) };
+  if (n.tipo === 'pulperia') return { ...su, oro: 0 };
+  if (n.tipo === 'bravo') return { vida: su.vida - 0.25, oro: su.oro + MAPA_CFG.bravo.oro, hueco: su.hueco };
+  return su;
+}
+
+/** El Mapa: el primer paso del camino que más vale hasta el asalto del tramo (seis caminos como mucho). */
+function mapaAction(run: Run, policy: RunPolicy): RunAction {
+  const ruta = policy.ruta ?? 'equilibrada';
+  const meta = asaltoDe(run.mapa, run.stage);
+  const opciones = alcanzables(run.mapa);
+  // azar (laboratorio): un paso cualquiera, sacado de la semilla y del nodo (sin tocar el azar de la campaña)
+  if (ruta === 'azar') return { t: 'ir', nodo: opciones[Math.abs(Math.imul((run.id | 0) ^ (run.mapa.en + 7), 0x9e3779b1) >>> 7) % opciones.length] };
+  const paths = meta ? caminos(run.mapa, run.mapa.en, meta.id) : [];
+  if (!paths.length) return { t: 'ir', nodo: opciones[0] };
+  let mejor = paths[0];
+  let tope = -Infinity;
+  for (const p of paths) {
+    let su: Supuesto = { vida: run.integrity / Math.max(1, run.maxIntegrity), oro: run.gold, hueco: run.tools.length < toolSlots(run) };
+    let v = 0;
+    for (const id of p) {
+      const n = run.mapa.nodos[id];
+      v += valorNodo(n, su, ruta, run);
+      su = trasNodo(n, su, run);
+    }
+    if (v > tope) (tope = v), (mejor = p);
+  }
+  return { t: 'ir', nodo: mejor[0] };
+}
+
+/** El Botín: primero el oro, luego cada «Elegí una» y el Amuleto; con todo resuelto, seguir. */
+function botinAction(run: Run, policy: RunPolicy): RunAction {
+  if (run.elegi !== null) {
+    const r = run.botin[run.elegi];
+    if (!r || r.k !== 'elegi') return { t: 'volver' };
+    if (r.tipo === 'bendicion') {
+      const op = r.opciones;
+      const pref = policy.bendicion ? op.findIndex((o) => o.id === policy.bendicion) : -1;
+      if (pref >= 0) return { t: 'elegir', j: pref };
+      const suya = policy.rey ? op.findIndex((o) => esDe(BENDICION[o.id], policy.rey!)) : -1;
+      if (suya >= 0) return { t: 'elegir', j: suya };
+      return { t: 'elegir', j: op.reduce((b, o, i) => (bendicionValue(o, run) > bendicionValue(op[b], run) ? i : b), 0) };
+    }
+    if (r.tipo === 'trampa') {
+      // V40 1e · con el mazo ya cargado de Trampas, la carta (o Saltar: +oro)
+      const llenas = trampasEn(run) > TOPE_TRAMPAS;
+      const ops = r.opciones.map((o, i) => ({ o, i })).filter((x) => !llenas || x.o.kind !== 'special');
+      return { t: 'elegir', j: ops.length ? ops.reduce((b, x) => (draftValue(x.o) > draftValue(b.o) ? x : b)).i : null };
+    }
+    if (run.tools.length >= toolSlots(run)) return { t: 'elegir', j: null };
+    const best = [...r.opciones].sort((a, b) => toolValue(b, run, policy.rey) - toolValue(a, run, policy.rey))[0];
+    return { t: 'elegir', j: best ? r.opciones.indexOf(best) : null };
+  }
+  const i = run.botin.findIndex((r) => r.estado === 'abierta');
+  if (i < 0) return { t: 'seguir' };
+  const r = run.botin[i];
+  if (r.k === 'amuleto' && run.tools.length >= toolSlots(run)) return { t: 'saltar', i };
+  return { t: 'cobrar', i };
+}
+
+/** El Fogón: Curar si falta Vida (menos del 70 %); si no, Purgar la carta que menos vale. */
+function fogonAction(run: Run): RunAction {
+  const f = run.fogon;
+  if (!f) return { t: 'next' };
+  const falta = run.integrity < run.maxIntegrity * 0.7;
+  const plain = run.deck.filter(isPlain).sort((a, b) => cardWorth(a) - cardWorth(b));
+  const peor = plain[0];
+  if (f.curar && (falta || !f.purgar || !peor || run.deck.length <= MIN_DECK) && run.integrity < run.maxIntegrity) return { t: 'fogon', que: 'curar' };
+  if (f.purgar && peor && run.deck.length > MIN_DECK) return { t: 'fogon', que: 'purgar', card: peor.id };
+  if (f.curar && run.integrity < run.maxIntegrity) return { t: 'fogon', que: 'curar' };
+  return { t: 'next' };
+}
+
 /** La siguiente decisión de campaña, o null si toca jugar la obra o la campaña ya terminó. */
 export function chooseRunAction(run: Run, policy: RunPolicy = {}): RunAction | null {
   if (run.pending) return pendingTarget(run);
@@ -355,21 +478,12 @@ export function chooseRunAction(run: Run, policy: RunPolicy = {}): RunAction | n
       if (suya >= 0) return { t: 'bendicion', i: suya };
       return { t: 'bendicion', i: op.reduce((b, o, i) => (bendicionValue(o, run) > bendicionValue(op[b], run) ? i : b), 0) };
     }
-    case 'map': {
-      if (stageDef(run.stage).boss) return { t: 'route', i: 0 };
-      if (run.node.tag && policy.skip?.includes(run.node.tag)) return { t: 'skip' };
-      const healthy = run.integrity >= run.maxIntegrity * 0.8;
-      const i = run.node.routes.findIndex((id) => CONTRACT[id]?.risk);
-      return { t: 'route', i: i >= 0 && policy.risk && healthy ? i : i === 0 ? 1 : 0 };
-    }
-    case 'reward': {
-      if (!run.looted) {
-        if (run.tools.length >= toolSlots(run)) return { t: 'loot', id: null };
-        return { t: 'loot', id: [...run.loot].sort((a, b) => toolValue(b, run, policy.rey) - toolValue(a, run, policy.rey))[0] ?? null };
-      }
-      const best = run.draft.reduce((b, o, i) => (draftValue(o) > draftValue(run.draft[b]) ? i : b), 0);
-      return { t: 'draft', i: run.draft.length ? best : null };
-    }
+    case 'map':
+      return mapaAction(run, policy);
+    case 'reward':
+      return botinAction(run, policy);
+    case 'fogon':
+      return fogonAction(run);
     case 'shop':
       return shopAction(run, policy.rey);
     case 'event':

@@ -95,6 +95,12 @@ export interface BalanceConfig {
   /** Oro al ganar un asalto, y la Vida que se recupera después. */
   cobro: { asalto: number; vidaCada: number; interesCada: number; curaTrasAsalto: number; sinSeleccion: number };
   /**
+   * V40 1e · El Mapa de caminos. Guardia Bravo: un solo guardia (el Caballo en los tramos 2 y 3, el Rey en el 4 y el 5),
+   * con su Vida × `vida` y `ataque` más de Ataque que los del asalto que viene; su Botín, `oro` y un Amuleto Raro o
+   * mejor. Fogón: Curar `curar` de Vida, o Purgar una carta gratis.
+   */
+  mapa: { bravo: { vida: number; ataque: number; oro: number; amuletos: number; bendicion: number }; fogon: { curar: number }; bendicionGuardia: number };
+  /**
    * Árbol de la Conjura (V12, sustituye a `orden`): esquirlas de cada rango de los nodos de combate (`costes`),
    * base de coste de los incrementales (rango r: base × crece^(r−1), a dos cifras significativas), oro inicial
    * por rango de la Bolsa de la conjura y la cifra por rango de cada nodo (`cifras`, ver `cifraDe` en arbol.ts).

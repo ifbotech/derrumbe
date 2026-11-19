@@ -276,3 +276,17 @@ export function migraMeta40d<M extends { renown: number; up: Record<string, numb
   }
   return meta;
 }
+
+// ───────────── V40 tramo 1e · el Mapa de caminos ─────────────
+// La campaña ya no es una fila de asaltos con Juramentos y Atajos: cada tramo es un Mapa de caminos con Guardias
+// Bravos, Santuarios del Bufón, Fogones y La Pulpería, y el Botín se cobra por partes. Una campaña del tramo 1d (sin
+// Mapa) no se sigue: se cierra y se abonan las esquirlas juntadas, como en la 1c y la 1d.
+
+/** Versión de campaña guardada del tramo 1d de la V40 (los Amuletos, aún sin Mapa de caminos). */
+export const RUN_40D = 9;
+
+/** ¿Es una campaña del tramo 1d de la V40 (sin Mapa de caminos)? */
+export function campanaSinMapa(raw: unknown): boolean {
+  const r = raw as { v?: unknown; mapa?: unknown } | null;
+  return r?.v === RUN_40D || (r?.v === RUN_40D + 1 && !r?.mapa);
+}

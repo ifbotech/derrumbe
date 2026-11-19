@@ -7,7 +7,7 @@ import { GameEvent, SEALS, SUITS, TREATMENTS, activo, applyAction, currentPlayer
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import { ACHIEVEMENTS } from '../src/rules/achievements';
 import { KEYWORDS } from '../src/rules/keywords';
-import { BOSSES, EVENT_AFTER, LAST_STAGE, MONARCAS_VIEJOS, Run, STAGES, UPGRADES, addSpecial, finishBattle, newMeta, newRun, ordenCasas, runAction, stageConfig, stageDef, startStage, tiranoKey, trackEvents } from '../src/rules/run';
+import { BOSSES, LAST_STAGE, MONARCAS_VIEJOS, Run, STAGES, UPGRADES, addSpecial, finishBattle, newMeta, newRun, ordenCasas, runAction, stageConfig, stageDef, startStage, tiranoKey, trackEvents } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS, TOOL_SLOTS } from '../src/rules/tools';
 import { ES } from '../src/shared/i18n/es';
@@ -112,14 +112,12 @@ describe('V11 · sin restos de la cuenta vieja', () => {
 
 // (3) la campaña de cinco asaltos (SPECS/V11.md, 1.6) y (4) los 36 logros de siempre (Steam los usa)
 describe('V11 · la campaña de cinco asaltos', () => {
-  it('cinco asaltos: tronos 2 / 3 / 4 / 4 / 4, monarca en 2, 4 y 5, Rey Tirano solo en el 5, Secretos tras 2 y 4, Atajo solo en el 3', () => {
+  it('cinco asaltos: tronos 2 / 3 / 4 / 4 / 4, monarca en 2, 4 y 5, Rey Tirano solo en el 5, ', () => {
     expect(STAGES.length).toBe(5);
     expect(LAST_STAGE).toBe(5);
     expect(STAGES.map((s) => s.thrones)).toEqual([2, 3, 4, 4, 4]);
     expect(STAGES.flatMap((s, i) => (s.boss ? [i + 1] : []))).toEqual([2, 4, 5]);
     expect(STAGES.flatMap((s, i) => (s.tirano ? [i + 1] : []))).toEqual([5]);
-    expect(EVENT_AFTER).toEqual([2, 4]);
-    expect(STAGES.flatMap((s, i) => (s.atajo ? [i + 1] : []))).toEqual([3]);
     expect(STAGES.map((s) => s.floors.length)).toEqual([1, 2, 2, 3, 3]);
     // salas con nombre en los dos idiomas, y el título de Tirano con su género
     STAGES.forEach((s, i) => {
@@ -131,7 +129,7 @@ describe('V11 · la campaña de cinco asaltos', () => {
     expect(BOSSES.filter((b) => b.fem).map((b) => b.id)).toEqual([]);
     for (const b of BOSSES) expect(tiranoKey(b.id)).toBe('asalto.tirano.m');
     // el Trono infinito empieza tras el asalto 5, sobre él: cuatro tronos y siempre con monarca
-    expect(stageDef(6)).toMatchObject({ thrones: 4, boss: true, atajo: false, floors: [10, 11, 12] });
+    expect(stageDef(6)).toMatchObject({ thrones: 4, boss: true, floors: [10, 11, 12] });
   });
 
   it('los tronos que faltan se crean sin guardias y con away; la Vida de cada guardia es múltiplo de 5', () => {

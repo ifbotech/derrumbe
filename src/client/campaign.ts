@@ -2,12 +2,12 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { ESQUIRLAS_POR_CORONA, RUN_40, abonoCampanaVieja, abonoFrancesa, campanaConReliquias, campanaFrancesa, campanaSinReyes, mazoDe } from '../rules/migracion';
+import { ESQUIRLAS_POR_CORONA, RUN_40, abonoCampanaVieja, abonoFrancesa, campanaConReliquias, campanaFrancesa, campanaSinMapa, campanaSinReyes, mazoDe } from '../rules/migracion';
 import { t } from '../shared/i18n';
 import { MAZO_INICIAL } from '../rules/mazos';
 import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
-import { L, asaltoN, cartaN, getLang, juraD, juraN, juraP, monD, monDec, monN, relD, relN } from './lengua';
+import { L, asaltoN, cartaN, getLang, monD, monDec, monN, relD, relN } from './lengua';
 import { sfx } from './audio';
 import { cardEl, portraitEl } from './card';
 import { $, Campaign, RUN_PLAYER, S, loadJson, modal, toast } from './core';
@@ -39,7 +39,7 @@ export function savedCampaign(): Campaign | null {
   // V40: solo se sigue una campaña de esta versión (las de antes eran de la baraja francesa: ver retireOldSave)
   if (c?.run) c.run = cargaRun(c.run) ?? c.run;
   // descarta guardados de versiones anteriores del juego
-  return c && c.run && c.key && c.run.v === RUN_VERSION && Array.isArray(c.run.tools) && c.run.node && c.run.stats?.toolUse ? c : null;
+  return c && c.run && c.key && c.run.v === RUN_VERSION && Array.isArray(c.run.tools) && c.run.mapa?.nodos && c.run.stats?.toolUse ? c : null;
 }
 export function saveCampaign(): void {
   const c = S.campaign;
@@ -66,6 +66,16 @@ export function retireOldSave(): void {
   const old = loadJson<{ run?: { stage?: number; phase?: string; v?: number } }>(RUN_KEY);
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
+  // V40 1e · una campaña del tramo 1d (sin Mapa de caminos) no sigue: se cobra lo juntado
+  if (campanaSinMapa(old.run)) {
+    const abono = abonoFrancesa(old.run);
+    if (abono > 0) {
+      meta.renown += abono;
+      saveMeta();
+    }
+    setTimeout(() => toast(abono > 0 ? L('ui.camp.sinmapa.abono', { n: abono }) : L('ui.camp.sinmapa')), 600);
+    return;
+  }
   // V40 1d · una campaña del tramo 1c (con Reliquias) no sigue: se cobra lo juntado
   if (campanaConReliquias(old.run)) {
     const abono = abonoFrancesa(old.run);
@@ -162,7 +172,7 @@ export function runDo(a: RunAction): void {
     return toast(errorFor(getLang(), err));
   }
   saveCampaign();
-  if (c.run.phase === 'battle' && a.t === 'route') return enterStage(true);
+  if (c.run.phase === 'battle' && a.t === 'ir') return enterStage(true);
   renderRun();
   afterRunChange(prev);
 }
@@ -293,11 +303,10 @@ export function stageIntro(): void {
   const c = S.campaign;
   const run = c?.run;
   if (!c || !run || run.phase !== 'battle') return;
-  const mark = `${c.key}:${run.stage}`;
+  const mark = `${c.key}:${run.stage}:${run.mapa?.en ?? 0}`;
   if (introFor === mark) return;
   introFor = mark;
-  ribbon(L('ui.camp.cinta', { n: run.stage, nombre: asaltoN(run.stage) }));
-  if (run.contract) logLine(L('ui.camp.contrato', { nombre: juraN(run.contract), desc: juraD(run.contract), premio: juraP(run.contract) }), 'yel');
+  ribbon(run.combate === 'bravo' ? L('ui.mapa.tipo.bravo') : L('ui.camp.cinta', { n: run.stage, nombre: asaltoN(run.stage) }));
   if (!run.boss) return;
   const boss = BOSS[run.boss];
   const el = modal(`<div class="boss-box"><div class="boss-card"></div><div><small>${L('ui.run.monarca')}</small><h2>${monN(boss.id)}</h2><h3>${L('ui.camp.decreto', { x: monDec(boss.id) })}</h3><p>${monD(boss.id)}</p><button class="primary x">${L('ui.run.al.asalto')}</button></div></div>`, { cls: 'boss-intro' });

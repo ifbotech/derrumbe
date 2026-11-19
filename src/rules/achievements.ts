@@ -49,8 +49,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'rico', name: 'Tacaño', desc: 'Juntá 30 de oro a la vez.', renown: 2, progress: count((m) => m.stats.maxGold, 30) },
   { id: 'cinturon', name: 'Faja llena', desc: `Llevá ${TOOL_SLOTS} Amuletos a la vez.`, renown: 3, progress: count((m) => m.stats.maxTools, TOOL_SLOTS) },
   { id: 'forja', name: 'Lacrador', desc: 'Estampa 10 sellos de lacre o acabados.', renown: 3, progress: count((m) => m.stats.forged, 10) },
-  { id: 'contratos', name: 'De palabra', desc: 'Cumple 10 Juramentos.', renown: 3, progress: count((m) => m.stats.contracts, 10) },
-  { id: 'atajo', name: 'Por la puerta de atrás', desc: 'Salta 3 asaltos.', renown: 2, progress: count((m) => m.stats.skips, 3) },
+  { id: 'contratos', name: 'De guapo', desc: 'Vencé a 10 Guardias Bravos.', renown: 3, progress: count((m) => m.stats.contracts, 10) },
+  { id: 'atajo', name: 'Al calor del fogón', desc: 'Descansá en 3 Fogones.', renown: 2, progress: count((m) => m.stats.skips, 3) },
   { id: 'coleccion', name: 'Coleccionista', desc: `Conseguí las ${BASE_POOL.length} Trampas del Bufón, entre todas tus campañas.`, renown: 5, progress: count((m) => m.seen.specials.filter((id) => BASE_POOL.includes(id)).length, BASE_POOL.length) },
   { id: 'ferretero', name: 'Cliente del Tratante', desc: `Llevá ${TOOL_GOAL} Amuletos distintos, entre todas tus campañas.`, renown: 8, progress: count((m) => m.seen.tools.length, TOOL_GOAL) },
   ...BOSSES.map(

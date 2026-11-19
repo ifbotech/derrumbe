@@ -2,9 +2,9 @@
 // y en sala online (corre en el servidor): es un reductor puro y determinista. Con la misma
 // semilla y las mismas decisiones, la campaña es idéntica.
 //
-//   Sobre lacrado → [ Mapa del castillo: ruta con Juramento (o Atajo, solo en el asalto 3) → asalto →
-//                     Botín + selección (+ botín de monarca) → La Taberna → (Secreto de la cripta tras
-//                     los monarcas de los asaltos 2 y 4) ] × 5 → Trono infinito
+//   Sobre lacrado → Bendición → [ Mapa de caminos (V40 1e, src/rules/mapa.ts): Guardia Bravo, Santuario del Bufón,
+//                     Fogón y La Pulpería → asalto (Guardia, o el Rey en los asaltos 2, 4 y 5) → Botín: Oro, «Elegí
+//                     una» (Bendición, Trampa o carta, Amuleto del Rey) ] × 5 → Trono infinito
 // Los asaltos 1 y 2 tienen menos tronos (2 y 3): los palos presentes se sortean al crear la campaña.
 // En el código los nombres internos siguen siendo los de antes (stage, boss, contract, shop, event…).
 import { Autopsy, autopsy } from './autopsy';
@@ -17,6 +17,7 @@ import { CIFRAS_MAZO, MANO_BASE, MAZO_INICIAL, MZ, TRUCO_MAX, esMazo } from './m
 import type { Cargas, MazoId, ReglaId } from './mazos';
 import { CABALLO, Card, Config, DEFAULT_CONFIG, FIGURAS, FORM, FORMATIONS, Formation, GameEvent, GameState, MAX_NUM, REY, SEALS, SOTA, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
+import { COMBATE, Mapa, NodoMapa, TipoNodo, agregaTramo, alcanzables, asaltoDe, generaMapa } from './mapa';
 import { BASE_POOL, SPECIAL } from './specials';
 import { Arch, BOXES, RARITY, Rarity, TOOL, ToolInst, huecosAmuleto, toolPool, placeTool } from './tools';
 import { BENDICION, PALO_DE_REY, REY_IDS, REY_NOMBRE, bendicionesDe, cierreBendiciones, escudoInicial, esDe, fuentesDe, nivelesCfg, nivelesReyes, ofertaBendiciones, reyesEnOferta } from './reyes';
@@ -25,13 +26,14 @@ import type { BendInst, OpcionBend, ReyId } from './reyes';
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
 /**
- * Versión del formato de campaña guardada. 9 desde el tramo 1d de la V40 (Amuletos y Trampas del Bufón en lugar de
+ * Versión del formato de campaña guardada. 10 desde el tramo 1e de la V40 (el Mapa de caminos, el Botín por partes y el
+ * Fogón: una de la 9 se cierra con su abono, `campanaSinMapa`). 9 desde el tramo 1d de la V40 (Amuletos y Trampas del Bufón en lugar de
  * Reliquias y especiales: una de la 8 se cierra con su abono, `campanaConReliquias`). 8 desde el tramo 1c (los 4 Reyes:
  * `bendiciones`, `oferta`, y los monarcas son Reyes). Una de la 6 o la 7 (tramos 1a y 1b, con rasgos y monarcas viejos) no se puede seguir: se
  * descarta con un aviso (`campanaSinReyes`). Una de antes (5, o la 4 de la 11.0) se jugaba con la baraja francesa: se
  * descarta igual (`campanaFrancesa`).
  */
-export const RUN_VERSION = 9;
+export const RUN_VERSION = 10;
 
 /**
  * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
@@ -62,8 +64,6 @@ export interface StageDef {
   floors: number[];
   /** Tronos en pie al empezar (2 a 4). Los que faltan se crean sin guardias y con `away`. */
   thrones: number;
-  /** El Mapa ofrece Atajo (saltar el asalto a cambio de un premio). */
-  atajo: boolean;
   /** El monarca de este asalto lleva el título de Rey Tirano (o Reina Tirana). */
   tirano?: true;
   /** Multiplicador de la resistencia base de los pisos. */
@@ -77,11 +77,11 @@ export interface StageDef {
  * Trono, con su Rey Tirano. La Vida y el Ataque de cada uno salen de `asaltos` en balance-config.json.
  */
 const STAGE_DEFS: Omit<StageDef, 'hp' | 'threat'>[] = [
-  { name: 'El Puente levadizo', floors: [SOTA], thrones: 2, atajo: false, boss: false },
-  { name: 'El Patio de armas', floors: [SOTA, CABALLO], thrones: 3, atajo: false, boss: true },
-  { name: 'La Cripta', floors: [SOTA, CABALLO], thrones: 4, atajo: true, boss: false },
-  { name: 'La Galería real', floors: [...FIGURAS], thrones: 4, atajo: false, boss: true },
-  { name: 'El Salón del Trono', floors: [...FIGURAS], thrones: 4, atajo: false, boss: true, tirano: true },
+  { name: 'El Puente levadizo', floors: [SOTA], thrones: 2, boss: false },
+  { name: 'El Patio de armas', floors: [SOTA, CABALLO], thrones: 3, boss: true },
+  { name: 'La Cripta', floors: [SOTA, CABALLO], thrones: 4, boss: false },
+  { name: 'La Galería real', floors: [...FIGURAS], thrones: 4, boss: true },
+  { name: 'El Salón del Trono', floors: [...FIGURAS], thrones: 4, boss: true, tirano: true },
 ];
 /** Los cinco asaltos: su Vida (`hp`) y su Ataque (`threat`) salen de `asaltos` en balance-config.json. */
 export const STAGES: StageDef[] = STAGE_DEFS.map((s, i) => {
@@ -92,10 +92,8 @@ export const STAGES: StageDef[] = STAGE_DEFS.map((s, i) => {
 export function stageDef(n: number): StageDef {
   if (n <= LAST_STAGE) return STAGES[n - 1];
   const depth = n - LAST_STAGE;
-  return { name: `Trono infinito ${depth}`, floors: [...FIGURAS], thrones: 4, atajo: false, hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
+  return { name: `Trono infinito ${depth}`, floors: [...FIGURAS], thrones: 4, hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
 }
-/** Tras estos asaltos (los de los dos primeros monarcas) aparece un Secreto de la cripta. */
-export const EVENT_AFTER = [2, 4];
 
 /** El título del monarca del Salón del Trono, según su género (claves `asalto.tirano.m` y `asalto.tirano.f`). */
 export const TIRANO: Record<'m' | 'f', string> = { m: 'Rey Tirano', f: 'Reina Tirana' };
@@ -209,9 +207,7 @@ export function bossIdentity(id: string): BossIdentity | null {
   return { who: b.who, name: b.name, desc: b.desc, barks: { ...b.barks }, curse: { ...b.curse } };
 }
 
-// ───────────────────────── Contratos (rutas del plano) ─────────────────────────
-
-/** Lo que pasó en la obra en curso, para comprobar contratos. */
+/** Lo que pasó en el combate en curso: golpes recibidos, Golpes exactos, Comodines y formaciones. */
 export interface BattleStats {
   taken: number;
   cleans: number;
@@ -219,50 +215,7 @@ export interface BattleStats {
   forms: Formation[];
 }
 
-export interface Contract {
-  id: string;
-  name: string;
-  /** La condición (o la traba, si es de riesgo). */
-  desc: string;
-  reward: string;
-  /** De riesgo: endurece la obra y paga siempre que la termines. */
-  risk?: boolean;
-  cfg?(c: Config): void;
-  done?(b: BattleStats, state: GameState, run: Run): boolean;
-  pay(run: Run): void;
-}
-const turnLimit = (run: Run) => 3 + 4 * stageDef(run.stage).floors.length;
-export const CONTRACTS: Contract[] = [
-  { id: 'intacto', name: 'Piel intacta', desc: 'Terminá el asalto sin perder Vida.', reward: '+8 de oro', done: (b) => b.taken === 0, pay: (run) => void (run.gold += 8) },
-  { id: 'limpios', name: 'Pulso firme', desc: 'Da 3 Golpes exactos.', reward: 'Un sello de lacre al azar', done: (b) => b.cleans >= 3, pay: (run) => void stampRandom(run, 1) },
-  { id: 'rapido', name: 'Al galope', desc: 'Ganá el asalto en 3 turnos + 4 por guardia de cada trono, o menos (3 guardias: 15).', reward: '+6 de oro', done: (_, s, run) => s.turnCount < turnLimit(run), pay: (run) => void (run.gold += 6) },
-  { id: 'sincolapso', name: 'Mazo medido', desc: 'Terminá sin que se agote el Mazo.', reward: '+5 de oro', done: (_, s) => s.collapses === 0, pay: (run) => void (run.gold += 5) },
-  { id: 'austero', name: 'Sin motines', desc: 'No juegues ningún Comodín.', reward: 'Un acabado al azar', done: (b) => b.jokers === 0, pay: (run) => void treatRandom(run) },
-  { id: 'maestra', name: 'Jugada maestra', desc: 'Jugá un color, un full, un póker o una escalera de color.', reward: 'Un Pergamino al azar', done: (b) => b.forms.some((f) => ['color', 'full', 'poker', 'escaleracolor'].includes(f)), pay: (run) => void run.levels[pick(run, FORMATIONS, 1)[0]]++ },
-  { id: 'horas', name: 'Noche larga', desc: 'El Ataque de todos los tronos sube 1.', reward: '+10 de oro', risk: true, cfg: (c) => eachThreat(c, 1), pay: (run) => void (run.gold += 10) },
-  { id: 'sinred', name: 'Sin escudo', desc: 'El Escudo no puede pasar de 2.', reward: 'Un Amuleto Raro o mejor', risk: true, cfg: (c) => void (c.wallCap = Math.min(c.wallCap, 2)), pay: (run) => void grantTool(run, ['oficio', 'capataz', 'reliquia']) },
-  { id: 'corta', name: 'Conjura corta', desc: 'Juegan con 1 carta menos en la mano.', reward: '+12 de oro', risk: true, cfg: (c) => eachHand(c, -1), pay: (run) => void (run.gold += 12) },
-];
-export const CONTRACT: Record<string, Contract> = Object.fromEntries(CONTRACTS.map((c) => [c.id, c]));
-
-// ───────────────────────── Etiquetas sindicales (premio por saltar una obra) ─────────────────────────
-
-export interface Tag {
-  id: string;
-  name: string;
-  desc: string;
-  apply(run: Run): void;
-}
-export const TAGS: Tag[] = [
-  { id: 'vale', name: 'Llave de la Pulpería', desc: 'En la próxima Pulpería, Amuletos, sobres y Mesa de lacre son gratis.', apply: (run) => void (run.freeShop = true) },
-  { id: 'envio', name: 'Contrabando', desc: 'Recibís ya un Amuleto Noble o Regio.', apply: (run) => void (grantTool(run, ['capataz', 'reliquia']) || (run.gold += 12)) },
-  { id: 'molde', name: 'Molde de cera', desc: 'Duplicas la carta de tu Mazo que elijas.', apply: (run) => void (run.pending = { kind: 'dup' }) },
-  { id: 'liquidacion', name: 'Botín escondido', desc: '+15 de oro.', apply: (run) => void (run.gold += 15) },
-  { id: 'timbrado', name: 'Lacre doble', desc: 'Dos cartas al azar de tu Mazo reciben un sello de lacre.', apply: (run) => void stampRandom(run, 2) },
-];
-export const TAG: Record<string, Tag> = Object.fromEntries(TAGS.map((t) => [t.id, t]));
-
-// ───────────────────────── Hallazgos en los cimientos ─────────────────────────
+// ───────────────────────── Santuarios del Bufón (los Secretos de antes) ─────────────────────────
 
 /** Una opción leída en dos segundos: lo que da y lo que cuesta (≤ 24 caracteres; `cost` vacío si es gratis) y su emblema. */
 export interface EventRead {
@@ -540,12 +493,25 @@ export interface Offer {
 export type DraftOpt = { kind: 'special'; id: string } | { kind: 'card'; card: Card };
 export type Pending = { kind: 'forge'; i: number } | { kind: 'dup' } | { kind: 'fuse' };
 
-export interface MapNode {
-  /** Contratos entre los que elegir (vacío en las obras con jefe). */
-  routes: string[];
-  /** Etiqueta que se cobra por saltar la obra (null si no se puede saltar). */
-  tag: string | null;
-}
+/**
+ * V40 1e · Lo que se elige en una «Elegí una»: tres Bendiciones (una por Rey), dos Trampas del Bufón y una carta, o tres
+ * Amuletos (el Cofre del Rey jefe).
+ */
+export type TipoElegi = 'bendicion' | 'trampa' | 'amuleto';
+/** Cómo quedó una recompensa del Botín: por cobrar, cobrada o saltada. */
+export type EstadoRecompensa = 'abierta' | 'tomada' | 'saltada';
+/**
+ * V40 1e · Una recompensa del Botín, que se cobra o se salta por separado: el oro del combate, una «Elegí una» (sus
+ * opciones salen ya al ganar, para que se vean y se repitan con la semilla) o un Amuleto suelto (el del Guardia Bravo).
+ */
+export type Recompensa =
+  | { k: 'oro'; n: number; estado: EstadoRecompensa }
+  | { k: 'elegi'; tipo: 'bendicion'; opciones: OpcionBend[]; estado: EstadoRecompensa }
+  | { k: 'elegi'; tipo: 'trampa'; opciones: DraftOpt[]; estado: EstadoRecompensa }
+  | { k: 'elegi'; tipo: 'amuleto'; opciones: string[]; estado: EstadoRecompensa }
+  | { k: 'amuleto'; id: string; estado: EstadoRecompensa };
+/** El combate en curso (o el último): el asalto del tramo o un Guardia Bravo del camino. */
+export type Combate = 'asalto' | 'bravo';
 
 /**
  * V29 · El Don de la Conjura: lo que se elige (uno de tres) al abrir la campaña. Un Amuleto común, un sello de lacre
@@ -557,13 +523,21 @@ export type Don = { kind: 'tool'; id: string } | { kind: 'sello'; seal: Seal; ca
 export type RunAction =
   /** Sobre: empezar la campaña con el Don i (sin `don`, sin regalo: la pantalla siempre manda uno). */
   | { t: 'begin'; don?: number }
-  /** Plano: tomar la ruta i (su contrato) y entrar a la obra. */
-  | { t: 'route'; i: number }
-  /** Plano: saltar la obra a cambio de la etiqueta. */
-  | { t: 'skip' }
-  /** Cobro: llevarse la opción i de la selección, o ninguna (bonifica oro). */
-  | { t: 'draft'; i: number | null }
-  | { t: 'loot'; id: string | null }
+  /** V40 1e · Mapa: ir al nodo (uno de los alcanzables). Un nodo de combate empieza el combate. */
+  | { t: 'ir'; nodo: number }
+  /** V40 1e · Botín: cobrar la recompensa i (el oro y el Amuleto, en el acto; una «Elegí una» se abre). */
+  | { t: 'cobrar'; i: number }
+  /** V40 1e · Botín: saltar la recompensa i sin cobrarla. */
+  | { t: 'saltar'; i: number }
+  /** V40 1e · «Elegí una» abierta: tomar la opción j, o Saltar (null). */
+  | { t: 'elegir'; j: number | null }
+  /** V40 1e · «Elegí una» abierta: volver a la lista sin decidir. */
+  | { t: 'volver' }
+  /** V40 1e · Botín: seguir (lo que quede sin cobrar se pierde) y volver al Mapa. */
+  | { t: 'seguir' }
+  /** V40 1e · Fogón: Curar, o Purgar una carta del mazo (gratis; con el Cartógrafo del Altar, las dos). */
+  | { t: 'fogon'; que: 'curar' }
+  | { t: 'fogon'; que: 'purgar'; card: string }
   | { t: 'buy'; i: number }
   /** Sobre abierto: quedarse con la carta i. */
   | { t: 'open'; i: number }
@@ -578,7 +552,6 @@ export type RunAction =
   | { t: 'event'; i: number }
   /** V40 1c · Oferta de Bendiciones: tomar la opción i. */
   | { t: 'bendicion'; i: number }
-  /** Cinturón: nuevo orden de las herramientas (permutación de índices). */
   /** Tras el asalto 5: seguir en el Trono infinito. */
   | { t: 'endless' };
 
@@ -619,8 +592,12 @@ export interface Run {
   seals: Seal[];
   treats: Treatment[];
   stage: number;
-  /** `bendicion` (V40 1c): la oferta de Bendiciones, al empezar la campaña y antes de cada asalto 2 a 5. */
-  phase: 'pack' | 'bendicion' | 'map' | 'battle' | 'reward' | 'shop' | 'event' | 'won' | 'lost';
+  /**
+   * `bendicion` (V40 1c): la oferta de Bendiciones al empezar la campaña (las de después van en el Botín). V40 1e:
+   * `map`, el Mapa de caminos; `reward`, el Botín (con su «Elegí una» abierta en `elegi`); `shop`, La Pulpería;
+   * `event`, un Santuario del Bufón; `fogon`, el Fogón.
+   */
+  phase: 'pack' | 'bendicion' | 'map' | 'battle' | 'reward' | 'shop' | 'event' | 'fogon' | 'won' | 'lost';
   gold: number;
   integrity: number;
   maxIntegrity: number;
@@ -635,23 +612,25 @@ export interface Run {
   /** Palos de los tronos presentes en los asaltos que no tienen los cuatro (1 y 2), sorteados al crear la campaña. */
   palos: Record<number, Suit[]>;
   boss: string | null;
-  node: MapNode;
-  contract: string | null;
-  /** Lo que pasó con el contrato de la última obra. */
-  contractDone: boolean | null;
-  /** El contrato maldito: la próxima obra tiene +1 de amenaza. */
+  /** V40 1e · El Mapa de caminos de la campaña (src/rules/mapa.ts), con el nodo donde se está y los ya recorridos. */
+  mapa: Mapa;
+  /** V40 1e · El combate en curso o el último (asalto del tramo o Guardia Bravo). */
+  combate: Combate | null;
+  /** El decreto maldito: el próximo asalto tiene +1 de Ataque. */
   curse: boolean;
-  freeShop: boolean;
   pack: string[];
   /** V29 · los tres Dones que ofrece la conjura al abrir la campaña (una campaña guardada antes de la 29.0 no los trae). */
   don?: Don[];
   /** El Don elegido (su índice), ya aplicado. */
   donTaken?: number;
+  /** Las líneas del oro del último combate ganado (lo que suma la recompensa de oro del Botín). */
   pay: [string, number][];
-  draft: DraftOpt[];
-  drafted: boolean;
-  loot: string[];
-  looted: boolean;
+  /** V40 1e · El Botín del último combate ganado: cada recompensa se cobra o se salta por separado. */
+  botin: Recompensa[];
+  /** V40 1e · La «Elegí una» abierta (el índice de su recompensa en `botin`), o null. */
+  elegi: number | null;
+  /** V40 1e · Lo que el Fogón aún deja hacer (una de las dos; con el Cartógrafo del Altar, las dos), o null. */
+  fogon: { curar: boolean; purgar: boolean } | null;
   shop: Offer[];
   /** Sobre abierto, esperando que elijas una de sus cartas. */
   sobre: string[] | null;
@@ -673,12 +652,14 @@ export interface Run {
   endless: boolean;
   /** Ya cayó la Torre Madre. */
   conquered: boolean;
-  /** Obras que se saltaron por el atajo (para sellarlas en el plano). */
-  skipped: number[];
   /** Jefes derrotados y obras terminadas con el búnker entero. */
   beaten: string[];
   intact: number;
-  stats: { floors: number; cleans: number; turns: number; gold: number; maxHit: number; burned: number; forged: number; contracts: number; skips: number; toolUse: Record<string, number>; stageTurns: number[]; esquirlas: number; gotas: number; sellosGratis: number };
+  /**
+   * V40 1e: `contracts` cuenta los Guardias Bravos vencidos y `skips` los Fogones (sus logros cambiaron de texto);
+   * `nodos`, los nodos del Mapa recorridos por tipo; `bravoTurns`, los turnos de cada Guardia Bravo.
+   */
+  stats: { floors: number; cleans: number; turns: number; gold: number; maxHit: number; burned: number; forged: number; contracts: number; skips: number; toolUse: Record<string, number>; stageTurns: number[]; esquirlas: number; gotas: number; sellosGratis: number; nodos: Partial<Record<TipoNodo, number>>; bravoTurns: number[] };
   /** Esquirlas de Corona de la mesa y de los huesos en esta campaña (se cobran al cerrarla, también al perder). */
   esquirlas: number;
   /** Gotas de lacre: con `caida.gotasPorSello`, la Mesa de lacre sella gratis. */
@@ -754,9 +735,9 @@ export function tomaBendicion(run: Run, id: string): void {
 }
 
 /** El Cofre del Rey jefe: tres Amuletos a elegir uno, Raros, Nobles o Regios al azar. */
-function cofreDelMonarca(run: Run): string[] {
+function cofreDelMonarca(run: Run, n = 3): string[] {
   const out: string[] = [];
-  while (out.length < 3) {
+  while (out.length < n) {
     const id = rollTool(run, ['oficio', 'capataz', 'reliquia'], out) ?? rollTool(run, ALL_RARITIES, out);
     if (!id) break;
     out.push(id);
@@ -945,17 +926,14 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     bosses: {},
     palos: {},
     boss: null,
-    node: { routes: [], tag: null },
-    contract: null,
-    contractDone: null,
+    mapa: { nodos: [], en: -1, hechos: [] },
+    combate: null,
     curse: false,
-    freeShop: false,
     pack: [],
     pay: [],
-    draft: [],
-    drafted: true,
-    loot: [],
-    looted: true,
+    botin: [],
+    elegi: null,
+    fogon: null,
     shop: [],
     sobre: null,
     pending: null,
@@ -969,10 +947,9 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     battle: { taken: 0, cleans: 0, jokers: 0, forms: [] },
     endless: false,
     conquered: false,
-    skipped: [],
     beaten: [],
     intact: 0,
-    stats: { floors: 0, cleans: 0, turns: 0, gold: 0, maxHit: 0, burned: 0, forged: 0, contracts: 0, skips: 0, toolUse: {}, stageTurns: [], esquirlas: 0, gotas: 0, sellosGratis: 0 },
+    stats: { floors: 0, cleans: 0, turns: 0, gold: 0, maxHit: 0, burned: 0, forged: 0, contracts: 0, skips: 0, toolUse: {}, stageTurns: [], esquirlas: 0, gotas: 0, sellosGratis: 0, nodos: {}, bravoTurns: [] },
     esquirlas: 0,
     gotas: 0,
     caida: caidaVacia(),
@@ -995,7 +972,9 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     const chosen = rey ? [rey, ...pick(run, SUITS.filter((x) => x !== rey), s.thrones - 1)] : pick(run, SUITS, s.thrones);
     run.palos[i + 1] = SUITS.filter((x) => chosen.includes(x));
   });
-  run.events = pick(run, EVENTS, EVENT_AFTER.length).map((e) => e.id);
+  // V40 1e · los Santuarios del Bufón del Mapa sacan sus Secretos de esta fila, en orden (todos, barajados)
+  run.events = pick(run, EVENTS, EVENTS.length).map((e) => e.id);
+  run.mapa = generaMapa(run.id, LAST_STAGE, (t) => stageDef(t).boss);
   return run;
 }
 
@@ -1023,9 +1002,20 @@ export const TIMBRE: { stamps: number } = BALANCE.timbre;
 export const CLAUSURA: { stages: number[]; threat: number } = BALANCE.clausura;
 ASCENSIONS.forEach((a) => (a.desc = fill(a.desc, { pct: Math.round((REIN.corazas - 1) * 100), reyes: Math.round((REIN.reyesAcorazados - 1) * 100), furia: REIN.furia, rey: REIN.reyColerico, heridas: REIN.heridasViejas, noche: REIN.guardiaNoche, asaltos: CLAUSURA.stages.length > 1 ? `los asaltos ${CLAUSURA.stages.join(' y ')}` : `el asalto ${CLAUSURA.stages[0]}`, clausura: CLAUSURA.threat })));
 
-/** Reglas efectivas de la obra actual: base + nivel de obra + planos + herramientas + jefe + contrato. */
+/** V40 1e · Las cifras del Mapa (`mapa` de balance-config.json): el Guardia Bravo y el Fogón. */
+export const MAPA_CFG: BalanceMapa = BALANCE.mapa;
+type BalanceMapa = typeof BALANCE.mapa;
+/** V40 1e · El nodo del Mapa donde se está (null antes de entrar al primero). */
+export const nodoActual = (run: Pick<Run, 'mapa'>): NodoMapa | null => run.mapa?.nodos[run.mapa.en] ?? null;
+/** V40 1e · El rango del Guardia Bravo del tramo t: el guardia más alto del asalto que viene (Caballo, o Rey en 4 y 5). */
+export const rangoBravo = (t: number): number => Math.max(...stageDef(t).floors);
+/** V40 1e · El Guardia Bravo que se está combatiendo (su nodo), o null si el combate es el asalto. */
+const bravoEnCurso = (run: Run): NodoMapa | null => (run.combate === 'bravo' ? nodoActual(run) : null);
+
+/** Reglas efectivas del combate actual: base + Reinado + Pergaminos + Amuletos + Bendiciones + jefe (o el Guardia Bravo). */
 export function stageConfig(run: Run, players = 1): Config {
   const st = stageDef(run.stage);
+  const bravo = bravoEnCurso(run);
   const cfg: Config = structuredClone(DEFAULT_CONFIG);
   cfg.maxIntegrity = run.maxIntegrity;
   // V40 · cada Mazo puede jugar con una carta más o menos en la mano (`mazos.<id>.mano`)
@@ -1033,22 +1023,23 @@ export function stageConfig(run: Run, players = 1): Config {
   cfg.handSize = { [players]: MANO_BASE + run.handBonus + manoMazo };
   // en cuadrilla hay más manos entre las que elegir: las obras aguantan más
   const a = run.ascension;
-  const scale = st.hp * (a >= 1 ? REIN.corazas : 1) * COOP_HP[Math.min(players, 4) - 1];
+  // V40 1e · el Guardia Bravo: más Vida y más Ataque que los guardias del asalto que viene
+  const scale = st.hp * (a >= 1 ? REIN.corazas : 1) * COOP_HP[Math.min(players, 4) - 1] * (bravo ? MAPA_CFG.bravo.vida : 1);
   for (const r of FIGURAS) {
     // Reinado 4 «Reyes acorazados»: en los asaltos con monarca, los Reyes tienen más Vida
     const reyes = a >= 3 && st.boss && r === REY ? REIN.reyesAcorazados : 1;
     // la Vida final, redondeada al múltiplo de 5 más cercano (asalto, Reinado y conjura ya aplicados)
     cfg.floorHp[r] = roundHp(DEFAULT_CONFIG.floorHp[r] * scale * reyes);
-    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === REY ? REIN.reyColerico : 0) + (a >= 6 && r !== REY ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0));
+    cfg.floorThreat[r] = Math.max(1, DEFAULT_CONFIG.floorThreat[r] + st.threat + (a >= 4 && r === REY ? REIN.reyColerico : 0) + (a >= 6 && r !== REY ? REIN.guardiaNoche : 0) + (a >= 7 && CLAUSURA.stages.includes(run.stage) ? CLAUSURA.threat : 0) + (bravo ? MAPA_CFG.bravo.ataque : 0));
   }
   // V35 · duelo Casa por Casa: se combate la primera en pie de `orden`. Sin reloj de turnos: la Furia sube con cada
   // Mazo agotado y, contra el monarca (el último guardia del asalto), con cada turno
   // Corte airada (Reinado 3+): cada Mazo agotado sube la Furia un poco más
   cfg.collapseSiege = FURIA.mazo + (a >= 2 ? REIN.furia : 0);
-  cfg.orden = ordenCasas(run);
+  cfg.orden = bravo?.palo ? [bravo.palo] : ordenCasas(run);
   // V40 1c · el Rey jefe: su Vida (× la del monarca) y su Furia propia; en el asalto 2 ocupa el sitio del Caballo
-  const rey = st.boss ? BOSS[run.bosses[run.stage]] : undefined;
-  if (st.boss) {
+  const rey = st.boss && !bravo ? BOSS[run.bosses[run.stage]] : undefined;
+  if (st.boss && !bravo) {
     const r = rey ? RY[rey.id] : { vida: 1, furia: FURIA.rey };
     const corto = !st.floors.includes(REY);
     cfg.jefe = {
@@ -1073,9 +1064,9 @@ export function stageConfig(run: Run, players = 1): Config {
   nivelesCfg(cfg, nivelesReyes(fuentesDe(bend, run.tools)));
   const escudo = escudoInicial(bend, run.tools);
   if (escudo) cfg.wallStart = (cfg.wallStart ?? 0) + escudo;
-  if (run.boss) BOSS[run.boss]?.apply(cfg);
-  if (run.contract) CONTRACT[run.contract]?.cfg?.(cfg);
-  if (run.curse) eachThreat(cfg, 1);
+  if (run.boss && !bravo) BOSS[run.boss]?.apply(cfg);
+  // el decreto maldito de un Santuario pesa sobre el próximo asalto (no sobre un Guardia Bravo)
+  if (run.curse && !bravo) eachThreat(cfg, 1);
   return cfg;
 }
 
@@ -1089,7 +1080,9 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
   run.death = null;
   run.caida = caidaVacia();
   run.ritual = null;
-  const towers = newTowers(stageDef(run.stage).floors, config, run.palos?.[run.stage]);
+  // V40 1e · el Guardia Bravo es un solo guardia, en su Casa
+  const bravo = bravoEnCurso(run);
+  const towers = bravo?.palo ? newTowers([rangoBravo(run.stage)], config, [bravo.palo]) : newTowers(stageDef(run.stage).floors, config, run.palos?.[run.stage]);
   // V40 1c · el último guardia de la Casa del jefe es su Rey (en el asalto 2, en el sitio del Caballo)
   if (config.jefe) {
     const t = towers[config.jefe.suit];
@@ -1131,7 +1124,7 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
 }
 
 /**
- * Anota lo que la campaña necesita de cada jugada (golpes limpios, Juramentos, estadísticas) y abona en el acto
+ * Anota lo que la campaña necesita de cada jugada (golpes limpios, estadísticas) y abona en el acto
  * lo que cae a la mesa (`caidaDe`): monedas a `run.gold`, esquirlas a `run.esquirlas`, gotas a `run.gotas`, y lo
  * del asalto a `run.caida`. Devuelve las piezas, para que el cliente las haga volar.
  */
@@ -1174,9 +1167,38 @@ export const removeCost = (run: Run) => BALANCE.taberna.hoguera.base + BALANCE.t
 export const healCost = (run: Run) => BALANCE.taberna.curar.base + BALANCE.taberna.curar.paso * run.heals;
 export const rerollCost = (run: Run) => (run.vouchers > 0 ? 0 : BALANCE.taberna.renovar.base + BALANCE.taberna.renovar.paso * run.rerolls);
 /** La Mesa de lacre sella gratis si llevás `caida.gotasPorSello` gotas de lacre (y las gasta al sellar). */
-export const selloGratis = (run: Run, o: Offer): boolean => !run.freeShop && o.kind === 'forja' && run.gotas >= BALANCE.caida.gotasPorSello;
-export const offerCost = (run: Run, o: Offer) => (run.freeShop || selloGratis(run, o) ? 0 : o.cost);
+export const selloGratis = (run: Run, o: Offer): boolean => o.kind === 'forja' && run.gotas >= BALANCE.caida.gotasPorSello;
+export const offerCost = (run: Run, o: Offer) => (selloGratis(run, o) ? 0 : o.cost);
 export const sellValue = (id: string) => Math.max(1, Math.floor(RARITY[TOOL[id]?.rarity ?? 'comun'].cost / 2));
+
+/** V40 1e · Un servicio de La Pulpería o del Fogón: su precio (0 si es gratis) y si se puede usar ahora. */
+export interface Servicio {
+  precio: number;
+  puede: boolean;
+}
+/**
+ * V40 1e · Los servicios de La Pulpería, con sus precios como datos: Purgar (quitar una carta del mazo; el precio sube
+ * `paso` por cada uso en la campaña), Curar (`vida` de Vida por oro; también sube con el uso) y Renovar la mesa.
+ */
+export function serviciosPulperia(run: Run): { purgar: Servicio & { paso: number }; curar: Servicio & { vida: number; paso: number }; renovar: Servicio & { paso: number; vales: number } } {
+  const T = BALANCE.taberna;
+  return {
+    purgar: { precio: removeCost(run), paso: T.hoguera.paso, puede: run.phase === 'shop' && run.gold >= removeCost(run) && run.deck.length > MIN_DECK },
+    curar: { precio: healCost(run), vida: T.curar.vida, paso: T.curar.paso, puede: run.phase === 'shop' && run.gold >= healCost(run) && run.integrity < run.maxIntegrity },
+    renovar: { precio: rerollCost(run), paso: T.renovar.paso, vales: run.vouchers, puede: run.phase === 'shop' && run.gold >= rerollCost(run) },
+  };
+}
+/** V40 1e · En qué bandeja de La Pulpería va cada oferta: la de Amuletos o la de cartas (Trampas, sellos y Pergaminos). */
+export const BANDEJA: Record<OfferKind, 'amuletos' | 'cartas'> = { tool: 'amuletos', sobre: 'cartas', clandestino: 'cartas', forja: 'cartas', plano: 'cartas' };
+/** V40 1e · Los servicios del Fogón: Curar `curar` de Vida o Purgar una carta, gratis; uno de los dos (con el Cartógrafo, los dos). */
+export function serviciosFogon(run: Run): { curar: Servicio & { vida: number }; purgar: Servicio; ambos: boolean } {
+  const f = run.fogon;
+  return {
+    curar: { precio: 0, vida: MAPA_CFG.fogon.curar, puede: run.phase === 'fogon' && !!f?.curar && run.integrity < run.maxIntegrity },
+    purgar: { precio: 0, puede: run.phase === 'fogon' && !!f?.purgar && run.deck.length > MIN_DECK },
+    ambos: rangoDe(run.up, 'rutas') > 0,
+  };
+}
 
 function generateShop(run: Run): Offer[] {
   return stock(run);
@@ -1207,30 +1229,19 @@ function openShop(run: Run): void {
   run.shop = generateShop(run);
 }
 
-/** Entra al plano de la obra en curso: sus rutas, su atajo o su jefe. */
+/** V40 1e · Vuelve al Mapa de caminos (tras un nodo que no es combate, o tras el Botín). */
 function toMap(run: Run): void {
   run.phase = 'map';
-  run.contract = null;
-  run.contractDone = null;
-  run.boss = null;
-  const st = stageDef(run.stage);
-  if (st.boss) {
-    if (!run.bosses[run.stage]) run.bosses[run.stage] = pick(run, BOSSES.filter((b) => b.id !== run.bosses[run.stage - 1]), 1)[0].id;
-    run.node = { routes: [], tag: null };
-    return;
-  }
-  // la primera ruta nunca es de riesgo; el Cartógrafo de la Orden añade una tercera. El Atajo, solo donde lo hay (asalto 3)
-  const [safe] = pick(run, CONTRACTS.filter((c) => !c.risk), 1);
-  const others = pick(run, CONTRACTS.filter((c) => c.id !== safe.id), 1 + lvl(run, 'rutas'));
-  run.node = { routes: [safe.id, ...others.map((c) => c.id)], tag: st.atajo ? pick(run, TAGS, 1)[0].id : null };
+  run.shop = [];
+  run.event = null;
+  run.fogon = null;
+  run.elegi = null;
+  run.botin = [];
 }
 
-/**
- * V40 1c · Entra al asalto en curso: antes, si toca, la oferta de Bendiciones (al empezar la campaña, de `oferta.inicio`
- * Reyes; antes de los asaltos 2 a 5, de `oferta.entre`); si no, el Mapa. Cada asalto ofrece una sola vez.
- */
+/** V40 1c · Al empezar la campaña, la oferta de Bendiciones (de `oferta.inicio` Reyes); después, el Mapa. */
 function entra(run: Run): void {
-  if (!run.endless && run.stage <= LAST_STAGE && run.ofertaDe !== run.stage) {
+  if (!run.endless && run.ofertaDe !== run.stage) {
     run.ofertaDe = run.stage;
     const op = ofertaBendiciones(run.id, run.stage, run.bendiciones, reyesEnOferta(run.stage === 1));
     if (op.length) {
@@ -1242,15 +1253,6 @@ function entra(run: Run): void {
   toMap(run);
 }
 
-function advance(run: Run): void {
-  run.stage++;
-  run.curse = run.curse && run.phase === 'event'; // el contrato maldito pesa sobre la obra que viene
-  run.shop = [];
-  run.event = null;
-  run.freeShop = false;
-  entra(run);
-}
-
 function draftOptions(run: Run): DraftOpt[] {
   const specials = rollSpecials(run, 2).map((id): DraftOpt => ({ kind: 'special', id }));
   // V40 · el Truco no reparte 8 ni 9
@@ -1260,7 +1262,82 @@ function draftOptions(run: Run): DraftOpt[] {
   return [...specials, { kind: 'card', card }];
 }
 
-/** Cierra la batalla: sincroniza mazo y cinturón, y si se ganó cobra y abre la selección. */
+// ───────────────────────── V40 1e · El Mapa de caminos ─────────────────────────
+
+/** V40 1e · Los nodos a los que se puede ir ahora (vacío si no se está en el Mapa). */
+export const nodosAlcanzables = (run: Run): NodoMapa[] => (run.phase === 'map' ? alcanzables(run.mapa).map((id) => run.mapa.nodos[id]) : []);
+
+/** V40 1e · Lo que se puede esperar de un nodo, para la vista previa del Mapa: oro, «Elegí una», Amuleto o cura. */
+export interface BotinPrevisto {
+  /** Oro de base (sin la Vida que quede, el interés ni los dados). */
+  oro: number;
+  elegi: TipoElegi[];
+  amuleto: boolean;
+  /** Fogón: lo que cura (o Purgar gratis). */
+  cura?: number;
+}
+export function botinPrevisto(run: Run, tipo: TipoNodo, tramo = run.stage): BotinPrevisto {
+  if (tipo === 'bravo') return { oro: MAPA_CFG.bravo.oro, elegi: [], amuleto: true };
+  if (tipo === 'fogon') return { oro: 0, elegi: [], amuleto: false, cura: MAPA_CFG.fogon.curar };
+  if (tipo === 'guardia' || tipo === 'rey') {
+    const ultimo = tramo >= LAST_STAGE && !run.endless;
+    const elegi: TipoElegi[] = ultimo ? [] : [...(!run.endless && tramo < LAST_STAGE ? (['bendicion'] as const) : []), 'trampa', ...(tipo === 'rey' ? (['amuleto'] as const) : [])];
+    return { oro: ultimo ? 0 : Math.max(0, BALANCE.cobro.asalto + Math.min(tramo, LAST_STAGE)), elegi, amuleto: false };
+  }
+  return { oro: 0, elegi: [], amuleto: false };
+}
+
+/** V40 1e · En el Trono infinito el Mapa crece: un tramo nuevo por asalto (siempre con Rey jefe). */
+function asegurTramo(run: Run): void {
+  if (asaltoDe(run.mapa, run.stage)) return;
+  if (!run.bosses[run.stage]) run.bosses[run.stage] = pick(run, BOSSES.filter((b) => b.id !== run.bosses[run.stage - 1]), 1)[0].id;
+  agregaTramo(run.mapa, run.id, run.stage, stageDef(run.stage).boss);
+}
+
+/** V40 1e · Ir a un nodo alcanzable: un combate empieza; La Pulpería, un Santuario o el Fogón se abren. */
+function irA(run: Run, id: number): string | null {
+  if (run.phase !== 'map') return 'No estás en el Mapa.';
+  if (!alcanzables(run.mapa).includes(id)) return 'Ese camino no sale de acá.';
+  const n = run.mapa.nodos[id];
+  run.mapa.en = id;
+  run.mapa.hechos.push(id);
+  run.stats.nodos[n.tipo] = (run.stats.nodos[n.tipo] ?? 0) + 1;
+  if (n.tipo === 'guardia' || n.tipo === 'rey') {
+    run.combate = 'asalto';
+    run.boss = stageDef(run.stage).boss ? run.bosses[run.stage] : null;
+    run.phase = 'battle';
+    // el Anillo de sello sella cartas del mazo antes de cada asalto
+    run.stamped = run.tools.some((t) => t.id === 'timbre') ? stampRandom(run, TIMBRE.stamps).map((c) => c.id) : [];
+    if (run.stamped.length) run.stats.toolUse.timbre = (run.stats.toolUse.timbre ?? 0) + run.stamped.length;
+  } else if (n.tipo === 'bravo') {
+    run.combate = 'bravo';
+    run.boss = null;
+    run.stamped = [];
+    run.phase = 'battle';
+  } else if (n.tipo === 'pulperia') openShop(run);
+  else if (n.tipo === 'santuario') {
+    run.phase = 'event';
+    run.suerte = null;
+    run.event = run.events.shift() ?? pick(run, EVENTS, 1)[0].id;
+  } else {
+    run.phase = 'fogon';
+    run.fogon = { curar: true, purgar: true };
+    run.stats.skips++;
+  }
+  return null;
+}
+
+/** V40 1e · Usa un servicio del Fogón: sin el Cartógrafo se acaba el Fogón; con él, queda el otro. Sin nada más, al Mapa. */
+function usaFogon(run: Run, que: 'curar' | 'purgar'): void {
+  const f = run.fogon!;
+  if (serviciosFogon(run).ambos) f[que] = false;
+  else f.curar = f.purgar = false;
+  if (!f.curar && !f.purgar) toMap(run);
+}
+
+// ───────────────────────── V40 1e · El Botín ─────────────────────────
+
+/** Cierra el combate: sincroniza mazo y Amuletos y, si se ganó, arma el Botín (o cierra la campaña). */
 export function finishBattle(run: Run, state: GameState): void {
   if (run.phase !== 'battle' || state.phase === 'playing') return;
   run.tools = state.tools.map((t) => ({ ...t }));
@@ -1269,10 +1346,31 @@ export function finishBattle(run: Run, state: GameState): void {
   run.deck = run.deck.filter((c) => !state.burned.includes(c.id));
   run.scrap = state.scrap;
   run.stats.turns += state.turnCount;
-  run.stats.stageTurns.push(state.turnCount);
+  const bravo = run.combate === 'bravo';
+  if (bravo) run.stats.bravoTurns.push(state.turnCount);
+  else run.stats.stageTurns.push(state.turnCount);
+  run.elegi = null;
   if (state.phase === 'lost') {
     run.integrity = 0;
     run.phase = 'lost';
+    return;
+  }
+  // V40 1e · el Guardia Bravo: su oro y un Amuleto Raro o mejor; la Vida sigue como quedó (sin cura de asalto)
+  if (bravo) {
+    run.integrity = Math.min(run.maxIntegrity, state.integrity);
+    run.stats.contracts++;
+    run.pay = [['Guardia Bravo', MAPA_CFG.bravo.oro]];
+    // el Amuleto del Bravo: uno suelto, o a elegir entre  (Raros o mejores)
+    const ops = cofreDelMonarca(run, MAPA_CFG.bravo.amuletos);
+    run.botin = [{ k: 'oro', n: MAPA_CFG.bravo.oro, estado: 'abierta' }];
+    if (ops.length === 1) run.botin.push({ k: 'amuleto', id: ops[0], estado: 'abierta' });
+    else if (ops.length) run.botin.push({ k: 'elegi', tipo: 'amuleto', opciones: ops, estado: 'abierta' });
+    // los Reyes también ofrecen: una Bendición a elegir entre las de `bendicion` Reyes (0: ninguna)
+    if (MAPA_CFG.bravo.bendicion && !run.endless) {
+      const op = ofertaBendiciones(run.id ^ 0x2545f491, run.stage * 10 + run.stats.contracts, run.bendiciones, MAPA_CFG.bravo.bendicion);
+      if (op.length) run.botin.push({ k: 'elegi', tipo: 'bendicion', opciones: op, estado: 'abierta' });
+    }
+    run.phase = 'reward';
     return;
   }
   const st = stageDef(run.stage);
@@ -1297,36 +1395,43 @@ export function finishBattle(run: Run, state: GameState): void {
   run.stats.esquirlas += run.ritual.esquirlas.extra;
   run.pay = lines.filter(([, n]) => n > 0);
   const total = run.pay.reduce((a, [, n]) => a + n, 0);
-  run.gold += total;
-  run.stats.gold += total;
   if (state.integrity >= run.maxIntegrity) run.intact++;
   if (run.boss) run.beaten.includes(run.boss) || run.beaten.push(run.boss);
   run.integrity = Math.min(run.maxIntegrity, state.integrity + BALANCE.cobro.curaTrasAsalto + vidaBend);
-  const contract = run.contract ? CONTRACT[run.contract] : null;
-  if (contract) {
-    run.contractDone = contract.risk ? true : !!contract.done?.(run.battle, state, run);
-    if (run.contractDone) {
-      contract.pay(run);
-      run.stats.contracts++;
-    }
-  }
   run.curse = false;
   if (run.stage === LAST_STAGE && !run.endless) {
+    run.gold += total;
+    run.stats.gold += total;
     run.conquered = true;
     run.esquirlasCorte = run.esquirlas;
     run.phase = 'won';
     return;
   }
+  // el Botín del asalto: el oro, la Bendición del asalto que viene (los Reyes ofrecen), una Trampa o carta y, si cayó
+  // un Rey jefe, su Cofre (tres Amuletos Raros o mejores)
+  const botin: Recompensa[] = [{ k: 'oro', n: total, estado: 'abierta' }];
+  if (!run.endless && run.stage < LAST_STAGE && (st.boss || MAPA_CFG.bendicionGuardia)) {
+    const op = ofertaBendiciones(run.id, run.stage + 1, run.bendiciones, reyesEnOferta(false));
+    if (op.length) botin.push({ k: 'elegi', tipo: 'bendicion', opciones: op, estado: 'abierta' });
+  }
+  botin.push({ k: 'elegi', tipo: 'trampa', opciones: draftOptions(run), estado: 'abierta' });
+  if (st.boss) {
+    const cofre = cofreDelMonarca(run);
+    if (cofre.length) botin.push({ k: 'elegi', tipo: 'amuleto', opciones: cofre, estado: 'abierta' });
+  }
+  run.botin = botin;
   run.phase = 'reward';
-  run.draft = draftOptions(run);
-  run.drafted = false;
-  run.loot = st.boss ? cofreDelMonarca(run) : [];
-  run.looted = run.loot.length === 0;
+}
+
+/** Cobra el oro de una recompensa. */
+function cobraOro(run: Run, n: number): void {
+  run.gold += n;
+  run.stats.gold += n;
 }
 
 /** Aplica una decisión de campaña. Devuelve un mensaje de error legible, o null si se aplicó. */
 export function runAction(run: Run, a: RunAction): string | null {
-  if (run.pending && a.t !== 'target' && a.t !== 'cancel') return 'Antes elige las cartas pendientes.';
+  if (run.pending && a.t !== 'target' && a.t !== 'cancel') return 'Antes elegí las cartas pendientes.';
   switch (a.t) {
     case 'begin':
       if (run.phase !== 'pack') return 'La campaña ya empezó.';
@@ -1342,55 +1447,97 @@ export function runAction(run: Run, a: RunAction): string | null {
       toMap(run);
       return null;
     }
-    case 'route': {
-      if (run.phase !== 'map') return 'No estás en el Mapa del castillo.';
-      const boss = stageDef(run.stage).boss;
-      if (!boss && !run.node.routes[a.i]) return 'Esa ruta no existe.';
-      run.contract = boss ? null : run.node.routes[a.i];
-      run.boss = boss ? run.bosses[run.stage] : null;
-      run.phase = 'battle';
-      // el Timbre del gremio sella cartas del mazo antes de cada obra
-      run.stamped = run.tools.some((t) => t.id === 'timbre') ? stampRandom(run, TIMBRE.stamps).map((c) => c.id) : [];
-      if (run.stamped.length) run.stats.toolUse.timbre = (run.stats.toolUse.timbre ?? 0) + run.stamped.length;
-      return null;
-    }
-    case 'skip': {
-      if (run.phase !== 'map' || !run.node.tag) return 'Este asalto no tiene Atajo.';
-      const tag = TAG[run.node.tag];
-      run.stats.skips++;
-      run.skipped.push(run.stage);
-      tag.apply(run);
-      run.stage++;
-      entra(run);
-      return null;
-    }
-    case 'draft': {
-      if (run.phase !== 'reward' || run.drafted) return 'No hay selección pendiente.';
-      if (a.i === null) run.gold += BALANCE.cobro.sinSeleccion;
-      else {
-        const opt = run.draft[a.i];
-        if (!opt) return 'Esa carta no está en la selección.';
-        if (opt.kind === 'special') addSpecial(run, opt.id);
-        else run.deck.push({ ...opt.card });
-      }
-      run.drafted = true;
-      if (run.looted) openShop(run);
-      return null;
-    }
-    case 'loot':
-      if (run.phase !== 'reward' || run.looted) return 'No hay botín que elegir.';
-      if (a.id !== null) {
-        if (!run.loot.includes(a.id)) return 'Ese Amuleto no está en el botín.';
+    case 'ir':
+      return irA(run, a.nodo);
+    case 'cobrar': {
+      if (run.phase !== 'reward' || run.elegi !== null) return 'No hay Botín que cobrar.';
+      const r = run.botin[a.i];
+      if (!r || r.estado !== 'abierta') return 'Esa recompensa ya no está.';
+      if (r.k === 'oro') cobraOro(run, r.n);
+      else if (r.k === 'amuleto') {
         if (run.tools.length >= toolSlots(run)) return `Solo caben ${toolSlots(run)} Amuletos.`;
-        placeTool(run.tools, { id: a.id, n: 0 });
+        placeTool(run.tools, { id: r.id, n: 0 });
+      } else {
+        run.elegi = a.i;
+        return null;
       }
-      run.looted = true;
-      if (run.drafted) openShop(run);
+      r.estado = 'tomada';
       return null;
+    }
+    case 'saltar': {
+      if (run.phase !== 'reward' || run.elegi !== null) return 'No hay Botín que saltar.';
+      const r = run.botin[a.i];
+      if (!r || r.estado !== 'abierta') return 'Esa recompensa ya no está.';
+      r.estado = 'saltada';
+      if (r.k === 'elegi' && r.tipo === 'trampa') cobraOro(run, BALANCE.cobro.sinSeleccion);
+      return null;
+    }
+    case 'elegir': {
+      if (run.phase !== 'reward' || run.elegi === null) return 'No hay nada que elegir.';
+      const r = run.botin[run.elegi];
+      if (!r || r.k !== 'elegi' || r.estado !== 'abierta') return 'Esa recompensa ya no está.';
+      if (a.j === null) {
+        r.estado = 'saltada';
+        if (r.tipo === 'trampa') cobraOro(run, BALANCE.cobro.sinSeleccion);
+      } else if (r.tipo === 'bendicion') {
+        const o = r.opciones[a.j];
+        if (!o) return 'Esa Bendición no está en la oferta.';
+        tomaBendicion(run, o.id);
+        r.estado = 'tomada';
+      } else if (r.tipo === 'trampa') {
+        const o = r.opciones[a.j];
+        if (!o) return 'Esa carta no está en la selección.';
+        if (o.kind === 'special') addSpecial(run, o.id);
+        else run.deck.push({ ...o.card });
+        r.estado = 'tomada';
+      } else {
+        const id = r.opciones[a.j];
+        if (!id) return 'Ese Amuleto no está en el Cofre.';
+        if (run.tools.length >= toolSlots(run)) return `Solo caben ${toolSlots(run)} Amuletos.`;
+        placeTool(run.tools, { id, n: 0 });
+        r.estado = 'tomada';
+      }
+      run.elegi = null;
+      return null;
+    }
+    case 'volver':
+      if (run.phase !== 'reward' || run.elegi === null) return 'No hay nada abierto.';
+      run.elegi = null;
+      return null;
+    case 'seguir': {
+      if (run.phase !== 'reward') return 'No hay Botín.';
+      // lo que no se cobró se pierde; tras el asalto, el Mapa sigue en el tramo siguiente
+      if (run.combate === 'asalto') {
+        run.stage++;
+        if (run.endless) asegurTramo(run);
+      }
+      run.combate = null;
+      toMap(run);
+      return null;
+    }
+    case 'fogon': {
+      if (run.phase !== 'fogon' || !run.fogon) return 'No estás en el Fogón.';
+      const sv = serviciosFogon(run);
+      if (a.que === 'curar') {
+        if (!run.fogon.curar) return 'El Fogón ya se usó.';
+        if (run.integrity >= run.maxIntegrity) return 'Tu Vida ya está al máximo.';
+        run.integrity = Math.min(run.maxIntegrity, run.integrity + sv.curar.vida);
+      } else {
+        if (!run.fogon.purgar) return 'El Fogón ya se usó.';
+        if (run.deck.length <= MIN_DECK) return `El mazo no puede bajar de ${MIN_DECK} cartas.`;
+        const i = run.deck.findIndex((c) => c.id === a.card);
+        if (i < 0) return 'Esa carta no está en el mazo.';
+        run.deck.splice(i, 1);
+        run.scrap++;
+        run.stats.burned++;
+      }
+      usaFogon(run, a.que);
+      return null;
+    }
     case 'buy': {
       const o = run.shop[a.i];
       if (run.phase !== 'shop' || !o || o.sold) return 'Esa oferta ya no está.';
-      if (run.sobre) return 'Antes elige una carta del sobre abierto.';
+      if (run.sobre) return 'Antes elegí una carta del sobre abierto.';
       const cost = offerCost(run, o);
       if (run.gold < cost) return 'No te alcanza el oro.';
       if (o.kind === 'forja') {
@@ -1421,10 +1568,11 @@ export function runAction(run: Run, a: RunAction): string | null {
     case 'cancel':
       if (!run.pending) return 'No hay nada pendiente.';
       run.pending = null;
-      if (run.phase === 'event') advance(run);
+      if (run.phase === 'event') toMap(run);
       return null;
     case 'burn': {
-      if (run.phase !== 'shop') return 'Solo se queman cartas en la hoguera de la Pulpería.';
+      // V40 1e · Purgar en La Pulpería (el precio sube con cada uso)
+      if (run.phase !== 'shop') return 'Solo se purga en La Pulpería (o gratis en el Fogón).';
       if (run.gold < removeCost(run)) return 'No te alcanza el oro.';
       if (run.deck.length <= MIN_DECK) return `El mazo no puede bajar de ${MIN_DECK} cartas.`;
       const i = run.deck.findIndex((c) => c.id === a.card);
@@ -1437,7 +1585,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'heal':
-      if (run.phase !== 'shop') return 'Solo en la Pulpería.';
+      if (run.phase !== 'shop') return 'Solo en La Pulpería.';
       if (run.integrity >= run.maxIntegrity) return 'Tu Vida ya está al máximo.';
       if (run.gold < healCost(run)) return 'No te alcanza el oro.';
       run.gold -= healCost(run);
@@ -1445,7 +1593,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       run.integrity = Math.min(run.maxIntegrity, run.integrity + BALANCE.taberna.curar.vida);
       return null;
     case 'sell': {
-      if (run.phase === 'battle') return 'En pleno asalto no se vende.';
+      if (run.phase === 'battle') return 'En pleno combate no se vende.';
       const t = run.tools[a.i];
       if (!t) return 'No llevás ese Amuleto.';
       run.gold += sellValue(t.id);
@@ -1453,8 +1601,8 @@ export function runAction(run: Run, a: RunAction): string | null {
       return null;
     }
     case 'reroll':
-      if (run.phase !== 'shop') return 'Solo en la Pulpería.';
-      if (run.sobre) return 'Antes elige una carta del sobre abierto.';
+      if (run.phase !== 'shop') return 'Solo en La Pulpería.';
+      if (run.sobre) return 'Antes elegí una carta del sobre abierto.';
       if (run.gold < rerollCost(run)) return 'No te alcanza el oro.';
       run.gold -= rerollCost(run);
       if (run.vouchers > 0) run.vouchers--;
@@ -1462,34 +1610,27 @@ export function runAction(run: Run, a: RunAction): string | null {
       run.shop = generateShop(run);
       return null;
     case 'next':
-      if (run.phase !== 'shop') return 'Aún no podés seguir.';
-      if (run.sobre) return 'Antes elige una carta del sobre abierto.';
-      if (!run.endless && EVENT_AFTER.includes(run.stage) && run.events.length) {
-        run.phase = 'event';
-        run.event = run.events.shift()!;
-        run.shop = [];
-        run.freeShop = false;
-        return null;
-      }
-      advance(run);
+      // V40 1e · salir de La Pulpería o del Fogón (sin usarlo) y volver al Mapa
+      if (run.phase !== 'shop' && run.phase !== 'fogon') return 'Aún no podés seguir.';
+      if (run.sobre) return 'Antes elegí una carta del sobre abierto.';
+      toMap(run);
       return null;
     case 'event': {
-      if (run.phase !== 'event' || !run.event) return 'No hay ningún Secreto de la cripta.';
+      if (run.phase !== 'event' || !run.event) return 'No hay ningún Santuario.';
       const opt = EVENT[run.event].options[a.i];
       if (!opt) return 'Esa opción no existe.';
       if (opt.can && !opt.can(run)) return 'No podés elegir eso ahora.';
       run.suerte = null;
       opt.apply(run);
-      if (!run.pending) advance(run);
+      if (!run.pending) toMap(run);
       return null;
     }
     case 'endless':
       if (run.phase !== 'won' || run.endless) return 'El Trono infinito se abre al ganar la campaña.';
       run.endless = true;
-      run.draft = draftOptions(run);
-      run.drafted = false;
-      run.loot = [];
-      run.looted = true;
+      run.combate = 'asalto';
+      run.botin = [{ k: 'elegi', tipo: 'trampa', opciones: draftOptions(run), estado: 'abierta' }];
+      run.elegi = null;
       run.phase = 'reward';
       return null;
   }
@@ -1535,12 +1676,15 @@ function resolvePending(run: Run, ids: string[]): string | null {
     run.stats.forged++;
   }
   run.pending = null;
-  if (run.phase === 'event') advance(run);
+  if (run.phase === 'event') toMap(run);
   return null;
 }
 
-/** Obras superadas (las saltadas no cuentan como demolidas, pero sí como camino recorrido). */
-export const stagesCleared = (run: Run) => (run.phase === 'battle' || run.phase === 'map' || run.phase === 'pack' || run.phase === 'bendicion' || run.phase === 'lost' ? run.stage - 1 : run.stage);
+/**
+ * Asaltos superados. V40 1e: en el Botín de un asalto (y al ganar) ya cuenta el asalto en curso; en el Mapa, en un
+ * nodo del camino, en un Guardia Bravo o al perder, el asalto en curso aún no.
+ */
+export const stagesCleared = (run: Run) => (run.phase === 'won' || (run.phase === 'reward' && run.combate === 'asalto') ? run.stage : run.stage - 1);
 export const depthOf = (run: Run) => Math.max(0, stagesCleared(run) - LAST_STAGE);
 
 export function renownFor(run: Run): number {

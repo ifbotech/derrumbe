@@ -91,7 +91,7 @@ export function createTelemetry(d: TelemetryDeps) {
       rec ??= run.seedText ? rev().find((r) => r.resultado === 'en curso' && r.semilla === run.seedText && r.baraja === run.deckId) : undefined;
       if (!rec) rec = fresh(jug > 1 ? 'sala' : 'campana', jug);
       if (cur?.rec !== rec) cur = { id: run.id, rec, lat: [], turn: '', at: 0 };
-      const offered = run.phase === 'reward' ? run.loot : run.phase === 'shop' ? run.shop.filter((o) => o.kind === 'tool').map((o) => o.id) : [];
+      const offered = run.phase === 'reward' ? run.botin.flatMap((r) => (r.k === 'amuleto' ? [r.id] : r.k === 'elegi' && r.tipo === 'amuleto' ? r.opciones : [])) : run.phase === 'shop' ? run.shop.filter((o) => o.kind === 'tool').map((o) => o.id) : [];
       add(rec.ofrecidas, offered);
       add(rec.elegidas, run.tools.map((t) => t.id).filter((id) => rec!.ofrecidas.includes(id)));
       const lost = run.phase === 'lost';

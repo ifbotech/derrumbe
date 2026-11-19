@@ -13,7 +13,7 @@ import { fingerprint } from '../scripts/lab';
 import { OBJETIVOS, duracion } from '../scripts/objetivos';
 import { FORMATION_NAME, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { KEYWORDS, TERMS } from '../src/rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FURIA, TAGS, UPGRADES } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, DECKS, FURIA, UPGRADES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { RARITY, TOOLS } from '../src/rules/tools';
 import { BENDICIONES, BONOS_REY, DUALES, REY_IDS, UMBRALES_REY, bendicionesDe } from '../src/rules/reyes';
@@ -26,11 +26,9 @@ const DESCS: [string, string][] = [
   ...SPECIALS.map((s): [string, string] => [`especial ${s.id}`, s.desc]),
   ...BOSSES.map((b): [string, string] => [`jefe ${b.id}`, b.desc]),
   ...ASCENSIONS.map((a, i): [string, string] => [`nivel ${i + 1}`, a.desc]),
-  ...CONTRACTS.map((c): [string, string] => [`contrato ${c.id}`, c.desc]),
   ...SEALS.map((s): [string, string] => [`sello ${s}`, SEAL[s].desc]),
   ...TREATMENTS.map((t): [string, string] => [`tratamiento ${t}`, TREATMENT[t].desc]),
   ...Object.entries(TOWER_FX).map(([k, v]): [string, string] => [`estado ${k}`, v.desc]),
-  ...TAGS.map((t): [string, string] => [`etiqueta ${t.id}`, t.desc]),
   // V40 1c · las Bendiciones: su efecto y su condición de carga
   ...BENDICIONES.map((b): [string, string] => [`bendición ${b.id}`, b.desc]),
   ...BENDICIONES.map((b): [string, string] => [`carga de ${b.id}`, b.carga]),
@@ -52,7 +50,6 @@ describe('constitución anticomplejidad', () => {
     expect(new Set(TOOLS.map((t) => t.name)).size).toBe(TOOLS.length);
     expect(new Set(SPECIALS.map((s) => s.id)).size).toBe(SPECIALS.length);
     expect(new Set(BOSSES.map((b) => b.id)).size).toBe(BOSSES.length);
-    expect(new Set(CONTRACTS.map((c) => c.id)).size).toBe(CONTRACTS.length);
   });
 
   it(`toda descripción cabe en ${MAX_DESC} caracteres`, () => {

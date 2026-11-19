@@ -10,7 +10,7 @@ import { ACHIEVEMENTS, unlocksOf } from '../src/rules/achievements';
 import { BALANCE } from '../src/rules/balance-config';
 import { fraccion } from '../src/rules/cifras';
 import { KEYWORDS } from '../src/rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECK, DECKS, EVENTS, EVENT_AFTER, FURIA, LAST_STAGE, MIN_DECK, STAGES, TAGS, TIRANO, UPGRADES, stageDef } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, DECK, DECKS, EVENTS, FURIA, LAST_STAGE, MAPA_CFG, MIN_DECK, STAGES, TIRANO, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
 import { RARITY, TOOL, TOOLS, TOOL_SLOTS, huecosAmuleto } from '../src/rules/tools';
 import { selloDe } from '../src/rules/piezas';
@@ -140,24 +140,19 @@ Un roguelike de construcción de mazo: **${LAST_STAGE} asaltos** cada vez más d
 
 Los primeros asaltos tienen menos tronos: los palos que faltan se sortean al empezar la campaña y el Mapa los enseña desde el principio.
 
-${table(['Asalto', 'Sala', 'Tronos', 'Guardias por trono', 'Vida', 'Ataque', 'Monarca', 'Atajo'], STAGES.map((s, i) => [String(i + 1), s.name, String(s.thrones), s.floors.map((r) => FIGURA_NOMBRE[r]).join(', '), `×${n(s.hp)}`, s.threat === 0 ? 'base' : s.threat > 0 ? `+${s.threat}` : String(s.threat), s.tirano ? `sí, ${TIRANO.m}` : s.boss ? 'sí' : '—', s.atajo ? 'sí' : '—']))}
+${table(['Asalto', 'Sala', 'Tronos', 'Guardias por trono', 'Vida', 'Ataque', 'Monarca'], STAGES.map((s, i) => [String(i + 1), s.name, String(s.thrones), s.floors.map((r) => FIGURA_NOMBRE[r]).join(', '), `×${n(s.hp)}`, s.threat === 0 ? 'base' : s.threat > 0 ? `+${s.threat}` : String(s.threat), s.tirano ? `sí, ${TIRANO.m}` : s.boss ? 'sí' : '—']))}
 
 En conjura de 2 a 4 jugadores los guardias aguantan un 30 % más.
 
-### El Mapa del castillo
+### El Mapa de caminos
 
-El Mapa enseña **desde el principio** qué monarca espera en cada asalto y cuál es su decreto. En los asaltos sin monarca eliges:
+Antes de cada asalto (desde el 2) se elige un camino en el **Mapa**: dos filas de tres nodos y, arriba, el asalto. Cada tramo tiene seis caminos, todos llegan al asalto y todos pueden pasar por **La Pulpería**, que va siempre en el centro de la segunda fila. El Mapa sale de la semilla: la misma semilla da el mismo Mapa.
 
-- una **ruta** (dos a elegir; tres con el ${up('rutas')} del Altar), cada una con su **Juramento**;
-- o, solo en el asalto ${STAGES.flatMap((s, i) => (s.atajo ? [i + 1] : [])).join(' y ')}, el **Atajo**: te saltas el asalto (sin Botín, sin selección y sin Pulpería) a cambio de un **Atajo de conspirador**.
+- **Guardia Bravo** (al menos uno por tramo): un guardia solo, en una Casa de un palo que el Mapa enseña de antemano, con Vida ×${n(MAPA_CFG.bravo.vida)} y +${MAPA_CFG.bravo.ataque} de Ataque sobre el asalto que viene. No cura al ganar. Paga ${MAPA_CFG.bravo.oro} de oro, un Amuleto Raro o mejor${MAPA_CFG.bravo.bendicion ? ` y una «Elegí una» Bendición de ${MAPA_CFG.bravo.bendicion} Reyes` : ''}.
+- **Santuario del Bufón**: un trato (los Secretos de abajo).
+- **Fogón**: Curar ${MAPA_CFG.fogon.curar} de Vida o Purgar una carta, gratis; uno de los dos (con el ${up('rutas')} del Altar, los dos).
+- **La Pulpería**: comprar, Purgar y Curar con oro.
 
-**Juramentos.** Los normales piden una condición y pagan si la cumples; los de **riesgo** endurecen el asalto y pagan siempre que lo ganes.
-
-${table(['Juramento', 'Condición', 'Premio', 'Tipo'], CONTRACTS.map((c) => [c.name, c.desc, c.reward, c.risk ? 'riesgo' : 'condición']))}
-
-**Atajos de conspirador** (uno al azar por cada asalto con Atajo):
-
-${table(['Atajo', 'Efecto'], TAGS.map((t) => [t.name, t.desc]))}
 
 **Reyes jefe** (${BOSSES.length}; cada campaña sortea ${STAGES.filter((s) => s.boss).length}). El monarca de cada asalto con jefe es uno de los 4 Reyes: es el **último guardia** de la Casa de su palo (que va la última), llega con retrato, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tienes delante, su **Furia del Rey** sube cada turno. Cada uno tiene además su **rasgo de combate**, y te habla según cómo lo trataste: como aliado si llevas alguna Bendición suya, como rival si solo llevas de otros. En el asalto ${STAGES.findIndex((s) => s.boss) + 1} el Rey ocupa el sitio del Caballo, con ×${n(BALANCE.reyes.asalto2.vida)} de su Vida y ${BALANCE.reyes.asalto2.ataque} de Ataque. Al caer abre su **Cofre**: uno de tres Amuletos, Raros o mejores.
 
@@ -165,7 +160,10 @@ ${table(['Rey jefe', 'Rasgo', 'Efecto', 'Furia por turno'], BOSSES.map((b) => [b
 
 ### El Botín
 
-Tras cada asalto cobras oro (asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada ${BALANCE.cobro.interesCada} de oro guardado), recuperas ${BALANCE.cobro.curaTrasAsalto} de Vida y eliges **una de tres opciones a la vista** —dos cartas especiales y una carta de baraja ya marcada con un sello de lacre o un acabado— o pasas a cambio de ${BALANCE.cobro.sinSeleccion} de oro.
+Tras cada combate, el **Botín** se cobra por partes; cada una se toma o se salta, y lo que no se cobra se pierde al seguir:
+
+- **Oro**: asalto ganado, Golpes exactos, la Vida que te queda e interés de 1 por cada ${BALANCE.cobro.interesCada} de oro guardado. Tras un asalto recuperás ${BALANCE.cobro.curaTrasAsalto} de Vida.
+- **«Elegí una»**: tres opciones a la vista. Tras un asalto, dos Trampas del Bufón y una carta de baraja ya marcada con un sello de lacre o un acabado (saltarla paga ${BALANCE.cobro.sinSeleccion} de oro); tras un asalto de Rey, también una Bendición${MAPA_CFG.bendicionGuardia ? ' (y tras los de Guardia)' : ''} y el **Cofre del Rey** (uno de tres Amuletos Raros o mejores).
 
 ### La Pulpería
 
@@ -176,11 +174,11 @@ Lo atiende el Tratante.
 - **Sobre a ciegas**: una especial sin verla, más barata.
 - **Mesa de lacre**: pone el sello de lacre o el acabado en oferta sobre la carta de tu Mazo que elijas.
 - **Pergamino**: sube de nivel una formación.
-- **Curar** (+${BALANCE.taberna.curar.vida} de Vida), **La hoguera** (quema una carta; el Mazo no baja de ${MIN_DECK}) y **Renovar mesa** (cambia lo que hay en oferta), los tres con coste creciente.
+- **Curar** (+${BALANCE.taberna.curar.vida} de Vida), **Purgar** (saca una carta; el Mazo no baja de ${MIN_DECK}) y **Renovar mesa** (cambia lo que hay en oferta), los tres con coste creciente.
 
-### Santuarios de la cripta
+### Santuarios del Bufón
 
-Tras los monarcas de los asaltos ${EVENT_AFTER.join(' y ')} aparece un santuario: una apuesta de azar o un dilema con premio y precio. Cada campaña ve ${EVENT_AFTER.length} de estos ${EVENTS.length}:
+En cada Santuario del Bufón del Mapa espera un trato: una apuesta de azar o un dilema con premio y precio. No se repiten hasta haber visto los ${EVENTS.length}:
 
 ${EVENTS.map((e) => `- **${e.name}.** ${e.text}\n${e.options.map((o) => `  - *${o.label}*: ${o.desc}`).join('\n')}`).join('\n')}
 
@@ -310,7 +308,7 @@ function balanceMd(r: Report): string {
     return `${cuales} de ${t.mediana[0]} a ${t.mediana[1]}${i === 0 ? ' turnos de mediana' : ''} (P95 ≤ ${t.p95})`;
   });
   return [
-    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de los Amuletos). El informe completo —cada Amuleto, Trampa, Bendición, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
+    `Medido con \`npm run analyze:meta\`: **${r.campaigns.toLocaleString('es-ES')} campañas** con semilla jugadas por el bot de referencia (camino en el Mapa, Botín y «Elegí una», la Pulpería, Mesa de lacre, Santuarios del Bufón, la Manga y orden de los Amuletos). El informe completo —cada Amuleto, Trampa, Bendición, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.`,
     '',
     `Campañas ganadas por Reinado (con la ${DECK[MAZO_INICIAL].name}, ${levels[0]?.n ?? 0} campañas por celda). Objetivos: Reinado 1 ${entre(O.reinado1.vacio)} con el Altar vacío y ${entre(O.reinado1.lleno)} con el Altar lleno; Reinado 8 ${entre(O.reinado8.vacio)} con el Altar vacío y ${entre(O.reinado8.lleno)} con el Altar lleno; y cada Reinado, más difícil que el anterior.`,
     '',

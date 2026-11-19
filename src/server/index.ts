@@ -279,7 +279,7 @@ export function startServer(opts: ServerOptions): Promise<RunningServer> {
         if (!action || typeof action !== 'object') return send(ws, { t: 'error', message: 'Decisión ilegible.' });
         const err = runAction(room.run, action);
         if (err) return send(ws, { t: 'error', message: err });
-        if (action.t === 'route' && room.run.phase === 'battle') return beginStage(room);
+        if (action.t === 'ir' && room.run.phase === 'battle') return beginStage(room);
         // la semilla ya se enseñó en la crónica: el Trono infinito se siembra de nuevo
         if (action.t === 'endless') room.run.rng = nextSeed();
         broadcastRun(room);

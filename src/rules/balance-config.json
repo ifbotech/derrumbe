@@ -72,6 +72,11 @@
     "renovar": { "base": 1, "paso": 1 }
   },
   "cobro": { "asalto": -1, "vidaCada": 5, "interesCada": 5, "curaTrasAsalto": 4, "sinSeleccion": 3 },
+  "mapa": {
+    "bravo": { "vida": 1.6, "ataque": 4, "oro": 8, "amuletos": 1, "bendicion": 2 },
+    "fogon": { "curar": 7 },
+    "bendicionGuardia": 0
+  },
   "arbol": {
     "oroPorNivel": 1,
     "costes": {

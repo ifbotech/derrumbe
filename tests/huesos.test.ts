@@ -80,7 +80,7 @@ describe('tirada', () => {
     const run = newRun({}, 77);
     runAction(run, { t: 'begin' });
     runAction(run, { t: 'bendicion', i: 0 }); // V40 1c · la oferta de los Reyes
-    runAction(run, { t: 'route', i: 0 });
+    runAction(run, { t: 'ir', nodo: 0 });
     const state = startStage(run, [{ id: 'p', name: 'p' }]);
     run.caida = { oro: 5, esquirlas: 20, gotas: 0 };
     for (const t of Object.values(state.towers)) t.floors = [];

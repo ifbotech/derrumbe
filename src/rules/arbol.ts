@@ -73,7 +73,7 @@ const ARSENAL: Def[] = [
   { id: 'caja', rama: 'arsenal', padre: null, rangos: 5, name: 'Bolsa de la conjura', glyph: 'hucha', pos: { x: -1, y: 0 }, plantilla: '+{oro} de oro inicial por rango.' },
   { id: 'vale', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Favor del Tratante', glyph: 'cinta', pos: { x: -2, y: -1 }, texto: 'Un «Renovar mesa» gratis en cada Pulpería, por nivel.' },
   { id: 'tienda', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Faja ancha', glyph: 'andamio', pos: { x: -2, y: 0 }, texto: 'Por nivel: +1 hueco de Amuleto (de 4 a 6).' },
-  { id: 'rutas', rama: 'arsenal', padre: 'caja', rangos: 1, name: 'Cartógrafo', glyph: 'plano', pos: { x: -2, y: 1 }, texto: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.' },
+  { id: 'rutas', rama: 'arsenal', padre: 'caja', rangos: 1, name: 'Cartógrafo', glyph: 'plano', pos: { x: -2, y: 1 }, texto: 'En el Fogón, Curar y Purgar a la vez.' },
   { id: 'tasador', rama: 'arsenal', padre: 'tienda', rangos: 3, name: 'Ojo del tasador', glyph: 'oro', pos: { x: -3, y: -1.5 }, plantilla: 'Los Amuletos de La Pulpería cuestan {n} de oro menos (mínimo 1).' },
   arcon('espadas', 'Arcón de Espadas', 'calibre', { x: -3, y: -0.5 }),
   arcon('bastos', 'Arcón de Bastos', 'ariete', { x: -3, y: 0.5 }),

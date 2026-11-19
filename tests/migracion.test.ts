@@ -99,7 +99,7 @@ describe('un perfil de antes de la 2: se devuelven las Coronas y se vacían las 
 describe('la campaña a medias de la 10.0 se cierra y cobra lo superado', () => {
   it('su versión ya no es la de ahora: no se puede continuar', () => {
     expect(G.campaign.run.v).not.toBe(RUN_VERSION);
-    expect(RUN_VERSION).toBe(9);
+    expect(RUN_VERSION).toBe(10);
     expect(cargaRun(structuredClone(G.campaign.run))).toBeNull();
   });
 

@@ -1,8 +1,11 @@
-// Pantallas de campaña: el sobre lacrado, el Mapa del castillo, el Botín con su selección, la Taberna
-// clandestino, los Secretos de la cripta y la Crónica final.
+// Pantallas de campaña: el sobre lacrado, la oferta de los Reyes, el Mapa de caminos, el Botín con su «Elegí una»,
+// La Pulpería, el Fogón, los Santuarios del Bufón y la Crónica final.
 import { whisper } from './whispers';
 import { Card, FORM } from '../rules/engine';
-import { BOSS, CONTRACT, Don, DraftOpt, EVENT, EVENT_AFTER, LAST_STAGE, MIN_DECK, Offer, Run, TAG, depthOf, formBase, healCost, mvpTool, offerCost, removeCost, rerollCost, sellValue, stageDef, stagesCleared, toolSlots } from '../rules/run';
+import { BOSS, Don, DraftOpt, EVENT, LAST_STAGE, MAPA_CFG, Offer, Recompensa, Run, botinPrevisto, depthOf, formBase, mvpTool, offerCost, sellValue, serviciosFogon, serviciosPulperia, stageDef, stagesCleared, toolSlots } from '../rules/run';
+import { alcanzables, filaAsalto, type NodoMapa, type TipoNodo } from '../rules/mapa';
+import type { OpcionBend } from '../rules/reyes';
+import type { ClaveUi } from '../shared/i18n/es';
 import { BALANCE } from '../rules/balance-config';
 import { TOOL } from '../rules/tools';
 import { contextoDe, marcaPieza } from './piezas-ui';
@@ -23,7 +26,7 @@ import { siguienteMejora } from '../rules/arbol';
 import { sendMsg } from './net';
 import { setScreen } from './router';
 import { renderPings } from './pings';
-import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, mejN, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
+import { L, Ln, acabD, acabN, asaltoN, barN, cartaN, espD, espN, formN, getLang, marca, mejN, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
 import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
 import { ritualDelBotin } from './ritual';
 import { opcionTexto, reyesPills } from './reyes-ui';
@@ -31,26 +34,7 @@ import { fraseBufonOferta } from '../rules/reyes';
 import { t } from '../shared/i18n';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
-// Iconos de juramentos, atajos y secretos: el emblema de GLYPH que mejor dice la imagen de la biblia de
-// nombres (§9, §10, §11). Las claves de GLYPH nombran la pieza vieja; el dibujo va en el comentario.
-const CONTRACT_GLYPH: Record<string, string> = {
-  intacto: 'andamio', // guantelete limpio (guante blanco sin mancha)
-  limpios: 'plomada', // péndulo quieto (pulso firme)
-  rapido: 'herradura', // herradura
-  sincolapso: 'puntales', // mazo de naipes atado, entero
-  austero: 'comodin', // el Motín: puño en alto (el Comodín)
-  maestra: 'abanico', // abanico de cinco naipes
-  horas: 'luna', // luna llena sobre una almena
-  sinred: 'escudo_roto', // escudo partido en dos
-  corta: 'abanico_corto', // cuatro naipes y el hueco del que falta
-};
-const TAG_GLYPH: Record<string, string> = {
-  vale: 'plano_maestro', // llave (Llave de la Taberna)
-  envio: 'fardo', // fardo atado (Contrabando)
-  molde: 'gemelo', // naipe con la esquina doblada (Molde de cera)
-  liquidacion: 'oro', // monedas (Botín escondido)
-  timbrado: 'sello', // lacre (Lacre doble)
-};
+// Iconos de los Secretos: el emblema de GLYPH que mejor dice la imagen de la biblia de nombres (§11).
 const EVENT_GLYPH: Record<string, string> = {
   caja: 'contenedor', // cofre con candado (El cofre enterrado)
   horno: 'crisol', // caldero (El caldero del alquimista)
@@ -100,6 +84,7 @@ export function renderRun(): void {
   else if (run.phase === 'reward') rewardScreen(run);
   else if (run.phase === 'shop') shopScreen(run);
   else if (run.phase === 'event') eventScreen(run);
+  else if (run.phase === 'fogon') fogonScreen(run);
   else if (over) actaScreen(run);
   else return;
   if (lastPhase === 'event' && run.phase !== 'event' && run.suerte) suerteCartel(run);
@@ -225,124 +210,229 @@ function bendicionScreen(run: Run): void {
     <div class="choices" id="bends"></div>
     ${mias ? `<section class="bend-mias"><h3 class="sec">${L('ui.run.bend.llevas')}</h3><div class="rasgos">${mias}</div></section>` : ''}${waitNote()}
     <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button></div></div></div>`;
+  bendTarjetas(run, op, $('#bends'), host() ? (i) => runDo({ t: 'bendicion', i }) : null);
+}
+
+/** Las tarjetas de Bendición (la oferta de los Reyes y la «Elegí una» del Botín): Rey, efecto, carga, nivel, sello y ★. */
+function bendTarjetas(run: Run, op: OpcionBend[], host_: HTMLElement, pick: ((i: number) => void) | null): void {
   op.forEach((o, i) => {
     const tx = opcionTexto(run.bendiciones, o, run.tools, marcaPieza({ tipo: 'bendicion', id: o.id }, contextoDe(run)));
-    const box = choice(tileEl('jefe', tx.titulo, 'service'), tx.titulo, tx.desc, L('ui.run.bend.tomar'), host() ? () => runDo({ t: 'bendicion', i }) : null, `bend r-${o.rey}${tx.info.dual ? ' dual' : ''}`);
+    const box = choice(tileEl('jefe', tx.titulo, 'service'), tx.titulo, tx.desc, L('ui.run.bend.tomar'), pick ? () => pick(i) : null, `bend r-${o.rey}${tx.info.dual ? ' dual' : ''}`);
     box.dataset.bend = o.id;
     box.dataset.i = String(i);
     box.style.setProperty('--i', String(i));
-    $('#bends').appendChild(box);
+    host_.appendChild(box);
   });
 }
 
-// ───────────────────────── Mapa del castillo ─────────────────────────
+// ───────────────────────── El Mapa de caminos (V40 1e) ─────────────────────────
 
-function mapScreen(run: Run): void {
-  const st = stageDef(run.stage);
-  const first = run.stage > LAST_STAGE ? run.stage - 3 : 1;
-  const last = run.stage > LAST_STAGE ? run.stage + 1 : LAST_STAGE;
-  const nodes: string[] = [];
-  for (let n = first; n <= last; n++) {
-    const def = stageDef(n);
-    const boss = run.bosses[n] ? BOSS[run.bosses[n]] : null;
-    const nombre = asaltoN(n);
-    const state = n < run.stage ? (run.skipped.includes(n) ? 'skip' : 'done') : n === run.stage ? 'now' : 'next';
-    // V11: el Salón del Trono lleva el título de su monarca («Rey Tirano» o «Reina Tirana»)
-    const title = def.tirano ? tiranoN(boss?.id ?? null) : L('ui.run.monarca');
-    const mark = state === 'done' ? `<i class="inkstamp s-done">${L('ui.run.tomado')}</i>` : state === 'skip' ? `<i class="inkstamp s-skip">${L('ui.run.esquivado')}</i>` : def.boss ? `<i class="inkstamp s-boss ${def.tirano ? 's-tirano' : ''}">${title}</i>` : '';
-    // V11: en los asaltos 1 y 2 faltan tronos; sus palos se sortean al empezar y el Mapa los enseña desde el principio
-    const palos = run.palos?.[n];
-    const tronos = palos?.length ? `<span class="bp-palos" aria-label="${L('ui.run.tronos.aria', { n: palos.length, palos: palos.map(paloN).join(', ') })}">${palos.map((s) => `<i class="s-${s}">${suitSvg(s)}</i>`).join('')}</span>` : '';
-    const tip = `<b>${nombre}</b>${L('ui.run.tronos', { n: palos?.length ?? def.thrones })}${Ln(def.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(def.hp) })}${boss ? `<hr><b>${def.tirano ? `${title} · ` : ''}${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}` : def.boss ? L('ui.run.monarca.llegar') : L('ui.run.dos.rutas')}`;
-    nodes.push(`<div class="bp-node ${state} ${def.boss ? 'boss' : ''} ${def.tirano ? 'tirano' : ''}" data-tip="${tip.replace(/"/g, '&quot;')}">
-      <span class="bp-n">${n}</span><b>${nombre}</b>${tronos}
-      ${boss ? `<span class="bp-boss" data-boss="${boss.id}"></span><em>${monN(boss.id)}<small>${monDec(boss.id)}</small></em>` : def.boss ? `<em>¿?<small>${L('ui.run.por.conocer')}</small></em>` : `<em class="plain">${L('ui.run.rutas')}</em>`}
-      ${mark}</div>`);
+/** El emblema de cada tipo de nodo (de GLYPH; arte-ui los dibujará propios). */
+const NODO_GLIFO: Record<TipoNodo, string> = { guardia: 'bastion', bravo: 'escudo_roto', pulperia: 'cajones', santuario: 'comodin', fogon: 'horno', rey: 'jefe' };
+const tipoN = (t: TipoNodo) => L(`ui.mapa.tipo.${t}` as ClaveUi);
+
+/** Lo que dice un nodo del Mapa: qué es y qué Botín deja (botinPrevisto, de las reglas). */
+function nodoTexto(run: Run, n: NodoMapa): string {
+  const def = stageDef(n.tramo);
+  if (n.tipo === 'bravo') return L('ui.mapa.desc.bravo', { palo: n.palo ? paloN(n.palo) : '', v: num(MAPA_CFG.bravo.vida), a: MAPA_CFG.bravo.ataque });
+  if (n.tipo === 'fogon') return L('ui.mapa.desc.fogon', { n: MAPA_CFG.fogon.curar });
+  if (n.tipo === 'rey') {
+    const boss = run.bosses[n.tramo] ? BOSS[run.bosses[n.tramo]] : null;
+    return boss ? `<b>${monN(boss.id)} · ${monDec(boss.id)}.</b> ${monD(boss.id)}` : L('ui.mapa.desc.rey');
   }
-  const boss = st.boss ? BOSS[run.bosses[run.stage]] : null;
-  app.innerHTML = `<div class="run map">${head(run, L('ui.run.mapa.titulo'), `${L('ui.run.mapa.sub', { n: run.stage })}${run.stage <= LAST_STAGE ? L('ui.run.mapa.de', { n: LAST_STAGE }) : ''} · ${asaltoN(run.stage)}`)}
+  if (n.tipo === 'guardia') return `${L('ui.mapa.desc.guardia')} ${Ln(def.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(def.hp) })}`;
+  return L(`ui.mapa.desc.${n.tipo}` as ClaveUi);
+}
+function nodoBotin(run: Run, n: NodoMapa): string {
+  const b = botinPrevisto(run, n.tipo, n.tramo);
+  const partes = [
+    b.oro ? L('ui.mapa.previo.oro', { n: b.oro }) : '',
+    ...b.elegi.map((e) => `${L('ui.elegi.titulo')} (${L(`ui.elegi.${e}` as ClaveUi)})`),
+    b.amuleto ? L('ui.mapa.previo.amuleto') : '',
+    n.tipo === 'bravo' && MAPA_CFG.bravo.bendicion ? L('ui.mapa.previo.bend') : '',
+  ].filter(Boolean);
+  return partes.length ? L('ui.mapa.previo', { x: partes.join(' · ') }) : '';
+}
+
+/**
+ * El Mapa: el tramo que lleva al próximo asalto, de abajo (el asalto anterior) arriba (el que viene), con sus aristas.
+ * Cada nodo es un botón (`#mn-<id>`, `data-tipo`); los alcanzables (`.alcanzable`) se pulsan con ratón, Enter o A, y
+ * la cruceta va de uno a otro (nav.ts no conoce el Mapa: busca el pulsable más cercano).
+ */
+function mapScreen(run: Run): void {
+  const m = run.mapa;
+  const lo = filaAsalto(Math.max(1, run.stage - 1));
+  const hi = filaAsalto(Math.max(2, run.stage));
+  const filas = hi - lo + 1;
+  const vis = m.nodos.filter((n) => n.fila >= lo && n.fila <= hi);
+  const ya = new Set(m.hechos);
+  const puede = new Set(alcanzables(m));
+  const x = (n: NodoMapa) => n.col * 100 + 50;
+  const y = (n: NodoMapa) => (hi - n.fila) * 100 + 50;
+  const lineas = vis
+    .flatMap((n) => n.hacia.map((h) => [n, m.nodos[h]] as const))
+    .filter(([, h]) => h && h.fila <= hi)
+    .map(([a, b]) => `<line class="${ya.has(a.id) && (ya.has(b.id) || puede.has(b.id)) ? 'hecha' : ''}" x1="${x(a)}" y1="${y(a)}" x2="${x(b)}" y2="${y(b)}" vector-effect="non-scaling-stroke"/>`)
+    .join('');
+  const can = host();
+  const nodos = vis
+    .map((n) => {
+      const estado = n.id === m.en ? 'aqui' : ya.has(n.id) ? 'hecho' : puede.has(n.id) ? 'alcanzable' : 'lejos';
+      const tip = `<b>${tipoN(n.tipo)}</b>${nodoTexto(run, n)}${nodoBotin(run, n) ? `<hr>${nodoBotin(run, n)}` : ''}`;
+      const palo = n.palo ? `<i class="s-${n.palo}">${suitSvg(n.palo)}</i>` : '';
+      return `<button type="button" id="mn-${n.id}" class="nodo-mapa t-${n.tipo} ${estado}" data-tipo="${n.tipo}" data-mn="${n.id}" style="grid-row:${hi - n.fila + 1};grid-column:${n.col + 1}" ${estado === 'alcanzable' && can ? '' : 'disabled'} ${estado === 'aqui' ? 'aria-current="step"' : ''} data-tip="${esc(tip)}" aria-label="${esc(`${tipoN(n.tipo)}. ${nodoBotin(run, n)}`)}">${glyphSvg(NODO_GLIFO[n.tipo], 'stamp-ico')}<b>${tipoN(n.tipo)}${n.asalto ? ` ${n.tramo}` : ''}</b>${palo}${estado === 'aqui' ? `<small>${L('ui.mapa.aqui')}</small>` : ''}</button>`;
+    })
+    .join('');
+  // la lista de lo alcanzable, con su Botín a la vista (para leer sin globos)
+  app.innerHTML = `<div class="run map">${head(run, L('ui.mapa.titulo'), `${L('ui.mapa.sub', { n: run.stage })}${run.stage <= LAST_STAGE ? L('ui.run.mapa.de', { n: LAST_STAGE }) : ''} · ${asaltoN(run.stage)}`)}
     <div class="run-body">
-      <div class="desk"><div class="blueprint"><div class="bp-title">${L('ui.run.mapa.castillo')}${run.endless ? L('ui.run.mapa.infinito') : ''}</div><div class="bp-path">${nodes.join('<span class="bp-link"></span>')}</div></div></div>
-      <h3 class="sec">${boss ? L('ui.run.monarca.espera') : L('ui.run.elige.entrar')}</h3>
+      <div class="desk"><div class="blueprint mapa-ramas"><div class="bp-title">${L('ui.mapa.titulo')}${run.endless ? L('ui.run.mapa.infinito') : ''}</div>
+        <div class="mapa-grid" style="--filas:${filas}"><svg class="mapa-aristas" viewBox="0 0 300 ${filas * 100}" preserveAspectRatio="none" aria-hidden="true">${lineas}</svg>${nodos}</div></div></div>
+      <h3 class="sec">${L('ui.mapa.elegi')}</h3>
       <div class="choices routes" id="routes"></div>${waitNote()}
       <div id="belt-host"></div>
     </div></div>`;
-  $$('[data-boss]').forEach((slot) => slot.appendChild(portraitEl(`j-${slot.dataset.boss}`, monN(slot.dataset.boss!))));
   $('#belt-host').appendChild(beltStrip(run));
+  const ir = (id: number) => (sfx.stamp(), runDo({ t: 'ir', nodo: id }));
+  $$('.nodo-mapa.alcanzable').forEach((b) => (b.onclick = () => ir(Number(b.dataset.mn))));
   const routes = $('#routes');
-  const can = host();
-  if (boss) {
-    routes.appendChild(choice(portraitEl(`j-${boss.id}`, monN(boss.id)), monN(boss.id), `<b>${monDec(boss.id)}.</b> ${monD(boss.id)}`, L('ui.run.al.asalto'), can ? () => runDo({ t: 'route', i: 0 }) : null, 'wide boss-route'));
-    routes.insertAdjacentHTML('beforeend', `<div class="route-note"><p class="lead">${L('ui.run.ruta.monarca', { nombre: asaltoN(run.stage), n: st.floors.length, hp: num(st.hp) })}</p></div>`);
-  } else {
-    run.node.routes.forEach((id, i) => {
-      const k = CONTRACT[id];
-      routes.appendChild(
-        choice(tileEl(CONTRACT_GLYPH[id] ?? 'pergamino', k.risk ? L('ui.run.riesgo') : L('ui.run.juramento'), 'relic', k.risk ? 'capataz' : 'oficio'), juraN(id), `${juraD(id)} <b>${L('ui.run.premio', { x: juraP(id) })}</b>`, k.risk ? L('ui.run.aceptar.riesgo') : L('ui.run.tomar.ruta'), can ? () => runDo({ t: 'route', i }) : null, k.risk ? 'risk' : ''),
-      );
-    });
-    const tag = run.node.tag ? TAG[run.node.tag] : null;
-    if (tag) {
-      routes.appendChild(
-        choice(tileEl(TAG_GLYPH[tag.id] ?? 'atajo', L('ui.run.atajo'), 'service'), L('ui.run.saltar.asalto'), L('ui.run.saltar.texto', { nombre: atajoN(tag.id), desc: atajoD(tag.id) }), L('ui.run.saltar'), can ? () => (sfx.stamp(), runDo({ t: 'skip' })) : null, 'skip'),
-      );
-      whisper('atajo', { tag: atajoN(tag.id) });
-    }
+  for (const id of alcanzables(m)) {
+    const n = m.nodos[id];
+    const box = choice(tileEl(NODO_GLIFO[n.tipo], tipoN(n.tipo), 'service'), tipoN(n.tipo), `${nodoTexto(run, n)}${nodoBotin(run, n) ? ` <b>${nodoBotin(run, n)}.</b>` : ''}`, L('ui.mapa.ir'), can ? () => ir(id) : null, `nodo t-${n.tipo}${n.tipo === 'bravo' ? ' risk' : ''}`);
+    box.dataset.tipo = n.tipo;
+    box.dataset.i = String(id);
+    routes.appendChild(box);
   }
+  if (run.stage === 2 && m.en >= 0 && m.nodos[m.en]?.asalto) whisper('atajo');
 }
 
-// ───────────────────────── Botín y selección ─────────────────────────
+// ───────────────────────── El Botín y la «Elegí una» (V40 1e) ─────────────────────────
 
 function draftChoice(run: Run, o: DraftOpt, i: number): HTMLElement {
-  const click = host() ? () => runDo({ t: 'draft', i }) : null;
+  const click = host() ? () => runDo({ t: 'elegir', j: i }) : null;
   if (o.kind === 'special') return choice(cardEl(spCard(o.id)), espN(o.id), `${espD(o.id)}${marcaPieza({ tipo: 'trampa', id: o.id }, contextoDe(run))}`, L('ui.run.llevar'), click);
   const c = o.card;
   const what = [c.tr ? `<b>${acabN(c.tr)}.</b> ${acabD(c.tr)}` : '', c.seal ? `<b>${selloN(c.seal)}.</b> ${selloD(c.seal)}` : ''].filter(Boolean).join(' ');
   return choice(cardEl(c), cartaN(c), what, L('ui.run.llevar'), click);
 }
 
+/** Cómo se nombra una recompensa del Botín. */
+function recompensaN(run: Run, r: Recompensa): { glifo: string; titulo: string; desc: string } {
+  if (r.k === 'oro') return { glifo: 'oro', titulo: L('ui.botin.oro'), desc: L('ui.run.total.oro', { n: r.n }) };
+  if (r.k === 'amuleto') return { glifo: r.id, titulo: relN(r.id), desc: relD(r.id) };
+  const que = L(`ui.elegi.${r.tipo}` as ClaveUi);
+  return { glifo: r.tipo === 'bendicion' ? 'jefe' : r.tipo === 'amuleto' ? 'contenedor' : 'naipes_par', titulo: `${L('ui.elegi.titulo')}: ${que}`, desc: L('ui.elegi.sub', { x: r.opciones.length === 1 ? que : `${r.opciones.length} · ${que}` }) };
+}
+
+/** El Botín tras un combate: cada recompensa se cobra (o se abre su «Elegí una») o se salta; «Seguir» vuelve al Mapa. */
 function rewardScreen(run: Run): void {
+  if (run.elegi !== null) return elegiScreen(run);
   const total = run.pay.reduce((a, [, n]) => a + n, 0);
-  const contract = run.contract ? CONTRACT[run.contract] : null;
-  const boss = run.boss ? BOSS[run.boss] : null;
-  app.innerHTML = `<div class="run">${head(run, L('ui.run.botin.titulo'), run.endless && run.stage === LAST_STAGE ? L('ui.run.botin.infinito') : L('ui.run.botin.sub', { n: run.stage, nombre: asaltoN(run.stage) }))}
+  const bravo = run.combate === 'bravo';
+  const can = host();
+  app.innerHTML = `<div class="run">${head(run, L('ui.run.botin.titulo'), bravo ? L('ui.botin.bravo') : run.endless && run.stage === LAST_STAGE ? L('ui.run.botin.infinito') : L('ui.run.botin.sub', { n: run.stage, nombre: asaltoN(run.stage) }))}
     <div class="run-body two">
       <section class="panel paybox"><h3><span>${L('ui.run.botin')}</span><span>+${total}</span></h3>
         <table class="pay">${run.pay.map(([l, n]) => `<tr><td>${cobroFor(getLang(), l)}</td><td>+${n}</td></tr>`).join('')}<tr class="sum"><td>${L('ui.run.total')}</td><td>${L('ui.run.total.oro', { n: total })}</td></tr></table>
-        ${contract ? `<div class="contract-res ${run.contractDone ? 'ok' : 'ko'}" id="contract-res"><b>${L('ui.run.juramento')} · ${juraN(contract.id)}</b><span>${run.contractDone ? L('ui.run.premio', { x: juraP(contract.id) }) : L('ui.run.sin.premio')}</span></div>` : ''}
       </section>
       <section>
-        <h3 class="sec">${run.drafted ? L('ui.run.seleccion.hecha') : L('ui.run.elige.una')}</h3>
-        <div class="choices" id="picks"></div>
-        ${run.loot.length ? `<h3 class="sec">${run.looted ? L('ui.run.botin.repartido') : L('ui.run.botin.de', { quien: boss ? monN(boss.id) : L('ui.run.el.monarca') })}</h3><div class="choices" id="loot"></div>` : ''}
+        <h3 class="sec">${L('ui.run.botin')}</h3>
+        <div class="botin-lista" id="botin"></div>
+        <p class="lead">${L('ui.botin.pierde')}</p>
         ${waitNote()}
+        <div class="row end-row"><button class="primary" id="seguir" ${can ? '' : 'disabled'}>${L('ui.botin.seguir')}</button></div>
         <div id="belt-host"></div>
       </section>
     </div></div>`;
-  if (contract) stampOn($('#contract-res'), run.contractDone ? L('ui.run.cumplido') : L('ui.run.incumplido'), run.contractDone ? 's-done' : 's-skip');
   if (lastPhase !== 'reward') sfx.coins(total);
   // V12: la tirada de huesos del asalto recién ganado, una vez, sobre el Botín
-  ritualDelBotin(`${run.id}:${run.stage}`, run.ritual?.asalto === run.stage ? run.ritual : null);
+  if (!bravo) ritualDelBotin(`${run.id}:${run.stage}`, run.ritual?.asalto === run.stage ? run.ritual : null);
   $('#belt-host').appendChild(beltStrip(run));
-  if (!run.drafted) {
-    run.draft.forEach((o, i) => {
-      const el = draftChoice(run, o, i);
-      dealIn($('.card', el), 120 + i * 160);
+  const full = run.tools.length >= toolSlots(run);
+  run.botin.forEach((r, i) => {
+    const tx = recompensaN(run, r);
+    const fila = document.createElement('div');
+    fila.className = `botin-fila k-${r.k} ${r.estado}`;
+    fila.dataset.i = String(i);
+    const ico = r.k === 'amuleto' ? toolTile(r.id) : tileEl(tx.glifo, tx.titulo, 'service');
+    fila.appendChild(ico);
+    fila.insertAdjacentHTML('beforeend', `<div class="botin-tx"><b>${tx.titulo}</b><small>${tx.desc}</small></div>`);
+    if (r.estado === 'abierta') {
+      const bloqueado = r.k === 'amuleto' && full;
+      fila.insertAdjacentHTML('beforeend', `<div class="botin-acc"><button class="primary cobrar" ${can && !bloqueado ? '' : 'disabled'}>${bloqueado ? L('ui.run.llenas') : r.k === 'elegi' ? L('ui.botin.abrir') : L('ui.botin.cobrar')}</button><button class="saltar" ${can ? '' : 'disabled'}>${r.k === 'elegi' && r.tipo === 'trampa' ? L('ui.elegi.saltar.oro', { n: BALANCE.cobro.sinSeleccion }) : L('ui.botin.saltar')}</button></div>`);
+      $('.cobrar', fila).onclick = () => (sfx.stamp(), runDo({ t: 'cobrar', i }));
+      $('.saltar', fila).onclick = () => runDo({ t: 'saltar', i });
+    } else fila.insertAdjacentHTML('beforeend', `<i class="inkstamp ${r.estado === 'tomada' ? 's-done' : 's-skip'}">${r.estado === 'tomada' ? L('ui.botin.tomada') : L('ui.botin.saltada')}</i>`);
+    $('#botin').appendChild(fila);
+  });
+  $('#seguir').onclick = () => runDo({ t: 'seguir' });
+}
+
+/**
+ * La «Elegí una» abierta (`run.elegi`): tres opciones con su sello S·A·B y su ★ Sinergia (marcaPieza), «Saltar» y
+ * «Volver al Botín». La de Bendición pinta las mismas tarjetas que la oferta de los Reyes (bendTarjetas).
+ */
+function elegiScreen(run: Run): void {
+  const r = run.botin[run.elegi!];
+  if (!r || r.k !== 'elegi') return;
+  const can = host();
+  const que = L(`ui.elegi.${r.tipo}` as ClaveUi);
+  app.innerHTML = `<div class="run elegi-una">${head(run, L('ui.elegi.titulo'), L('ui.elegi.sub', { x: que }))}
+    <div class="run-body">${r.tipo === 'bendicion' ? `<p class="bufon-dice"><i>${t(fraseBufonOferta(run.id, run.stage))}</i></p>` : ''}
+    <div class="choices" id="${r.tipo === 'bendicion' ? 'bends' : r.tipo === 'amuleto' ? 'loot' : 'picks'}"></div>${waitNote()}
+    <div class="row end-row"><button id="volver" ${can ? '' : 'disabled'}>${L('ui.elegi.volver')}</button><button id="saltar" ${can ? '' : 'disabled'}>${r.tipo === 'trampa' ? L('ui.elegi.saltar.oro', { n: BALANCE.cobro.sinSeleccion }) : L('ui.elegi.saltar')}</button><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button></div>
+    <div id="belt-host"></div></div></div>`;
+  $('#belt-host').appendChild(beltStrip(run));
+  if (r.tipo === 'bendicion') bendTarjetas(run, r.opciones, $('#bends'), can ? (j) => runDo({ t: 'elegir', j }) : null);
+  else if (r.tipo === 'trampa')
+    r.opciones.forEach((o, j) => {
+      const el = draftChoice(run, o, j);
+      dealIn($('.card', el), 120 + j * 160);
       $('#picks').appendChild(el);
     });
-    $('#picks').appendChild(choice(tileEl('oro', L('ui.run.pasar'), 'service'), L('ui.run.ninguna'), L('ui.run.ninguna.texto'), L('ui.run.pasar'), host() ? () => runDo({ t: 'draft', i: null }) : null));
-  }
-  const loot = $('#loot');
-  if (loot && !run.looted) {
+  else {
     const full = run.tools.length >= toolSlots(run);
-    loot.classList.add('cofre');
-    run.loot.forEach((id, i) => {
-      const box = choice(toolTile(id), relN(id), `${relD(id)}${marcaPieza({ tipo: 'amuleto', id }, contextoDe(run))}`, full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null);
-      box.style.setProperty('--i', String(i));
-      loot.appendChild(box);
+    $('#loot').classList.add('cofre');
+    r.opciones.forEach((id, j) => {
+      const box = choice(toolTile(id), relN(id), `${relD(id)}${marcaPieza({ tipo: 'amuleto', id }, contextoDe(run))}`, full ? L('ui.run.llenas') : L('ui.run.llevar'), can && !full ? () => runDo({ t: 'elegir', j }) : null);
+      box.style.setProperty('--i', String(j));
+      $('#loot').appendChild(box);
     });
-    loot.appendChild(choice(tileEl('retirar', L('ui.run.ninguna'), 'service'), L('ui.run.pasar'), full ? L('ui.run.caben.llenas', { n: toolSlots(run) }) : L('ui.run.caben', { n: toolSlots(run), m: run.tools.length }), L('ui.run.pasar'), host() ? () => runDo({ t: 'loot', id: null }) : null));
+    if (full) $('#loot').insertAdjacentHTML('afterend', `<p class="lead">${L('ui.run.caben.llenas', { n: toolSlots(run) })}</p>`);
   }
+  $('#volver').onclick = () => runDo({ t: 'volver' });
+  $('#saltar').onclick = () => runDo({ t: 'elegir', j: null });
+}
+
+// ───────────────────────── El Fogón (V40 1e) ─────────────────────────
+
+/** El Fogón: Curar o Purgar gratis, uno de los dos (con el Cartógrafo del Altar, los dos); los datos, de serviciosFogon. */
+function fogonScreen(run: Run): void {
+  const sv = serviciosFogon(run);
+  const can = host();
+  app.innerHTML = `<div class="run fogon">${head(run, L('ui.fogon.titulo'), sv.ambos ? L('ui.fogon.ambos') : L('ui.fogon.sub'))}
+    <div class="run-body"><div class="choices" id="fogon-opts"></div>${waitNote()}
+    <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button><button class="primary" id="go" ${can ? '' : 'disabled'}>${L('ui.fogon.seguir')}</button></div>
+    <div id="belt-host"></div></div></div>`;
+  $('#belt-host').appendChild(beltStrip(run));
+  const usado = (ok: boolean) => (ok ? L('ui.run.gratis') : L('ui.fogon.usado'));
+  const curar = choice(tileEl('reparacion', L('ui.fogon.curar'), 'service'), L('ui.fogon.curar'), L('ui.fogon.curar.desc', { n: sv.curar.vida, i: run.integrity, max: run.maxIntegrity }), usado(sv.curar.puede), can && sv.curar.puede ? () => (sfx.build(), runDo({ t: 'fogon', que: 'curar' })) : null, 'fogon-curar');
+  curar.id = 'fogon-curar';
+  const purgar = choice(tileEl('retirar', L('ui.fogon.purgar'), 'service'), L('ui.fogon.purgar'), L('ui.fogon.purgar.desc'), usado(sv.purgar.puede), can && sv.purgar.puede ? () => purgarModal(run, L('ui.fogon.purgar.titulo'), (id) => runDo({ t: 'fogon', que: 'purgar', card: id })) : null, 'fogon-purgar');
+  purgar.id = 'fogon-purgar';
+  $('#fogon-opts').append(curar, purgar);
+  $('#go').onclick = () => runDo({ t: 'next' });
+}
+
+/** Elegir la carta que se purga (La Pulpería o el Fogón). */
+function purgarModal(run: Run, titulo: string, onPick: (id: string) => void): void {
+  deckModal(titulo, [{ label: L('ui.mesa.mazo'), cards: run.deck, note: L('ui.run.hoguera.nota') }], {
+    pick: 1,
+    onPick: ([card]) => {
+      onPick(card.id);
+      showBurned(card);
+    },
+  });
 }
 
 // ───────────────────────── La Taberna ─────────────────────────
@@ -388,11 +478,12 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
 }
 
 function shopScreen(run: Run): void {
-  const nextN = run.stage + 1;
+  const nextN = run.stage;
+  const sv = serviciosPulperia(run);
   const next = stageDef(nextN);
   const boss = run.bosses[nextN] ? BOSS[run.bosses[nextN]] : null;
   const can = host();
-  app.innerHTML = `<div class="run">${head(run, L('ui.run.taberna'), `${L('ui.run.taberna.sub', { n: run.stage })}${run.freeShop ? L('ui.run.taberna.vale') : ''}`)}
+  app.innerHTML = `<div class="run">${head(run, L('ui.run.taberna'), `${L('ui.run.taberna.sub', { n: run.stage })}`)}
     <div class="run-body shop">
       <aside class="keeper"><div id="npc"></div><p class="say" id="say">…</p></aside>
       <section class="stock"><div class="rail"></div><div class="choices hangers" id="offers"></div>${waitNote()}<div id="belt-host"></div></section>
@@ -402,10 +493,10 @@ function shopScreen(run: Run): void {
           <p><b>${asaltoN(nextN)}</b> · ${Ln(next.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(next.hp) })}</p>
           ${boss ? `<p class="boss"><b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}</p>` : next.boss ? L('ui.run.monarca.sabra') : L('ui.run.sin.monarca')}</div></div></div>
         <div class="grid2">
-          <button id="heal" data-tip="${L('ui.run.curar.tip', { v: BALANCE.taberna.curar.vida, i: run.integrity, max: run.maxIntegrity, p: BALANCE.taberna.curar.paso })}" ${can && run.gold >= healCost(run) && run.integrity < run.maxIntegrity ? '' : 'disabled'}>${L('ui.run.curar', { n: healCost(run) })}</button>
-          <button id="burn" data-tip="${L('ui.run.hoguera.tip', { p: BALANCE.taberna.hoguera.paso })}" ${can && run.gold >= removeCost(run) && run.deck.length > MIN_DECK ? '' : 'disabled'}>${L('ui.run.hoguera', { n: removeCost(run) })}</button>
-          <button id="reroll" data-tip="${L('ui.run.renovar.tip', { p: BALANCE.taberna.renovar.paso })}${run.vouchers ? L('ui.run.renovar.vales', { n: run.vouchers }) : ''}." ${can && run.gold >= rerollCost(run) ? '' : 'disabled'}>${L('ui.run.renovar', { x: rerollCost(run) || L('ui.run.vale') })}</button>
-          <button class="primary" id="go" ${can ? '' : 'disabled'}>${!run.endless && EVENT_AFTER.includes(run.stage) && run.events.length ? L('ui.run.cripta.bajar') : L('ui.run.al.mapa')}</button>
+          <button id="heal" data-tip="${L('ui.run.curar.tip', { v: sv.curar.vida, i: run.integrity, max: run.maxIntegrity, p: sv.curar.paso })}" ${can && sv.curar.puede ? '' : 'disabled'}>${L('ui.run.curar', { n: sv.curar.precio })}</button>
+          <button id="burn" data-tip="${L('ui.run.hoguera.tip', { p: sv.purgar.paso })}" ${can && sv.purgar.puede ? '' : 'disabled'}>${L('ui.run.hoguera', { n: sv.purgar.precio })}</button>
+          <button id="reroll" data-tip="${L('ui.run.renovar.tip', { p: sv.renovar.paso })}${sv.renovar.vales ? L('ui.run.renovar.vales', { n: sv.renovar.vales }) : ''}." ${can && sv.renovar.puede ? '' : 'disabled'}>${L('ui.run.renovar', { x: sv.renovar.precio || L('ui.run.vale') })}</button>
+          <button class="primary" id="go" ${can ? '' : 'disabled'}>${L('ui.run.al.mapa')}</button>
         </div>
       </aside>
     </div></div>`;
@@ -418,17 +509,10 @@ function shopScreen(run: Run): void {
   if (lastPhase === 'shop' && lastGold >= 0 && run.gold < lastGold) {
     sfx.coins(lastGold - run.gold), coins('.purse b', '#npc', lastGold - run.gold); // juice-ux V8: de la bolsa al Tratante
     ferreteroSays('buy');
-  } else if (lastPhase !== 'shop') ferreteroSays(run.freeShop ? 'free' : 'hello');
+  } else if (lastPhase !== 'shop') ferreteroSays('hello');
   else $('#say').textContent = '…';
   $('#heal').onclick = () => (sfx.build(), runDo({ t: 'heal' }));
-  $('#burn').onclick = () =>
-    deckModal(L('ui.run.hoguera.titulo', { n: removeCost(run) }), [{ label: L('ui.mesa.mazo'), cards: run.deck, note: L('ui.run.hoguera.nota') }], {
-      pick: 1,
-      onPick: ([card]) => {
-        runDo({ t: 'burn', card: card.id });
-        showBurned(card);
-      },
-    });
+  $('#burn').onclick = () => purgarModal(run, L('ui.run.hoguera.titulo', { n: sv.purgar.precio }), (id) => runDo({ t: 'burn', card: id }));
   $('#reroll').onclick = () => {
     runDo({ t: 'reroll' });
     ferreteroSays('reroll');
@@ -555,7 +639,6 @@ export function actaText(run: Run, online = false): string {
   const cleared = stagesCleared(run);
   const row = Array.from({ length: LAST_STAGE }, (_, i) => {
     const n = i + 1;
-    if (run.skipped.includes(n)) return '⏭️';
     if (n <= cleared) return '🟥';
     return n === cleared + 1 && !run.conquered ? '💀' : '⬛';
   }).join('');

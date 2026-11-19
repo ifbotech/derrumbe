@@ -1,5 +1,5 @@
-// Balance de la campaña, versión rápida: el bot juega campañas enteras (plano, contratos, selección,
-// ferretería, forja, hallazgos, andamio y orden del cinturón) y se mide hasta dónde llega.
+// Balance de la campaña, versión rápida: el bot juega campañas enteras (Mapa de caminos, Botín y «Elegí una»,
+// La Pulpería, Mesa de lacre, Santuarios, la Manga y orden de los Amuletos) y se mide hasta dónde llega.
 // Para el informe completo, con cada herramienta y cada jefe: npm run analyze:meta
 //
 //   npm run simulate:run [campañas] [gremio: vacio | lleno | ambos] [jugadores] [baraja | todas]
@@ -13,12 +13,14 @@
 import './balance-patch';
 import { DECKS, LAST_STAGE } from '../src/rules/run';
 import { playCampaign } from './lab';
+import type { PoliticaRuta } from '../src/rules/bot';
 
 const runs = Number(process.argv[2] ?? 400);
 const guild = process.argv[3] ?? 'ambos';
 const players = Number(process.argv[4] ?? 1);
 const which = process.argv[5] ?? 'escoba';
-const policy = { skip: process.env.SKIP ? process.env.SKIP.split(',') : [], risk: process.env.RISK === '1' };
+// V40 1e · la política de ruta del bot en el Mapa (RUTA=equilibrada|brava|prudente|sinPulperia|azar)
+const policy = { ruta: (process.env.RUTA ?? 'equilibrada') as PoliticaRuta };
 const ascension = Math.max(0, Number(process.env.ASC ?? 1) - 1);
 const verbose = process.env.VERBOSE === '1';
 

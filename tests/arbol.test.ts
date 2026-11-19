@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from '../src/rules/achievements';
 import { ARBOL, RAIZ, RAMAS, arbolLleno, cifraDe, comprarNodo, costeDe, dosCifras, imanDe, mejorasAlAlcance, nodo, puedeComprar, siguienteMejora } from '../src/rules/arbol';
 import { BALANCE, fill, fillFor } from '../src/rules/balance-config';
-import { BOSSES, CONTRACTS, EVENTS, TAGS, UPGRADES, buyUpgrade, cleanUp, newMeta, newRun, stageConfig, startStage } from '../src/rules/run';
+import { BOSSES, EVENTS, UPGRADES, buyUpgrade, cleanUp, newMeta, newRun, stageConfig, startStage } from '../src/rules/run';
 import { newTowers, previewStrike } from '../src/rules/engine';
 import type { Card } from '../src/rules/engine';
 import { SPECIALS } from '../src/rules/specials';
@@ -118,15 +118,13 @@ describe('los textos de cada nodo', () => {
     for (const r of RAMAS) for (const lang of ['es', 'en'] as const) expect(DICCIONARIOS[lang][`rama.${r.id}.nombre`]).toBeTruthy();
   });
 
-  it('ningún nodo repite el nombre de una reliquia, especial, monarca, juramento, atajo, Secreto o logro', () => {
+  it('ningún nodo repite el nombre de una reliquia, especial, monarca, Secreto o logro', () => {
     for (const lang of ['es', 'en'] as const) {
       const d = DICCIONARIOS[lang];
       const otros = new Set([
         ...TOOLS.map((t) => d[`reliquia.${t.id}.nombre`]),
         ...SPECIALS.map((s) => d[`especial.${s.id}.nombre`]),
         ...BOSSES.flatMap((b) => [d[`monarca.${b.id}.nombre`], d[`monarca.${b.id}.decreto`]]),
-        ...CONTRACTS.map((c) => d[`juramento.${c.id}.nombre`]),
-        ...TAGS.map((t) => d[`atajo.${t.id}.nombre`]),
         ...EVENTS.map((e) => d[`secreto.${e.id}.nombre`]),
         ...ACHIEVEMENTS.map((a) => d[`logro.${a.id}.nombre`]),
       ]);

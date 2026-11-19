@@ -12,7 +12,7 @@ import { ACHIEVEMENTS, TOOL_GOAL } from '../../rules/achievements';
 import { BALANCE, fillFor } from '../../rules/balance-config';
 import { CIFRAS_MESA, cifrasBaraja, cifrasPalabra, cifrasEspecial, cifrasMonarca, cifrasReinado, cifrasReliquia } from '../../rules/cifras';
 import type { Formation, Seal, Suit, Treatment, TowerFx } from '../../rules/engine';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, UPGRADES } from '../../rules/run';
+import { ASCENSIONS, BOSSES, DECKS, EVENTS, STAGES, UPGRADES } from '../../rules/run';
 import { cifraDe } from '../../rules/arbol';
 import { BASE_POOL, SPECIALS } from '../../rules/specials';
 import { TOOL_SLOTS, TOOLS } from '../../rules/tools';
@@ -157,27 +157,6 @@ const REGLAS_EN: Record<string, [string, string]> = {
   pasar: ['Pass', 'Once per turn, discarding just 1 card does not spend the turn: you draw another at once.'],
   chancho: ['Chancho', 'Four of a kind (4 equal cards): the next {n} Counterattacks miss.'],
   arranque: ['Quick Start', 'Defeat a guard in the first {turnos} turns of the assault: +{n} Damage to the next hit.'],
-};
-
-/** Oaths: [name, condition, reward]. Their figures are written in run.ts, so here too (the parity test compares them). */
-const JURAMENTOS: Record<string, [string, string, string]> = {
-  intacto: ['Unscathed', 'Finish the assault without losing Health.', '+8 gold'],
-  limpios: ['Steady Hand', 'Land 3 Exact Hits.', 'A random wax seal'],
-  rapido: ['At a Gallop', 'Win the assault in 3 turns + 4 per guard of each throne, or fewer (3 guards: 15).', '+6 gold'],
-  sincolapso: ['Never Run Dry', 'Finish without the Deck running out.', '+5 gold'],
-  austero: ['No Mutinies', 'Do not play any Joker.', 'A random finish'],
-  maestra: ['Master Play', 'Play a flush, a full house, four of a kind or a straight flush.', 'A random Scroll'],
-  horas: ['Long Night', 'The Attack of every throne rises by 1.', '+10 gold'],
-  sinred: ['No Shield', 'Shield cannot go above 2.', 'A Rare amulet or better'],
-  corta: ['Short Conspiracy', 'Everyone plays with 1 fewer card in hand.', '+12 gold'],
-};
-
-const ATAJOS: Record<string, [string, string]> = {
-  vale: ['Store Key', 'At the next General Store, amulets, packs and the Wax Table are free.'],
-  envio: ['Contraband', 'You get a Noble or Royal amulet right now.'],
-  molde: ['Wax Mold', 'Duplicate the card of your Deck that you choose.'],
-  liquidacion: ['Hidden Loot', '+15 gold.'],
-  timbrado: ['Double Wax', 'Two random cards of your Deck get a wax seal.'],
 };
 
 interface OpcionEn {
@@ -363,7 +342,7 @@ const MEJORAS: Record<string, [string, string?]> = {
   vale: ["Keeper's Favor", 'One free Refresh Table at each General Store, per level.'],
   tienda: ['Wide Sash', 'Per level: +1 amulet slot (from 4 to 6).'],
   caja: ['Conspiracy Purse', '+{oro} starting gold per rank.'],
-  rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
+  rutas: ['Cartographer', 'At the Campfire, Heal and Purge at once.'],
   tasador: ["Appraiser's Eye", 'Amulets at the General Store cost {n} gold less (minimum 1).'],
   manga: ['Deep Sleeve', 'On the Endless Throne, the Sleeve holds 2 cards instead of 1.'],
   gracia: ['Keen Eye', 'On the Endless Throne, Exact Hit also counts if you go over by {n} or less.'],
@@ -416,8 +395,8 @@ const LOGROS: Record<string, [string, string]> = {
   rico: ['Miser', 'Hold 30 gold at once.'],
   cinturon: ['Full Sash', 'Carry {n} amulets at once.'],
   forja: ['Sealmaker', 'Stamp 10 wax seals or finishes.'],
-  contratos: ['Word of Honor', 'Fulfill 10 Oaths.'],
-  atajo: ['Through the Back Door', 'Skip 3 assaults.'],
+  contratos: ['Tough Guy', 'Beat 10 Elite Guards.'],
+  atajo: ['By the Fire', 'Rest at 3 Campfires.'],
   coleccion: ['Collector', "Get the {n} Jester's Tricks, across all your campaigns."],
   ferretero: ["The Keeper's Regular", 'Carry {n} different amulets, across all your campaigns.'],
   jefes: ['No King Left Standing', 'Defeat all {n} Kings.'],
@@ -591,13 +570,11 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.rebobinar': 'You have no Rewinds left.',
   'error.pendientes': 'Choose the pending cards first.',
   'error.empezada': 'The campaign has already begun.',
-  'error.no_mapa': 'You are not on the Castle Map.',
-  'error.ruta': 'That route does not exist.',
-  'error.sin_atajo': 'This assault has no Shortcut.',
-  'error.sin_seleccion': 'There is no pending pick.',
+  'error.no_mapa': 'You are not on the Map.',
+  'error.ruta': 'That path does not lead from here.',
   'error.no_en_seleccion': 'That card is not in the pick.',
-  'error.sin_botin': 'There are no Spoils to choose.',
-  'error.no_en_botin': 'That amulet is not in the Spoils.',
+  'error.sin_botin': 'There are no Spoils to collect.',
+  'error.no_en_botin': 'That amulet is not in the Chest.',
   'error.caben': 'Only {n} amulets fit.',
   'error.caben.vende': 'Only {n} amulets fit. Sell one first.',
   'error.oferta': 'That offer is gone.',
@@ -607,17 +584,24 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.sin_sobre': 'There is no open pack.',
   'error.no_en_sobre': 'That card is not in the pack.',
   'error.nada_pendiente': 'Nothing is pending.',
-  'error.hoguera': 'Cards only burn in the Bonfire of the General Store.',
+  'error.hoguera': 'You can only Purge in the General Store (or for free at the Campfire).',
   'error.mazo_minimo': 'The deck cannot drop below {n} cards.',
   'error.no_en_mazo': 'That card is not in the deck.',
   'error.solo_taberna': 'Only in the General Store.',
   'error.vida_llena': 'Your Health is already full.',
-  'error.no_vender': 'No selling in the middle of an assault.',
+  'error.no_vender': 'No selling in the middle of a fight.',
   'error.no_llevas': 'You do not carry that amulet.',
   'error.no_seguir': 'You cannot move on yet.',
   'error.sin_bendicion': 'There are no Blessings to choose.',
   'error.no_en_bendicion': 'That Blessing is not in the offer.',
-  'error.sin_secreto': 'There is no Crypt Secret.',
+  'error.sin_secreto': 'There is no Shrine.',
+  'error.recompensa': 'That reward is gone.',
+  'error.sin_saltar': 'There are no Spoils to skip.',
+  'error.nada_elegir': 'There is nothing to choose.',
+  'error.nada_abierto': 'Nothing is open.',
+  'error.no_botin': 'There are no Spoils.',
+  'error.no_fogon': 'You are not at the Campfire.',
+  'error.fogon_usado': 'The Campfire has been used.',
   'error.opcion': 'That option does not exist.',
   'error.no_ahora': 'You cannot choose that right now.',
   'error.infinito': 'The Endless Throne opens when you win the campaign.',
@@ -702,19 +686,6 @@ export function reglasEn(): Record<string, string> {
     o[`regla.${r.id}.nombre`] = e[0];
     o[`regla.${r.id}.desc`] = f(e[1], CIFRAS_REGLA[r.id]);
   }
-  for (const c of CONTRACTS) {
-    const j = JURAMENTOS[c.id];
-    if (!j) continue;
-    o[`juramento.${c.id}.nombre`] = j[0];
-    o[`juramento.${c.id}.desc`] = j[1];
-    o[`juramento.${c.id}.premio`] = j[2];
-  }
-  for (const t of TAGS) {
-    const a = ATAJOS[t.id];
-    if (!a) continue;
-    o[`atajo.${t.id}.nombre`] = a[0];
-    o[`atajo.${t.id}.desc`] = a[1];
-  }
   for (const e of EVENTS) {
     const s = SECRETOS[e.id];
     if (!s) continue;
@@ -787,6 +758,7 @@ export function reglasEn(): Record<string, string> {
   for (const [r, nombre] of Object.entries(FIGURAS_EN)) o[`figura.${r}`] = nombre;
   const C = BALANCE.cobro;
   o['cuenta.asalto'] = 'Assault won';
+  o['cuenta.bravo'] = 'Elite Guard';
   o['cuenta.vida'] = f('Health left (1 for every {n})', { n: C.vidaCada });
   o['cuenta.interes'] = f('Interest (1 for every {n} gold)', { n: C.interesCada });
   // V12: the Best Play rule (src/rules/mejor-jugada.ts)

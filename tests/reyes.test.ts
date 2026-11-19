@@ -24,25 +24,24 @@ import {
   relacionRey,
   reyesDe,
 } from '../src/rules/reyes';
-import { BOSSES, EVENT, META_VERSION, MONARCAS_VIEJOS, RUN_VERSION, Run, cargaRun, finishBattle, loadMeta, newMeta, newRun, runAction, stageConfig, startStage } from '../src/rules/run';
+import { BOSSES, META_VERSION, STAGES, MONARCAS_VIEJOS, RUN_VERSION, Run, cargaRun, finishBattle, loadMeta, newMeta, newRun, runAction, stageConfig, startStage } from '../src/rules/run';
 import { tFor } from '../src/shared/i18n';
+import { alAsalto, cierraBotin } from './mapa-ayuda';
 
 const P = [{ id: 'a', name: 'A' }];
 const act = (run: Run, a: Parameters<typeof runAction>[1]) => expect(runAction(run, a), JSON.stringify(a)).toBeNull();
 const card = (id: string): Card => ({ id, suit: id[0] as Suit, rank: Number(id.slice(1)) });
 const OF = BALANCE.oferta;
 
-/** Gana el asalto en curso sin jugarlo y llega a La Pulpería. */
-function ganaYCompra(run: Run): void {
+/** Gana el asalto del tramo sin jugarlo y deja la campaña en el Botín. */
+function gana(run: Run): void {
   if (run.phase === 'bendicion') act(run, { t: 'bendicion', i: 0 });
-  act(run, { t: 'route', i: 0 });
+  alAsalto(run);
   const st = startStage(run, P);
   for (const t of Object.values(st.towers)) t.floors = [];
   st.phase = 'won';
   finishBattle(run, st);
-  if (!run.looted) act(run, { t: 'loot', id: null });
-  act(run, { t: 'draft', i: null });
-  expect(run.phase).toBe('shop');
+  expect(run.phase).toBe('reward');
 }
 
 /** Un golpe de prueba con estas Bendiciones (mesa ancha, sin jefe). */
@@ -81,18 +80,24 @@ describe('V40 1c · la oferta de Bendiciones', () => {
     expect(runAction(run, { t: 'bendicion', i: 0 })).toBe('No hay Bendiciones que elegir.');
   });
 
-  it('entre asaltos vuelven a ofrecer (con oferta.entre Reyes), y nunca una Bendición que ya llevás', () => {
+  it('V40 1e · tras los asaltos de Rey, el Botín trae una «Elegí una» Bendición (de oferta.entre Reyes), nunca una que ya llevás', () => {
     const run = newRun({ seedText: 'REYES-2' }, 3);
     act(run, { t: 'begin' });
     for (let stage = 1; stage <= 4; stage++) {
-      ganaYCompra(run);
-      act(run, { t: 'next' });
-      if (run.phase === 'event') act(run, { t: 'event', i: EVENT[run.event!].options.length - 1 });
-      expect(run.phase, `tras el asalto ${stage}`).toBe('bendicion');
-      expect(run.oferta).toHaveLength(OF.entre);
-      for (const o of run.oferta!) expect(run.bendiciones.some((b) => b.id === o.id), o.id).toBe(false);
+      gana(run);
+      const i = run.botin.findIndex((r) => r.k === 'elegi' && r.tipo === 'bendicion');
+      expect(i >= 0, `tras el asalto ${stage}`).toBe(STAGES[stage - 1].boss || BALANCE.mapa.bendicionGuardia > 0);
+      if (i >= 0) {
+        const r = run.botin[i];
+        if (r.k !== 'elegi' || r.tipo !== 'bendicion') throw new Error('no es Bendición');
+        expect(r.opciones).toHaveLength(OF.entre);
+        for (const o of r.opciones) expect(run.bendiciones.some((b) => b.id === o.id), o.id).toBe(false);
+        act(run, { t: 'cobrar', i });
+        act(run, { t: 'elegir', j: 0 });
+      }
+      cierraBotin(run);
     }
-    expect(run.bendiciones.length).toBe(4);
+    expect(run.bendiciones.length).toBe(1 + STAGES.slice(0, 4).filter((s) => s.boss).length);
   });
 
   it('es reproducible: la misma semilla da la misma oferta, y no depende de nada más de la campaña', () => {
@@ -157,7 +162,7 @@ describe('V40 1c · cargas', () => {
     act(run, { t: 'begin' });
     act(run, { t: 'bendicion', i: 0 });
     run.bendiciones = [{ id: 'filo', n: 0 }];
-    act(run, { t: 'route', i: 0 });
+    act(run, { t: 'ir', nodo: 0 });
     let st = startStage(run, P);
     // un Golpe exacto: el guardia al frente queda justo a cero
     const frente = (st.config.orden ?? ['S', 'C', 'D', 'H']).find((s) => st.towers[s].floors.length)!;

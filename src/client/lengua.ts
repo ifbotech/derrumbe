@@ -55,11 +55,6 @@ export const barN = (id: string) => t(`baraja.${id}.nombre`);
 export const barD = (id: string) => t(`baraja.${id}.desc`);
 /** V40 · el lema de un Mazo («Mesa barrida»). */
 export const barL = (id: string) => t(`baraja.${id}.lema`);
-export const juraN = (id: string) => t(`juramento.${id}.nombre`);
-export const juraD = (id: string) => t(`juramento.${id}.desc`);
-export const juraP = (id: string) => t(`juramento.${id}.premio`);
-export const atajoN = (id: string) => t(`atajo.${id}.nombre`);
-export const atajoD = (id: string) => t(`atajo.${id}.desc`);
 export const secN = (id: string) => t(`secreto.${id}.nombre`);
 export const secT = (id: string) => t(`secreto.${id}.texto`);
 /** Una opción de un secreto: `campo` = etiqueta, desc, gana o cuesta. */

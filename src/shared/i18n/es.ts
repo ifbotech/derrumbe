@@ -11,7 +11,7 @@ import { fill, BALANCE } from '../../rules/balance-config';
 import { FIGURA_NOMBRE, FIGURAS, FORMACIONES_MAZO, FORMATION_NAME, FORMATIONS, MATERIAL, PALO_NOMBRE, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
 import { REGLA_MEJOR } from '../../rules/mejor-jugada';
 import { KEYWORDS } from '../../rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
+import { ASCENSIONS, BOSSES, DECKS, EVENTS, STAGES, TIRANO, UPGRADES } from '../../rules/run';
 import { RAIZ, RAMAS } from '../../rules/arbol';
 import { SPECIALS } from '../../rules/specials';
 import { ARCH, RARITY, TOOLS } from '../../rules/tools';
@@ -81,15 +81,6 @@ export function reglasEs(): Record<string, string> {
     o[`regla.${r.id}.nombre`] = r.name;
     o[`regla.${r.id}.desc`] = r.desc;
   }
-  for (const c of CONTRACTS) {
-    o[`juramento.${c.id}.nombre`] = c.name;
-    o[`juramento.${c.id}.desc`] = c.desc;
-    o[`juramento.${c.id}.premio`] = c.reward;
-  }
-  for (const t of TAGS) {
-    o[`atajo.${t.id}.nombre`] = t.name;
-    o[`atajo.${t.id}.desc`] = t.desc;
-  }
   for (const e of EVENTS) {
     o[`secreto.${e.id}.nombre`] = e.name;
     o[`secreto.${e.id}.texto`] = e.text;
@@ -147,6 +138,7 @@ export function reglasEs(): Record<string, string> {
   // la cuenta del cobro (run.ts, finishBattle): las mismas cadenas que acaban en `run.pay`
   const C = BALANCE.cobro;
   o['cuenta.asalto'] = 'Asalto ganado';
+  o['cuenta.bravo'] = 'Guardia Bravo';
   o['cuenta.vida'] = fill('Vida que te queda (1 por cada {n})', { n: C.vidaCada });
   o['cuenta.interes'] = fill('Interés (1 por cada {n} de oro)', { n: C.interesCada });
   // V12: la regla de Mejor jugada (src/rules/mejor-jugada.ts)

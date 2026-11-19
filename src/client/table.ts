@@ -3,7 +3,7 @@
 import { CABALLO, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, REY, SOTA, SUITS, StrikeResult, Suit, TOWER_FX, TowerFx, activo, cardLabel, cardValue, classify, esJefe, floorHp, multiplier, ordenDe, previewStrike, threatOf, vecinosPresentes } from '../rules/engine';
 import { autopsy } from '../rules/autopsy';
 import { BALANCE } from '../rules/balance-config';
-import { BOSS, CONTRACT, FURIA, LAST_STAGE, stageDef, toolSlots } from '../rules/run';
+import { BOSS, FURIA, LAST_STAGE, MAPA_CFG, stageDef, toolSlots } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
 import type { ClientMsg } from '../shared/protocol';
 import { bunkerArt, rubble, skyline } from './art';
@@ -12,7 +12,7 @@ import { afterBatch, campaignAct, isRunHost, routeRun, runDo, stageIntro } from 
 import { backEl, cardEl, pipPath, setDeckBack, suitSvg } from './card';
 import { causeHtml } from './causa';
 import { aportes, contraataqueTras, liveHtml, Preview, closeReceipt, paintScore, polvoraDe, previewHtml, stageOver } from './cuenta';
-import { L, Ln, asaltoN, espN, formN, fxD, fxN, juraD, juraN, juraP, marca, monD, monDec, monN, paloN } from './lengua';
+import { L, Ln, asaltoN, espN, formN, fxD, fxN, marca, monD, monDec, monN, paloN } from './lengua';
 import { $, $$, RUN_PLAYER, S, cap, closeModal, cycleSpeed, hideTip, nameOf, num, settings, sortHand, speedLabel, toast, topModal } from './core';
 import { storeySvg } from './engraving';
 import { CRACKS, exactChain, sealStep, banner, burst, chipAt, coins, dealIn, flash, floatText, fly, guardFall, hitstop, pop, quake, restart, ribbon, shake, procBadge, stampOn, tear, throneFall, wait } from './fx';
@@ -313,10 +313,10 @@ export function renderHud(): void {
   const obra = $('#obra');
   if (obra && c) {
     const boss = c.run.boss ? BOSS[c.run.boss] : null;
-    const contract = c.run.contract ? CONTRACT[c.run.contract] : null;
+    const bravo = c.run.combate === 'bravo';
     obra.innerHTML = [
       boss ? `<div class="chip boss-chip" data-lupa="boss:${boss.id}" data-tip="<b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}"><span>${L('ui.mesa.monarca')}</span><b>${REY_IDS.includes(boss.id as ReyId) ? t(`rey.${boss.id}.nombre`) : monN(boss.id)}</b></div>` : '',
-      contract ? `<div class="chip contract-chip ${contract.risk ? 'risk' : ''}" data-tip="<b>${L('ui.mesa.juramento')} · ${juraN(contract.id)}</b>${juraD(contract.id)}<hr>${L('ui.mesa.premio', { x: juraP(contract.id) })}"><span>${contract.risk ? L('ui.mesa.riesgo') : L('ui.mesa.juramento')}</span><b>${juraN(contract.id)}</b></div>` : '',
+      bravo ? `<div class="chip contract-chip risk" data-tip="${L('ui.mapa.bravo.tip', { a: MAPA_CFG.bravo.ataque })}"><span>${L('ui.mapa.tipo.bravo')}</span><b>+${MAPA_CFG.bravo.ataque} ⚔</b></div>` : '',
       c.run.curse ? `<div class="chip boss-chip" data-tip="${L('ui.mesa.maldito.tip')}"><span>${L('ui.mesa.maldito')}</span><b>+1 ⚔</b></div>` : '',
       c.run.ascension ? `<div class="chip level-chip" data-tip="${L('ui.mesa.reinado.tip', { n: c.run.ascension + 1 })}"><span>${L('ui.mesa.reinado')}</span><b>${c.run.ascension + 1}</b></div>` : '',
     ].join('');

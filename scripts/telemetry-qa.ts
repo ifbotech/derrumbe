@@ -23,7 +23,7 @@ type Step = ['run', Partial<Run>] | ['turn', number] | ['act', string];
 function botCampaign(seed: number): { steps: Step[]; run: Run } {
   const run = newRun({ seedText: `HUMO-${seed}`, deck: 'escoba' }, seed);
   const steps: Step[] = [];
-  const note = () => steps.push(['run', structuredClone({ id: run.id, seedText: run.seedText, deckId: run.deckId, ascension: run.ascension, stage: run.stage, phase: run.phase, loot: run.loot, shop: run.shop, tools: run.tools, stats: run.stats, death: run.death })]);
+  const note = () => steps.push(['run', structuredClone({ id: run.id, seedText: run.seedText, deckId: run.deckId, ascension: run.ascension, stage: run.stage, phase: run.phase, botin: run.botin, shop: run.shop, tools: run.tools, stats: run.stats, death: run.death })]);
   note();
   for (let guard = 0; guard < 3000 && run.phase !== 'won' && run.phase !== 'lost'; guard++) {
     if (run.phase === 'battle') {

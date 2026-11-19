@@ -204,7 +204,7 @@ describe('autopsia de la derrota (contrato C1)', () => {
     const run: Run = newRun({}, 77);
     expect(runAction(run, { t: 'begin' })).toBeNull();
     expect(runAction(run, { t: 'bendicion', i: 0 })).toBeNull(); // V40 1c · la oferta de los Reyes
-    expect(runAction(run, { t: 'route', i: 0 })).toBeNull();
+    expect(runAction(run, { t: 'ir', nodo: 0 })).toBeNull();
     let state = startStage(run, P);
     expect(run.death).toBeNull();
     state.integrity = 1; // un búnker que no aguanta la primera sirena que entre

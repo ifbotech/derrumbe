@@ -59,6 +59,11 @@ export interface Log {
   golpes: number;
   /** V40 1c · las Bendiciones al acabar, con sus cargas. */
   bendEnd: { id: string; n: number }[];
+  /** V40 1e · nodos del Mapa recorridos por tipo, jugadas en Guardias Bravos, si cayó en uno y oro gastado en La Pulpería. */
+  nodos: Record<string, number>;
+  bravoJugadas: number;
+  diedBravo: boolean;
+  gastoPulperia: number;
 }
 
 // Mandos de ajuste (variables de entorno): valen para el laboratorio entero, también en sus procesos hijos.
@@ -104,7 +109,7 @@ const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec
 
 /** Archivos cuyas reglas decide el laboratorio: si cambian, el informe publicado deja de valer. */
 // V12: también el Árbol, lo que cae y los huesos (mueven el oro y los nodos de combate de la campaña).
-const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos', 'mazos', 'reyes', 'piezas'];
+const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos', 'mazos', 'reyes', 'piezas', 'mapa'];
 /** Y los números con que juegan: balance-config.json (sin espacios: solo cuentan sus valores). */
 const RULE_DATA = 'balance-config.json';
 /**
@@ -143,13 +148,14 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   if (spec.giveSpecial) addSpecial(run, spec.giveSpecial);
   // V40 1d · con su efecto inmediato (oro, Vida máxima…), como cuando se toma en la oferta
   if (spec.giveBendicion) tomaBendicion(run, spec.giveBendicion);
-  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0, bendEnd: [] };
+  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0, bendEnd: [], nodos: {}, bravoJugadas: 0, diedBravo: false, gastoPulperia: 0 };
   let shop: unknown = null;
-  let rewardFor = 0;
+  let botin: unknown = null;
   for (let guard = 0; guard < 6000; guard++) {
     if (run.phase === 'won' || run.phase === 'lost') break;
     if (run.phase === 'battle') {
-      if (run.boss) log.faced.push(run.boss);
+      const bravo = run.combate === 'bravo';
+      if (run.boss && !bravo) log.faced.push(run.boss);
       // a mitad de campaña (el asalto 3 de 5): lo que se lleva para medir «con» y «sin» cada pieza
       if (!log.mid && run.stage >= Math.ceil((LAST_STAGE + 1) / 2))
         log.mid = {
@@ -167,13 +173,15 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
         for (const ev of res.events) if (ev.e === 'impact') log.golpes++;
         state = res.state;
       }
-      log.stageJugadas.push(jugadas);
-      const boss = run.boss;
+      if (bravo) log.bravoJugadas += jugadas;
+      else log.stageJugadas.push(jugadas);
+      const boss = bravo ? null : run.boss;
       const stage = run.stage;
       finishBattle(run, state);
       if ((run.phase as Run['phase']) === 'lost') {
         log.diedAt = stage;
         log.diedBoss = boss;
+        log.diedBravo = bravo;
       }
       continue;
     }
@@ -182,10 +190,15 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
       shop = run.shop;
       for (const o of run.shop) bump(log.offered, o.kind === 'tool' ? `tool:${o.id}` : o.kind === 'forja' ? `mark:${o.seal ?? o.tr}` : `shop:${o.kind}`);
     }
-    if (run.phase === 'reward' && rewardFor !== run.stage) {
-      rewardFor = run.stage;
-      for (const id of run.loot) bump(log.offered, `tool:${id}`);
-      for (const o of run.draft) bump(log.offered, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+    // V40 1e · el Botín: lo que ofrece cada «Elegí una» y el Amuleto suelto del Guardia Bravo
+    if (run.phase === 'reward' && run.botin !== botin) {
+      botin = run.botin;
+      for (const r of run.botin) {
+        if (r.k === 'amuleto') bump(log.offered, `tool:${r.id}`);
+        else if (r.k === 'elegi' && r.tipo === 'amuleto') for (const id of r.opciones) bump(log.offered, `tool:${id}`);
+        else if (r.k === 'elegi' && r.tipo === 'trampa') for (const o of r.opciones) bump(log.offered, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+        else if (r.k === 'elegi' && r.tipo === 'bendicion') for (const o of r.opciones) bump(log.offered, `bend:${o.id}`);
+      }
     }
     if (run.phase === 'bendicion') for (const o of run.oferta ?? []) bump(log.offered, `bend:${o.id}`);
     const action = chooseRunAction(run, spec.policy);
@@ -197,12 +210,21 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
     if (action.t === 'buy') {
       const o = run.shop[action.i];
       if (o) bump(log.taken, o.kind === 'tool' ? `tool:${o.id}` : o.kind === 'forja' ? `mark:${o.seal ?? o.tr}` : `shop:${o.kind}`);
-    } else if (action.t === 'loot' && action.id) bump(log.taken, `tool:${action.id}`);
-    else if (action.t === 'draft' && action.i !== null) {
-      const o = run.draft[action.i];
-      if (o) bump(log.taken, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+    } else if (action.t === 'cobrar') {
+      const r = run.botin[action.i];
+      if (r?.k === 'amuleto') bump(log.taken, `tool:${r.id}`);
+    } else if (action.t === 'elegir' && action.j !== null && run.elegi !== null) {
+      const r = run.botin[run.elegi];
+      if (r?.k === 'elegi' && r.tipo === 'amuleto') bump(log.taken, `tool:${r.opciones[action.j]}`);
+      else if (r?.k === 'elegi' && r.tipo === 'trampa') {
+        const o = r.opciones[action.j];
+        if (o) bump(log.taken, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+      } else if (r?.k === 'elegi' && r.tipo === 'bendicion') bump(log.taken, `bend:${r.opciones[action.j]?.id}`);
     }
+    const oroAntes = run.gold;
+    const enPulperia = run.phase === 'shop';
     const err = runAction(run, action);
+    if (enPulperia && run.gold < oroAntes) log.gastoPulperia += oroAntes - run.gold;
     if (err) throw new Error(`decisión rechazada (${JSON.stringify(action)}): ${err}`);
   }
   log.won = run.conquered;
@@ -213,5 +235,6 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   log.toolUse = run.stats.toolUse;
   log.maxHit = run.stats.maxHit;
   log.gold = run.stats.gold;
+  log.nodos = { ...run.stats.nodos };
   return { run, log };
 }

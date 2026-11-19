@@ -6,6 +6,7 @@ import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
 import { CABALLO, Card, GameState, MAX_NUM, REY, SOTA, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, ordenDe, previewStrike, viewFor } from '../rules/engine';
 import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage, tomaBendicion } from '../rules/run';
+import { agregaTramo, asaltoDe, type TipoNodo } from '../rules/mapa';
 import { BENDICION, PALO_DE_REY, REY_IDS, type ReyId, bendicionesDe, esRey, fraseRey, ofertaBendiciones, reyesEnOferta } from '../rules/reyes';
 import { TOOLS, placeTool } from '../rules/tools';
 import { hero } from './art';
@@ -108,6 +109,35 @@ function baseRun(stage = 1): Run {
   run.stats.cleans = 5;
   return run;
 }
+/** V40 1e · Pone la campaña en el Mapa justo antes del nodo `id` (en uno que lleva a él) y entra en él. */
+function alNodo(run: Run, id: number): void {
+  const m = run.mapa;
+  const previo = m.nodos.find((n) => n.hacia.includes(id));
+  m.en = previo ? previo.id : -1;
+  m.hechos = m.nodos.filter((n) => n.fila < (m.nodos[id]?.fila ?? 0) && (n.asalto || n.id === previo?.id)).map((n) => n.id);
+  run.phase = 'map';
+  runAction(run, { t: 'ir', nodo: id });
+}
+/** V40 1e · Entra al asalto de `run.stage` desde el Mapa. */
+function alAsalto(run: Run): void {
+  // en el Trono infinito, el Mapa crece hasta el asalto pedido
+  for (let t = Math.max(...run.mapa.nodos.map((n) => n.tramo)) + 1; t <= run.stage; t++) agregaTramo(run.mapa, run.id, t, true);
+  const a = asaltoDe(run.mapa, run.stage);
+  if (a) alNodo(run, a.id);
+}
+/** V40 1e · Entra a un nodo del tipo pedido en el tramo de `run.stage` (si el tramo no lo tiene, la QA lo pone en la fila A). */
+function alTipo(run: Run, tipo: TipoNodo): void {
+  const tramo = run.mapa.nodos.filter((n) => n.tramo === run.stage && !n.asalto);
+  const n = tramo.find((x) => x.tipo === tipo) ?? tramo[0];
+  if (!n) return;
+  n.tipo = tipo;
+  alNodo(run, n.id);
+}
+/** V40 1e · Cobra el oro del Botín, salta el resto y vuelve al Mapa (tramo siguiente). */
+function cierraBotin(run: Run): void {
+  run.botin.forEach((r, i) => runAction(run, r.k === 'oro' ? { t: 'cobrar', i } : { t: 'saltar', i }));
+  runAction(run, { t: 'seguir' });
+}
 function show(run: Run, state: GameState | null = null, key = 'qa'): void {
   clean();
   S.campaign = { run, online: false, state, key };
@@ -127,7 +157,7 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   // V12: el Trono infinito (mesa-cifras): la campaña ya ganada y abierta hacia abajo
   if (depth) run.endless = true;
   if (boss) run.bosses[at] = boss;
-  runAction(run, { t: 'route', i: 0 });
+  alAsalto(run);
   let state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   // V40 1d: la Manga de dos huecos que daba la Pasarela (retirada); las medidas de la mesa de la QA son con ella
   state.config.reserveSize = 2;
@@ -234,7 +264,7 @@ async function bufonEn(id: ConsejoBufon): Promise<void> {
 function huesos(dos: boolean): void {
   const run = baseRun(2);
   if (dos) run.up = { ...run.up, hueso_tallado: 1, cara_rey: 1, segundo_hueso: 1 };
-  runAction(run, { t: 'route', i: 0 });
+  alAsalto(run);
   const state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   run.caida = { oro: 12, esquirlas: 140, gotas: 1 };
   for (const s of SUITS) state.towers[s].floors = [];
@@ -248,7 +278,7 @@ function huesos(dos: boolean): void {
 }
 
 function winStage(run: Run): void {
-  runAction(run, { t: 'route', i: 0 });
+  alAsalto(run);
   const state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   for (const s of SUITS) state.towers[s].floors = [];
   state.phase = 'won';
@@ -295,8 +325,8 @@ function arbol(): void {
 
 function toShop(run: Run): void {
   winStage(run);
-  runAction(run, { t: 'draft', i: null });
-  if (!run.looted) runAction(run, { t: 'loot', id: null });
+  cierraBotin(run);
+  alTipo(run, 'pulperia');
   run.gold = 64;
 }
 
@@ -425,6 +455,56 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(baseRun(2));
     setScreen('run');
   },
+  // V40 1e · el Mapa de caminos en el tramo 3: el asalto 2 hecho, la fila A alcanzable y la B y el asalto 3 por delante
+  'mapa-ramas': () => {
+    const run = baseRun(2);
+    winStage(run);
+    cierraBotin(run);
+    show(run);
+    setScreen('run');
+  },
+  // V40 1e · el Botín de un asalto de Rey: el oro ya cobrado, la «Elegí una» de Bendición, la de Trampa y el Cofre
+  botin: () => {
+    const run = baseRun(2);
+    winStage(run);
+    const oro = run.botin.findIndex((r) => r.k === 'oro');
+    if (oro >= 0) runAction(run, { t: 'cobrar', i: oro });
+    show(run);
+    setScreen('run');
+    ritualNuevo();
+  },
+  // V40 1e · la «Elegí una» abierta (la de Trampa o carta), con Saltar y Volver al Botín
+  'elegi-una': () => {
+    const run = baseRun(2);
+    winStage(run);
+    const i = run.botin.findIndex((r) => r.k === 'elegi' && r.tipo === 'trampa');
+    if (i >= 0) runAction(run, { t: 'cobrar', i });
+    show(run);
+    setScreen('run');
+    ritualNuevo();
+  },
+  // V40 1e · La Pulpería con sus servicios: Purgar ya usado una vez (su precio subió) y Curar a la vista
+  'pulperia-servicios': () => {
+    const run = baseRun(2);
+    toShop(run);
+    run.integrity = 11;
+    const carta = run.deck.find((c) => !c.sp && c.suit !== 'X');
+    if (carta) runAction(run, { t: 'burn', card: carta.id });
+    run.gold = 64;
+    show(run);
+    setScreen('run');
+  },
+  // V40 1e · el Fogón: Curar o Purgar gratis
+  fogon: () => {
+    const run = baseRun(2);
+    winStage(run);
+    cierraBotin(run);
+    run.up = { ...run.up, rutas: 0 };
+    run.integrity = 10;
+    alTipo(run, 'fogon');
+    show(run);
+    setScreen('run');
+  },
   cobro: () => {
     const run = baseRun(2);
     winStage(run);
@@ -466,6 +546,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     toShop(run);
     run.events = ['horno', ...run.events.filter((e) => e !== 'horno')];
     runAction(run, { t: 'next' });
+    alTipo(run, 'santuario');
     show(run);
     setScreen('run');
   },
@@ -478,6 +559,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
         toShop(run);
         run.events = [e.id, ...run.events.filter((x) => x !== e.id)];
         runAction(run, { t: 'next' });
+        alTipo(run, 'santuario');
         show(run);
         setScreen('run');
       },
