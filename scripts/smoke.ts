@@ -564,17 +564,17 @@ async function seccionBufon({ browser, site }: Sesion): Promise<void> {
       });
       return { text: el.textContent ?? '', heard: [...w.__qaVoz.heard], ms: w.__qaVoz.ms(), covers: hit('#hand .card') || hit('#score'), n: document.querySelectorAll('#bark, .bark').length };
     });
-    check(bark?.heard.includes('sequia:entrada'), `un asalto con monarca enseña su bocadillo de entrada${bark ? ` («${bark.text}»)` : ''}`);
+    check(bark?.heard.includes('copas:entrada'), `un asalto con monarca enseña su bocadillo de entrada${bark ? ` («${bark.text}»)` : ''}`);
     check(bark && !bark.covers && bark.n === 1, 'el bocadillo no tapa la mano ni la cuenta, y hay uno solo');
     check(bark && bark.ms <= 2500, `el bocadillo dura ≤ 2,5 s a 1× (${bark?.ms} ms)`);
-    check((await sounds(page)).some((s) => s === 'monarch:sequia:entrada'), 'el monarca entra con su firma sonora');
+    check((await sounds(page)).some((s) => s === 'monarch:copas:entrada'), 'el monarca entra con su firma sonora');
     await page.waitForTimeout(2900);
     check(await page.evaluate(() => document.getElementById('bark')?.hidden !== false), 'y se va solo');
     // con «Reducir movimiento» entra sin animación
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const calm = await page.evaluate(async () => {
       const w = window as unknown as { __qaVoz: { say(id: string, kind: string): void } };
-      w.__qaVoz.say('furia', 'contraataque');
+      w.__qaVoz.say('espadas', 'contraataque');
       await new Promise((r) => setTimeout(r, 60));
       const el = document.getElementById('bark');
       return el && !el.hidden ? getComputedStyle(el).animationName : 'oculto';
@@ -583,8 +583,8 @@ async function seccionBufon({ browser, site }: Sesion): Promise<void> {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const stacked = await page.evaluate(async () => {
       const w = window as unknown as { __qaVoz: { say(id: string, kind: string): void } };
-      w.__qaVoz.say('furia', 'caida');
-      w.__qaVoz.say('furia', 'entrada');
+      w.__qaVoz.say('espadas', 'caida');
+      w.__qaVoz.say('espadas', 'entrada');
       await new Promise((r) => setTimeout(r, 60));
       return { n: document.querySelectorAll('.bark:not([hidden])').length, text: document.getElementById('bark')?.textContent ?? '' };
     });

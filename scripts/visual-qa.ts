@@ -143,14 +143,14 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto', 'bendicion', 'mesa-rey'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
-const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
+const EXTRA = /^(mesa-monarca|mesa-rey|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
-const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'mesa-rey'];
+const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-') || s.startsWith('mesa-rey-');
 /** infra/rapido · navegadores a la vez (QA_HILOS); cada uno es un proceso de Chromium aparte con las banderas de siempre. */
 const HILOS = Math.max(1, Math.floor(Number(process.env.QA_HILOS || 8)) || 1);
 
@@ -1672,7 +1672,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (document.querySelector('.modal, #guia:not([hidden])')) fail('bufon', 'el Bufón no debe abrir ventana ni velar la mesa');
     }
     // monarca en la mesa: retrato, nombre y placa del decreto; la maldición marcada; bocadillo ≥ 14 px sin pisar mano ni cuenta
-    if (opts.state === 'mesa-monarca' || opts.state.startsWith('mesa-monarca-')) {
+    if (opts.state === 'mesa-monarca' || opts.state.startsWith('mesa-monarca-') || opts.state === 'mesa-rey' || opts.state.startsWith('mesa-rey-')) {
       const mon = document.getElementById('monarch');
       if (!mon || !visible(mon)) fail('voz', 'no se ve el monarca en la mesa');
       else {
@@ -1703,14 +1703,26 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (over(r, union('.actions > button'))) fail('voz', 'el bocadillo pisa la barra de acciones', bark);
       }
     }
-    // galería: los siete, cada uno con su retrato en calma y vencido y la placa de su decreto
+    // galería: los 4 Reyes (V40 1c), cada uno con su retrato en calma y vencido y la placa de su rasgo
     if (opts.state === 'monarcas') {
       const fichas = [...document.querySelectorAll('.mon-ficha')];
-      if (fichas.length !== 7) fail('voz', `la galería tiene ${fichas.length} monarcas (deben ser 7)`);
+      if (fichas.length !== 4) fail('voz', `la galería tiene ${fichas.length} Reyes (deben ser 4)`);
       for (const f of fichas) {
         const id = f.getAttribute('data-boss');
         if (!f.querySelector('svg.monarca.calma') || !f.querySelector('svg.monarca.vencido')) fail('voz', `a ${id} le falta una de sus dos caras`, f);
         if (!f.querySelector('.curse-plate b')?.textContent?.trim()) fail('voz', `a ${id} le falta la placa del decreto`, f);
+      }
+    }
+    // V40 1c · la oferta de los Reyes: 2 o 3 Bendiciones de Reyes distintos, cada una elegible y con su efecto y su carga
+    if (opts.state === 'bendicion') {
+      const cards = [...document.querySelectorAll<HTMLElement>('#bends > .choice')];
+      if (cards.length < 2 || cards.length > 3) fail('voz', `la oferta tiene ${cards.length} Bendiciones (deben ser 2 o 3)`);
+      const reyes = new Set(cards.map((c) => [...c.classList].find((k) => k.startsWith('r-'))));
+      if (reyes.size !== cards.length) fail('voz', 'dos Bendiciones de la oferta son del mismo Rey');
+      for (const c of cards) {
+        if (!c.dataset.bend) fail('voz', 'una Bendición de la oferta no dice cuál es (data-bend)', c);
+        if (!c.classList.contains('pick')) fail('voz', 'una Bendición de la oferta no se puede elegir', c);
+        if ((c.textContent ?? '').trim().length < 20) fail('voz', 'una Bendición de la oferta no explica su efecto', c);
       }
     }
     // secretos: lo que da y lo que cuesta cada opción, a la vista sin desplazar y a 15 px o más
@@ -2668,8 +2680,9 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
       const todo = t.map((x) => x.txt).join(' ');
       if (t.length) medidas.push(`${que} «${todo}» ${f1(Math.min(...t.map((x) => x.px)))} px, ${f1(Math.min(...t.map((x) => x.k)))}:1`);
     }
-    const relojero = document.querySelector<HTMLElement>("[data-curse='asedio'] .tower.activa .threat .curse-tag");
-    if (visible(relojero) && !/furia|fury/i.test(relojero.textContent ?? '')) fail('furia', `la marca del Relojero en el ⚔ dice «${relojero.textContent?.trim()}» y no la palabra Furia`);
+    // V40 1c · la marca del Rey de Copas en el ⚔ dice que se cura (antes, la del Relojero decía Furia)
+    const copas = document.querySelector<HTMLElement>("[data-curse='asedio'] .tower.activa .threat .curse-tag");
+    if (visible(copas) && !/cura|heal/i.test(copas.textContent ?? '')) fail('furia', `la marca del Rey de Copas en el ⚔ dice «${copas.textContent?.trim()}» y no que se cura`);
   }
 
   // ── V38b · «pilas»: el Mazo y el Descarte, sus rótulos a ≥ 7:1 y sus dos cifras a ≥ 7:1 y del mismo tamaño ──

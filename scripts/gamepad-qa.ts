@@ -553,13 +553,20 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
   const toTable = async () => {
     if (!(await focusOn(page, '#go'))) return false;
     await A();
+    // V40 1c · la oferta de los Reyes: la cruceta pasa por las Bendiciones y A se queda con una
+    await page.waitForSelector('#bends .choice.pick', { timeout: 5_000 }).catch(() => undefined);
+    if (!(await focusOn(page, '#bends .choice.pick:nth-child(2)'))) return false;
+    if (!(await focusIsSane(page))) return false;
+    await A();
+    await page.waitForTimeout(300);
+    if ((await run(page))?.phase !== 'map') return false;
     if (!(await focusOn(page, '#routes .choice.pick'))) return false;
     await A();
     await page.waitForSelector('.table-screen');
     await settled(page);
     return (await run(page))?.phase === 'battle';
   };
-  check(await toTable(), 'sobre → mapa → ruta → mesa, todo con A y la cruceta');
+  check(await toTable(), 'sobre → Bendición → mapa → ruta → mesa, todo con A y la cruceta');
 
   // ── V12 · mantener Select + Start: reinicio rápido (Select solo es AUTO; Start solo, Ajustes) ──
   await page.evaluate((b) => ((window as unknown as QaWindow).__qaGamepad.pad.buttons[b] = { pressed: true, touched: true, value: 1 }), BTN.SELECT);

@@ -151,7 +151,12 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
       continue;
     }
     if (r.phase === 'pack') await page.locator('#go').click();
-    else if (r.phase === 'map') {
+    // V40 1c · la oferta de los Reyes: el bot del ratón se queda con la primera Bendición
+    else if (r.phase === 'bendicion') {
+      await page.waitForTimeout(400); // las tarjetas se dan la vuelta de una en una
+      const b = page.locator('#bends .choice.pick').first();
+      if (await b.count()) await b.click();
+    } else if (r.phase === 'map') {
       // el Mapa del Salón del Trono lleva la estampilla «Rey Tirano» (o «Reina Tirana») en su asalto
       if (r.stage === 5) tirano = (await page.locator('.bp-node.tirano .s-tirano').first().textContent().catch(() => null)) ?? '';
       const route = page.locator('#routes .choice.pick:not(.skip)').first();
@@ -215,6 +220,8 @@ export async function campaignSuite(browser: Browser, url: string, check: Check,
   check(st.get(1)?.thrones === 2 && st.get(2)?.thrones === 3 && [3, 4, 5].every((n) => st.get(n)?.thrones === 4), `[campaña] tronos por asalto 2 / 3 / 4 / 4 / 4 (${stages.map((s) => s.thrones).join(' / ')})`);
   const events = phases.filter((p) => p.startsWith('event:')).map((p) => Number(p.split(':')[1]));
   check(events.join() === '2,4', `[campaña] Secretos de la cripta tras los asaltos 2 y 4 (${events.join(', ') || 'ninguno'})`);
+  const bends = phases.filter((p) => p.startsWith('bendicion:')).map((p) => Number(p.split(':')[1]));
+  check(bends.join() === '1,2,3,4,5', `[campaña] los Reyes ofrecen una Bendición antes de cada asalto (${bends.join(', ') || 'ninguna'})`);
   check([T('asalto.tirano.m'), T('asalto.tirano.f')].includes(tirano.trim()), `[campaña] el Mapa del asalto 5 lleva la estampilla del Rey Tirano o la Reina Tirana («${tirano.trim()}»)`);
   const play = median(plays) / 1000;
   check(plays.length >= 20 && play > 0 && play < 12, `[campaña] tiempo de jugada a 1× medido en ${plays.length} jugadas: mediana ${play.toFixed(2)} s`);
