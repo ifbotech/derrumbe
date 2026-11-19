@@ -206,11 +206,12 @@ describe('cada número que lee el motor sale de balance-config.json', () => {
   it('campaña: Vida, oro, precios y Reinados', async () => {
     const { B, run } = await patched();
     const r = run.newRun({ up: { caja: 1 } }, 5);
-    expect(r.maxIntegrity).toBe(B.inicio.vida);
+    // la Escoba (el Mazo por defecto) suma su Vida a la de inicio
+    expect(r.maxIntegrity).toBe(B.inicio.vida + B.mazos.escoba.vida);
     expect(r.gold).toBe(B.inicio.oro + B.arbol.oroPorNivel);
     expect(r.interestCap).toBe(B.inicio.interesTope);
     expect(r.pack).toHaveLength(B.inicio.sobre);
-    expect(run.newRun({ ascension: 5 }, 5).maxIntegrity).toBe(B.inicio.vida - B.reinados.heridasViejas);
+    expect(run.newRun({ ascension: 5 }, 5).maxIntegrity).toBe(B.inicio.vida + B.mazos.escoba.vida - B.reinados.heridasViejas);
     r.removals = 2;
     r.heals = 2;
     r.rerolls = 2;

@@ -72,10 +72,10 @@ export interface BalanceConfig {
   oferta: { inicio: number; entre: number; dual: number };
   /** V40 1c · Cifras de los bonos de nivel [2/4] de cada Rey. */
   niveles: {
-    espadas: { multi: number; x: number };
-    bastos: { escudo: number; dano: number; tope: number };
-    oros: { oro: number; caras: number };
-    copas: { vida: number; cartas: number; cura: number };
+    espadas: { tol: number; x: number };
+    bastos: { escudo: number; tope: number; escudo2: number };
+    oros: { cara: number; cara4: number; oro: number };
+    copas: { vida: number };
   };
   /** V40 1c · Cifras de cada Bendición (`carga`: lo que da cada carga), por `id`. */
   bendiciones: Record<string, Record<string, number>>;
