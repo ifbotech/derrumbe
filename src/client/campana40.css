@@ -259,8 +259,9 @@
    Penumbra de noche (#09070F → #160C1C → #24112B) en la mesa, el Mapa, el Botín, «Elegí una», La Pulpería, el Fogón y el
    HUD: los naipes y los efectos brillan sobre la oscuridad. Acentos saturados de los cuatro palos, sin pasteles. Las
    tintas de la mesa (--table*, --pit) se redefinen solo dentro de estas pantallas; los colores de palo de los naipes
-   siguen en theme.css (son del arte). Gancho de la trama Bayer: --fondo-trama (el arte la exportará con fondoTramado()
-   de pixel/dither.ts; mientras tanto, «none» y el degradado liso). */
+   siguen en theme.css (son del arte). Gancho de la trama Bayer: --fondo-trama. hud.ts cuelga en :root las tres
+   penumbras de fondoTramado() (pixel/dither.ts) como --trama-mesa, --trama-mapa y --trama-pulperia; cada pantalla
+   elige la suya aquí abajo. Sin ellas (o sin JS), queda el degradado liso. */
 :root {
   --noche-0: #09070f;
   --noche-1: #160c1c;
@@ -282,9 +283,16 @@
   --table-3: #2a1533;
   --table-4: #452551;
   --laton: var(--acc-D-hi);
+  --fondo-trama: var(--trama-mesa, none);
   background-color: var(--noche-1);
   background-image: var(--fondo-trama), linear-gradient(180deg, var(--noche-0) 0%, var(--noche-1) 55%, var(--noche-2) 100%);
+  background-size: cover, auto;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
 }
+/* el Mapa, en índigo de luna; La Pulpería, en vino y ámbar de farol */
+.run.m40.mapa40 { --fondo-trama: var(--trama-mapa, none); }
+.run.m40.pulp40 { --fondo-trama: var(--trama-pulperia, none); }
 .run.m40 > .hud, .table-screen.m40 > .bar.hud { background: var(--noche-0); border-bottom-color: var(--table-4); }
 .table-screen.m40 .tray { background: rgba(9, 7, 15, 0.72); border-top-color: var(--table-4); }
 .table-screen.m40 .field { background: none; }
@@ -318,7 +326,7 @@
 }
 
 /* ───────────────────────── la portada mínima ───────────────────────── */
-.home.m40 { --pit: var(--noche-0); --table: var(--noche-1); --table-2: #1b0f22; --table-3: #2a1533; --table-4: #452551; background-color: var(--noche-1); background-image: var(--fondo-trama), linear-gradient(180deg, var(--noche-0) 0%, var(--noche-1) 55%, var(--noche-2) 100%); }
+.home.m40 { --pit: var(--noche-0); --table: var(--noche-1); --table-2: #1b0f22; --table-3: #2a1533; --table-4: #452551; --fondo-trama: var(--trama-mesa, none); background-color: var(--noche-1); background-size: cover, auto; background-position: center, center; background-repeat: no-repeat, no-repeat; background-image: var(--fondo-trama), linear-gradient(180deg, var(--noche-0) 0%, var(--noche-1) 55%, var(--noche-2) 100%); }
 .home.m40 .home-left, .home.m40 .home-right { background: none; border: 0; }
 .home.m40 .home-left { justify-content: center; align-items: center; text-align: center; }
 .home.m40 .bufon-portada { width: clamp(96px, 22vh, 220px); }
@@ -344,4 +352,25 @@
   .home.m40 .st40 { min-height: 104px; }
   .home.m40 .st40 > b { font-size: 22px; }
   .home.m40 .resume { flex-direction: column; align-items: center; gap: 2px; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* el HUD de la campaña en el móvil: si la bolsa crece, el Mazo y Ajustes bajan a una segunda fila, nunca fuera */
+  .run.m40 > .hud .hud-izq, .run.m40 > .hud .hud-der { display: contents; }
+  .run.m40 > .hud .hud-vida { order: 1; }
+  .run.m40 > .hud .hud-escudo { order: 2; }
+  .run.m40 > .hud .chip.bolsa { order: 3; }
+  .run.m40 > .hud .hud-mazo { order: 4; }
+  .run.m40 > .hud .hud-der > * { order: 5; margin-left: auto; }
+  .run.m40 > .hud .hud-tira { order: 6; }
+}
+/* La Pulpería no lleva línea de efecto (se lee en el globo): el párrafo vacío no ocupa lugar y caben más bandejas */
+.op40 > p:empty { display: none; }
+/* El título de pantalla va en su cabecera de siempre (.deck-head, la buscan el humo y los atajos), sin nada de la
+   cabecera vieja: ni filete, ni márgenes, ni la gótica gigante ni el filtro áspero. Manda .pant-t. */
+.run.m40 > header.deck-head.pant-cab { display: block; border: 0; padding: 0; margin: 0; gap: 0; }
+.run.m40 > header.deck-head.pant-cab > h1.pant-t { filter: none; margin: 0; font-family: 'Corona Talla', 'Cinzel', serif; font-weight: 900; font-size: clamp(26px, 4.2vh, 44px); line-height: 1.1; letter-spacing: 0.06em; text-transform: uppercase; }
+.run.m40.elegi-una > header.deck-head.pant-cab > h1.pant-t { font-size: clamp(32px, 6vh, 64px); letter-spacing: 0.1em; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .run.m40 > header.deck-head.pant-cab > h1.pant-t { font-size: 24px; }
+  .run.m40.elegi-una > header.deck-head.pant-cab > h1.pant-t { font-size: 32px; }
 }

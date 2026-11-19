@@ -10,8 +10,21 @@ import { cifraEl } from './cifra';
 import { L } from './lengua';
 import { bendicionSvg } from './pixel/iconos';
 import { dorsoSvg } from './pixel/dorsos';
+import { fondoTramado } from './pixel/dither';
 import { hudSvg } from './pixel/nodos';
 import { beltEl } from './widgets';
+
+/**
+ * Cuelga las tres penumbras tramadas del arte (`fondoTramado()` de pixel/dither.ts) en `:root` como `--trama-mesa`,
+ * `--trama-mapa` y `--trama-pulperia`; cada pantalla elige la suya en campana40.css con el gancho `--fondo-trama`.
+ * Se hace una vez, al cargar el módulo (fuera del navegador, en las pruebas, no hace nada).
+ */
+function colgarTramas(): void {
+  if (typeof document === 'undefined') return;
+  const raiz = document.documentElement.style;
+  for (const v of ['mesa', 'mapa', 'pulperia'] as const) raiz.setProperty(`--trama-${v}`, fondoTramado(v).url);
+}
+colgarTramas();
 
 export interface HudDatos {
   vida: number;
@@ -67,7 +80,7 @@ export function hudHtml(d: HudDatos, o: HudOpts = {}): string {
   const escudo = d.escudo ? `<span class="hud-c hud-escudo${d.escudo.v ? '' : ' cero'}" tabindex="0" aria-label="${d.escudo.v}/${d.escudo.max}" data-tip="${L('ui.hud.escudo.tip', { v: d.escudo.v, max: d.escudo.max })}">${hudSvg('escudo')}<b id="wall-num">${d.escudo.v}</b></span>` : '';
   const mazo = `<button type="button" class="hud-c hud-mazo" id="${o.mazoId ?? 'deck-view'}" aria-label="${L('ui.hud.mazo')} ${d.mazo}" data-tip="${L('ui.hud.mazo.tip', { n: d.mazo })}"><span class="hud-dorso">${dorsoSvg(d.mazoId)}</span><b id="deck-n">${d.mazo}</b></button>`;
   return `<header class="hud" role="group" aria-label="${L('ui.hud')}">
-    <div class="hud-izq">${o.antes ?? ''}${vida}${escudo}${bolsaHtml(d.oro, d.esquirlas, d.gotas)}${mazo}</div>
+    <div class="hud-izq">${o.antes ?? ''}${vida}${escudo}${bolsaCeros(bolsaHtml(d.oro, d.esquirlas, d.gotas), d.esquirlas, d.gotas)}${mazo}</div>
     <div class="hud-tira" id="${o.tiraId ?? 'hud-tira'}" role="group" aria-label="${L('ui.hud.tira')}"></div>
     <div class="hud-der">${o.derecha ?? ''}</div>
   </header>`;
@@ -80,6 +93,10 @@ export function montaTira(root: ParentNode, d: HudDatos, belt?: HTMLElement): vo
   host.replaceChildren(tiraEl(d.tools, d.slots, d.bendiciones, belt as HTMLDivElement | undefined));
   marcaCeros(root);
 }
+
+/** La bolsa ya escrita con sus ceros marcados (esquirlas y gotas a 0 no se ven), sin esperar al DOM. */
+const bolsaCeros = (html: string, esquirlas: number, gotas: number): string =>
+  html.replace('class="bolsa-c bolsa-esquirla"', `class="bolsa-c bolsa-esquirla${esquirlas ? '' : ' cero'}"`).replace('class="bolsa-c bolsa-gota"', `class="bolsa-c bolsa-gota${gotas ? '' : ' cero'}"`);
 
 /** Esquirlas y gotas solo se ven cuando hay: el HUD no enseña ceros que no dicen nada. */
 export function marcaCeros(root: ParentNode = document): void {

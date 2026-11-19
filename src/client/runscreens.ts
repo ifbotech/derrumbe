@@ -126,7 +126,7 @@ const hudDe = (run: Run): HudDatos => ({ vida: run.integrity, vidaMax: run.maxIn
  * Fuera los subtítulos: lo que decían (Vida, Mazo, oro) ya está en el HUD. `sub` queda para el lector de pantalla.
  */
 function head(run: Run, h1: string, sub = ''): string {
-  return `${hudHtml(hudDe(run), { mazoId: 'deck-view', derecha: `<button type="button" class="hud-btn" id="btn-set" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">⚙</button>` })}<h1 class="pant-t"${sub ? ` aria-description="${esc(sub.replace(/<[^>]+>/g, ''))}"` : ''}>${h1}</h1>`;
+  return `${hudHtml(hudDe(run), { mazoId: 'deck-view', derecha: `<button type="button" class="hud-btn" id="btn-set" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">⚙</button>` })}<header class="deck-head pant-cab"><h1 class="pant-t"${sub ? ` aria-description="${esc(sub.replace(/<[^>]+>/g, ''))}"` : ''}>${h1}</h1></header>`;
 }
 /** V27 · las Reliquias que había la última vez que se pintó la tira: la que llega nueva se marca y se dice dónde se colocó. */
 let beltAntes: string[] | null = null;
@@ -168,7 +168,7 @@ function donTexto(run: Run, d: Don): { glifo: string; nombre: string; desc: stri
 function packScreen(run: Run): void {
   const dones = run.don ?? [];
   let elegido = 0;
-  app.innerHTML = `<div class="run">${head(run, L('ui.run.sobre.titulo'), `${L('ui.run.sobre.sub', { n: run.ascension + 1 })}${run.seedText ? L('ui.run.sobre.semilla', { s: run.seedText }) : ''}`)}
+  app.innerHTML = `<div class="run m40 sobre40">${head(run, L('ui.run.sobre.titulo'), `${L('ui.run.sobre.sub', { n: run.ascension + 1 })}${run.seedText ? L('ui.run.sobre.semilla', { s: run.seedText }) : ''}`)}
     <div class="run-body"><p class="lead">${L('ui.run.sobre.texto')}</p>
     <div class="choices" id="picks"></div>
     ${dones.length ? `<section class="don"><h3 class="sec">${L('ui.run.don.titulo')}</h3><p class="don-sub">${L('ui.run.don.texto')}</p><div class="don-opts" id="don-opts" role="radiogroup" aria-label="${L('ui.run.don.titulo')}"></div></section>` : ''}${waitNote()}
@@ -294,7 +294,7 @@ const tipoN = (t: TipoNodo) => L(`ui.mapa.tipo.${t}` as ClaveUi);
 /** Lo que dice un nodo del Mapa: qué es y qué Botín deja (botinPrevisto, de las reglas). */
 function nodoTexto(run: Run, n: NodoMapa): string {
   const def = stageDef(n.tramo);
-  if (n.tipo === 'bravo') return L('ui.mapa.desc.bravo', { palo: n.palo ? paloN(n.palo) : '', v: num(MAPA_CFG.bravo.vida), a: MAPA_CFG.bravo.ataque });
+  if (n.tipo === 'bravo') return L('ui.mapa.desc.bravo', { palo: n.palo ? paloN(n.palo) : '', v: num(MAPA_CFG.bravo.vida), k: MAPA_CFG.bravo.amuletos, o: MAPA_CFG.bravo.oro });
   if (n.tipo === 'fogon') return L('ui.mapa.desc.fogon', { n: MAPA_CFG.fogon.curar });
   if (n.tipo === 'rey') {
     const boss = run.bosses[n.tramo] ? BOSS[run.bosses[n.tramo]] : null;
@@ -689,7 +689,7 @@ function showBurned(card: Card): void {
 
 function eventScreen(run: Run): void {
   const ev = EVENT[run.event!];
-  app.innerHTML = `<div class="run event">${head(run, L('ui.run.secreto'), L('ui.run.secreto.sub', { n: run.stage }))}
+  app.innerHTML = `<div class="run m40 event">${head(run, L('ui.run.secreto'), L('ui.run.secreto.sub', { n: run.stage }))}
     <div class="run-body"><div class="event-box">
       <div class="event-art">${glyphSvg(EVENT_GLYPH[ev.id] ?? 'incognita', 'event-ico')}</div>
       <div class="event-txt"><h3 class="sec">${secN(ev.id)}</h3><p class="lead">${secT(ev.id)}</p>
