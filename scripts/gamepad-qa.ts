@@ -948,10 +948,14 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
     await page.waitForTimeout(300);
     check((await run(page))?.phase === 'map', 'A sigue del Botín al Mapa de caminos');
     // el Mapa: la cruceta llega a La Pulpería (en la fila A o en el centro de la fila B); si antes toca un Fogón o un
-    // Santuario, A lo atraviesa sin usarlo
-    for (let i = 0; i < 4 && (await run(page))?.phase !== 'shop'; i++) {
+    // Santuario, A lo atraviesa sin usarlo. V40 fase 4: al dejar el Fogón sale su Botín (una «Elegí una» Bendición,
+    // `mapa.fogon.bendicion`), así que la fase pasa por «reward»: «Seguir» (o «Saltar») vuelve al Mapa. Antes el bucle
+    // se cortaba ahí y el humo fallaba solo con las semillas cuya fila A tiene Fogón y no Pulpería.
+    for (let i = 0; i < 6 && (await run(page))?.phase !== 'shop'; i++) {
       const fase = (await run(page))?.phase;
-      if (fase === 'map') {
+      if (fase === 'reward') {
+        if (!(await focusOn(page, '#seguir'))) break;
+      } else if (fase === 'map') {
         let ok = false;
         for (const t of ['pulperia', 'fogon', 'santuario']) {
           if (!(await count(page, `#routes .choice.pick[data-tipo="${t}"]`))) continue;
