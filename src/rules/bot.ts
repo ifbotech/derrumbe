@@ -165,6 +165,16 @@ export function chooseAction(state: GameState): Action {
     plays.sort((a, b) => b.score - a.score);
   }
   const best = plays[0];
+  // V40 1e · el Motín cuando vale más que la mejor jugada: frena este Contraataque y Aturde (se salta el siguiente), al
+  // precio de un turno sin Daño (contra el monarca, un turno más de Furia). Antes se guardaba hasta un Caballo o un
+  // apuro y ocupaba un hueco de la mano: con manos cortas (el Truco) eso costaba mucho.
+  if (joker && frente && !frente.fx.sobrecarga && state.config.mazo !== 'mentiroso') {
+    const low = state.integrity <= state.config.maxIntegrity / 2 ? 1.5 : 1;
+    const amenaza = threatOf(state, frente);
+    const furia = state.config.jefe && frente.suit === state.config.jefe.suit ? 2 : 0;
+    const motin = Math.max(0, amenaza * (state.config.sirenCount ?? 1) - state.wall) * 1.7 * low + amenaza * 1.7 * low * 0.6 - 0.8 - furia;
+    if (motin > (best?.score ?? 0)) return { type: 'joker', card: joker.id, target: frente.suit };
+  }
   // andamio: antes de jugar, aparta la mejor carta que esta jugada no necesita (al reponer, hay una más)
   if (!state.stashed && p.reserve.length < (state.config.reserveSize ?? 1) && p.hand.length > 1) {
     const used = new Set(best && best.score > 1.5 ? best.cards.map((c) => c.id) : []);
@@ -179,7 +189,8 @@ export function chooseAction(state: GameState): Action {
     if (junk && cardWorth(junk) <= 4) return { type: 'discard', cards: [junk.id] };
   }
   if (best && best.score > 1.5) return { type: 'attack', cards: best.cards.map((c) => c.id), target: best.target };
-  // Sin jugada útil: descarta las dos cartas más bajas.
+  // Sin jugada útil: el Motín si lo hay (al menos frena el Contraataque); si no, descarta las dos cartas más bajas.
+  if (joker && frente && !frente.fx.sobrecarga) return { type: 'joker', card: joker.id, target: frente.suit };
   const lowest = held.filter((c) => c.suit !== 'X').sort((a, b) => cardValue(a) - cardValue(b)).slice(0, 2);
   if (lowest.length) return { type: 'discard', cards: lowest.map((c) => c.id) };
   const spare = held.find((c) => c.sp);
