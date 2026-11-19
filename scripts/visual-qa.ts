@@ -1150,9 +1150,12 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
           if (ratio(lit, mesa) < need - 0.04) fail('paleta', `${tag}: la variante clara del palo ${s} (${hex(lit)}) va a ${ratio(lit, mesa).toFixed(2)}:1 sobre la mesa (mínimo ${need}:1)`);
         }
         if (!alto && !cls.length) {
-          // V40 · fase 2b: la paleta de la constitución (acero azul, carmesí, oro viejo y verde oliva), ≥ 7:1 sobre el marfil
-          const pedidos: Record<string, string> = { S: '#1d3a66', H: '#8e1424', D: '#633f06', C: '#34481a' };
-          for (const [s, want] of Object.entries(pedidos)) if (hex(tok(`--suit-${s}`)) !== want) fail('paleta', `cuatro colores: el palo ${s} es ${hex(tok(`--suit-${s}`))} y el pedido es ${want}`);
+          // V40: los colores de palo son del arte (theme.css) y cambian con la dirección de arte; la QA ya no fija los
+          // hexadecimales: pide que cada tinta de palo vaya a ≥ 7:1 sobre el marfil (índices y pintas, apartado 7) y
+          // que las cuatro sean distintas
+          const tintas = ['S', 'H', 'D', 'C'].map((s) => [s, tok(`--suit-${s}`)] as const);
+          for (const [s, ink] of tintas) if (ink && papel && ratio(ink, papel) < 7 - 0.04) fail('paleta', `cuatro colores: el palo ${s} (${hex(ink)}) va a ${ratio(ink, papel).toFixed(2)}:1 sobre el marfil (mínimo 7:1)`);
+          if (new Set(tintas.map(([, ink]) => hex(ink))).size < 4) fail('paleta', 'cuatro colores: dos palos comparten tinta');
         }
       }
     }

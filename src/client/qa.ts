@@ -101,7 +101,7 @@ function baseRun(stage = 1): Run {
   run.stage = stage;
   run.tools = TOOLKIT.map((id) => ({ id, n: id === 'calibre' ? 4 : 0 }));
   run.gold = 64;
-  run.integrity = 16;
+  run.integrity = 58; // V40 1f · Vida de dos dígitos en la escala nueva (59–76 por Mazo)
   for (const [s, r, m] of MARKS) Object.assign(find(run.deck, s, r) ?? {}, m);
   run.stats.toolUse = { piqueta: 14, gemelos: 9, calibre: 4, dinamita: 11 };
   run.stats.maxHit = 268;
@@ -178,7 +178,7 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   // los dos estados de la V11: Expuesto y Aturdido, en el enemigo que tenés delante
   state.towers[a].fx = { fractura: true, sobrecarga: true };
   state.wall = 3;
-  state.integrity = 13;
+  state.integrity = 52; // V40 1f · la escala nueva (Vida 59–76, golpes de hasta ~35): sobrevive a un Contraataque
   state.chain = 1;
   state.turnCount = turn;
   state.fatigue = fatigueAt(state.config, turn);

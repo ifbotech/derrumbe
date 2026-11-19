@@ -18,8 +18,9 @@ export function installQaJuice(): void {
       heal: () => {
         const st = S.campaign?.state;
         if (!st || st.phase !== 'playing') return false;
-        // V40 1e · desde el asalto 4 un Contraataque solo puede pasar de la Vida máxima (15 a 19 contra 13 a 16): con
-        // la Vida al tope, la prueba pone el Escudo a la altura de todos los Contraataques de la mesa (nadie muere)
+        // V40 1f · en la escala nueva (Vida 59–76 por Mazo, golpes de hasta ~35) ningún golpe mata con la Vida llena,
+        // pero la suma de los Contraataques de la mesa sí puede pasarla: con la Vida al tope, la prueba pone el Escudo a
+        // la altura de todos ellos (nadie muere por el camino)
         const golpe = Object.values(st.towers).filter((t) => !t.away && t.floors.length).reduce((n, t) => n + threatOf(st, t), 0) * (st.config.sirenCount ?? 1);
         st.integrity = st.config.maxIntegrity;
         st.wall = Math.max(st.wall, golpe);
