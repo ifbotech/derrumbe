@@ -11,6 +11,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 //   … --n=2000 cambia las campañas por celda; --barajas=truco,chancho mide solo esos Mazos.
 //   Solo el informe completo escribe meta-report.json.
 //   npm run analyze:meta -- --tramo=1/5 … --tramo=5/5 y luego -- --juntar   el informe completo por tramos (< 300 s cada uno)
+//     (V40 1c: antes de --juntar, -- --previo=clasica:1,2 · --previo=clasica:3,4 · --previo=confirmar, cada uno < 170 s)
 //   npm run analyze:meta -- --fast  certificación rápida del bucle (6.000 campañas, < 90 s; 0 s si la huella no cambió)
 //
 // Qué mide:
@@ -27,7 +28,7 @@ guardian('analyze:meta', 2400); // tope duro: ver scripts/guardian.ts
 // con esos números cambiados (ver scripts/balance-patch.ts) sin tocar balance-config.json.
 import './balance-patch';
 import { spawn } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -325,8 +326,8 @@ function print(r: ReturnType<typeof report>): void {
 }
 
 /** Partida clásica (una obra): cuánto gana el bot según cuántos jueguen. Objetivo: del 58 al 65 % con 1, 2, 3 y 4. */
-function classic(games: number) {
-  return [1, 2, 3, 4].map((n) => {
+function classic(games: number, jugadores: number[] = [1, 2, 3, 4]) {
+  return jugadores.map((n) => {
     let wins = 0;
     let turns = 0;
     for (let g = 0; g < games; g++) {
@@ -353,13 +354,35 @@ function juntados(): Promise<Log[]> {
   if (!files.length || files.length !== total) throw new Error(`faltan tramos: hay ${files.length} de ${total} registros en ${TRAMOS}`);
   return Promise.resolve(files.flatMap((f) => JSON.parse(readFileSync(join(TRAMOS, f), 'utf8')) as Log[]));
 }
-const running = args.includes('--juntar') ? juntados() : runAll();
-// mientras los procesos juegan campañas, este juega las partidas clásicas
-const classicRows = mode === 'todo' || mode === 'clasica' ? classic(N || 1500) : [];
+/**
+ * V40 1c · Los pasos previos de `--juntar`, para que ninguna orden pase de los topes: `--previo=clasica:1,2` juega las
+ * partidas clásicas de esos jugadores y `--previo=confirmar` confirma los regalos sospechosos de los tramos; los dos
+ * dejan su resultado en la carpeta de los tramos (el tramo 1 la vacía), y `--juntar` lo usa en vez de jugarlo.
+ */
+const CLASICA_DE = (n: number) => join(TRAMOS, `x-clasica-${n}.json`);
+const CONFIRMAR = join(TRAMOS, 'x-confirmar.json');
+const previo = arg('previo');
+if (previo) {
+  if (previo.startsWith('clasica:')) {
+    for (const n of previo.slice(8).split(',').map(Number)) writeFileSync(CLASICA_DE(n), JSON.stringify(classic(N || 1500, [n])));
+  } else if (previo === 'confirmar') {
+    const sus = report(await juntados()).suspects;
+    writeFileSync(CONFIRMAR, JSON.stringify(sus.length ? await runAll(['regalos', `--piezas=${sus.join(',')}`, `--n=${CONFIRM_N}`, '--sal=37']) : []));
+  } else throw new Error(`--previo=${previo}: se espera clasica:<jugadores> o confirmar`);
+  console.log(`Previo «${previo}» hecho · ${Math.round((Date.now() - started) / 1000)} s.`);
+  process.exit(0);
+}
+const juntar = args.includes('--juntar');
+const guardado = <T>(f: string): T | null => (juntar && existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as T) : null);
+const running = juntar ? juntados() : runAll();
+// mientras los procesos juegan campañas, este juega las partidas clásicas (o las toma de --previo=clasica)
+const clasicasPrevias = [1, 2, 3, 4].map((n) => guardado<ReturnType<typeof classic>>(CLASICA_DE(n)));
+const classicRows = mode === 'todo' || mode === 'clasica' ? (clasicasPrevias.every(Boolean) ? clasicasPrevias.flatMap((r) => r!) : classic(N || 1500)) : [];
 const logs = mode === 'clasica' ? [] : await running;
-// segunda vuelta: lo que el informe completo señala entre los regalos se confirma con muestra grande
-const suspects = mode === 'todo' ? report(logs).suspects : [];
-const confirmLogs = suspects.length ? await runAll(['regalos', `--piezas=${suspects.join(',')}`, `--n=${CONFIRM_N}`, '--sal=37']) : [];
+// segunda vuelta: lo que el informe completo señala entre los regalos se confirma con muestra grande (o --previo=confirmar)
+const confirmPrevias = guardado<Log[]>(CONFIRMAR);
+const suspects = mode === 'todo' && !confirmPrevias ? report(logs).suspects : [];
+const confirmLogs = confirmPrevias ?? (suspects.length ? await runAll(['regalos', `--piezas=${suspects.join(',')}`, `--n=${CONFIRM_N}`, '--sal=37']) : []);
 const result = { ...report(logs, confirmLogs), classic: classicRows };
 for (const c of revisarClasica(classicRows)) if (!c.ok) result.flags.push(c.texto);
 print(result);

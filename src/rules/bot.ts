@@ -7,7 +7,7 @@ import { ESCOBA_SUMA, MZ } from './mazos';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';
 import { RARITY, TOOL, TOOL_SLOTS } from './tools';
-import { BENDICION, OpcionBend, PALO_DE_REY, ReyId, UMBRALES_REY, nivelesReyes, reyesDe } from './reyes';
+import { BENDICION, OpcionBend, PALO_DE_REY, ReyId, UMBRALES_REY, esDe, nivelesReyes, reyesDe } from './reyes';
 
 // ───────────────────────── La obra ─────────────────────────
 
@@ -194,6 +194,8 @@ export interface RunPolicy {
   risk?: boolean;
   /** V40 1c · Toma esta Bendición siempre que se ofrezca (para medir cuánto vale). */
   bendicion?: string;
+  /** V40 1c · Sigue a este Rey: toma una suya (o una Dual suya) siempre que se ofrezca (para medir cada línea). */
+  rey?: ReyId;
 }
 
 const SPECIAL_VALUE: Record<string, number> = { bola: 8, nitro: 6, martillo: 7, sierra: 7, gemelo: 6, barreno: 6, palanca: 6, mordaza: 5, botica: 5, hormigonera: 5, cemento: 4, clavos: 4, grua: 4, saboteador: 4, pico: 4, chatarrero: 3 };
@@ -353,6 +355,8 @@ export function chooseRunAction(run: Run, policy: RunPolicy = {}): RunAction | n
       const op = run.oferta ?? [];
       const pref = policy.bendicion ? op.findIndex((o) => o.id === policy.bendicion) : -1;
       if (pref >= 0) return { t: 'bendicion', i: pref };
+      const suya = policy.rey ? op.findIndex((o) => esDe(BENDICION[o.id], policy.rey!)) : -1;
+      if (suya >= 0) return { t: 'bendicion', i: suya };
       return { t: 'bendicion', i: op.reduce((b, o, i) => (bendicionValue(o, run) > bendicionValue(op[b], run) ? i : b), 0) };
     }
     case 'map': {
