@@ -228,56 +228,53 @@ Es para pruebas con gente de confianza: no hay cuentas, ni clasificaciones, ni f
 ## Balance
 
 <!-- balance:inicio -->
-Medido con `npm run analyze:meta`: **48.640 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
+Medido con `npm run analyze:meta`: **54.400 campañas** con semilla jugadas por el bot de referencia (rutas, Juramentos, selección, la Pulpería, Mesa de lacre, Secretos de la cripta, la Manga y orden de las reliquias). El informe completo —cada reliquia, carta especial, sello de lacre y acabado— queda en [scripts/meta-report.json](scripts/meta-report.json). Cada porcentaje es una muestra: con 1.500 campañas, el margen es de unos ±2,5 puntos, así que dos medidas que difieran menos que eso no se distinguen.
 
 Campañas ganadas por Reinado (con la Escoba, 1500 campañas por celda). Objetivos: Reinado 1 entre el 28 y el 34 % con el Altar vacío y entre el 42 y el 50 % con el Altar lleno; Reinado 8 entre el 6 y el 10 % con el Altar vacío y entre el 12 y el 18 % con el Altar lleno; y cada Reinado, más difícil que el anterior.
 
 | Reinado | Altar vacío | Altar lleno |
 |---|---|---|
-| 1 · Reinado de paz | 28,9 % | 46,5 % |
-| 2 · Corazas finas | 25,5 % | 44,1 % |
-| 3 · Corte airada | 24,7 % | 43,2 % |
-| 4 · Reyes acorazados | 21 % | 39,7 % |
-| 5 · Rey colérico | 16,9 % | 36,7 % |
-| 6 · Heridas viejas | 13,7 % | 31,6 % |
-| 7 · Guardia de noche | 9,6 % | 22,1 % |
-| 8 · Puertas selladas | 6,6 % | 17,7 % |
+| 1 · Reinado de paz | 31,5 % | 43,1 % |
+| 2 · Corazas finas | 25,5 % | 35,5 % |
+| 3 · Corte airada | 20,7 % | 31,5 % |
+| 4 · Reyes acorazados | 18,1 % | 29,5 % |
+| 5 · Rey colérico | 13,6 % | 26,8 % |
+| 6 · Heridas viejas | 11,9 % | 23,3 % |
+| 7 · Guardia de noche | 8,7 % | 17,3 % |
+| 8 · Puertas selladas | 7,5 % | 13,1 % |
 
 Por Mazo (Reinado 1, 1500 campañas por celda). Objetivo: todas entre el 28–34 % con el Altar vacío y entre el 42–50 % con el Altar lleno (el informe avisa fuera de 28–34 y de 40–50).
 
 | Mazo | Altar vacío | Altar lleno | Lo que suma el Altar |
 |---|---|---|---|
-| Escoba | 28,9 % | 46,5 % | +17,6 |
-| Truco | 32,9 % | 46,5 % | +13,6 |
-| Chinchón | 31,2 % | 47,3 % | +16,1 |
-| El Mentiroso | 33,5 % | 48,5 % | +15 |
-| Chancho Va | 31,9 % | 49,1 % | +17,2 |
+| Escoba | 31,5 % | 43,1 % | +11,6 |
+| Truco | 33 % | 40,9 % | +7,9 |
+| Chinchón | 33,8 % | 45,3 % | +11,5 |
+| El Mentiroso | 32,5 % | 47,7 % | +15,2 |
+| Chancho Va | 33,1 % | 43,8 % | +10,7 |
 
-Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media 22,4 %). Objetivo: todos entre 0,8× y 1,3× de la media.
+Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media 22 %). Objetivo: todos entre 0,8× y 1,25× de la media.
 
 | Monarca | Letalidad | Frente a la media |
 |---|---|---|
-| El Rey de Dos Caras | 23 % | ×1,03 |
-| El Usurero | 23,7 % | ×1,06 |
-| La Dama del Cáliz | 23,6 % | ×1,05 |
-| La Reina Helada | 20,2 % | ×0,9 |
-| El Inquisidor | 26,3 % | ×1,17 |
-| El Carnicero | 19,8 % | ×0,88 |
-| El Relojero | 20,2 % | ×0,9 |
+| El Rey de Espadas | 21,8 % | ×0,99 |
+| El Rey de Bastos | 25,2 % | ×1,15 |
+| El Rey de Oros | 19,6 % | ×0,89 |
+| El Rey de Copas | 21,3 % | ×0,97 |
 
 Turnos por asalto. Objetivo: asalto 1 de 3 a 5 turnos de mediana (P95 ≤ 8); asaltos 2 y 3 de 7 a 11 (P95 ≤ 16); asaltos 4 y 5 de 8 a 12 (P95 ≤ 19), con cualquier Mazo (peor P95 ≤ 19).
 
 | Asalto | Mediana | P95 | Jugadas (mediana) |
 |---|---|---|---|
-| 1 · El Puente levadizo | 4 | 6 | 7 |
-| 2 · El Patio de armas | 9 | 15 | 14 |
-| 3 · La Cripta | 8 | 15 | 14 |
-| 4 · La Galería real | 10 | 18 | 16 |
-| 5 · El Salón del Trono | 8 | 17 | 14 |
+| 1 · El Puente levadizo | 3 | 6 | 7 |
+| 2 · El Patio de armas | 9 | 15 | 15 |
+| 3 · La Cripta | 10 | 16 | 17 |
+| 4 · La Galería real | 11 | 19 | 18 |
+| 5 · El Salón del Trono | 9 | 18 | 16 |
 
-Un turno es una jugada que recibe el Contraataque; las jugadas cuentan también la que abate y las que no gastan el turno. Duración estimada de la campaña: 18,6 minutos (objetivo 18–22; 12 s por jugada).
+Un turno es una jugada que recibe el Contraataque; las jugadas cuentan también la que abate y las que no gastan el turno. Duración estimada de la campaña: 20,2 minutos (objetivo 18–22; 12 s por jugada).
 
-Peor percentil 95 de los 5 asaltos, por Mazo: Escoba 16 · Truco 19 · Chinchón 19 · El Mentiroso 18 · Chancho Va 19.
+Peor percentil 95 de los 5 asaltos, por Mazo: Escoba 18 · Truco 19 · Chinchón 19 · El Mentiroso 19 · Chancho Va 18.
 
 Asalto único (1500 partidas por celda; objetivo 58–65 %): 1 jugador 61,5 % · 2 jugadores 63,1 % · 3 jugadores 61,9 % · 4 jugadores 58,7 %.
 
