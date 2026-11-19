@@ -28,12 +28,12 @@ import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Browser, chromium, Page } from 'playwright';
 import { campaignSuite } from './campana-qa';
-import { LANG, LOCALE, OTHER, T, VIRTUAL_GAMEPAD, gamepadSuite, guidedRun, immuneCheck, langSwitchSuite } from './gamepad-qa';
+import { LANG, LOCALE, OTHER, T, VIRTUAL_GAMEPAD, gamepadSuite, immuneCheck, langSwitchSuite } from './gamepad-qa';
 import { controlRows } from '../src/client/prompts';
 import { BRAND } from '../src/shared/brand';
 import { telemetrySuite } from './telemetry-qa';
 import { feedbackButtonsSuite } from './feedback-qa';
-import { arbolSuite, autoDiariaSuite, autoPausaSuite, autoSuite, mejorSuite } from './v12-qa';
+import { arbolSuite, autoPausaSuite, autoSuite, mejorSuite } from './v12-qa';
 import { caidaSuite, susurrosSuite, tiradaSuite } from './v12-sensacion';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
 import { humoRapido } from './humo-rapido';
@@ -84,7 +84,7 @@ const TRAMO = join(OUT, 'campana-tramo.json');
 const TRAMOS = 5;
 const SECCIONES: Seccion[] = [
   { id: 'mesa', que: 'la mesa con ratón y teclado, susurro, insignias, sonidos, jugo V8, Ajustes, colección, idioma, red y campaña vieja', fn: seccionMesa },
-  { id: 'guia', que: 'la partida guiada con teclado y ratón, Inmune con teclado, la voz del monarca y un asalto a teclado', fn: seccionGuia },
+  { id: 'bufon', que: 'V40: las frases del Bufón sin tapar la mano, Inmune con teclado, la voz del monarca y un asalto a teclado', fn: seccionBufon },
   ...Array.from({ length: TRAMOS }, (_, i): Seccion => ({
     id: `campana-${i + 1}`,
     que: `la campaña de cinco asaltos con el bot y el ratón a 1×: ${i + 1 < TRAMOS ? `asalto ${i + 1}` : 'asalto 5 y las comprobaciones de la campaña'}`,
@@ -94,15 +94,15 @@ const SECCIONES: Seccion[] = [
       return campaignSuite(browser, site.url, check, problems, { n: i + 1, de: TRAMOS, archivo: TRAMO });
     },
   })),
-  { id: 'mando', que: 'la campaña jugada solo con el mando virtual: menú, asalto, Botín, La Taberna, Secreto, reliquias y partida guiada', fn: seccionMando, si: () => !process.env.NO_PAD },
+  { id: 'mando', que: 'la campaña jugada solo con el mando virtual: menú, asalto, Botín, La Pulpería, Secreto y reliquias', fn: seccionMando, si: () => !process.env.NO_PAD },
   { id: 'datos', que: 'los datos de prueba con la red bloqueada y el botón de feedback', fn: seccionDatos },
-  { id: 'v12-entrada', que: 'V12: Mejor jugada (ratón, teclado y mando), el Árbol con mando y teclado, AUTO en pausa y en el diario', fn: seccionEntrada, si: () => !process.env.NO_V12 },
+  { id: 'v12-entrada', que: 'V12: Mejor jugada (ratón, teclado y mando), el Altar con mando y teclado y AUTO en pausa', fn: seccionEntrada, si: () => !process.env.NO_V12 },
   { id: 'auto', que: 'V12: AUTO se apaga al instante (15 medidas) y juega la campaña entera a 8×', fn: seccionAuto, si: () => !process.env.NO_V12 },
   { id: 'v12-sensacion', que: 'V12: lo que cae, la tirada de huesos y los Susurros nuevos', fn: seccionSensacion, si: () => !process.env.NO_V12 },
   { id: 'calma', que: '«Reducir movimiento» y la copia de seguridad', fn: seccionCalma },
 ];
 
-/** La página de las secciones «mesa» y «guia»: un perfil limpio, en ?qa, con los errores apuntados. */
+/** La página de las secciones «mesa» y «bufon»: un perfil limpio, en ?qa, con los errores apuntados. */
 async function paginaPrincipal(browser: Browser, url: string): Promise<Page> {
   const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: LOCALE });
   await context.addInitScript({ content: NAME_SHIM });
@@ -346,14 +346,14 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
   check((await count(page, '.whisper')) === 0 && (await whispers(page, (x) => x.off())), '«No mostrar más» lo borra a un clic y queda guardado');
   await whispers(page, (x) => x.reset());
 
-  // ── insignias de reliquia: «+12 Daño · Ariete» junto a la cuenta, «−12 · Rodela de púas» sobre el trono ──
+  // ── insignias de Amuleto: «+12 Daño · Cuchillo criollo» junto a la cuenta, «−12 · Talero» sobre el trono ──
   await go(page, 'mesa');
   const badges = await page.evaluate(() => {
     const fire = (window as unknown as { __qaProc: (ev: unknown) => void }).__qaProc;
     const step = (id: string, label: string, proc: unknown) => ({ e: 'step', src: 'tool', id, label, fuerza: 0, res: 0, proc });
-    fire(step('ariete', 'Ariete: +12 de Daño', { what: 'fuerza', n: 12 }));
-    fire(step('contragolpe', 'Rodela de púas: devuelve 12', { what: 'dano', n: 12, tower: 'S' }));
-    fire(step('rebosadero', 'Copa rebosante: cura 2', { what: 'repara', n: 2 }));
+    fire(step('piqueta', 'Cuchillo criollo: +12 de Daño', { what: 'fuerza', n: 12 }));
+    fire(step('contragolpe', 'Talero: devuelve 12', { what: 'dano', n: 12, tower: 'S' }));
+    fire(step('botiquin', 'Bota de vino: cura 2', { what: 'repara', n: 2 }));
     const read = (cls: string) => {
       const el = document.querySelector<HTMLElement>(`.proc-badge.${cls}`);
       if (!el) return null;
@@ -365,10 +365,10 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
     const bunker = document.querySelector('#bunker')!.getBoundingClientRect();
     return { f: read('fuerza'), d: read('dano'), r: read('repara'), tower: [tower.left, tower.right], bunker: [bunker.left, bunker.right] };
   });
-  const [ariete, rodela, dano, vida] = [T('reliquia.ariete.nombre'), T('reliquia.contragolpe.nombre'), T('ui.proc.dano'), T('ui.proc.vida')];
+  const [ariete, rodela, dano, vida] = [T('reliquia.piqueta.nombre'), T('reliquia.contragolpe.nombre'), T('ui.proc.dano'), T('ui.proc.vida')];
   check(badges.f?.text.includes('+12') && badges.f.text.includes(dano) && badges.f.text.includes(ariete), `${ariete} enseña «+12 ${dano} · ${ariete}» (${badges.f?.text})`);
   check(badges.d?.text.includes('−12') && badges.d.text.includes(rodela) && badges.d.x >= badges.tower[0] && badges.d.x <= badges.tower[1], `${rodela} enseña «−12 · ${rodela}» sobre su trono`);
-  check(badges.r?.text.includes(`+2 ${vida}`) && badges.r.x >= badges.bunker[0] - 60 && badges.r.x <= badges.bunker[1] + 60, `la reliquia que cura enseña «+2 ${vida}» sobre tu Vida`);
+  check(badges.r?.text.includes(`+2 ${vida}`) && badges.r.x >= badges.bunker[0] - 60 && badges.r.x <= badges.bunker[1] + 60, `el Amuleto que cura enseña «+2 ${vida}» sobre tu Vida`);
   check([badges.f, badges.d, badges.r].every((b) => b && b.size >= 14 && !/Unifraktur|Grenze/i.test(b.font)), 'la cifra de las insignias va en sans de peso alto (≥ 14 px, nunca gótica)');
   check(badges.f?.dur === '1.2s', 'cada insignia dura 1,2 s a velocidad normal');
   check((await sounds(page)).filter((x) => x === 'proc').length >= 3, 'cada insignia trae su sonido');
@@ -507,8 +507,8 @@ async function seccionMesa({ browser, site }: Sesion): Promise<void> {
   await page.context().close();
 }
 
-// ── sección «guia» ──
-async function seccionGuia({ browser, site }: Sesion): Promise<void> {
+// ── sección «bufon» (V40: sustituye a la partida guiada) ──
+async function seccionBufon({ browser, site }: Sesion): Promise<void> {
   const page = await paginaPrincipal(browser, site.url);
   {
     // lo que la sección «mesa» deja en los datos de prueba de este equipo y se comprueba al final de esta: un golpe,
@@ -526,22 +526,96 @@ async function seccionGuia({ browser, site }: Sesion): Promise<void> {
     await page.waitForTimeout(300);
     await settled(page);
   }
-  // ── V7 · la partida guiada se juega entera: con el teclado (medida) y con el ratón ──
-  console.log('Partida guiada');
-  const shot = (p: Page, name: string) => p.screenshot({ path: join(OUT, `${name}.png`) });
-  await page.keyboard.press('ArrowDown'); // el teclado vuelve a ser el dispositivo en uso
-  await guidedRun(page, 'keys', check, shot);
-  await page.screenshot({ path: join(OUT, 'partida-guiada.png') });
-  await page.locator('#t-home').click();
-  await page.waitForSelector('#m-tuto');
-  check((await count(page, '.end')) === 0 && !(await page.evaluate(() => document.documentElement.dataset.guia)), '«Jugar de verdad» vuelve a la portada sin dejar el foco de la guía');
-  await guidedRun(page, 'mouse', check);
-  await page.locator('#t-again').click();
-  await page.waitForSelector('.table-screen');
-  await page.waitForFunction(() => document.documentElement.dataset.guia === '1', null, { timeout: 10_000 });
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(200);
-  check((await count(page, '.table-screen')) === 0 && (await count(page, '#m-tuto')) === 1 && !(await page.evaluate(() => document.documentElement.dataset.guia)), 'Esc salta la partida guiada de un toque y vuelve a la portada');
+  // ── V40 · el Bufón: cada frase en el hueco de los Susurros, sin ventana, sin tapar la mano y con la mano viva ──
+  console.log('Bufón');
+  for (const id of ['palo', 'cuenta', 'exacto']) {
+    await go(page, `bufon-${id}`);
+    await page.waitForTimeout(250);
+    const b = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('.whisper.bufon');
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const tapa = [...document.querySelectorAll('#hand .card, #score')].some((o) => {
+        const q = o.getBoundingClientRect();
+        return q.width > 0 && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top;
+      });
+      return { texto: el.textContent ?? '', tapa, modales: document.querySelectorAll('.modal').length, bloqueada: !!document.querySelector('.handrow.locked') };
+    });
+    check(!!b && b.texto.includes(T(`bufon.${id}`).slice(0, 20)), `el Bufón dice su frase «${id}»${b ? ` («${b.texto.slice(0, 60)}»)` : ''}`);
+    check(!!b && !b.tapa && b.modales === 0 && !b.bloqueada, `la frase «${id}» no abre ventana, no tapa la mano ni la cuenta y la mano sigue jugable`);
+  }
+  await page.screenshot({ path: join(OUT, 'bufon.png') });
+
+  // ── V40 · 3b · el Bufón vivo: su cara y su frase corta en cada momento, sin repetirse ni tapar la mano; y el sello
+  // de los momentos grandes (Escoba, Envido…) con su sonido, en ≤ 600 ms y sin tapar la mano ──
+  {
+    await go(page, 'mesa');
+    await page.waitForTimeout(300);
+    type BV = { __bufonVivo: { frases(on: boolean): void; reacciona(m: string): void; estado(): { cara: string | null; frase: string | null; expresiones: number }; dichas(): string[] } };
+    const reaccion = (m: string) => page.evaluate(async (m) => {
+      const w = window as unknown as BV;
+      // los Susurros de la mesa de QA callan al Bufón vivo (uno de uno en uno): se cierran para esta prueba
+      document.querySelectorAll('.side > .whisper').forEach((e) => e.remove());
+      w.__bufonVivo.frases(true);
+      w.__bufonVivo.reacciona(m);
+      await new Promise((r) => setTimeout(r, 120));
+      const host = document.getElementById('bufon-mesa');
+      const dicho = host?.querySelector<HTMLElement>('.bufon-dicho:not(.out)');
+      const r = dicho?.getBoundingClientRect();
+      const pisa = (sel: string) => !!r && [...document.querySelectorAll(sel)].some((o) => {
+        const q = o.getBoundingClientRect();
+        return q.width > 0 && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top;
+      });
+      return {
+        ...w.__bufonVivo.estado(),
+        tapa: pisa('#hand .card') || pisa('#score') || pisa('.tower.activa') || pisa('.actions button'),
+        modales: document.querySelectorAll('.modal').length,
+        anim: host ? getComputedStyle(host.querySelector('.bf-cuerpo') ?? host).animationName : 'sin bufón',
+      };
+    }, m);
+    const caras: [string, string][] = [['escoba', 'risa'], ['contra', 'burla'], ['tienta', 'brillo']];
+    const vistas: string[] = [];
+    for (const [m, cara] of caras) {
+      const e = await reaccion(m);
+      check(e.cara === cara, `[bufón vivo] con «${m}» pone cara de ${cara} (${e.cara}; ${e.expresiones} caras)`);
+      check(!!e.frase && e.frase.length <= 90 && !e.tapa && e.modales === 0, `[bufón vivo] y dice una línea de ≤ 90 caracteres que no tapa mano, cuenta, enemigo ni botones («${e.frase}»)`);
+      if (e.frase) vistas.push(e.frase);
+      await page.waitForTimeout(3000);
+    }
+    const otra = await reaccion('escoba');
+    check(otra.cara === 'risa' && otra.anim !== 'none' && otra.anim !== 'sin bufón', `[bufón vivo] respira (anima su cuerpo: ${otra.anim})`);
+    await page.waitForTimeout(3000);
+    const tercera = await reaccion('escoba');
+    check(!!otra.frase && !!tercera.frase && otra.frase !== tercera.frase && !vistas.includes(tercera.frase), `[bufón vivo] no repite la misma línea seguida («${otra.frase}» → «${tercera.frase}»)`);
+    await page.waitForTimeout(3000);
+    // el sello de un momento grande: se ve, suena, no tapa la mano y se va en ≤ 600 ms
+    const sello = await page.evaluate(async () => {
+      const w = window as unknown as { __qaFx: { momento(m: string, ev: null): void }; __qaSounds: string[] };
+      const desde = w.__qaSounds.length;
+      const t0 = performance.now();
+      w.__qaFx.momento('envido', null);
+      await new Promise((r) => setTimeout(r, 60));
+      const s = document.querySelector<HTMLElement>('.momento40');
+      const r = s?.getBoundingClientRect();
+      const tapa = !!r && [...document.querySelectorAll('#hand .card')].some((o) => {
+        const q = o.getBoundingClientRect();
+        return r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top;
+      });
+      let fin = 0;
+      while (document.querySelector('.momento40') && performance.now() - t0 < 2000) await new Promise((r) => setTimeout(r, 25));
+      fin = performance.now() - t0;
+      return { visto: !!s, texto: s?.textContent ?? '', tapa, fin: Math.round(fin), sonidos: w.__qaSounds.slice(desde) };
+    });
+    check(sello.visto && !sello.tapa, `[momento] ¡Envido! estampa su sello sobre el enemigo sin tapar la mano («${sello.texto}»)`);
+    check(sello.sonidos.includes('envido'), `[momento] y suena con su sonido propio (${sello.sonidos.join(', ')})`);
+    check(sello.fin <= 700, `[momento] y se va en ≤ 600 ms (${sello.fin} ms, con el margen del reloj)`);
+    // con «Reducir movimiento», el Bufón queda en un cuadro fijo
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const quieto = await reaccion('chancho');
+    check(quieto.anim === 'none', `[bufón vivo] con «Reducir movimiento» queda en un cuadro fijo (${quieto.anim})`);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => (window as unknown as BV).__bufonVivo.frases(false));
+  }
 
   // ── V11 · con el teclado: dos tronos, las flechas solo pisan los presentes y la placa Inmune se ve ──
   await immuneCheck(page, 'keys', check);
@@ -561,17 +635,17 @@ async function seccionGuia({ browser, site }: Sesion): Promise<void> {
       });
       return { text: el.textContent ?? '', heard: [...w.__qaVoz.heard], ms: w.__qaVoz.ms(), covers: hit('#hand .card') || hit('#score'), n: document.querySelectorAll('#bark, .bark').length };
     });
-    check(bark?.heard.includes('sequia:entrada'), `un asalto con monarca enseña su bocadillo de entrada${bark ? ` («${bark.text}»)` : ''}`);
+    check(bark?.heard.includes('copas:entrada'), `un asalto con monarca enseña su bocadillo de entrada${bark ? ` («${bark.text}»)` : ''}`);
     check(bark && !bark.covers && bark.n === 1, 'el bocadillo no tapa la mano ni la cuenta, y hay uno solo');
     check(bark && bark.ms <= 2500, `el bocadillo dura ≤ 2,5 s a 1× (${bark?.ms} ms)`);
-    check((await sounds(page)).some((s) => s === 'monarch:sequia:entrada'), 'el monarca entra con su firma sonora');
+    check((await sounds(page)).some((s) => s === 'monarch:copas:entrada'), 'el monarca entra con su firma sonora');
     await page.waitForTimeout(2900);
     check(await page.evaluate(() => document.getElementById('bark')?.hidden !== false), 'y se va solo');
     // con «Reducir movimiento» entra sin animación
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const calm = await page.evaluate(async () => {
       const w = window as unknown as { __qaVoz: { say(id: string, kind: string): void } };
-      w.__qaVoz.say('furia', 'contraataque');
+      w.__qaVoz.say('espadas', 'contraataque');
       await new Promise((r) => setTimeout(r, 60));
       const el = document.getElementById('bark');
       return el && !el.hidden ? getComputedStyle(el).animationName : 'oculto';
@@ -580,8 +654,8 @@ async function seccionGuia({ browser, site }: Sesion): Promise<void> {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const stacked = await page.evaluate(async () => {
       const w = window as unknown as { __qaVoz: { say(id: string, kind: string): void } };
-      w.__qaVoz.say('furia', 'caida');
-      w.__qaVoz.say('furia', 'entrada');
+      w.__qaVoz.say('espadas', 'caida');
+      w.__qaVoz.say('espadas', 'entrada');
       await new Promise((r) => setTimeout(r, 60));
       return { n: document.querySelectorAll('.bark:not([hidden])').length, text: document.getElementById('bark')?.textContent ?? '' };
     });
@@ -618,7 +692,6 @@ async function seccionGuia({ browser, site }: Sesion): Promise<void> {
     const camp = log.filter((r) => r.modo === 'campana');
     check(camp.some((r) => r.manga >= 1) && camp.some((r) => r.rebobinar >= 1), `los datos de prueba cuentan La Manga y Rebobinar de lo jugado (${camp.map((r) => `${r.manga}/${r.rebobinar}`).join(' · ')})`);
     check(camp.some((r) => r.turnos > 0), 'y los turnos del asalto jugado a teclado');
-    check(log.some((r) => r.modo === 'guia' && r.guia === 'victoria') && log.some((r) => r.modo === 'guia' && r.guia === 'saltada'), 'la partida guiada queda apuntada: terminada y saltada');
   }
   await page.screenshot({ path: join(OUT, 'fin-de-asalto.png') });
   await page.context().close();
@@ -662,7 +735,6 @@ async function seccionEntrada({ browser, site }: Sesion): Promise<void> {
   await arbolSuite(browser, site.url, 'keys', check, problems);
   console.log('AUTO');
   await autoPausaSuite(browser, site.url, check, problems);
-  await autoDiariaSuite(browser, site.url, check, problems);
 }
 
 // ── sección «auto»: AUTO se apaga al instante y juega la campaña entera a 8× ──

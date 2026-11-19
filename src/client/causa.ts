@@ -37,8 +37,8 @@ function tablas(): { plantillas: [string, RegExp][]; nombres: Map<string, string
 const LEGADO: [RegExp, string][] = [
   [reDe('{desde}: ⚔ {ataque} contra Escudo {frena} → entran {entra}'), '{desde}: Attack {ataque} against Shield {frena} → {entra} got through'],
   [reDe('{desde}: ⚔ {ataque} y ningún Escudo → entran {entra}'), '{desde}: Attack {ataque} and no Shield → {entra} got through'],
-  [reDe('{queda}. Un ♣ más o un Golpe exacto lo evitaban.'), '{queda}. One more ♣ or an Exact Hit would have stopped it.'],
-  [reDe('{queda}. Un ♣ más o un Golpe exacto lo evitaba.'), '{queda}. One more ♣ or an Exact Hit would have stopped it.'],
+  [reDe('{queda}. Un ♣ más o un Golpe exacto lo evitaban.'), '{queda}. One more Clubs card or an Exact Hit would have stopped it.'],
+  [reDe('{queda}. Un ♣ más o un Golpe exacto lo evitaba.'), '{queda}. One more Clubs card or an Exact Hit would have stopped it.'],
   [reDe('Mazo agotado: te quitó {n} de Vida y el Escudo no lo frena'), 'Deck ran out: it took {n} Health and Shield does not stop it'],
   [reDe('{queda}. Cada vez que se agota el Mazo quita 1 más: cuenta el Mazo antes de robar.'), '{queda}. Each time the Deck runs out it takes 1 more: count the Deck before drawing.'],
 ];

@@ -1,6 +1,7 @@
-// El Árbol de la Conjura (V12, SPECS/V12.md apartado 1.5): sustituye a La Orden. Treinta nodos y una raíz,
-// en cuatro ramas. El Arsenal (13 nodos, poder de combate) lleva las 12 mejoras de La Orden con su mismo `id`,
-// sus rangos y su efecto, y una nueva (Ojo del tasador). Las otras tres ramas (la Bolsa, los Huesos y la Corona
+// El Árbol de la Conjura (V12, SPECS/V12.md apartado 1.5; en pantalla, el Altar): sustituye a La Orden. Veintiocho
+// nodos y una raíz, en cuatro ramas. El Arsenal (11 nodos, poder de combate) lleva las mejoras de La Orden con su mismo
+// `id`, sus rangos y su efecto, y una nueva (Ojo del tasador); desde la V40 1d, sus seis arcones de arquetipo son cuatro,
+// uno por Rey. Las otras tres ramas (la Bolsa, los Huesos y la Corona
 // de hierro) no cambian la campaña de cinco asaltos: solo las esquirlas que caen y los dados de hueso, y en el
 // Trono infinito, además, Manga honda y Buen ojo (V12-C: en la campaña sumaban ~20 puntos al Árbol lleno y no
 // cabían en el presupuesto del Arsenal). Lo comprueba tests/arbol.test.ts.
@@ -53,7 +54,7 @@ const incremental = (id: string, rangos: number): number[] => Array.from({ lengt
 
 type Def = Omit<Nodo, 'costs' | 'desc' | 'combate' | 'infinito' | 'plantilla'> & { plantilla?: string; texto?: string; infinito?: true };
 
-/** Los seis arcones: añaden reliquias al surtido de La Taberna. */
+/** V40 1d · Los cuatro arcones, uno por Rey: añaden al surtido de La Pulpería los 2 Amuletos de su familia que no salen de serie. */
 const arcon = (arch: Arch, name: string, glyph: string, pos: { x: number; y: number }): Def => ({
   id: `caja_${arch}`,
   rama: 'arsenal',
@@ -70,16 +71,14 @@ const arcon = (arch: Arch, name: string, glyph: string, pos: { x: number; y: num
 
 const ARSENAL: Def[] = [
   { id: 'caja', rama: 'arsenal', padre: null, rangos: 5, name: 'Bolsa de la conjura', glyph: 'hucha', pos: { x: -1, y: 0 }, plantilla: '+{oro} de oro inicial por rango.' },
-  { id: 'vale', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Favor del Tratante', glyph: 'cinta', pos: { x: -2, y: -1 }, texto: 'Un «Renovar mesa» gratis en cada Taberna, por nivel.' },
-  { id: 'tienda', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Puesto grande', glyph: 'andamio', pos: { x: -2, y: 0 }, texto: 'Por nivel: +1 reliquia en La Taberna, y 2 de las que ofrece son de tu rasgo principal.' },
-  { id: 'rutas', rama: 'arsenal', padre: 'caja', rangos: 1, name: 'Cartógrafo', glyph: 'plano', pos: { x: -2, y: 1 }, texto: 'Cada asalto sin monarca ofrece 3 rutas con Juramento en vez de 2.' },
-  { id: 'tasador', rama: 'arsenal', padre: 'tienda', rangos: 3, name: 'Ojo del tasador', glyph: 'oro', pos: { x: -3, y: -1.5 }, plantilla: 'Las reliquias de La Taberna cuestan {n} de oro menos (mínimo 1).' },
-  arcon('precision', 'Arcón de precisión', 'calibre', { x: -3, y: -0.5 }),
-  arcon('sismo', 'Arcón del eco', 'diapason', { x: -3, y: 0.5 }),
-  arcon('alquimia', 'Arcón de alquimia', 'crisol', { x: -4, y: -1 }),
-  arcon('limite', 'Arcón del filo', 'megafono', { x: -4, y: 0 }),
-  arcon('trituradora', 'Arcón de cenizas', 'prensa', { x: -4, y: 1 }),
-  arcon('aguante', 'Arcón del escudo', 'ariete', { x: -3, y: 1.5 }),
+  { id: 'vale', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Favor del Tratante', glyph: 'cinta', pos: { x: -2, y: -1 }, texto: 'Un «Renovar mesa» gratis en cada Pulpería, por nivel.' },
+  { id: 'tienda', rama: 'arsenal', padre: 'caja', rangos: 2, name: 'Faja ancha', glyph: 'andamio', pos: { x: -2, y: 0 }, texto: 'Por nivel: +1 hueco de Amuleto (de 4 a 6).' },
+  { id: 'rutas', rama: 'arsenal', padre: 'caja', rangos: 1, name: 'Cartógrafo', glyph: 'plano', pos: { x: -2, y: 1 }, texto: 'En el Fogón, Curar y Purgar a la vez.' },
+  { id: 'tasador', rama: 'arsenal', padre: 'tienda', rangos: 3, name: 'Ojo del tasador', glyph: 'oro', pos: { x: -3, y: -1.5 }, plantilla: 'Los Amuletos de La Pulpería cuestan {n} de oro menos (mínimo 1).' },
+  arcon('espadas', 'Arcón de Espadas', 'calibre', { x: -3, y: -0.5 }),
+  arcon('bastos', 'Arcón de Bastos', 'ariete', { x: -3, y: 0.5 }),
+  arcon('oros', 'Arcón de Oros', 'dados', { x: -4, y: -0.5 }),
+  arcon('copas', 'Arcón de Copas', 'corazon', { x: -4, y: 0.5 }),
   { id: 'tampones', rama: 'arsenal', padre: null, rangos: 1, name: 'Lacres nuevos', glyph: 'sello', pos: { x: -0.6, y: 1.5 }, texto: 'La Mesa de lacre también ofrece los sellos de pólvora y de la manga.' },
   { id: 'bronce', rama: 'arsenal', padre: 'tampones', rangos: 1, name: 'Cristalero real', glyph: 'forja', pos: { x: -1.3, y: 2.4 }, texto: 'La Mesa de lacre también ofrece Lacre policromo y Cristal maldito.' },
 ];
@@ -89,7 +88,7 @@ const BOLSA: Def[] = [
   { id: 'esq_golpe', rama: 'bolsa', padre: null, rangos: 5, name: 'Astillas de corona', glyph: 'corona_rota', pos: { x: 1, y: 0 }, plantilla: '+{n} esquirlas por cada golpe.' },
   { id: 'esq_guardia', rama: 'bolsa', padre: 'esq_golpe', rangos: 5, name: 'Diezmo del guardia', glyph: 'coronas', pos: { x: 2, y: 0 }, plantilla: '+{n} esquirlas por cada guardia abatido.' },
   { id: 'esq_exacto', rama: 'bolsa', padre: 'esq_guardia', rangos: 5, name: 'Corte limpio', glyph: 'rayo', pos: { x: 3, y: 0.5 }, plantilla: '+{n} esquirlas por cada Golpe exacto.' },
-  { id: 'esq_monarca', rama: 'bolsa', padre: 'esq_guardia', rangos: 5, name: 'Rescate real', glyph: 'jefe', pos: { x: 3, y: -0.5 }, plantilla: '+{n} esquirlas por cada monarca vencido.' },
+  { id: 'esq_monarca', rama: 'bolsa', padre: 'esq_guardia', rangos: 5, name: 'Rescate real', glyph: 'jefe', pos: { x: 3, y: -0.5 }, plantilla: '+{n} esquirlas por cada Rey jefe vencido.' },
   { id: 'esq_derrota', rama: 'bolsa', padre: 'esq_golpe', rangos: 5, name: 'Ceniza del caído', glyph: 'luna', pos: { x: 2, y: -1 }, plantilla: 'Al perder, +{n} esquirlas por cada guardia que abatiste.' },
   { id: 'esq_formacion', rama: 'bolsa', padre: 'esq_golpe', rangos: 5, name: 'Mano llena', glyph: 'abanico', pos: { x: 2, y: 1 }, plantilla: '+{n} esquirlas por cada golpe de 3 cartas o más.' },
   { id: 'esq_racha', rama: 'bolsa', padre: 'esq_exacto', rangos: 5, name: 'Racha de sangre', glyph: 'cometa', pos: { x: 4, y: 0.5 }, plantilla: '+{n} esquirlas por cada eslabón de Racha al golpear.' },
@@ -98,17 +97,17 @@ const BOLSA: Def[] = [
 const HUESOS: Def[] = [
   { id: 'hueso_tallado', rama: 'huesos', padre: null, rangos: 5, name: 'Hueso tallado', glyph: 'dados', pos: { x: 0.4, y: -1.8 }, plantilla: 'Mejoras de +1 a la cara más baja del Dado de la Corona: {n}.' },
   { id: 'cara_rey', rama: 'huesos', padre: 'hueso_tallado', rangos: 5, name: 'Cara del rey', glyph: 'estandarte', pos: { x: 0.4, y: -2.8 }, plantilla: 'La cara más alta del Dado de la Corona vale ×{n}.' },
-  { id: 'segundo_hueso', rama: 'huesos', padre: 'cara_rey', rangos: 1, name: 'Segundo hueso', glyph: 'naipes_par', pos: { x: 0.4, y: -3.8 }, texto: 'Tiras dos Dados de la Corona y sus caras se multiplican.' },
+  { id: 'segundo_hueso', rama: 'huesos', padre: 'cara_rey', rangos: 1, name: 'Segundo hueso', glyph: 'naipes_par', pos: { x: 0.4, y: -3.8 }, texto: 'Tirás dos Dados de la Corona y sus caras se multiplican.' },
 ];
 
 const CORONA: Def[] = [
   { id: 'corona_hierro', rama: 'corona', padre: 'esq_monarca', rangos: 5, name: 'Corona de hierro', glyph: 'abismo', pos: { x: 4, y: -1.2 }, plantilla: 'En el Trono infinito, las esquirlas de la mesa valen ×{n}.' },
-  { id: 'pendon', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Pendón negro', glyph: 'cajones', pos: { x: 5, y: -1.8 }, plantilla: '+{n} esquirlas por cada Trono infinito que superas.' },
+  { id: 'pendon', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Pendón negro', glyph: 'cajones', pos: { x: 5, y: -1.8 }, plantilla: '+{n} esquirlas por cada Trono infinito que superás.' },
   { id: 'sangre_real', rama: 'corona', padre: 'corona_hierro', rangos: 5, name: 'Sangre real', glyph: 'corazon', pos: { x: 5, y: -0.6 }, plantilla: 'En el Trono infinito, cada cara del Dado de la Corona sube {n}.' },
-  { id: 'trono_huesos', rama: 'corona', padre: 'sangre_real', rangos: 1, name: 'Trono de huesos', glyph: 'relicario', pos: { x: 6, y: -0.6 }, texto: 'En el Trono infinito tiras un Dado de la Corona más.' },
+  { id: 'trono_huesos', rama: 'corona', padre: 'sangre_real', rangos: 1, name: 'Trono de huesos', glyph: 'relicario', pos: { x: 6, y: -0.6 }, texto: 'En el Trono infinito tirás un Dado de la Corona más.' },
   // combate solo en el Trono infinito: costes fijos de `arbol.costes`, como los del Arsenal
   { id: 'manga', rama: 'corona', padre: 'corona_hierro', rangos: 1, name: 'Manga honda', glyph: 'pasarela', pos: { x: 4, y: -2.4 }, texto: 'En el Trono infinito, La Manga guarda 2 cartas en vez de 1.', infinito: true },
-  { id: 'gracia', rama: 'corona', padre: 'manga', rangos: 2, name: 'Buen ojo', glyph: 'nivel', pos: { x: 5, y: -3 }, plantilla: 'En el Trono infinito, Golpe exacto también si te pasas por {n} o menos.', infinito: true },
+  { id: 'gracia', rama: 'corona', padre: 'manga', rangos: 2, name: 'Buen ojo', glyph: 'nivel', pos: { x: 5, y: -3 }, plantilla: 'En el Trono infinito, Golpe exacto también si te pasás por {n} o menos.', infinito: true },
 ];
 
 /**
@@ -135,14 +134,14 @@ export function cifraDe(id: string, rango: number): Record<string, number> {
 function build(d: Def, combate: boolean): Nodo {
   const fijos = BALANCE.arbol.costes[d.id];
   const costs = fijos ? [...fijos] : incremental(d.id, d.rangos);
-  if (costs.length !== d.rangos) throw new Error(`árbol: ${d.id} tiene ${d.rangos} rangos y ${costs.length} costes`);
+  if (costs.length !== d.rangos) throw new Error(`altar: ${d.id} tiene ${d.rangos} rangos y ${costs.length} costes`);
   const plantilla = d.plantilla ?? '';
   const desc = d.texto ?? fill(plantilla, cifraDe(d.id, 1));
   const { texto: _t, plantilla: _p, infinito, ...rest } = d;
   return { ...rest, costs, combate, infinito: infinito === true, desc, plantilla };
 }
 
-/** Los 30 nodos comprables: 13 del Arsenal (combate) y 17 que no cambian la campaña (2 de ellos, combate del Trono infinito). */
+/** Los 28 nodos comprables: 11 del Arsenal (combate) y 17 que no cambian la campaña (2 de ellos, combate del Trono infinito). */
 export const ARBOL: Nodo[] = [...ARSENAL.map((d) => build(d, true)), ...[...BOLSA, ...HUESOS, ...CORONA].map((d) => build(d, false))];
 
 /** La raíz, «La corona quebrada» (el anexo A decía «La corona rota», que es un título viejo prohibido por tests/vocabulario.test.ts): no se compra, enseña el saldo. */

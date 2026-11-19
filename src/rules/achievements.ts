@@ -22,42 +22,41 @@ const count = (n: (m: Meta) => number, goal: number) => (m: Meta): [number, numb
 const has = (list: string[], id: string) => list.includes(id);
 /** «Vence al Usurero», «Vence a la Dama del Cáliz»: el artículo se contrae como en castellano. */
 const toWho = (who: string) => (who.startsWith('El ') ? `al ${who.slice(3)}` : `a ${who.replace(/^La /, 'la ')}`);
-/** Reliquias distintas que pide «Cliente del Tratante». */
-export const TOOL_GOAL = 30;
+/** Amuletos distintos que pide «Cliente del Tratante» (V40 1d: de 22, 16; con 52 Reliquias eran 30). */
+export const TOOL_GOAL = 16;
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'primera', name: 'Primer paso', desc: 'Gana tu primer asalto de campaña.', renown: 1, progress: count((m) => m.stats.reach, 1) },
-  { id: 'capataz', name: 'Adiós, carcelero', desc: 'Supera el asalto 2.', renown: 2, progress: count((m) => m.stats.reach, 2) },
-  { id: 'media', name: 'Medio castillo', desc: 'Supera el asalto 3.', renown: 3, progress: count((m) => m.stats.reach, 3) },
-  { id: 'madre', name: 'Fin del reinado', desc: 'Gana una campaña.', renown: 5, progress: count((m) => m.wins, 1) },
-  { id: 'asc3', name: 'Gran conspirador', desc: 'Gana una campaña en el Reinado 4 o superior.', renown: 8, progress: count((m) => m.stats.winAsc + 1, 4) },
-  { id: 'abismo', name: 'Más allá del trono', desc: 'Supera un Trono infinito.', renown: 4, progress: count((m) => m.stats.depth, 1) },
-  { id: 'abismo3', name: 'Sin fin', desc: 'Supera tres Tronos infinitos en una campaña.', renown: 8, progress: count((m) => m.stats.depth, 3) },
-  { id: 'diaria', name: 'Ronda diaria', desc: 'Termina un Asalto diario.', renown: 2, progress: count((m) => m.stats.dailies, 1) },
-  { id: 'doblepar', name: 'Dos y dos', desc: 'Juega un doble par.', renown: 1, progress: flag((m) => has(m.seen.forms, 'doblepar')) },
-  { id: 'color', name: 'Todo al mismo palo', desc: 'Juega un color.', renown: 1, progress: flag((m) => has(m.seen.forms, 'color')) },
-  { id: 'full', name: 'Casa llena', desc: 'Juega un full.', renown: 2, progress: flag((m) => has(m.seen.forms, 'full')) },
-  { id: 'poker', name: 'Póker', desc: 'Juega un póker.', renown: 3, progress: flag((m) => has(m.seen.forms, 'poker')) },
-  { id: 'real', name: 'Escalera real', desc: 'Juega una escalera de color de 5 cartas o más.', renown: 3, progress: flag((m) => has(m.seen.forms, 'escaleracolor5')) },
-  { id: 'golpe100', name: 'De un solo golpe', desc: 'Haz un Golpe de 100 o más.', renown: 2, progress: count((m) => m.stats.maxHit, 100) },
-  { id: 'golpe500', name: 'Trueno', desc: 'Haz un Golpe de 500 o más.', renown: 4, progress: count((m) => m.stats.maxHit, 500) },
-  { id: 'golpe2000', name: 'Cataclismo', desc: 'Haz un Golpe de 2000 o más.', renown: 8, progress: count((m) => m.stats.maxHit, 2000) },
-  { id: 'limpio10', name: 'Mano firme', desc: 'Da 10 Golpes exactos.', renown: 2, progress: count((m) => m.stats.cleans, 10) },
-  { id: 'limpio50', name: 'Pulso de ladrón', desc: 'Da 50 Golpes exactos.', renown: 5, progress: count((m) => m.stats.cleans, 50) },
-  { id: 'pisos100', name: 'Cien guardias', desc: 'Abate a 100 guardias.', renown: 3, progress: count((m) => m.stats.floors, 100) },
-  { id: 'pisos500', name: 'Azote de la corte', desc: 'Abate a 500 guardias.', renown: 6, progress: count((m) => m.stats.floors, 500) },
-  { id: 'intacto', name: 'Ni un rasguño', desc: 'Termina un asalto con la Vida entera.', renown: 2, progress: count((m) => m.stats.intact, 1) },
-  { id: 'rico', name: 'Tacaño', desc: 'Junta 30 de oro a la vez.', renown: 2, progress: count((m) => m.stats.maxGold, 30) },
-  { id: 'cinturon', name: 'Relicario lleno', desc: `Lleva ${TOOL_SLOTS} reliquias a la vez.`, renown: 3, progress: count((m) => m.stats.maxTools, TOOL_SLOTS) },
-  { id: 'forja', name: 'Lacrador', desc: 'Estampa 10 sellos de lacre o acabados.', renown: 3, progress: count((m) => m.stats.forged, 10) },
-  { id: 'contratos', name: 'De palabra', desc: 'Cumple 10 Juramentos.', renown: 3, progress: count((m) => m.stats.contracts, 10) },
-  { id: 'atajo', name: 'Por la puerta de atrás', desc: 'Salta 3 asaltos.', renown: 2, progress: count((m) => m.stats.skips, 3) },
-  { id: 'coleccion', name: 'Coleccionista', desc: `Consigue las ${BASE_POOL.length} cartas especiales comunes, entre todas tus campañas.`, renown: 5, progress: count((m) => m.seen.specials.filter((id) => BASE_POOL.includes(id)).length, BASE_POOL.length) },
-  { id: 'ferretero', name: 'Cliente del Tratante', desc: `Lleva ${TOOL_GOAL} reliquias distintas, entre todas tus campañas.`, renown: 8, progress: count((m) => m.seen.tools.length, TOOL_GOAL) },
+  { id: 'primera', name: 'Primer paso', desc: 'Ganá tu primer asalto de campaña.', renown: 1, progress: count((m) => m.stats.reach, 1) },
+  { id: 'capataz', name: 'Adiós, carcelero', desc: 'Superá el asalto 2.', renown: 2, progress: count((m) => m.stats.reach, 2) },
+  { id: 'media', name: 'Medio castillo', desc: 'Superá el asalto 3.', renown: 3, progress: count((m) => m.stats.reach, 3) },
+  { id: 'madre', name: 'Fin del reinado', desc: 'Ganá una campaña.', renown: 5, progress: count((m) => m.wins, 1) },
+  { id: 'asc3', name: 'Gran conspirador', desc: 'Ganá una campaña en el Reinado 4 o superior.', renown: 8, progress: count((m) => m.stats.winAsc + 1, 4) },
+  { id: 'abismo', name: 'Más allá del trono', desc: 'Superá un Trono infinito.', renown: 4, progress: count((m) => m.stats.depth, 1) },
+  { id: 'abismo3', name: 'Sin fin', desc: 'Superá tres Tronos infinitos en una campaña.', renown: 8, progress: count((m) => m.stats.depth, 3) },
+  { id: 'doblepar', name: 'Dos y dos', desc: 'Jugá un doble par.', renown: 1, progress: flag((m) => has(m.seen.forms, 'doblepar')) },
+  { id: 'color', name: 'Todo al mismo palo', desc: 'Jugá un color.', renown: 1, progress: flag((m) => has(m.seen.forms, 'color')) },
+  { id: 'full', name: 'Casa llena', desc: 'Jugá un full.', renown: 2, progress: flag((m) => has(m.seen.forms, 'full')) },
+  { id: 'poker', name: 'Póker', desc: 'Jugá un póker.', renown: 3, progress: flag((m) => has(m.seen.forms, 'poker')) },
+  { id: 'real', name: 'Escalera real', desc: 'Jugá una escalera de color de 5 cartas o más.', renown: 3, progress: flag((m) => has(m.seen.forms, 'escaleracolor5')) },
+  { id: 'golpe100', name: 'De un solo golpe', desc: 'Hacé un Golpe de 100 o más.', renown: 2, progress: count((m) => m.stats.maxHit, 100) },
+  { id: 'golpe500', name: 'Trueno', desc: 'Hacé un Golpe de 500 o más.', renown: 4, progress: count((m) => m.stats.maxHit, 500) },
+  { id: 'golpe2000', name: 'Cataclismo', desc: 'Hacé un Golpe de 2000 o más.', renown: 8, progress: count((m) => m.stats.maxHit, 2000) },
+  { id: 'limpio10', name: 'Mano firme', desc: 'Lográ 10 Golpes exactos.', renown: 2, progress: count((m) => m.stats.cleans, 10) },
+  { id: 'limpio50', name: 'Pulso de ladrón', desc: 'Lográ 50 Golpes exactos.', renown: 5, progress: count((m) => m.stats.cleans, 50) },
+  { id: 'pisos100', name: 'Cien guardias', desc: 'Abatí a 100 guardias.', renown: 3, progress: count((m) => m.stats.floors, 100) },
+  { id: 'pisos500', name: 'Azote de la corte', desc: 'Abatí a 500 guardias.', renown: 6, progress: count((m) => m.stats.floors, 500) },
+  { id: 'intacto', name: 'Ni un rasguño', desc: 'Terminá un asalto con la Vida entera.', renown: 2, progress: count((m) => m.stats.intact, 1) },
+  { id: 'rico', name: 'Tacaño', desc: 'Juntá 30 de oro a la vez.', renown: 2, progress: count((m) => m.stats.maxGold, 30) },
+  { id: 'cinturon', name: 'Faja llena', desc: `Llevá ${TOOL_SLOTS} Amuletos a la vez.`, renown: 3, progress: count((m) => m.stats.maxTools, TOOL_SLOTS) },
+  { id: 'forja', name: 'Lacrador', desc: 'Estampá 10 sellos de lacre o acabados.', renown: 3, progress: count((m) => m.stats.forged, 10) },
+  { id: 'contratos', name: 'De guapo', desc: 'Vencé a 10 Guardias Bravos.', renown: 3, progress: count((m) => m.stats.contracts, 10) },
+  { id: 'atajo', name: 'Al calor del fogón', desc: 'Descansá en 3 Fogones.', renown: 2, progress: count((m) => m.stats.skips, 3) },
+  { id: 'coleccion', name: 'Coleccionista', desc: `Conseguí las ${BASE_POOL.length} Trampas del Bufón, entre todas tus campañas.`, renown: 5, progress: count((m) => m.seen.specials.filter((id) => BASE_POOL.includes(id)).length, BASE_POOL.length) },
+  { id: 'ferretero', name: 'Cliente del Tratante', desc: `Llevá ${TOOL_GOAL} Amuletos distintos, entre todas tus campañas.`, renown: 8, progress: count((m) => m.seen.tools.length, TOOL_GOAL) },
   ...BOSSES.map(
-    (b): Achievement => ({ id: `j-${b.id}`, name: `Trofeo: ${b.who}`, desc: `Vence ${toWho(b.who)} (${b.name.toLowerCase()}).`, renown: 2, progress: flag((m) => has(m.seen.bosses, b.id)) }),
+    (b): Achievement => ({ id: `j-${b.id}`, name: `Trofeo: ${b.who}`, desc: `Vencé ${toWho(b.who)} (${b.name.toLowerCase()}).`, renown: 2, progress: flag((m) => has(m.seen.bosses, b.id)) }),
   ),
-  { id: 'jefes', name: 'Ningún rey en pie', desc: `Vence a los ${BOSSES.length} monarcas.`, renown: 8, progress: count((m) => m.seen.bosses.length, BOSSES.length) },
+  { id: 'jefes', name: 'Ningún rey en pie', desc: `Vencé a los ${BOSSES.length} Reyes.`, renown: 8, progress: count((m) => m.seen.bosses.length, BOSSES.length) },
 ];
 // V12: una sola moneda permanente. Cada logro da sus Coronas de siempre en Esquirlas de Corona (× 100).
 for (const a of ACHIEVEMENTS) a.renown *= ESQUIRLAS_POR_CORONA;
@@ -66,8 +65,10 @@ for (const a of ACHIEVEMENTS) a.renown *= ESQUIRLAS_POR_CORONA;
 export function unlocksOf(id: string): string | null {
   const deck = DECKS.find((d) => d.unlock === id);
   if (deck) return deck.name;
-  const card = SPECIALS.find((s) => s.locked === id);
-  return card ? `Carta legendaria: ${card.name}` : null;
+  const cards = SPECIALS.filter((s) => s.locked === id);
+  // V40 1c · el trofeo de un Rey abre las dos legendarias de su palo
+  if (cards.length === 2) return `Cartas legendarias: ${cards[0].name} y ${cards[1].name}`;
+  return cards.length ? `Carta legendaria: ${cards[0].name}` : null;
 }
 
 /** Cartas legendarias que este jugador ya puede sortear. */

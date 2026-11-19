@@ -1,0 +1,358 @@
+{
+ "generated": "npm run analyze:meta -- sellos",
+ "control": {
+  "winrate": 38.9,
+  "n": 1000
+ },
+ "ruido": 6.5,
+ "amuletos": [
+  {
+   "id": "piqueta",
+   "delta": -1.6,
+   "n": 1000
+  },
+  {
+   "id": "cincel",
+   "delta": 4.3,
+   "n": 1000
+  },
+  {
+   "id": "calibre",
+   "delta": 12.7,
+   "n": 1000
+  },
+  {
+   "id": "cizalla",
+   "delta": -1,
+   "n": 1000
+  },
+  {
+   "id": "plano_maestro",
+   "delta": 13.9,
+   "n": 1000
+  },
+  {
+   "id": "maza",
+   "delta": -0.2,
+   "n": 1000
+  },
+  {
+   "id": "sacos",
+   "delta": 3.9,
+   "n": 1000
+  },
+  {
+   "id": "encofrado",
+   "delta": 5.5,
+   "n": 1000
+  },
+  {
+   "id": "contragolpe",
+   "delta": -4,
+   "n": 1000
+  },
+  {
+   "id": "sordina",
+   "delta": 4,
+   "n": 1000
+  },
+  {
+   "id": "cortavidrios",
+   "delta": 0.5,
+   "n": 1000
+  },
+  {
+   "id": "hucha",
+   "delta": 4.7,
+   "n": 1000
+  },
+  {
+   "id": "gemelos",
+   "delta": 2.2,
+   "n": 1000
+  },
+  {
+   "id": "piquete",
+   "delta": 9.3,
+   "n": 1000
+  },
+  {
+   "id": "dados",
+   "delta": 4.5,
+   "n": 1000
+  },
+  {
+   "id": "dinamita",
+   "delta": 4.1,
+   "n": 1000
+  },
+  {
+   "id": "paleta",
+   "delta": -0.8,
+   "n": 1000
+  },
+  {
+   "id": "botiquin",
+   "delta": 4.1,
+   "n": 1000
+  },
+  {
+   "id": "casco",
+   "delta": 6.2,
+   "n": 1000
+  },
+  {
+   "id": "cinta",
+   "delta": -2.8,
+   "n": 1000
+  },
+  {
+   "id": "ultimo",
+   "delta": -3.3,
+   "n": 1000
+  },
+  {
+   "id": "andamio",
+   "delta": 24.6,
+   "n": 1000
+  }
+ ],
+ "trampas": [
+  {
+   "id": "gemelo",
+   "delta": -3.7,
+   "n": 1000
+  },
+  {
+   "id": "mordaza",
+   "delta": 7,
+   "n": 1000
+  },
+  {
+   "id": "nitro",
+   "delta": -4.5,
+   "n": 1000
+  },
+  {
+   "id": "sierra",
+   "delta": -4.5,
+   "n": 1000
+  },
+  {
+   "id": "grua",
+   "delta": 1.7,
+   "n": 1000
+  },
+  {
+   "id": "pico",
+   "delta": -3,
+   "n": 1000
+  },
+  {
+   "id": "barreno",
+   "delta": 0.5,
+   "n": 1000
+  },
+  {
+   "id": "bola",
+   "delta": 1.6,
+   "n": 1000
+  }
+ ],
+ "bendiciones": [
+  {
+   "id": "filo",
+   "delta": 6.8,
+   "n": 1000
+  },
+  {
+   "id": "estocada",
+   "delta": 6.3,
+   "n": 1000
+  },
+  {
+   "id": "tajo",
+   "delta": 7.3,
+   "n": 1000
+  },
+  {
+   "id": "duelo",
+   "delta": 7.8,
+   "n": 1000
+  },
+  {
+   "id": "remate",
+   "delta": 7.9,
+   "n": 1000
+  },
+  {
+   "id": "garrote",
+   "delta": 4.9,
+   "n": 1000
+  },
+  {
+   "id": "empalizada",
+   "delta": 5.3,
+   "n": 1000
+  },
+  {
+   "id": "replica",
+   "delta": 0.6,
+   "n": 1000
+  },
+  {
+   "id": "porra",
+   "delta": 1.8,
+   "n": 1000
+  },
+  {
+   "id": "aguante",
+   "delta": 7,
+   "n": 1000
+  },
+  {
+   "id": "moneda",
+   "delta": 12.9,
+   "n": 1000
+  },
+  {
+   "id": "lluvia",
+   "delta": 9.7,
+   "n": 1000
+  },
+  {
+   "id": "taba",
+   "delta": 13,
+   "n": 1000
+  },
+  {
+   "id": "arcon",
+   "delta": 13.7,
+   "n": 1000
+  },
+  {
+   "id": "envite",
+   "delta": 11.1,
+   "n": 1000
+  },
+  {
+   "id": "brindis",
+   "delta": 14.9,
+   "n": 1000
+  },
+  {
+   "id": "porron",
+   "delta": 14.3,
+   "n": 1000
+  },
+  {
+   "id": "ronda",
+   "delta": 19,
+   "n": 1000
+  },
+  {
+   "id": "caliz",
+   "delta": 7.2,
+   "n": 1000
+  },
+  {
+   "id": "sobremesa",
+   "delta": 9.3,
+   "n": 1000
+  },
+  {
+   "id": "hoja",
+   "delta": 8,
+   "n": 1000
+  },
+  {
+   "id": "filodorado",
+   "delta": 16,
+   "n": 1000
+  },
+  {
+   "id": "sangria",
+   "delta": 13.1,
+   "n": 1000
+  },
+  {
+   "id": "peaje",
+   "delta": 12,
+   "n": 1000
+  },
+  {
+   "id": "fogon",
+   "delta": 10.3,
+   "n": 1000
+  },
+  {
+   "id": "convite",
+   "delta": 19,
+   "n": 1000
+  }
+ ],
+ "sellos": {
+  "amuletos": {
+   "andamio": "S",
+   "botiquin": "A",
+   "calibre": "S",
+   "casco": "S",
+   "cincel": "A",
+   "cinta": "B",
+   "cizalla": "B",
+   "contragolpe": "B",
+   "cortavidrios": "A",
+   "dados": "A",
+   "dinamita": "A",
+   "encofrado": "S",
+   "gemelos": "A",
+   "hucha": "S",
+   "maza": "B",
+   "paleta": "B",
+   "piqueta": "B",
+   "piquete": "S",
+   "plano_maestro": "S",
+   "sacos": "A",
+   "sordina": "A",
+   "ultimo": "B"
+  },
+  "trampas": {
+   "barreno": "A",
+   "bola": "A",
+   "gemelo": "A",
+   "grua": "S",
+   "mordaza": "S",
+   "nitro": "B",
+   "pico": "A",
+   "sierra": "B"
+  },
+  "bendiciones": {
+   "aguante": "B",
+   "arcon": "S",
+   "brindis": "S",
+   "caliz": "B",
+   "convite": "S",
+   "duelo": "A",
+   "empalizada": "B",
+   "envite": "A",
+   "estocada": "B",
+   "filo": "B",
+   "filodorado": "S",
+   "fogon": "A",
+   "garrote": "B",
+   "hoja": "A",
+   "lluvia": "A",
+   "moneda": "A",
+   "peaje": "A",
+   "porra": "B",
+   "porron": "S",
+   "remate": "A",
+   "replica": "B",
+   "ronda": "S",
+   "sangria": "S",
+   "sobremesa": "A",
+   "taba": "S",
+   "tajo": "A"
+  }
+ }
+}

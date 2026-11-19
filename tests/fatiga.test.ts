@@ -11,7 +11,7 @@ const cfgWith = (extra: Partial<Config> = {}): Config => ({ ...structuredClone(D
 /** Una mesa mínima para probar golpes: cuatro torres de un piso (J) y lo que se le añada. */
 function table(config: Config, tools: string[] = [], extra: Partial<GameState> = {}): GameState {
   for (const id of tools) TOOL[id].cfg?.(config);
-  return { ...createGame([{ id: 'a', name: 'A' }], 7, config), towers: newTowers([11, 12], config), tools: tools.map((id) => ({ id, n: 0 })), ...extra };
+  return { ...createGame([{ id: 'a', name: 'A' }], 7, config), towers: newTowers([10, 11], config), tools: tools.map((id) => ({ id, n: 0 })), ...extra };
 }
 
 describe('fatiga de cimientos', () => {
@@ -32,7 +32,7 @@ describe('fatiga de cimientos', () => {
   });
 
   it('el motor la sube sola al pasar los turnos, avisa con un evento y la enseña en la vista', () => {
-    let state = createGame([{ id: 'a', name: 'A' }], 11, cfgWith({ fatigueStart: 2, fatigueEvery: 1, floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 0, 12: 0, 13: 0 } }));
+    let state = createGame([{ id: 'a', name: 'A' }], 11, cfgWith({ fatigueStart: 2, fatigueEvery: 1, floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 0, 11: 0, 12: 0 } }));
     const seen: number[] = [];
     for (let i = 0; i < 4 && state.phase === 'playing'; i++) {
       const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
@@ -54,10 +54,10 @@ describe('fatiga de cimientos', () => {
   });
 
   it('V35 · Furia del Rey: cada turno que el monarca sigue de enemigo activo, la Furia sube; su Vida va multiplicada', () => {
-    const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 1, 12: 1, 13: 2 }, jefe: { suit: 'S', vida: 2, furia: 1 } });
+    const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 1, 11: 1, 12: 2 }, jefe: { suit: 'S', vida: 2, furia: 1 } });
     const s = table(cfg, [], { integrity: 20 });
     // PICAS es la Casa activa y le queda un solo guardia (el Rey): es el monarca
-    s.towers.S.floors = [13];
+    s.towers.S.floors = [12];
     expect(esJefe(cfg, s.towers.S)).toBe(true);
     expect(floorHp(s.towers.S, cfg)).toBe(1800);
     expect(esJefe(cfg, s.towers.D)).toBe(false);
@@ -81,39 +81,22 @@ describe('fatiga de cimientos', () => {
   it('la dureza crece: el Ataque de los asaltos 1 a 3 queda por debajo del de los asaltos 4 y 5', () => {
     const early = Math.max(...STAGES.slice(0, 3).map((s) => s.threat));
     for (const st of STAGES.slice(3)) expect(st.threat).toBeGreaterThan(early);
-    expect(Math.max(...STAGES.map((s) => s.hp))).toBeLessThan(10);
+    // V40 1c · con las Bendiciones la campaña pega más, y los guardias de los asaltos 3 a 5 aguantan más
+    expect(Math.max(...STAGES.map((s) => s.hp))).toBeLessThan(12);
   });
 });
 
-describe('aguante: la defensa se cobra en daño', () => {
-  it('la caja de aguante trae sus cuatro remates', () => {
-    expect(TOOLS.filter((t) => t.arch === 'aguante').map((t) => t.id)).toEqual(['ariete', 'contragolpe', 'rebosadero', 'bastion']);
+describe('Rey de Bastos: la defensa se cobra en daño', () => {
+  it('V40 1d · la familia del Rey de Bastos trae sus cinco Amuletos', () => {
+    expect(TOOLS.filter((t) => t.arch === 'bastos').map((t) => t.id)).toEqual(['maza', 'sacos', 'encofrado', 'contragolpe', 'sordina']);
   });
 
-  it('Ariete suma Fuerza por cada punto de muro, y la Embestida también', () => {
-    const cfg = cfgWith();
-    const bare = previewStrike(table(cfg, [], { wall: 6 }), [card('S5')], 'D').fuerza;
-    expect(previewStrike(table(cfg, ['ariete'], { wall: 6 }), [card('S5')], 'D').fuerza).toBe(bare + 24);
-    expect(previewStrike(table(cfg, ['ariete'], { wall: 0 }), [card('S5')], 'D').fuerza).toBe(bare);
-    expect(SPECIAL.embestida.fx.wallForce).toBe(3);
-    const rider: Card = { id: 'sp-e', suit: 'X', rank: 0, sp: 'embestida' };
-    expect(previewStrike(table(cfg, [], { wall: 4 }), [card('S5'), rider], 'D').fuerza).toBe(bare + 4 + 12);
-    // sin muro no es una carta muerta: su Fuerza fija sigue ahí
-    expect(previewStrike(table(cfg, [], { wall: 0 }), [card('S5'), rider], 'D').fuerza).toBe(bare + 4);
-  });
-
-  it('Baluarte suma Multi con el Escudo a la mitad de su tope o más', () => {
-    const cfg = cfgWith();
-    const low = previewStrike(table(cfgWith(), ['bastion'], { wall: 3 }), [card('S5')], 'D').res;
-    const high = previewStrike(table(cfg, ['bastion'], { wall: 4 }), [card('S5')], 'D').res;
-    expect(high).toBe(low + BALANCE.reliquias.bastion.multi);
-  });
-
-  it('Contragolpe devuelve el triple de lo que el muro frena entero, y nada si la sirena pasa', () => {
+  it('el Talero devuelve el triple de lo que el Escudo frena entero, y nada si el Contraataque pasa', () => {
     const play = (wall: number) => {
-      const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 } });
+      // el Ataque de la Corte de antes de la 1f (3/4/6): la prueba mide el Escudo que frena entero, no la escala
+      const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 }, floorThreat: { 10: 3, 11: 4, 12: 6 } });
       const s = table(cfg, ['contragolpe'], { wall });
-      // contraataca el enemigo activo: la Sota de PICAS (Ataque 3)
+      // contraataca el enemigo activo: la Sota de Espadas (Ataque 3)
       s.players[0].hand = [card('S2'), card('S3')];
       const out = applyAction(s, 'a', { type: 'discard', cards: ['S2'] }).state;
       return out.towers.S.damage;
@@ -121,56 +104,56 @@ describe('aguante: la defensa se cobra en daño', () => {
     expect(play(5)).toBe(9);
     expect(play(1)).toBe(0);
   });
-
-  it('Rebosadero: el muro que sobra repara, y lo que sobra de reparar carga Fuerza', () => {
-    // guardias que no pegan: lo que se mide es lo que rebosa
-    const cfg = cfgWith({ floorHp: { 11: 900, 12: 900, 13: 900 }, floorThreat: { 11: 0, 12: 0, 13: 0 } });
-    const s = table(cfg, ['rebosadero'], { wall: cfg.wallCap - 1, integrity: cfg.maxIntegrity - 1 });
-    s.players[0].hand = [card('C8'), card('C9'), card('C10')];
-    // escalera de tréboles: tres ♣, +6 de Escudo; cabe 1 y sobran 5 → cura 2; cabe 1 y sobra 1 → +3 de Daño cargado
-    const out = applyAction(s, 'a', { type: 'attack', cards: ['C8', 'C9', 'C10'], target: 'S' }).state;
-    expect(out.wall).toBe(cfg.wallCap);
-    expect(out.integrity).toBe(cfg.maxIntegrity);
-    expect(out.charge).toBe(3);
-  });
 });
 
-describe('jefes de la 4.0', () => {
-  const boss = (id: string) => {
-    const cfg = cfgWith();
+describe('V40 1c · los 4 Reyes jefe en la mesa', () => {
+  /** Una mesa con el Rey del palo `suit` solo al frente (las otras Casas ya cayeron) y su rasgo puesto. */
+  const conRey = (id: string, suit: 'S' | 'C' | 'D' | 'H', extra: Partial<GameState> = {}) => {
+    const cfg = cfgWith({ floorHp: { 10: 900, 11: 900, 12: 900 }, orden: [suit] });
+    cfg.jefe = { suit, vida: 1, furia: 1, rey: id as 'espadas' };
     BOSS[id].apply(cfg);
-    return cfg;
+    const s = table(cfg, [], extra);
+    for (const o of ['S', 'C', 'D', 'H'] as const) s.towers[o].floors = o === suit ? [12] : [];
+    return s;
   };
 
-  it('El Inquisidor (V35): ningún trono queda Aturdido; Expuesto sigue y sus guardias pegan menos', () => {
-    const cfg = boss('blindaje');
-    const s = table(cfg);
-    const calm = table(cfgWith());
-    expect(threatOf(s, s.towers.S)).toBe(Math.max(1, threatOf(calm, calm.towers.S) - BALANCE.monarcas.blindaje.ataque));
-    strike(s, [card('C2'), card('C3'), card('C4')], 'S'); // un solo palo: sin el decreto dejaría Expuesto
-    strike(s, [card('S3'), card('H4'), card('D5')], 'C'); // tres palos: sin el decreto dejaría Aturdido (no lo deja)
-    expect(s.towers.S.fx).toEqual({ fractura: true }); // un solo palo: Expuesto, como siempre
+  it('Bastos: mientras está al frente no queda Expuesto ni Aturdido', () => {
+    const s = conRey('bastos', 'C');
+    expect(esJefe(s.config, s.towers.C)).toBe(true);
+    strike(s, [card('D2'), card('D3'), card('D4')], 'C'); // un solo palo: dejaría Expuesto
+    strike(s, [card('S3'), card('H4'), card('D5')], 'C'); // tres palos: dejaría Aturdido
     expect(s.towers.C.fx).toEqual({});
   });
 
-  it('El Relojero: cada guardia abatido sin Golpe exacto te quita Vida, y el asalto empieza con Furia', () => {
-    const cfg = boss('inestable');
-    expect(cfg.furiaInicial).toBe(BALANCE.monarcas.inestable.furia);
-    const s = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
-    const rough = strike(s, [card('C10'), card('H10')], 'D'); // pareja sin picas: tira la J con daño de sobra y no perfora
-    expect(rough.fallen).toBeGreaterThan(0);
-    expect(rough.clean).toBe(false);
-    expect(rough.hurt).toBe(rough.fallen);
-    const exact = table(cfgWith({ ...cfg, floorHp: { 11: 20, 12: 30, 13: 40 } }));
-    const clean = strike(exact, [card('S4'), card('H4')], 'D'); // (2 + 4 + 4) × 2 = 20: Golpe exacto
-    expect(clean.clean).toBe(true);
-    expect(clean.hurt).toBe(0);
+  it('Oros: su dado suma de +1 a +caras a su Contraataque; sin dado, nada', () => {
+    const s = conRey('oros', 'D');
+    const base = threatOf({ config: s.config }, s.towers.D);
+    expect(threatOf({ config: s.config, dado: 1 }, s.towers.D)).toBe(base + Math.ceil(BALANCE.reyes.oros.dado / 6));
+    expect(threatOf({ config: s.config, dado: 6 }, s.towers.D)).toBe(base + BALANCE.reyes.oros.dado);
+    for (let d = 1; d <= 6; d++) expect(Number.isInteger(threatOf({ config: s.config, dado: d }, s.towers.D))).toBe(true);
   });
 
-  it('La Ventisca limita el muro sin anularlo', () => {
-    const cfg = boss('intemperie');
-    expect(cfg.wallCap).toBeGreaterThanOrEqual(1);
-    expect(cfg.wallCap).toBeLessThan(DEFAULT_CONFIG.wallCap);
+  it('Espadas: su Contraataque atraviesa parte del Escudo', () => {
+    const golpe = (wall: number) => {
+      const s = conRey('espadas', 'S', { wall });
+      s.players[0].hand = [card('C2'), card('C3')];
+      const before = s.integrity;
+      const out = applyAction(s, 'a', { type: 'discard', cards: ['C2'] }).state;
+      return before - out.integrity;
+    };
+    const ataque = threatOf({ config: conRey('espadas', 'S').config }, conRey('espadas', 'S').towers.S);
+    // con Escudo de sobra, entra justo lo que atraviesa
+    expect(golpe(99)).toBe(Math.min(ataque, BALANCE.reyes.espadas.perfora));
+    expect(golpe(0)).toBe(ataque);
+  });
+
+  it('Copas: cada turno que sigue al frente se cura, sin pasar de lo que le hicieron', () => {
+    const s = conRey('copas', 'H');
+    s.towers.H.damage = 50;
+    s.players[0].hand = [card('C2'), card('C3'), card('C4')];
+    const out = applyAction(s, 'a', { type: 'discard', cards: ['C2'] }).state;
+    expect(out.towers.H.damage).toBe(50 - BALANCE.reyes.copas.cura);
+    expect(out.furiaRey).toBe(1);
   });
 });
 

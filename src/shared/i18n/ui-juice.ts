@@ -26,16 +26,15 @@ export const UI_JUICE = {
   'ui.ctl.ritual': ['Saltar la tirada de huesos', 'Skip the Bone Roll'],
   'ui.ctl.ritual.k': ['Cualquier tecla', 'Any key'],
   'ui.ctl.ritual.p': ['Cualquier botón', 'Any button'],
-  'ui.ctl.arbol.comprar': ['Árbol: elegir un nodo y comprarlo', 'Tree: pick a node and buy it'],
+  'ui.ctl.arbol.comprar': ['Altar: elegir un nodo y comprarlo', 'Altar: pick a node and buy it'],
   'ui.ctl.arbol.comprar.k': ['{k} en el nodo · {k} en Comprar', '{k} on the node · {k} on Buy'],
-  'ui.ctl.arbol.zum': ['Árbol: alejar / ampliar', 'Tree: zoom out / in'],
-  'ui.ctl.arbol.mover': ['Árbol: mover la vista', 'Tree: move the view'],
+  'ui.ctl.arbol.zum': ['Altar: alejar / ampliar', 'Altar: zoom out / in'],
+  'ui.ctl.arbol.mover': ['Altar: mover la vista', 'Altar: move the view'],
   'ui.ctl.arbol.mover.k': ['Arrastrar · {mayus} + flechas', 'Drag · {mayus} + arrow keys'],
   'ui.ctl.arbol.mover.p': ['Palanca derecha', 'Right stick'],
   'ui.ctl.descartar': ['Descartar lo elegido', 'Discard what you chose'],
   'ui.ctl.descartar.p': ['{p} (pulsar la palanca izquierda)', '{p} (press the left stick)'],
   'ui.ctl.atras': ['Atrás / soltar la selección', 'Back / drop the selection'],
-  'ui.ctl.saltar': ['Saltar la partida guiada (sin nada elegido)', 'Skip the Guided Game (with nothing chosen)'],
   'ui.ctl.mazo': ['Ver el Mazo y el Descarte', 'See the Deck and the Discard'],
   'ui.ctl.lupa': ['Lupa', 'Loupe'],
   'ui.ctl.lupa.k': ['{k} · clic derecho · pulsación larga', '{k} · right click · long press'],
@@ -58,49 +57,114 @@ export const UI_JUICE = {
 
   // ── Susurros (whispers.ts): una línea cada uno ──
   'ui.w.inmune': ['<b>Inmune:</b> tus {glyph} no le hacen Daño a un enemigo de su mismo palo (su poder sí cuenta). Guárdalas para la Casa siguiente.', '<b>Immune:</b> your {glyph} deal no Damage to an enemy of their own suit (their power does count). Save them for the next House.'],
-  'ui.w.andamio': ['<b>Viene un Contraataque fuerte:</b> guarda en La Manga{kh} la carta que no quieras gastar; al reponer robas una más.', '<b>A strong Counterattack is coming:</b> keep the card you want to save Up the Sleeve{kh}; when you refill, you draw one more.'],
-  'ui.w.limpio': ['<b>Golpe exacto:</b> si golpeas ahora no hay Contraataque, cobras 1 de oro y robas una carta más.', '<b>Exact Hit:</b> strike now and there is no Counterattack: you collect 1 gold and draw one more card.'],
+  'ui.w.andamio': ['<b>Viene un Contraataque fuerte:</b> guardá en La Manga{kh} la carta que no quieras gastar; al reponer robás una más.', '<b>A strong Counterattack is coming:</b> keep the card you want to save Up the Sleeve{kh}; when you refill, you draw one more.'],
+  'ui.w.limpio': ['<b>Golpe exacto:</b> si golpeás ahora no hay Contraataque, cobrás 1 de oro y robás una carta más.', '<b>Exact Hit:</b> strike now and there is no Counterattack: you collect 1 gold and draw one more card.'],
   'ui.w.forja': ['<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.', '<b>Wax Table:</b> the card you pick stays sealed forever. Cancel spends nothing.'],
-  'ui.w.atajo': ['<b>Atajo:</b> te saltas el asalto sin Botín ni Taberna, pero te llevas «{tag}».', '<b>Shortcut:</b> you skip the assault with no Spoils and no Tavern, but you take “{tag}”.'],
-  'ui.w.jefe': ['<b>Monarca:</b> {who} impone un decreto en este asalto. Su placa, junto a tu Vida, te lo recuerda. Es el último guardia: cada turno que sigue en pie, su Furia sube.', '<b>Monarch:</b> {who} imposes a decree on this assault. The plate beside your Health reminds you. It is the last guard: each turn it stays standing, its Fury rises.'],
-  'ui.w.fatiga': ["<b>Furia:</b> el Ataque de los enemigos ha subido. Sube con cada Mazo agotado y, contra el monarca, cada turno.", "<b>Fury:</b> enemy Attack has gone up. It rises each time the Deck runs out and, against the monarch, every turn."],
-  'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte. No pierdes Vida: {efecto}.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back in. You lose no Health: {efecto}.'],
+  'ui.w.atajo': ['<b>El Mapa:</b> elegí el camino. El Guardia Bravo da una Bendición; el Fogón y La Pulpería curan y purgan.', '<b>The Map:</b> choose your path. The Elite Guard gives a Blessing; the Campfire and the General Store heal and purge.'],
+  'ui.w.jefe': ['<b>Rey jefe:</b> {who} impone un decreto en este asalto. Su placa, junto a tu Vida, te lo recuerda. Es el último guardia: cada turno que sigue en pie, su Furia sube.', '<b>Boss King:</b> {who} imposes a decree on this assault. The plate beside your Health reminds you. It is the last guard: each turn it stays standing, its Fury rises.'],
+  'ui.w.fatiga': ["<b>Furia:</b> el Ataque de los enemigos ha subido. Sube con cada Mazo agotado y, contra el Rey jefe, cada turno.", "<b>Fury:</b> enemy Attack has gone up. It rises each time the Deck runs out and, against the boss King, every turn."],
+  'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte. No perdés Vida: {efecto}.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back in. You lose no Health: {efecto}.'],
   'ui.w.cantera.sube': ["la Furia sube {n} (⚔ +{n} en cada enemigo)", "the Fury rises {n} (⚔ +{n} on every enemy)"],
   'ui.w.cantera.gratis': ['esta vez no pasa nada más', 'nothing else happens this time'],
   // V11: la mesa de dos o tres tronos y los dos estados, la primera vez que se ven
-  'ui.w.ausente': ['<b>Un enemigo a la vez:</b> este asalto tiene {n} Casas y se asaltan de una en una. Solo golpeas al del centro, y solo él te contraataca; la fila enseña las que esperan.', '<b>One enemy at a time:</b> this assault has {n} Houses, stormed one by one. You only strike the one in the centre, and only it strikes back; the queue shows the ones waiting.'],
-  'ui.w.expuesto': ['<b>Expuesto {glyph}:</b> el próximo golpe contra ese enemigo hace ×{n} de Daño. Lo deja un golpe de 2 cartas o más de un solo palo.', '<b>Exposed {glyph}:</b> the next hit against that enemy deals ×{n} Damage. A hit of 2+ cards of one suit leaves it Exposed.'],
-  'ui.w.aturdido': ['<b>Aturdido {glyph}:</b> ese enemigo se salta su próximo Contraataque. Lo deja un golpe de tres palos.', '<b>Stunned {glyph}:</b> that enemy skips its next Counterattack. A hit with three suits leaves it Stunned.'],
+  'ui.w.ausente': ['<b>Un enemigo a la vez:</b> este asalto tiene {n} Casas y se asaltan de una en una. Solo golpeás al del centro, y solo él te contraataca; la fila enseña las que esperan.', '<b>One enemy at a time:</b> this assault has {n} Houses, stormed one by one. You only strike the one in the centre, and only it strikes back; the queue shows the ones waiting.'],
+  'ui.w.expuesto': ['<b>Expuesto ({glyph}):</b> el próximo golpe contra ese enemigo hace ×{n} de Daño. Lo deja un golpe de 2 cartas o más de un solo palo.', '<b>Exposed ({glyph}):</b> the next hit against that enemy deals ×{n} Damage. A hit of 2+ cards of one suit leaves it Exposed.'],
+  'ui.w.aturdido': ['<b>Aturdido ({glyph}):</b> ese enemigo se salta su próximo Contraataque. Lo deja un golpe de tres palos.', '<b>Stunned ({glyph}):</b> that enemy skips its next Counterattack. A hit with three suits leaves it Stunned.'],
   // V11: el registro de la mesa, cuando el Contraataque saca el palo de un trono que no está en el asalto (table.ts)
   // V12: lo que cae, la tirada de huesos, el Árbol, Mejor jugada, AUTO y las 3 gotas, la primera vez
-  'ui.w.caida': ['<b>Lo que cae</b> vuela solo a tu bolsa: esquirlas, monedas y gotas. Pasa el cursor o el dedo para cogerlo antes.', '<b>Loot</b> flies to your purse by itself: shards, coins and drops. Sweep the cursor or a finger over it to grab it sooner.'],
+  'ui.w.caida': ['<b>Lo que cae</b> vuela solo a tu bolsa: esquirlas, monedas y gotas. Pasá el cursor o el dedo para agarrarlo antes.', '<b>Loot</b> flies to your purse by itself: shards, coins and drops. Sweep the cursor or a finger over it to grab it sooner.'],
   'ui.w.tirada': ['<b>Tirada de huesos:</b> tras ganar un asalto, los dados multiplican lo que cayó. Cualquier tecla la salta.', '<b>Bone Roll:</b> after a win, dice multiply what dropped. Any key skips it.'],
-  'ui.w.arbol': ['<b>Árbol de la Conjura:</b> gasta esquirlas aquí para mejorar para siempre. Lo que puedes comprar lleva filete de latón.', '<b>Conspiracy Tree:</b> spend shards here to get better for good. What you can buy has a brass frame.'],
-  'ui.w.mejor': ['<b>Mejor jugada</b> elige por ti el mejor golpe. Tú confirmas con Golpear{kh}.', '<b>Best Play</b> picks the best strike for you. You confirm with Strike{kh}.'],
+  'ui.w.arbol': ['<b>Altar:</b> gasta esquirlas aquí para mejorar para siempre. Lo que podés comprar lleva filete de latón.', '<b>Altar:</b> spend shards here to get better for good. What you can buy has a brass frame.'],
+  'ui.w.mejor': ['<b>Mejor jugada</b> elige por vos el mejor golpe. Vos confirmás con Golpear{kh}.', '<b>Best Play</b> picks the best strike for you. You confirm with Strike{kh}.'],
   'ui.w.auto': ['<b>AUTO:</b> el juego juega solo. Cualquier tecla, clic o botón te devuelve el mando.', '<b>AUTO:</b> the game plays itself. Any key, click or button hands control back to you.'],
   'ui.w.gotas': ['<b>{n} gotas de lacre:</b> la próxima Mesa de lacre te sella gratis.', '<b>{n} Wax Drops:</b> the next Wax Table seals for free.'],
   'ui.w.off': ['No mostrar más', 'Do not show again'],
   'ui.w.ajuste': ['Susurros', 'Whispers'],
-  'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Furia…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Fury…).'],
+  'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encontrás algo (trono Inmune, La Manga, Mesa de lacre, Furia…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Fury…).'],
 
-  // ── partida guiada (tutorial-ui.ts): el final y los avisos ──
-  'ui.tuto.ganada': ['PARTIDA GUIADA COMPLETADA', 'GUIDED GAME COMPLETE'],
-  'ui.tuto.fallida': ['PARTIDA GUIADA FALLIDA', 'GUIDED GAME FAILED'],
-  'ui.tuto.lista': ['Lista la<br>conjura', 'The conspiracy<br>is ready'],
-  'ui.tuto.deshecha': ['Conjura deshecha', 'Conspiracy Undone'],
-  'ui.tuto.lista.texto': ['Ya sabes el poder de cada palo, el trono Inmune, La Manga, Daño × Multi = Golpe y el Golpe exacto. En campaña se suman las Reliquias y Rebobinar.', 'Now you know the power of each suit, the Immune throne, Up the Sleeve, Damage × Mult = Hit and the Exact Hit. A campaign adds Relics and Rewind.'],
-  'ui.tuto.deshecha.texto': ['Pasa hasta en las mejores conjuras. Repítela con calma.', 'It happens to the best conspiracies. Play it again, calmly.'],
-  'ui.tuto.campana': ['A la campaña', 'To the campaign'],
-  'ui.tuto.jugar': ['Jugar de verdad', 'Play for real'],
-  'ui.tuto.repetir': ['Repetir', 'Play again'],
-  'ui.tuto.invalida': ['Jugada inválida', 'Invalid move'],
+  // ── V40 · el Bufón: sus consejos de la primera campaña (whispers.ts) y su fila de Ajustes ──
+  'ui.bufon.ajuste': ['Consejos del Bufón', 'Jester tips'],
+  'ui.bufon.ajuste.texto': ['En los 3 primeros golpes de tu primera campaña, el Bufón te dice una frase.', 'In the first 3 hits of your first campaign, the Jester says one line.'],
+  'ui.bufon.quien': ['El Bufón', 'The Jester'],
+  // V40 · 3b · los sellos de los momentos grandes de la mesa (fx.ts, momento)
+  'ui.momento.escoba': ['¡Escoba!', 'Escoba!'],
+  'ui.momento.envido': ['¡Envido!', 'Envido!'],
+  'ui.momento.chancho': ['¡Chancho!', 'Chancho!'],
+  'ui.momento.bravo': ['¡Bravo!', 'Bravo!'],
+  'ui.momento.engano': ['¡Engaño!', 'Bluff!'],
+  'ui.momento.nivel': ['¡Nivel del Rey!', 'King’s level!'],
+  'ui.momento.carga': ['+1 · carga {n}', '+1 · charge {n}'],
+  'ui.momento.multi': ['+{n} Multi', '+{n} Multi'],
+  'ui.momento.dano': ['+{n} Daño', '+{n} Damage'],
+  // V40 · 3b · lo que dice el Bufón cuando la mesa le da motivo (bufon-vivo.ts): varias por momento, separadas por «|»;
+  // cada una ≤ 64 caracteres (cabe en dos renglones junto a él en el móvil). Pícaro y ambiguo: nunca se sabe de qué lado está.
+  'ui.bufon.r.exacto': [
+    '¡Justito en cero! Así me gusta.|Ni un punto de más. Qué prolijo.|Cero redondo. Hasta me dio envidia.|Exacto. Sospechosamente exacto.',
+    'Dead on zero! That’s how I like it.|Not a point wasted. How tidy.|Exactly zero. I’m almost jealous.|Precise. Suspiciously precise.',
+  ],
+  'ui.bufon.r.escoba': [
+    '¡Escoba! Barriste la mesa, pícaro.|Quince justos. ¿Quién te enseñó?|¡Escoba! Y yo que te daba por perdido.',
+    'Escoba! Swept clean, you rascal.|Fifteen on the nose. Who taught you?|Escoba! And I had written you off.',
+  ],
+  'ui.bufon.r.envido': [
+    '¡Envido! Mirá vos, se anima.|Dos del mismo palo… ¿quiero o no quiero?|Envido cantado. Que tiemble la mesa.',
+    'Envido! Look who’s feeling brave.|Two of a suit… shall I call it?|Envido sung. Let the table tremble.',
+  ],
+  'ui.bufon.r.chancho': [
+    '¡Chancho! Cuatro iguales y nadie respira.|¡Chancho va! Y se quedaron quietitos.|Cuatro mellizos. Qué asco. Qué lindo.',
+    'Chancho! Four alike and no one breathes.|The pig goes! And they all froze.|Four twins. Revolting. Lovely.',
+  ],
+  'ui.bufon.r.bravo': [
+    'Un bravo en la mano… eso es tener cara.|¡Bravo! El ancho no perdona.|Esa carta pega con ganas. Yo sé.',
+    'A bravo in hand… what nerve.|Bravo! The high card shows no mercy.|That card bites with relish. I’d know.',
+  ],
+  'ui.bufon.r.engano': [
+    '¿Engaño? Yo no vi nada. Seguí.|Mentís con cara de piedra. Me encanta.|Ese palo no era tuyo… shh.',
+    'A bluff? I saw nothing. Carry on.|Lying with a stone face. Delicious.|That suit wasn’t yours… hush.',
+  ],
+  'ui.bufon.r.jugada': [
+    'Bien servida. Seguí, seguí.|Así se juega al Chinchón, ¿viste?|Prolijo. Demasiado prolijo para vos.',
+    'Neatly served. Go on, go on.|That’s how Chinchón is played, see?|Tidy. Too tidy for you.',
+  ],
+  'ui.bufon.r.carga': [
+    'Otra carga. El Rey anota todo.|Suma y sigue. Alguien va a cobrar esto.|Más para la cuenta del Rey.',
+    'Another charge. The King keeps score.|It adds up. Someone will collect.|More on the King’s tab.',
+  ],
+  'ui.bufon.r.nivel': [
+    '¡Se encendió el Rey! Ahora te mira distinto.|Un Rey de tu lado… por ahora.|Otra vela para el Rey. Que no se te apague.',
+    'The King lights up! He sees you differently now.|A King on your side… for now.|Another candle for the King. Keep it lit.',
+  ],
+  'ui.bufon.r.contra': [
+    '¡Ay! Eso dolió. A mí no, claro.|Te dieron. Yo avisé… ¿avisé?|Sangre. Ahora se pone lindo.|Mirá que no perdonan, ¿eh?',
+    'Ouch! That hurt. Not me, of course.|You got hit. I warned you… did I?|Blood. Now it gets interesting.|They don’t forgive, you know.',
+  ],
+  'ui.bufon.r.salvo': [
+    'Ni un rasguño. Qué aburrido.|El Escudo aguantó. Por esta vez.|¿Nada? Pegale más fuerte, che… a vos no, a él.',
+    'Not a scratch. How dull.|The Shield held. This time.|Nothing? Hit harder… not you, him.',
+  ],
+  'ui.bufon.r.sombria': [
+    'Te queda poco. Elegí bien… o no.|¿Último turno? Qué emoción.|Mirá que el Caballo no perdona.',
+    'Not much left. Choose well… or don’t.|Last turn? How thrilling.|Mind you, the Knight won’t forgive.',
+  ],
+  'ui.bufon.r.victoria': [
+    'Ganaste. Esta vez.|Bien jugado. No se lo digas a nadie.|Mirá vos. El naipe te quiere.',
+    'You won. This time.|Well played. Don’t tell anyone.|Well, well. The cards like you.',
+  ],
+  'ui.bufon.r.derrota': [
+    'Y así termina. Yo me río igual.|Otra vez será. Yo te espero.|Se acabó el baile. Barajá y volvé.',
+    'And so it ends. I’ll laugh anyway.|Next time, then. I’ll be waiting.|The dance is over. Shuffle and come back.',
+  ],
+  'ui.bufon.r.tienta': [
+    'Mirá sin miedo. Bueno, con un poco.|Elegí una. Las otras no te querían.|Todas brillan. Alguna muerde.',
+    'Look without fear. Well, a little.|Choose one. The others didn’t love you.|They all shine. One of them bites.',
+  ],
 
   // ── la barra y el reinicio (main.ts) ──
   'ui.main.reiniciar': ['Reiniciar campaña', 'Restart campaign'],
   'ui.main.velocidad': ['Velocidad {v}', 'Speed {v}'],
   // V12 · AUTO (auto.ts): encendido y apagado fuera de la mesa (en la mesa lo dice su botón)
   'ui.auto.on': ['AUTO encendido: cualquier tecla o botón lo apaga', 'AUTO on: any key or button turns it off'],
-  'ui.auto.off': ['AUTO apagado: ahora juegas tú', 'AUTO off: your turn to play'],
+  'ui.auto.off': ['AUTO apagado: ahora jugás vos', 'AUTO off: your turn to play'],
   'ui.main.reiniciar.pad': ['Select + Start', 'Select + Start'],
 
   // ── insignias de reliquia (fx.ts, procBadge) ──
@@ -110,7 +174,7 @@ export const UI_JUICE = {
 
   // ── la red (net.ts): conexión y avisos ──
   'ui.red.sin': ['Sin conexión con el servidor', 'No connection to the server'],
-  'ui.red.sin.servidor': ['Esta instalación no tiene servidor de salas: escribe uno en Ajustes', 'This install has no room server: type one in Settings'],
+  'ui.red.sin.servidor': ['Esta instalación no tiene servidor de salas: escribí uno en Ajustes', 'This install has no room server: type one in Settings'],
   'ui.red.otra': ['Sesión abierta en otra pestaña', 'Session open in another tab'],
   'ui.red.resync': ['Mesa puesta al día con el servidor', 'Table brought up to date with the server'],
   'ui.red.local': ['○ sin servidor de salas: campaña en local', '○ no room server: local campaign'],
@@ -136,7 +200,6 @@ export const UI_JUICE = {
   'ui.tel.linea': ['{resultado} · Asalto {asalto} · {turnos} turnos · Reinado {reinado} · {baraja}', '{resultado} · Assault {asalto} · {turnos} turns · Reign {reinado} · {baraja}'],
   'ui.tel.causa': ['Causa: {texto}', 'Cause: {texto}'],
   'ui.tel.dudas': ['Dudas: {dudas} · La Manga: {manga} · Rebobinar: {rebobinar}', 'Doubts: {dudas} · Up the Sleeve: {manga} · Rewind: {rebobinar}'],
-  'ui.tel.guiada': ['Partida guiada', 'Guided Game'],
   'ui.tel.titulo': ['Feedback de prueba', 'Playtest Feedback'],
   'ui.tel.curso': ['En curso', 'In progress'],
   'ui.tel.victoria': ['Victoria', 'Victory'],

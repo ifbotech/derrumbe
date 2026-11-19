@@ -1,6 +1,6 @@
 // Arranque del cliente (el título vive en shared/brand.ts). Cada pantalla vive en su módulo:
 //   core (estado y ajustes) · platform (guardado, pantalla, vibración) · net (servidor de salas)
-//   router · home · lobby · guild · campaign · runscreens · table (mesa de combate) · tutorial-ui
+//   router · home · lobby · guild · campaign · runscreens · table (mesa de combate)
 //   widgets · lupa · pings · nav (teclado y mando) · fx · card / art / glyphs / engraving · audio
 import '@fontsource/archivo-black';
 import '@fontsource/unifrakturcook/700.css';
@@ -20,6 +20,10 @@ import './movil.css';
 import './legible.css';
 import './duelo.css'; // V35 · un enemigo grande y la fila
 import './deck.css'; // V38 · legibilidad en el Steam Deck y el portátil (va la última)
+import './pixel.css'; // V40 · fase 2: el naipe y las piezas en pixel-art (detrás de deck.css)
+import './campana40.css'; // V40 · fase 3a: el HUD único y las pantallas de campaña mínimas
+import './mesa40.css'; // V40 · fase 3a: la mesa mínima (va la última)
+import './jugo40.css'; // V40 · fase 3b (juice-ux): el Bufón vivo, los momentos grandes y los pendientes de la 3a
 import './tinta';
 import { sfx, startMusic } from './audio';
 import { canRestart, isRunHost, restartCampaign, retireOldSave } from './campaign';

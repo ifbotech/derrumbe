@@ -1,7 +1,7 @@
 // La tirada de huesos (V12, SPECS/V12.md apartado 1.4): tras cada asalto ganado, un Dado de oro multiplica las
 // monedas que cayeron a la mesa en ese asalto y uno o más Dados de la Corona multiplican sus esquirlas. Caras
 // enteras. El resultado sale de un azar propio, sembrado con la campaña, el asalto y el dado: no toca
-// `run.rng`, así que el resto de la campaña sale igual con o sin dados (solo cambia el oro que tienes).
+// `run.rng`, así que el resto de la campaña sale igual con o sin dados (solo cambia el oro que tenés).
 //
 // Puro. No importa run.ts en tiempo de ejecución (run.ts importa este módulo).
 import { cifraDe, rangoDe } from './arbol';

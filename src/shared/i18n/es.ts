@@ -8,14 +8,16 @@
 //     tests/i18n.test.ts y la foto de textos de la V10, que exigen que salgan letra por letra iguales.
 import { ACHIEVEMENTS, unlocksOf } from '../../rules/achievements';
 import { fill, BALANCE } from '../../rules/balance-config';
-import { FORMATION_NAME, FORMATIONS, MATERIAL, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
+import { FIGURA_NOMBRE, FIGURAS, FORMACIONES_MAZO, FORMATION_NAME, FORMATIONS, MATERIAL, PALO_NOMBRE, SEAL, SEALS, SUITS, TOWER_FX, TREATMENT, TREATMENTS } from '../../rules/engine';
 import { REGLA_MEJOR } from '../../rules/mejor-jugada';
 import { KEYWORDS } from '../../rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
+import { ASCENSIONS, BOSSES, DECKS, EVENTS, STAGES, TIRANO, UPGRADES } from '../../rules/run';
 import { RAIZ, RAMAS } from '../../rules/arbol';
 import { SPECIALS } from '../../rules/specials';
-import { ARCH, RARITY, RASGOS, TOOLS } from '../../rules/tools';
-import { TUTORIAL_STEPS, createTutorial } from '../../rules/tutorial';
+import { ARCH, RARITY, TOOLS } from '../../rules/tools';
+import { BENDICIONES, BONOS_REY, BUFON_BENDICION, FRASES_REY, REY_IDS, REY_NOMBRE, REY_PALO } from '../../rules/reyes';
+import { FRASES_BUFON } from '../../rules/bufon';
+import { REGLAS } from '../../rules/mazos';
 import { ES_PLANTILLAS } from '../../rules/plantillas';
 import { columna } from './ui-arte';
 import { columnaJuice } from './ui-juice';
@@ -27,9 +29,6 @@ export const ES_UI = { ...columna(0), ...columnaJuice(0) } as const satisfies Re
 export type ClaveUi = keyof typeof ES_UI;
 
 
-/** Mayúscula inicial y el resto en minúscula: «PICAS» → «Picas», «TRÉBOLES» → «Tréboles». */
-const capital = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
-
 /** Los textos de reglas en español, por clave estable, tal como salen hoy de los datos. */
 export function reglasEs(): Record<string, string> {
   const o: Record<string, string> = {};
@@ -37,12 +36,19 @@ export function reglasEs(): Record<string, string> {
     o[`reliquia.${t.id}.nombre`] = t.name;
     o[`reliquia.${t.id}.desc`] = t.desc;
   }
-  // V35 · los cinco rasgos de build y sus bonos con 2, 4 y 6 Reliquias
-  for (const r of RASGOS) {
-    o[`rasgo.${r.id}.nombre`] = r.name;
-    o[`rasgo.${r.id}.lema`] = r.lema;
-    r.bonos.forEach((b, i) => (o[`rasgo.${r.id}.bono.${i + 1}`] = b));
+  // V40 1c · los 4 Reyes (sus bonos de nivel con 2 y 4 piezas y sus frases de jefe) y sus Bendiciones
+  for (const r of REY_IDS) {
+    o[`rey.${r}.nombre`] = REY_NOMBRE[r];
+    o[`rey.${r}.palo`] = REY_PALO[r];
+    BONOS_REY[r].forEach((b, i) => (o[`rey.${r}.bono.${i + 1}`] = b));
+    for (const [rel, t] of Object.entries(FRASES_REY[r])) o[`rey.${r}.frase.${rel}`] = t;
   }
+  for (const b of BENDICIONES) {
+    o[`bendicion.${b.id}.nombre`] = b.name;
+    o[`bendicion.${b.id}.desc`] = b.desc;
+    o[`bendicion.${b.id}.carga`] = b.carga;
+  }
+  BUFON_BENDICION.forEach((t, i) => (o[`bufon.bendicion.${i + 1}`] = t));
   for (const [r, v] of Object.entries(RARITY)) o[`rareza.${r}`] = v.name;
   for (const [a, v] of Object.entries(ARCH)) o[`arquetipo.${a}`] = v;
   for (const s of SPECIALS) {
@@ -67,16 +73,13 @@ export function reglasEs(): Record<string, string> {
   });
   for (const d of DECKS) {
     o[`baraja.${d.id}.nombre`] = d.name;
+    o[`baraja.${d.id}.lema`] = d.lema;
     o[`baraja.${d.id}.desc`] = d.desc;
   }
-  for (const c of CONTRACTS) {
-    o[`juramento.${c.id}.nombre`] = c.name;
-    o[`juramento.${c.id}.desc`] = c.desc;
-    o[`juramento.${c.id}.premio`] = c.reward;
-  }
-  for (const t of TAGS) {
-    o[`atajo.${t.id}.nombre`] = t.name;
-    o[`atajo.${t.id}.desc`] = t.desc;
+  // V40 · las reglas de los 5 Mazos
+  for (const r of REGLAS) {
+    o[`regla.${r.id}.nombre`] = r.name;
+    o[`regla.${r.id}.desc`] = r.desc;
   }
   for (const e of EVENTS) {
     o[`secreto.${e.id}.nombre`] = e.name;
@@ -99,8 +102,8 @@ export function reglasEs(): Record<string, string> {
     o[`rama.${r.id}.nombre`] = r.name;
     o[`rama.${r.id}.desc`] = r.desc;
   }
-  o['arbol.nombre'] = 'Árbol de la Conjura';
-  o['arbol.desc'] = 'Gasta esquirlas aquí para mejorar para siempre.';
+  o['arbol.nombre'] = 'El Altar';
+  o['arbol.desc'] = 'Gastá esquirlas acá para mejorar para siempre.';
   o['arbol.raiz.nombre'] = RAIZ.name;
   o['arbol.raiz.desc'] = RAIZ.desc;
   for (const a of ACHIEVEMENTS) {
@@ -113,7 +116,7 @@ export function reglasEs(): Record<string, string> {
     o[`palabra.${k.id}.nombre`] = k.name;
     o[`palabra.${k.id}.desc`] = k.desc;
   }
-  for (const f of FORMATIONS) o[`formacion.${f}`] = FORMATION_NAME[f];
+  for (const f of [...FORMATIONS, ...FORMACIONES_MAZO]) o[`formacion.${f}`] = FORMATION_NAME[f];
   for (const s of SEALS) {
     o[`sello.${s}.nombre`] = SEAL[s].name;
     o[`sello.${s}.desc`] = SEAL[s].desc;
@@ -126,25 +129,28 @@ export function reglasEs(): Record<string, string> {
     o[`estado.${k}.nombre`] = v.name;
     o[`estado.${k}.desc`] = v.desc;
   }
+  // V40 · la baraja española: el nombre de cada palo (en mayúsculas, como en la mesa, y para leer) y de cada figura
   for (const s of SUITS) {
     o[`palo.${s}`] = MATERIAL[s];
-    o[`palo.${s}.nombre`] = capital(MATERIAL[s]);
+    o[`palo.${s}.nombre`] = PALO_NOMBRE[s];
   }
+  for (const r of FIGURAS) o[`figura.${r}`] = FIGURA_NOMBRE[r];
   // la cuenta del cobro (run.ts, finishBattle): las mismas cadenas que acaban en `run.pay`
   const C = BALANCE.cobro;
   o['cuenta.asalto'] = 'Asalto ganado';
+  o['cuenta.bravo'] = 'Guardia Bravo';
   o['cuenta.vida'] = fill('Vida que te queda (1 por cada {n})', { n: C.vidaCada });
   o['cuenta.interes'] = fill('Interés (1 por cada {n} de oro)', { n: C.interesCada });
   // V12: la regla de Mejor jugada (src/rules/mejor-jugada.ts)
   o['regla.mejor'] = REGLA_MEJOR;
-  o['mejor.nada'] = 'Ninguna jugada hace Daño: descarta o guarda en La Manga.';
+  o['mejor.nada'] = 'Ninguna jugada hace Daño: descartá o guardá en La Manga.';
   // V12: monedas, esquirlas, gotas, dados de hueso, tirada, imán, cobro y AUTO (anexo A de SPECS/V12.md)
   o['pieza.moneda.nombre'] = 'Monedas';
-  o['pieza.moneda.desc'] = 'Oro para La Taberna.';
+  o['pieza.moneda.desc'] = 'Oro para La Pulpería.';
   o['pieza.esquirla.nombre'] = 'Esquirlas de Corona';
   o['pieza.esquirla.desc'] = 'Trozos de corona: se guardan aunque pierdas.';
   o['pieza.gota.nombre'] = 'Gotas de lacre';
-  o['pieza.gota.desc'] = fill('Junta {n} y la Mesa de lacre te sella gratis.', { n: BALANCE.caida.gotasPorSello });
+  o['pieza.gota.desc'] = fill('Juntá {n} y la Mesa de lacre te sella gratis.', { n: BALANCE.caida.gotasPorSello });
   o['hueso.oro.nombre'] = 'Dado de oro';
   o['hueso.oro.desc'] = 'Multiplica tus monedas del asalto.';
   o['hueso.corona.nombre'] = 'Dado de la Corona';
@@ -154,26 +160,22 @@ export function reglasEs(): Record<string, string> {
   o['iman.nombre'] = 'Imán';
   o['iman.desc'] = 'Lo que cae vuela solo a tu bolsa.';
   o['cobro.conjura.nombre'] = 'Cobro de la conjura';
-  o['cobro.conjura.desc'] = 'Las esquirlas que ganas al acabar la campaña.';
+  o['cobro.conjura.desc'] = 'Las esquirlas que ganás al acabar la campaña.';
   o['auto.nombre'] = 'AUTO';
-  o['auto.desc'] = 'El juego juega solo. Toca para volver.';
+  o['auto.desc'] = 'El juego juega solo. Tocá para volver.';
   o['auto.saquear.nombre'] = 'Auto-saquear';
   o['auto.saquear.desc'] = 'El bot elige tu Botín.';
-  o['auto.taberna.nombre'] = 'Auto-taberna';
-  o['auto.taberna.desc'] = 'El bot compra en La Taberna y elige ruta.';
-  o['auto.pausa.botin'] = 'AUTO espera: elige tu Botín.';
-  o['auto.pausa.taberna'] = 'AUTO espera: compra en La Taberna o sigue.';
-  o['auto.pausa.mapa'] = 'AUTO espera: elige tu ruta en el Mapa.';
-  o['auto.pausa.secreto'] = 'AUTO espera: elige en el Secreto.';
+  o['auto.taberna.nombre'] = 'Auto-pulpería';
+  o['auto.taberna.desc'] = 'El bot compra en La Pulpería y elige ruta.';
+  o['auto.pausa.botin'] = 'AUTO espera: elegí tu Botín.';
+  o['auto.pausa.bendicion'] = 'AUTO espera: elegí tu Bendición.';
+  o['auto.pausa.taberna'] = 'AUTO espera: comprá en La Pulpería o seguí.';
+  o['auto.pausa.mapa'] = 'AUTO espera: elegí tu ruta en el Mapa.';
+  o['auto.pausa.secreto'] = 'AUTO espera: elegí en el Secreto.';
   o['auto.pausa.fin'] = 'La campaña terminó: AUTO se apaga.';
-  o['auto.pausa.diaria'] = 'En el Asalto diario se juega a mano.';
   o['auto.pausa.coop'] = 'En cooperativo se juega a mano.';
-  // la partida guiada
-  for (const s of TUTORIAL_STEPS) {
-    o[`guia.${s.id}.titulo`] = s.title;
-    o[`guia.${s.id}.linea`] = s.line;
-  }
-  o['guia.jugador'] = createTutorial().players[0].name;
+  // V40 · lo que dice el Bufón en los tres primeros golpes de la primera campaña (src/rules/bufon.ts)
+  for (const b of FRASES_BUFON) o[`bufon.${b.id}`] = b.texto;
   return { ...o, ...ES_PLANTILLAS };
 }
 

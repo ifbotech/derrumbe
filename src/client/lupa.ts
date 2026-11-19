@@ -1,12 +1,12 @@
 // Lupa: clic derecho, pulsación larga o la tecla L sobre cualquier carta, reliquia o monarca
 // abre la pieza a tamaño de lámina, con su epígrafe, su texto de reglas, la cuenta exacta de
 // lo que aporta ahora mismo y, si lo tiene, su sello de maestría.
-import { Card, DEFAULT_CONFIG, RANK_LABEL, SUITS, SUIT_GLYPH, Suit, TOWER_FX, TowerFx, cardLabel, cardValue, threatOf } from '../rules/engine';
+import { Card, DEFAULT_CONFIG, RANK_LABEL, SUITS, Suit, TOWER_FX, TowerFx, esFigura, cardValue, threatOf } from '../rules/engine';
 import { keywordsInFor } from '../rules/keywords';
 import { BOSS, DECK, sellValue } from '../rules/run';
 import { SPECIAL } from '../rules/specials';
-import { TOOL, TOOL_SLOTS } from '../rules/tools';
-import { L, acabD, acabN, archN, barD, barN, espD, espN, fxD, fxN, getLang, monDec, monD, monN, palabraD, palabraN, paloN, rarN, relD, relN, selloD, selloN } from './lengua';
+import { TOOL } from '../rules/tools';
+import { L, acabD, acabN, archN, barD, barN, espD, espN, fxD, fxN, getLang, monDec, monD, monN, palabraD, palabraN, paloN, cartaN, guardiaN, rarN, relD, relN, selloD, selloN } from './lengua';
 import { sfx } from './audio';
 import { backEl, cardEl, cardOf, portraitEl, suitSvg } from './card';
 import { S, cap, hideTip, kw, num } from './core';
@@ -54,12 +54,12 @@ function cardSheet(c: Card, host: HTMLElement): Sheet {
     const t = v.towers[s];
     const hp = v.config.floorHp[c.rank] ?? 0;
     rows.push(row(L('ui.lupa.vida'), L('ui.lupa.vida.de', { n: Math.max(0, hp - t.damage), total: hp })));
-    rows.push(row(L('ui.lupa.ataque'), `${L('ui.lupa.ataque.texto', { n: threatOf(v, t), palo: SUIT_GLYPH[s] })}${v.fatigue ? L('ui.lupa.ataque.asedio', { n: v.fatigue }) : ''}${t.fx.sobrecarga ? L('ui.lupa.ataque.aturdido') : ''}`));
+    rows.push(row(L('ui.lupa.ataque'), `${L('ui.lupa.ataque.texto', { n: threatOf(v, t), palo: paloN(s) })}${v.fatigue ? L('ui.lupa.ataque.asedio', { n: v.fatigue }) : ''}${t.fx.sobrecarga ? L('ui.lupa.ataque.aturdido') : ''}`));
     rows.push(row(L('ui.lupa.inmune'), own === 0 ? L('ui.lupa.inmune.texto', { palo: glyph(s) }) : L('ui.lupa.inmune.anulada', { palo: glyph(s), n: own })));
     const fx = (Object.keys(TOWER_FX) as (keyof TowerFx)[]).filter((k) => t.fx?.[k]);
     if (fx.length) rows.push(row(L('ui.lupa.estado'), fx.map((k) => `${fxN(k)}: ${fxD(k)}`).join(' ')));
     if (t.floors.length > 1) rows.push(row(L('ui.lupa.detras'), t.floors.slice(1).map((r) => `${RANK_LABEL[r]} (${v.config.floorHp[r]})`).join(' · ')));
-    return { art, kicker: L('ui.lupa.guardia', { palo: paloN(s) }), name: cardLabel(c), epi: cardFlavor(c), rules: L('ui.lupa.guardia.texto'), rows };
+    return { art, kicker: L('ui.lupa.guardia', { palo: paloN(s) }), name: guardiaN(c), epi: cardFlavor(c), rules: L('ui.lupa.guardia.texto'), rows };
   }
   rows.push(row(L('ui.lupa.valor'), `<b>${val}</b>${c.rank === 1 ? L('ui.lupa.valor.as') : ''}`));
   const standing = v ? SUITS.filter((x) => v.towers[x].floors.length) : SUITS;
@@ -77,12 +77,12 @@ function cardSheet(c: Card, host: HTMLElement): Sheet {
   // el poder de su palo, con el número por carta de esta mesa (las reliquias y el monarca lo cambian)
   const cfg = v?.config ?? DEFAULT_CONFIG;
   const per = s === 'D' ? cfg.salpicaPorCarta : s === 'H' ? cfg.curaPorCarta : s === 'C' ? cfg.escudoPorCarta : 0;
-  rows.push(row(L('ui.lupa.poder', { palo: SUIT_GLYPH[s] }), s === 'H' && per === 0 ? `${L('ui.lupa.poder.H.0')}` : L(POWER[s], { n: per })));
+  rows.push(row(L('ui.lupa.poder', { palo: paloN(s) }), s === 'H' && per === 0 ? `${L('ui.lupa.poder.H.0')}` : L(POWER[s], { n: per })));
   if (c.rank === 1) rows.push(row(L('ui.lupa.as'), L('ui.lupa.as.texto')));
   if (c.tr) rows.push(row(acabN(c.tr), acabD(c.tr)));
   if (c.seal) rows.push(row(selloN(c.seal), selloD(c.seal)));
-  const kind = c.rank > 10 ? L('ui.lupa.figura') : c.rank === 1 ? L('ui.lupa.asn') : L('ui.lupa.numero');
-  return { art, kicker: `${kind} · ${paloN(s)}`, name: cardLabel(c), epi: cardFlavor(c), rules: L('ui.lupa.carta.texto', { palo: paloN(s).toLowerCase() }), rows };
+  const kind = esFigura(c.rank) ? L('ui.lupa.figura') : c.rank === 1 ? L('ui.lupa.asn') : L('ui.lupa.numero');
+  return { art, kicker: `${kind} · ${paloN(s)}`, name: cartaN(c), epi: cardFlavor(c), rules: L('ui.lupa.carta.texto', { palo: paloN(s).toLowerCase() }), rows };
 }
 
 function toolSheet(id: string): Sheet | null {

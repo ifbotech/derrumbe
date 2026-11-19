@@ -12,12 +12,13 @@
 import { DICCIONARIOS, type Lang, tFor } from '../shared/i18n';
 import { type Autopsy, type Omen, type TextosAutopsia, TEXTOS_ES, autopsyWith, omenWith } from './autopsy';
 import type { Config, GameEvent, PlayerView } from './engine';
+import type { Sinergia } from './piezas';
 import { ES_PLANTILLAS } from './plantillas';
 
 type Paso = Extract<GameEvent, { e: 'step' }>;
 
 /** Prefijos de clave cuyo valor español es un nombre propio que puede ir en la cabecera de un paso. */
-const NOMBRES = /^(?:reliquia\.[^.]+\.nombre|especial\.[^.]+\.nombre|formacion\.[^.]+|sello\.[^.]+\.nombre|acabado\.[^.]+\.nombre|estado\.[^.]+\.nombre|monarca\.[^.]+\.decreto|rasgo\.[^.]+\.nombre|paso\.(?:racha|carga))$/;
+const NOMBRES = /^(?:reliquia\.[^.]+\.nombre|especial\.[^.]+\.nombre|formacion\.[^.]+|sello\.[^.]+\.nombre|acabado\.[^.]+\.nombre|estado\.[^.]+\.nombre|monarca\.[^.]+\.decreto|bendicion\.[^.]+\.nombre|rey\.[^.]+\.nombre|regla\.[^.]+\.nombre|paso\.(?:racha|carga))$/;
 
 let nombresEs: Map<string, string> | null = null;
 /** Nombre español → clave («Broquel» → «reliquia.encofrado.nombre»). */
@@ -51,10 +52,19 @@ function rehacer(lang: Lang, prefijo: string, texto: string, traducir: (campo: s
   return null;
 }
 
-/** Un nombre propio en `lang` («Broquel» → «Buckler»); las etiquetas de carta (7♠, A♦) no cambian. */
+/** V40 · la etiqueta de una carta («7 de Espadas», «Comodín») en `lang` («7 of Swords», «Joker»); null si no lo es. */
+export function cartaEn(lang: Lang, es: string): string | null {
+  if (es === 'Comodín') return tFor(lang, 'carta.comodin');
+  const m = /^(\d{1,2}) de (\p{L}+)$/u.exec(es);
+  if (!m) return null;
+  for (const s of ['S', 'D', 'H', 'C']) if (tFor('es', `palo.${s}.nombre`) === m[2]) return tFor(lang, 'carta.etiqueta', { n: m[1], palo: tFor(lang, `palo.${s}.nombre`) });
+  return null;
+}
+
+/** Un nombre propio en `lang` («Broquel» → «Buckler»; «7 de Espadas» → «7 of Swords»). */
 function nombreEn(lang: Lang, es: string): string {
   const k = nombres().get(es);
-  return k ? tFor(lang, k) : es;
+  return k ? tFor(lang, k) : (cartaEn(lang, es) ?? es);
 }
 
 /** Cabecera de un paso: nombres separados por « · » (carta y su acabado) o « → » (Espejo de mano y lo que copia). */
@@ -64,7 +74,7 @@ const cabecera = (lang: Lang, es: string) =>
     .map((a) => a.split(' · ').map((b) => nombreEn(lang, b)).join(' · '))
     .join(' → ');
 
-/** El nombre del palo en mayúsculas («PICAS» → «SPADES»). */
+/** El nombre del palo en mayúsculas («ESPADAS» → «SWORDS»). */
 function paloEn(lang: Lang, es: string): string {
   for (const s of ['S', 'D', 'H', 'C']) if (tFor('es', `palo.${s}`) === es) return tFor(lang, `palo.${s}`);
   return es;
@@ -100,7 +110,7 @@ export function pasoFor(lang: Lang, ev: Paso): string {
 /** Una línea del cobro (`run.pay`) en `lang`. Las de cifra fija, la del Dado de oro y el nombre de la Bolsa de monedas. */
 export function cobroFor(lang: Lang, label: string): string {
   if (lang === 'es') return label;
-  for (const k of ['cuenta.asalto', 'cuenta.vida', 'cuenta.interes']) if (tFor('es', k) === label) return tFor(lang, k);
+  for (const k of ['cuenta.asalto', 'cuenta.vida', 'cuenta.interes', 'cuenta.bravo']) if (tFor('es', k) === label) return tFor(lang, k);
   // V12: «Dado de oro ×2»
   const dado = rehacer(lang, 'cuenta.dado', label);
   if (dado !== null) return dado;
@@ -121,7 +131,6 @@ function textosAutopsia(lang: Lang): TextosAutopsia {
     especial: (id) => tFor(lang, `especial.${id}.nombre`),
     reliquia: (id) => tFor(lang, `reliquia.${id}.nombre`),
     palo: (s) => tFor(lang, `palo.${s}`),
-    arena: () => tFor(lang, 'monarca.inestable.decreto'),
   };
 }
 
@@ -130,3 +139,10 @@ export const autopsyFor = (lang: Lang, events: GameEvent[], cfg: Config): Autops
 
 /** El aviso de último turno en `lang` (ver `omen`). */
 export const omenFor = (lang: Lang, v: PlayerView): Omen | null => omenWith(textosAutopsia(lang), v);
+
+/** V40 1d · La etiqueta ★ Sinergia de una pieza (ver `sinergia` en piezas.ts) en `lang`: «★ Bastos [4]», «★ For Escoba». */
+export function sinergiaFor(lang: Lang, s: Sinergia): string {
+  if (lang === 'es') return s.texto;
+  if (s.tipo === 'mazo') return tFor(lang, s.clave, { mazo: tFor(lang, `baraja.${s.mazo}.nombre`) });
+  return tFor(lang, s.clave, { ...s.datos, palo: tFor(lang, `rey.${s.rey}.palo`) });
+}

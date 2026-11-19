@@ -11,7 +11,7 @@ export interface FormBase {
   r: number;
   lf: number;
 }
-/** Vida, Ataque y mano por rango (11 Sota, 12 Reina, 13 Rey) o por número de jugadores. */
+/** Vida, Ataque y mano por rango (10 Sota, 11 Caballo, 12 Rey) o por número de jugadores. */
 type PorClave = Record<string, number>;
 /** Lo que hace una carta especial (ver `Fx` en specials.ts). */
 export interface FxConfig {
@@ -56,22 +56,33 @@ export interface BalanceConfig {
   clausura: { stages: number[]; threat: number };
   /** Anillo de sello: cartas que sella al empezar cada asalto. */
   timbre: { stamps: number };
-  /** Cifras de los decretos de los monarcas. */
-  monarcas: {
-    doble: { contraataques: number; ataque: number };
-    escasez: { cartas: number };
-    intemperie: { escudoTope: number };
-    furia: { ataque: number };
-    inestable: { furia: number; vida: number };
-    /** V35 · lo que quita cada ♥ jugada contra la Dama del Cáliz. */
-    sequia: { veneno: number };
-    /** V35 · cuánto Ataque de menos tienen los guardias del Inquisidor (sin Aturdido el duelo se le hace largo). */
-    blindaje: { ataque: number };
+  /**
+   * V40 1c · Los 4 Reyes jefe: su Vida (× la Vida del monarca, `furia.jefeVida`), la Furia que sube cada turno que
+   * siguen al frente y la cifra de su rasgo. `asalto2`: en el asalto 2 el Rey ocupa el sitio del Caballo, con esta
+   * Vida (×) y este Ataque (+) de más sobre el de un Rey.
+   */
+  reyes: {
+    espadas: { vida: number; furia: number; perfora: number };
+    bastos: { vida: number; furia: number };
+    oros: { vida: number; furia: number; dado: number };
+    copas: { vida: number; furia: number; cura: number };
+    asalto2: { vida: number; ataque: number };
   };
+  /** V40 1c · La oferta de Bendiciones: Reyes que ofrecen al empezar y entre asaltos, y la probabilidad de una Dual. */
+  oferta: { inicio: number; entre: number; dual: number };
+  /** V40 1c · Cifras de los bonos de nivel [2/4] de cada Rey. */
+  niveles: {
+    espadas: { tol: number; x: number };
+    bastos: { escudo: number; tope: number };
+    oros: { cara: number; cara4: number; oro: number };
+    copas: { vida: number };
+  };
+  /** V40 1c · Cifras de cada Bendición (`carga`: lo que da cada carga), por `id`. */
+  bendiciones: Record<string, Record<string, number>>;
   /** Precios de La Taberna. */
   taberna: {
     rarezas: Record<'comun' | 'oficio' | 'capataz' | 'reliquia', { cost: number; weight: number }>;
-    /** Reliquias en oferta (más las del Puesto grande). */
+    /** Amuletos en oferta en La Pulpería (V40 1d: la Faja ancha ya no suma surtido, suma huecos). */
     reliquias: number;
     sobre: number;
     sobreCiego: number;
@@ -84,6 +95,12 @@ export interface BalanceConfig {
   /** Oro al ganar un asalto, y la Vida que se recupera después. */
   cobro: { asalto: number; vidaCada: number; interesCada: number; curaTrasAsalto: number; sinSeleccion: number };
   /**
+   * V40 1e · El Mapa de caminos. Guardia Bravo: un solo guardia (el Caballo en los tramos 2 y 3, el Rey en el 4 y el 5),
+   * con su Vida × `vida` y `ataque` más de Ataque que los del asalto que viene; su Botín, `oro` y un Amuleto Raro o
+   * mejor. Fogón: Curar `curar` de Vida, o Purgar una carta gratis.
+   */
+  mapa: { bravo: { vida: number; ataque: number; oro: number; amuletos: number; bendicion: number }; fogon: { curar: number; bendicion: number }; bendicionGuardia: number };
+  /**
    * Árbol de la Conjura (V12, sustituye a `orden`): esquirlas de cada rango de los nodos de combate (`costes`),
    * base de coste de los incrementales (rango r: base × crece^(r−1), a dos cifras significativas), oro inicial
    * por rango de la Bolsa de la conjura y la cifra por rango de cada nodo (`cifras`, ver `cifraDe` en arbol.ts).
@@ -93,13 +110,17 @@ export interface BalanceConfig {
   caida: { esquirlaGolpe: number; esquirlaGuardia: number; esquirlaExacto: number; esquirlaMonarca: number; oroGuardia: number; gotaExacto: number; gotasPorSello: number; formacionCartas: number; imanSegundos: number; maxPiezas: number };
   /** Caras de los dados de hueso (enteras): el Dado de oro y el Dado de la Corona. */
   huesos: { oro: number[]; corona: number[] };
-  /** Lo que suma o quita cada baraja inicial. */
-  barajas: {
-    acero: { vida: number };
-    prestamista: { oro: number; interes: number; vida: number };
-    ases: { vida: number };
-    corta: { oro: number; vida: number };
-    caos: { especiales: number };
+  /**
+   * V40 · Los 5 Mazos (ver src/rules/mazos.ts): las bases de sus formaciones propias (Par de palo del Truco, Quince de
+   * la Escoba) y las cifras de cada regla. `vida`: lo que el Mazo suma o quita a la Vida inicial; `mano`, al tamaño de la mano.
+   */
+  mazos: {
+    formaciones: Record<'parpalo' | 'quince', FormBase>;
+    truco: { vida: number; mano: number; bravo: Record<'S1' | 'C1' | 'S7' | 'D7', number>; envido: number };
+    escoba: { vida: number; mano: number; multi: number; carga: number };
+    chinchon: { vida: number; mano: number; pierna: number; escalera: number; cartas: number; carga: number; alivio: number };
+    mentiroso: { vida: number; mano: number; comodines: number; dano: number; furia: number };
+    chancho: { vida: number; mano: number; cadena: number; turnos: number; dano: number };
   };
   formaciones: Record<string, FormBase>;
   /** La mesa por defecto (DEFAULT_CONFIG del motor). */
@@ -108,29 +129,28 @@ export interface BalanceConfig {
   golpe: { racha: number; rachaTope: number; expuesto: number; onda: number; oroExacto: number };
   acabados: { forjado: number; templado: number; policromado: number; agrietado: number; agrietadoRompe: number };
   sellos: { jornal: number };
-  /** V35 · Cifras de los bonos de cada rasgo de build (con 2, 4 y 6 Reliquias). */
-  rasgos: {
-    sangre: { vida: number; cada: number; multi: number; x: number };
-    tahur: { oro: number; x: number };
-    verdugo: { pct: number; pct2: number; dano: number };
-    bastion: { escudo: number; dano: number; dano2: number; tope: number };
-    horda: { multi: number; cartas: number };
-  };
   /** Asalto único (partida clásica): lo que cambia sobre la mesa por defecto. */
   clasica: {
     obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; collapseSiege: number; cuadrilla: number[]; fatigueStart: number; fatigueEvery: number };
     brutal: { maxIntegrity: number; collapseSiege: number };
   };
-  /** Cifras de cada reliquia, por `id`. */
+  /** Cifras de cada Amuleto, por `id` (la clave guarda su nombre de antes: `reliquias`). */
   reliquias: Record<string, Record<string, number>>;
-  /** Efecto de cada carta especial, por `id`. */
+  /** Efecto de cada Trampa del Bufón (carta especial), por `id`. */
   especiales: Record<string, FxConfig>;
+  /**
+   * V40 1d · Sellos de nivel S · A · B de cada Amuleto, Trampa y Bendición. Los escribe el laboratorio
+   * (`npm run analyze:meta -- sellos`), nunca a mano: salen del efecto de cada pieza en la tasa de victoria.
+   */
+  sellosNivel: Record<'amuletos' | 'trampas' | 'bendiciones', Record<string, SelloNivel>>;
 }
+/** Sello de nivel de una pieza: S (de lo mejor), A o B. */
+export type SelloNivel = 'S' | 'A' | 'B';
 
 /** Los números del balance. Lo que lee el motor; se puede leer, no se debe escribir fuera del afinador. */
 export const BALANCE: BalanceConfig = raw as BalanceConfig;
 
-/** Cifras de una reliquia (vacío si no tiene). */
+/** Cifras de un Amuleto (vacío si no tiene). */
 export const relic = (id: string): Record<string, number> => BALANCE.reliquias[id] ?? {};
 
 /** Un número como lo lee el jugador: coma decimal y como mucho dos decimales («0,15», «1,5», «12»). */

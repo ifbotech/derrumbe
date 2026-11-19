@@ -123,7 +123,8 @@ const padKey = (b: string) => `<kbd class="kh pd b-${b.toLowerCase()}">${b}</kbd
 export function padPrompt(el: Element | null): string {
   if (mode !== 'pad' || !el || el.closest('.modal')) return '';
   // V19: la carta enfocada de la mano ya no lleva insignia (pegada a la carta se leía como «tapa la carta»)
-  if (!el.closest('.run-body.shop')) return '';
+  // V40 · 3b: el HUD de La Pulpería (la tira de Amuletos) vive fuera de .run-body.shop, dentro de .run.pulp40
+  if (!el.closest('.run-body.shop, .run.pulp40')) return '';
   const hit = SHOP_VERBS.find(([sel]) => el.matches(sel));
   if (!hit) return '';
   return `<b>${padKey('A')}${t(hit[1])}</b>`;
@@ -276,6 +277,19 @@ function nearest(a: DOMRect, list: HTMLElement[], dx: number, dy: number): HTMLE
   return inline.length ? pick((o) => o.gap, inline) : pick((o) => o.gap + o.side * 1.5, pool);
 }
 
+/** El de la lista con el centro más cerca del de `from`, en cualquier dirección (null si la lista está vacía). */
+function cercana(from: HTMLElement, list: HTMLElement[]): HTMLElement | null {
+  const a = from.getBoundingClientRect();
+  let best: HTMLElement | null = null;
+  let dist = Infinity;
+  for (const el of list) {
+    const b = el.getBoundingClientRect();
+    const d = Math.hypot(b.left + b.width / 2 - (a.left + a.width / 2), b.top + b.height / 2 - (a.top + a.height / 2));
+    if (d < dist) [dist, best] = [d, el];
+  }
+  return best;
+}
+
 /**
  * Mueve el foco al elemento pulsable más cercano en la dirección (dx, dy) (ver `nearest`). Si el foco está en un
  * deslizador, izquierda y derecha cambian su valor; si no queda nada hacia ese lado, se desplaza la
@@ -325,6 +339,9 @@ export function moveFocus(dx: number, dy: number): void {
   if (dx > 0 && best?.closest('.bar') && from.matches('.table-screen .tower')) {
     best = nearest(from.getBoundingClientRect(), list.filter((el) => el.closest('.table-screen .side')), dx, dy) ?? best;
   }
+  // V40 · 3b · mesa: «abajo» desde Golpear o Descartar sin nada debajo (la mano queda a su izquierda, en la misma
+  // franja) no se traba: salta a la carta de la mano más cercana
+  if (!best && dy > 0 && from.closest('.table-screen .actions')) best = cercana(from, list.filter((el) => el.matches('#hand .card, #reserve .card')));
   if (best) {
     reveal(best);
     sfx.focus(dx, dy);

@@ -5,7 +5,7 @@ import type { Card, Suit } from '../rules/engine';
 import { getLang } from './lengua';
 
 const TOOL_FLAVOR: Record<string, string> = {
-  piqueta: 'Una pica no discute: convence, punta a punta.',
+  piqueta: 'Una espada no discute: convence, filo a filo.',
   cortavidrios: 'Una raya fina y la gema entera se rinde.',
   paleta: 'Lo que se brinda con este cáliz, se cumple.',
   maza: 'No tiene filo ni lo necesita.',
@@ -22,7 +22,7 @@ const TOOL_FLAVOR: Record<string, string> = {
   estandarte: 'Bajo un mismo color, la conjura canta al mismo compás.',
   dados: 'La suerte existe. Por eso conviene traerla hecha de casa.',
   dinamita: 'Mecha corta, discusión breve.',
-  acido: 'Gota a gota, hasta el orgullo de un trono se pica.',
+  acido: 'Gota a gota, hasta el orgullo de un trono se oxida.',
   andamio: 'Una mano más en la mesa es una baza más en la conjura.',
   pasarela: 'En cada manga cabe un secreto. En dos, una traición.',
   contrapeso: 'Lo que lo protegía es justo lo que lo derriba.',
@@ -63,9 +63,9 @@ const SPECIAL_FLAVOR: Record<string, string> = {
   barreno: 'Un virote pequeño para un problema grande.',
   martillo: 'Repite. Repite. Repite.',
   saboteador: 'Entró por la puerta de servicio y salió sin hacer ruido.',
-  palanca: 'Dadme un punto de apoyo y una conjura con ganas.',
+  palanca: 'Dadme un punto de apoyo y una conjura con ganás.',
   grua: 'Lo que hace falta, llega volando.',
-  mordaza: 'Hoy la guardia se queda con las ganas.',
+  mordaza: 'Hoy la guardia se queda con las ganás.',
   clavos: 'Una flecha para cada vecino.',
   chatarrero: 'Toca una vez, pregunta nunca.',
   pico: 'Hasta los reyes tienen precio.',
@@ -79,7 +79,7 @@ const SPECIAL_FLAVOR: Record<string, string> = {
   embestida: 'La mejor defensa es llevársela por delante.',
   ferretero: 'Fía una vez. Solo una.',
   'j-doble': 'Por fin, las dos caras miran hacia el mismo lado.',
-  'j-escasez': 'Lo que os quitó, ahora lo paga.',
+  'j-escasez': 'Lo que les quitó, ahora lo paga.',
   'j-sequia': 'Su cáliz, por fin, a favor de la conjura.',
   'j-intemperie': 'El hielo también sabe hacer de puerta.',
   'j-blindaje': 'Sus preguntas, vueltas contra la corte.',
@@ -88,8 +88,13 @@ const SPECIAL_FLAVOR: Record<string, string> = {
 };
 
 const BOSS_FLAVOR: Record<string, string> = {
+  // V40 1c · los 4 Reyes jefe
+  espadas: 'Corta primero y pregunta después, si queda a quién.',
+  bastos: 'No se mueve. Espera a que te canses de pegarle.',
+  oros: 'Todo lo cobra, hasta la suerte que te dio.',
+  copas: 'Te sirve la copa y se bebe tu Vida.',
   doble: 'Nadie sabe cuál de sus dos caras dio la orden.',
-  escasez: 'Lleva la cuenta de cada carta que os falta.',
+  escasez: 'Lleva la cuenta de cada carta que les falta.',
   sequia: 'Brinda siempre a tu salud. Nunca bebe primero.',
   intemperie: 'Donde pisa, el Escudo se cubre de escarcha.',
   blindaje: 'Pregunta despacio. Nadie responde dos veces.',
@@ -98,32 +103,33 @@ const BOSS_FLAVOR: Record<string, string> = {
   ferretero: 'Vende, gruñe y cobra. En ese orden.',
 };
 
+// V40: la corte española, 10 Sota, 11 Caballo y 12 Rey
 const COURT: Record<number, Record<Suit, string>> = {
+  10: {
+    S: 'Vigila de día, vigila de noche y no soltó la espada desde que entró.',
+    D: 'Cuenta las monedas del tesoro dos veces al día. Siempre le sobra una.',
+    H: 'Sirve el vino del Rey. Nunca le tiembla la copa.',
+    C: 'Cuida el monte y conoce cada palo por su nombre.',
+  },
   11: {
-    S: 'Vigila de día, vigila de noche y no ha soltado la lanza desde que entró.',
-    D: 'Cuenta las joyas del tesoro dos veces al día. Siempre le sale una más.',
-    H: 'Sirve el vino del Rey. Nunca le tiembla la jarra.',
-    C: 'Guarda los jardines y conoce cada seto por su nombre.',
+    S: 'Llega al galope y pregunta después. Nunca al revés.',
+    D: 'Cobra los peajes del camino real, moneda por moneda.',
+    H: 'Lleva las copas de la corte sin derramar una gota.',
+    C: 'Su garrote es una rama del roble más viejo del patio.',
   },
   12: {
-    S: 'Firma con un punzón. Sus decretos no se rompen: se oxidan.',
-    D: 'Se mira en mil gemas a la vez y ninguna la engaña.',
-    H: 'Cada carta de amor del castillo pasa antes por sus manos.',
-    C: 'Plantó un brote en el patio. Hoy da sombra a toda la guardia.',
-  },
-  13: {
     S: 'Su corona es una espada doblada a martillazos.',
-    D: 'Reina desde lo alto de un prisma. Abajo, todo son reflejos.',
-    H: 'Dicen que tiene el corazón en un cofre. Nadie ha visto la llave.',
+    D: 'Manda desde una pila de oros. Abajo, todo es reflejo.',
+    H: 'Dicen que guarda su copa en un cofre. Nadie vio la llave.',
     C: 'Mandó tallar su trono en un solo roble.',
   },
 };
 
 const SUIT_FLAVOR: Record<Suit, string> = {
-  S: 'Picas: hierro oscuro, lanza y vigilia.',
-  D: 'Diamantes: oro bruñido, frío y cortante.',
-  H: 'Corazones: carmesí real, cáliz y promesa.',
-  C: 'Tréboles: verdín profundo, raíz y paciencia.',
+  S: 'Espadas: hierro oscuro, filo y vigilia.',
+  D: 'Oros: oro bruñido, frío y contante.',
+  H: 'Copas: carmesí real, cáliz y promesa.',
+  C: 'Bastos: verdín profundo, raíz y paciencia.',
 };
 const ACE_FLAVOR: Record<Suit, string> = {
   S: 'La primera lanza. Va con quien se lo pida.',
@@ -217,6 +223,10 @@ const SPECIAL_FLAVOR_EN: Record<string, string> = {
 };
 
 const BOSS_FLAVOR_EN: Record<string, string> = {
+  espadas: 'Cuts first and asks later, if anyone is left.',
+  bastos: 'He does not move. He waits for you to tire of hitting him.',
+  oros: 'He collects on everything, even the luck he gave you.',
+  copas: 'He pours you a cup and drinks your Health.',
   doble: 'Nobody knows which of the two faces gave the order.',
   escasez: 'Keeps count of every card you are missing.',
   sequia: 'Always toasts your health. Never drinks first.',
@@ -228,30 +238,30 @@ const BOSS_FLAVOR_EN: Record<string, string> = {
 };
 
 const COURT_EN: Record<number, Record<Suit, string>> = {
+  10: {
+    S: 'Watches by day, watches by night, and has not let go of the sword since coming in.',
+    D: 'Counts the treasure coins twice a day. Always finds one extra.',
+    H: 'Pours the King’s wine. The cup never shakes.',
+    C: 'Keeps the woods and knows every club by name.',
+  },
   11: {
-    S: 'Watches by day, watches by night, and has not let go of the spear since coming in.',
-    D: 'Counts the treasure jewels twice a day. Always finds one extra.',
-    H: 'Pours the King’s wine. The jug never shakes.',
-    C: 'Keeps the gardens and knows every hedge by name.',
+    S: 'Arrives at a gallop and asks later. Never the other way round.',
+    D: 'Collects the tolls of the royal road, coin by coin.',
+    H: 'Carries the court’s cups without spilling a drop.',
+    C: 'His cudgel is a branch from the oldest oak in the yard.',
   },
   12: {
-    S: 'Signs with an awl. Her decrees do not break: they rust.',
-    D: 'Sees herself in a thousand gems at once and none of them fools her.',
-    H: 'Every love letter in the castle passes through her hands first.',
-    C: 'Planted a sprout in the courtyard. Today it shades the whole guard.',
-  },
-  13: {
     S: 'His crown is a sword bent by hammer blows.',
-    D: 'Reigns from the top of a prism. Below, all is reflections.',
-    H: 'They say he keeps his heart in a chest. Nobody has seen the key.',
+    D: 'Rules from a pile of coins. Below, all is reflections.',
+    H: 'They say he keeps his cup in a chest. Nobody has seen the key.',
     C: 'Had his throne carved from a single oak.',
   },
 };
 
 const SUIT_FLAVOR_EN: Record<Suit, string> = {
-  S: 'Spades: dark iron, spear and vigil.',
-  D: 'Diamonds: burnished gold, cold and sharp.',
-  H: 'Hearts: royal crimson, chalice and promise.',
+  S: 'Swords: dark iron, edge and vigil.',
+  D: 'Coins: burnished gold, cold and hard.',
+  H: 'Cups: royal crimson, chalice and promise.',
   C: 'Clubs: deep verdigris, root and patience.',
 };
 const ACE_FLAVOR_EN: Record<Suit, string> = {
@@ -269,7 +279,7 @@ export const bossFlavor = (id: string) => (en() ? BOSS_FLAVOR_EN : BOSS_FLAVOR)[
 export function cardFlavor(c: Card): string {
   if (c.sp) return (en() ? SPECIAL_FLAVOR_EN : SPECIAL_FLAVOR)[c.sp] ?? '';
   if (c.suit === 'X') return en() ? 'Arms folded. Nobody strikes, nobody collects, nobody warns.' : 'Brazos cruzados. Nadie golpea, nadie cobra, nadie avisa.';
-  if (c.rank > 10) return (en() ? COURT_EN : COURT)[c.rank]?.[c.suit] ?? '';
+  if (c.rank >= 10) return (en() ? COURT_EN : COURT)[c.rank]?.[c.suit] ?? '';
   if (c.rank === 1) return (en() ? ACE_FLAVOR_EN : ACE_FLAVOR)[c.suit];
   return (en() ? SUIT_FLAVOR_EN : SUIT_FLAVOR)[c.suit];
 }

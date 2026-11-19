@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS, applyAction, createGame } from '../src/rules/engine';
 import { KEYWORDS, keywordsIn, markKeywords } from '../src/rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, TAGS } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, DECKS } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
 
@@ -33,8 +33,6 @@ describe('palabras clave', () => {
       ...TOOLS.map((t) => t.desc),
       ...SPECIALS.map((s) => s.desc),
       ...BOSSES.map((b) => b.desc),
-      ...CONTRACTS.map((c) => `${c.desc} ${c.reward}`),
-      ...TAGS.map((t) => t.desc),
       ...DECKS.map((d) => d.desc),
       ...ASCENSIONS.map((a) => a.desc),
       ...SEALS.map((s) => SEAL[s].desc),

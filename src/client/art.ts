@@ -3,6 +3,8 @@
 // La sala del trono de una corte de naipes, vista por los conjurados.
 import type { Suit } from '../rules/engine';
 import { pipPath } from './card';
+import { arteDe } from './arte-rey';
+import { esReyPx, reySvg } from './pixel/reyes';
 
 const SUITS: Suit[] = ['S', 'D', 'H', 'C'];
 const crow = (x: number, y: number, s = 1) => `<path class="cut" transform="translate(${x} ${y}) scale(${s})" d="M-12,2 q6,-9 12,0 q6,-9 12,0"/>`;
@@ -182,7 +184,7 @@ export function rubble(s: Suit, cls = ''): string {
 
 /**
  * Tu escondite de conjurado: el Escudo a la izquierda, tu estandarte de conjura en medio y la Vida
- * a la derecha. Se rasga a medida que pierdes Vida (data-level 0-3).
+ * a la derecha. Se rasga a medida que perdés Vida (data-level 0-3).
  */
 export function bunkerArt(): string {
   return `<svg class="art lino bunker-art" viewBox="0 0 260 66" data-level="0" aria-hidden="true"><g filter="url(#rough)">
@@ -213,6 +215,7 @@ export const strip = (s: Suit) => `<svg class="strip" width="100%" height="12" a
 
 export type MonarchMood = 'calma' | 'vencido';
 export const MONARCH_IDS = ['doble', 'escasez', 'sequia', 'intemperie', 'blindaje', 'furia', 'inestable'] as const;
+export { ARTE_REY, arteDe } from './arte-rey';
 
 /** Ojos: almendra de tinta en calma, aspa en la derrota. */
 const eyes = (pts: [number, number][], down: boolean) =>
@@ -327,7 +330,10 @@ const BUSTS: Record<string, Bust> = {
 };
 
 /** El busto de un monarca (`id` de BOSSES) en calma o vencido. Clases: .monarca, .m-<id>, .calma / .vencido. */
-export function monarchSvg(id: string, mood: MonarchMood = 'calma', cls = ''): string {
+export function monarchSvg(rid: string, mood: MonarchMood = 'calma', cls = ''): string {
+  // V40 · fase 2: los 4 Reyes jefe tienen su busto pixel-art
+  if (esReyPx(rid)) return reySvg(rid, mood, cls);
+  const id = arteDe(rid);
   const b = BUSTS[id];
   if (!b) return '';
   const down = mood === 'vencido';

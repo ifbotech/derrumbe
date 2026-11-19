@@ -31,7 +31,7 @@ function todas(state: GameState): Jugada[] {
   recorre(0, []);
   const out: Jugada[] = [];
   for (const s of subs) {
-    if (!classify(s)) continue;
+    if (!classify(s, state.config)) continue;
     const orden = arrange(s);
     // V35 · solo se golpea al enemigo activo
     const t = activo(state)?.suit;
@@ -89,7 +89,7 @@ function mesas(n: number): GameState[] {
 describe('Mejor jugada', () => {
   it('la regla del Reglamento (regla.mejor), ≤ 100 caracteres en los dos idiomas', () => {
     expect(DICCIONARIOS.es['regla.mejor']).toBe(REGLA_MEJOR);
-    expect(REGLA_MEJOR).toBe('Mejor jugada: si puedes dar un Golpe exacto, lo elige. Si no, elige tu Golpe más alto. Tú confirmas.');
+    expect(REGLA_MEJOR).toBe('Mejor jugada: si podés dar un Golpe exacto, lo elige. Si no, elige tu Golpe más alto. Vos confirmás.');
     for (const lang of ['es', 'en'] as const) expect(DICCIONARIOS[lang]['regla.mejor'].length, lang).toBeLessThanOrEqual(100);
     expect(DICCIONARIOS.en['regla.mejor']).toContain('Exact Hit');
   });
@@ -129,7 +129,8 @@ describe('Mejor jugada', () => {
     tiempos.sort((a, b) => a - b);
     const p95 = tiempos[Math.floor(tiempos.length * 0.95)];
     console.log(`mejorJugada: P50 ${tiempos[250].toFixed(2)} ms · P95 ${p95.toFixed(2)} ms · máx ${tiempos.at(-1)!.toFixed(2)} ms · ${conExacto} mesas con exacto · ${nulas} sin jugada`);
-    expect(conExacto).toBeGreaterThan(100);
+    // V40 (1b): con la Escoba (mano de 6) hay algo menos de exactos al alcance que con la baraja de la conjura
+    expect(conExacto).toBeGreaterThan(80);
     expect(p95).toBeLessThanOrEqual(30);
   }, 120_000);
 

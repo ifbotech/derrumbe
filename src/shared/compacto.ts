@@ -3,7 +3,7 @@
 //
 //   · español: 1K · 1,2K · 45K · 1,8M · 1,2MM · 3B (billón) — inglés: 1K · 1.2K · 45K · 1.8M · 1.2B · 3T
 //   · una decimal solo por debajo de 10 de su unidad (1,2K pero 45K), y sin «,0» (1K, no 1,0K)
-//   · se TRUNCA, nunca se redondea: no enseña más de lo que tienes (1.999 → 1,9K)
+//   · se TRUNCA, nunca se redondea: no enseña más de lo que tenés (1.999 → 1,9K)
 //   · como mucho 5 caracteres, más el signo si es negativo (−1,2K)
 //   · por debajo de 1.000, el entero tal cual (también truncado: 12,7 → 12)
 // El número entero va aparte, en el `aria-label` del sitio que lo pinta: esto es solo la vista.

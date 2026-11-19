@@ -1,4 +1,4 @@
-// V7 · Mesa brava y lectura rápida: la voz de los siete monarcas, su maldición a la vista, los Secretos
+// V7 · Mesa brava y lectura rápida: la voz de los monarcas (V40 1c: los 4 Reyes), su maldición a la vista, los Secretos
 // de la cripta en dos segundos y el factor de palo que pinta el sello de las cartas (fricción F1).
 import { describe, expect, it } from 'vitest';
 import { CardSuit, Config, DEFAULT_CONFIG, SUITS, Suit, multiplier } from '../src/rules/engine';
@@ -13,10 +13,10 @@ const llano = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCa
 describe('mesa brava: la voz de los monarcas', () => {
   const barks = BOSSES.flatMap((b) => [b.barks.entrada, b.barks.contraataque, b.barks.caida]);
 
-  it('los siete monarcas, con tres líneas cada uno: 21 distintas', () => {
-    expect(BOSSES.map((b) => b.id)).toEqual(['doble', 'escasez', 'sequia', 'intemperie', 'blindaje', 'furia', 'inestable']);
-    expect(barks).toHaveLength(21);
-    expect(new Set(barks).size).toBe(21);
+  it('los 4 Reyes, con tres líneas cada uno: 12 distintas', () => {
+    expect(BOSSES.map((b) => b.id)).toEqual(['espadas', 'bastos', 'oros', 'copas']);
+    expect(barks).toHaveLength(12);
+    expect(new Set(barks).size).toBe(12);
   });
 
   it('cada bark cabe en 70 caracteres, sin cifras y sin palabras de reglas', () => {
@@ -42,13 +42,10 @@ describe('la maldición a la vista', () => {
     const marks = BOSSES.map((b) => b.curse.mark);
     expect(new Set(marks).size).toBe(BOSSES.length);
     expect(Object.fromEntries(BOSSES.map((b) => [b.id, b.curse.mark]))).toEqual({
-      doble: 'contraataque',
-      escasez: 'mano',
-      sequia: 'corazones',
-      intemperie: 'escudo',
-      blindaje: 'guardias',
-      furia: 'ataque',
-      inestable: 'asedio',
+      espadas: 'escudo',
+      bastos: 'guardias',
+      oros: 'contraataque',
+      copas: 'asedio',
     });
     for (const b of BOSSES) {
       expect(b.curse.badge.length, b.id).toBeLessThanOrEqual(28);
@@ -59,17 +56,16 @@ describe('la maldición a la vista', () => {
   it('las placas con número dicen el mismo número que la regla', () => {
     // lo comprueba aplicando la maldición: la placa no puede contar una cuenta distinta
     const cfg = (id: string): Config => {
-      const c = structuredClone(DEFAULT_CONFIG);
+      const c: Config = { ...structuredClone(DEFAULT_CONFIG), jefe: { suit: 'S', vida: 1, furia: 1 } };
       BOSS[id].apply(c);
       return c;
     };
-    expect(cfg('doble').sirenCount).toBe(Number(BOSS.doble.curse.badge.match(/\d+/)![0]));
-    expect(DEFAULT_CONFIG.handSize[1] - cfg('escasez').handSize[1]).toBe(Number(BOSS.escasez.curse.badge.match(/\d+/)![0]));
-    expect(cfg('intemperie').wallCap).toBe(Number(BOSS.intemperie.curse.badge.match(/\d+/)![0]));
-    expect(cfg('blindaje').noFx).toBe('sobrecarga');
-    expect(BOSS.blindaje.curse.badge).toBe('Sin Aturdido');
-    expect(cfg('furia').floorThreat[11] - DEFAULT_CONFIG.floorThreat[11]).toBe(Number(BOSS.furia.curse.badge.match(/\d+/)![0]));
-    expect(cfg('inestable').furiaInicial).toBe(Number(BOSS.inestable.curse.badge.match(/\d+/)![0]));
+    const num = (id: string) => Number(BOSS[id].curse.badge.match(/\d+/g)!.pop());
+    expect(cfg('espadas').jefe?.perfora).toBe(num('espadas'));
+    expect(cfg('oros').jefe?.dado).toBe(num('oros'));
+    expect(cfg('copas').jefe?.cura).toBe(num('copas'));
+    expect(cfg('bastos').jefe?.sinFx).toBe(true);
+    expect(BOSS.bastos.curse.badge).toBe('Ni Expuesto ni Aturdido');
   });
 
   it('bossIdentity da quién es, su maldición, su voz y su placa, sin compartir los datos', () => {
@@ -121,21 +117,9 @@ describe('F1 · el factor de palo que lleva el sello de cada carta', () => {
     expect(pairs.filter(([c, t]) => multiplier(c, t) > 1)).toHaveLength(0);
   });
 
-  it('con la Gota de veneno (acido) nadie es Inmune: ×1 contra el propio trono', () => {
-    const cfg = withTool('acido');
-    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(1);
-  });
-
-  it('con la Máscara de traidor (contrapeso) el propio palo hace el doble contra su trono', () => {
-    const cfg = withTool('contrapeso');
-    for (const [c, t] of pairs) expect(multiplier(c, t, cfg), `${c}→${t}`).toBe(c === t ? 2 : 1);
-  });
-
   it('un comodín (o una carta especial, palo X) no lleva factor: 0 contra cualquier trono', () => {
     for (const t of SUITS) {
       expect(multiplier('X' as CardSuit, t, DEFAULT_CONFIG)).toBe(0);
-      expect(multiplier('X', t, withTool('acido'))).toBe(0);
-      expect(multiplier('X', t, withTool('contrapeso'))).toBe(0);
     }
   });
 });

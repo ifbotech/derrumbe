@@ -6,7 +6,9 @@
 //     e identificadores),
 //   · README.md, REGLAS.md e index.html.
 // Falla con archivo y texto. Los identificadores internos (`id`, claves `derrumbe:*` del guardado,
-// la ruta `/derrumbe/` de GitHub Pages, la semilla de la diaria) no se leen y no cuentan.
+// la ruta `/derrumbe/` de GitHub Pages) no se leen y no cuentan.
+// V40: además, la baraja es la española: ni los palos franceses (en español ni en inglés) ni sus signos ♠♥♦♣, ni
+// la Taberna (hoy La Pulpería) ni el Árbol (hoy el Altar).
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -16,7 +18,7 @@ import * as keywords from '../src/rules/keywords';
 import * as run from '../src/rules/run';
 import * as specials from '../src/rules/specials';
 import * as tools from '../src/rules/tools';
-import * as tutorial from '../src/rules/tutorial';
+import * as bufon from '../src/rules/bufon';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 
@@ -57,22 +59,83 @@ const PROHIBIDAS: [string, RegExp][] = [
   ['regicid', /\bregicid/],
   // desde la 6.1: el título viejo y el nombre viejo de la tienda
   ['Corona rota (título viejo)', /\bcorona rota\b/],
-  ['Mercado clandestino (hoy La Taberna)', /\bmercado clandestino\b/],
+  ['Mercado clandestino (hoy La Pulpería)', /\bmercado clandestino\b/],
+  // V40: la baraja española y los nombres nuevos
+  ['Picas (hoy Espadas)', /\bpicas\b/],
+  ['Corazones (hoy Copas)', /\bcorazones\b/],
+  ['Diamantes (hoy Oros)', /\bdiamantes\b/],
+  ['Tréboles (hoy Bastos)', /\btrebol(?:es)?\b/],
+  ['Spades (hoy Swords)', /\bspades\b/],
+  ['Hearts (hoy Cups)', /\bhearts\b/],
+  ['Diamonds (hoy Coins)', /\bdiamonds\b/],
+  ['signo de palo francés', /[♠♥♦♣♤♡♢♧]/],
+  ['Taberna (hoy La Pulpería)', /\btabernas?\b/],
+  ['Tavern (hoy General Store)', /\btaverns?\b/],
+  ['Árbol (hoy el Altar)', /\barbol\b/],
+  ['Conspiracy Tree (hoy the Altar)', /\bconspiracy tree\b/],
+  // V40 (1b): las seis barajas de inicio pasaron a ser los 5 Mazos
+  ['Baraja de la conjura (hoy la Escoba)', /\bbaraja de la conjura\b/],
+  ['Baraja negra (hoy el Truco)', /\bbaraja negra\b/],
+  ['Baraja del prestamista (hoy el Chinchón)', /\bbaraja del prestamista\b/],
+  ['Baraja de ases (hoy El Mentiroso)', /\bbaraja de ases\b/],
+  ['Baraja corta (hoy Chancho Va)', /\bbaraja corta\b/],
+  ['Baraja del caos', /\bbaraja del caos\b/],
+  ['las barajas de inicio en inglés (hoy los Decks)', /\b(?:conspiracy|black|moneylender'?s|chaos|short) deck\b|\bdeck of aces\b/],
+  // V40 (1c): los siete monarcas sueltos y los cinco rasgos de build se fueron; los sustituyen los 4 Reyes y sus Bendiciones
+  ['los siete monarcas (hoy los 4 Reyes)', /\b(?:rey de dos caras|usurero|dama del caliz|reina helada|inquisidor|verdugo|relojero)\b/],
+  ['los siete monarcas en inglés (hoy the 4 Kings)', /\b(?:two-faced king|usurer|chalice lady|frost queen|inquisitor|butcher|clockmaker)\b/],
+  ['los rasgos de build (hoy las Bendiciones)', /\b(?:rasgos? de build|dado del tahur|bastion|horda)\b/],
+  ['los rasgos de build en inglés (hoy the Blessings)', /\b(?:build traits?|gambler'?s die|executioner|bastion|horde)\b/],
+  // V40 (1d): las 52 Reliquias pasaron a ser los 22 Amuletos (y las 25 especiales, las 8 Trampas del Bufón)
+  ['Reliquia (hoy Amuleto)', /\breliquias?\b/],
+  ['Relic (hoy Amulet)', /\brelics?\b/],
+  ['relicario (hoy la faja)', /\brelicario|\breliquary\b/],
+  // V40 (fase 4): los monarcas sueltos y el Tirano del Salón del Trono pasaron a ser los Reyes jefe; no hay Reina en la
+  // baraja española; el Don de la Conjura es el Don del Bufón. Los identificadores internos (`monarca.<id>`, `tirano`,
+  // `.monarch`) no se leen y no cuentan.
+  ['monarca (hoy Rey jefe)', /\bmonarcas?\b/],
+  ['monarch (hoy boss King)', /\bmonarchs?\b/],
+  ['Rey Tirano / Reina Tirana (hoy el último Rey jefe)', /\btiran[oa]s?\b/],
+  ['Tyrant King / Queen (hoy the last boss King)', /\btyrants?\b/],
+  ['Reina (la baraja española no tiene Reina)', /\breinas?\b/],
+  ['Queen (the Spanish deck has no Queen)', /\bqueens?\b/],
+  ['Don de la Conjura (hoy el Don del Bufón)', /\bdon de la conjura\b/],
+  ['Conspiracy’s Gift (hoy the Jester’s Gift)', /\bconspiracy.?s gift\b/],
 ];
+
+/**
+ * V40 (fase 4): voseo rioplatense en todo lo que se lee en español. Va aparte porque se mira con las tildes puestas
+ * (sin ellas, «llevás» sería «llevas»): solo cuenta la forma de tú.
+ */
+const TUTEO: [string, RegExp] = ['tuteo (hoy voseo: podés, tenés, elegís, empezás…)', /(?<!\p{L})(?:puedes|tienes|eliges|empiezas|quieres|juegas|llevas|consigues|pierdes)(?!\p{L})/u];
 
 /**
  * Excepciones justificadas: [archivo (sufijo de ruta), trozo exacto del texto]. Cada una dice por qué.
  * Mantener corta: si algo de aquí lo lee un jugador, no es una excepción, es una errata.
  */
 const EXCEPCIONES: [string, string, string][] = [
-  // (vacía por ahora)
+  // V40: las causas que guardaron las crónicas de la V8 llevan el signo ♣; esta plantilla solo se lee para reconocerlas y
+  // traducirlas (lo que se enseña en inglés ya dice «Clubs card»)
+  ['src/client/causa.ts', 'Un ♣ más o un Golpe exacto', 'legado: así lo guardaron las actas de la V8'],
+  // V40 1d: las claves de diccionario de los Amuletos conservan su prefijo (`reliquia.<id>.nombre`); son claves, no texto
+  ['src/rules/textos.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/shared/i18n/en.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/shared/i18n/es.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/client/fx.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  ['src/client/lengua.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  // V40 fase 4: lo mismo con las claves de los Reyes jefe (`monarca.<id>.nombre`, `.desc`, `.bark.*`)
+  ['src/shared/i18n/en.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
+  ['src/shared/i18n/es.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
+  ['src/client/lengua.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
+  ['src/client/voces.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
 ];
 
 const llano = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 function prohibidasEn(texto: string): string[] {
   const t = llano(texto);
-  return PROHIBIDAS.filter(([, re]) => re.test(t)).map(([w]) => w);
+  const tuteo = TUTEO[1].test(texto.toLowerCase()) ? [TUTEO[0]] : [];
+  return [...PROHIBIDAS.filter(([, re]) => re.test(t)).map(([w]) => w), ...tuteo];
 }
 
 const excepcion = (archivo: string, texto: string) => EXCEPCIONES.some(([f, trozo]) => archivo.replace(/\\/g, '/').endsWith(f) && texto.includes(trozo));
@@ -245,14 +308,23 @@ describe('vocabulario del juego: nada de jerga vieja en lo que se lee', () => {
   it('el detector reconoce las palabras prohibidas y deja en paz las nuevas', () => {
     expect(prohibidasEn('El búnker aguanta')).toEqual(['búnker']);
     expect(prohibidasEn('Cada golpe limpio suma')).toEqual(['golpe limpio']);
-    expect(prohibidasEn('La Torre de PICAS')).toEqual(['torre']);
-    expect(prohibidasEn('Contraataque de PICAS: Ataque 14 contra Escudo 3 → entran 11')).toEqual([]);
-    expect(prohibidasEn('Mazo agotado: pierdes 5 de Vida; el Escudo no lo frena')).toEqual([]);
+    expect(prohibidasEn('La Torre de ESPADAS')).toEqual(['torre']);
+    expect(prohibidasEn('Contraataque de ESPADAS: Ataque 14 contra Escudo 3 → entran 11')).toEqual([]);
+    // V40: los palos franceses y sus signos, fuera; el corazón suelto (Corazón de piedra) no es un palo
+    expect(prohibidasEn('Contraataque de PICAS')).toEqual(['Picas (hoy Espadas)']);
+    expect(prohibidasEn('+3 de Daño por cada ♥')).toEqual(['signo de palo francés']);
+    expect(prohibidasEn('Corazón de piedra')).toEqual([]);
+    expect(prohibidasEn('Mazo agotado: perdés 5 de Vida; el Escudo no lo frena')).toEqual([]);
     // palabra entera: «obrar», «pisotón» o «torreón» no son el piso ni la torre de antes
     expect(prohibidasEn('Maniobra, pisotón y refuerzas')).toEqual([]);
     expect(prohibidasEn('CORONA ROTA · La conjura')).toEqual(['Corona rota (título viejo)']);
-    expect(prohibidasEn('Todo en el Mercado clandestino')).toEqual(['Mercado clandestino (hoy La Taberna)']);
-    expect(prohibidasEn('Las Coronas de la Orden; en la Taberna, el Tratante')).toEqual([]);
+    expect(prohibidasEn('Todo en el Mercado clandestino')).toEqual(['Mercado clandestino (hoy La Pulpería)']);
+    expect(prohibidasEn('Las Coronas de la Orden; en la Pulpería, el Tratante')).toEqual([]);
+    expect(prohibidasEn('en la Taberna, el Tratante')).toEqual(['Taberna (hoy La Pulpería)']);
+    // V40 fase 4: el Rey jefe y el voseo; «Reinado» no es una Reina
+    expect(prohibidasEn('Con monarca: el Rey Tirano')).toEqual(['monarca (hoy Rey jefe)', 'Rey Tirano / Reina Tirana (hoy el último Rey jefe)']);
+    expect(prohibidasEn('Reinado 4: con Rey jefe, si podés')).toEqual([]);
+    expect(prohibidasEn('Si puedes, empiezas otra')).toEqual(['tuteo (hoy voseo: podés, tenés, elegís, empezás…)']);
     expect(literales("const a = 'hola mundo'; // 'comentario con torre'\nconst b = `x ${'dentro de plantilla'} y`; const r = /'no'/g;")).toEqual(['hola mundo', 'dentro de plantilla', 'x  ·  y']);
   });
 
@@ -264,7 +336,7 @@ describe('vocabulario del juego: nada de jerga vieja en lo que se lee', () => {
       ['src/rules/specials.ts', specials],
       ['src/rules/run.ts', run],
       ['src/rules/achievements.ts', achievements],
-      ['src/rules/tutorial.ts', tutorial],
+      ['src/rules/bufon.ts', bufon],
     ];
     const malas = modulos.flatMap(([f, m]) => informe(f, cadenas(m, [])));
     expect(malas).toEqual([]);
@@ -274,7 +346,7 @@ describe('vocabulario del juego: nada de jerga vieja en lo que se lee', () => {
     const textos = [
       ...run.BOSSES.flatMap((b) => [b.barks.entrada, b.barks.contraataque, b.barks.caida, b.curse.badge]),
       ...run.EVENTS.flatMap((e) => e.options.flatMap((o) => [o.read.gain, o.read.cost])),
-      ...tutorial.TUTORIAL_STEPS.flatMap((p) => [p.line, p.title]),
+      ...bufon.FRASES_BUFON.map((f) => f.texto),
     ].filter(Boolean);
     expect(textos.length).toBeGreaterThan(40);
     expect(informe('src/rules/run.ts', textos)).toEqual([]);

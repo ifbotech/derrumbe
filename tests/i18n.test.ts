@@ -21,7 +21,7 @@ import { KEYWORDS, keywordsInFor, markKeywordsFor } from '../src/rules/keywords'
 import * as R from '../src/rules/run';
 import { chooseAction } from '../src/rules/bot';
 import { SPECIALS } from '../src/rules/specials';
-import { TOOLS } from '../src/rules/tools';
+import { TOOL, TOOLS } from '../src/rules/tools';
 import { autopsyFor, cobroFor, errorFor, omenFor, pasoFor } from '../src/rules/textos';
 import { autopsy, omen } from '../src/rules/autopsy';
 import { playCampaign } from '../scripts/lab';
@@ -72,7 +72,7 @@ describe('la constitución también en inglés', () => {
 
   it(`descripciones ≤ ${MAX_DESC} caracteres en español y en inglés, ya rellenas, y frases con punto`, () => {
     const descs = claves.filter((k) => DESCS.test(k));
-    expect(descs.length).toBeGreaterThanOrEqual(140);
+    expect(descs.length).toBeGreaterThanOrEqual(100); // V40 1d: 22 Amuletos y 8 Trampas (antes, 52 y 25)
     for (const lang of LANGS) {
       const d = DICCIONARIOS[lang];
       const largas = descs.filter((k) => d[k].length > MAX_DESC).map((k) => `${lang} ${k} (${d[k].length}): ${d[k]}`);
@@ -128,19 +128,20 @@ describe('glosario obligatorio (SPECS/V10.md, 1.3)', () => {
     expect(en['palabra.fractura.nombre']).toBe('Exposed');
     expect(en['palabra.desarmada.nombre']).toBe('Stunned');
     expect(en['palabra.apuntalado.nombre']).toBeUndefined();
-    expect(['S', 'D', 'H', 'C'].map((s) => en[`palo.${s}.nombre`])).toEqual(['Spades', 'Diamonds', 'Hearts', 'Clubs']);
+    // V40: la baraja española (Espadas, Oros, Copas, Bastos)
+    expect(['S', 'D', 'H', 'C'].map((s) => en[`palo.${s}.nombre`])).toEqual(['Swords', 'Coins', 'Cups', 'Clubs']);
+    expect(['S', 'D', 'H', 'C'].map((s) => es[`palo.${s}.nombre`])).toEqual(['Espadas', 'Oros', 'Copas', 'Bastos']);
   });
 
   it('Health, Shield, Counterattack, Damage × Mult y Up the Sleeve donde toca', () => {
     expect(en['reliquia.casco.desc']).toContain('Health');
     expect(en['reliquia.encofrado.desc']).toContain('Shield');
-    expect(en['monarca.doble.desc']).toContain('Counterattack');
+    expect(en['monarca.oros.desc']).toContain('Counterattack');
     expect(en['palabra.resonancia.desc']).toContain('Damage × Mult');
-    expect(en['guia.cuenta.linea']).toContain('Damage × Mult');
-    expect(en['reliquia.pasarela.desc']).toContain('Up the Sleeve');
+    expect(en['bufon.cuenta']).toContain('Damage × Mult');
     // V37 · la partida guiada ya no tiene paso de La Manga: el nombre se comprueba en la ayuda de su hueco
     expect(en['ui.mesa.manga.hueco.tip']).toContain('<b>Up the Sleeve</b>');
-    expect(en['monarca.inestable.desc']).toContain('Exact Hit');
+    expect(en['bendicion.filo.carga']).toContain('Exact Hit');
   });
 
   it('las palabras clave se reconocen y se marcan en inglés con el mismo data-kw', () => {
@@ -194,8 +195,8 @@ describe('idioma de la sesión', () => {
     expect(numFor('en', 12)).toBe('12');
     expect(fillFor('es', '×{n} de Multi.', { n: 1.5 })).toBe(fill('×{n} de Multi.', { n: 1.5 }));
     expect(fillFor('en', '×{n} Mult.', { n: 1.5 })).toBe('×1.5 Mult.');
-    expect(tFor('en', 'error.caben', { n: 6 })).toBe('Only 6 relics fit.');
-    expect(tFor('es', 'error.caben', { n: 6 })).toBe('Solo caben 6 reliquias.');
+    expect(tFor('en', 'error.caben', { n: 6 })).toBe('Only 6 amulets fit.');
+    expect(tFor('es', 'error.caben', { n: 6 })).toBe('Solo caben 6 Amuletos.');
     expect(tFor('en', 'no.existe')).toBe('no.existe');
   });
 
@@ -286,14 +287,14 @@ describe('textos al vuelo en inglés', () => {
   it('las líneas del cobro', () => {
     let lineas = 0;
     for (let seed = 1; seed <= 6; seed++) {
-      const { run } = playCampaign({ seed, deck: 'obra', ascension: 0, full: true, giveTool: 'hucha' });
+      const { run } = playCampaign({ seed, deck: 'escoba', ascension: 0, full: true, giveTool: 'hucha' });
       for (const [label] of run.pay) {
         expect(restosEs(cobroFor('en', label)), label).toEqual([]);
         lineas++;
       }
     }
     expect(cobroFor('en', tFor('es', 'cuenta.vida'))).toBe(tFor('en', 'cuenta.vida'));
-    expect(cobroFor('en', 'Bolsa de monedas')).toBe('Coin Purse');
+    expect(cobroFor('en', TOOL.hucha.name)).toBe('Piggy Bank');
     expect(lineas).toBeGreaterThan(0);
     expect(BALANCE.cobro.vidaCada).toBeGreaterThan(0);
   }, 60_000);

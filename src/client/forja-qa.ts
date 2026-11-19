@@ -1,25 +1,31 @@
-// Banco de la forja de grabado. Solo se carga con ?qa: enseña cada pieza del arte suelta (palo, trama,
-// carta, herramienta, jefe) sobre papel crema y al tamaño que se pida, para que scripts/svg-forge.ts
-// la fotografíe a 24 y a 300 px y mida su tinta. No guarda nada ni toca la partida.
+// Banco de la forja pixel-art (antes, de grabado). Solo se carga con ?qa: enseña cada pieza del arte suelta (pinta,
+// trama, naipe, Amuleto, Trampa, Bendición, Rey, el Bufón) sobre papel marfil y al tamaño que se pida, para que
+// scripts/svg-forge.ts la fotografíe a 24 y a 300 px y mida su tinta. No guarda nada ni toca la partida.
 import { BOSSES } from '../rules/run';
 import { SUITS, type Card, type Suit } from '../rules/engine';
 import { TOOLS } from '../rules/tools';
 import { SPECIAL } from '../rules/specials';
-import { ALL_CARDS, cardEl, ensureDefs, portraitEl, suitSvg } from './card';
+import { ALL_CARDS, backEl, cardEl, ensureDefs, portraitEl, suitSvg } from './card';
 import { glyphSvg } from './glyphs';
-import { MONARCH_IDS, monarchSvg, type MonarchMood } from './art';
+import { monarchSvg, type MonarchMood } from './art';
+import { BENDICIONES } from '../rules/reyes';
+import { bendicionSvg } from './pixel/iconos';
+import { EXPRESIONES, bufonSvg, type Expresion } from './pixel/bufon';
+import { REYES_PX } from './pixel/reyes';
+import { pintaNaipeSvg } from './pixel/pintas';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import type { Seal } from '../rules/engine';
 
 export interface Pieza {
-  grupo: 'palos' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'servicios' | 'jefes' | 'monarcas' | 'piezas';
+  grupo: 'palos' | 'pintas' | 'tramas' | 'cartas' | 'herramientas' | 'especiales' | 'bendiciones' | 'servicios' | 'jefes' | 'monarcas' | 'bufon' | 'piezas';
   id: string;
 }
 
-/** El papel sobre el que se mide todo: el de las cartas. */
-const PAPEL = '#efe6d5';
-/** Cartas de muestra: un as, un número bajo, uno alto y las tres figuras de cada palo, y el comodín. */
-const RANGOS = [1, 7, 10, 11, 12, 13];
+/** El papel sobre el que se mide todo: el del naipe (V40 · fase 2b: marfil luminoso). */
+const PAPEL = '#f4efe2';
+/** V40 · todos los naipes: del 1 al 9 y la Corte (10 Sota, 11 Caballo, 12 Rey) de cada palo, el Comodín y los dorsos. */
+const RANGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const DORSOS = ['escoba', 'truco', 'chinchon', 'mentiroso', 'chancho'];
 const carta = (id: string): Card | undefined => ALL_CARDS.find((c) => c.id === id);
 
 /** Iconos de servicio, de la Orden, del mapa, de los logros y de los juramentos (no son reliquias: solo avisos). */
@@ -47,7 +53,7 @@ function pieza(id: string): HTMLElement {
     box.appendChild(c);
   } else {
     // el naipe se mide en el documento y se retira: sus piezas se colocan aquí a mano, abiertas por el tajo
-    const card = cardEl(carta('S10') ?? ALL_CARDS[0], { tilt: false });
+    const card = cardEl(carta('S9') ?? ALL_CARDS[0], { tilt: false });
     card.style.setProperty('--w', '200px');
     document.body.appendChild(card);
     const parts = slashPieces(card);
@@ -73,16 +79,23 @@ const retal = (s: Suit) => `<svg viewBox="0 0 96 96" width="96" height="96" aria
 function lista(): Pieza[] {
   return [
     ...SUITS.map((s): Pieza => ({ grupo: 'palos', id: s })),
+    // V40 · fase 2b: las pintas del naipe, la chica (4 a 9) y la grande (2 y 3)
+    ...SUITS.flatMap((s) => (['chica', 'grande'] as const).map((t): Pieza => ({ grupo: 'pintas', id: `${s}-${t}` }))),
     ...SUITS.map((s): Pieza => ({ grupo: 'tramas', id: s })),
     ...SUITS.flatMap((s) => RANGOS.map((r): Pieza => ({ grupo: 'cartas', id: `${s}${r}` }))),
     { grupo: 'cartas', id: 'X1' },
+    ...DORSOS.map((d): Pieza => ({ grupo: 'cartas', id: `dorso-${d}` })),
     ...TOOLS.map((t): Pieza => ({ grupo: 'herramientas', id: t.id })),
     // especiales del sorteo con emblema propio (las legendarias llevan retrato)
     ...Object.keys(SPECIAL).filter((id) => !id.startsWith('j-') && id !== 'ferretero').map((id): Pieza => ({ grupo: 'especiales', id })),
+    // V40 · las 26 Bendiciones de los Reyes (medallón con la corona de su Rey)
+    ...BENDICIONES.map((b): Pieza => ({ grupo: 'bendiciones', id: b.id })),
     ...SERVICIOS.map((id): Pieza => ({ grupo: 'servicios', id })),
     ...BOSSES.map((b): Pieza => ({ grupo: 'jefes', id: b.id })),
-    // V7: los bustos de la mesa, en calma y vencidos (doble-calma, doble-vencido…)
-    ...MONARCH_IDS.flatMap((id) => (['calma', 'vencido'] as const).map((m): Pieza => ({ grupo: 'monarcas', id: `${id}-${m}` }))),
+    // V40: los bustos de los 4 Reyes jefe, en calma y vencidos (espadas-calma, espadas-vencido…)
+    ...REYES_PX.flatMap((id) => (['calma', 'vencido'] as const).map((m): Pieza => ({ grupo: 'monarcas', id: `${id}-${m}` }))),
+    // V40: el Bufón en sus cinco expresiones (cuadro fijo)
+    ...EXPRESIONES.map((e): Pieza => ({ grupo: 'bufon', id: e })),
     // V8: las piezas de la caída (esquirlas de corona por palo, naipe cortado, sellos de lacre y moneda)
     ...SUITS.map((s): Pieza => ({ grupo: 'piezas', id: `esquirlas-${s}` })),
     { grupo: 'piezas', id: 'tajo' },
@@ -101,6 +114,12 @@ function nodo(p: Pieza): HTMLElement {
     const svg = box.firstElementChild as SVGElement;
     svg.style.width = '220px';
     svg.style.height = '230px';
+  } else if (p.grupo === 'pintas') {
+    const [s, t] = p.id.split('-') as [Suit, 'chica' | 'grande'];
+    box.innerHTML = pintaNaipeSvg(s, t);
+    const svg = box.firstElementChild as SVGElement;
+    svg.style.height = '230px';
+    svg.style.width = 'auto';
   } else if (p.grupo === 'tramas') box.innerHTML = retal(p.id as Suit);
   else if (p.grupo === 'monarcas') {
     const [id, mood] = p.id.split('-') as [string, MonarchMood];
@@ -108,6 +127,21 @@ function nodo(p: Pieza): HTMLElement {
     const svg = box.firstElementChild as SVGElement;
     svg.style.width = '200px';
     svg.style.height = '200px';
+  } else if (p.grupo === 'bufon') {
+    box.innerHTML = bufonSvg(p.id as Expresion, 'forja-quieto');
+    const svg = box.firstElementChild as SVGElement;
+    svg.style.width = '200px';
+    svg.style.height = '200px';
+  } else if (p.grupo === 'bendiciones') {
+    box.innerHTML = bendicionSvg(p.id);
+    const svg = box.firstElementChild as SVGElement;
+    svg.style.width = '200px';
+    svg.style.height = '200px';
+  } else if (p.grupo === 'cartas' && p.id.startsWith('dorso-')) {
+    const el = backEl(p.id.slice(6));
+    el.style.setProperty('--w', '250px');
+    el.style.width = '250px';
+    box.appendChild(el);
   } else if (p.grupo === 'herramientas' || p.grupo === 'especiales' || p.grupo === 'servicios') {
     box.innerHTML = glyphSvg(p.id);
     const svg = box.firstElementChild as SVGElement;

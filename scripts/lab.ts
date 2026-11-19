@@ -4,10 +4,10 @@
 import './balance-patch';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { applyAction, currentPlayer } from '../src/rules/engine';
+import { DEFAULT_CONFIG, FIGURAS, applyAction, currentPlayer, esJefe } from '../src/rules/engine';
 import type { Seal, Treatment } from '../src/rules/engine';
 import { RunPolicy, chooseAction, chooseRunAction } from '../src/rules/bot';
-import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, trackEvents, BOSS, CLAUSURA, DECKS, FURIA, STAGES, TIMBRE } from '../src/rules/run';
+import { LAST_STAGE, Run, RunOpts, UPGRADES, addSpecial, finishBattle, newRun, runAction, stagesCleared, startStage, tomaBendicion, trackEvents, BOSS, CLAUSURA, DECKS, FURIA, STAGES, TIMBRE } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
 
 export interface Spec {
@@ -20,13 +20,17 @@ export interface Spec {
   /** Herramienta o carta especial de regalo al empezar (para medir cuánto vale por sí sola). */
   giveTool?: string;
   giveSpecial?: string;
+  /** V40 1c · Bendición de regalo al empezar (con 0 cargas), para medir cuánto vale por sí sola. */
+  giveBendicion?: string;
   /** Campaña de control: las mismas semillas que las de regalo, pero sin regalo. */
-  control?: 'tool' | 'special';
+  control?: 'tool' | 'special' | 'bendicion';
   /** Con gremio lleno, solo estas mejoras (y «legendarias»). */
   only?: string[];
   policy?: RunPolicy;
   /** Rangos del Árbol tal cual (manda sobre `full`/`only`): para medir nodos sueltos, p. ej. los incrementales. */
   up?: Record<string, number>;
+  /** V40 1d · el grupo de nodos del Altar que falta (modo «altar» del laboratorio): solo etiqueta la campaña. */
+  sinAltar?: string;
 }
 
 /** Lo que se apunta de cada campaña. */
@@ -40,6 +44,8 @@ export interface Log {
   /** Jefes a los que se llegó a enfrentar. */
   faced: string[];
   stageTurns: number[];
+  /** V40 · jugadas de cada asalto: los turnos más las que no gastan el turno (Pasar, Comodín de El Mentiroso, andamio). */
+  stageJugadas: number[];
   /** Cinturón y mazo al entrar a la obra 5 (null si no se llegó). */
   mid: { tools: string[]; specials: string[]; seals: Seal[]; treats: Treatment[] } | null;
   toolsEnd: string[];
@@ -51,6 +57,23 @@ export interface Log {
   gold: number;
   /** Golpes del jugador en la campaña (eventos `impact`). */
   golpes: number;
+  /** V40 1c · las Bendiciones al acabar, con sus cargas. */
+  bendEnd: { id: string; n: number }[];
+  /** V40 1e · nodos del Mapa recorridos por tipo, jugadas en Guardias Bravos, si cayó en uno y oro gastado en La Pulpería. */
+  nodos: Record<string, number>;
+  bravoJugadas: number;
+  diedBravo: boolean;
+  gastoPulperia: number;
+  /**
+   * V40 1f · cada Contraataque que llegó: [asalto, quién (0 guardia, 1 Rey jefe, 2 Guardia Bravo), Ataque, Furia,
+   * Vida quitada, Vida máxima, Vida antes del golpe, turno del Rey jefe (1, 2, 3…; 0 si no es él)].
+   */
+  sirenas: number[][];
+  /** V40 1f · Contraataques por asalto y por cómo acabaron («3:strike», «3:clean», «3:sobrecarga», «3:huelga»). */
+  motivos: Record<string, number>;
+  /** V40 1f · Vida curada en combate (eventos `repair`) y Contraataque parado por el Escudo, en toda la campaña. */
+  curado: number;
+  parado: number;
 }
 
 // Mandos de ajuste (variables de entorno): valen para el laboratorio entero, también en sus procesos hijos.
@@ -80,12 +103,17 @@ if (env.VENTISCA) {
   const [cap, up] = env.VENTISCA.split(':').map(Number);
   BOSS.intemperie.apply = (c) => {
     c.wallCap = Math.min(c.wallCap, cap);
-    if (up) [11, 12, 13].forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + up)));
+    if (up) FIGURAS.forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + up)));
   };
 }
 if (env.CLAUSURA) {
   const [stages, threat] = env.CLAUSURA.split(':');
   Object.assign(CLAUSURA, { stages: stages.split(',').map(Number), threat: Number(threat ?? 1) });
+}
+// V40 1f · RELOJ=4:1  la Furia de la campaña sube 1 desde ese turno de cada asalto, y luego cada tantos turnos
+if (env.RELOJ) {
+  const [start, every] = env.RELOJ.split(':').map(Number);
+  Object.assign(DEFAULT_CONFIG, { fatigueStart: start, fatigueEvery: every || 1 });
 }
 if (env.FUR) {
   const [mazo, rey, jefeVida] = env.FUR.split(',').map(Number);
@@ -96,7 +124,7 @@ const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec
 
 /** Archivos cuyas reglas decide el laboratorio: si cambian, el informe publicado deja de valer. */
 // V12: también el Árbol, lo que cae y los huesos (mueven el oro y los nodos de combate de la campaña).
-const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos'];
+const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos', 'mazos', 'reyes', 'piezas', 'mapa'];
 /** Y los números con que juegan: balance-config.json (sin espacios: solo cuentan sus valores). */
 const RULE_DATA = 'balance-config.json';
 /**
@@ -133,13 +161,16 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   const run = newRun(optsFor(spec), spec.seed);
   if (spec.giveTool) run.tools.push({ id: spec.giveTool, n: 0 });
   if (spec.giveSpecial) addSpecial(run, spec.giveSpecial);
-  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0 };
+  // V40 1d · con su efecto inmediato (oro, Vida máxima…), como cuando se toma en la oferta
+  if (spec.giveBendicion) tomaBendicion(run, spec.giveBendicion);
+  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0, bendEnd: [], nodos: {}, bravoJugadas: 0, diedBravo: false, gastoPulperia: 0, sirenas: [], motivos: {}, curado: 0, parado: 0 };
   let shop: unknown = null;
-  let rewardFor = 0;
+  let botin: unknown = null;
   for (let guard = 0; guard < 6000; guard++) {
     if (run.phase === 'won' || run.phase === 'lost') break;
     if (run.phase === 'battle') {
-      if (run.boss) log.faced.push(run.boss);
+      const bravo = run.combate === 'bravo';
+      if (run.boss && !bravo) log.faced.push(run.boss);
       // a mitad de campaña (el asalto 3 de 5): lo que se lleva para medir «con» y «sin» cada pieza
       if (!log.mid && run.stage >= Math.ceil((LAST_STAGE + 1) / 2))
         log.mid = {
@@ -149,19 +180,39 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
           treats: [...new Set(run.deck.filter((c) => c.tr).map((c) => c.tr!))],
         };
       let state = startStage(run, players);
-      for (let turns = 0; state.phase === 'playing'; turns++) {
-        if (turns > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
+      let jugadas = 0;
+      for (; state.phase === 'playing'; jugadas++) {
+        if (jugadas > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
+        const antes = state.integrity;
+        // V40 fase 4 · el turno del Rey jefe al frente (1, 2, 3…) sale de su Furia acumulada (`furiaRey` sube
+        // `jefe.furia` al cerrar cada turno que sigue al frente), no de los Contraataques que llegaron: los que paran
+        // el Golpe exacto o el Aturdido también son turnos suyos
+        const furiaJefe = state.config.jefe?.furia ?? 0;
+        const turnoRey = furiaJefe > 0 ? Math.round((state.furiaRey ?? 0) / furiaJefe) + 1 : 0;
         const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
         trackEvents(run, res.events);
-        for (const ev of res.events) if (ev.e === 'impact') log.golpes++;
+        let vida = antes;
+        for (const ev of res.events) {
+          if (ev.e === 'impact') log.golpes++;
+          if (ev.e === 'repair') log.curado += ev.amount;
+          if (ev.e === 'siren') log.parado += ev.blocked;
+          if (ev.e === 'siren' && !bravo) bump(log.motivos, `${run.stage}:${ev.reason}`);
+          if (ev.e !== 'siren' || ev.reason !== 'strike' || !ev.tower) continue;
+          const jefe = !bravo && esJefe(res.state.config, res.state.towers[ev.tower]);
+          log.sirenas.push([run.stage, bravo ? 2 : jefe ? 1 : 0, ev.threat, ev.asedio ?? 0, ev.taken, res.state.config.maxIntegrity, vida, jefe ? turnoRey : 0]);
+          vida = ev.integrity;
+        }
         state = res.state;
       }
-      const boss = run.boss;
+      if (bravo) log.bravoJugadas += jugadas;
+      else log.stageJugadas.push(jugadas);
+      const boss = bravo ? null : run.boss;
       const stage = run.stage;
       finishBattle(run, state);
       if ((run.phase as Run['phase']) === 'lost') {
         log.diedAt = stage;
         log.diedBoss = boss;
+        log.diedBravo = bravo;
       }
       continue;
     }
@@ -170,30 +221,51 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
       shop = run.shop;
       for (const o of run.shop) bump(log.offered, o.kind === 'tool' ? `tool:${o.id}` : o.kind === 'forja' ? `mark:${o.seal ?? o.tr}` : `shop:${o.kind}`);
     }
-    if (run.phase === 'reward' && rewardFor !== run.stage) {
-      rewardFor = run.stage;
-      for (const id of run.loot) bump(log.offered, `tool:${id}`);
-      for (const o of run.draft) bump(log.offered, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+    // V40 1e · el Botín: lo que ofrece cada «Elegí una» y el Amuleto suelto del Guardia Bravo
+    if (run.phase === 'reward' && run.botin !== botin) {
+      botin = run.botin;
+      for (const r of run.botin) {
+        if (r.k === 'amuleto') bump(log.offered, `tool:${r.id}`);
+        else if (r.k === 'elegi' && r.tipo === 'amuleto') for (const id of r.opciones) bump(log.offered, `tool:${id}`);
+        else if (r.k === 'elegi' && r.tipo === 'trampa') for (const o of r.opciones) bump(log.offered, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+        else if (r.k === 'elegi' && r.tipo === 'bendicion') for (const o of r.opciones) bump(log.offered, `bend:${o.id}`);
+      }
     }
+    if (run.phase === 'bendicion') for (const o of run.oferta ?? []) bump(log.offered, `bend:${o.id}`);
     const action = chooseRunAction(run, spec.policy);
     if (!action) throw new Error(`el bot no sabe qué hacer en la fase ${run.phase}`);
+    if (action.t === 'bendicion') {
+      const o = run.oferta?.[action.i];
+      if (o) bump(log.taken, `bend:${o.id}`);
+    }
     if (action.t === 'buy') {
       const o = run.shop[action.i];
       if (o) bump(log.taken, o.kind === 'tool' ? `tool:${o.id}` : o.kind === 'forja' ? `mark:${o.seal ?? o.tr}` : `shop:${o.kind}`);
-    } else if (action.t === 'loot' && action.id) bump(log.taken, `tool:${action.id}`);
-    else if (action.t === 'draft' && action.i !== null) {
-      const o = run.draft[action.i];
-      if (o) bump(log.taken, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+    } else if (action.t === 'cobrar') {
+      const r = run.botin[action.i];
+      if (r?.k === 'amuleto') bump(log.taken, `tool:${r.id}`);
+    } else if (action.t === 'elegir' && action.j !== null && run.elegi !== null) {
+      const r = run.botin[run.elegi];
+      if (r?.k === 'elegi' && r.tipo === 'amuleto') bump(log.taken, `tool:${r.opciones[action.j]}`);
+      else if (r?.k === 'elegi' && r.tipo === 'trampa') {
+        const o = r.opciones[action.j];
+        if (o) bump(log.taken, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
+      } else if (r?.k === 'elegi' && r.tipo === 'bendicion') bump(log.taken, `bend:${r.opciones[action.j]?.id}`);
     }
+    const oroAntes = run.gold;
+    const enPulperia = run.phase === 'shop';
     const err = runAction(run, action);
+    if (enPulperia && run.gold < oroAntes) log.gastoPulperia += oroAntes - run.gold;
     if (err) throw new Error(`decisión rechazada (${JSON.stringify(action)}): ${err}`);
   }
   log.won = run.conquered;
   log.cleared = Math.min(LAST_STAGE, stagesCleared(run));
   log.stageTurns = run.stats.stageTurns;
   log.toolsEnd = run.tools.map((t) => t.id);
+  log.bendEnd = run.bendiciones.map((b) => ({ ...b }));
   log.toolUse = run.stats.toolUse;
   log.maxHit = run.stats.maxHit;
   log.gold = run.stats.gold;
+  log.nodos = { ...run.stats.nodos };
   return { run, log };
 }

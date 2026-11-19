@@ -16,7 +16,7 @@ const golpe = (cartas: number, extra: GameEvent[] = []): GameEvent[] => [
   ...extra,
   { e: 'impact', tower: 'S', fuerza: 5, res: 1, total: 5 },
 ];
-const guardia = (clean: boolean): GameEvent => ({ e: 'floorDown', tower: 'S', rank: 11, clean, towerDown: false, damage: 0 });
+const guardia = (clean: boolean): GameEvent => ({ e: 'floorDown', tower: 'S', rank: 10, clean, towerDown: false, damage: 0 });
 
 describe('la tabla del apartado 1.3, con números', () => {
   it('Árbol vacío: golpe 1 esquirla; guardia 1 moneda y 2; exacto +5 y 1 gota; oro tal cual; monarca 25', () => {
@@ -65,7 +65,8 @@ describe('lo que cae es lo que se abona', () => {
     for (const seed of [11, 23, 37, 41, 59]) {
       const run = newRun({}, seed);
       runAction(run, { t: 'begin' });
-      runAction(run, { t: 'route', i: 0 });
+      runAction(run, { t: 'bendicion', i: 0 }); // V40 1c · la oferta de los Reyes
+      runAction(run, { t: 'ir', nodo: 0 });
       let state = startStage(run, [{ id: 'p', name: 'p' }]);
       const total = { oro: 0, esquirlas: 0, gotas: 0 };
       const gold0 = run.gold;
@@ -90,7 +91,7 @@ describe('lo que cae es lo que se abona', () => {
   it('al perder también se cobran las esquirlas: cobro de la conjura = Coronas × 100 + esquirlas', () => {
     let vistas = 0;
     for (let i = 0; i < 40 && vistas < 5; i++) {
-      const { run } = playCampaign({ seed: (i + 1) * 7919, deck: 'obra', ascension: 7, full: false });
+      const { run } = playCampaign({ seed: (i + 1) * 7919, deck: 'escoba', ascension: 7, full: false });
       if (run.phase !== 'lost') continue;
       vistas++;
       expect(run.esquirlas).toBeGreaterThan(0);
@@ -126,7 +127,7 @@ describe('gotas de lacre', () => {
 
   it('el bot usa las gotas (sellos gratis en campañas enteras)', () => {
     let gratis = 0;
-    for (let i = 0; i < 40; i++) gratis += playCampaign({ seed: (i + 1) * 104729, deck: 'obra', ascension: 0, full: false }).run.stats.sellosGratis;
+    for (let i = 0; i < 40; i++) gratis += playCampaign({ seed: (i + 1) * 104729, deck: 'escoba', ascension: 0, full: false }).run.stats.sellosGratis;
     expect(gratis).toBeGreaterThan(0);
   }, 120_000);
 });

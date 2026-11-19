@@ -1,25 +1,34 @@
 import { guardian } from './guardian';
 guardian('forja', 300); // tope duro: ver scripts/guardian.ts
-// Forja de grabado: renderiza cada pieza del arte suelta (palos, tramas de palo, cartas, reliquias
-// —grupo «herramientas»—, especiales y monarcas —grupo «jefes»—) a 24 y a 300 px sobre papel crema, mide su tinta y comprueba que los cuatro palos se
+// Forja pixel-art (V40; antes, de grabado): renderiza cada pieza del arte suelta (pintas, tramas de palo, naipes y
+// dorsos, Amuletos —grupo «herramientas»—, Trampas del Bufón —«especiales»—, Bendiciones, Reyes jefe —«jefes» y
+// «monarcas»— y el Bufón) a 24 y a 300 px sobre papel marfil, mide su tinta y comprueba que los cuatro palos se
 // distinguen sin color. Abre el juego construido con ?qa=1 y usa el banco de src/client/forja-qa.ts.
 //
 //   npm run forja                        todas las piezas
-//   npm run forja -- palos tramas        solo esos grupos (palos, tramas, cartas, herramientas, especiales, servicios, jefes)
+//   npm run forja -- palos tramas        solo esos grupos (palos, tramas, cartas, herramientas, especiales,
+//                                        bendiciones, servicios, jefes, monarcas, bufon, piezas)
 //   NO_BUILD=1 npm run forja             sin reconstruir · QA_DIR=dist/qa-forja para construcción propia
 //
 // Deja en artifacts/svg-forge/: <grupo>/<id>@24.png y @300.png, informe.json, hoja.png (hoja de
 // contacto) y hoja-gris.png (la misma en escala de grises: la prueba de daltonismo a ojo).
 //
-// Falla (código 1) si: dos tramas de palo no se distinguen, un glifo de palo no llega a 7:1 sobre el
-// papel, o una pieza queda en blanco o hecha una mancha. Las reliquias (grupo «herramientas») son más
-// estrictas: fallan con la tinta a 300 px fuera de 22–58 % o con la silueta a 24 px por debajo del 55 %.
+// Falla (código 1) si: dos tramas de palo no se distinguen, una pinta no llega a 7:1 sobre el papel, la tinta de un
+// índice de palo (--suit-*, de serie y en Alto contraste) no llega a 7:1, o una pieza queda en blanco o hecha una
+// mancha. Los Amuletos (grupo «herramientas») y las Bendiciones son más estrictos: fallan con la tinta a 300 px fuera
+// de 22–58 % o con la silueta a 24 px por debajo del 55 %.
 // Lo demás son avisos para mirar la hoja.
+//
+// V40 · fase 2b: antes de abrir el navegador pasa el linter del pixel-art (scripts/pixel-lint.ts) por todo el catálogo
+// de src/client/pixel/: huérfanos, jaggies, almohada, bandas, contorno negro pesado, paleta, rejilla entera y la
+// silueta de las pintas sin contorno (≥ 60 % del borde a 3:1 sobre el papel del naipe, WCAG 1.4.11). Un fallo del
+// linter es un fallo de la forja. El índice y el glifo del palo siguen a 7:1.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
 import { NAME_SHIM, ensureBuilt, serveWeb } from './web';
+import { SILUETA, imprimir, lintCatalogo } from './pixel-lint';
 
 /** FORJA_OUT=artifacts/svg-forge-loquesea: dos celdas forjando a la vez no se pisan las hojas. */
 const OUT = resolve(process.env.FORJA_OUT?.trim() || 'artifacts/svg-forge');
@@ -29,7 +38,7 @@ const SIZES = [24, 300] as const;
  * ancho): a 24 px no se le mide la silueta, solo la tinta.
  */
 const SOLO_GRANDE = ['piezas/tajo'];
-const GROUPS = ['palos', 'tramas', 'cartas', 'herramientas', 'especiales', 'servicios', 'jefes', 'monarcas', 'piezas'];
+const GROUPS = ['palos', 'pintas', 'tramas', 'cartas', 'herramientas', 'especiales', 'bendiciones', 'servicios', 'jefes', 'monarcas', 'bufon', 'piezas'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const groups = wanted.length ? GROUPS.filter((g) => wanted.includes(g)) : GROUPS;
 
@@ -50,9 +59,9 @@ const LIMITS = {
   driftWarn: 0.18,
   /** A 24 px, el mayor cuerpo conexo de tinta ocupa al menos esta parte del alto o del ancho de la pieza. */
   bodyWarn: 0.55,
-  /** Contraste WCAG del glifo de un palo contra el papel. V11: 4,5:1 con los cuatro colores (apartado 1.13: el
-   *  emblema y el índice son grandes y macizos, con contorno de tinta; el 7:1 lo pide Alto contraste). */
-  suitContrast: 4.5,
+  /** Contraste WCAG de la pinta de un palo (y de la tinta de su índice) contra el papel. V40 · fase 2: 7:1 de serie
+   *  (constitución, apartado 7), con la paleta pixel-art. */
+  suitContrast: 7,
   /** Dos tramas son distintas si difieren en estructura (dirección de sus trazos) o en esta fracción de píxeles. */
   patternShape: 0.12,
   patternPixels: 0.25,
@@ -262,6 +271,10 @@ interface Forja {
 }
 
 async function main(): Promise<number> {
+  // el linter del pixel-art, sobre los mapas (sin navegador)
+  const lint = lintCatalogo();
+  const lintMalas = imprimir(lint);
+  console.log(lintMalas ? `✗ linter: ${lintMalas} piezas con fallo` : `Linter del pixel-art limpio (${lint.length} piezas; silueta de las pintas a ${SILUETA.contraste}:1 en ≥ ${SILUETA.fraccion * 100} % del borde).`);
   ensureBuilt();
   const site = await serveWeb();
   const browser = await chromium.launch();
@@ -308,8 +321,8 @@ async function main(): Promise<number> {
       row.shape = shape(big.m.mask, big.img.w, big.img.h).map((n) => round(n));
       masks.set(p.id, { mask: big.m.mask, w: big.img.w, h: big.img.h });
     } else {
-      const icon = p.grupo === 'palos' || p.grupo === 'herramientas' || p.grupo === 'especiales' || p.grupo === 'servicios';
-      const relic = p.grupo === 'herramientas';
+      const icon = p.grupo === 'palos' || p.grupo === 'herramientas' || p.grupo === 'especiales' || p.grupo === 'bendiciones' || p.grupo === 'servicios';
+      const relic = p.grupo === 'herramientas' || p.grupo === 'bendiciones';
       if (row.ink300 < (icon ? LIMITS.inkFail[0] : 0.01)) row.fails.push(`casi sin tinta a 300 px (${(row.ink300 * 100).toFixed(1)} %)`);
       else if (icon && row.ink300 > LIMITS.inkFail[1]) row.fails.push(`mancha a 300 px (${(row.ink300 * 100).toFixed(1)} % de tinta)`);
       else if (relic && (row.ink300 < LIMITS.relicInk[0] || row.ink300 > LIMITS.relicInk[1])) row.fails.push(`densidad de tinta ${(row.ink300 * 100).toFixed(1)} % (una reliquia va entre ${Math.round(LIMITS.relicInk[0] * 100)} y ${Math.round(LIMITS.relicInk[1] * 100)} %)`);
@@ -346,7 +359,7 @@ async function main(): Promise<number> {
   }
   for (const t of tramas) if (t.ink300 < 0.08 || t.ink300 > 0.92) t.fails.push(`la trama de ${t.id} es casi lisa (${(t.ink300 * 100).toFixed(0)} % de tinta): no distingue el palo`);
 
-  // V7 · los siete bustos en calma, dos a dos a 24 px: ninguno se confunde con otro
+  // V7 · los bustos en calma (V40: los 4 Reyes jefe), dos a dos a 24 px: ninguno se confunde con otro
   const bustPairs: { a: string; b: string; diferencia: number; ok: boolean }[] = [];
   const ids = [...busts.keys()];
   for (let i = 0; i < ids.length; i++) {
@@ -362,6 +375,29 @@ async function main(): Promise<number> {
     }
   }
 
+  // V40 · la tinta de los índices de palo (--suit-*), de serie y en Alto contraste: ≥ 7:1 sobre su papel
+  const indices: { paleta: string; palo: string; color: string; contraste: number; ok: boolean }[] = [];
+  if (groups.includes('palos')) {
+    for (const hc of [false, true]) {
+      const tintas = await page.evaluate((alto) => {
+        const root = document.documentElement;
+        const antes = root.classList.contains('contraste');
+        root.classList.toggle('contraste', alto);
+        const cs = getComputedStyle(root);
+        const out = { papel: (cs.getPropertyValue('--naipe-papel') || cs.getPropertyValue('--card-paper')).trim(), S: '', C: '', D: '', H: '' } as Record<string, string>;
+        for (const s of ['S', 'C', 'D', 'H']) out[s] = cs.getPropertyValue(`--suit-${s}`).trim();
+        root.classList.toggle('contraste', antes);
+        return out;
+      }, hc);
+      const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
+      for (const palo of ['S', 'C', 'D', 'H']) {
+        const c = round(contrast(lum(...rgb(tintas[palo])), lum(...rgb(tintas.papel))), 2);
+        indices.push({ paleta: hc ? 'contraste' : 'serie', palo, color: tintas[palo], contraste: c, ok: c >= LIMITS.suitContrast });
+        if (c < LIMITS.suitContrast) rows.find((r) => r.grupo === 'palos' && r.id === palo)?.fails.push(`índice ${tintas[palo]} a ${c}:1 sobre ${tintas.papel} (${hc ? 'Alto contraste' : 'de serie'}; mínimo ${LIMITS.suitContrast}:1)`);
+      }
+    }
+  }
+
   // hojas de contacto, en color y en gris
   for (const gris of [false, true]) {
     await page.evaluate(([g, gs]) => (window as unknown as { __forja: Forja }).__forja.hoja(g as boolean, gs as string[]), [gris, groups] as [boolean, string[]]);
@@ -373,7 +409,7 @@ async function main(): Promise<number> {
   const fails = rows.flatMap((r) => r.fails.map((f) => `${r.grupo}/${r.id}: ${f}`));
   const warns = rows.flatMap((r) => r.warns.map((f) => `${r.grupo}/${r.id}: ${f}`));
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, 'informe.json'), JSON.stringify({ generado: 'npm run forja', limites: LIMITS, papel: paperHex, piezas: rows, tramas: pairs, monarcas: bustPairs, fallos: fails, avisos: warns, errores: errors }, null, 1) + '\n');
+  writeFileSync(join(OUT, 'informe.json'), JSON.stringify({ generado: 'npm run forja', limites: LIMITS, papel: paperHex, piezas: rows, tramas: pairs, monarcas: bustPairs, indices, fallos: fails, avisos: warns, errores: errors }, null, 1) + '\n');
 
   const pct = (n: number) => `${(n * 100).toFixed(1).padStart(5)} %`;
   for (const g of groups) {
@@ -383,13 +419,15 @@ async function main(): Promise<number> {
     for (const r of list) console.log(`  ${r.fails.length ? '✗' : r.warns.length ? '!' : '✓'} ${r.id.padEnd(16)} ${pct(r.ink300)}   ${pct(r.ink24)}   ${pct(r.body24)}${r.contrast ? `   ${r.contrast}:1` : ''}`);
   }
   if (bustPairs.length) console.log(`\nMonarcas dos a dos a 24 px: menor diferencia ${Math.min(...bustPairs.map((p) => p.diferencia))} (mínimo ${LIMITS.monarchApart}) ${bustPairs.every((p) => p.ok) ? '✓' : '✗'}`);
+  if (indices.length) console.log(`\nÍndices de palo: ${indices.map((i) => `${i.paleta} ${i.palo} ${i.contraste}:1 ${i.ok ? '✓' : '✗'}`).join(' · ')}`);
   if (pairs.length) console.log(`\nTramas dos a dos: ${pairs.map((p) => `${p.a}–${p.b} forma ${p.forma} · píxeles ${(p.pixeles * 100).toFixed(0)} % ${p.ok ? '✓' : '✗'}`).join(' | ')}`);
   for (const w of warns) console.log(`! ${w}`);
   for (const f of fails) console.log(`✗ ${f}`);
   for (const e of [...new Set(errors)]) console.log(`✗ error de página: ${e}`);
   console.log(`\n${rows.length} piezas × ${SIZES.length} tamaños en ${OUT} (hoja.png y hoja-gris.png para mirarlas juntas)`);
-  console.log(fails.length || errors.length ? `${fails.length} fallos, ${warns.length} avisos` : `Forja limpia${warns.length ? ` (${warns.length} avisos para mirar)` : ''}.`);
-  return fails.length || errors.length ? 1 : 0;
+  if (lintMalas) console.log(`✗ linter del pixel-art: ${lintMalas} piezas con fallo (arriba, «lint …»)`);
+  console.log(fails.length || errors.length || lintMalas ? `${fails.length + lintMalas} fallos, ${warns.length} avisos` : `Forja limpia${warns.length ? ` (${warns.length} avisos para mirar)` : ''}.`);
+  return fails.length || errors.length || lintMalas ? 1 : 0;
   } finally {
     await Promise.race([browser.close(), new Promise((ok) => setTimeout(ok, 10_000).unref())]);
     site.close();

@@ -2,6 +2,7 @@
 // tools.ts, specials.ts y run.ts al rellenar sus descripciones en español; aquí se repiten, puras y sobre
 // los mismos números de `BALANCE`, para rellenar las plantillas inglesas sin tocar los archivos de la huella.
 // tests/i18n.test.ts comprueba que cada texto inglés lleva exactamente las cifras del español.
+import { CIFRAS_MAZO } from './mazos';
 import { BALANCE, relic } from './balance-config';
 
 /** Cifras de la descripción de una reliquia (`reliquias.<id>` más las derivadas de tools.ts). */
@@ -20,11 +21,12 @@ export function cifrasEspecial(id: string): Record<string, number> {
   return Object.fromEntries(Object.entries(fx).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
 }
 
-/** Cifras del decreto de un monarca, para su descripción y su placa (como `BOSS_NUMS` de run.ts). */
+/** Cifras del rasgo de combate de un Rey jefe, para su descripción y su placa (como `BOSS_NUMS` de run.ts). */
 export function cifrasMonarca(id: string): Record<string, number> {
-  const M = BALANCE.monarcas as unknown as Record<string, Record<string, number>>;
-  if (id === 'doble') return { ...M.doble, pct: Math.round((1 - BALANCE.monarcas.doble.ataque) * 100) };
-  return M[id] ?? {};
+  const M = BALANCE.reyes as unknown as Record<string, Record<string, number>>;
+  const c = M[id] ?? {};
+  // V40 1f · el dado del Rey de Oros va de +⌈caras/6⌉ a +caras (la cara 1 a 6, a escala: ver `threatOf`)
+  return c.dado ? { ...c, dadoMin: Math.ceil(c.dado / 6) } : c;
 }
 
 /** Cifras de los Reinados (como el relleno de `ASCENSIONS` en run.ts). */
@@ -37,17 +39,14 @@ export function cifrasReinado(): Record<string, number | string> {
     rey: R.reyColerico,
     heridas: R.heridasViejas,
     noche: R.guardiaNoche,
-    asaltos: BALANCE.clausura.stages.join(', '),
+    asaltos: BALANCE.clausura.stages.length > 1 ? `assaults ${BALANCE.clausura.stages.join(' and ')}` : `assault ${BALANCE.clausura.stages[0]}`,
     clausura: BALANCE.clausura.threat,
   };
 }
 
-/** Cifras de una baraja inicial (como `DECK_NUMS` de run.ts). */
+/** Cifras de la descripción de un Mazo (como en run.ts). */
 export function cifrasBaraja(id: string): Record<string, number> {
-  const B = BALANCE.barajas as unknown as Record<string, Record<string, number>>;
-  if (id === 'obra') return { sobre: BALANCE.inicio.sobre };
-  if (id === 'caos') return { ...B.caos, total: BALANCE.inicio.sobre + BALANCE.barajas.caos.especiales };
-  return B[id] ?? {};
+  return (CIFRAS_MAZO as Record<string, Record<string, number>>)[id] ?? {};
 }
 
 /** Una fracción como la lee el jugador: «¼», «½», «¾»; si no es una de esas, en tanto por ciento («30 %»). */

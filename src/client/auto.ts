@@ -181,10 +181,10 @@ function paso(): void {
   const enMesa = S.screen === 'table';
   // entre la mesa y la campaña (el último trono cayendo, la pantalla que entra) se espera
   if (enMesa !== (c.run.phase === 'battle') || S.screen === null) return programa(SONDEO);
-  const p = pasoAuto({ run: c.run, state: enMesa ? c.state : null, playerId: RUN_PLAYER, diaria: false, coop: false }, { saquear: settings.autoSaquear, taberna: settings.autoTaberna });
+  const p = pasoAuto({ run: c.run, state: enMesa ? c.state : null, playerId: RUN_PLAYER, coop: false }, { saquear: settings.autoSaquear, taberna: settings.autoTaberna });
   if (!p) return programa(SONDEO);
   if (p.t === 'pausa') {
-    if (p.motivo === 'fin' || p.motivo === 'diaria' || p.motivo === 'coop') {
+    if (p.motivo === 'fin' || p.motivo === 'coop') {
       apagaAuto();
       toast(t(avisoPausa(p.motivo)));
       return;
@@ -233,7 +233,7 @@ export function autoDiag(): Record<string, unknown> {
   const enMesa = S.screen === 'table';
   let p: unknown = null;
   try {
-    p = c ? pasoAuto({ run: c.run, state: enMesa ? c.state : null, playerId: RUN_PLAYER, diaria: false, coop: false }, { saquear: settings.autoSaquear, taberna: settings.autoTaberna }) : null;
+    p = c ? pasoAuto({ run: c.run, state: enMesa ? c.state : null, playerId: RUN_PLAYER, coop: false }, { saquear: settings.autoSaquear, taberna: settings.autoTaberna }) : null;
   } catch (e) {
     p = String(e);
   }

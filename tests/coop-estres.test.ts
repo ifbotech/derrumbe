@@ -7,7 +7,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { chooseAction, chooseRunAction } from '../src/rules/bot';
 import type { Action, GameState, PlayerView } from '../src/rules/engine';
-import type { Run } from '../src/rules/run';
+import { EVENT, type Run, type RunAction } from '../src/rules/run';
+import { alcanzables } from '../src/rules/mapa';
 import { stateHash, tableHash } from '../src/rules/state-hash';
 import { DEFAULT_NAME, RunningServer, startServer } from '../src/server/index';
 import { PROTOCOL_VERSION, type ClientMsg, type LobbyInfo, type ServerMsg } from '../src/shared/protocol';
@@ -247,10 +248,13 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
     const clients = await room(3, SEED + 50, 'campana', 0);
     const [host] = clients;
     await host.next((m) => m.t === 'lobby' && m.lobby.mode === 'campana', 'modo campaña');
-    host.send({ t: 'start', deck: 'obra' });
+    host.send({ t: 'start', deck: 'escoba' });
     const phase = (p: Run['phase']) => Promise.all(clients.map((c) => c.next((m) => m.t === 'run' && m.run.phase === p, `campaña en ${p}`)));
     await phase('pack');
     host.send({ t: 'run', action: { t: 'begin' } });
+    // V40 1c · la oferta de los Reyes: la decide el anfitrión
+    await phase('bendicion');
+    host.send({ t: 'run', action: { t: 'bendicion', i: 0 } });
     await phase('map');
     const signal = async (target: string) => {
       for (const c of clients) c.send({ t: 'ping', target });
@@ -259,15 +263,23 @@ describe('cooperativo a prueba de cortes (clientes ws contra startServer)', () =
     await signal('route:0');
     // el primer asalto: lo juegan los tres
     for (const c of clients) c.auto = true;
-    host.send({ t: 'run', action: { t: 'route', i: 0 } });
+    host.send({ t: 'run', action: { t: 'ir', nodo: 0 } });
     await Promise.all(clients.map((c) => c.ended()));
     sameTable(clients);
     await host.next((m) => m.t === 'run' && m.run.phase !== 'battle', 'el asalto se cobra');
-    // el anfitrión decide el Botín hasta llegar a La Taberna
-    for (let guard = 0; guard < 10 && host.run?.phase !== 'shop'; guard++) {
+    // el anfitrión decide el Botín y, en el Mapa, va hacia La Pulpería (sin pasar por un Guardia Bravo)
+    const hacia = (run: Run): RunAction | null => {
+      if (run.phase === 'fogon') return { t: 'next' };
+      if (run.phase === 'event' && run.event) return { t: 'event', i: EVENT[run.event].options.length - 1 };
+      if (run.phase !== 'map') return chooseRunAction(run);
+      const alc = alcanzables(run.mapa).map((id) => run.mapa.nodos[id]);
+      const n = alc.find((x) => x.tipo === 'pulperia') ?? alc.find((x) => x.tipo === 'fogon') ?? alc.find((x) => x.tipo === 'santuario') ?? alc[0];
+      return { t: 'ir', nodo: n.id };
+    };
+    for (let guard = 0; guard < 14 && host.run?.phase !== 'shop'; guard++) {
       const run = host.run!;
       expect(run.phase, 'la conjura cayó en el primer asalto: cambia SEED').not.toBe('lost');
-      const a = chooseRunAction(run);
+      const a = hacia(run);
       const seen = host.inbox.length;
       host.send({ t: 'run', action: a! });
       await host.next((m) => m.t === 'run', 'la campaña sigue', seen);

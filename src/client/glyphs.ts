@@ -4,6 +4,8 @@
 // irregular. Un solo objeto por emblema, sin texto, con silueta cerrada que se lea a 24 px; la forja
 // (npm run forja -- herramientas) exige a las reliquias entre 22 y 58 % de tinta y silueta entera a 24 px.
 // Las claves son los `id` de los datos y no cambian aunque nombren la versión vieja.
+import { amuletoSvg, trampaSvg } from './pixel/iconos';
+
 const INK = '#181614';
 const GOLD = '#c98a1e';
 const VERD = '#1d544b';
@@ -265,6 +267,12 @@ export const GLYPH: Record<string, string> = {
   comodin: `<path class="ink" d="M30,96 V66 C24,62 22,54 24,46 L26,30 C26,24 34,24 34,30 V24 C34,18 42,18 42,24 V20 C42,14 50,14 50,20 V24 C50,18 58,18 58,24 V34 C62,30 70,32 70,40 C70,52 66,60 62,66 V96 Z"/><path class="cut" d="M34,30 V44 M42,24 V44 M50,24 V44 M58,34 V48"/><path class="rd ol" d="M80,4 L83,12 L92,13 L85,19 L87,28 L80,23 L73,28 L75,19 L68,13 L77,12 Z"/>`,
 };
 
+/**
+ * El emblema de un id. V40 · fase 2: los Amuletos y las Trampas del Bufón tienen icono pixel-art (src/client/pixel/
+ * iconos.ts) y salen de ahí; el resto (servicios, mapa, logros) conserva su emblema hasta la fase 3.
+ */
 export function glyphSvg(id: string, cls = ''): string {
+  const px = amuletoSvg(id, `emblem ${cls}`) || trampaSvg(id, `emblem ${cls}`);
+  if (px) return px;
   return `<svg class="art lino emblem ${cls}" viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#rough)">${GLYPH[id] ?? GLYPH.comodin}</g></svg>`;
 }

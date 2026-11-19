@@ -1,8 +1,10 @@
-// Cartas especiales: no son de la baraja francesa. No tienen palo ni número: se suman a cualquier
-// golpe como apoyo (hasta dos por golpe) o se juegan solas, y hacen su efecto.
-// Se consiguen a la vista (selección tras cada asalto, Sobre lacrado de la Taberna) o a ciegas
-// (Sobre a ciegas). Las legendarias (el Tratante y los monarcas) solo entran en el sorteo tras su logro.
+// V40 1d · Las Trampas del Bufón (en el código, «cartas especiales»): 8 en lugar de las 25 de antes. No tienen palo
+// ni número: se suman a cualquier golpe como apoyo (hasta dos por golpe) o se juegan solas, y hacen su efecto, una
+// línea con su cifra. Se consiguen a la vista (selección tras cada asalto, Sobre lacrado de La Pulpería) o a ciegas
+// (Sobre a ciegas). Ya no hay legendarias: las 8 entran en el sorteo desde la primera campaña. Los `id` son los de
+// las especiales de antes con el mismo efecto (no se renombran).
 import { BALANCE, fill } from './balance-config';
+import type { MazoId } from './mazos';
 
 export interface Fx {
   /** Fuerza que suma al golpe. */
@@ -30,7 +32,7 @@ export interface Fx {
   /** Daño directo a cada una de las otras torres. */
   splash?: number;
   noSiren?: boolean;
-  /** Cartas extra que robas este turno. */
+  /** Cartas extra que robás este turno. */
   draw?: number;
   /** Deja Aturdido al trono golpeado. */
   disarm?: boolean;
@@ -43,44 +45,28 @@ export interface Special {
   name: string;
   desc: string;
   fx: Fx;
-  /** Legendaria: logro que la mete en el sorteo. */
+  /** Legendaria: logro que la mete en el sorteo (V40 1d: ninguna lo es). */
   locked?: string;
+  /** Los Mazos con los que encaja (★ Para Truco…; ver `sinergia` en piezas.ts). */
+  mazos?: MazoId[];
 }
 
-/** Una carta especial tal como se escribe aquí: su efecto (`fx`) sale de balance-config.json. */
+/** Una Trampa tal como se escribe aquí: su efecto (`fx`) sale de balance-config.json. */
 type SpecialDef = Omit<Special, 'fx'>;
 const DEFS: SpecialDef[] = [
-  { id: 'barreno', name: 'Ballesta', desc: 'El golpe Perfora y suma +{flat} de Daño.' },
-  { id: 'martillo', name: 'Martillo de guerra', desc: 'La carta de mayor valor del golpe cuenta 2 veces.' },
-  { id: 'saboteador', name: 'El Espía', desc: 'El trono que golpeas queda Aturdido.' },
-  { id: 'palanca', name: 'Garfio', desc: '+{flatPerCard} de Daño por cada carta del golpe.' },
-  { id: 'grua', name: 'Paloma mensajera', desc: 'Robas {draw} cartas extra este turno.' },
-  { id: 'mordaza', name: 'Tregua', desc: 'No hay Contraataque este turno.' },
-  { id: 'clavos', name: 'Lluvia de flechas', desc: '{splash} puntos a cada uno de los otros tronos.' },
-  { id: 'chatarrero', name: 'Carterista', desc: '+{gold} de oro.' },
-  { id: 'pico', name: 'Rescate', desc: 'Si el golpe abate a un guardia, +{goldOnKill} de oro.' },
-  { id: 'botica', name: 'Elixir', desc: '+{heal} de Vida.' },
-  { id: 'gemelo', name: 'Naipe trucado', desc: 'Todas las cartas del golpe valen lo que la de mayor valor.' },
-  { id: 'nitro', name: 'Pacto oscuro', desc: '×{strikeMult} de Multi, pero pierdes {hurt} de Vida.' },
-  { id: 'bola', name: 'Clarín', desc: '+{multi} de Multi.' },
-  { id: 'hormigonera', name: 'Puerta atrancada', desc: '+{wall} de Escudo.' },
-  { id: 'cemento', name: 'Cota de malla', desc: '+{wallPerCard} de Escudo por cada carta del golpe.' },
-  { id: 'embestida', name: 'Embestida', desc: '+{flat} de Daño, y +{wallForce} más por cada punto de Escudo en pie.' },
-  { id: 'sierra', name: 'Pasadizo', desc: 'Este golpe no respeta Inmune: tus cartas hacen su Daño contra cualquier trono.' },
-  // ── legendarias ──
-  { id: 'ferretero', name: 'El Tratante', desc: '+{gold} de oro y robas {draw} carta extra.', locked: 'ferretero' },
-  { id: 'j-doble', name: 'El Rey de Dos Caras', desc: 'No hay Contraataque y robas {draw} carta extra.', locked: 'j-doble' },
-  { id: 'j-escasez', name: 'El Usurero', desc: '+{gold} de oro.', locked: 'j-escasez' },
-  { id: 'j-sequia', name: 'La Dama del Cáliz', desc: '+{heal} de Vida.', locked: 'j-sequia' },
-  { id: 'j-intemperie', name: 'La Reina Helada', desc: '+{wall} de Escudo y no hay Contraataque.', locked: 'j-intemperie' },
-  { id: 'j-blindaje', name: 'El Inquisidor', desc: '×{strikeMult} de Multi.', locked: 'j-blindaje' },
-  { id: 'j-furia', name: 'El Verdugo', desc: '+{flat} de Daño y el golpe Perfora.', locked: 'j-furia' },
-  { id: 'j-inestable', name: 'El Relojero', desc: '{splash} puntos a cada uno de los otros tronos.', locked: 'j-inestable' },
+  { id: 'gemelo', name: 'Cuento del tío', desc: 'Cada carta del golpe vale lo que la de mayor número.' },
+  { id: 'mordaza', name: 'Zancadilla', desc: 'Este turno no hay Contraataque.' },
+  { id: 'nitro', name: 'Mano negra', desc: '×{strikeMult} de Multi, pero perdés {hurt} de Vida.' },
+  { id: 'sierra', name: 'Disfraz', desc: 'Este golpe no respeta Inmune: tus cartas hacen su Daño contra cualquiera.', mazos: ['mentiroso'] },
+  { id: 'grua', name: 'Pase mágico', desc: 'Robás {draw} cartas más este turno.', mazos: ['chancho'] },
+  { id: 'pico', name: 'Mordida', desc: 'Si el golpe abate a un guardia, +{goldOnKill} de oro.' },
+  { id: 'barreno', name: 'Puñal oculto', desc: 'El golpe Perfora y suma +{flat} de Daño.' },
+  { id: 'bola', name: '¡Retruco!', desc: '+{multi} de Multi.', mazos: ['truco'] },
 ];
-/** Las cartas especiales con su efecto de balance-config.json (`especiales.<id>`) y su texto ya con las cifras. */
+/** Las Trampas con su efecto de balance-config.json (`especiales.<id>`) y su texto ya con las cifras. */
 export const SPECIALS: Special[] = DEFS.map((s) => {
   const fx: Fx = BALANCE.especiales[s.id];
-  if (!fx) throw new Error(`balance-config.json no tiene la especial «${s.id}»`);
+  if (!fx) throw new Error(`balance-config.json no tiene la Trampa «${s.id}»`);
   const nums = Object.fromEntries(Object.entries(fx).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
   return { ...s, desc: fill(s.desc, nums), fx };
 });

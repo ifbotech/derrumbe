@@ -79,7 +79,8 @@ describe('tirada', () => {
   it('finishBattle tira al ganar, abona el Dado de oro con su línea y no toca el azar de la campaña', () => {
     const run = newRun({}, 77);
     runAction(run, { t: 'begin' });
-    runAction(run, { t: 'route', i: 0 });
+    runAction(run, { t: 'bendicion', i: 0 }); // V40 1c · la oferta de los Reyes
+    runAction(run, { t: 'ir', nodo: 0 });
     const state = startStage(run, [{ id: 'p', name: 'p' }]);
     run.caida = { oro: 5, esquirlas: 20, gotas: 0 };
     for (const t of Object.values(state.towers)) t.floors = [];
@@ -100,7 +101,7 @@ describe('tirada', () => {
 
   it('al perder no hay tirada; en campañas enteras, una por asalto ganado', () => {
     for (let i = 0; i < 20; i++) {
-      const { run, log } = playCampaign({ seed: (i + 1) * 7919, deck: 'obra', ascension: 0, full: false });
+      const { run, log } = playCampaign({ seed: (i + 1) * 7919, deck: 'escoba', ascension: 0, full: false });
       if (log.won) expect(run.ritual?.asalto).toBe(5);
       else if (run.phase === 'lost') expect(run.ritual).toBeNull();
     }

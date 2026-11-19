@@ -1,0 +1,376 @@
+/* V40 · fase 3a · Interfaz mínima de la campaña: el HUD único (también en la mesa), el Mapa de caminos, el Botín,
+   «Elegí una», La Pulpería en bandejas y el Fogón. Va detrás de pixel.css: manda sobre las reglas viejas de la cabecera
+   (.deck-head), la tira (.run-belt) y las opciones (.choice). Mínimo texto: iconos pixel-art grandes y cifras rotundas
+   en placa. */
+
+/* ───────────────────────── el HUD ───────────────────────── */
+.hud {
+  --hud-h: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--hud-h);
+  padding: 8px 16px 6px;
+  background: var(--pit);
+  border-bottom: 2px solid var(--table-4);
+  color: var(--card-paper);
+  position: relative;
+  z-index: 5;
+}
+.hud-izq { display: flex; align-items: center; gap: 8px; flex: none; }
+.hud-der { display: flex; align-items: center; gap: 8px; flex: none; margin-left: auto; }
+.hud-c {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 2px 10px 2px 6px;
+  background: var(--table-2);
+  border: 2px solid var(--table-4);
+  color: var(--card-paper);
+  font-family: var(--num);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.hud-c > b { font-size: 22px; color: var(--card-paper); }
+.hud-c > small { font-size: 16px; color: var(--paper-2); font-family: var(--num); }
+.hud-c .icono { width: 26px; height: auto; image-rendering: pixelated; flex: none; }
+.hud-vida.baja { border-color: var(--red); }
+.hud-vida.baja > b { color: #ffb2a4; }
+.hud-escudo.cero { opacity: 0.72; }
+.hud-c:focus-visible, .hud-bend:focus-visible, .hud .belt-slot:focus-visible { outline: 3px solid var(--laton, #d6a645); outline-offset: 2px; }
+/* la bolsa (oro; esquirlas y gotas solo cuando hay): la de siempre, con las ids que usa el jugo */
+.hud .chip.bolsa { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 2px 10px; background: var(--table-2); border: 2px solid var(--table-4); }
+.hud .bolsa-c { display: inline-flex; align-items: center; gap: 6px; }
+.hud .bolsa-c.cero { display: none; }
+.hud .bolsa-c b { font-family: var(--num); font-size: 22px; font-variant-numeric: tabular-nums; color: var(--hazard); }
+.hud .bolsa-svg { width: 26px; height: 26px; }
+/* el Mazo: su dorso chico y el contador */
+.hud-mazo { cursor: pointer; --bg: var(--table-2); --bd: var(--table-4); --bw: 2px; --sh: none; text-transform: none; letter-spacing: 0; }
+.hud-mazo:hover { border-color: var(--laton, #d6a645); }
+.hud-dorso { display: block; width: 24px; height: 34px; flex: none; }
+.hud-dorso > svg { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+/* la tira: Amuletos (sus huecos abiertos) y Bendiciones con sus cargas */
+.hud-tira { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding-block: 2px; }
+.hud-tira::-webkit-scrollbar { display: none; }
+.hud-tira-in { display: flex; align-items: center; gap: 8px; }
+.hud-tira-in > .belt-label { display: none; }
+.hud .belt { display: flex; gap: 8px; margin: 0; padding: 0; background: none; border: 0; flex-wrap: nowrap; }
+.hud .belt-slot { width: 44px; height: 44px; min-width: 44px; margin: 0; padding: 2px; position: relative; display: grid; place-items: center; background: var(--paper); border: 2px solid var(--table-4); box-shadow: none; }
+.hud .belt-slot .belt-ico, .hud .belt-slot svg.icono { width: 36px; height: 36px; }
+.hud .belt-slot .kind, .hud .belt-slot .pos { display: none; }
+.hud .belt-slot .cnt { position: absolute; right: -4px; bottom: -4px; min-width: 20px; padding: 0 3px; font-family: var(--num); font-size: 14px; line-height: 18px; text-align: center; background: var(--ink); color: var(--card-paper); border: 2px solid var(--card-paper); }
+.hud .belt-slot.empty { background: transparent; border: 2px dashed var(--table-4); }
+.hud .belt-slot.empty > span { display: none; }
+.hud .belt-slot.locked { display: none; }
+.hud .belt-slot.picked { outline: 3px solid var(--red-lit); outline-offset: 1px; }
+.hud .belt-slot.recien { box-shadow: 0 0 0 3px var(--laton, #d6a645); }
+.hud-bends { display: flex; gap: 6px; }
+.hud-bend { position: relative; width: 44px; height: 44px; display: grid; place-items: center; background: var(--table-2); border: 2px solid var(--table-4); cursor: help; }
+.hud-bend > svg.icono { width: 34px; height: auto; image-rendering: pixelated; }
+.hud-carga { position: absolute; right: -4px; bottom: -4px; padding: 0 3px; font-family: var(--num); font-size: 14px; line-height: 18px; background: var(--laton, #d6a645); color: var(--ink); border: 2px solid var(--ink); font-variant-numeric: tabular-nums; }
+.hud-btn { min-width: 44px; min-height: 44px; padding: 0 10px; font-size: 18px; --bg: var(--table-2); --bd: var(--table-4); --bw: 2px; --sh: none; color: var(--card-paper); }
+
+/* ───────────────────────── la pantalla de campaña ───────────────────────── */
+.run.m40 { grid-template-rows: auto auto minmax(0, 1fr); padding: 0 0 12px; gap: 8px; }
+.run.m40 > .run-body { padding-inline: clamp(16px, 2.4vw, 36px); min-height: 0; }
+.pant-t { margin: 0; padding-inline: clamp(16px, 2.4vw, 36px); font-family: var(--display, 'Cinzel', serif); font-size: clamp(26px, 4.2vh, 44px); line-height: 1.1; letter-spacing: 0.06em; text-transform: uppercase; text-align: center; color: var(--card-paper); }
+.run.m40 .wait { text-align: center; }
+
+/* opción grande (Elegí una, oferta de los Reyes, bandejas, Fogón) */
+.op40.choice { position: relative; width: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 14px 14px; text-align: center; background: var(--paper); color: var(--ink); border: 3px solid var(--table-4); box-shadow: 0 6px 0 var(--pit); }
+.op40.choice.pick { cursor: pointer; }
+.op40.choice.pick:hover, .op40.choice.pick:focus-visible, .op40.choice[data-foco] { border-color: var(--laton, #d6a645); outline: 3px solid var(--laton, #d6a645); outline-offset: 2px; transform: translateY(-3px); }
+.op40.choice > h4 { margin: 0; font-family: var(--display, 'Cinzel', serif); font-size: clamp(17px, 2.3vh, 22px); line-height: 1.15; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); }
+.op40.choice > p { margin: 0; font-size: 15px; line-height: 1.35; color: #2b2622; max-width: 30ch; }
+.op40.choice > .tag-act { display: none; }
+.op40.no-pick, .op40.usado { opacity: 0.6; }
+.ico40 { display: grid; place-items: center; width: clamp(84px, 13vh, 128px); aspect-ratio: 1; }
+.ico40 > svg.icono, .ico40 > svg.px { width: 100%; height: auto; image-rendering: pixelated; }
+.ico40 > svg.stamp-ico, .ico40 > svg.emblem:not(.px) { width: 80%; height: auto; }
+.op40 > .card { --w: clamp(84px, 13vh, 128px); }
+.sello40 { position: absolute; top: -14px; left: -14px; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: #9c2a20; border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--pit); }
+.sello40 > b { font-family: var(--num); font-size: 24px; line-height: 1; color: var(--card-paper); }
+.sello40.s-S { background: #7a1a24; }
+.sello40.s-A { background: #1d3a66; }
+.sello40.s-B { background: #34481a; }
+.sello40.estrella { background: var(--laton, #d6a645); }
+.sello40.estrella > b { color: var(--ink); font-size: 26px; }
+.sin40 { font-family: var(--mono, monospace); font-size: 14px; font-weight: 700; padding: 2px 8px; background: var(--ink); color: var(--laton-hi, #f2cf7a); letter-spacing: 0.02em; }
+.carga40 { font-size: 14px; color: #3b342e; }
+.nivel40 { display: inline-block; margin: 4px 2px 0; padding: 2px 8px; font-family: var(--num); font-size: 15px; background: var(--table-3); color: var(--card-paper); font-variant-numeric: tabular-nums; }
+.nivel40.enciende { background: var(--laton, #d6a645); color: var(--ink); }
+.ico-bend { position: relative; }
+.ico-bend > .rey40 { position: absolute; top: -10px; right: -26px; display: flex; gap: 2px; }
+.ico-bend > .rey40 > svg { width: 48px; height: 48px; image-rendering: pixelated; border: 2px solid var(--ink); background: var(--table-2); }
+.ico-bend > svg.icono { width: 88%; }
+
+/* ───────────────────────── «Elegí una» ───────────────────────── */
+.elegi-una .pant-t { font-size: clamp(32px, 6vh, 64px); letter-spacing: 0.1em; }
+.elegi40 { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; justify-items: center; align-items: center; gap: 12px; overflow: auto; }
+.op-fila { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: clamp(20px, 3vw, 44px); padding: 18px 18px 10px; }
+.op-fila > .op40 { width: clamp(220px, 22vw, 300px); }
+.elegi-pie { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.elegi-pie > button { min-height: 48px; min-width: 160px; font-size: 18px; }
+.elegi-pie > button.discreto { --bg: transparent; --bd: var(--table-4); color: var(--paper-2); min-width: 0; font-size: 15px; }
+.bufon-dice { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 16px; color: var(--paper-2); }
+.bufon-mini { width: 48px; flex: none; }
+.bufon-mini > svg { width: 100%; height: auto; image-rendering: pixelated; }
+
+/* ───────────────────────── el Mapa ───────────────────────── */
+.mapa40 .run-body.mapa-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 16px; min-height: 0; }
+.mapa-scroll { position: relative; overflow-y: auto; overflow-x: hidden; min-height: 0; background: var(--table-2); border: 2px solid var(--table-4); overscroll-behavior: contain; cursor: grab; scrollbar-width: thin; }
+.mapa-scroll.arrastra { cursor: grabbing; user-select: none; }
+.mapa-lienzo { position: relative; width: min(100%, 560px); margin: 0 auto; height: calc(var(--filas) * 104px); padding-block: 8px; }
+.mapa-aristas { position: absolute; inset: 8px 0; width: 100%; height: calc(100% - 16px); overflow: visible; }
+.mapa-aristas line { stroke: var(--table-4); stroke-width: 3px; stroke-dasharray: 6 6; }
+.mapa-aristas line.hecha { stroke: var(--paper-3); stroke-dasharray: none; }
+.mapa-aristas line.abierta { stroke: var(--laton, #d6a645); stroke-width: 4px; stroke-dasharray: none; }
+.mapa-nodos { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(var(--filas), 1fr); height: 100%; }
+.nodo-mapa { appearance: none; margin: 0; padding: 0; border: 0; background: none; min-height: 0; font: inherit; color: inherit; text-transform: none; letter-spacing: 0; box-shadow: none; transition: none; box-sizing: border-box; place-self: center; position: relative; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; cursor: default; }
+.nodo-mapa > svg.ic-nodo { width: 64px; height: 64px; image-rendering: pixelated; }
+.nodo-mapa.lejos > svg.ic-nodo { opacity: 0.5; }
+.nodo-mapa.hecho > svg.ic-nodo { opacity: 0.45; }
+.nodo-mapa.alcanzable { width: 76px; height: 76px; cursor: pointer; }
+.nodo-mapa.alcanzable > svg.ic-nodo { width: 72px; height: 72px; }
+.nodo-mapa.alcanzable::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--laton, #d6a645); }
+.nodo-mapa.alcanzable:hover::before, .nodo-mapa.alcanzable:focus-visible::before, .nodo-mapa[data-foco]::before { border-width: 5px; inset: -8px; }
+.nodo-mapa:focus-visible { outline: none; }
+.nodo-mapa.aqui::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 3px solid var(--card-paper); }
+.nodo-aqui { position: absolute; left: 50%; top: -30px; width: 30px; transform: translateX(-50%); pointer-events: none; }
+.nodo-aqui > svg { width: 100%; height: auto; image-rendering: pixelated; }
+.nodo-palo { position: absolute; right: -6px; bottom: -6px; width: 26px; height: 26px; display: grid; place-items: center; background: var(--card-paper); border: 2px solid var(--ink); border-radius: 50%; }
+.nodo-palo > svg { width: 18px; height: 18px; }
+.mapa-ficha { align-self: start; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; background: var(--paper); color: var(--ink); border: 3px solid var(--table-4); box-shadow: 0 6px 0 var(--pit); text-align: center; }
+.ficha-ico > svg { width: 112px; height: 112px; image-rendering: pixelated; }
+.ficha-tx { display: flex; flex-direction: column; gap: 6px; }
+.ficha-tx > b { font-family: var(--display, 'Cinzel', serif); font-size: 20px; text-transform: uppercase; letter-spacing: 0.04em; }
+.ficha-tx > span { font-size: 15px; line-height: 1.35; }
+
+/* ───────────────────────── el Botín ───────────────────────── */
+.botin40 .run-body.botin-cuerpo { display: flex; flex-direction: column; align-items: center; gap: 14px; overflow: auto; }
+.botin40 .botin-lista { display: flex; flex-direction: column; gap: 10px; width: min(100%, 560px); }
+.botin40 .botin-fila { display: flex; align-items: stretch; gap: 8px; padding: 0; border: 0; background: none; }
+.botin40 .botin-fila .cobrar { flex: 1 1 auto; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 6px 16px 6px 8px; text-align: left; text-transform: none; letter-spacing: 0; --bg: var(--paper); --bd: var(--table-4); --bw: 3px; color: var(--ink); }
+.botin40 .botin-fila .cobrar:hover:not(:disabled), .botin40 .botin-fila .cobrar:focus-visible { --bd: var(--laton, #d6a645); }
+.botin40 .botin-fila .cobrar.hecha { opacity: 0.55; border: 3px solid var(--table-4); background: var(--paper-2); }
+.botin40 .botin-ico { width: 52px; height: 52px; flex: none; display: grid; place-items: center; }
+.botin40 .botin-ico > svg { width: 100%; height: auto; image-rendering: pixelated; }
+.botin40 .botin-tx { font-family: var(--cap, inherit); font-size: 18px; line-height: 1.2; color: var(--ink); }
+.botin40 .botin-estado { margin-left: auto; font-style: normal; font-size: 22px; color: var(--verd); }
+.botin40 .botin-fila .saltar { flex: none; min-width: 48px; min-height: 48px; align-self: center; padding: 0; font-size: 18px; --bg: var(--table-3); --bd: var(--table-4); color: var(--card-paper); }
+.botin40 .botin-pie > button { min-width: 220px; min-height: 52px; font-size: 20px; }
+
+/* ───────────────────────── el Fogón ───────────────────────── */
+.fogon40 { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+
+/* ───────────────────────── La Pulpería ───────────────────────── */
+.pulp40 .run-body.shop { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; overflow: auto; }
+.pulp-cab { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.pulpero { width: 72px; flex: none; }
+.pulpero > svg { width: 100%; height: auto; image-rendering: pixelated; }
+.pulp-cab .say { position: relative; margin: 0; max-width: 46ch; padding: 8px 14px; font-size: 16px; line-height: 1.3; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); }
+.pulp40 .bandejas { display: flex; flex-wrap: wrap; justify-content: center; align-content: start; gap: 14px 22px; padding: 14px 8px 4px; width: auto; }
+.pulp40 .bandeja-t { order: 0; flex: 0 0 100%; margin: 0; font-family: var(--cap, inherit); font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--paper-2); text-align: center; border-bottom: 2px solid var(--table-4); padding-bottom: 4px; }
+.pulp40 .bandeja-t.t-cartas { order: 2; margin-top: 6px; }
+.pulp40 .bandejas > .op40.k-tool { order: 1; }
+.pulp40 .bandejas > .op40.k-otra { order: 3; }
+.pulp40 .bandejas > .op40 { width: clamp(150px, 13vw, 190px); padding: 16px 10px 10px; }
+.pulp40 .bandejas > .op40 .ico40 { width: clamp(68px, 10vh, 96px); }
+.pulp40 .bandejas > .op40 > .card, .pulp40 .bandejas > .op40 > .k-tile { --w: clamp(68px, 10vh, 96px); }
+.pulp40 .bandejas > .op40 > h4 { font-size: 15px; }
+.pulp40 .op40.sold { opacity: 0.45; }
+.precio40 { position: static; display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 2px 10px; transform: none; background: var(--ink); color: var(--hazard); border: 2px solid var(--ink); font-family: var(--num); font-variant-numeric: tabular-nums; box-shadow: none; }
+.precio40 > b { font-size: 28px; line-height: 1.05; color: var(--hazard); }
+.precio40 > svg.precio-oro { width: 22px; height: 22px; }
+.precio40.dear > b { color: var(--red-lit); }
+.precio40.free > b { color: var(--verd-lit); }
+.pulp-pie { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px; }
+.servicios40 { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.servicio40 { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 4px 12px 4px 6px; text-transform: none; letter-spacing: 0; --bg: var(--paper); --bd: var(--table-4); --bw: 3px; color: var(--ink); }
+.servicio40 > .ico40 { width: 40px; }
+.servicio40 > .serv-n { font-size: 17px; font-family: var(--cap, inherit); }
+.servicio40 .precio40 > b { font-size: 22px; }
+.pulp-pie > #go { min-height: 56px; min-width: 200px; font-size: 19px; }
+
+/* ───────────────────────── móvil ───────────────────────── */
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .hud { --hud-h: auto; flex-wrap: wrap; gap: 10px 8px; padding: 8px 16px 6px; }
+  .hud-izq { gap: 6px; }
+  .hud-c { padding: 2px 8px 2px 4px; }
+  .hud-c > b, .hud .bolsa-c b { font-size: 19px; }
+  .hud-tira { order: 3; flex: 1 0 100%; }
+  .hud-der { margin-left: auto; }
+  .run.m40 > .run-body { padding-inline: 16px; }
+  .pant-t { font-size: 24px; }
+  .elegi-una .pant-t { font-size: 32px; }
+  .op-fila { flex-direction: column; align-items: stretch; gap: 22px; padding: 16px 16px 8px; }
+  .op-fila > .op40 { width: auto; flex-direction: row; flex-wrap: wrap; text-align: left; align-items: center; padding: 14px 12px 12px 16px; column-gap: 12px; row-gap: 4px; }
+  .op-fila > .op40 > .ico40, .op-fila > .op40 > .card { width: 72px; --w: 72px; flex: none; }
+  .op-fila > .op40 > h4 { flex: 1 1 0; min-width: 0; }
+  .op-fila > .op40 > p { flex: 1 0 100%; max-width: none; }
+  .ico-bend > .rey40 { right: -14px; }
+  .ico-bend > .rey40 > svg { width: 34px; height: 34px; }
+  .mapa40 .run-body.mapa-cuerpo { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 10px; }
+  .mapa-lienzo { width: 100%; height: calc(var(--filas) * 92px); }
+  .mapa-ficha { flex-direction: row; text-align: left; padding: 10px 12px; }
+  .ficha-ico > svg { width: 64px; height: 64px; }
+  .pulp40 .bandejas > .op40 { width: calc(50% - 12px); }
+  .pulp-cab .say { font-size: 15px; }
+  .botin40 .botin-tx { font-size: 16px; }
+}
+
+/* ── ajustes tras la primera captura ── */
+.hud .chip.bolsa b, .hud .bolsa-c b { background: var(--ink); color: var(--hazard); padding: 1px 5px; box-shadow: none; border: 0; }
+.hud .run-belt, .hud .hud-tira-in { border: 0; margin: 0; padding: 0; background: none; }
+.hud .belt { gap: 8px; }
+.hud-tira-in, .hud-bends { gap: 8px; }
+.nodo-mapa::before { display: none; }
+.nodo-mapa.alcanzable::before, .nodo-mapa.aqui::before { display: block; background: none; filter: none; box-shadow: none; z-index: 0; pointer-events: none; }
+.nodo-mapa > svg { position: relative; z-index: 1; }
+.op40.choice > h4 { font-family: var(--display); min-height: 0; height: auto; }
+.op40.choice.pick:hover > h4, .op40.choice.pick:focus-visible > h4, .op40.choice[data-foco] > h4 { color: var(--ink); }
+.pant-t { font-family: 'Corona Talla', 'Cinzel', serif; font-weight: 900; }
+.elegi-pie > button { white-space: nowrap; padding-inline: 18px; }
+.botin40 .botin-fila .cobrar.hecha { opacity: 1; background: var(--paper-3); color: var(--ink); }
+.botin40 .botin-fila .cobrar.hecha .botin-ico { opacity: 0.6; }
+.botin40 .botin-estado { color: var(--ink); }
+.pulp40 .run-body.shop { gap: 8px; }
+.pulp-cab .pulpero { width: 52px; }
+.pulp40 .bandejas { gap: 10px 18px; padding-top: 12px; }
+.pulp40 .bandejas > .op40 { gap: 6px; padding: 14px 10px 8px; }
+.pulp40 .bandejas > .op40 .ico40 { width: clamp(56px, 8.5vh, 92px); }
+.pulp40 .bandejas > .op40 > .card, .pulp40 .bandejas > .op40 > .k-tile { --w: clamp(56px, 8.5vh, 92px); }
+.precio40 > b { font-size: 24px; }
+.pulp40 .run-body.shop .bandejas.hangers { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-content: start; grid-template-columns: none; }
+
+/* ── pasada de la QA: la tira con 8 px entre dianas; «Elegí una» crece con su contenido y desplaza dentro ── */
+.hud .hud-tira-in.run-belt { gap: 8px; }
+.elegi40 { grid-template-rows: auto auto auto auto; align-content: start; }
+.elegi-pie > button { width: auto; max-width: 100%; white-space: nowrap; flex: none; min-width: max-content; padding: 10px 20px; height: auto; line-height: 1.25; }
+.op-fila > .op40 { min-height: 0; height: auto; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .op-fila { gap: 18px; padding: 12px 0 4px; width: 100%; }
+  .op-fila > .op40 { justify-content: flex-start; }
+  .elegi-pie > button { white-space: normal; }
+}
+
+/* ═════════════════════ V40 · fase 3a · la atmósfera nocturna («Dark Dithered & Textured») ═════════════════════
+   Penumbra de noche (#09070F → #160C1C → #24112B) en la mesa, el Mapa, el Botín, «Elegí una», La Pulpería, el Fogón y el
+   HUD: los naipes y los efectos brillan sobre la oscuridad. Acentos saturados de los cuatro palos, sin pasteles. Las
+   tintas de la mesa (--table*, --pit) se redefinen solo dentro de estas pantallas; los colores de palo de los naipes
+   siguen en theme.css (son del arte). Gancho de la trama Bayer: --fondo-trama. hud.ts cuelga en :root las tres
+   penumbras de fondoTramado() (pixel/dither.ts) como --trama-mesa, --trama-mapa y --trama-pulperia; cada pantalla
+   elige la suya aquí abajo. Sin ellas (o sin JS), queda el degradado liso. */
+:root {
+  --noche-0: #09070f;
+  --noche-1: #160c1c;
+  --noche-2: #24112b;
+  --fondo-trama: none;
+  --acc-S: #1440b8;
+  --acc-S-hi: #00c8ff;
+  --acc-C: #0b5e28;
+  --acc-C-hi: #22d95b;
+  --acc-D: #ff7b00;
+  --acc-D-hi: #ffd500;
+  --acc-H: #7a0026;
+  --acc-H-hi: #ff1453;
+}
+.run.m40, .table-screen.m40 {
+  --pit: var(--noche-0);
+  --table: var(--noche-1);
+  --table-2: #1b0f22;
+  --table-3: #2a1533;
+  --table-4: #452551;
+  --laton: var(--acc-D-hi);
+  --fondo-trama: var(--trama-mesa, none);
+  background-color: var(--noche-1);
+  background-image: var(--fondo-trama), linear-gradient(180deg, var(--noche-0) 0%, var(--noche-1) 55%, var(--noche-2) 100%);
+  background-size: cover, auto;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+/* el Mapa, en índigo de luna; La Pulpería, en vino y ámbar de farol */
+.run.m40.mapa40 { --fondo-trama: var(--trama-mapa, none); }
+.run.m40.pulp40 { --fondo-trama: var(--trama-pulperia, none); }
+.run.m40 > .hud, .table-screen.m40 > .bar.hud { background: var(--noche-0); border-bottom-color: var(--table-4); }
+.table-screen.m40 .tray { background: rgba(9, 7, 15, 0.72); border-top-color: var(--table-4); }
+.table-screen.m40 .field { background: none; }
+.table-screen.m40 .side > .whisper { background: var(--noche-0); }
+/* acentos: Golpear en oro de Oros, Descartar en cobalto de Espadas; los sellos S · A · B con su palo */
+.table-screen.m40 #btn-strike:not(:disabled) { --bg: var(--acc-D-hi); --bd: var(--noche-0); color: var(--noche-0); }
+.table-screen.m40 #btn-strike:hover:not(:disabled) { --bg: #ffe55c; }
+.table-screen.m40 #btn-discard:not(:disabled) { --bg: var(--acc-S); --bd: var(--noche-0); color: #f3e6cf; }
+.table-screen.m40 #btn-discard:hover:not(:disabled) { --bg: #1d55e0; color: #f3e6cf; }
+.sello40.s-S { background: var(--acc-H); }
+.sello40.s-A { background: var(--acc-S); }
+.sello40.s-B { background: var(--acc-C); }
+.sello40.estrella { background: var(--acc-D-hi); }
+.hud-carga, .nivel40.enciende { background: var(--acc-D-hi); color: var(--noche-0); }
+.hud .chip.bolsa b, .hud .bolsa-c b, .table-screen.m40 .hud .bolsa-c b { background: var(--noche-0); color: var(--acc-D-hi); }
+.precio40 { background: var(--noche-0); color: var(--acc-D-hi); }
+.mapa-scroll { background: rgba(9, 7, 15, 0.6); }
+.mapa-aristas line.abierta { stroke: var(--acc-S-hi); }
+.nodo-mapa.alcanzable::before { border-color: var(--acc-D-hi); }
+.table-screen.m40 .tower.activa { --bd: var(--acc-H-hi); }
+/* La Pulpería: las bandejas desplazan dentro (con su aviso de tinta) y el pie (servicios y «Volver al Mapa») queda
+   siempre a la vista; en el móvil, los tres servicios en una fila de tres */
+.pulp40 .run-body.shop { overflow: hidden; }
+.pulp40 .run-body.shop > .bandejas { overflow-y: auto; overflow-x: hidden; min-height: 0; max-height: 100%; align-self: stretch; padding-bottom: 12px; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .pulp40 .servicios40 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
+  .pulp40 .servicio40 { flex-direction: column; justify-content: center; gap: 2px; min-height: 48px; padding: 4px; font-size: 14px; }
+  .pulp40 .servicio40 .precio40 { padding: 0 6px; }
+  .pulp-pie > #go { width: 100%; min-height: 48px; }
+  .pulp40 .bandejas > .op40 { min-height: 0; }
+}
+
+/* ───────────────────────── la portada mínima ───────────────────────── */
+.home.m40 { --pit: var(--noche-0); --table: var(--noche-1); --table-2: #1b0f22; --table-3: #2a1533; --table-4: #452551; --fondo-trama: var(--trama-mesa, none); background-color: var(--noche-1); background-size: cover, auto; background-position: center, center; background-repeat: no-repeat, no-repeat; background-image: var(--fondo-trama), linear-gradient(180deg, var(--noche-0) 0%, var(--noche-1) 55%, var(--noche-2) 100%); }
+.home.m40 .home-left, .home.m40 .home-right { background: none; border: 0; }
+.home.m40 .home-left { justify-content: center; align-items: center; text-align: center; }
+.home.m40 .bufon-portada { width: clamp(96px, 22vh, 220px); }
+.home.m40 .bufon-portada > svg { width: 100%; height: auto; display: block; image-rendering: pixelated; }
+.home.m40 .home-right { justify-content: center; gap: clamp(10px, 2vh, 18px); }
+.home.m40 .menu { flex: none; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 14px; }
+.home.m40 .st40 { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: clamp(120px, 21vh, 190px); padding: 12px; text-align: center; --bg: var(--table-2, #1b0f22); --bd: #452551; --bw: 3px; --sh: 0 5px 0 var(--noche-0); color: #f3e6cf; }
+.home.m40 .st40.primary { --bg: var(--acc-D-hi); --bd: var(--noche-0); color: var(--noche-0); }
+.home.m40 .st40:hover:not(:disabled), .home.m40 .st40:focus-visible { --bd: var(--acc-D-hi); }
+.home.m40 .st40 > b { font-family: var(--title); font-size: clamp(20px, 3.4vh, 32px); line-height: 1; }
+.home.m40 .st40-ico { display: grid; place-items: center; width: clamp(48px, 9vh, 84px); height: clamp(48px, 9vh, 84px); }
+.home.m40 .st40-ico > svg { width: 100%; height: 100%; image-rendering: pixelated; }
+.home.m40 .st40-ico > .dorso40 { width: 66%; height: 100%; display: block; }
+.home.m40 .st40-ico > .dorso40 > svg { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.home.m40 .st40-n { font-style: normal; font-family: var(--num); font-weight: 800; font-size: 16px; padding: 1px 8px; background: var(--noche-0); color: var(--acc-D-hi); font-variant-numeric: tabular-nums; }
+.home.m40 .resume { display: flex; align-items: baseline; justify-content: center; gap: 12px; min-height: 56px; --bg: var(--acc-S); --bd: var(--noche-0); color: #f3e6cf; }
+.home.m40 .resume > b { font-family: var(--title); font-size: 24px; }
+.home.m40 .resume > span { font-size: 15px; }
+.home.m40 .foot { justify-content: center; gap: 12px; }
+.home.m40 .foot > button.ghost { --bg: transparent; --bd: #452551; color: #d8c9b4; font-size: 15px; min-height: 44px; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .home.m40 .bufon-portada { width: 88px; }
+  .home.m40 .st40 { min-height: 104px; }
+  .home.m40 .st40 > b { font-size: 22px; }
+  .home.m40 .resume { flex-direction: column; align-items: center; gap: 2px; }
+}
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  /* el HUD de la campaña en el móvil: si la bolsa crece, el Mazo y Ajustes bajan a una segunda fila, nunca fuera */
+  .run.m40 > .hud .hud-izq, .run.m40 > .hud .hud-der { display: contents; }
+  .run.m40 > .hud .hud-vida { order: 1; }
+  .run.m40 > .hud .hud-escudo { order: 2; }
+  .run.m40 > .hud .chip.bolsa { order: 3; }
+  .run.m40 > .hud .hud-mazo { order: 4; }
+  .run.m40 > .hud .hud-der > * { order: 5; margin-left: auto; }
+  .run.m40 > .hud .hud-tira { order: 6; }
+}
+/* La Pulpería no lleva línea de efecto (se lee en el globo): el párrafo vacío no ocupa lugar y caben más bandejas */
+.op40 > p:empty { display: none; }
+/* El título de pantalla va en su cabecera de siempre (.deck-head, la buscan el humo y los atajos), sin nada de la
+   cabecera vieja: ni filete, ni márgenes, ni la gótica gigante ni el filtro áspero. Manda .pant-t. */
+.run.m40 > header.deck-head.pant-cab { display: block; border: 0; padding: 0; margin: 0; gap: 0; }
+.run.m40 > header.deck-head.pant-cab > h1.pant-t { filter: none; margin: 0; font-family: 'Corona Talla', 'Cinzel', serif; font-weight: 900; font-size: clamp(26px, 4.2vh, 44px); line-height: 1.1; letter-spacing: 0.06em; text-transform: uppercase; }
+.run.m40.elegi-una > header.deck-head.pant-cab > h1.pant-t { font-size: clamp(32px, 6vh, 64px); letter-spacing: 0.1em; }
+@media (max-width: 640px), (max-aspect-ratio: 1/1) {
+  .run.m40 > header.deck-head.pant-cab > h1.pant-t { font-size: 24px; }
+  .run.m40.elegi-una > header.deck-head.pant-cab > h1.pant-t { font-size: 32px; }
+}

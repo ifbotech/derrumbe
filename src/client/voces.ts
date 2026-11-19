@@ -10,6 +10,7 @@
 // leer para elegir). Con «Reducir movimiento» entra sin animación (guia.css).
 import { SUITS, type GameEvent } from '../rules/engine';
 import { bossIdentity } from '../rules/run';
+import { esRey, fraseRey } from '../rules/reyes';
 import { sfx } from './audio';
 import { S, settings } from './core';
 import { hideBark, setMonarchMood, showBark } from './guia';
@@ -44,7 +45,8 @@ function speak(bossId: string, kind: Kind, sound = false): void {
     }
     heard.push(`${bossId}:${kind}`);
     if (heard.length > 60) heard.shift();
-    showBark(t(`monarca.${bossId}.bark.${kind}`)); // V10: la voz en el idioma de la mesa
+    // V10: la voz en el idioma de la mesa. V40 1c · al entrar, un Rey habla según lo que llevás de él (aliado, rival o neutral)
+    showBark(t(kind === 'entrada' && esRey(bossId) ? fraseRey(S.campaign?.run.bendiciones, bossId) : `monarca.${bossId}.bark.${kind}`));
     if (sound) sfx.monarch(bossId, kind === 'caida' ? 'caida' : 'entrada');
     const until = performance.now() + barkMs();
     const watch = () => {

@@ -1,7 +1,8 @@
 // Constitución anticomplejidad del juego. Si un cambio rompe una de estas pruebas, el cambio está mal:
 // no se sube el límite, se simplifica otra cosa.
 //
-//   · como mucho 5 palabras clave (V11) y 56 reliquias (TOOLS), con identificadores únicos
+//   · como mucho 5 palabras clave (V11); de 20 a 24 Amuletos (TOOLS) en 4 familias de 5 o 6, una por Rey, y 8 Trampas
+//     del Bufón (SPECIALS) (V40 1d; antes, 56 reliquias como mucho), con identificadores únicos
 //   · toda descripción cabe en 100 caracteres (V12; antes 115) y no inventa palabras clave
 //   · el informe publicado del laboratorio (scripts/meta-report.json) es de estas reglas, no trae avisos,
 //     ningún asalto (los cinco) pasa del tope de turnos de su tramo en el percentil 95 con ninguna baraja, y los Reinados 1 y 8
@@ -9,12 +10,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fingerprint } from '../scripts/lab';
-import { OBJETIVOS } from '../scripts/objetivos';
+import { OBJETIVOS, duracion } from '../scripts/objetivos';
 import { FORMATION_NAME, SEAL, SEALS, TOWER_FX, TREATMENT, TREATMENTS } from '../src/rules/engine';
 import { KEYWORDS, TERMS } from '../src/rules/keywords';
-import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, FURIA, TAGS, UPGRADES } from '../src/rules/run';
+import { ASCENSIONS, BOSSES, DECKS, FURIA, UPGRADES } from '../src/rules/run';
 import { SPECIALS } from '../src/rules/specials';
-import { RARITY, RASGOS, TOOLS, UMBRALES } from '../src/rules/tools';
+import { RARITY, TOOLS } from '../src/rules/tools';
+import { BENDICIONES, BONOS_REY, DUALES, REY_IDS, UMBRALES_REY, bendicionesDe } from '../src/rules/reyes';
 
 const MAX_DESC = 100;
 
@@ -24,11 +26,12 @@ const DESCS: [string, string][] = [
   ...SPECIALS.map((s): [string, string] => [`especial ${s.id}`, s.desc]),
   ...BOSSES.map((b): [string, string] => [`jefe ${b.id}`, b.desc]),
   ...ASCENSIONS.map((a, i): [string, string] => [`nivel ${i + 1}`, a.desc]),
-  ...CONTRACTS.map((c): [string, string] => [`contrato ${c.id}`, c.desc]),
   ...SEALS.map((s): [string, string] => [`sello ${s}`, SEAL[s].desc]),
   ...TREATMENTS.map((t): [string, string] => [`tratamiento ${t}`, TREATMENT[t].desc]),
   ...Object.entries(TOWER_FX).map(([k, v]): [string, string] => [`estado ${k}`, v.desc]),
-  ...TAGS.map((t): [string, string] => [`etiqueta ${t.id}`, t.desc]),
+  // V40 1c · las Bendiciones: su efecto y su condición de carga
+  ...BENDICIONES.map((b): [string, string] => [`bendición ${b.id}`, b.desc]),
+  ...BENDICIONES.map((b): [string, string] => [`carga de ${b.id}`, b.carga]),
 ];
 
 describe('constitución anticomplejidad', () => {
@@ -37,13 +40,16 @@ describe('constitución anticomplejidad', () => {
     expect(new Set(KEYWORDS.map((k) => k.id)).size).toBe(KEYWORDS.length);
   });
 
-  it('como mucho 56 herramientas, con identificadores únicos', () => {
-    expect(TOOLS.length).toBeLessThanOrEqual(56);
+  it('V40 1d · de 20 a 24 Amuletos en 4 familias de 5 o 6 (una por Rey) y 8 Trampas del Bufón, con identificadores únicos', () => {
+    expect(TOOLS.length).toBeGreaterThanOrEqual(20);
+    expect(TOOLS.length).toBeLessThanOrEqual(24);
+    for (const rey of REY_IDS) expect(TOOLS.filter((t) => t.arch === rey).length, rey).toBeGreaterThanOrEqual(5);
+    for (const rey of REY_IDS) expect(TOOLS.filter((t) => t.arch === rey).length, rey).toBeLessThanOrEqual(6);
+    expect(SPECIALS).toHaveLength(8);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
     expect(new Set(TOOLS.map((t) => t.name)).size).toBe(TOOLS.length);
     expect(new Set(SPECIALS.map((s) => s.id)).size).toBe(SPECIALS.length);
     expect(new Set(BOSSES.map((b) => b.id)).size).toBe(BOSSES.length);
-    expect(new Set(CONTRACTS.map((c) => c.id)).size).toBe(CONTRACTS.length);
   });
 
   it(`toda descripción cabe en ${MAX_DESC} caracteres`, () => {
@@ -97,13 +103,22 @@ describe('constitución anticomplejidad', () => {
     expect(Number.isInteger(FURIA.mazo) && FURIA.mazo >= 1).toBe(true);
   });
 
-  it('V35 · cinco rasgos, cada Reliquia con el suyo, y tres bonos por rasgo (con 2, 4 y 6) de ≤ 100 caracteres', () => {
-    expect(RASGOS.map((r) => r.id)).toEqual(['sangre', 'tahur', 'verdugo', 'bastion', 'horda']);
-    expect(UMBRALES).toEqual([2, 4, 6]);
-    for (const t of TOOLS) expect(RASGOS.some((r) => r.id === t.rasgo), t.id).toBe(true);
-    // con seis huecos, cada rasgo tiene Reliquias de sobra para llegar a su bono de 6
-    for (const r of RASGOS) expect(TOOLS.filter((t) => t.rasgo === r.id).length, r.id).toBeGreaterThanOrEqual(8);
-    for (const r of RASGOS) for (const b of r.bonos) {
+  it('V40 1c · 4 Reyes, de 5 a 6 Bendiciones por Rey, de 4 a 6 Duales y dos bonos por Rey (con 2 y 4) de ≤ 100 caracteres', () => {
+    expect(REY_IDS).toEqual(['espadas', 'bastos', 'oros', 'copas']);
+    expect([...UMBRALES_REY]).toEqual([2, 4]);
+    expect(BOSSES.map((b) => b.id).sort()).toEqual([...REY_IDS].sort());
+    for (const r of REY_IDS) {
+      expect(bendicionesDe(r).length, r).toBeGreaterThanOrEqual(5);
+      expect(bendicionesDe(r).length, r).toBeLessThanOrEqual(6);
+    }
+    expect(DUALES.length).toBeGreaterThanOrEqual(4);
+    expect(DUALES.length).toBeLessThanOrEqual(6);
+    // una Dual es de dos Reyes distintos, y no hay dos Duales del mismo par
+    for (const d of DUALES) expect(d.duo && d.duo !== d.rey, d.id).toBe(true);
+    expect(new Set(DUALES.map((d) => [d.rey, d.duo].sort().join('+'))).size).toBe(DUALES.length);
+    expect(new Set(BENDICIONES.map((b) => b.id)).size).toBe(BENDICIONES.length);
+    expect(new Set(BENDICIONES.map((b) => b.name)).size).toBe(BENDICIONES.length);
+    for (const r of REY_IDS) for (const b of BONOS_REY[r]) {
       expect(b.length, b).toBeLessThanOrEqual(100);
       expect(b.endsWith('.'), b).toBe(true);
       expect(b, b).not.toMatch(/\{\w+\}/);
@@ -118,7 +133,7 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     rules?: string;
     flags: string[];
     winrate: { levels: Cell[]; decks: Cell[] };
-    pacing: { stage: number; p50: number; p95: number; n: number }[];
+    pacing: { stage: number; name: string; p50: number; p95: number; n: number; j50?: number }[];
     pacingByDeck: { deck: string; name: string; worstP95: number; n: number }[];
     tools: { id: string; given: number | null; confirm: number | null; confirmN: number }[];
     bosses: { id: string; lethality: number; faced: number }[];
@@ -157,7 +172,7 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     expect(r.flags).toEqual([]);
   });
 
-  it.runIf(vigente)('ningún asalto de los cinco pasa del tope de turnos de su tramo en el percentil 95, con ninguna de las seis barajas', () => {
+  it.runIf(vigente)('ningún asalto de los cinco pasa del tope de turnos de su tramo en el percentil 95, con ninguno de los cinco Mazos', () => {
     expect(r.pacingByDeck.map((d) => d.deck).sort()).toEqual(DECKS.map((d) => d.id).sort());
     for (const d of r.pacingByDeck) {
       expect(d.n, d.name).toBeGreaterThan(0);
@@ -165,6 +180,25 @@ describe('informe publicado del laboratorio (scripts/meta-report.json)', () => {
     }
     expect(r.pacing.map((p) => p.stage)).toEqual([1, 2, 3, 4, 5]);
     for (const p of r.pacing) expect(p.p95, `asalto ${p.stage}`).toBeLessThanOrEqual(OBJETIVOS.ritmo.find((t) => p.stage <= t.hasta)!.p95);
+  });
+
+  // V40 1b · la duración se estima con las jugadas (un turno no cuenta la jugada que abate ni las que no gastan el turno)
+  it.runIf(vigente)('trae las jugadas de cada asalto (nunca menos que sus turnos) y la duración estimada está en rango', () => {
+    for (const p of r.pacing) {
+      expect(typeof p.j50, `asalto ${p.stage}`).toBe('number');
+      expect(p.j50!, `asalto ${p.stage}`).toBeGreaterThanOrEqual(p.p50);
+    }
+    const min = duracion(r)!;
+    expect(min).toBeGreaterThanOrEqual(OBJETIVOS.duracion.minutos[0]);
+    expect(min).toBeLessThanOrEqual(OBJETIVOS.duracion.minutos[1]);
+  });
+
+  it('la duración de un informe sin jugadas usa el supuesto viejo de los turnos', () => {
+    const D = OBJETIVOS.duracion;
+    const fijo = D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual;
+    const p = [5, 9, 9, 10, 9].map((p50, i) => ({ stage: i + 1, name: '', p50, p95: 0, n: 1 }));
+    expect(duracion({ pacing: p })).toBe(Math.round(((fijo + D.turno * 42) / 60) * 10) / 10);
+    expect(duracion({ pacing: p.map((x) => ({ ...x, j50: 13 })) })).toBe(Math.round(((fijo + D.jugada * 65) / 60) * 10) / 10);
   });
 
   it.runIf(vigente)('el Reinado 1 y el Reinado 8 están en rango, y del 1 al 8 cada Reinado gana menos que el anterior', () => {

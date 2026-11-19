@@ -51,9 +51,9 @@ const DIM = '#4d463c';
 
 // ───────────────────────── Enlace con semilla ─────────────────────────
 
-/** El enlace que repite la campaña: semilla, baraja y Reinado. null en sala o en el Asalto diario. */
+/** El enlace que repite la campaña: semilla, baraja y Reinado. null en sala. */
 export function seedLink(run: Run, online: boolean): string | null {
-  if (online || run.daily || !run.seedText) return null;
+  if (online || !run.seedText) return null;
   const q = new URLSearchParams({ seed: run.seedText, baraja: run.deckId, nivel: String(run.ascension + 1) });
   return `${location.href.split(/[?#]/)[0]}?${q}`;
 }
@@ -91,7 +91,7 @@ export function laminaOf(run: Run, online: boolean): Lamina {
     tools: run.tools.map((t) => (TOOL[t.id] ? relN(t.id) : t.id)),
     deck: DECK[run.deckId] ? barN(run.deckId) : run.deckId,
     level: run.ascension + 1,
-    seed: run.daily ? Lg('ui.lam.diaria', { d: run.daily }) : online ? Lg('ui.lam.servidor') : run.seedText,
+    seed: online ? Lg('ui.lam.servidor') : run.seedText,
     link: seedLink(run, online),
     death: !won && run.phase === 'lost' && run.death ? deathIn(run.death) : null,
   };
@@ -399,7 +399,7 @@ export async function copyLamina(d: Lamina, text: string): Promise<'png' | 'text
 let linkNote = '';
 let watcher: MutationObserver | null = null;
 
-/** Pone el aviso «vienes de una crónica» arriba de la preparación de campaña (y lo repone si la pantalla se repinta). */
+/** Pone el aviso «venís de una crónica» arriba de la preparación de campaña (y lo repone si la pantalla se repinta). */
 function placeNote(): void {
   const host = app.querySelector('.camp .camp-run .scroll');
   if (!host) {

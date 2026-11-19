@@ -84,7 +84,6 @@ export function reconnect(): void {
 /** Olvida la sala (o la partida local) y vuelve a la portada. */
 export function forget(): void {
   S.session = null;
-  S.tutorial = null;
   S.campaign = null;
   sessionStorage.removeItem('derrumbe');
   S.lobby = null;
@@ -99,8 +98,7 @@ function onMsg(msg: ServerMsg): void {
   switch (msg.t) {
     case 'joined':
       S.session = { room: msg.room, playerId: msg.playerId, token: msg.token };
-      S.tutorial = null;
-      S.pings = {};
+          S.pings = {};
       if (S.campaign && !S.campaign.online) S.campaign = null; // la campaña local sigue guardada
       sessionStorage.setItem('derrumbe', JSON.stringify(S.session));
       history.replaceState(null, '', `?sala=${msg.room}`);

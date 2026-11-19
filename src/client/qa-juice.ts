@@ -4,6 +4,7 @@
 // que nadie muere por el camino). No toca el guardado de verdad: con ?qa, platform es de quita y pon.
 // V12: la Mejor jugada que propone el motor y lo que ha hecho AUTO (pasos, pausas y tiempos de apagado).
 import { mejorJugada } from '../rules/mejor-jugada';
+import { threatOf } from '../rules/engine';
 import { autoDiag, autoQa } from './auto';
 import { RUN_PLAYER, S, settings } from './core';
 import { serverError } from './net';
@@ -17,7 +18,12 @@ export function installQaJuice(): void {
       heal: () => {
         const st = S.campaign?.state;
         if (!st || st.phase !== 'playing') return false;
+        // V40 1f · en la escala nueva (Vida 59–76 por Mazo, golpes de hasta ~35) ningún golpe mata con la Vida llena,
+        // pero la suma de los Contraataques de la mesa sí puede pasarla: con la Vida al tope, la prueba pone el Escudo a
+        // la altura de todos ellos (nadie muere por el camino)
+        const golpe = Object.values(st.towers).filter((t) => !t.away && t.floors.length).reduce((n, t) => n + threatOf(st, t), 0) * (st.config.sirenCount ?? 1);
         st.integrity = st.config.maxIntegrity;
+        st.wall = Math.max(st.wall, golpe);
         return true;
       },
       /** Tronos presentes en la mesa de ahora (el asalto 1 tiene dos; el 2, tres). */

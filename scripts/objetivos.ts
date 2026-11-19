@@ -5,15 +5,29 @@
 
 /** Los rangos. Todo en % de campañas ganadas, salvo el ritmo (turnos) y la letalidad (veces la media). */
 export const OBJETIVOS = {
-  /** Reinado 1 y Reinado 8 «Puertas selladas», con el Árbol vacío y lleno. */
-  reinado1: { vacio: [26, 32], lleno: [42, 48] },
+  /**
+   * Reinado 1 y Reinado 8 «Puertas selladas», con el Altar vacío y lleno (con el Mazo inicial). V40: con la baraja
+   * española, el Reinado 1 vacío pasa a 28–34; con los 5 Mazos (decisión de dirección) el lleno puede subir a 42–50.
+   */
+  reinado1: { vacio: [28, 34], lleno: [42, 50] },
   reinado8: { vacio: [6, 10], lleno: [12, 18] },
-  /** Barajas en el Reinado 1. Objetivo 26–32 vacío y 42–48 lleno; avisa fuera de 23–34 y 40–50. */
-  barajas: { lleno: [40, 50], llenoObjetivo: '42–48', vacio: [23, 34], vacioObjetivo: '26–32', sumaMinima: 6 },
-  /** Reliquias y especiales dados de salida: trampa por debajo, victoria regalada por encima. */
-  regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40 },
-  /** Letalidad de cada monarca respecto a la media (con al menos `enfrentados` encuentros). */
-  monarcas: { ratio: [0.8, 1.3], enfrentados: 150 },
+  /**
+   * V40 · Los 5 Mazos en el Reinado 1: cada uno 28–34 con el Altar vacío y los cinco a 5 puntos o menos entre sí
+   * (`dispersion`: el mejor menos el peor); con el Altar lleno, ≤ 50 (avisa por debajo de 40) y el Altar suma ≥ 6.
+   */
+  mazos: { lleno: [40, 50], llenoObjetivo: '42–50', vacio: [28, 34], vacioObjetivo: '28–34', dispersion: 5, sumaMinima: 6 },
+  /**
+   * Amuletos y Trampas del Bufón dados de salida: trampa por debajo, victoria regalada por encima. V40 1d: ningún
+   * Amuleto elegido más de `sobreMedia` veces la media de elección (con al menos `ofertasMinimas` ofertas).
+   */
+  regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40, sobreMedia: 2 },
+  /** Letalidad de cada Rey jefe respecto a la media (con al menos `enfrentados` encuentros). V40 1c: 0,8×–1,25×. */
+  monarcas: { ratio: [0.8, 1.25], enfrentados: 150 },
+  /**
+   * V40 1c · Bendiciones: ninguna elegida por el bot más de `sobreMedia` veces la media de elección (con al menos
+   * `ofertasMinimas` ofertas), y ninguna que empeore el resultado si se da de salida (más allá del ruido).
+   */
+  bendiciones: { sobreMedia: 2, ofertasMinimas: 40 },
   /** Turnos por asalto: hasta qué asalto vale cada tramo, rango de la mediana y tope del percentil 95. */
   ritmo: [
     // V35 · duelo Casa por Casa: los enemigos van en fila (2, 6, 8, 12 y 12) y el monarca cierra los asaltos 2, 4 y 5
@@ -27,12 +41,31 @@ export const OBJETIVOS = {
   muertesAsalto1: 8,
   /**
    * Duración estimada de una campaña, en minutos: (inicio + 4 entreactos + 2 Secretos + 5 tiradas de huesos +
-   * jugada × Σ medianas de turnos de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado
+   * jugada × Σ medianas de jugadas de los cinco asaltos) / 60. Las constantes (segundos) son un supuesto declarado
    * (SPECS/V11.md 1.10; la tirada, SPECS/V12.md 1.12).
+   *
+   * V40 1b · se cuentan jugadas, no turnos: un turno es una jugada que recibe el Contraataque, y no cuenta la que
+   * abate ni las que no gastan el turno (Pasar de Chancho Va, el Comodín de El Mentiroso). Con los 5 Mazos esas
+   * jugadas pesan mucho más (Chancho Va: 36 turnos y 84 jugadas). `jugada` (12 s) deja la baraja española de la 1a
+   * en los mismos minutos que daba el supuesto viejo (Σ turnos 42 × 18 s ≈ Σ jugadas 62 × 12 s). `turno` (18 s) es
+   * ese supuesto viejo, para los informes que no traen las jugadas.
+   *
+   * V40 1e · con el Mapa de caminos, el entreacto (`entreacto`: el Botín por partes y elegir camino) se separa de lo
+   * que se hace en cada nodo (`nodo`: La Pulpería, un Santuario del Bufón, el Fogón y el Botín de un Guardia Bravo),
+   * contado con la media de nodos por campaña del informe (`mapa.nodos`), y las jugadas de los Guardias Bravos
+   * (`mapa.bravoJugadas`, media por campaña) se suman a las de los asaltos. Sin `mapa`, el supuesto de la 1b.
    */
-  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 18 },
+  duracion: { minutos: [18, 22], inicio: 30, entreacto: 60, secreto: 20, ritual: 5, jugada: 12, turno: 18, mapa: { entreacto: 40, nodo: { pulperia: 40, santuario: 20, fogon: 10, bravo: 20 } } },
   /** Asalto único (partida clásica): victorias del bot con 1, 2, 3 y 4 jugadores. */
   clasica: [58, 65],
+  /**
+   * V40 1f · Ninguna muerte de un golpe con la Vida llena (lo comprueba tests/golpe-unico.test.ts con los números de
+   * balance-config.json): en el Reinado 1, el Contraataque de un guardia o de un Guardia Bravo, con la Furia típica de
+   * su asalto, quita como mucho `tope` de la Vida máxima del Mazo más frágil, y el Rey jefe no mata de un golpe con la
+   * Vida llena en sus `turnosRey` primeros turnos. `furiaTipica`: la mediana de la Furia en los Contraataques de los
+   * guardias de cada asalto (`npm run analyze:meta -- golpes`; el laboratorio avisa si la mediana medida la pasa).
+   */
+  golpeUnico: { tope: 0.6, turnosRey: 3, furiaTipica: [0, 0, 0, 0, 0] },
 } as const;
 
 /** Un número frente a su rango (`lo`/`hi` pueden faltar: sin límite por ese lado). */
@@ -42,7 +75,7 @@ export interface Parte {
   hi?: number;
 }
 export interface Comprobacion {
-  /** Estable: `reinado1.vacio`, `ritmo.4`, `monarca.furia`, `reliquia.horno.trampa`… */
+  /** Estable: `reinado1.vacio`, `ritmo.4`, `monarca.furia`, `amuleto.horno.trampa`… */
   id: string;
   /** El texto del aviso tal como sale en el informe (si no se cumple). */
   texto: string;
@@ -57,12 +90,18 @@ export interface InformeMeta {
   winrate: { levels: { level: number; vacio: number; lleno: number; n: number }[]; decks: { deck: string; name: string; vacio: number; lleno: number; n: number }[] };
   tools: Pieza[];
   specials: Pieza[];
+  bendiciones?: Pieza[];
   bosses: { id: string; who: string; faced: number; deaths: number; lethality: number }[];
   avgLethality: number;
-  pacing: { stage: number; name: string; p50: number; p95: number; n: number }[];
+  /** `j50`: mediana de jugadas del asalto (los turnos más las jugadas que abaten o no gastan el turno; V40 1b). */
+  pacing: { stage: number; name: string; p50: number; p95: number; n: number; j50?: number }[];
   pacingByDeck: { deck: string; name: string; worstP95: number; n: number }[];
+  /** V40 1e · el Mapa (Reinado 1, todos los Mazos): media de nodos por campaña por tipo y de jugadas en Guardias Bravos. */
+  mapa?: { nodos: Record<string, number>; bravoJugadas: number; muereBravo: number; gastoPulperia: number };
   /** % de campañas (Reinado 1, Árbol vacío) que caen en cada asalto. */
   deaths?: number[];
+  /** V40 1f · los Contraataques por asalto y por quién pega (modos con golpes: barajas, golpes, foco, niveles). */
+  golpes?: { filas: { asalto: number; quien: string; furia50: number; unGolpe: number; n: number }[]; porMazo: { deck: string; unGolpe: number; reyTemprano: number }[] };
   giftBaseline: number;
   giftBaselineN: number;
   classic?: { players: number; winrate: number; n: number }[];
@@ -91,6 +130,8 @@ export const noise = (n: number, nRef: number, refPct: number) => {
   return Math.round(3 * Math.sqrt(p * (1 - p) * (1 / Math.max(1, n) + 1 / Math.max(1, nRef))) * 1000) / 10;
 };
 
+import { MAZO_INICIAL } from '../src/rules/mazos';
+
 const inRange = (v: number, [lo, hi]: readonly number[]) => v >= lo && v <= hi;
 
 /** Todas las comprobaciones del informe, en el orden en que salen los avisos (sin la partida clásica). */
@@ -102,27 +143,35 @@ export function revisar(r: InformeMeta): Comprobacion[] {
   const l8 = r.winrate.levels[7];
   const rango = (id: string, v: number, rg: readonly number[], texto: string) => out.push({ id, texto, ok: inRange(v, rg), partes: [{ valor: v, lo: rg[0], hi: rg[1] }] });
   if (l1 && has(l1)) {
-    rango('reinado1.vacio', l1.vacio, O.reinado1.vacio, `Reinado 1 con el Árbol vacío: ${l1.vacio} % (objetivo ${O.reinado1.vacio.join('–')})`);
-    rango('reinado1.lleno', l1.lleno, O.reinado1.lleno, `Reinado 1 con el Árbol lleno: ${l1.lleno} % (objetivo ${O.reinado1.lleno.join('–')})`);
+    rango('reinado1.vacio', l1.vacio, O.reinado1.vacio, `Reinado 1 con el Altar vacío: ${l1.vacio} % (objetivo ${O.reinado1.vacio.join('–')})`);
+    rango('reinado1.lleno', l1.lleno, O.reinado1.lleno, `Reinado 1 con el Altar lleno: ${l1.lleno} % (objetivo ${O.reinado1.lleno.join('–')})`);
   }
   if (l8 && has(l8)) {
-    rango('reinado8.vacio', l8.vacio, O.reinado8.vacio, `Reinado 8 con el Árbol vacío: ${l8.vacio} % (objetivo ${O.reinado8.vacio.join('–')})`);
-    rango('reinado8.lleno', l8.lleno, O.reinado8.lleno, `Reinado 8 con el Árbol lleno: ${l8.lleno} % (objetivo ${O.reinado8.lleno.join('–')})`);
+    rango('reinado8.vacio', l8.vacio, O.reinado8.vacio, `Reinado 8 con el Altar vacío: ${l8.vacio} % (objetivo ${O.reinado8.vacio.join('–')})`);
+    rango('reinado8.lleno', l8.lleno, O.reinado8.lleno, `Reinado 8 con el Altar lleno: ${l8.lleno} % (objetivo ${O.reinado8.lleno.join('–')})`);
   }
   // cada nivel tiene que ser más difícil que el anterior, con el Árbol vacío y con el lleno
   for (let i = 1; i < r.winrate.levels.length; i++) {
     const a = r.winrate.levels[i - 1];
     const b = r.winrate.levels[i];
     if (!has(a) || !has(b)) continue;
-    out.push({ id: `escalera.${b.level}.vacio`, texto: `Reinados ${a.level} → ${b.level} con el Árbol vacío: ${a.vacio} % → ${b.vacio} % (no baja)`, ok: b.vacio < a.vacio, partes: [{ valor: a.vacio - b.vacio, lo: 0.1 }] });
-    out.push({ id: `escalera.${b.level}.lleno`, texto: `Reinados ${a.level} → ${b.level} con el Árbol lleno: ${a.lleno} % → ${b.lleno} % (no baja)`, ok: b.lleno < a.lleno, partes: [{ valor: a.lleno - b.lleno, lo: 0.1 }] });
+    out.push({ id: `escalera.${b.level}.vacio`, texto: `Reinados ${a.level} → ${b.level} con el Altar vacío: ${a.vacio} % → ${b.vacio} % (no baja)`, ok: b.vacio < a.vacio, partes: [{ valor: a.vacio - b.vacio, lo: 0.1 }] });
+    out.push({ id: `escalera.${b.level}.lleno`, texto: `Reinados ${a.level} → ${b.level} con el Altar lleno: ${a.lleno} % → ${b.lleno} % (no baja)`, ok: b.lleno < a.lleno, partes: [{ valor: a.lleno - b.lleno, lo: 0.1 }] });
   }
   for (const d of r.winrate.decks) {
-    if (!has(d) || d.deck === 'obra') continue;
-    rango(`baraja.${d.deck}.lleno`, d.lleno, O.barajas.lleno, `${d.name}: ${d.lleno} % con el Árbol lleno (objetivo ${O.barajas.llenoObjetivo}, margen ${O.barajas.lleno.join('–')})`);
-    rango(`baraja.${d.deck}.vacio`, d.vacio, O.barajas.vacio, `${d.name}: ${d.vacio} % con el Árbol vacío (objetivo ${O.barajas.vacioObjetivo})`);
+    if (!has(d) || d.deck === MAZO_INICIAL) continue;
+    rango(`baraja.${d.deck}.lleno`, d.lleno, O.mazos.lleno, `${d.name}: ${d.lleno} % con el Altar lleno (objetivo ${O.mazos.llenoObjetivo}, margen ${O.mazos.lleno.join('–')})`);
+    rango(`baraja.${d.deck}.vacio`, d.vacio, O.mazos.vacio, `${d.name}: ${d.vacio} % con el Altar vacío (objetivo ${O.mazos.vacioObjetivo})`);
     const suma = d.lleno - d.vacio;
-    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: el Árbol lleno solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.barajas.sumaMinima), partes: [{ valor: suma, lo: O.barajas.sumaMinima }] });
+    out.push({ id: `baraja.${d.deck}.orden`, texto: `${d.name}: el Altar lleno solo le suma ${Math.round(suma * 10) / 10} puntos`, ok: !(suma < O.mazos.sumaMinima), partes: [{ valor: suma, lo: O.mazos.sumaMinima }] });
+  }
+  // V40 · ningún Mazo domina: con el Altar vacío, del mejor al peor hay 5 puntos o menos (el inicial incluido)
+  const vacios = r.winrate.decks.filter(has);
+  if (vacios.length > 1) {
+    const hi = vacios.reduce((a, b) => (b.vacio > a.vacio ? b : a));
+    const lo = vacios.reduce((a, b) => (b.vacio < a.vacio ? b : a));
+    const d = Math.round((hi.vacio - lo.vacio) * 10) / 10;
+    out.push({ id: 'mazos.dispersion', texto: `Mazos con el Altar vacío: de ${hi.name} (${hi.vacio} %) a ${lo.name} (${lo.vacio} %) hay ${d} puntos (objetivo ≤ ${O.mazos.dispersion})`, ok: d <= O.mazos.dispersion, partes: [{ valor: d, hi: O.mazos.dispersion }] });
   }
   const ref = r.giftBaselineN;
   const refPct = r.giftBaseline;
@@ -136,25 +185,42 @@ export function revisar(r: InformeMeta): Comprobacion[] {
     out.push({ id: `${kind.toLowerCase()}.${x.id}.empeora`, completo: true, texto: `${kind} ${x.name}: llevarla de salida empeora el resultado (${delta} puntos en ${n} campañas; ruido ±${ruido})`, ok: !(delta <= -ruido), partes: [{ valor: delta, lo: -ruido }] });
   };
   const G = O.regalo;
+  const amuOfrecidos = r.tools.filter((t) => t.offered >= G.ofertasMinimas);
+  const mediaAmu = amuOfrecidos.length ? amuOfrecidos.reduce((a, b) => a + b.pick, 0) / amuOfrecidos.length : 0;
+  const topeAmu = Math.round(mediaAmu * G.sobreMedia * 10) / 10;
   for (const t of r.tools) {
     const [won, n] = final(t);
     if (won !== null) {
-      out.push({ id: `reliquia.${t.id}.regalada`, completo: true, texto: `Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo}: victoria regalada)`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
-      out.push({ id: `reliquia.${t.id}.trampa`, completo: true, texto: `Reliquia ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${G.trampa}: trampa)`, ok: !(won < G.trampa), partes: [{ valor: won, lo: G.trampa }] });
+      out.push({ id: `amuleto.${t.id}.regalada`, completo: true, texto: `Amuleto ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo}: victoria regalada)`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
+      out.push({ id: `amuleto.${t.id}.trampa`, completo: true, texto: `Amuleto ${t.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${G.trampa}: trampa)`, ok: !(won < G.trampa), partes: [{ valor: won, lo: G.trampa }] });
     }
-    if (t.offered >= G.ofertasMinimas) out.push({ id: `reliquia.${t.id}.eleccion`, completo: true, texto: `Reliquia ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`, ok: !(t.pick < G.eleccionMinima && (t.delta ?? 0) <= 0), partes: [{ valor: t.pick, lo: G.eleccionMinima }] });
-    worse('Reliquia', t);
+    if (t.offered >= G.ofertasMinimas) {
+      out.push({ id: `amuleto.${t.id}.eleccion`, completo: true, texto: `Amuleto ${t.name}: casi nunca se elige (${t.pick} %) y no ayuda (${t.delta})`, ok: !(t.pick < G.eleccionMinima && (t.delta ?? 0) <= 0), partes: [{ valor: t.pick, lo: G.eleccionMinima }] });
+      out.push({ id: `amuleto.${t.id}.favorito`, completo: true, texto: `Amuleto ${t.name}: el bot lo elige el ${t.pick} % de las veces (más de ${G.sobreMedia}× la media: ${topeAmu} %)`, ok: t.pick <= topeAmu, partes: [{ valor: t.pick, hi: topeAmu }] });
+    }
+    worse('Amuleto', t);
   }
   for (const sp of r.specials) {
     const [won, n] = final(sp);
-    if (won !== null) out.push({ id: `especial.${sp.id}.regalada`, completo: true, texto: `Especial ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo})`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
-    worse('Especial', sp);
+    if (won !== null) out.push({ id: `trampa.${sp.id}.regalada`, completo: true, texto: `Trampa ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo})`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
+    if (won !== null) out.push({ id: `trampa.${sp.id}.trampa`, completo: true, texto: `Trampa ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (< ${G.trampa}: trampa)`, ok: !(won < G.trampa), partes: [{ valor: won, lo: G.trampa }] });
+    worse('Trampa', sp);
   }
-  // monarcas: todos entre 0,8× y 1,3× de la letalidad media
+  // V40 1c · Bendiciones: ninguna se elige más del doble de la media, y ninguna empeora el resultado dada de salida
+  const bend = r.bendiciones ?? [];
+  const ofrecidas = bend.filter((b) => b.offered >= O.bendiciones.ofertasMinimas);
+  const mediaPick = ofrecidas.length ? ofrecidas.reduce((a, b) => a + b.pick, 0) / ofrecidas.length : 0;
+  for (const b of ofrecidas) {
+    const tope = Math.round(mediaPick * O.bendiciones.sobreMedia * 10) / 10;
+    out.push({ id: `bendicion.${b.id}.eleccion`, texto: `Bendición ${b.name}: el bot la elige el ${b.pick} % de las veces (más de ${O.bendiciones.sobreMedia}× la media: ${tope} %)`, ok: b.pick <= tope, partes: [{ valor: b.pick, hi: tope }] });
+  }
+  for (const b of bend) worse('Bendición', b);
+  // Reyes jefe: todos entre 0,8× y 1,25× de la letalidad media
+  const fr = (x: number) => String(x).replace('.', ',');
   for (const b of r.bosses) {
     if (b.faced < O.monarcas.enfrentados) continue;
     const ratio = r.avgLethality ? b.lethality / r.avgLethality : 1;
-    out.push({ id: `monarca.${b.id}`, texto: `Monarca ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo 0,8×–1,3×)`, ok: !(ratio < O.monarcas.ratio[0] || ratio > O.monarcas.ratio[1]), partes: [{ valor: ratio, lo: O.monarcas.ratio[0], hi: O.monarcas.ratio[1] }] });
+    out.push({ id: `monarca.${b.id}`, texto: `Rey jefe ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo ${fr(O.monarcas.ratio[0])}×–${fr(O.monarcas.ratio[1])}×)`, ok: !(ratio < O.monarcas.ratio[0] || ratio > O.monarcas.ratio[1]), partes: [{ valor: ratio, lo: O.monarcas.ratio[0], hi: O.monarcas.ratio[1] }] });
   }
   // ritmo: asalto 1 de 4 a 6 turnos (P95 ≤ 9), asaltos 2 y 3 de 7 a 10 (P95 ≤ 13), asaltos 4 y 5 de 9 a 12 (P95 ≤ 15)
   for (const p of r.pacing) {
@@ -167,7 +233,19 @@ export function revisar(r: InformeMeta): Comprobacion[] {
   for (const d of r.pacingByDeck) out.push({ id: `ritmo.baraja.${d.deck}`, texto: `${d.name}: percentil 95 de ${d.worstP95} turnos en algún asalto (objetivo ≤ ${O.ritmoBaraja})`, ok: !(d.worstP95 > O.ritmoBaraja), partes: [{ valor: d.worstP95, hi: O.ritmoBaraja }] });
   // el asalto 1 (dos tronos) no mata a más del 8 % de las campañas
   const m1 = r.deaths?.[0];
-  if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con el Árbol vacío (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
+  if (m1 !== undefined && l1 && has(l1)) out.push({ id: 'muertes.1', texto: `Asalto 1: mueren ahí el ${m1} % de las campañas con el Altar vacío (objetivo ≤ ${O.muertesAsalto1})`, ok: m1 <= O.muertesAsalto1, partes: [{ valor: m1, hi: O.muertesAsalto1 }] });
+  // V40 1f · ninguna muerte de un golpe con la Vida llena: la Furia típica medida no pasa la de objetivos.ts y ningún
+  // guardia, Bravo o Rey jefe en sus primeros turnos mata de un golpe con la Vida llena
+  if (r.golpes) {
+    const GU = O.golpeUnico;
+    for (const f of r.golpes.filas) {
+      if (f.quien === 'rey') continue;
+      const tipica = GU.furiaTipica[f.asalto - 1] ?? 0;
+      out.push({ id: `golpe.furia.${f.asalto}.${f.quien}`, texto: `Asalto ${f.asalto} (${f.quien}): Furia mediana ${f.furia50} en los Contraataques (objetivos.ts supone ${tipica})`, ok: f.furia50 <= tipica, partes: [{ valor: f.furia50, hi: tipica }] });
+      out.push({ id: `golpe.unico.${f.asalto}.${f.quien}`, texto: `Asalto ${f.asalto} (${f.quien}): ${f.unGolpe} muertes de un golpe con la Vida llena en ${f.n} Contraataques`, ok: f.unGolpe === 0, partes: [{ valor: f.unGolpe, hi: 0 }] });
+    }
+    for (const m of r.golpes.porMazo) out.push({ id: `golpe.rey.${m.deck}`, texto: `${m.deck}: el Rey jefe mata de un golpe con la Vida llena en sus ${GU.turnosRey} primeros turnos en el ${m.reyTemprano} % de las campañas`, ok: m.reyTemprano === 0, partes: [{ valor: m.reyTemprano, hi: 0 }] });
+  }
   // duración estimada de la campaña con las medianas de turnos de los cinco asaltos
   const min = duracion(r);
   if (min !== null) out.push({ id: 'duracion', texto: `Duración estimada de la campaña: ${min} minutos (objetivo ${O.duracion.minutos.join('–')})`, ok: inRange(min, O.duracion.minutos), partes: [{ valor: min, lo: O.duracion.minutos[0], hi: O.duracion.minutos[1] }] });
@@ -175,12 +253,19 @@ export function revisar(r: InformeMeta): Comprobacion[] {
 }
 
 /** Minutos estimados de una campaña (con un decimal), o null si el informe no trae el ritmo de los cinco asaltos. */
-export function duracion(r: Pick<InformeMeta, 'pacing'>): number | null {
+export function duracion(r: Pick<InformeMeta, 'pacing' | 'mapa'>): number | null {
   const D = OBJETIVOS.duracion;
   const p = r.pacing.filter((x) => x.n > 0 && x.stage <= 5);
   if (p.length < 5) return null;
-  const turnos = p.reduce((a, x) => a + x.p50, 0);
-  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual + D.jugada * turnos) / 60) * 10) / 10;
+  // con las jugadas de cada asalto si el informe las trae; si no, el supuesto viejo sobre los turnos
+  const jugadas = p.every((x) => typeof x.j50 === 'number');
+  const juego = jugadas ? D.jugada * p.reduce((a, x) => a + x.j50!, 0) : D.turno * p.reduce((a, x) => a + x.p50, 0);
+  if (jugadas && r.mapa) {
+    const M = D.mapa;
+    const nodos = Object.entries(M.nodo).reduce((a, [k, s]) => a + s * (r.mapa!.nodos[k] ?? 0), 0);
+    return Math.round(((D.inicio + 4 * M.entreacto + nodos + 5 * D.ritual + juego + D.jugada * r.mapa.bravoJugadas) / 60) * 10) / 10;
+  }
+  return Math.round(((D.inicio + 4 * D.entreacto + 2 * D.secreto + 5 * D.ritual + juego) / 60) * 10) / 10;
 }
 
 /** La partida clásica: del 58 al 65 % con 1, 2, 3 y 4 jugadores. */

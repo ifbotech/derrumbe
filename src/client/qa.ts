@@ -4,16 +4,17 @@
 import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
-import { Card, GameState, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, ordenDe, previewStrike, viewFor } from '../rules/engine';
-import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
-import { TUTORIAL_PLAYER, TUTORIAL_STEPS, createTutorial, stepAction } from '../rules/tutorial';
+import { CABALLO, Card, GameState, MAX_NUM, REY, SOTA, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, ordenDe, previewStrike, viewFor } from '../rules/engine';
+import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage, tomaBendicion } from '../rules/run';
+import { agregaTramo, asaltoDe, type TipoNodo } from '../rules/mapa';
+import { BENDICION, PALO_DE_REY, REY_IDS, type ReyId, bendicionesDe, esRey, fraseRey, ofertaBendiciones, reyesEnOferta } from '../rules/reyes';
 import { TOOLS, placeTool } from '../rules/tools';
 import { hero } from './art';
 import { prefs } from './campaign';
 import { cardEl } from './card';
 import { FULL_TITLE } from '../shared/brand';
 import { RUN_PLAYER, S, app, applySettings, settings } from './core';
-import { getLang, isLang, setLang } from '../shared/i18n';
+import { getLang, isLang, setLang, t } from '../shared/i18n';
 import { L, acabN } from './lengua';
 import { brandLockup, renderHome } from './home';
 import { archive, meta, openGuild, qaCobro } from './guild';
@@ -30,19 +31,23 @@ import { platform } from './platform';
 import { setScreen } from './router';
 import { renderRun } from './runscreens';
 import { pump, renderInteractive, toggleInspector } from './table';
-import { hideBark, monarchGallery, showBark, spotlight } from './guia';
+import { hideBark, monarchGallery, showBark } from './guia';
+import { bufonSays } from './whispers';
+import type { ConsejoBufon } from '../rules/bufon';
 import { coinPieces, crownShardsHost, slashPieces, waxStamp } from './engraving';
 import { feedbackShow, showRules, showSettings } from './widgets';
 import { clearTelemetry, noteRun, telemetryLog } from './telemetry';
 
-const TOOLKIT = ['piqueta', 'gemelos', 'calibre', 'dinamita', 'pasarela', 'resonador'];
+// V40 1d: tres de Espadas (el Rey de la Bendición que toma la QA, Remate) y dos de Bastos; sin la Piedra ni el Facón,
+// que llenan la mano de coronas de Golpe exacto
+const TOOLKIT = ['piqueta', 'cincel', 'cizalla', 'sacos', 'encofrado'];
 const MARKS: [Suit, number, { seal?: Seal; tr?: Treatment }][] = [
   ['S', 7, { seal: 'dinamita' }],
   ['D', 7, { seal: 'eco' }],
   ['H', 7, { tr: 'policromado' }],
   ['C', 9, { tr: 'forjado' }],
-  ['H', 10, { seal: 'jornal' }],
-  ['D', 10, { tr: 'templado' }],
+  ['H', 9, { seal: 'jornal' }],
+  ['D', 8, { tr: 'templado' }],
   ['S', 1, { seal: 'sindical' }],
   ['C', 4, { tr: 'agrietado' }],
 ];
@@ -73,7 +78,6 @@ function clean(): void {
   recogerCaida();
   ritualNuevo();
   document.querySelectorAll('.modal, .lupa, .end:not(.in-page), .toast, .ach-stack, .tip, .ribbon, .banner, body > .pieza, body > .esquirlas').forEach((n) => n.remove());
-  S.tutorial = null;
   S.session = null;
   S.lobby = null;
   S.shown = null;
@@ -90,18 +94,49 @@ function clean(): void {
 
 /** Una campaña a medio camino: Reliquias llenas, oro y unas cuantas cartas con sello o acabado. */
 function baseRun(stage = 1): Run {
-  const run = newRun({ seedText: 'QA-CORONA', deck: 'obra', ascension: 2, up: { tienda: 1, rutas: 1 } }, 7);
+  const run = newRun({ seedText: 'QA-CORONA', deck: 'escoba', ascension: 2, up: { tienda: 1, rutas: 1 } }, 7);
   runAction(run, { t: 'begin' });
+  // V40 1c · la campaña empieza con la oferta de los Reyes: la QA se queda con la primera
+  if (run.phase === 'bendicion') runAction(run, { t: 'bendicion', i: 0 });
   run.stage = stage;
   run.tools = TOOLKIT.map((id) => ({ id, n: id === 'calibre' ? 4 : 0 }));
   run.gold = 64;
-  run.integrity = 16;
+  run.integrity = 58; // V40 1f · Vida de dos dígitos en la escala nueva (59–76 por Mazo)
   for (const [s, r, m] of MARKS) Object.assign(find(run.deck, s, r) ?? {}, m);
   run.stats.toolUse = { piqueta: 14, gemelos: 9, calibre: 4, dinamita: 11 };
   run.stats.maxHit = 268;
   run.stats.floors = 14;
   run.stats.cleans = 5;
   return run;
+}
+/** V40 1e · Pone la campaña en el Mapa justo antes del nodo `id` (en uno que lleva a él) y entra en él. */
+function alNodo(run: Run, id: number): void {
+  const m = run.mapa;
+  const previo = m.nodos.find((n) => n.hacia.includes(id));
+  m.en = previo ? previo.id : -1;
+  m.hechos = m.nodos.filter((n) => n.fila < (m.nodos[id]?.fila ?? 0) && (n.asalto || n.id === previo?.id)).map((n) => n.id);
+  run.phase = 'map';
+  runAction(run, { t: 'ir', nodo: id });
+}
+/** V40 1e · Entra al asalto de `run.stage` desde el Mapa. */
+function alAsalto(run: Run): void {
+  // en el Trono infinito, el Mapa crece hasta el asalto pedido
+  for (let t = Math.max(...run.mapa.nodos.map((n) => n.tramo)) + 1; t <= run.stage; t++) agregaTramo(run.mapa, run.id, t, true);
+  const a = asaltoDe(run.mapa, run.stage);
+  if (a) alNodo(run, a.id);
+}
+/** V40 1e · Entra a un nodo del tipo pedido en el tramo de `run.stage` (si el tramo no lo tiene, la QA lo pone en la fila A). */
+function alTipo(run: Run, tipo: TipoNodo): void {
+  const tramo = run.mapa.nodos.filter((n) => n.tramo === run.stage && !n.asalto);
+  const n = tramo.find((x) => x.tipo === tipo) ?? tramo[0];
+  if (!n) return;
+  n.tipo = tipo;
+  alNodo(run, n.id);
+}
+/** V40 1e · Cobra el oro del Botín, salta el resto y vuelve al Mapa (tramo siguiente). */
+function cierraBotin(run: Run): void {
+  run.botin.forEach((r, i) => runAction(run, r.k === 'oro' ? { t: 'cobrar', i } : { t: 'saltar', i }));
+  runAction(run, { t: 'seguir' });
 }
 function show(run: Run, state: GameState | null = null, key = 'qa'): void {
   clean();
@@ -122,8 +157,10 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   // V12: el Trono infinito (mesa-cifras): la campaña ya ganada y abierta hacia abajo
   if (depth) run.endless = true;
   if (boss) run.bosses[at] = boss;
-  runAction(run, { t: 'route', i: 0 });
-  let state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  alAsalto(run);
+  let state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
+  // V40 1d: la Manga de dos huecos que daba la Pasarela (retirada); las medidas de la mesa de la QA son con ella
+  state.config.reserveSize = 2;
   // la mano que se quiere ver: trío de sietes, cartas marcadas, un as, una especial y el comodín
   const p = state.players[0];
   const all = [...p.hand, ...state.deck];
@@ -138,10 +175,10 @@ async function mesa(firstRun = false, input: InputMode = 'pointer', turn = 6, bo
   state.towers[a].damage = Math.floor(hp[state.towers[a].floors[0]] * 0.35);
   // un diamante salpicó a la siguiente Casa
   if (b) state.towers[b].damage = Math.floor(hp[state.towers[b].floors[0]] * 0.12);
-  // los dos estados de la V11: Expuesto y Aturdido, en el enemigo que tienes delante
+  // los dos estados de la V11: Expuesto y Aturdido, en el enemigo que tenés delante
   state.towers[a].fx = { fractura: true, sobrecarga: true };
   state.wall = 3;
-  state.integrity = 13;
+  state.integrity = 52; // V40 1f · la escala nueva (Vida 59–76, golpes de hasta ~35): sobrevive a un Contraataque
   state.chain = 1;
   state.turnCount = turn;
   state.fatigue = fatigueAt(state.config, turn);
@@ -174,28 +211,52 @@ function apunta(s: Suit): void {
 async function mesaMonarca(boss: string): Promise<void> {
   await mesa(false, 'pointer', 6, boss);
   const id = bossIdentity(boss);
-  if (id) showBark(id.barks.entrada);
+  if (id) showBark(esRey(boss) ? t(fraseRey(S.campaign?.run.bendiciones, boss)) : id.barks.entrada);
 }
 
-/** V7 · la partida guiada en el paso n (0-2), con los pasos anteriores ya jugados y su foco encendido. */
-async function guia(step: number): Promise<void> {
-  clean();
-  setMode('pointer');
-  meta.runs = Math.max(1, meta.runs);
-  let state = createTutorial();
-  for (let i = 0; i < step; i++) {
-    const a = stepAction(TUTORIAL_STEPS[i]);
-    if (a) state = applyAction(state, TUTORIAL_PLAYER, a).state;
-  }
-  S.tutorial = { state, step, mode: 'do' };
-  S.campaign = null;
-  S.queue.push({ view: viewFor(state, TUTORIAL_PLAYER), events: [] });
-  setScreen('table');
+/**
+ * V40 1c · un Rey jefe al frente: las otras Casas ya cayeron, el Rey va tocado, su Furia lleva dos turnos subiendo y
+ * su frase de entrada (según las Bendiciones que llevás) a la vista.
+ */
+async function mesaRey(rey: ReyId): Promise<void> {
+  await mesa(false, 'pointer', 6, rey);
+  const st = S.campaign?.state;
+  if (!st) return;
+  const palo = PALO_DE_REY[rey];
+  for (const s of SUITS) if (s !== palo) st.towers[s].floors = [];
+  const tr = st.towers[palo];
+  tr.floors = [REY];
+  tr.damage = Math.floor(st.config.floorHp[REY] * 0.3);
+  tr.fx = {};
+  st.furiaRey = 2 * (st.config.jefe?.furia ?? 0);
+  if (rey === 'oros') st.dado = 4;
+  S.queue.push({ view: viewFor(st, RUN_PLAYER), events: [] });
   await pump();
-  document.querySelectorAll('.modal').forEach((m) => m.remove());
+  S.selected.length = 0;
   renderInteractive();
-  const s = TUTORIAL_STEPS[step];
-  spotlight(s.focus, s.line);
+  showBark(t(fraseRey(S.campaign?.run.bendiciones, rey)));
+}
+
+/** V40 1c · la oferta de los Reyes antes del asalto 3: ya llevás una de Espadas y una de Oros (puede salir su Dual). */
+function bendicion(): void {
+  const run = baseRun(3);
+  for (const rey of ['espadas', 'oros'] as ReyId[]) {
+    const b = bendicionesDe(rey).find((d) => !run.bendiciones.some((x) => x.id === d.id));
+    if (b && !run.bendiciones.some((x) => BENDICION[x.id]?.rey === rey)) tomaBendicion(run, b.id);
+  }
+  run.bendiciones[0].n = 3;
+  run.phase = 'bendicion';
+  run.ofertaDe = run.stage;
+  run.oferta = ofertaBendiciones(run.id, run.stage, run.bendiciones, reyesEnOferta(false));
+  show(run);
+  setScreen('run');
+}
+
+/** V40 · la mesa de la primera campaña con la frase n del Bufón (palo, cuenta o Golpe exacto) a la vista. */
+async function bufonEn(id: ConsejoBufon): Promise<void> {
+  await STATES.mesa();
+  document.querySelector('.whisper')?.remove();
+  bufonSays(id);
 }
 
 /** Da por ganado el asalto en curso y deja la campaña en el Botín. */
@@ -203,8 +264,8 @@ async function guia(step: number): Promise<void> {
 function huesos(dos: boolean): void {
   const run = baseRun(2);
   if (dos) run.up = { ...run.up, hueso_tallado: 1, cara_rey: 1, segundo_hueso: 1 };
-  runAction(run, { t: 'route', i: 0 });
-  const state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  alAsalto(run);
+  const state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   run.caida = { oro: 12, esquirlas: 140, gotas: 1 };
   for (const s of SUITS) state.towers[s].floors = [];
   state.phase = 'won';
@@ -217,8 +278,8 @@ function huesos(dos: boolean): void {
 }
 
 function winStage(run: Run): void {
-  runAction(run, { t: 'route', i: 0 });
-  const state = startStage(run, [{ id: RUN_PLAYER, name: 'TÚ' }]);
+  alAsalto(run);
+  const state = startStage(run, [{ id: RUN_PLAYER, name: 'Tú' }]);
   for (const s of SUITS) state.towers[s].floors = [];
   state.phase = 'won';
   state.turnCount = 9;
@@ -248,7 +309,7 @@ function derrota(): Run {
   run.stats.turns = 41;
   run.stats.gold = 103;
   run.stats.contracts = 2;
-  run.death = { kind: 'sirena', title: 'Contraataque de PICAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaba 9 de Vida. Un ♣ más o un Golpe exacto lo evitaban.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
+  run.death = { kind: 'sirena', title: 'Contraataque de ESPADAS: ⚔ 14 contra Escudo 3 → entran 11', detail: 'Te quedaban 9 de Vida. Faltaron 2 de Escudo (Bastos); un Golpe exacto también lo paraba.', before: 9, threat: 14, blocked: 3, taken: 11, tower: 'S' };
   return run;
 }
 
@@ -258,14 +319,14 @@ function arbol(): void {
   setMode('pointer');
   meta.renown = 12345;
   for (const a of ACHIEVEMENTS.slice(0, 9)) meta.ach[a.id] = true;
-  meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 2, tasador: 1, caja_sismo: 1, caja_precision: 1, tampones: 1, piedra_iman: 1, esq_golpe: 3, esq_guardia: 2, esq_monarca: 1, esq_derrota: 1, hueso_tallado: 2, cara_rey: 1, corona_hierro: 1, pendon: 1 };
+  meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 2, tasador: 1, caja_espadas: 1, caja_bastos: 1, tampones: 1, piedra_iman: 1, esq_golpe: 3, esq_guardia: 2, esq_monarca: 1, esq_derrota: 1, hueso_tallado: 2, cara_rey: 1, corona_hierro: 1, pendon: 1 };
   openGuild('ups');
 }
 
 function toShop(run: Run): void {
   winStage(run);
-  runAction(run, { t: 'draft', i: null });
-  if (!run.looted) runAction(run, { t: 'loot', id: null });
+  cierraBotin(run);
+  alTipo(run, 'pulperia');
   run.gold = 64;
 }
 
@@ -333,6 +394,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
     if (!c || !state) return;
     c.run.gold = 1234;
     state.chain = 8;
+    // V40 1d: sin los multiplicadores de antes en la tira, una carga de Daño lleva el golpe a 4 cifras
+    state.charge = 200;
     for (const x of SUITS) if (!state.towers[x].away) state.towers[x].fx = { fractura: true };
     const keep = [...S.selected];
     S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
@@ -392,6 +455,66 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(baseRun(2));
     setScreen('run');
   },
+  // V40 1e · el Mapa de caminos en el tramo 3: el asalto 2 hecho, la fila A alcanzable y la B y el asalto 3 por delante
+  'mapa-ramas': () => {
+    const run = baseRun(2);
+    winStage(run);
+    cierraBotin(run);
+    show(run);
+    setScreen('run');
+  },
+  // V40 1e · el Botín de un asalto de Rey: el oro ya cobrado, la «Elegí una» de Bendición, la de Trampa y el Cofre
+  botin: () => {
+    const run = baseRun(2);
+    winStage(run);
+    const oro = run.botin.findIndex((r) => r.k === 'oro');
+    if (oro >= 0) runAction(run, { t: 'cobrar', i: oro });
+    show(run);
+    setScreen('run');
+    ritualNuevo();
+  },
+  // V40 1e · la «Elegí una» abierta (la de Trampa o carta), con Saltar y Volver al Botín
+  'elegi-una': () => {
+    const run = baseRun(2);
+    winStage(run);
+    const i = run.botin.findIndex((r) => r.k === 'elegi' && r.tipo === 'trampa');
+    if (i >= 0) runAction(run, { t: 'cobrar', i });
+    show(run);
+    setScreen('run');
+    ritualNuevo();
+  },
+  // V40 1e · La Pulpería con sus servicios: Purgar ya usado una vez (su precio subió) y Curar a la vista
+  'pulperia-servicios': () => {
+    const run = baseRun(2);
+    toShop(run);
+    run.integrity = 11;
+    const carta = run.deck.find((c) => !c.sp && c.suit !== 'X');
+    if (carta) runAction(run, { t: 'burn', card: carta.id });
+    run.gold = 64;
+    show(run);
+    setScreen('run');
+  },
+  // V40 1e · el Fogón: Curar o Purgar gratis
+  fogon: () => {
+    const run = baseRun(2);
+    winStage(run);
+    cierraBotin(run);
+    run.up = { ...run.up, rutas: 0 };
+    run.integrity = 10;
+    alTipo(run, 'fogon');
+    show(run);
+    setScreen('run');
+  },
+  // V40 · fase 3a · el HUD único sobre el Mapa, con el globo de la primera pieza de la tira abierto (foco)
+  hud: async () => {
+    await STATES['mapa-ramas']();
+    const pieza = document.querySelector<HTMLElement>('.hud .hud-bend, .hud .belt-slot.tool');
+    pieza?.setAttribute('tabindex', pieza.getAttribute('tabindex') ?? '0');
+    pieza?.focus();
+  },
+  // V40 · fase 3a · nombres del mandato para La Pulpería y la oferta de Bendición de los Reyes
+  pulperia: () => STATES.ferreteria(),
+  'oferta-bendicion': () => STATES.bendicion(),
   cobro: () => {
     const run = baseRun(2);
     winStage(run);
@@ -425,7 +548,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
   },
   // V29 · la primera pantalla de una campaña nueva: el Sobre con sus tres cartas y el Don de la Conjura
   don: () => {
-    show(newRun({ seedText: 'QA-CORONA', deck: 'obra', ascension: 0 }, 7));
+    show(newRun({ seedText: 'QA-CORONA', deck: 'escoba', ascension: 0 }, 7));
     setScreen('run');
   },
   hallazgo: () => {
@@ -433,6 +556,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     toShop(run);
     run.events = ['horno', ...run.events.filter((e) => e !== 'horno')];
     runAction(run, { t: 'next' });
+    alTipo(run, 'santuario');
     show(run);
     setScreen('run');
   },
@@ -445,6 +569,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
         toShop(run);
         run.events = [e.id, ...run.events.filter((x) => x !== e.id)];
         runAction(run, { t: 'next' });
+        alTipo(run, 'santuario');
         show(run);
         setScreen('run');
       },
@@ -465,7 +590,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
   'arbol-aviso': () => {
     clean();
     meta.renown = 3700;
-    meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 1, rutas: 1, tampones: 1, caja_sismo: 1, caja_precision: 1, bronce: 1 };
+    meta.up = { ...meta.up, caja: 2, vale: 1, tienda: 1, rutas: 1, tampones: 1, caja_espadas: 1, caja_bastos: 1, bronce: 1 };
     meta.aviso = { id: 'arbol-v12', coronas: 37, esquirlas: 3700, rangos: 9 };
     setMode('pointer');
     openGuild('ups');
@@ -480,9 +605,9 @@ const STATES: Record<string, () => void | Promise<void>> = {
   coleccion: () => {
     clean();
     meta.seen.tools = TOOLS.slice(0, 30).map((t) => t.id);
-    meta.seen.specials = ['barreno', 'martillo', 'palanca', 'grua', 'mordaza', 'bola', 'nitro', 'gemelo'];
-    meta.seen.bosses = ['doble', 'blindaje', 'furia'];
-    meta.mastery = { tools: { piqueta: 2, gemelos: 5, dinamita: 8, calibre: 1, resonador: 4 }, decks: { obra: 3, acero: 7 } };
+    meta.seen.specials = ['barreno', 'sierra', 'pico', 'grua', 'mordaza', 'bola', 'nitro', 'gemelo'];
+    meta.seen.bosses = ['espadas', 'bastos', 'oros'];
+    meta.mastery = { tools: { piqueta: 2, gemelos: 5, dinamita: 8, calibre: 1, cinta: 4 }, decks: { escoba: 3, truco: 7 } };
     openGuild('col');
   },
   acta: () => {
@@ -560,7 +685,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     clean();
     archive.length = 0;
     // V11: las actas nuevas llevan `de` (5 asaltos); la última es de la 10.0, sin `de`: «asalto 7 de 8», sin sala
-    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'obra', level = 1, death: Autopsy | null = null, de: number | undefined = 5) => ({
+    const sample = (i: number, won: boolean, stage: number, boss: string | null, tools: string[], seed: string, deck = 'escoba', level = 1, death: Autopsy | null = null, de: number | undefined = 5) => ({
       key: `qa:${i}`,
       when: new Date(Date.UTC(2026, 10, 12 - i, 20, 0)).toISOString(),
       won,
@@ -575,25 +700,24 @@ const STATES: Record<string, () => void | Promise<void>> = {
       seed,
       deck,
       level,
-      daily: null,
       online: false,
       gain: won ? 13 : stage - 1,
       text: `${FULL_TITLE} · Crónica`,
       death,
     });
     archive.push(
-      sample(0, true, 5, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'obra', 2),
-      sample(1, false, 4, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'obra', 1, {
+      sample(0, true, 5, 'El Rey de Espadas', ['piqueta', 'gemelos', 'calibre', 'contragolpe', 'sacos', 'dinamita'], 'ALBA-7', 'escoba', 2),
+      sample(1, false, 4, 'El Rey de Bastos', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'chinchon', 1, {
         kind: 'sirena',
-        title: 'Contraataque de TRÉBOLES: ⚔ 18 contra Escudo 4 → entran 14',
-        detail: 'Te quedaba 11 de Vida. Un ♣ más o un Golpe exacto lo evitaban.',
+        title: 'Contraataque de BASTOS: ⚔ 18 contra Escudo 4 → entran 14',
+        detail: 'Te quedaban 11 de Vida. Faltaron 3 de Escudo (Bastos); un Golpe exacto también lo paraba.',
         before: 11,
         threat: 18,
         blocked: 4,
         taken: 14,
         tower: 'C',
       }),
-      sample(2, false, 5, 'La Reina Helada', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'acero', 3, {
+      sample(2, false, 5, 'El Rey de Copas', ['cincel', 'calibre', 'cizalla', 'plano_maestro'], 'PLOMO', 'truco', 3, {
         kind: 'colapso',
         title: 'Mazo agotado: te quitó 4 de Vida y el Escudo no lo frena',
         detail: 'Te quedaba 3 de Vida. Cada vez que se agota el Mazo quita 1 más: cuenta el Mazo antes de robar.',
@@ -602,8 +726,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
         blocked: 0,
         taken: 4,
       }),
-      sample(3, true, 5, 'El Relojero', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'ases', 1),
-      sample(4, false, 7, 'El Usurero', ['hucha', 'cinta'], '4HH2PA', 'obra', 1, null, undefined),
+      sample(3, true, 5, 'El Rey de Oros', ['paleta', 'botiquin', 'casco', 'cinta', 'ultimo', 'andamio'], 'Z81MM0', 'mentiroso', 1),
+      sample(4, false, 7, 'El Rey de Oros', ['hucha', 'cinta'], '4HH2PA', 'chancho', 1, null, undefined),
     );
     openGuild('arc');
   },
@@ -621,7 +745,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     if (!state) return;
     state.integrity = 2;
     state.wall = 0;
-    // V35 · un enemigo Aturdido no contraataca: aquí el que tienes delante está despierto
+    // V35 · un enemigo Aturdido no contraataca: aquí el que tenés delante está despierto
     for (const s of SUITS) delete state.towers[s].fx.sobrecarga;
     const keep = [...S.selected];
     S.queue.push({ view: viewFor(state, RUN_PLAYER), events: [] });
@@ -652,12 +776,16 @@ const STATES: Record<string, () => void | Promise<void>> = {
   },
   // ── arte-ui V7: partida guiada, monarcas y su maldición ──
   // el foco de los pasos 1 (el poder del palo), 3 (La Manga) y 5 (el Golpe exacto)
-  'guia-palo': () => guia(0),
-  'guia-cuenta': () => guia(1),
-  'guia-exacto': () => guia(2),
+  'bufon-palo': () => bufonEn('palo'),
+  'bufon-cuenta': () => bufonEn('cuenta'),
+  'bufon-exacto': () => bufonEn('exacto'),
   // un asalto con La Dama del Cáliz: su retrato, la placa «Tus ♥ no curan», el cáliz tachado en cada ♥ y su bocadillo
-  'mesa-monarca': () => mesaMonarca('sequia'),
-  // el mismo asalto con cada monarca (mesa-monarca-doble, …-escasez…): la QA los corre a demanda
+  // V40 1c · la oferta de Bendiciones y un Rey jefe al frente (con su Furia y su frase)
+  bendicion: () => bendicion(),
+  'mesa-rey': () => mesaRey('espadas'),
+  ...Object.fromEntries(REY_IDS.map((r) => [`mesa-rey-${r}`, () => mesaRey(r)])),
+  'mesa-monarca': () => mesaMonarca('copas'),
+  // el mismo asalto con cada Rey (mesa-monarca-espadas, …-oros…): la QA los corre a demanda
   ...Object.fromEntries(BOSSES.map((b) => [`mesa-monarca-${b.id}`, () => mesaMonarca(b.id)])),
   // ── arte-ui V8: las piezas de la caída, congeladas a mano (sin fx.ts) ──
   // el trono de Diamantes caído con la corona hecha esquirlas, y el guardia de Picas cortado por el tajo
@@ -759,11 +887,11 @@ const STATES: Record<string, () => void | Promise<void>> = {
     S.campaign = null;
     setMode('pointer');
     app.innerHTML = `<div class="run"><div class="run-head"><h1>${L('ui.qa.laminas')}</h1></div><div class="qa-limpias"></div><div class="qa-laminas"></div></div>`;
-    // V11: las cuarenta numeradas de cara limpia, del As al 10 de cada palo (las mide la regla «cara-limpia»)
+    // V40: las treinta y seis numeradas de cara limpia, del As al 9 de cada palo (las mide la regla «cara-limpia»)
     const sheet = app.querySelector('.qa-limpias')!;
-    for (const suit of ['S', 'H', 'D', 'C'] as Suit[]) for (let rank = 1; rank <= 10; rank++) sheet.appendChild(cardEl({ id: `lim-${suit}${rank}`, suit, rank }, { tilt: false }));
+    for (const suit of ['S', 'H', 'D', 'C'] as Suit[]) for (let rank = 1; rank <= MAX_NUM; rank++) sheet.appendChild(cardEl({ id: `lim-${suit}${rank}`, suit, rank }, { tilt: false }));
     const host = app.querySelector('.qa-laminas')!;
-    ([['forjado', 'C', 9, 52], ['templado', 'D', 10, 78], ['policromado', 'H', 7, 104], ['agrietado', 'S', 4, 64]] as [Treatment, Suit, number, number][]).forEach(([tr, suit, rank, at]) => {
+    ([['forjado', 'C', 9, 52], ['templado', 'D', 8, 78], ['policromado', 'H', 7, 104], ['agrietado', 'S', 4, 64]] as [Treatment, Suit, number, number][]).forEach(([tr, suit, rank, at]) => {
       const fig = document.createElement('figure');
       const c = cardEl({ id: `lam-${tr}`, suit, rank, tr }, { tilt: false });
       const band = c.querySelector<HTMLElement>('.foil-band');
@@ -773,10 +901,10 @@ const STATES: Record<string, () => void | Promise<void>> = {
       fig.insertAdjacentHTML('beforeend', `<figcaption>${acabN(tr)}</figcaption>`);
       host.appendChild(fig);
     });
-    // y una figura junto a las numeradas: la Reina conserva su grabado
+    // y una figura junto a las numeradas: el Caballo conserva su grabado
     const fig = document.createElement('figure');
-    fig.append(cardEl({ id: 'lam-figura', suit: 'H', rank: 12 }, { tilt: false }));
-    fig.insertAdjacentHTML('beforeend', `<figcaption>${L('ui.carta.reina')}</figcaption>`);
+    fig.append(cardEl({ id: 'lam-figura', suit: 'H', rank: CABALLO }, { tilt: false }));
+    fig.insertAdjacentHTML('beforeend', `<figcaption>${L('ui.carta.caballo')}</figcaption>`);
     host.appendChild(fig);
   },
   // la Taberna con el oro en vuelo: seis monedas grabadas entre la primera oferta y la bolsa
@@ -784,7 +912,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     await STATES.ferreteria();
     quieto();
     const from = document.querySelector('.run-body.shop .choice')?.getBoundingClientRect();
-    const to = document.querySelector('.deck-head .purse b, .purse b')?.getBoundingClientRect();
+    const to = document.querySelector('#bolsa-oro, .deck-head .purse b, .purse b')?.getBoundingClientRect();
     if (!from || !to) return;
     const [ax, ay] = [from.left + from.width / 2, from.top + from.height * 0.3];
     const [bx, by] = [to.left + to.width / 2, to.top + to.height / 2];
@@ -866,7 +994,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     // V10: en el idioma de la mesa (scripts/og-card.ts hace una por idioma; og-card.png es la española)
     app.innerHTML = `<div class="og-card">${hero()}<div class="og-txt">${brandLockup(getLang())}<small>${L('ui.og.sub')}</small></div><div class="og-cards"></div></div>`;
     const fan = app.querySelector('.og-cards')!;
-    ([['S', 13], ['D', 12], ['H', 11], ['C', 13]] as [Suit, number][]).forEach(([suit, rank], i) => {
+    ([['S', REY], ['D', CABALLO], ['H', SOTA], ['C', REY]] as [Suit, number][]).forEach(([suit, rank], i) => {
       const c = cardEl({ id: `og-${suit}`, suit, rank }, { tilt: false });
       c.style.setProperty('--r', `${(i - 1.5) * 9}deg`);
       c.style.setProperty('--y', `${Math.abs(i - 1.5) * 16}px`);
@@ -920,7 +1048,7 @@ export function installQa(): void {
       /** Resumen de la campaña en curso, para comprobar lo que hizo el mando. */
       run: () => {
         const run = S.campaign?.run;
-        return run ? { phase: run.phase, stage: run.stage, gold: run.gold, tools: run.tools.map((t) => t.id), marks: run.deck.filter((c) => c.seal || c.tr).length, pending: run.pending?.kind ?? null, shop: run.shop.map((o) => o.kind) } : null;
+        return run ? { phase: run.phase, stage: run.stage, gold: run.gold, tools: run.tools.map((t) => t.id), marks: run.deck.filter((c) => c.seal || c.tr).length, pending: run.pending?.kind ?? null, shop: run.shop.map((o) => o.kind), combate: run.combate, deck: run.deck.length, bendiciones: run.bendiciones.length, elegi: run.elegi } : null;
       },
       /** En la Taberna: oro de sobra y dos reliquias, para probar las Reliquias y la Mesa de lacre sin depender del azar. */
       boost: () => {

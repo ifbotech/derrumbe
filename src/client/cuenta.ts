@@ -32,7 +32,7 @@ export interface Preview {
 const CHEVRON = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5,7.8 L6,4.2 L9.5,7.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg>';
 const CROSS = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5,3.5 L12.5,12.5 M12.5,3.5 L3.5,12.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg>';
 /** Guardia por rango, para el recibo. */
-const GUARD_NAME = (r: number): string | undefined => (r === 11 ? L('ui.cuenta.sota') : r === 12 ? L('ui.cuenta.reina') : r === 13 ? L('ui.cuenta.rey') : undefined);
+const GUARD_NAME = (r: number): string | undefined => (r === 10 ? L('ui.cuenta.sota') : r === 11 ? L('ui.cuenta.caballo') : r === 12 ? L('ui.cuenta.rey') : undefined);
 const WARN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12,2.5 L22.5,21 H1.5 Z" fill="currentColor"/><path d="M12,9 V15 M12,17.6 V18.4" fill="none" stroke="var(--hazard)" stroke-width="2.6" stroke-linecap="square"/></svg>';
 
 const signed = (n: number, text = String(n)) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${text.replace('-', '')}`;
@@ -88,7 +88,7 @@ export function previewHtml(p: Preview, tail = ''): string {
   const worst = contra ?? 0;
   const marks = [
     r.clean ? `<em class="m gold">${L('ui.cuenta.exacto')}</em>` : '',
-    fallen ? `<em class="m red">${throne ? L('ui.cuenta.cae.trono') : fallen > 1 ? L('ui.cuenta.caen', { n: fallen }) : L('ui.cuenta.cae')}</em>` : '',
+    fallen ? `<em class="m red cae">${throne ? L('ui.cuenta.cae.trono') : fallen > 1 ? L('ui.cuenta.caen', { n: fallen }) : L('ui.cuenta.cae')}</em>` : '',
     immune ? `<em class="m inm" data-tip="${L('ui.cuenta.inmune.tip')}">${L('ui.cuenta.inmune')}</em>` : '',
     mas ? `<em class="m mas" data-extra="${mas}">${r.clean ? L('ui.cuenta.impulso', { n: mas }) : L('ui.cuenta.mas', { n: mas })}</em>` : '',
     r.hurt ? `<em class="m red">${L('ui.cuenta.vida', { n: r.hurt })}</em>` : '',
@@ -97,7 +97,7 @@ export function previewHtml(p: Preview, tail = ''): string {
         : `<em class="m dim" data-tip="${L('ui.cuenta.contra.tip', { n: worst })}">${L('ui.cuenta.contra', { n: worst })}</em>`,
     wallGain > 0 ? `<em class="m">${L('ui.cuenta.escudo', { n: wallGain })}</em>` : '',
     repair > 0 ? `<em class="m">${L('ui.cuenta.cura', { n: repair })}</em>` : '',
-    r.gold ? `<em class="m gold">${L('ui.cuenta.oro', { n: r.gold })}</em>` : '',
+    r.gold ? `<em class="m gold oro">${L('ui.cuenta.oro', { n: r.gold })}</em>` : '',
     polvora ? `<em class="m polvora">${L('ui.cuenta.polvora', { n: polvora })}</em>` : '',
     r.draw ? `<em class="m">${L('ui.cuenta.robas', { n: r.draw })}</em>` : '',
     tail,
@@ -216,7 +216,8 @@ function slip(p: Preview): Slip {
       s.after.push({ who, amount: '', kind: 'n', note: note || L('ui.cuenta.tras') });
       continue;
     }
-    const group = ev.src === 'tool' ? 'belt' : ev.src === 'form' || ev.src === 'chain' || ev.src === 'state' ? 'base' : 'cards';
+    // V40 · las reglas del Mazo (Envido, ¡Escoba!, Mano larga…) van con la base del golpe
+    const group = ev.src === 'tool' ? 'belt' : ev.src === 'form' || ev.src === 'chain' || ev.src === 'state' || ev.src === 'mazo' ? 'base' : 'cards';
     const lines = s[group];
     if (ev.src === 'form') {
       // la formación pone la base de las dos mitades de la cuenta
@@ -261,8 +262,13 @@ function receiptHtml(p: Preview): string {
   const fallen = r.fallenBy[target] ?? 0;
   const dealt = r.dealt[target] ?? 0;
   const fate = fallen > 1 ? L('ui.cuenta.fate.caen', { n: fallen }) : fallen ? (r.fell.some((f) => f.tower === target && f.clean) ? L('ui.cuenta.fate.exacto') : L('ui.cuenta.fate.cae')) : L('ui.cuenta.fate.quedan', { n: Math.max(0, left - dealt) });
+  // V40 3b · la línea de la mesa enseña solo lo que decide el golpe (el Contraataque y lo excepcional): el oro y la
+  // pólvora que reparte el golpe se leen aquí
+  const polvora = vecinosPresentes(v.towers, target).some((x) => v.towers[x].floors.length) ? polvoraDe(p.cards, r) : 0;
   const total: Line[] = [
     { who: L('ui.cuenta.de', { guardia: GUARD_NAME(rank) ?? RANK_LABEL[rank] ?? '', palo: paloN(target) }), amount: `${left}`, kind: 'n', note: fate },
+    ...(r.gold ? [{ who: L('ui.cuenta.oro', { n: r.gold }), amount: '', kind: 'n' as const }] : []),
+    ...(polvora ? [{ who: L('ui.cuenta.polvora', { n: polvora }), amount: '', kind: 'n' as const }] : []),
     ...s.after,
   ];
   // en el móvil el aviso de último turno va en un renglón: su explicación entera vive aquí, en el recibo
@@ -319,7 +325,13 @@ function place(): void {
   const handTop = tops.length ? Math.min(...tops.map((b) => b.top)) : innerHeight;
   const towersBottom = Math.max(0, ...[...document.querySelectorAll('.tower')].map((n) => n.getBoundingClientRect().bottom));
   const sr = score.getBoundingClientRect();
-  const top = towersBottom + GAP;
+  // V40 3b · en el móvil la franja entre los enemigos y la cuenta no da (≈ 60 px para ≈ 260): mientras la hoja está
+  // abierta, el enemigo activo se recoge a su nombre y sus placas (Inmune y la del golpe) y la fila de los que esperan se
+  // esconde (jugo40.css); la hoja se abre justo debajo del enemigo, con sus fichas plegadas a su renglón de cabecera; se
+  // despliegan las que quepan, la de las cartas primero (un toque despliega otra)
+  document.querySelector('.table-screen')?.classList.toggle('hoja-abierta', sheet);
+  const activa = document.querySelector('.table-screen .tower.activa')?.getBoundingClientRect();
+  const top = sheet && activa ? Math.max(0, activa.bottom + GAP) : towersBottom + GAP;
   if (sheet) {
     el.style.left = '6px';
     el.style.right = '6px';
@@ -353,7 +365,10 @@ function place(): void {
     el.style.maxHeight = `${Math.floor(room)}px`;
     // cuántas líneas caben bajo la cabecera de cada ficha: las demás pasan a otra columna
     const fits = () => !body || (body.scrollHeight <= body.clientHeight + 1 && body.scrollWidth <= body.clientWidth + 1);
-    if (sheet) return fits();
+    if (sheet) {
+      pliega(el, fits);
+      return fits();
+    }
     const max = Math.max(2, Math.min(9, Math.floor((room - head - 22) / Math.max(14, line))));
     // una línea que se parte en dos ocupa dos renglones: se prueba con un renglón menos por columna mientras quepa a lo ancho;
     // si así no cabe, se repite con las notas en un solo renglón (.ancho), que gasta el ancho que sobre en lugar de alto
@@ -372,12 +387,33 @@ function place(): void {
   // primero, en la franja entre las torres y la cuenta, sin taparla; si ahí no cabe, baja hasta la mano (nunca la pisa)
   const above = Math.min(sr.top, handTop) - GAP;
   const low = Math.max(above, Math.min(handTop, innerHeight) - GAP);
-  if (above - top < 84 || !at(above)) at(low);
+  // la hoja del móvil nunca baja de la cuenta: si ni plegada cabe, su cuerpo se desplaza (con su aviso de tinta)
+  if (sheet) at(above);
+  else if (above - top < 84 || !at(above)) at(low);
   if (!sheet) {
     const w = el.getBoundingClientRect().width;
     el.style.left = `${Math.round(Math.max(lo, Math.min(mid - w / 2, hi - w)))}px`;
   }
   fades();
+}
+
+/** V40 3b · la ficha que el jugador desplegó con un toque en la hoja del móvil (las demás se pliegan). */
+let desplegada = '';
+const ORDEN_FICHAS = ['f-cartas', 'f-base', 'f-res', 'f-cinto', 'f-total'];
+/** Pliega las fichas de la hoja y despliega, en orden, las que caben sin desplazarse (o la que se tocó). */
+function pliega(el: HTMLElement, fits: () => boolean): void {
+  const fichas = [...el.querySelectorAll<HTMLElement>('.ficha')];
+  fichas.forEach((f) => f.classList.add('plegada'));
+  if (desplegada) {
+    el.querySelector(`.ficha.${desplegada}`)?.classList.remove('plegada');
+    return;
+  }
+  for (const cls of ORDEN_FICHAS) {
+    const f = el.querySelector<HTMLElement>(`.ficha.${cls}`);
+    if (!f || !f.querySelector('li:not(.vacio):not(.repite)')) continue;
+    f.classList.remove('plegada');
+    if (!fits()) f.classList.add('plegada');
+  }
 }
 
 /** Tinta desvanecida en el borde hacia el que queda recibo por leer. */
@@ -433,6 +469,8 @@ export function closeReceipt(): boolean {
   }
   calc()?.setAttribute('aria-expanded', 'false');
   document.getElementById('score')?.classList.remove('con-recibo');
+  document.querySelector('.table-screen')?.classList.remove('hoja-abierta');
+  desplegada = '';
   return was;
 }
 export const receiptOpen = () => why !== null;
@@ -467,6 +505,13 @@ function bind(): void {
   });
   // toque, clic, Enter o A: la fija abierta; otra vez, la repliega
   document.addEventListener('click', (e) => {
+    // V40 3b · en la hoja del móvil, tocar una ficha plegada la despliega (y pliega las demás)
+    const ficha = (e.target as Element | null)?.closest?.<HTMLElement>('#recibo.hoja .ficha.plegada');
+    if (ficha) {
+      desplegada = ORDEN_FICHAS.find((c) => ficha.classList.contains(c)) ?? '';
+      place();
+      return;
+    }
     if ((e.target as Element | null)?.closest?.('#recibo .recibo-x')) {
       closeReceipt();
       if (inputMode() !== 'pointer') calc()?.focus({ preventScroll: true });

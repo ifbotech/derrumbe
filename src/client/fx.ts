@@ -560,6 +560,65 @@ export function procBadge(ev: GameEvent): void {
   sfx.proc(what);
   setTimeout(() => el.remove(), 1250);
 }
+/**
+ * V40 · 3b · Los momentos grandes de la mesa: ¡Escoba!, ¡Envido!, ¡Chancho!, un bravo del Truco, el Engaño, Pierna o
+ * Escalera, la carga de una Bendición que sube y el nivel [2/4] de un Rey que se enciende. Un sello pixel (cuadrado,
+ * a celda entera, del color del momento) que cae sobre el enemigo activo —nunca sobre la mano—, una sacudida corta, la
+ * cifra de la cuenta que salta (Daño o Multi, según lo que aporte) y su sonido propio (audio.ts). ≤ 600 ms a 1× (menos
+ * a 2× y 4×). Con «Reducir movimiento», el sello aparece y se va sin moverse, sin sacudida ni astillas; suena igual.
+ * Lo llama el Bufón vivo (bufon-vivo.ts) por cada paso del golpe que lo merece; `ancla` lo pone sobre otra cosa (la
+ * opción de Bendición que enciende un nivel).
+ */
+export type Momento = 'escoba' | 'envido' | 'chancho' | 'bravo' | 'engano' | 'jugada' | 'carga' | 'nivel' | 'exacto' | 'contra' | 'salvo' | 'sombria' | 'victoria' | 'derrota' | 'tienta';
+const SELLO_MOMENTO: Partial<Record<Momento, string>> = { escoba: 'ui.momento.escoba', envido: 'ui.momento.envido', chancho: 'ui.momento.chancho', bravo: 'ui.momento.bravo', engano: 'ui.momento.engano' };
+/** Cuánto sacude cada momento (0: nada). */
+const SACUDE: Partial<Record<Momento, number>> = { escoba: 0.35, chancho: 0.4, envido: 0.25, engano: 0.2, bravo: 0.18, jugada: 0.15, nivel: 0 };
+let momentoUlt = { m: '', t: 0 };
+export function momento(m: Momento, ev: GameEvent | null, ancla?: Element | null): void {
+  const sonido = { escoba: sfx.escoba, envido: sfx.envido, chancho: sfx.chancho, bravo: sfx.bravo, engano: sfx.engano, jugada: sfx.jugada, nivel: sfx.nivel } as Partial<Record<Momento, () => void>>;
+  const paso = ev?.e === 'step' ? ev : null;
+  // la cifra de la cuenta que salta: Multi si el paso lo sube, Daño si suma Daño
+  if (paso) {
+    const cifra = paso.mr || paso.dr ? $('#score .calc .r') : paso.df ? $('#score .calc .f') : null;
+    restart(cifra, 'salta');
+  }
+  const ahora = performance.now();
+  const repetido = momentoUlt.m === m && ahora - momentoUlt.t < 350;
+  momentoUlt = { m, t: ahora };
+  if (m === 'carga') {
+    // la píldora de la Bendición (o de su Rey) salta con su «+n» y un toque de moneda
+    const n = Number(/carga (\d+)$/.exec(paso?.label ?? '')?.[1] ?? 1);
+    const pill = paso ? $(`#rasgos .rasgo[data-bend="${paso.id}"]`) ?? $(`#rasgos .rasgo[data-rasgo]`) : null;
+    restart(pill, 'salta');
+    chipAt(pill ?? $('#score .calc'), L('ui.momento.carga', { n }), 'carga');
+    sfx.carga(n);
+    return;
+  }
+  if (repetido) return;
+  sonido[m]?.();
+  const at = ancla ?? $('.table-screen .tower.activa .floor-slot') ?? $('#score');
+  if (!at) return;
+  const r = at.getBoundingClientRect();
+  const lang = getLang();
+  const quien = paso ? pasoFor(lang, paso) : '';
+  const nombre = SELLO_MOMENTO[m] ? L(SELLO_MOMENTO[m] as 'ui.momento.escoba') : m === 'nivel' ? (ancla?.querySelector('.enciende')?.textContent ?? L('ui.momento.nivel')) : (quien.split(': ')[0].split(' · ').pop() ?? '');
+  const extra = paso ? (paso.mr ? `×${paso.mr}` : paso.dr ? L('ui.momento.multi', { n: paso.dr }) : paso.df ? L('ui.momento.dano', { n: paso.df }) : '') : '';
+  const s = document.createElement('div');
+  s.className = `momento40 m-${m}`;
+  s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = `<b>${nombre}</b>${extra ? `<small>${extra}</small>` : ''}`;
+  const dur = Math.round(600 * Math.max(0.5, speed()));
+  s.style.setProperty('--x', `${Math.round(Math.max(110, Math.min(innerWidth - 110, r.left + r.width / 2)))}px`);
+  s.style.setProperty('--y', `${Math.round(Math.max(60, r.top + Math.min(r.height * 0.45, 160)))}px`);
+  s.style.animationDuration = `${dur}ms`;
+  document.body.appendChild(s);
+  setTimeout(() => s.remove(), dur + 40);
+  if (settings.calm) return;
+  const fuerza = SACUDE[m] ?? 0;
+  if (fuerza) quake(fuerza, 0, 1);
+  if (fuerza >= 0.25) burst(r.left + r.width / 2, r.top + Math.min(r.height * 0.45, 160), 8);
+}
+
 // la prueba de humo dispara insignias a mano (con ?qa): no depende de que el azar traiga la reliquia
 /**
  * V8-7: el primer temblor de la mesa (`quake`) sube `.table-screen` entera a su propia capa, y la primera
@@ -578,6 +637,8 @@ function warmTable(): void {
     const once = first;
     first = false;
     idle(() => {
+      // V40 4 · cada mesa nueva calienta el primer foco escalado del mando (calientaFoco)
+      calientaFoco(el);
       if (settings.calm || !el.isConnected) return;
       // una centésima de píxel: con 0 px el navegador se salta la animación y no prepara la capa
       el.animate([{ transform: 'translate(0px, 0.01px)' }, { transform: 'none' }], { duration: 60 });
@@ -653,6 +714,17 @@ function warmSeals(tries: number): void {
   for (const band of document.querySelectorAll<HTMLElement>('.table-screen #hand .card .foil-band'))
     band.animate([{ transform: 'translateX(-160%) rotate(20deg)', opacity: 0 }, { transform: 'translateX(260%) rotate(20deg)', opacity: 0.01 }], { duration: 160 });
   window.setTimeout(() => used.forEach(([w, pool]) => ((w.style.opacity = ''), release(w, pool))), 240);
+  // V40 3b · el sello de un momento grande (¡Escoba!…), invisible y con su entrada: su letra grande, su trama y su sombra
+  // se rasterizan aquí y no en el primer momento de verdad (en frío pagaba ~140 ms en 1920×1080)
+  {
+    const s = document.createElement('div');
+    s.className = 'momento40 m-escoba';
+    s.innerHTML = `<b>${L('ui.momento.escoba')}</b><small>+1</small>`;
+    s.style.cssText = `--x:${Math.round(innerWidth / 2)}px;--y:${Math.round(innerHeight / 3)}px;opacity:0.01;animation:none`;
+    document.body.appendChild(s);
+    s.animate([{ transform: 'translate(-50%, -50%) scale(1.9) rotate(-12deg)' }, { transform: 'translate(-50%, -50%) scale(1) rotate(-5deg)' }], { duration: 160 });
+    window.setTimeout(() => s.remove(), 240);
+  }
   // y el tajo sobre un guardia de verdad (la copia de su figura al tamaño de la mesa), invisible, con las mismas piezas
   const guard = document.querySelector<HTMLElement>('.table-screen .tower:not([hidden]) .floor-slot .card');
   if (guard) {
@@ -670,13 +742,57 @@ function warmSeals(tries: number): void {
     }, 240);
   }
 }
+/**
+ * V40 4 · con mando, el naipe enfocado de la mano crece 1,22× en su sitio (mesa40.css). La primera vez que un naipe de
+ * la mano se veía a esa escala, el navegador pagaba un fotograma de ~60 ms (1280×800, en frío). Una copia fuera de la
+ * mano no lo calienta: tiene que ser un naipe de la mano, en su sitio y de cara. Con cada mesa nueva (lo ya calentado
+ * se pierde entre pantallas), en cuanto se posa, el naipe más cargado de la mano pasa unos
+ * fotogramas a 1,22× y a opacidad 0,01 mientras una copia suya, idéntica y en su mismo sitio, lo tapa: no se ve nada y
+ * el primer foco de la cruceta ya no lo paga. Sin reescalar capas ni desenfocar el pixel-art.
+ */
+function calientaFoco(mesa: Element, intentos = 0): void {
+  if (!mesa.isConnected || matchMedia('(max-width: 640px), (max-aspect-ratio: 1/1)').matches) return;
+  // el naipe más cargado de la mano que esté quieto (ni elegido, ni enfocado, ni repartiéndose)
+  const libres = [...mesa.querySelectorAll<HTMLElement>('#hand .card')].filter((x) => !x.classList.contains('sel') && !x.hasAttribute('data-foco'));
+  const c = libres.sort((a, b) => b.getElementsByTagName('*').length - a.getElementsByTagName('*').length)[0];
+  if (!c) return;
+  // si todavía se está repartiendo, se espera a que se pose y a que la pantalla quede quieta
+  const vuelo = c.getAnimations({ subtree: true }).filter((a) => a.playState === 'running' || a.pending);
+  if (vuelo.length) {
+    if (intentos < 3) Promise.all(vuelo.map((a) => a.finished.catch(() => undefined))).then(() => cuandoQuieta(() => calientaFoco(mesa, intentos + 1)));
+    return;
+  }
+  // la caja del naipe sin su abanico (sin transición: se lee y se devuelve en la misma tarea, sin pintar nada)
+  const cs = getComputedStyle(c);
+  const giro = cs.transform;
+  const origen = cs.transformOrigin;
+  const ancho = cs.getPropertyValue('--w');
+  c.style.transition = 'none';
+  c.style.transform = 'none';
+  const r = c.getBoundingClientRect();
+  c.style.transform = '';
+  void c.offsetWidth;
+  c.style.transition = '';
+  // la tapa: una copia idéntica, en el mismo sitio y con el mismo giro, dentro de la mesa (hereda sus tintas)
+  const m = (mesa as HTMLElement).getBoundingClientRect();
+  const tapa = c.cloneNode(true) as HTMLElement;
+  tapa.removeAttribute('id');
+  tapa.removeAttribute('tabindex');
+  tapa.setAttribute('aria-hidden', 'true');
+  tapa.style.cssText = `position:fixed;left:${r.left - m.left}px;top:${r.top - m.top}px;width:${r.width}px;height:${r.height}px;margin:0;z-index:60;pointer-events:none;transition:none;animation:none;transform:${giro};transform-origin:${origen};${ancho ? `--w:${ancho};` : ''}`;
+  mesa.appendChild(tapa);
+  const quieto = { opacity: 0.01, transform: 'scale(1.22)', transformOrigin: '50% 100%' };
+  c.animate([quieto, quieto], { duration: 120 });
+  c.querySelector<HTMLElement>('.card-in')?.animate([{ transform: 'none' }, { transform: 'none' }], { duration: 120 });
+  window.setTimeout(() => tapa.remove(), 140);
+}
 // la reserva se calienta en cuanto la página pinta su primer fotograma
 requestAnimationFrame(() => requestAnimationFrame(() => (warmUp(), warmTable())));
 if (new URLSearchParams(location.search).has('qa'))
   Object.assign(window, {
     __qaProc: procBadge,
     // V8 · la prueba de humo y qa:fps disparan los efectos a mano, sin depender del azar de la partida
-    __qaFx: { tear, throneFall, coins, sealStep, burst, hitstop, quake, guardFall, exactChain, made: () => made, settings },
+    __qaFx: { tear, throneFall, coins, sealStep, burst, hitstop, quake, guardFall, exactChain, momento, made: () => made, settings },
   });
 
 /**

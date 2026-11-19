@@ -166,8 +166,8 @@ svg.ly.art.seal { transform: translateZ(25px) scale(0.973); }
 .resume small { font-family: var(--cap); font-size: 14px; letter-spacing: 0.1em; }
 .resume b { font-family: var(--title); font-weight: 700; text-transform: none; letter-spacing: 0; font-size: clamp(20px, 3.6vh, 36px); line-height: 1; }
 .resume span { font-family: var(--mono); font-weight: 700; text-transform: none; font-size: 14px; }
-.home-right .foot { align-items: center; flex: none; }
-.home-right .foot .conn { flex: 1; text-align: right; }
+.home-right .foot { align-items: center; flex: none; flex-wrap: wrap; }
+.home-right .foot .conn { flex: 1 1 12em; min-width: 0; text-align: right; }
 .home-right .foot button { flex: none; }
 
 /* ventanas pequeñas */

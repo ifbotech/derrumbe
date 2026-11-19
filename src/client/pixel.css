@@ -1,0 +1,179 @@
+/* SANGRE Y PALO V40 · fase 2c — papel hueso #f4efe2 y tintas de palo del tono hondo de cada rampa saturada.
+   V40 · fase 2b — el naipe y las piezas en pixel-art «sin línea» (src/client/pixel/).
+   Va la última (main.ts): manda sobre deck.css en lo que toca al naipe. Nada de reglas de juego ni de maquetación de
+   pantallas: tinta, píxel nítido y la animación del Bufón (solo transform y opacity, sin filtros; quieto con
+   «Reducir movimiento»). */
+
+/* ── la paleta de palo: deck.css (V38) reafirmaba el verde botella de Bastos; la de la baraja española manda ── */
+:root {
+  --suit-C: #0a5424;
+  --suitd-C: #5ceb86;
+}
+:root.contraste {
+  --suit-C: #063d1a;
+  --suitd-C: #9cf5b4;
+}
+
+/* ── el naipe: marfil luminoso, esquinas redondeadas, un filo fino y una sombra suave (fuera el doble marco negro).
+   El papel va por variable local: los tratamientos (forjado, agrietado) y las selecciones conservan lo suyo. ── */
+:root {
+  --naipe-papel: #f4efe2;
+}
+.card {
+  --card-paper: var(--naipe-papel);
+}
+.card .ly.paper {
+  border: 1px solid rgba(42, 34, 32, 0.3);
+  border-radius: calc(var(--w) * 0.07);
+  box-shadow: 0 2px 0 rgba(10, 9, 8, 0.32), 0 5px 12px rgba(10, 9, 8, 0.26);
+}
+.card .card-back {
+  border: 1px solid rgba(42, 34, 32, 0.45);
+  border-radius: calc(var(--w) * 0.07);
+  overflow: hidden;
+  box-shadow: 0 2px 0 rgba(10, 9, 8, 0.32), 0 5px 12px rgba(10, 9, 8, 0.26);
+}
+/* el índice: el número limpio en su placa y el glifo del palo debajo, más chico que antes para que las pintas llenen
+   el naipe (las zonas libres de dibujo son las de ZONA_INDICE en pixel/naipes.ts) */
+.card .corner {
+  font-size: max(14px, calc(var(--w) * 0.22));
+}
+.card .corner.wide b {
+  letter-spacing: -0.08em;
+}
+
+/* ── el píxel es píxel: sin trazos heredados (el contorno ya va dibujado) ni suavizado al escalar ── */
+svg.px,
+svg.px-cara,
+svg.px-dorso {
+  stroke: none !important;
+  paint-order: normal !important;
+  shape-rendering: crispEdges;
+  image-rendering: pixelated;
+}
+svg.px *,
+svg.px-cara *,
+svg.px-dorso * {
+  stroke: none !important;
+}
+
+/* ── la pinta del índice: alta y estrecha como su silueta, a la altura que ya tenía el palo de la esquina ── */
+.card .corner svg.glyph.px-pinta,
+:is(.hand, .reserve, .qa-limpias) .card .corner svg.glyph.px-pinta {
+  width: auto;
+  height: max(12px, calc(var(--w) * 0.12));
+  overflow: visible;
+}
+
+/* ── la cara del naipe ocupa su lienzo entero; el marfil es el de .ly.paper ── */
+svg.ly.art.px-cara {
+  width: 100%;
+  height: 100%;
+}
+/* la tirada de una sola pinta (carta diminuta del móvil) no se ve de serie */
+svg.px-numero .px-solo {
+  display: none;
+}
+/* en la carta de 44 px del móvil el índice llena la mitad de arriba: las pintas se retiran y queda una sola, grande,
+   en la mitad libre de abajo (el mismo gesto que la cara limpia de la 11.0, sin mover la capa) */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :is(.hand, .reserve, .qa-limpias) .card svg.px-numero .px-pintas {
+    display: none;
+  }
+  :is(.hand, .reserve, .qa-limpias) .card svg.px-numero .px-solo {
+    display: inline;
+  }
+}
+
+/* ── los dorsos de cada Mazo: a sangre dentro de la carta ── */
+.card-back svg.px-dorso {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── iconos de Amuletos, Trampas y Bendiciones: la caja manda, el dibujo conserva su proporción ── */
+svg.px.icono {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ── los Reyes jefe en la mesa: vencido, el busto se hunde una celda (el color ya lo pierde el dibujo: fase 2c) ── */
+.monarca.px.vencido .m-bust {
+  transform: translateY(2px);
+}
+
+/* ═════════════ el Bufón (bufonSvg) ═════════════
+   Reposo: respira (el cuerpo baja y sube una celda) y los cascabeles se mecen de a un píxel. Risa: rebota rápido y
+   los cascabeles tintinean. Burla: se ladea de un lado a otro. Brillo: los destellos parpadean. Sombría: respira
+   lento y hondo. Todo con pasos (steps): el píxel nunca queda a medias. */
+.bufon {
+  display: block;
+  overflow: visible;
+}
+.bufon .bf-cuerpo,
+.bufon .bf-cascabel,
+.bufon .bf-brillo {
+  transform-box: view-box;
+  will-change: transform;
+}
+.bufon.bf-reposo .bf-cuerpo {
+  animation: bf-respira 2.6s steps(1, end) infinite;
+}
+.bufon.bf-reposo .bf-cascabel {
+  animation: bf-mece 1.3s steps(1, end) infinite;
+  animation-delay: calc(var(--i, 0) * -0.43s);
+}
+.bufon.bf-risa .bf-cuerpo {
+  animation: bf-rebota 0.36s steps(1, end) infinite;
+}
+.bufon.bf-risa .bf-cascabel {
+  animation: bf-mece 0.24s steps(1, end) infinite;
+  animation-delay: calc(var(--i, 0) * -0.08s);
+}
+.bufon.bf-burla .bf-cuerpo {
+  animation: bf-ladea 0.9s steps(1, end) infinite;
+}
+.bufon.bf-burla .bf-cascabel {
+  animation: bf-mece 0.45s steps(1, end) infinite;
+}
+.bufon.bf-brillo .bf-cuerpo {
+  animation: bf-respira 2s steps(1, end) infinite;
+}
+.bufon.bf-brillo .bf-brillo {
+  animation: bf-destello 0.8s steps(1, end) infinite;
+}
+.bufon.bf-sombria .bf-cuerpo {
+  animation: bf-respira 4.2s steps(1, end) infinite;
+}
+@keyframes bf-respira {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(1px); }
+}
+@keyframes bf-rebota {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+@keyframes bf-ladea {
+  0%, 100% { transform: translateX(-1px); }
+  50% { transform: translateX(1px); }
+}
+@keyframes bf-mece {
+  0%, 100% { transform: translateX(0); }
+  33% { transform: translateX(-1px); }
+  66% { transform: translateX(1px); }
+}
+@keyframes bf-destello {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+/* «Reducir movimiento» (Ajustes o el sistema): el Bufón queda en su cuadro fijo */
+:root.calm .bufon *,
+.calm .bufon * {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bufon * {
+    animation: none !important;
+  }
+}

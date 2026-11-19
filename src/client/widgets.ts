@@ -1,7 +1,7 @@
 // Piezas de interfaz que se repiten en varias pantallas: la opción-carta, las Reliquias, el visor
 // de mazos, las reglas y los ajustes.
-import { Card, SUITS, SUIT_GLYPH, sortCards } from '../rules/engine';
-import { TOOL, TOOL_SLOTS, ToolInst } from '../rules/tools';
+import { Card, SUITS, sortCards } from '../rules/engine';
+import { TOOL, TOOL_SLOTS, ToolInst, huecosAmuleto } from '../rules/tools';
 import { isLang, onLangChange, setLang, t as tr, tFor } from '../shared/i18n';
 import { L, Ln, archN, espD, espN, getLang, palo, rarN, relD, relN } from './lengua';
 import { Volume, getVolume, setVolume, sfx } from './audio';
@@ -13,7 +13,7 @@ import { applyBackup, describeBackup, exportProgress, readBackup } from './backu
 import { COMMUNITY_URL, customServer, platform, setCustomServer } from './platform';
 import { rulesHtml } from './rules-text';
 import { controlRows } from './prompts';
-import { whisperSetting } from './whispers';
+import { bufonSetting, whisperSetting } from './whispers';
 import { type ShareResult, clearTelemetry, feedbackIssueUrl, shareFeedback, telemetryBytes, telemetryLog, telemetryRemote } from './telemetry';
 
 export const spCard = (id: string): Card => ({ id: `show-${id}`, suit: 'X', rank: 0, sp: id });
@@ -60,24 +60,28 @@ export function toolTile(id: string): HTMLDivElement {
 }
 
 export interface BeltOpts {
+  /** Huecos abiertos (V40 1d: 4 y uno más por nivel de la Faja ancha; ver `toolSlots`); los demás, cerrados. */
+  slots?: number;
   /** Se puede vender: recibe el hueco. */
   onSell?: (slot: number) => void;
   sellValue?: (id: string) => number;
 }
 
 /**
- * Las Reliquias, en el orden en que llegaron. No se ordenan (V34): ninguna depende de su hueco. En La Taberna,
+ * Los Amuletos, en el orden en que llegaron. No se ordenan (V34): ninguna depende de su hueco. En La Taberna,
  * pulsar una dos veces la vende.
  */
 export function beltEl(tools: ToolInst[], opts: BeltOpts = {}): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'belt';
   let picked = -1;
-  for (let i = 0; i < TOOL_SLOTS; i++) {
+  // la tira tiene siempre los 6 huecos de la Faja ancha entera (la mesa no cambia de medida); los cerrados, apagados
+  const abiertos = opts.slots ?? Math.max(TOOL_SLOTS, tools.length);
+  for (let i = 0; i < huecosAmuleto(2); i++) {
     const t = tools[i];
     const slot = document.createElement('div');
     if (!t || !TOOL[t.id]) {
-      slot.className = 'belt-slot empty';
+      slot.className = `belt-slot empty${i >= abiertos ? ' locked' : ''}`;
       slot.innerHTML = `<span>${i + 1}</span>`;
       el.appendChild(slot);
       continue;
@@ -149,7 +153,7 @@ export function deckModal(title: string, tabs: DeckTab[], opts: { pick?: number;
     const rows = $('.deck-rows', el);
     rows.innerHTML = '';
     const sorted = sortCards(t.cards);
-    const groups: [string, Card[]][] = [...SUITS.map((s): [string, Card[]] => [`${suitSvg(s)} ${palo(s)}`, sorted.filter((c) => !c.sp && c.suit === s)]), [`${SUIT_GLYPH.X} ${L('ui.mazo.especiales')}`, sorted.filter((c) => c.sp || c.suit === 'X')]];
+    const groups: [string, Card[]][] = [...SUITS.map((s): [string, Card[]] => [`${suitSvg(s)} ${palo(s)}`, sorted.filter((c) => !c.sp && c.suit === s)]), [`★ ${L('ui.mazo.especiales')}`, sorted.filter((c) => c.sp || c.suit === 'X')]];
     for (const [label, cards] of groups) {
       if (!cards.length) continue;
       const row = document.createElement('div');
@@ -270,9 +274,8 @@ export function bindFeedback(root: ParentNode, after?: () => void): void {
 function telemetryCount(): string {
   const log = telemetryLog();
   const runs = log.filter((r) => r.modo !== 'guia').length;
-  const guides = log.length - runs;
   const kb = (telemetryBytes() / 1024).toLocaleString(getLang() === 'es' ? 'es-ES' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  return `${Ln(runs, 'ui.fb.campana.1', 'ui.fb.campana.n')}${guides ? Ln(guides, 'ui.fb.guia.1', 'ui.fb.guia.n') : ''}${L('ui.fb.kb', { kb })}`;
+  return `${Ln(runs, 'ui.fb.campana.1', 'ui.fb.campana.n')}${L('ui.fb.kb', { kb })}`;
 }
 
 /** «Ver»: lo guardado, tal cual, en un cuadro de solo lectura. */
@@ -330,6 +333,7 @@ export function showSettings(onChange?: () => void): void {
       <div class="set set-progreso"><div><b>${L('ui.set.progreso')}</b><span>${L('ui.set.progreso.texto')}</span></div>
         <span class="server-edit"><button id="set-export">${L('ui.set.exportar')}</button><button id="set-import">${L('ui.set.importar')}</button><input type="file" id="set-file" accept="application/json,.json" hidden /></span></div>
       <div class="set"><div><b>${L('ui.set.comunidad')}</b><span>${L('ui.set.comunidad.texto')}</span></div><button id="set-community">${L('ui.set.abrir')}</button></div>
+      <div class="set-list" id="set-toggles-b"></div>
       </div>
       <div class="set-col set-col-b">
       <div class="set-list" id="set-vol"></div><div class="set-list" id="set-toggles"></div>
@@ -369,6 +373,7 @@ export function showSettings(onChange?: () => void): void {
   const draw = () => {
     // la fila de Susurros es de juice-ux (whispers.ts): aquí solo se traduce su Sí / No
     const [wName, wDesc, wValue, wDo] = whisperSetting();
+    const [bName, bDesc, bValue, bDo] = bufonSetting();
     const rows: [string, string, string, () => void, boolean, string][] = [
       [L('ui.set.velocidad'), L('ui.set.velocidad.texto'), speedLabel(), () => void cycleSpeed(), true, 'set-speed'],
       [L('ui.set.calma'), L('ui.set.calma.texto'), yes(settings.calm), () => ((settings.calm = !settings.calm), applySettings()), settings.calm, 'set-calma'],
@@ -378,19 +383,25 @@ export function showSettings(onChange?: () => void): void {
       [L('ui.set.contraste'), L('ui.set.contraste.texto'), yes(settings.contrast), () => ((settings.contrast = !settings.contrast), applySettings()), settings.contrast, 'set-contraste'],
       [L('ui.set.pantalla'), L('ui.set.pantalla.texto'), yes(platform.isFullscreen()), () => void platform.toggleFullscreen().then(draw), platform.isFullscreen(), 'set-pantalla'],
       [wName, wDesc, wValue === 'No' ? L('ui.no') : wValue === 'Sí' ? L('ui.si') : wValue, wDo, wValue !== 'No', 'set-susurros'],
+      // V40 · los consejos del Bufón en la primera campaña
+      [bName, bDesc, bValue === 'No' ? L('ui.no') : L('ui.si'), bDo, bValue !== 'No', 'set-bufon'],
       // V12 · lo que AUTO hace por ti fuera de la mesa (AUTO mismo se enciende en la mesa y nunca se guarda)
       [tr('auto.saquear.nombre'), tr('auto.saquear.desc'), yes(settings.autoSaquear), () => ((settings.autoSaquear = !settings.autoSaquear), applySettings()), settings.autoSaquear, 'set-auto-saquear'],
       [tr('auto.taberna.nombre'), tr('auto.taberna.desc'), yes(settings.autoTaberna), () => ((settings.autoTaberna = !settings.autoTaberna), applySettings()), settings.autoTaberna, 'set-auto-taberna'],
     ];
     const list = $('#set-toggles', el);
-    list.innerHTML = rows.map(([name, desc, value, , on, cls], i) => `<div class="set ${cls}"><div><b>${name}</b><span>${desc}</span></div><button data-set="${i}" class="${on ? 'on' : ''}">${value}</button></div>`).join('');
-    $$('[data-set]', list).forEach(
+    // V40 · la fila del Bufón va en la otra columna: con ella, la lista de interruptores ya no cabía entera en 1366×768
+    const APARTE = 'set-bufon';
+    const fila = ([name, desc, value, , on, cls]: (typeof rows)[number], i: number) => `<div class="set ${cls}"><div><b>${name}</b><span>${desc}</span></div><button data-set="${i}" class="${on ? 'on' : ''}">${value}</button></div>`;
+    list.innerHTML = rows.map((r, i) => (r[5] === APARTE ? '' : fila(r, i))).join('');
+    $('#set-toggles-b', el).innerHTML = rows.map((r, i) => (r[5] === APARTE ? fila(r, i) : '')).join('');
+    $$('[data-set]', el).forEach(
       (b) =>
         (b.onclick = () => {
           const i = Number(b.dataset.set);
           rows[i][3]();
           draw();
-          $<HTMLButtonElement>(`[data-set="${i}"]`, list)?.focus();
+          $<HTMLButtonElement>(`[data-set="${i}"]`, el)?.focus();
           onChange?.();
         }),
     );

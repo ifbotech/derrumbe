@@ -143,14 +143,14 @@ const VIEWS = [
   { name: '1280x800', width: 1280, height: 800 },
   { name: '390x844', width: 390, height: 844, mobile: true },
 ].filter((v) => !process.env.VIEW || process.env.VIEW.split(',').includes(v.name));
-const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'guia-palo', 'guia-cuenta', 'guia-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto'];
+const ALL = ['portada', 'portada-en', 'preparacion', 'don', 'mesa', 'lupa', 'lupa-herramienta', 'lupa-piso', 'lupa-especial', 'plano', 'cobro', 'ferreteria', 'forja', 'mazo', 'hallazgo', 'mapa-ramas', 'botin', 'elegi-una', 'pulperia-servicios', 'fogon', 'gremio', 'logros', 'coleccion', 'archivo', 'acta', 'ajustes', 'reglas', 'mesa-mando', 'mesa-susurro', 'mesa-fatiga', 'mesa-cuenta', 'mesa-peligro', 'acta-derrota', 'acta-victoria', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'monarcas', 'mesa-esquirlas', 'cartas-lamina', 'taberna-monedas', 'mesa-lacre', 'acta-feedback', 'ajustes-prueba', 'ferreteria-mando', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'ajustes-paleta', 'mesa-polvora', 'mesa-cifras', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'ritual', 'ritual-dos', 'ajustes-auto', 'bendicion', 'mesa-rey', 'hud', 'pulperia', 'oferta-bendicion'];
 const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 /** Variantes que no van en la pasada completa y se piden por su nombre: mesa-monarca-<id> y hallazgo-<secreto>. */
-const EXTRA = /^(mesa-monarca|hallazgo)-[a-z]+$/;
+const EXTRA = /^(mesa-monarca|mesa-rey|hallazgo)-[a-z]+$/;
 const STATES = wanted.length ? [...ALL.filter((s) => wanted.includes(s)), ...wanted.filter((s) => EXTRA.test(s) && !ALL.includes(s))] : ALL;
 /** Pantallas que tienen que caber enteras, sin desplazamiento vertical. */
-const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'guia-palo', 'guia-cuenta', 'guia-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor'];
-const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-');
+const NO_SCROLL = ['portada', 'portada-en', 'mesa', 'mesa-mando', 'mesa-fatiga', 'lupa', 'lupa-herramienta', 'lupa-piso', 'mesa-cuenta', 'mesa-peligro', 'bufon-palo', 'bufon-cuenta', 'bufon-exacto', 'mesa-monarca', 'mesa-esquirlas', 'mesa-lacre', 'portada-idioma', 'mesa-contraste', 'mesa-2tintas', 'mesa-clasica', 'mesa-2tronos', 'mesa-3tronos', 'mesa-estados', 'mesa-inmune', 'mesa-polvora', 'mesa-cifras', 'gremio', 'arbol-zoom', 'arbol-aviso', 'mesa-caida', 'mesa-auto', 'mesa-mejor', 'mesa-rey'];
+const noScroll = (s: string) => NO_SCROLL.includes(s) || s.startsWith('mesa-monarca-') || s.startsWith('mesa-rey-');
 /** infra/rapido · navegadores a la vez (QA_HILOS); cada uno es un proceso de Chromium aparte con las banderas de siempre. */
 const HILOS = Math.max(1, Math.floor(Number(process.env.QA_HILOS || 8)) || 1);
 
@@ -554,7 +554,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       marcador: union('#score > *'),
       botones: union('.actions button'),
       andamio: union('#reserve'),
-      poderes: union('#powers .power'),
+      // V40 · fase 3a: la mesa mínima ya no tiene la fila de los cuatro poderes de palo; al medio van las píldoras de
+      // los Reyes (#rasgos), que solo salen si llevás alguna Bendición
+      poderes: union('#powers .power, #rasgos .rasgo'),
     };
     const names = Object.keys(zones);
     for (let i = 0; i < names.length; i++) {
@@ -567,7 +569,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (w > 2 && h > 2) fail('maqueta', `se pisan ${names[i]} y ${names[j]} (${Math.round(w)}×${Math.round(h)} px)`, names[i] === 'marcador' || names[j] === 'marcador' ? document.querySelector('#score') : null);
       }
     }
-    for (const z of ['mano', 'torres', 'cinturon', 'marcador', 'botones', 'poderes']) if (!zones[z]) fail('maqueta', `falta en la mesa: ${z}`, z === 'marcador' ? document.querySelector('#score') : null);
+    for (const z of ['mano', 'torres', 'cinturon', 'marcador', 'botones']) if (!zones[z]) fail('maqueta', `falta en la mesa: ${z}`, z === 'marcador' ? document.querySelector('#score') : null);
     // las tres bandas de la pantalla: torres, lateral y bandeja
     const bands: Record<string, ReturnType<typeof union>> = { 'las torres': union('.tower'), 'el lateral': union('.side > *:not(.whisper)'), 'la bandeja': union('.tray') };
     const bn = Object.keys(bands);
@@ -602,7 +604,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     }
     // contrato C5: los botones de acción, con los id de siempre (V35: La Manga se usa desde su hueco y Soltar va con
     // Atrás o Esc: #btn-stash y #btn-clear ya no están)
-    for (const id of ['btn-strike', 'btn-undo', 'btn-discard', 'btn-pass']) if (!document.querySelector(`.actions #${id}`)) fail('maqueta', `falta el botón de acción #${id}`);
+    // V40 · fase 3a: Deshacer va discreto en el HUD de arriba (mesa mínima: abajo solo Golpear y Descartar)
+    for (const id of ['btn-strike', 'btn-undo', 'btn-discard', 'btn-pass']) if (!document.querySelector(id === 'btn-undo' ? `.actions #${id}, .hud #${id}` : `.actions #${id}`)) fail('maqueta', `falta el botón de acción #${id}`);
   }
 
   // ───────── maqueta · la barra de arriba: ninguna ficha tapada por otra ni por un botón ─────────
@@ -992,7 +995,22 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
   }
 
   // ───────── bunker (V9 · V8-2): «Tu Vida», cada rótulo encima de su barra ─────────
-  if (['mesa', 'mesa-mando', 'mesa-peligro'].includes(opts.state) && !opts.mobile) {
+  // V40 · fase 3a: en la mesa mínima, Vida y Escudo son dos fichas del HUD de arriba, cada una con su icono y su cifra
+  // a 14 px o más (las barras de casillas con sus rótulos ya no están)
+  const hud40 = document.querySelector('.table-screen.m40 .hud');
+  if (hud40 && ['mesa', 'mesa-mando', 'mesa-peligro'].includes(opts.state)) {
+    for (const [id, que] of [['int-num', 'Vida'], ['wall-num', 'Escudo']] as const) {
+      const n = document.getElementById(id);
+      const ficha = n?.closest<HTMLElement>('.hud-c');
+      if (!n || !ficha || !visible(n) || !(n.textContent ?? '').trim()) fail('bunker', `no se ve la ficha de ${que} en el HUD`);
+      else {
+        if (!ficha.querySelector('svg')) fail('bunker', `la ficha de ${que} no lleva su icono`, ficha);
+        const fs = parseFloat(getComputedStyle(n).fontSize);
+        if (fs < 13.95) fail('bunker', `la cifra de ${que} mide ${fs.toFixed(1)} px (mínimo 14)`, n);
+      }
+    }
+  }
+  if (!hud40 && ['mesa', 'mesa-mando', 'mesa-peligro'].includes(opts.state) && !opts.mobile) {
     const bar = (id: string) => document.getElementById(id);
     const label = (id: string) => document.getElementById(id)?.closest('.stat') ?? null;
     const [ib, wb, il, wl] = [bar('int-blocks'), bar('wall-blocks'), label('int-num'), label('wall-num')];
@@ -1039,7 +1057,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const en = document.documentElement.lang === 'en';
     const FB = en
       ? { boton: 'Send Chronicle / Playtest Feedback', aviso: 'Open report', linea: /Nothing leaves this device|sends your last campaign|^(Copied|Downloaded|Shared|Sent)/, copiado: /^Copied: paste the summary wherever you like/, cuenta: (n: string) => new RegExp(`^${n} campaigns? · \\d+\\.\\d kB, saved on this device$`), llana: /^(Nothing leaves this device: the button copies or downloads\.|Pressing Send sends your last campaign, and nothing else\.)$/ }
-      : { boton: 'Enviar Crónica / Feedback de Prueba', aviso: 'Abrir aviso', linea: /Nada sale de este equipo|se manda tu última campaña|^(Copiado|Descargado|Compartido|Enviado)/, copiado: /^Copiado: pega el resumen donde quieras/, cuenta: (n: string) => new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`), llana: /^(Nada sale de este equipo: el botón copia o descarga\.|Al pulsar Enviar se manda tu última campaña, y nada más\.)$/ };
+      : { boton: 'Enviar Crónica / Feedback de Prueba', aviso: 'Abrir aviso', linea: /Nada sale de este equipo|se manda tu última campaña|^(Copiado|Descargado|Compartido|Enviado)/, copiado: /^Copiado: pegá el resumen donde quieras/, cuenta: (n: string) => new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`), llana: /^(Nada sale de este equipo: el botón copia o descarga\.|Al pulsar Enviar se manda tu última campaña, y nada más\.)$/ };
     const send = scope.querySelector<HTMLButtonElement>('#fb-send');
     const out = scope.querySelector<HTMLElement>('.fb .fb-estado');
     if (!send || !visible(send)) fail('feedback', 'falta el botón «Enviar Crónica / Feedback de Prueba»');
@@ -1054,7 +1072,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     if (issue && issue.textContent?.trim() !== FB.aviso) fail('feedback', `el botón del aviso dice «${issue.textContent?.trim()}»`, issue);
     if (opts.state === 'acta-feedback') {
       const box = scope.querySelector<HTMLElement>('.fb');
-      if (box?.dataset.hecho !== 'copiado' || !FB.copiado.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pega el resumen donde quieras»');
+      if (box?.dataset.hecho !== 'copiado' || !FB.copiado.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pegá el resumen donde quieras»');
     }
     if (opts.state.startsWith('ajustes')) {
       // ajustes-prueba lleva exactamente dos; ajustes, las que haya dejado la pasada (al menos una)
@@ -1132,8 +1150,12 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
           if (ratio(lit, mesa) < need - 0.04) fail('paleta', `${tag}: la variante clara del palo ${s} (${hex(lit)}) va a ${ratio(lit, mesa).toFixed(2)}:1 sobre la mesa (mínimo ${need}:1)`);
         }
         if (!alto && !cls.length) {
-          const pedidos: Record<string, string> = { S: '#161514', H: '#c8232c', D: '#1b5e9e', C: '#005442' }; // V38c: ♣ verde botella, 7,2:1 sobre el marfil (antes #1b6b46, 5,2:1)
-          for (const [s, want] of Object.entries(pedidos)) if (hex(tok(`--suit-${s}`)) !== want) fail('paleta', `cuatro colores: el palo ${s} es ${hex(tok(`--suit-${s}`))} y el pedido es ${want}`);
+          // V40: los colores de palo son del arte (theme.css) y cambian con la dirección de arte; la QA ya no fija los
+          // hexadecimales: pide que cada tinta de palo vaya a ≥ 7:1 sobre el marfil (índices y pintas, apartado 7) y
+          // que las cuatro sean distintas
+          const tintas = ['S', 'H', 'D', 'C'].map((s) => [s, tok(`--suit-${s}`)] as const);
+          for (const [s, ink] of tintas) if (ink && papel && ratio(ink, papel) < 7 - 0.04) fail('paleta', `cuatro colores: el palo ${s} (${hex(ink)}) va a ${ratio(ink, papel).toFixed(2)}:1 sobre el marfil (mínimo 7:1)`);
+          if (new Set(tintas.map(([, ink]) => hex(ink))).size < 4) fail('paleta', 'cuatro colores: dos palos comparten tinta');
         }
       }
     }
@@ -1289,7 +1311,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (sd < 16) fail('trama', `la trama del palo ${s} no se aprecia a 24 px en grises (desviación ${sd.toFixed(1)})`);
       gray[s] = g.map((v) => (v - mean) / (sd || 1));
       // en uso (V11): etiqueta del trono y figuras (las numeradas van de cara limpia, sin trama)
-      const uses: [string, Element | null][] = [['la etiqueta del trono', document.querySelector(`.tower[data-suit="${s}"] .tower-tag`)], ['las figuras', document.querySelector(`.floor-slot .card.k-figure.s-${s}, #hand .card.k-figure.s-${s}`)]];
+      // V40 · fase 2b: las figuras son pixel-art de cuerpo entero, sin trama de grabado; la trama queda en la etiqueta
+      const uses: [string, Element | null][] = [['la etiqueta del trono', document.querySelector(`.tower[data-suit="${s}"] .tower-tag`)]];
       for (const [where, host] of uses) if (!host || !new RegExp(`#(pat|trama)-${s}\\b`).test(host.outerHTML)) fail('trama', `la trama del palo ${s} no se usa en ${where}`);
     }
     const ks = Object.keys(gray);
@@ -1479,13 +1502,15 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     // V11 · esquina: el rango de la esquina ≥ 1,35 × el de la 10.0 (34 / 22 / 20 / 20 px), el palo de la esquina
     // ≥ 14 px (≥ 10 en 390×844), la insignia de orden ≥ 16 px (≥ 14) y la carta del mismo tamaño que en la 10.0
     if (['mesa', 'mesa-mando', 'mesa-2tintas', 'mesa-contraste', 'mesa-clasica'].includes(opts.state)) {
-      const needPalo = opts.mobile ? 10 : 14;
+      // V40 · fase 2b: la pinta española del índice es alta y estrecha (espada, basto): se mide su lado largo, con el
+      // suelo de pixel.css (12 px; 10 en el móvil). El cuadrado de ≥ 14 px era el del palo francés, que ya no está.
+      const needPalo = opts.mobile ? 10 : 12;
       const needN = opts.mobile ? 14 : 16;
       const needRango = ({ 1920: 34, 1366: 22, 1280: 20, 390: 20 } as Record<number, number>)[W] ?? 20;
       for (const g of document.querySelectorAll('#hand .card .corner svg, .reserve .card .corner svg')) {
         if (!visible(g)) continue;
         const r = g.getBoundingClientRect();
-        const lado = Math.min(r.width, r.height);
+        const lado = Math.max(r.width, r.height);
         if (lado < needPalo - 0.05) fail('esquina', `el palo de la esquina mide ${r.width.toFixed(1)}×${r.height.toFixed(1)} px (mínimo ${needPalo})`, g);
       }
       for (const b of document.querySelectorAll<HTMLElement>('#hand .card .corner b')) {
@@ -1503,7 +1528,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       const c0 = [...document.querySelectorAll('#hand .card')].find(visible);
       if (caja && c0 && !c0.matches('[data-foco]')) {
         const r = c0.getBoundingClientRect();
-        if (Math.abs(r.width - caja[0]) > 1.5 || Math.abs(r.height - caja[1]) > 1.5) fail('esquina', `la carta de la mano mide ${Math.round(r.width)}×${Math.round(r.height)} px (debe seguir en ${caja[0]}×${caja[1]} ± 1)`, c0);
+        // V40 · fase 3a: la mesa mínima lleva naipes grandes; la carta de la mano ya no puede ser menor que la de la 10.0
+        if (r.width < caja[0] - 1.5 || r.height < caja[1] - 1.5) fail('esquina', `la carta de la mano mide ${Math.round(r.width)}×${Math.round(r.height)} px (mínimo ${caja[0]}×${caja[1]} ± 1)`, c0);
       }
     }
     // V11 · vida: la Vida que queda (.hp-n) +35 % sobre la 10.0 en 1280 y 390 (20,25 y 18,9 px) y al menos lo de
@@ -1656,37 +1682,23 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const handZone = union('#hand .card, #reserve .card, #reserve .reserve-slot');
     const scoreZone = union('#score > *');
     const inside = (r: DOMRect) => r.left >= -1 && r.top >= -1 && r.right <= W + 1 && r.bottom <= H + 1;
-    // guía: placa de una línea ≥ 14 px (15 en móvil) que no pisa la mano ni la cuenta; velo y aro a la vista
-    if (opts.state.startsWith('guia-')) {
-      const placa = document.querySelector<HTMLElement>('#guia .guia-placa');
-      if (!placa || !visible(placa) || !placa.textContent?.trim()) fail('guia', 'no se ve la placa de la guía');
+    // V40 · el Bufón: su frase en el hueco de los Susurros, ≥ 13 px, sin pisar la mano ni la cuenta, sin ventana ni velo
+    if (opts.state.startsWith('bufon-')) {
+      const b = document.querySelector<HTMLElement>('.whisper.bufon');
+      if (!b || !visible(b) || !b.textContent?.trim()) fail('bufon', 'no se ve la frase del Bufón');
       else {
-        const r = placa.getBoundingClientRect();
-        const px = pxOf(placa);
-        if (px < (opts.mobile ? 14.95 : 13.95)) fail('guia', `la placa de la guía mide ${px.toFixed(1)} px`, placa);
-        if (!opts.mobile && r.height > px * 1.25 * 1.6 + 26) fail('guia', `la placa de la guía no cabe en una línea (${Math.round(r.height)} px de alto)`, placa);
-        if (over(r, handZone)) fail('guia', 'la placa de la guía pisa la mano', placa);
-        if (over(r, scoreZone)) fail('guia', 'la placa de la guía pisa la cuenta', placa);
-        if (!inside(r)) fail('guia', 'la placa de la guía se sale de la ventana', placa);
-        if (/[<>]/.test(placa.textContent)) fail('guia', 'la placa de la guía enseña etiquetas HTML en crudo', placa);
+        const r = b.getBoundingClientRect();
+        const px = pxOf(b.querySelector('p') ?? b);
+        if (px < 12.95) fail('bufon', `la frase del Bufón mide ${px.toFixed(1)} px`, b);
+        if (over(r, handZone)) fail('bufon', 'la frase del Bufón pisa la mano', b);
+        if (over(r, scoreZone)) fail('bufon', 'la frase del Bufón pisa la cuenta', b);
+        if (!inside(r)) fail('bufon', 'la frase del Bufón se sale de la ventana', b);
+        if (/[<>{}]/.test(b.textContent)) fail('bufon', 'la frase del Bufón enseña etiquetas o huecos en crudo', b);
       }
-      const hueco = document.querySelector<HTMLElement>('#guia .guia-hueco');
-      const aro = document.querySelector<HTMLElement>('#guia .guia-aro');
-      if (!hueco || alpha(hueco) < 0.5) fail('guia', 'la mesa no se vela alrededor del foco');
-      if (!aro || !visible(aro)) fail('guia', 'no hay aro de foco a la vista');
-      else if (!inside(aro.getBoundingClientRect())) fail('guia', 'el aro de foco se sale de la ventana', aro);
-      // lo que señala cada paso: la carta del paso, la cuenta y el trono del Golpe exacto
-      const want: Record<string, string> = { 'guia-palo': '#hand .card[data-id="C6"]', 'guia-cuenta': '#score', 'guia-exacto': '.tower[data-suit="H"]' };
-      const t = want[opts.state] ? document.querySelector(want[opts.state]) : null;
-      if (want[opts.state] && !t) fail('guia', `no está en la mesa lo que señala el paso (${want[opts.state]})`);
-      if (t && aro) {
-        const a = aro.getBoundingClientRect();
-        const b = t.getBoundingClientRect();
-        if (!(b.left >= a.left - 2 && b.right <= a.right + 2 && b.top >= a.top - 2 && b.bottom <= a.bottom + 2)) fail('guia', `el aro no rodea ${want[opts.state]}`, aro);
-      }
+      if (document.querySelector('.modal, #guia:not([hidden])')) fail('bufon', 'el Bufón no debe abrir ventana ni velar la mesa');
     }
     // monarca en la mesa: retrato, nombre y placa del decreto; la maldición marcada; bocadillo ≥ 14 px sin pisar mano ni cuenta
-    if (opts.state === 'mesa-monarca' || opts.state.startsWith('mesa-monarca-')) {
+    if (opts.state === 'mesa-monarca' || opts.state.startsWith('mesa-monarca-') || opts.state === 'mesa-rey' || opts.state.startsWith('mesa-rey-')) {
       const mon = document.getElementById('monarch');
       if (!mon || !visible(mon)) fail('voz', 'no se ve el monarca en la mesa');
       else {
@@ -1697,7 +1709,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (!inside(mon.getBoundingClientRect())) fail('voz', 'el monarca se sale de la ventana', mon);
       }
       const mark = document.querySelector<HTMLElement>('.table-screen')?.dataset.curse;
-      const marked: Record<string, string> = { contraataque: '.pile .curse-tag', mano: '#hand > .curse-ghost', corazones: '#hand .card.s-H > .curse-chalice', escudo: '.stat .curse-tag', guardias: '.tower .curse-tag.sin-fx', ataque: '.tower .threat .curse-tag', asedio: '#fatigue .curse-tag' };
+      const marked: Record<string, string> = { contraataque: '.tower .threat .curse-tag', mano: '#hand > .curse-ghost', corazones: '#hand .card.s-H > .curse-chalice', escudo: '.stat .curse-tag, .hud-escudo .curse-tag', guardias: '.tower .curse-tag.sin-fx', ataque: '.tower .threat .curse-tag', asedio: '.tower .threat .curse-tag' };
       if (!mark || !marked[mark]) fail('voz', `la mesa no lleva la marca de la maldición (data-curse=${mark ?? 'nada'})`);
       else if (![...document.querySelectorAll(marked[mark])].some(visible)) fail('voz', `no se ve la marca de la maldición «${mark}» (${marked[mark]})`);
       const bark = document.getElementById('bark');
@@ -1717,14 +1729,26 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
         if (over(r, union('.actions > button'))) fail('voz', 'el bocadillo pisa la barra de acciones', bark);
       }
     }
-    // galería: los siete, cada uno con su retrato en calma y vencido y la placa de su decreto
+    // galería: los 4 Reyes (V40 1c), cada uno con su retrato en calma y vencido y la placa de su rasgo
     if (opts.state === 'monarcas') {
       const fichas = [...document.querySelectorAll('.mon-ficha')];
-      if (fichas.length !== 7) fail('voz', `la galería tiene ${fichas.length} monarcas (deben ser 7)`);
+      if (fichas.length !== 4) fail('voz', `la galería tiene ${fichas.length} Reyes (deben ser 4)`);
       for (const f of fichas) {
         const id = f.getAttribute('data-boss');
         if (!f.querySelector('svg.monarca.calma') || !f.querySelector('svg.monarca.vencido')) fail('voz', `a ${id} le falta una de sus dos caras`, f);
         if (!f.querySelector('.curse-plate b')?.textContent?.trim()) fail('voz', `a ${id} le falta la placa del decreto`, f);
+      }
+    }
+    // V40 1c · la oferta de los Reyes: 2 o 3 Bendiciones de Reyes distintos, cada una elegible y con su efecto y su carga
+    if (opts.state === 'bendicion') {
+      const cards = [...document.querySelectorAll<HTMLElement>('#bends > .choice')];
+      if (cards.length < 2 || cards.length > 3) fail('voz', `la oferta tiene ${cards.length} Bendiciones (deben ser 2 o 3)`);
+      const reyes = new Set(cards.map((c) => [...c.classList].find((k) => k.startsWith('r-'))));
+      if (reyes.size !== cards.length) fail('voz', 'dos Bendiciones de la oferta son del mismo Rey');
+      for (const c of cards) {
+        if (!c.dataset.bend) fail('voz', 'una Bendición de la oferta no dice cuál es (data-bend)', c);
+        if (!c.classList.contains('pick')) fail('voz', 'una Bendición de la oferta no se puede elegir', c);
+        if ((c.textContent ?? '').trim().length < 20) fail('voz', 'una Bendición de la oferta no explica su efecto', c);
       }
     }
     // secretos: lo que da y lo que cuesta cada opción, a la vista sin desplazar y a 15 px o más
@@ -1872,7 +1896,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
 
   // ── jerga: ninguna palabra de la obra vieja en lo que lee una persona (normas V6, red 2) ──
   // sin distinguir mayúsculas ni tildes; las raíces cogen sus derivadas, las palabras corrientes van enteras
-  const ROOTS = ['derrumbe', 'bunker', 'escombrera', 'cantera', 'ferreteri', 'ferretero', 'andamio', 'hormigon', 'ladrillo', 'vidrio', 'sirena', 'demoli', 'demoler', 'capataz', 'gremio', 'sindical', 'cimiento', 'tiza', 'forja', 'quemador', 'integridad', 'resonancia', 'fractura', 'apuntalad', 'huelga', 'herramienta', 'cinturon', 'regicid'];
+  const ROOTS = ['derrumbe', 'bunker', 'escombrera', 'cantera', 'ferreteri', 'ferretero', 'andamio', 'hormigon', 'ladrillo', 'vidrio', 'sirena', 'demoli', 'demoler', 'capataz', 'gremio', 'sindical', 'cimiento', 'tiza', 'forja', 'quemador', 'integridad', 'resonancia', 'fractura', 'apuntalad', 'huelga', 'herramienta', 'cinturon', 'regicid', 'reliqui', 'relic'];
+  // V40 1d: las Reliquias son hoy Amuletos («reliqui» y «relic» cogen reliquia, relicario, relic y reliquary)
   // desde la 6.1, también el título viejo y el nombre viejo de la tienda (hoy La Taberna)
   const WORDS = ['acero', 'obras?', 'pisos?', 'torres?', 'muros?', 'fuerza', 'golpes? limpios?', 'corona rota', 'mercado clandestino'];
   const JERGA = new RegExp(`(?<![\\p{L}\\p{N}])(?:(?:${ROOTS.join('|')})\\p{L}*|(?:${WORDS.join('|')})(?![\\p{L}\\p{N}]))`, 'iu');
@@ -1919,6 +1944,28 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     vieja(`el texto de ${path(el)}`, node.textContent, el);
   }
   for (const el of document.querySelectorAll('[data-tip], [aria-label], [title]')) for (const attr of ['data-tip', 'aria-label', 'title']) if (el.hasAttribute(attr)) vieja(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
+
+  // ── baraja (V40): la española. Ni los palos franceses ni sus signos, ni la Taberna ni el Árbol, en lo que se lee ──
+  const FRANCESA = /(?<![\p{L}])(?:[Pp]icas|[Cc]orazones|[Dd]iamantes|[Tt]r[ée]bol(?:es)?|PICAS|CORAZONES|DIAMANTES|TR[ÉE]BOLES|[Ss]pades|[Hh]earts|[Dd]iamonds|SPADES|HEARTS|DIAMONDS|[Tt]abernas?|TABERNA|[Tt]averns?|TAVERN|Árbol|ÁRBOL|Conspiracy Tree)(?![\p{L}])|[♠♥♦♣♤♡♢♧]/u;
+  const francesa = (where: string, text: string | null | undefined, el: Element | null) => {
+    if (!text) return;
+    const m = text.replace(/<[^>]+>/g, ' ').match(FRANCESA);
+    if (m) fail('baraja', `«${m[0]}» en ${where} (desde la V40: Espadas, Bastos, Oros y Copas; La Pulpería; el Altar)`, el);
+  };
+  const fw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = fw.nextNode(); node; node = fw.nextNode()) {
+    const el = node.parentElement;
+    if (!el || !node.textContent?.trim() || el.closest('script, style, template') || !visible(el)) continue;
+    francesa(`el texto de ${path(el)}`, node.textContent, el);
+  }
+  for (const el of document.querySelectorAll('[data-tip], [aria-label], [title], [alt]')) for (const attr of ['data-tip', 'aria-label', 'title', 'alt']) if (el.hasAttribute(attr)) francesa(`${attr} de ${path(el)}`, el.getAttribute(attr), el);
+  for (const el of document.body.querySelectorAll('*')) {
+    if (!visible(el)) continue;
+    for (const pseudo of ['::before', '::after']) {
+      const c = getComputedStyle(el, pseudo).content;
+      if (c && c !== 'none' && c !== 'normal') francesa(`el ${pseudo} de ${path(el)}`, c, el);
+    }
+  }
 
   // ── fuga (V10, pasada inglesa): ningún resto de español en lo que lee una persona ──
   if (opts.fuga) {
@@ -2255,8 +2302,10 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
           if (Math.min(r.right, q.right) - Math.max(r.left, q.left) > 1 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 1) fail('polvora', `la vista previa de la pólvora pisa ${name(o)}`, p);
         }
       }
+      // V40 3b (mínimo texto en la mesa): la marca «Pólvora +n» salió de la línea de la cuenta; la dicen la vista previa
+      // del de al lado (arriba) y el recibo. En la mesa vieja (sin .m40) se sigue pidiendo.
       const m = [...document.querySelectorAll<HTMLElement>('#score .marks .m.polvora')].find(visible);
-      if (!m && opts.state === 'mesa-polvora') fail('polvora', 'la cuenta no enseña la marca «Pólvora +n»', document.querySelector('#score'));
+      if (!m && opts.state === 'mesa-polvora' && !document.querySelector('.table-screen.m40')) fail('polvora', 'la cuenta no enseña la marca «Pólvora +n»', document.querySelector('#score'));
     }
   }
 
@@ -2269,7 +2318,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     else {
       if (vista.getAttribute('data-lienzo') === null) fail('arbol', 'el pergamino no se declara lienzo (data-lienzo)', vista);
       if (getComputedStyle(vista).touchAction !== 'none') fail('arbol', 'el pergamino no captura el dedo (touch-action: none): no se podría arrastrar ni pellizcar', vista);
-      if (nodos.length !== 30) fail('arbol', `el Árbol tiene ${nodos.length} nodos (30)`);
+      // V40 1d: 28 (los seis arcones de antes son hoy cuatro, uno por Rey)
+      if (nodos.length !== 28) fail('arbol', `el Árbol tiene ${nodos.length} nodos (28)`);
       const banderas = [...document.querySelectorAll<HTMLElement>('.arbol .estandarte')];
       if (banderas.length !== 4) fail('arbol', `el Árbol tiene ${banderas.length} estandartes de rama (4)`);
       for (const b of banderas) if (!b.querySelector('b')?.textContent?.trim()) fail('arbol', 'un estandarte no dice el nombre de su rama', b);
@@ -2375,6 +2425,8 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       if (document.querySelectorAll('.chip.gold, #gold-n').length) fail('caida', 'el oro sale dos veces: queda el indicador viejo de la barra además de la bolsa');
       for (const id of ['bolsa-oro', 'bolsa-esquirlas', 'bolsa-gotas']) {
         const b = document.getElementById(id);
+        // V40 · fase 3a: el HUD mínimo no enseña esquirlas ni gotas mientras valen 0 (se ven en cuanto cae una)
+        if (b && id !== 'bolsa-oro' && b.closest('.cero') && (b.textContent ?? '').trim() === '0') continue;
         if (!b || !visible(b)) {
           fail('caida', `la bolsa no enseña #${id}`, bolsa);
           continue;
@@ -2469,7 +2521,9 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const a = document.querySelector<HTMLButtonElement>('#btn-auto');
     const v = document.querySelector<HTMLElement>('#btn-speed');
     if (!a || !visible(a)) fail('auto', 'no hay conmutador AUTO (#btn-auto)');
-    else if (v) {
+    // V40 · fase 3a: la mesa mínima no enseña la velocidad (va en Ajustes); AUTO queda discreto en el HUD
+    else if (v && !visible(v) && !a.closest('.hud')) fail('auto', 'sin la velocidad a la vista, AUTO debía ir en el HUD de arriba', a);
+    else if (v && visible(v)) {
       if (a.getAttribute('aria-pressed') !== 'true') fail('auto', 'AUTO encendido no dice aria-pressed="true"', a);
       if (a.parentElement !== v.parentElement) fail('auto', 'AUTO y la velocidad no comparten zona', a);
       const ra = a.getBoundingClientRect();
@@ -2510,7 +2564,10 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
       const need = opts.mobile ? 48 : 44;
       if (Math.min(rm.width, rm.height) < need - 0.5) fail('mejor', `Mejor jugada mide ${Math.round(rm.width)}×${Math.round(rm.height)} px (diana mínima ${need})`, m);
       const gap = Math.max(rm.left - rg.right, rg.left - rm.right, rm.top - rg.bottom, rg.top - rm.bottom);
-      if (gap > 16) fail('mejor', `Mejor jugada queda a ${Math.round(gap)} px de Golpear (máximo 16)`, m);
+      // V40 · fase 3a: en la mesa mínima abajo solo van Golpear y Descartar; Mejor jugada va discreta en el HUD
+      if (m.closest('.hud')) {
+        if (!m.closest('.hud-der')) fail('mejor', 'Mejor jugada va en el HUD pero fuera de su zona de la derecha', m);
+      } else if (gap > 16) fail('mejor', `Mejor jugada queda a ${Math.round(gap)} px de Golpear (máximo 16)`, m);
       for (const c of document.querySelectorAll<HTMLElement>('.hand .card, .reserve .card')) if (visible(c) && corta(rm, c.getBoundingClientRect())) fail('mejor', 'Mejor jugada tapa una carta de la mano', m);
       if (!m.getAttribute('aria-label')) fail('mejor', 'Mejor jugada no lleva aria-label', m);
     }
@@ -2660,8 +2717,9 @@ async function legibleV38(opts: { state: string; mobile: boolean }): Promise<{ f
       const todo = t.map((x) => x.txt).join(' ');
       if (t.length) medidas.push(`${que} «${todo}» ${f1(Math.min(...t.map((x) => x.px)))} px, ${f1(Math.min(...t.map((x) => x.k)))}:1`);
     }
-    const relojero = document.querySelector<HTMLElement>("[data-curse='asedio'] .tower.activa .threat .curse-tag");
-    if (visible(relojero) && !/furia|fury/i.test(relojero.textContent ?? '')) fail('furia', `la marca del Relojero en el ⚔ dice «${relojero.textContent?.trim()}» y no la palabra Furia`);
+    // V40 1c · la marca del Rey de Copas en el ⚔ dice que se cura (antes, la del Relojero decía Furia)
+    const copas = document.querySelector<HTMLElement>("[data-curse='asedio'] .tower.activa .threat .curse-tag");
+    if (visible(copas) && !/cura|heal/i.test(copas.textContent ?? '')) fail('furia', `la marca del Rey de Copas en el ⚔ dice «${copas.textContent?.trim()}» y no que se cura`);
   }
 
   // ── V38b · «pilas»: el Mazo y el Descarte, sus rótulos a ≥ 7:1 y sus dos cifras a ≥ 7:1 y del mismo tamaño ──
@@ -3002,6 +3060,9 @@ async function placasPx(png: string): Promise<{ fails: Fail[]; inmune: number; i
  * dibuja en un canvas de la página y se leen sus píxeles. Devuelve los fallos y el menor porcentaje medido.
  */
 async function caraLimpia(png: string): Promise<{ fails: Fail[]; min: number; n: number }> {
+  // V40 · fase 2b: con las pintas en su disposición tradicional (hasta nueve), la cara es marfil en un 50 % o más
+  // (va dentro: la función corre en la página)
+  const MARFIL_MIN = 0.5;
   const img = new Image();
   img.src = `data:image/png;base64,${png}`;
   await img.decode();
@@ -3044,10 +3105,9 @@ async function caraLimpia(png: string): Promise<{ fails: Fail[]; min: number; n:
     const x1 = Math.floor(cx + iw / 2);
     const y1 = Math.floor(Math.min(innerHeight, cy + ih / 2));
     if (x1 - x0 < 8 || y1 - y0 < 8) continue;
-    // el emblema, macizo y de ancho ≥ 40 % del de la carta (con su contorno de tinta)
-    const emb = c.querySelector('svg.ly.art.face')?.querySelector('g.emb-ink')?.getBoundingClientRect();
-    if (!emb) fails.push({ regla: 'cara-limpia', msg: `la carta numerada ${c.dataset.id} no lleva el emblema de la cara limpia`, ajeno: false });
-    else if (emb.width < 0.4 * w - 0.5) fails.push({ regla: 'cara-limpia', msg: `el emblema de la carta ${c.dataset.id} mide ${emb.width.toFixed(1)} px de ancho (mínimo 40 % de ${w} px)`, ajeno: false });
+    // V40 · fase 2b: las cartas 1 a 9 llevan sus pintas en la disposición tradicional (ya no un emblema único): basta
+    // con que la cara esté dibujada; el marfil, la mitad de la cara como mínimo (MARFIL_MIN)
+    if (!c.querySelector('svg.ly.art.face, svg.ly.art')) fails.push({ regla: 'cara-limpia', msg: `la carta numerada ${c.dataset.id} no lleva su cara dibujada`, ajeno: false });
     const d = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
     // lo que va encima del papel no cuenta: el sello de lacre de las cartas selladas (su círculo, con el
     // margen del filtro rugoso) y la insignia de orden de las elegidas (::after de [data-n])
@@ -3087,7 +3147,7 @@ async function caraLimpia(png: string): Promise<{ fails: Fail[]; min: number; n:
     n++;
     min = Math.min(min, frac);
     const label = `${c.querySelector('.corner.tl b')?.textContent ?? '?'}${[...c.classList].find((k) => /^s-[SHDC]$/.test(k))?.slice(2) ?? ''}`;
-    if (frac < 0.75) fails.push({ regla: 'cara-limpia', msg: `la carta ${label} ${c.closest('#hand') ? 'de la mano' : 'de la hoja'} tiene un ${(frac * 100).toFixed(1)} % de marfil (mínimo 75 %)`, ajeno: false });
+    if (frac < MARFIL_MIN) fails.push({ regla: 'cara-limpia', msg: `la carta ${label} ${c.closest('#hand') ? 'de la mano' : 'de la hoja'} tiene un ${(frac * 100).toFixed(1)} % de marfil (mínimo ${MARFIL_MIN * 100} %)`, ajeno: false });
   }
   if (!n) fails.push({ regla: 'cara-limpia', msg: 'no hay ninguna carta numerada que medir', ajeno: false });
   return { fails, min, n };

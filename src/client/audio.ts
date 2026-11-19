@@ -15,6 +15,7 @@
 // dos toques de madera hacia abajo, la sirena que el muro frena entera es piedra contra piedra con un
 // respiro que sube, y la que entra es hierro, un cuerno que se desploma y cascotes. Lo que se repite
 // (elegir carta, mover el foco) nunca suena dos veces igual: cambia unos cents, el ataque y la nota.
+import { arteDe } from './arte-rey';
 import { PAN, campana, compas, flujo, mezcla, notaRecogida, variacion, type Escena, type Evento, type Voz } from './audio-frases';
 import { loadJson, platform, saveJson } from './platform';
 
@@ -670,7 +671,7 @@ export const sfx = logged({
     heard.push(`monarch:${id}:${mood}`);
     fx((_, o, t) => {
       const fall = mood === 'caida';
-      const m = MOTIF[id] ?? MOTIF.doble;
+      const m = MOTIF[arteDe(id)] ?? MOTIF.doble;
       const k = (fall ? 0.84 : 1) * drift(8);
       const notes = fall ? [...m.notes].reverse() : m.notes;
       notes.forEach(([n, d], i) => {
@@ -708,6 +709,113 @@ export const sfx = logged({
     fx((_, o, t) => {
       [0, 1.1, 2.2].forEach((d) => [1, 2, 2.4, 3, 4.5].forEach((m, i) => note(o, 110 * m, t + d, 2.4 - i * 0.3, { type: 'sine', vol: 0.16 / (i + 1) })));
     }),
+
+  // ── V40 · 3b · los momentos grandes de la mesa: cada uno con su firma, corta (≤ 600 ms) y variada al repetirse ──
+  /** ¡Escoba!: una barrida de cerdas (ruido que sube) y tres notas que trepan */
+  escoba: () => {
+    const v = vario('escoba');
+    fx((a, o, t) => {
+      const src = a.createBufferSource();
+      const buf = a.createBuffer(1, Math.floor(a.sampleRate * 0.32), a.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.sin((Math.PI * i) / d.length);
+      const f = a.createBiquadFilter();
+      f.type = 'bandpass';
+      f.Q.value = 1.6;
+      f.frequency.setValueAtTime(700, t);
+      f.frequency.exponentialRampToValueAtTime(5200, t + 0.3);
+      const g = a.createGain();
+      g.gain.value = 0.32;
+      src.buffer = buf;
+      src.connect(f).connect(g).connect(o);
+      src.start(t);
+      [0, 4, 7, 12].forEach((s, i) => note(o, 523.25 * semi(s) * cents(v.cents), t + 0.14 + i * 0.07, 0.22, { type: 'triangle', vol: 0.09, attack: v.ataque }));
+    }, v.pan);
+  },
+  /** ¡Envido!: dos punteos de guitarra criolla (quinta justa) y una palmada */
+  envido: () => {
+    const v = vario('envido');
+    fx((_, o, t) => {
+      const base = 220 * cents(v.cents);
+      [[0, 0], [7, 0.11], [12, 0.22]].forEach(([s, d]) => {
+        note(o, base * semi(s), t + d, 0.32, { type: 'sawtooth', vol: 0.05, attack: 0.002, cutoff: 1500 });
+        note(o, base * semi(s) * 2, t + d, 0.18, { type: 'triangle', vol: 0.04, attack: 0.002 });
+      });
+      noise(o, t + 0.3, 0.06, 0.22, 'bandpass', 1400);
+    }, v.pan);
+  },
+  /** ¡Chancho!: cuatro golpes sordos iguales y un gruñido que baja */
+  chancho: () => {
+    const v = vario('chancho');
+    fx((_, o, t) => {
+      for (let i = 0; i < 4; i++) {
+        note(o, 130 * cents(v.cents), t + i * 0.075, 0.09, { type: 'sine', vol: 0.32, slide: 70 });
+        noise(o, t + i * 0.075, 0.04, 0.12, 'lowpass', 600);
+      }
+      note(o, 240 * cents(v.cents), t + 0.32, 0.26, { type: 'sawtooth', vol: 0.07, cutoff: 700, slide: 90, vibrato: 18 });
+    }, v.pan);
+  },
+  /** Un bravo del Truco: filo que canta (parciales metálicos que suben un poco) */
+  bravo: () => {
+    const v = vario('bravo');
+    fx((_, o, t) => {
+      noise(o, t, 0.05, 0.16, 'highpass', 4200);
+      [1, 2.76, 5.4].forEach((m, i) => note(o, 660 * m * cents(v.cents), t, 0.42 - i * 0.1, { type: 'sine', vol: 0.07 / (i + 1), slide: 690 * m * cents(v.cents), attack: v.ataque }));
+    }, v.pan);
+  },
+  /** Engaño: una nota que se tuerce (vibrato ancho que cae) */
+  engano: () => {
+    const v = vario('engano');
+    fx((_, o, t) => {
+      note(o, 587 * cents(v.cents), t, 0.34, { type: 'triangle', vol: 0.09, vibrato: 30, slide: 392 });
+      note(o, 880 * cents(v.cents), t + 0.16, 0.2, { type: 'sine', vol: 0.05, slide: 660 });
+    }, v.pan);
+  },
+  /** Pierna, Escalera o Mano larga del Chinchón: tres naipes que se asientan */
+  jugada: () => {
+    const v = vario('jugada');
+    fx((_, o, t) => {
+      [0, 3, 7].forEach((s, i) => {
+        noise(o, t + i * 0.06, 0.03, 0.12, 'highpass', 3000);
+        note(o, 392 * semi(s) * cents(v.cents), t + i * 0.06, 0.2, { type: 'triangle', vol: 0.07, attack: v.ataque });
+      });
+    }, v.pan);
+  },
+  /** Una carga de Bendición que sube: un toque de moneda que trepa un peldaño por carga */
+  carga: (n = 1) => {
+    const v = vario('carga');
+    fx((_, o, t) => {
+      const f = 784 * semi(PENTA[Math.min(PENTA.length - 1, Math.max(0, n - 1) % PENTA.length)]) * cents(v.cents);
+      note(o, f, t, 0.18, { type: 'sine', vol: 0.08, attack: 0.002 });
+      note(o, f * 1.5, t + 0.05, 0.14, { type: 'sine', vol: 0.04, attack: 0.002 });
+    }, v.pan);
+  },
+  /** El nivel [2/4] de un Rey que se enciende: acorde mayor de metales, corto */
+  nivel: () => {
+    const v = vario('nivel');
+    fx((_, o, t) => {
+      [0, 4, 7].forEach((s, i) => horn(o, 293.66 * semi(s) * cents(v.cents), t + i * 0.05, 0.5, 0.045));
+      note(o, 1174.66 * cents(v.cents), t + 0.18, 0.3, { type: 'sine', vol: 0.05 });
+    }, v.pan);
+  },
+  /** El Bufón se ríe: cascabeles agitados (alturas al azar de su escala, cada vez distintos) */
+  bufonRie: () => {
+    const v = vario('bufonRie');
+    fx((_, o, t) => {
+      for (let i = 0; i < 6; i++) {
+        const f = 1318.5 * semi(PENTA[Math.floor(azar() * PENTA.length)] - 5) * cents(v.cents);
+        note(o, f, t + i * 0.045 * sway(0.25), 0.09, { type: 'sine', vol: 0.035 * sway(0.3), attack: 0.002 });
+      }
+    }, v.pan);
+  },
+  /** El Bufón se burla: «na-na» que baja una tercera menor, nasal */
+  bufonBurla: () => {
+    const v = vario('bufonBurla');
+    fx((_, o, t) => {
+      note(o, 523.25 * cents(v.cents), t, 0.13, { type: 'square', vol: 0.035, cutoff: 1400, attack: v.ataque });
+      note(o, 440 * cents(v.cents), t + 0.15, 0.2, { type: 'square', vol: 0.035, cutoff: 1100, attack: v.ataque });
+    }, v.pan);
+  },
 });
 // la prueba de humo comprueba de oído: con ?qa, lo que ha sonado queda a la vista (solo nombres)
 // (y __qaSfx deja tocar cada efecto a mano, para comprobar que se sintetiza sin errores)

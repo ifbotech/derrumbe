@@ -66,7 +66,7 @@ const compacta = (evs: GameEvent[]): GameEvent[] =>
 
 /** Una campaña entera con el bot (con el `up` que se le dé) y lo que deja. */
 function juega(up: Record<string, number>, pool: string[], seed: number): { hecho: Hecho; esquirlas: number } {
-  const run = newRun({ up, deck: 'obra', ascension: 0, pool }, seed);
+  const run = newRun({ up, deck: 'escoba', ascension: 0, pool }, seed);
   const delta = newMeta();
   const players = [{ id: 'p0', name: 'p0' }];
   const asaltos: Hecho['asaltos'] = [];
@@ -113,7 +113,7 @@ function esquirlasCon(h: Hecho, up: Record<string, number>): number {
 function suma(meta: Meta, d: Meta): void {
   const s = meta.stats;
   const x = d.stats;
-  for (const k of ['floors', 'cleans', 'forged', 'contracts', 'skips', 'dailies'] as const) s[k] += x[k];
+  for (const k of ['floors', 'cleans', 'forged', 'contracts', 'skips'] as const) s[k] += x[k];
   for (const k of ['maxHit', 'maxGold', 'reach', 'winAsc', 'intact', 'depth', 'maxTools'] as const) s[k] = Math.max(s[k], x[k]);
   for (const k of ['tools', 'specials', 'bosses', 'forms'] as const) for (const id of d.seen[k]) if (!meta.seen[k].includes(id)) meta.seen[k].push(id);
   meta.runs += d.runs;
