@@ -181,10 +181,14 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
         };
       let state = startStage(run, players);
       let jugadas = 0;
-      let turnoRey = 0;
       for (; state.phase === 'playing'; jugadas++) {
         if (jugadas > 4000) throw new Error(`asalto sin fin (${JSON.stringify(spec)}, asalto ${run.stage})`);
         const antes = state.integrity;
+        // V40 fase 4 · el turno del Rey jefe al frente (1, 2, 3…) sale de su Furia acumulada (`furiaRey` sube
+        // `jefe.furia` al cerrar cada turno que sigue al frente), no de los Contraataques que llegaron: los que paran
+        // el Golpe exacto o el Aturdido también son turnos suyos
+        const furiaJefe = state.config.jefe?.furia ?? 0;
+        const turnoRey = furiaJefe > 0 ? Math.round((state.furiaRey ?? 0) / furiaJefe) + 1 : 0;
         const res = applyAction(state, currentPlayer(state).id, chooseAction(state));
         trackEvents(run, res.events);
         let vida = antes;
@@ -195,7 +199,6 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
           if (ev.e === 'siren' && !bravo) bump(log.motivos, `${run.stage}:${ev.reason}`);
           if (ev.e !== 'siren' || ev.reason !== 'strike' || !ev.tower) continue;
           const jefe = !bravo && esJefe(res.state.config, res.state.towers[ev.tower]);
-          if (jefe) turnoRey++;
           log.sirenas.push([run.stage, bravo ? 2 : jefe ? 1 : 0, ev.threat, ev.asedio ?? 0, ev.taken, res.state.config.maxIntegrity, vida, jefe ? turnoRey : 0]);
           vida = ev.integrity;
         }
