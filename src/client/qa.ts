@@ -505,6 +505,16 @@ const STATES: Record<string, () => void | Promise<void>> = {
     show(run);
     setScreen('run');
   },
+  // V40 · fase 3a · el HUD único sobre el Mapa, con el globo de la primera pieza de la tira abierto (foco)
+  hud: async () => {
+    await STATES['mapa-ramas']();
+    const pieza = document.querySelector<HTMLElement>('.hud .hud-bend, .hud .belt-slot.tool');
+    pieza?.setAttribute('tabindex', pieza.getAttribute('tabindex') ?? '0');
+    pieza?.focus();
+  },
+  // V40 · fase 3a · nombres del mandato para La Pulpería y la oferta de Bendición de los Reyes
+  pulperia: () => STATES.ferreteria(),
+  'oferta-bendicion': () => STATES.bendicion(),
   cobro: () => {
     const run = baseRun(2);
     winStage(run);
@@ -902,7 +912,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     await STATES.ferreteria();
     quieto();
     const from = document.querySelector('.run-body.shop .choice')?.getBoundingClientRect();
-    const to = document.querySelector('.deck-head .purse b, .purse b')?.getBoundingClientRect();
+    const to = document.querySelector('#bolsa-oro, .deck-head .purse b, .purse b')?.getBoundingClientRect();
     if (!from || !to) return;
     const [ax, ay] = [from.left + from.width / 2, from.top + from.height * 0.3];
     const [bx, by] = [to.left + to.width / 2, to.top + to.height / 2];
