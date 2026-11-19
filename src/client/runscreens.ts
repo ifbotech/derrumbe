@@ -27,10 +27,20 @@ import { sendMsg } from './net';
 import { setScreen } from './router';
 import { renderPings } from './pings';
 import { L, Ln, acabD, acabN, asaltoN, barN, cartaN, espD, espN, formN, getLang, marca, mejN, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
-import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
+import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, showSettings, spCard, toolTile, toolTip } from './widgets';
+import { type HudDatos, hudHtml, montaTira } from './hud';
 import { ritualDelBotin } from './ritual';
 import { opcionTexto, reyesPills } from './reyes-ui';
 import { fraseBufonOferta } from '../rules/reyes';
+import { bufonSvg } from './pixel/bufon';
+import { amuletoSvg, bendicionSvg, trampaSvg } from './pixel/iconos';
+import { hudSvg, nodoSvg } from './pixel/nodos';
+import { pintaHalo } from './pixel/pintas';
+import { reySvg, type ReyPx } from './pixel/reyes';
+import { type Pieza, selloDe, sinergia } from '../rules/piezas';
+import { sinergiaFor } from '../rules/textos';
+import { UMBRALES_REY, infoOpcion } from '../rules/reyes';
+
 import { t } from '../shared/i18n';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
@@ -109,30 +119,29 @@ export function renderRun(): void {
 
 const host = () => isRunHost();
 const waitNote = () => (host() ? '' : `<p class="wait">${L('ui.run.espera')}</p>`);
-function head(run: Run, h1: string, sub: string): string {
-  return `<header class="deck-head"><div><h1>${h1}</h1><p class="sub">${sub} · ${barN(run.deckId)} · ${L('ui.run.cabeza', { v: run.integrity, max: run.maxIntegrity, n: run.deck.length })}</p></div><div class="purse">${cifraEl(run.gold, 'oro', 'b', 'id="purse-n"')}<span>${L('ui.run.de.oro')}</span></div></header>`;
+/** Lo que el HUD enseña de la campaña. */
+const hudDe = (run: Run): HudDatos => ({ vida: run.integrity, vidaMax: run.maxIntegrity, oro: run.gold, esquirlas: run.esquirlas, gotas: run.gotas, mazo: run.deck.length, mazoId: run.deckId, tools: run.tools, slots: toolSlots(run), bendiciones: run.bendiciones });
+/**
+ * V40 · fase 3a · La cabecera de toda pantalla de campaña: el HUD único arriba y, debajo, el título en una línea.
+ * Fuera los subtítulos: lo que decían (Vida, Mazo, oro) ya está en el HUD. `sub` queda para el lector de pantalla.
+ */
+function head(run: Run, h1: string, sub = ''): string {
+  return `${hudHtml(hudDe(run), { mazoId: 'deck-view', derecha: `<button type="button" class="hud-btn" id="btn-set" aria-label="${L('ui.ajustes')}" data-tip="${L('ui.ajustes')}">⚙</button>` })}<h1 class="pant-t"${sub ? ` aria-description="${esc(sub.replace(/<[^>]+>/g, ''))}"` : ''}>${h1}</h1>`;
 }
 /** V27 · las Reliquias que había la última vez que se pintó la tira: la que llega nueva se marca y se dice dónde se colocó. */
 let beltAntes: string[] | null = null;
-/** Las Reliquias en las pantallas de campaña: aquí se reordenan con calma (y en la Taberna se venden). */
-function beltStrip(run: Run, sell = false): HTMLElement {
-  const wrap = document.createElement('div');
-  wrap.className = 'run-belt';
+/** V40 · fase 3a · La tira del HUD (Amuletos y Bendiciones): aquí se inspeccionan con calma (y en La Pulpería se venden). */
+function montaHud(run: Run, sell = false): void {
   const ids = run.tools.map((t) => t.id);
   const nuevas = beltAntes ? ids.filter((id) => !beltAntes!.includes(id)) : [];
   beltAntes = ids;
-  wrap.innerHTML = `<span class="belt-label">${L('ui.mesa.reliquias')} <small>${L('ui.run.reliquias.orden', { n: run.tools.length, total: toolSlots(run) })}</small></span>`;
-  wrap.appendChild(
-    beltEl(run.tools, {
-      slots: toolSlots(run),
-      onSell: sell && host() ? (i) => confirmSell(run, i) : undefined,
-      sellValue,
-    }),
-  );
-  wrap.insertAdjacentHTML('beforeend', `<button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button>`);
+  const belt = beltEl(run.tools, { slots: toolSlots(run), onSell: sell && host() ? (i) => confirmSell(run, i) : undefined, sellValue });
+  montaTira(app, hudDe(run), belt);
+  $('.hud-tira-in')?.classList.add('run-belt');
   // la Reliquia recién llegada lleva un filete de latón (V31: su hueco ya no cambia la cuenta, así que no se anuncia)
-  for (const n of nuevas) wrap.querySelector(`.belt-slot[data-id="${CSS.escape(n)}"]`)?.classList.add('recien');
-  return wrap;
+  for (const n of nuevas) belt.querySelector(`.belt-slot[data-id="${CSS.escape(n)}"]`)?.classList.add('recien');
+  const set = $('#btn-set');
+  if (set) set.onclick = () => showSettings();
 }
 function confirmSell(run: Run, i: number): void {
   const t = run.tools[i];
@@ -141,7 +150,7 @@ function confirmSell(run: Run, i: number): void {
   $('#yes', el).onclick = () => {
     el.remove();
     runDo({ t: 'sell', i });
-    sfx.coins(sellValue(t.id)), coins('#npc', '.purse b', sellValue(t.id)); // juice-ux V8: del Tratante a la bolsa
+    sfx.coins(sellValue(t.id)), coins('#npc', '#bolsa-oro', sellValue(t.id)); // juice-ux V8: del Tratante a la bolsa
     ferreteroSays('sell');
   };
 }
@@ -194,30 +203,83 @@ function packScreen(run: Run): void {
   $('#go').onclick = () => runDo(dones.length ? { t: 'begin', don: elegido } : { t: 'begin' });
 }
 
+// ───────────────────────── «Elegí una» (V40 · fase 3a) ─────────────────────────
+
+/**
+ * El sello de una pieza en grande: la letra S · A · B en su lacre o, si la pieza encaja con lo que llevás (★ Sinergia),
+ * la estrella con su etiqueta de dos o tres palabras debajo del nombre. Datos: selloDe y sinergia (src/rules/piezas.ts).
+ */
+function sello40(p: Pieza, run: Run): { sello: string; sin: string } {
+  const s = selloDe(p);
+  const sin = sinergia(p, contextoDe(run));
+  const sello = sin
+    ? `<span class="sello40 estrella" data-sello="${s ?? ''}" data-sinergia="${sin.tipo}" aria-label="★"><b>★</b></span>`
+    : s
+      ? `<span class="sello40 s-${s}" data-sello="${s}" aria-label="${L('ui.pieza.sello', { s })}"><b>${s}</b></span>`
+      : '';
+  return { sello, sin: sin ? `<span class="sin40">${sinergiaFor(getLang(), sin).replace(/^★\s*/, '★ ')}</span>` : '' };
+}
+
+/** El icono grande de una opción (pixel-art), con su globo y su Lupa. */
+function ico40(svg: string, tip = '', lupa = ''): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'ico40';
+  el.innerHTML = svg;
+  if (tip) el.dataset.tip = tip;
+  if (lupa) el.dataset.lupa = lupa;
+  return el;
+}
+
+/**
+ * Una opción grande de «Elegí una» (también la oferta de los Reyes y las bandejas de La Pulpería): el sello arriba, el
+ * icono, el nombre y una línea por efecto. Usa `choice` (foco, Enter, A del mando y la clase `.choice.pick`).
+ */
+function opcion40(el: HTMLElement, titulo: string, lineas: string[], p: Pieza | null, run: Run, onPick: (() => void) | null, cls = ''): HTMLElement {
+  const box = choice(el, titulo, lineas.filter(Boolean).join('<br>'), null, onPick, `op40 ${cls}`);
+  if (p) {
+    const s = sello40(p, run);
+    box.insertAdjacentHTML('afterbegin', s.sello);
+    if (s.sin) box.querySelector('h4')?.insertAdjacentHTML('afterend', s.sin);
+  }
+  return box;
+}
+
+/** La pantalla limpia de «Elegí una»: HUD, el título rotundo, las opciones y «Saltar» abajo. */
+function elegiHtml(run: Run, idOpciones: string, botones: string, previo = ''): string {
+  return `<div class="run m40 elegi-una">${head(run, L('ui.elegi40.titulo'))}
+    <div class="run-body elegi40">${previo}<div class="choices op-fila" id="${idOpciones}"></div>${waitNote()}
+    ${botones ? `<div class="row elegi-pie">${botones}</div>` : ''}</div></div>`;
+}
+
 // ───────────────────────── La oferta de Bendiciones (V40 1c) ─────────────────────────
 
 /**
- * Los Reyes ofrecen: una tarjeta por Bendición con su Rey, su efecto, su condición de carga y el nivel que deja. Se
- * elige con el ratón, con Enter/Espacio sobre la que tiene el foco o con el mando (A); las flechas y la cruceta
- * mueven el foco (nav.ts, que conoce `.choice.pick`).
+ * Los Reyes ofrecen: la misma pantalla de «Elegí una», una opción por Rey con su retrato pixel-art, la Bendición, su
+ * efecto, su condición de carga, el nivel [2/4] que encendería y su sello. Se elige con el ratón, con Enter/Espacio
+ * sobre la que tiene el foco o con el mando (A); las flechas y la cruceta mueven el foco (nav.ts conoce `.choice.pick`).
  */
 function bendicionScreen(run: Run): void {
   const op = run.oferta ?? [];
-  const mias = reyesPills(run.bendiciones, run.tools);
-  app.innerHTML = `<div class="run">${head(run, L('ui.run.bend.titulo'), `${L('ui.run.bend.sub')} · ${asaltoN(run.stage)}`)}
-    <div class="run-body"><p class="lead">${L('ui.run.bend.texto')}</p>
-    <p class="bufon-dice"><i>${t(fraseBufonOferta(run.id, run.stage))}</i></p>
-    <div class="choices" id="bends"></div>
-    ${mias ? `<section class="bend-mias"><h3 class="sec">${L('ui.run.bend.llevas')}</h3><div class="rasgos">${mias}</div></section>` : ''}${waitNote()}
-    <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button></div></div></div>`;
+  app.innerHTML = elegiHtml(run, 'bends', '', `<p class="bufon-dice"><span class="bufon-mini">${bufonSvg('brillo')}</span><i>${t(fraseBufonOferta(run.id, run.stage))}</i></p>`);
+  montaHud(run);
   bendTarjetas(run, op, $('#bends'), host() ? (i) => runDo({ t: 'bendicion', i }) : null);
 }
+
+const metaRey = (n: number) => UMBRALES_REY.find((u) => u > n) ?? UMBRALES_REY[UMBRALES_REY.length - 1];
 
 /** Las tarjetas de Bendición (la oferta de los Reyes y la «Elegí una» del Botín): Rey, efecto, carga, nivel, sello y ★. */
 function bendTarjetas(run: Run, op: OpcionBend[], host_: HTMLElement, pick: ((i: number) => void) | null): void {
   op.forEach((o, i) => {
-    const tx = opcionTexto(run.bendiciones, o, run.tools, marcaPieza({ tipo: 'bendicion', id: o.id }, contextoDe(run)));
-    const box = choice(tileEl('jefe', tx.titulo, 'service'), tx.titulo, tx.desc, L('ui.run.bend.tomar'), pick ? () => pick(i) : null, `bend r-${o.rey}${tx.info.dual ? ' dual' : ''}`);
+    const info = infoOpcion(run.bendiciones, o, run.tools);
+    const nombre = t(`bendicion.${o.id}.nombre`);
+    const nivel = info.reyes
+      .map((r) => `<span class="nivel40 r-${r.rey}${r.enciende ? ' enciende' : ''}">${L('ui.elegi40.nivel', { r: t(`rey.${r.rey}.palo`), n: r.n, m: metaRey(r.n - 1) })}</span>`)
+      .join('');
+    const ico = document.createElement('div');
+    ico.className = 'ico40 ico-bend';
+    ico.innerHTML = `<span class="rey40" aria-hidden="true">${info.reyes.map((r) => reySvg(r.rey as ReyPx)).join('')}</span>${bendicionSvg(o.id)}`;
+    ico.dataset.tip = `<b>${t(`rey.${o.rey}.nombre`)}</b>${L('ui.elegi40.rey')}: ${nombre}`;
+    const box = opcion40(ico, nombre, [t(`bendicion.${o.id}.desc`), `<small class="carga40">${t(`bendicion.${o.id}.carga`)}</small>`, nivel], { tipo: 'bendicion', id: o.id }, run, pick ? () => pick(i) : null, `bend r-${o.rey}${info.dual ? ' dual' : ''}`);
     box.dataset.bend = o.id;
     box.dataset.i = String(i);
     box.style.setProperty('--i', String(i));
@@ -225,10 +287,8 @@ function bendTarjetas(run: Run, op: OpcionBend[], host_: HTMLElement, pick: ((i:
   });
 }
 
-// ───────────────────────── El Mapa de caminos (V40 1e) ─────────────────────────
+// ───────────────────────── El Mapa de caminos (V40 1e · fase 3a) ─────────────────────────
 
-/** El emblema de cada tipo de nodo (de GLYPH; arte-ui los dibujará propios). */
-const NODO_GLIFO: Record<TipoNodo, string> = { guardia: 'bastion', bravo: 'escudo_roto', pulperia: 'cajones', santuario: 'comodin', fogon: 'horno', rey: 'jefe' };
 const tipoN = (t: TipoNodo) => L(`ui.mapa.tipo.${t}` as ClaveUi);
 
 /** Lo que dice un nodo del Mapa: qué es y qué Botín deja (botinPrevisto, de las reglas). */
@@ -255,146 +315,185 @@ function nodoBotin(run: Run, n: NodoMapa): string {
 }
 
 /**
- * El Mapa: el tramo que lleva al próximo asalto, de abajo (el asalto anterior) arriba (el que viene), con sus aristas.
- * Cada nodo es un botón (`#mn-<id>`, `data-tipo`); los alcanzables (`.alcanzable`) se pulsan con ratón, Enter o A, y
- * la cruceta va de uno a otro (nav.ts no conoce el Mapa: busca el pulsable más cercano).
+ * El Mapa entero, de abajo (el asalto 1) arriba (el último), en una vista que se desplaza con la rueda, el dedo, el
+ * arrastre del ratón y la cruceta (el foco lleva la vista). Cada nodo es su icono pixel-art (`#mn-<id>`, `data-tipo`,
+ * `.t-<tipo>`); los alcanzables son además `.choice.pick` dentro de `#routes` (el humo y el mando los buscan ahí) y se
+ * pulsan con ratón, Enter o A. La ficha enseña el nodo que tiene el ratón o el foco, con su Botín.
  */
 function mapScreen(run: Run): void {
   const m = run.mapa;
-  const lo = filaAsalto(Math.max(1, run.stage - 1));
-  const hi = filaAsalto(Math.max(2, run.stage));
-  const filas = hi - lo + 1;
-  const vis = m.nodos.filter((n) => n.fila >= lo && n.fila <= hi);
+  const hi = Math.max(...m.nodos.map((n) => n.fila), filaAsalto(Math.max(2, run.stage)));
+  const filas = hi + 1;
   const ya = new Set(m.hechos);
   const puede = new Set(alcanzables(m));
   const x = (n: NodoMapa) => n.col * 100 + 50;
   const y = (n: NodoMapa) => (hi - n.fila) * 100 + 50;
-  const lineas = vis
+  const lineas = m.nodos
     .flatMap((n) => n.hacia.map((h) => [n, m.nodos[h]] as const))
-    .filter(([, h]) => h && h.fila <= hi)
-    .map(([a, b]) => `<line class="${ya.has(a.id) && (ya.has(b.id) || puede.has(b.id)) ? 'hecha' : ''}" x1="${x(a)}" y1="${y(a)}" x2="${x(b)}" y2="${y(b)}" vector-effect="non-scaling-stroke"/>`)
-    .join('');
-  const can = host();
-  const nodos = vis
-    .map((n) => {
-      const estado = n.id === m.en ? 'aqui' : ya.has(n.id) ? 'hecho' : puede.has(n.id) ? 'alcanzable' : 'lejos';
-      const tip = `<b>${tipoN(n.tipo)}</b>${nodoTexto(run, n)}${nodoBotin(run, n) ? `<hr>${nodoBotin(run, n)}` : ''}`;
-      const palo = n.palo ? `<i class="s-${n.palo}">${suitSvg(n.palo)}</i>` : '';
-      return `<button type="button" id="mn-${n.id}" class="nodo-mapa t-${n.tipo} ${estado}" data-tipo="${n.tipo}" data-mn="${n.id}" style="grid-row:${hi - n.fila + 1};grid-column:${n.col + 1}" ${estado === 'alcanzable' && can ? '' : 'disabled'} ${estado === 'aqui' ? 'aria-current="step"' : ''} data-tip="${esc(tip)}" aria-label="${esc(`${tipoN(n.tipo)}. ${nodoBotin(run, n)}`)}">${glyphSvg(NODO_GLIFO[n.tipo], 'stamp-ico')}<b>${tipoN(n.tipo)}${n.asalto ? ` ${n.tramo}` : ''}</b>${palo}${estado === 'aqui' ? `<small>${L('ui.mapa.aqui')}</small>` : ''}</button>`;
+    .filter(([, h]) => !!h)
+    .map(([a, b]) => {
+      const cls = ya.has(a.id) && ya.has(b.id) ? 'hecha' : a.id === m.en && puede.has(b.id) ? 'abierta' : '';
+      return `<line class="${cls}" x1="${x(a)}" y1="${y(a)}" x2="${x(b)}" y2="${y(b)}" vector-effect="non-scaling-stroke"/>`;
     })
     .join('');
-  // la lista de lo alcanzable, con su Botín a la vista (para leer sin globos)
-  app.innerHTML = `<div class="run map">${head(run, L('ui.mapa.titulo'), `${L('ui.mapa.sub', { n: run.stage })}${run.stage <= LAST_STAGE ? L('ui.run.mapa.de', { n: LAST_STAGE }) : ''} · ${asaltoN(run.stage)}`)}
-    <div class="run-body">
-      <div class="desk"><div class="blueprint mapa-ramas"><div class="bp-title">${L('ui.mapa.titulo')}${run.endless ? L('ui.run.mapa.infinito') : ''}</div>
-        <div class="mapa-grid" style="--filas:${filas}"><svg class="mapa-aristas" viewBox="0 0 300 ${filas * 100}" preserveAspectRatio="none" aria-hidden="true">${lineas}</svg>${nodos}</div></div></div>
-      <h3 class="sec">${L('ui.mapa.elegi')}</h3>
-      <div class="choices routes" id="routes"></div>${waitNote()}
-      <div id="belt-host"></div>
+  const can = host();
+  app.innerHTML = `<div class="run m40 map mapa40">${head(run, L('ui.mapa40.titulo'), L('ui.mapa.sub', { n: run.stage }))}
+    <div class="run-body mapa-cuerpo">
+      <div class="mapa-scroll" id="mapa-scroll"><div class="mapa-lienzo" style="--filas:${filas}">
+        <svg class="mapa-aristas" viewBox="0 0 300 ${filas * 100}" preserveAspectRatio="none" aria-hidden="true">${lineas}</svg>
+        <div class="mapa-nodos" id="routes" role="group" aria-label="${L('ui.mapa.elegi')}"></div>
+      </div></div>
+      <aside class="mapa-ficha" id="mapa-ficha" aria-live="polite"></aside>
+      ${waitNote()}
     </div></div>`;
-  $('#belt-host').appendChild(beltStrip(run));
+  montaHud(run);
   const ir = (id: number) => (sfx.stamp(), runDo({ t: 'ir', nodo: id }));
-  $$('.nodo-mapa.alcanzable').forEach((b) => (b.onclick = () => ir(Number(b.dataset.mn))));
-  const routes = $('#routes');
-  for (const id of alcanzables(m)) {
-    const n = m.nodos[id];
-    const box = choice(tileEl(NODO_GLIFO[n.tipo], tipoN(n.tipo), 'service'), tipoN(n.tipo), `${nodoTexto(run, n)}${nodoBotin(run, n) ? ` <b>${nodoBotin(run, n)}.</b>` : ''}`, L('ui.mapa.ir'), can ? () => ir(id) : null, `nodo t-${n.tipo}${n.tipo === 'bravo' ? ' risk' : ''}`);
-    box.dataset.tipo = n.tipo;
-    box.dataset.i = String(id);
-    routes.appendChild(box);
+  const host_ = $('#routes');
+  const ficha = $('#mapa-ficha');
+  const enseña = (n: NodoMapa) => {
+    const b = nodoBotin(run, n);
+    ficha.innerHTML = `<div class="ficha-ico">${nodoSvg(n.tipo)}</div><div class="ficha-tx"><b>${tipoN(n.tipo)}${n.asalto ? ` · ${L('ui.mapa40.tramo', { n: n.tramo })}` : ''}</b>${b ? `<span>${b.replace(/^[^:]*:\s*/, '')}</span>` : ''}</div>`;
+    ficha.dataset.tipo = n.tipo;
+  };
+  for (const n of m.nodos) {
+    const estado = n.id === m.en ? 'aqui' : ya.has(n.id) ? 'hecho' : puede.has(n.id) ? 'alcanzable' : 'lejos';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = `mn-${n.id}`;
+    b.className = `nodo-mapa t-${n.tipo} ${estado}${estado === 'alcanzable' && can ? ' choice pick' : ''}`;
+    b.dataset.tipo = n.tipo;
+    b.dataset.mn = String(n.id);
+    b.dataset.i = String(n.id);
+    b.style.gridRow = String(hi - n.fila + 1);
+    b.style.gridColumn = String(n.col + 1);
+    b.disabled = !(estado === 'alcanzable' && can);
+    if (estado === 'aqui') b.setAttribute('aria-current', 'step');
+    const botin = nodoBotin(run, n);
+    b.dataset.tip = `<b>${tipoN(n.tipo)}</b>${nodoTexto(run, n)}${botin ? `<hr>${botin}` : ''}`;
+    b.setAttribute('aria-label', `${tipoN(n.tipo)}${n.asalto ? ` ${n.tramo}` : ''}. ${botin}`);
+    b.innerHTML = `${nodoSvg(n.tipo)}${n.palo ? `<i class="nodo-palo s-${n.palo}">${suitSvg(n.palo)}</i>` : ''}${estado === 'aqui' ? `<i class="nodo-aqui" aria-hidden="true">${bufonSvg('reposo')}</i>` : ''}`;
+    if (estado === 'alcanzable' && can) b.onclick = () => ir(n.id);
+    b.addEventListener('pointerenter', () => enseña(n));
+    b.addEventListener('focus', () => enseña(n));
+    host_.appendChild(b);
   }
+  const primero = alcanzables(m)[0];
+  enseña(m.nodos[primero ?? Math.max(0, m.en)] ?? m.nodos[0]);
+  // la vista: el primero alcanzable (o el actual) centrado; arrastre con el ratón; el foco la lleva
+  const sc = $('#mapa-scroll');
+  const foco = $(`#mn-${primero ?? m.en}`) ?? $('.nodo-mapa');
+  if (foco) {
+    const r = foco.getBoundingClientRect();
+    const s = sc.getBoundingClientRect();
+    sc.scrollTop += r.top - s.top - (s.height - r.height) / 2;
+  }
+  sc.addEventListener('focusin', (e) => (e.target as HTMLElement).scrollIntoView?.({ block: 'nearest', inline: 'nearest' }));
+  let arrastre: { y: number; top: number } | null = null;
+  sc.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || (e.target as HTMLElement).closest('.nodo-mapa.pick')) return;
+    arrastre = { y: e.clientY, top: sc.scrollTop };
+    sc.setPointerCapture(e.pointerId);
+    sc.classList.add('arrastra');
+  });
+  sc.addEventListener('pointermove', (e) => {
+    if (arrastre) sc.scrollTop = arrastre.top - (e.clientY - arrastre.y);
+  });
+  const suelta = () => {
+    arrastre = null;
+    sc.classList.remove('arrastra');
+  };
+  sc.addEventListener('pointerup', suelta);
+  sc.addEventListener('pointercancel', suelta);
   if (run.stage === 2 && m.en >= 0 && m.nodos[m.en]?.asalto) whisper('atajo');
 }
 
-// ───────────────────────── El Botín y la «Elegí una» (V40 1e) ─────────────────────────
+// ───────────────────────── El Botín y la «Elegí una» (V40 1e · fase 3a) ─────────────────────────
 
 function draftChoice(run: Run, o: DraftOpt, i: number): HTMLElement {
   const click = host() ? () => runDo({ t: 'elegir', j: i }) : null;
-  if (o.kind === 'special') return choice(cardEl(spCard(o.id)), espN(o.id), `${espD(o.id)}${marcaPieza({ tipo: 'trampa', id: o.id }, contextoDe(run))}`, L('ui.run.llevar'), click);
+  if (o.kind === 'special') return opcion40(trampaSvg(o.id) ? ico40(trampaSvg(o.id), `<b>${espN(o.id)}</b>${espD(o.id)}`, `special:${o.id}`) : cardEl(spCard(o.id)), espN(o.id), [espD(o.id)], { tipo: 'trampa', id: o.id }, run, click, 'trampa');
   const c = o.card;
-  const what = [c.tr ? `<b>${acabN(c.tr)}.</b> ${acabD(c.tr)}` : '', c.seal ? `<b>${selloN(c.seal)}.</b> ${selloD(c.seal)}` : ''].filter(Boolean).join(' ');
-  return choice(cardEl(c), cartaN(c), what, L('ui.run.llevar'), click);
+  const what = [c.tr ? `<b>${acabN(c.tr)}.</b> ${acabD(c.tr)}` : '', c.seal ? `<b>${selloN(c.seal)}.</b> ${selloD(c.seal)}` : ''].filter(Boolean);
+  return opcion40(cardEl(c), cartaN(c), what, null, run, click, 'carta');
 }
 
-/** Cómo se nombra una recompensa del Botín. */
-function recompensaN(run: Run, r: Recompensa): { glifo: string; titulo: string; desc: string } {
-  if (r.k === 'oro') return { glifo: 'oro', titulo: L('ui.botin.oro'), desc: L('ui.run.total.oro', { n: r.n }) };
-  if (r.k === 'amuleto') return { glifo: r.id, titulo: relN(r.id), desc: relD(r.id) };
+/** El icono y la línea de cada recompensa del Botín. */
+function recompensa40(run: Run, r: Recompensa): { ico: string; titulo: string; tip: string } {
+  if (r.k === 'oro') return { ico: pintaHalo('D', 'ico-oro'), titulo: L('ui.botin40.cobrar.oro', { n: r.n }), tip: run.pay.map(([l, n]) => `${cobroFor(getLang(), l)} +${n}`).join('<br>') };
+  if (r.k === 'amuleto') return { ico: amuletoSvg(r.id), titulo: relN(r.id), tip: `<b>${relN(r.id)}</b>${relD(r.id)}` };
   const que = L(`ui.elegi.${r.tipo}` as ClaveUi);
-  return { glifo: r.tipo === 'bendicion' ? 'jefe' : r.tipo === 'amuleto' ? 'contenedor' : 'naipes_par', titulo: `${L('ui.elegi.titulo')}: ${que}`, desc: L('ui.elegi.sub', { x: r.opciones.length === 1 ? que : `${r.opciones.length} · ${que}` }) };
+  const ico =
+    r.tipo === 'bendicion'
+      ? bendicionSvg((r.opciones as OpcionBend[])[0]?.id ?? '')
+      : r.tipo === 'amuleto'
+        ? amuletoSvg(String(r.opciones[0] ?? ''))
+        : trampaSvg(String((r.opciones as DraftOpt[]).find((o) => o.kind === 'special')?.id ?? 'gemelo'));
+  return { ico, titulo: L('ui.botin40.elegi', { x: que }), tip: L('ui.elegi.sub', { x: `${r.opciones.length} · ${que}` }) };
 }
 
-/** El Botín tras un combate: cada recompensa se cobra (o se abre su «Elegí una») o se salta; «Seguir» vuelve al Mapa. */
+/**
+ * El Botín tras un combate: una lista vertical centrada. Cada fila es un botón grande que cobra (o abre su «Elegí
+ * una») y una cruz chica para saltarla; abajo, un solo botón claro: «Seguir» (o «Saltar», si queda algo por cobrar).
+ */
 function rewardScreen(run: Run): void {
   if (run.elegi !== null) return elegiScreen(run);
-  const total = run.pay.reduce((a, [, n]) => a + n, 0);
   const bravo = run.combate === 'bravo';
   const can = host();
-  app.innerHTML = `<div class="run">${head(run, L('ui.run.botin.titulo'), bravo ? L('ui.botin.bravo') : run.endless && run.stage === LAST_STAGE ? L('ui.run.botin.infinito') : L('ui.run.botin.sub', { n: run.stage, nombre: asaltoN(run.stage) }))}
-    <div class="run-body two">
-      <section class="panel paybox"><h3><span>${L('ui.run.botin')}</span><span>+${total}</span></h3>
-        <table class="pay">${run.pay.map(([l, n]) => `<tr><td>${cobroFor(getLang(), l)}</td><td>+${n}</td></tr>`).join('')}<tr class="sum"><td>${L('ui.run.total')}</td><td>${L('ui.run.total.oro', { n: total })}</td></tr></table>
-      </section>
-      <section>
-        <h3 class="sec">${L('ui.run.botin')}</h3>
-        <div class="botin-lista" id="botin"></div>
-        <p class="lead">${L('ui.botin.pierde')}</p>
-        ${waitNote()}
-        <div class="row end-row"><button class="primary" id="seguir" ${can ? '' : 'disabled'}>${L('ui.botin.seguir')}</button></div>
-        <div id="belt-host"></div>
-      </section>
+  const total = run.pay.reduce((a, [, n]) => a + n, 0);
+  const quedan = run.botin.some((r) => r.estado === 'abierta');
+  app.innerHTML = `<div class="run m40 botin40">${head(run, L('ui.botin40.titulo'), bravo ? L('ui.botin.bravo') : L('ui.run.botin.sub', { n: run.stage, nombre: asaltoN(run.stage) }))}
+    <div class="run-body botin-cuerpo">
+      <div class="botin-lista" id="botin"></div>${waitNote()}
+      <div class="row botin-pie"><button class="primary" id="seguir" ${can ? '' : 'disabled'}>${quedan ? L('ui.botin40.saltar') : L('ui.botin40.seguir')}</button></div>
     </div></div>`;
   if (lastPhase !== 'reward') sfx.coins(total);
   // V12: la tirada de huesos del asalto recién ganado, una vez, sobre el Botín
   if (!bravo) ritualDelBotin(`${run.id}:${run.stage}`, run.ritual?.asalto === run.stage ? run.ritual : null);
-  $('#belt-host').appendChild(beltStrip(run));
+  montaHud(run);
   const full = run.tools.length >= toolSlots(run);
   run.botin.forEach((r, i) => {
-    const tx = recompensaN(run, r);
+    const tx = recompensa40(run, r);
     const fila = document.createElement('div');
     fila.className = `botin-fila k-${r.k} ${r.estado}`;
     fila.dataset.i = String(i);
-    const ico = r.k === 'amuleto' ? toolTile(r.id) : tileEl(tx.glifo, tx.titulo, 'service');
-    fila.appendChild(ico);
-    fila.insertAdjacentHTML('beforeend', `<div class="botin-tx"><b>${tx.titulo}</b><small>${tx.desc}</small></div>`);
+    const bloqueado = r.k === 'amuleto' && full;
+    const cuerpo = `<span class="botin-ico">${tx.ico}</span><b class="botin-tx">${bloqueado ? `${tx.titulo} · ${L('ui.run.llenas')}` : tx.titulo}</b>`;
     if (r.estado === 'abierta') {
-      const bloqueado = r.k === 'amuleto' && full;
-      fila.insertAdjacentHTML('beforeend', `<div class="botin-acc"><button class="primary cobrar" ${can && !bloqueado ? '' : 'disabled'}>${bloqueado ? L('ui.run.llenas') : r.k === 'elegi' ? L('ui.botin.abrir') : L('ui.botin.cobrar')}</button><button class="saltar" ${can ? '' : 'disabled'}>${r.k === 'elegi' && r.tipo === 'trampa' ? L('ui.elegi.saltar.oro', { n: BALANCE.cobro.sinSeleccion }) : L('ui.botin.saltar')}</button></div>`);
+      fila.innerHTML = `<button class="cobrar" data-tip="${esc(tx.tip)}" ${can && !bloqueado ? '' : 'disabled'}>${cuerpo}</button><button class="saltar" aria-label="${L('ui.botin.saltar')}" data-tip="${r.k === 'elegi' && r.tipo === 'trampa' ? L('ui.elegi.saltar.oro', { n: BALANCE.cobro.sinSeleccion }) : L('ui.botin.saltar')}" ${can ? '' : 'disabled'}>✕</button>`;
       $('.cobrar', fila).onclick = () => (sfx.stamp(), runDo({ t: 'cobrar', i }));
       $('.saltar', fila).onclick = () => runDo({ t: 'saltar', i });
-    } else fila.insertAdjacentHTML('beforeend', `<i class="inkstamp ${r.estado === 'tomada' ? 's-done' : 's-skip'}">${r.estado === 'tomada' ? L('ui.botin.tomada') : L('ui.botin.saltada')}</i>`);
+    } else fila.innerHTML = `<div class="cobrar hecha">${cuerpo}<i class="botin-estado" aria-label="${r.estado === 'tomada' ? L('ui.botin.tomada') : L('ui.botin.saltada')}">${r.estado === 'tomada' ? '✓' : '—'}</i></div>`;
     $('#botin').appendChild(fila);
   });
   $('#seguir').onclick = () => runDo({ t: 'seguir' });
 }
 
 /**
- * La «Elegí una» abierta (`run.elegi`): tres opciones con su sello S·A·B y su ★ Sinergia (marcaPieza), «Saltar» y
- * «Volver al Botín». La de Bendición pinta las mismas tarjetas que la oferta de los Reyes (bendTarjetas).
+ * La «Elegí una» abierta (`run.elegi`): pantalla limpia, el título rotundo, tres opciones grandes con su sello S·A·B o
+ * ★ Sinergia (selloDe, sinergia) y «Saltar» abajo; «Volver» al Botín, discreto. La de Bendición pinta las mismas
+ * tarjetas que la oferta de los Reyes (bendTarjetas).
  */
 function elegiScreen(run: Run): void {
   const r = run.botin[run.elegi!];
   if (!r || r.k !== 'elegi') return;
   const can = host();
-  const que = L(`ui.elegi.${r.tipo}` as ClaveUi);
-  app.innerHTML = `<div class="run elegi-una">${head(run, L('ui.elegi.titulo'), L('ui.elegi.sub', { x: que }))}
-    <div class="run-body">${r.tipo === 'bendicion' ? `<p class="bufon-dice"><i>${t(fraseBufonOferta(run.id, run.stage))}</i></p>` : ''}
-    <div class="choices" id="${r.tipo === 'bendicion' ? 'bends' : r.tipo === 'amuleto' ? 'loot' : 'picks'}"></div>${waitNote()}
-    <div class="row end-row"><button id="volver" ${can ? '' : 'disabled'}>${L('ui.elegi.volver')}</button><button id="saltar" ${can ? '' : 'disabled'}>${r.tipo === 'trampa' ? L('ui.elegi.saltar.oro', { n: BALANCE.cobro.sinSeleccion }) : L('ui.elegi.saltar')}</button><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button></div>
-    <div id="belt-host"></div></div></div>`;
-  $('#belt-host').appendChild(beltStrip(run));
+  const id = r.tipo === 'bendicion' ? 'bends' : r.tipo === 'amuleto' ? 'loot' : 'picks';
+  const saltar = r.tipo === 'trampa' ? L('ui.elegi.saltar.oro', { n: BALANCE.cobro.sinSeleccion }) : L('ui.elegi.saltar');
+  app.innerHTML = elegiHtml(run, id, `<button id="volver" class="discreto" ${can ? '' : 'disabled'}>${L('ui.elegi.volver')}</button><button id="saltar" ${can ? '' : 'disabled'}>${saltar}</button>`);
+  montaHud(run);
   if (r.tipo === 'bendicion') bendTarjetas(run, r.opciones, $('#bends'), can ? (j) => runDo({ t: 'elegir', j }) : null);
   else if (r.tipo === 'trampa')
     r.opciones.forEach((o, j) => {
       const el = draftChoice(run, o, j);
-      dealIn($('.card', el), 120 + j * 160);
+      const carta = el.querySelector<HTMLElement>('.card');
+      if (carta) dealIn(carta, 120 + j * 160);
       $('#picks').appendChild(el);
     });
   else {
     const full = run.tools.length >= toolSlots(run);
     $('#loot').classList.add('cofre');
-    r.opciones.forEach((id, j) => {
-      const box = choice(toolTile(id), relN(id), `${relD(id)}${marcaPieza({ tipo: 'amuleto', id }, contextoDe(run))}`, full ? L('ui.run.llenas') : L('ui.run.llevar'), can && !full ? () => runDo({ t: 'elegir', j }) : null);
+    r.opciones.forEach((tid, j) => {
+      const box = opcion40(ico40(amuletoSvg(tid), toolTip(tid), `tool:${tid}`), relN(tid), [relD(tid)], { tipo: 'amuleto', id: tid }, run, can && !full ? () => runDo({ t: 'elegir', j }) : null, 'amuleto');
       box.style.setProperty('--i', String(j));
       $('#loot').appendChild(box);
     });
@@ -404,21 +503,19 @@ function elegiScreen(run: Run): void {
   $('#saltar').onclick = () => runDo({ t: 'elegir', j: null });
 }
 
-// ───────────────────────── El Fogón (V40 1e) ─────────────────────────
+// ───────────────────────── El Fogón (V40 1e · fase 3a) ─────────────────────────
 
-/** El Fogón: Curar o Purgar gratis, uno de los dos (con el Cartógrafo del Altar, los dos); los datos, de serviciosFogon. */
+/** El Fogón: dos opciones grandes, Curar o Purgar gratis (con el Cartógrafo del Altar, los dos); datos de serviciosFogon. */
 function fogonScreen(run: Run): void {
   const sv = serviciosFogon(run);
   const can = host();
-  app.innerHTML = `<div class="run fogon">${head(run, L('ui.fogon.titulo'), sv.ambos ? L('ui.fogon.ambos') : L('ui.fogon.sub'))}
-    <div class="run-body"><div class="choices" id="fogon-opts"></div>${waitNote()}
-    <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button><button class="primary" id="go" ${can ? '' : 'disabled'}>${L('ui.fogon.seguir')}</button></div>
-    <div id="belt-host"></div></div></div>`;
-  $('#belt-host').appendChild(beltStrip(run));
-  const usado = (ok: boolean) => (ok ? L('ui.run.gratis') : L('ui.fogon.usado'));
-  const curar = choice(tileEl('reparacion', L('ui.fogon.curar'), 'service'), L('ui.fogon.curar'), L('ui.fogon.curar.desc', { n: sv.curar.vida, i: run.integrity, max: run.maxIntegrity }), usado(sv.curar.puede), can && sv.curar.puede ? () => (sfx.build(), runDo({ t: 'fogon', que: 'curar' })) : null, 'fogon-curar');
+  app.innerHTML = `<div class="run m40 fogon">${head(run, L('ui.fogon40.titulo'), sv.ambos ? L('ui.fogon.ambos') : L('ui.fogon.sub'))}
+    <div class="run-body fogon40"><div class="choices op-fila" id="fogon-opts"></div>${waitNote()}
+    <div class="row elegi-pie"><button class="primary" id="go" ${can ? '' : 'disabled'}>${L('ui.botin40.seguir')}</button></div></div></div>`;
+  montaHud(run);
+  const curar = opcion40(ico40(hudSvg('vida')), L('ui.fogon40.curar', { n: sv.curar.vida }), [`${run.integrity} → ${Math.min(run.maxIntegrity, run.integrity + sv.curar.vida)} / ${run.maxIntegrity}`], null, run, can && sv.curar.puede ? () => (sfx.build(), runDo({ t: 'fogon', que: 'curar' })) : null, `fogon-curar${sv.curar.puede ? '' : ' usado'}`);
   curar.id = 'fogon-curar';
-  const purgar = choice(tileEl('retirar', L('ui.fogon.purgar'), 'service'), L('ui.fogon.purgar'), L('ui.fogon.purgar.desc'), usado(sv.purgar.puede), can && sv.purgar.puede ? () => purgarModal(run, L('ui.fogon.purgar.titulo'), (id) => runDo({ t: 'fogon', que: 'purgar', card: id })) : null, 'fogon-purgar');
+  const purgar = opcion40(ico40(glyphSvg('retirar', 'stamp-ico')), L('ui.fogon40.purgar'), [L('ui.run.gratis')], null, run, can && sv.purgar.puede ? () => purgarModal(run, L('ui.fogon.purgar.titulo'), (id) => runDo({ t: 'fogon', que: 'purgar', card: id })) : null, `fogon-purgar${sv.purgar.puede ? '' : ' usado'}`);
   purgar.id = 'fogon-purgar';
   $('#fogon-opts').append(curar, purgar);
   $('#go').onclick = () => runDo({ t: 'next' });
@@ -435,11 +532,12 @@ function purgarModal(run: Run, titulo: string, onPick: (id: string) => void): vo
   });
 }
 
-// ───────────────────────── La Taberna ─────────────────────────
+// ───────────────────────── La Pulpería (V40 · fase 3a) ─────────────────────────
 
 /** El sello sin su «Sello de…» delante: «Lacre: rojo» / «Wax: Red». */
 const selloCorto = (id: string) => (getLang() === 'es' ? selloN(id).replace('Sello de lacre ', '').replace('Sello de ', '').replace('Sello ', '') : selloN(id).replace(/ (wax )?seal$/i, ''));
 
+/** Una pieza de la bandeja: su icono, el nombre, su sello y el precio gigante debajo; el detalle, en el globo. */
 function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   const cost = offerCost(run, o);
   const can = host() && !o.sold && run.gold >= cost;
@@ -447,10 +545,12 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   let el: HTMLElement;
   let title: string;
   let desc: string;
+  let p: Pieza | null = null;
   if (o.kind === 'tool') {
-    el = toolTile(o.id!);
+    el = ico40(amuletoSvg(o.id!), '', `tool:${o.id}`);
     title = relN(o.id!);
-    desc = `${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>${marcaPieza({ tipo: 'amuleto', id: o.id! }, contextoDe(run))}`;
+    desc = relD(o.id!);
+    p = { tipo: 'amuleto', id: o.id! };
   } else if (o.kind === 'sobre') {
     el = tileEl('sobre', L('ui.run.sobre'), 'service');
     title = L('ui.run.sobre');
@@ -471,43 +571,40 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
     // V11: el Pergamino solo sube el Daño de la formación; su Multi no cambia
     desc = L('ui.run.pergamino.desc', { f: now.f, f2: now.f + FORM[f].lf, r: now.r });
   }
-  const box = choice(el, title, desc, null, buy, o.sold ? 'sold hang' : 'hang');
-  box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `<b>${cost}</b> ${L('ui.run.de.oro')}`}</span>`);
-  if (o.sold) stampOn(box, L('ui.run.vendido'), 's-skip');
+  const tip = `<b>${title}</b>${desc}${o.kind === 'tool' ? `<small>${rarN(TOOL[o.id!].rarity)}</small>` : ''}`;
+  el.dataset.tip = tip;
+  const box = opcion40(el, title, [], p, run, buy, `${o.kind === 'tool' ? 'k-tool' : 'k-otra'}${o.sold ? ' sold' : ''}`);
+  box.dataset.tip = tip;
+  box.insertAdjacentHTML('beforeend', `<span class="price-tag precio40 ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.pulp40.vendido') : cost === 0 ? L('ui.pulp40.gratis') : `${pintaHalo('D', 'precio-oro')}<b>${cost}</b>`}</span>`);
   return box;
 }
 
+/** Un servicio de La Pulpería: icono, nombre y precio gigante; un botón con su id de siempre (#heal, #burn, #reroll). */
+function servicio40(id: string, ico: string, nombre: string, precio: number | string, tip: string, ok: boolean): string {
+  return `<button type="button" class="servicio40" id="${id}" data-tip="${esc(tip)}" ${ok ? '' : 'disabled'}><span class="ico40">${ico}</span><b class="serv-n">${nombre}</b><span class="price-tag precio40">${typeof precio === 'number' ? `${pintaHalo('D', 'precio-oro')}<b>${precio}</b>` : `<b>${precio}</b>`}</span></button>`;
+}
+
 function shopScreen(run: Run): void {
-  const nextN = run.stage;
   const sv = serviciosPulperia(run);
-  const next = stageDef(nextN);
-  const boss = run.bosses[nextN] ? BOSS[run.bosses[nextN]] : null;
   const can = host();
-  app.innerHTML = `<div class="run">${head(run, L('ui.run.taberna'), `${L('ui.run.taberna.sub', { n: run.stage })}`)}
+  app.innerHTML = `<div class="run m40 pulp40">${head(run, L('ui.pulp40.titulo'), L('ui.run.taberna.sub', { n: run.stage }))}
     <div class="run-body shop">
-      <aside class="keeper"><div id="npc"></div><p class="say" id="say">…</p></aside>
-      <section class="stock"><div class="rail"></div><div class="choices hangers" id="offers"></div>${waitNote()}<div id="belt-host"></div></section>
-      <aside class="shop-side">
-        <div class="panel next"><h3><span>${L('ui.run.siguiente')}</span><span>${nextN}${nextN <= LAST_STAGE ? `/${LAST_STAGE}` : ''}</span></h3>
-          <div class="next-row"><div id="next-boss"></div><div>
-          <p><b>${asaltoN(nextN)}</b> · ${Ln(next.floors.length, 'ui.run.guardias.1', 'ui.run.guardias.n')}${L('ui.run.vida.x', { n: num(next.hp) })}</p>
-          ${boss ? `<p class="boss"><b>${monN(boss.id)} · ${monDec(boss.id)}</b>${monD(boss.id)}</p>` : next.boss ? L('ui.run.monarca.sabra') : L('ui.run.sin.monarca')}</div></div></div>
-        <div class="grid2">
-          <button id="heal" data-tip="${L('ui.run.curar.tip', { v: sv.curar.vida, i: run.integrity, max: run.maxIntegrity, p: sv.curar.paso })}" ${can && sv.curar.puede ? '' : 'disabled'}>${L('ui.run.curar', { n: sv.curar.precio })}</button>
-          <button id="burn" data-tip="${L('ui.run.hoguera.tip', { p: sv.purgar.paso })}" ${can && sv.purgar.puede ? '' : 'disabled'}>${L('ui.run.hoguera', { n: sv.purgar.precio })}</button>
-          <button id="reroll" data-tip="${L('ui.run.renovar.tip', { p: sv.renovar.paso })}${sv.renovar.vales ? L('ui.run.renovar.vales', { n: sv.renovar.vales }) : ''}." ${can && sv.renovar.puede ? '' : 'disabled'}>${L('ui.run.renovar', { x: sv.renovar.precio || L('ui.run.vale') })}</button>
-          <button class="primary" id="go" ${can ? '' : 'disabled'}>${L('ui.run.al.mapa')}</button>
+      <div class="pulp-cab"><div class="pulpero" id="npc">${bufonSvg('brillo')}</div><p class="say" id="say" role="status">…</p></div>
+      <div class="choices hangers bandejas" id="offers"><h3 class="bandeja-t t-amuletos">${L('ui.pulp40.amuletos')}</h3><h3 class="bandeja-t t-cartas">${L('ui.pulp40.cartas')}</h3></div>${waitNote()}
+      <div class="pulp-pie">
+        <div class="servicios40" role="group" aria-label="${L('ui.pulp40.servicios')}">
+          ${servicio40('burn', glyphSvg('retirar', 'stamp-ico'), L('ui.pulp40.purgar'), sv.purgar.precio, L('ui.run.hoguera.tip', { p: sv.purgar.paso }), can && sv.purgar.puede)}
+          ${servicio40('heal', hudSvg('vida'), `${L('ui.pulp40.curar')} +${sv.curar.vida}`, sv.curar.precio, L('ui.run.curar.tip', { v: sv.curar.vida, i: run.integrity, max: run.maxIntegrity, p: sv.curar.paso }), can && sv.curar.puede)}
+          ${servicio40('reroll', glyphSvg('cajones', 'stamp-ico'), L('ui.pulp40.renovar'), sv.renovar.precio || L('ui.run.vale'), `${L('ui.run.renovar.tip', { p: sv.renovar.paso })}${sv.renovar.vales ? L('ui.run.renovar.vales', { n: sv.renovar.vales }) : ''}.`, can && sv.renovar.puede)}
         </div>
-      </aside>
+        <button class="primary" id="go" ${can ? '' : 'disabled'}>${L('ui.pulp40.volver')}</button>
+      </div>
     </div></div>`;
-  $('#npc').appendChild(ferreteroEl());
-  $('#belt-host').appendChild(beltStrip(run, true));
-  if (boss) $('#next-boss').appendChild(portraitEl(`j-${boss.id}`, monN(boss.id)));
-  $('#offers').style.setProperty('--n', String(run.shop.length));
-  $('#offers').style.setProperty('--n2', String(Math.ceil(run.shop.length / 2))); // V11: en dos filas si no caben
-  run.shop.forEach((o, i) => $('#offers').appendChild(offerChoice(run, o, i)));
+  montaHud(run, true);
+  const offers = $('#offers');
+  run.shop.forEach((o, i) => offers.appendChild(offerChoice(run, o, i)));
   if (lastPhase === 'shop' && lastGold >= 0 && run.gold < lastGold) {
-    sfx.coins(lastGold - run.gold), coins('.purse b', '#npc', lastGold - run.gold); // juice-ux V8: de la bolsa al Tratante
+    sfx.coins(lastGold - run.gold), coins('#bolsa-oro', '#npc', lastGold - run.gold); // juice-ux V8: de la bolsa al Pulpero
     ferreteroSays('buy');
   } else if (lastPhase !== 'shop') ferreteroSays('hello');
   else $('#say').textContent = '…';
@@ -597,8 +694,8 @@ function eventScreen(run: Run): void {
       <div class="event-art">${glyphSvg(EVENT_GLYPH[ev.id] ?? 'incognita', 'event-ico')}</div>
       <div class="event-txt"><h3 class="sec">${secN(ev.id)}</h3><p class="lead">${secT(ev.id)}</p>
         <div class="event-opts" id="opts"></div>${waitNote()}</div>
-    </div><div id="belt-host"></div></div></div>`;
-  $('#belt-host').appendChild(beltStrip(run));
+    </div></div></div>`;
+  montaHud(run);
   ev.options.forEach((o, i) => {
     const ok = host() && (!o.can || o.can(run));
     const b = document.createElement('button');
