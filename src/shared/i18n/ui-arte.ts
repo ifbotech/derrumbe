@@ -2,7 +2,9 @@
 // es.ts y en.ts los reparten en `ES_UI` y `EN_UI`; la paridad de tests/i18n.test.ts los recorre (mismos
 // `{campo}`, mismas cifras, ningún resto de español en el inglés). El español es letra por letra el de
 // la 9.0: no se reescribe ningún texto, solo se saca del código.
-// Sin importaciones: así no entra en el ciclo de las reglas.
+// Sin importaciones de las reglas (solo ui-v40.ts, que tampoco importa nada): así no entra en el ciclo de las reglas.
+
+import { type ClaveV40, columnaV40 } from './ui-v40';
 
 export const UI_ARTE = {
   // ── comunes ──
@@ -907,6 +909,6 @@ export const UI_ARTE = {
 export type ClaveArte = keyof typeof UI_ARTE;
 
 /** Una de las dos columnas: 0 = español, 1 = inglés. */
-export function columna(i: 0 | 1): Record<ClaveArte, string> {
-  return Object.fromEntries(Object.entries(UI_ARTE).map(([k, v]) => [k, v[i]])) as Record<ClaveArte, string>;
+export function columna(i: 0 | 1): Record<ClaveArte | ClaveV40, string> {
+  return { ...(Object.fromEntries(Object.entries(UI_ARTE).map(([k, v]) => [k, v[i]])) as Record<ClaveArte, string>), ...columnaV40(i) }; // V40 · fase 3a: los textos de ui-v40.ts
 }
