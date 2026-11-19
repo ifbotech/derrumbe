@@ -319,9 +319,12 @@ export const UI_ARTE = {
   'ui.mesa.frente.jefe': ["Jefe", "Boss"],
   'ui.mesa.fila.casa': ["Casa de {palo}", "House of {palo}"],
   'ui.mesa.toast.frente': ["Primero el enemigo que tenés delante.", "First the enemy in front of you."],
-  'ui.mesa.rasgo.tip': ["<b>{nombre} · {lema}</b>Llevás {n} Reliquias de este rasgo.", "<b>{nombre} · {lema}</b>You carry {n} relics of this trait."],
+  // V40 1c · las píldoras de los Reyes y de las Bendiciones con cargas
+  'ui.mesa.rey.tip': ["<b>{nombre}</b>Llevás {n} piezas de este Rey.", "<b>{nombre}</b>You carry {n} pieces of this King."],
+  'ui.mesa.bend.tip': ["<b>{nombre}</b>{carga}<br>Cargas: {n}.", "<b>{nombre}</b>{carga}<br>Charges: {n}."],
+  'ui.mesa.rey.cura': ['Se cura {n}', 'Heals {n}'],
   'ui.mesa.rasgo.bono': ["<br><b>{u}:</b> {texto}", "<br><b>{u}:</b> {texto}"],
-  'ui.mesa.dado.tip': ["<b>Dado del Tahúr: {n}</b>Se tira al empezar cada turno. Lo que da este turno ya está en la cuenta.", "<b>Gambler's die: {n}</b>It is rolled at the start of every turn. What it gives this turn is already in the count."],
+  'ui.mesa.dado.tip': ["<b>Dado del turno: {n}</b>Se tira al empezar cada turno. Lo que da este turno ya está en la cuenta.", "<b>Die of the turn: {n}</b>It is rolled at the start of every turn. What it gives this turn is already in the count."],
   'ui.log.furia.banner': ["Furia {n}", "Fury {n}"],
   'ui.log.furia.sub': ["los enemigos pegan más fuerte", "enemies hit harder"],
   'ui.log.furia': ["Furia {n}: el Ataque de todos los enemigos sube a ⚔ +{n}.", "Fury {n}: the Attack of every enemy rises to ⚔ +{n}."],
@@ -571,6 +574,9 @@ export const UI_ARTE = {
   // ── campaña: avisos (campaign.ts) ──
   'ui.camp.vieja': ['Tu campaña a medias era de la 10.0, de ocho asaltos: se cerró y cobrás {n} ✦', 'Your unfinished campaign was from 10.0, with eight assaults: it was closed and you collect {n} ✦'],
   'ui.camp.francesa': ['Tu campaña a medias era de la baraja francesa: se cerró. Ajustes y Altar siguen intactos.', 'Your campaign in progress used the French deck: it was closed. Settings and Altar are intact.'],
+  // V40 1c · las campañas de los tramos 1a y 1b (rasgos y monarcas viejos) se cierran al llegar los 4 Reyes
+  'ui.camp.sinreyes': ['Tu campaña a medias era de antes de los 4 Reyes: se cerró. Ajustes y Altar siguen intactos.', 'Your campaign in progress predates the 4 Kings: it was closed. Settings and Altar are intact.'],
+  'ui.camp.sinreyes.abono': ['Tu campaña a medias era de antes de los 4 Reyes: se cerró y cobraste {n} ✦.', 'Your campaign in progress predates the 4 Kings: it was closed and you collected {n} ✦.'],
   'ui.camp.francesa.abono': ['Tu campaña a medias era de la baraja francesa: se cerró y cobraste {n} ✦.', 'Your campaign in progress used the French deck: it was closed and you collected {n} ✦.'],
   'ui.camp.reiniciada': ['Campaña reiniciada: misma baraja, mismo Reinado', 'Campaign restarted: same deck, same Reign'],
   'ui.camp.anfitrion': ['En campaña decide el anfitrión.', 'In a campaign the host decides.'],
@@ -644,7 +650,7 @@ export const UI_ARTE = {
 
   // ── estados de QA (qa.ts) ──
   'ui.qa.laminas': ['Cartas con lámina', 'Foiled Cards'],
-  'ui.qa.monarcas': ['Los siete monarcas', 'The Seven Monarchs'],
+  'ui.qa.monarcas': ['Los 4 Reyes', 'The 4 Kings'],
 
   // ── campaña (runscreens.ts) ──
   'ui.tratante.hello': ['¿Qué va a ser?|Tengo género nuevo.|Mirá sin tocar. Bueno, tocá.|Otra vez vos. Bien.', 'What will it be?|Fresh goods in.|Look, do not touch. Fine, touch.|You again. Good.'],
@@ -714,8 +720,16 @@ export const UI_ARTE = {
   'ui.run.elige.una': ['Elegí una para tu mazo', 'Choose one for your deck'],
   'ui.run.botin.repartido': ['Botín repartido', 'Spoils shared'],
   'ui.run.botin.de': ['Cofre de {quien}: elige una Reliquia', "{quien}'s Chest: choose a relic"],
-  'ui.run.rasgo.cuenta': ['{r} {n}/{m}', '{r} {n}/{m}'],
-  'ui.run.rasgo.enciende': ['¡{r} {n}/{m}!', '{r} {n}/{m}!'],
+  // V40 1c · la oferta de Bendiciones
+  'ui.run.bend.titulo': ['Los Reyes te ofrecen', 'The Kings make an offer'],
+  'ui.run.bend.sub': ['Elegí una Bendición: se queda toda la campaña', 'Pick a Blessing: it stays for the whole campaign'],
+  'ui.run.bend.texto': ['Cada Rey pone una Bendición suya. Su efecto vale desde ya, y cada vez que se cumple su carga suma para siempre.', 'Each King puts forward a Blessing of his. Its effect works right away, and every time its charge is met it adds up for good.'],
+  'ui.run.bend.carga': ['Carga', 'Charge'],
+  'ui.run.bend.dual': ['Dual', 'Dual'],
+  'ui.run.bend.tomar': ['Tomarla', 'Take it'],
+  'ui.run.bend.nivel': ['{r} {n}/{m}', '{r} {n}/{m}'],
+  'ui.run.bend.enciende': ['¡{r} {n}/{m}: se enciende!', '{r} {n}/{m}: it lights up!'],
+  'ui.run.bend.llevas': ['Tus Bendiciones', 'Your Blessings'],
   'ui.run.suerte': ['El santuario responde', 'The shrine answers'],
   'ui.run.suerte.ok': ['Seguir', 'Continue'],
   'ui.run.el.monarca': ['el monarca', 'the monarch'],

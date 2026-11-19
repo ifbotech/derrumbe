@@ -75,7 +75,7 @@ export function paintMonarch(bossId: string | null, v: PlayerView | null): void 
 }
 
 /** Las cifras de las marcas salen de la configuración de balance: no se escriben a mano (la 11.0 las cambió). */
-const MON = BALANCE.monarcas;
+const MON = BALANCE.reyes;
 
 /** La parte de la mesa que castiga la maldición, con la misma tinta que la placa. */
 function markTable(mark: CurseMark, v: PlayerView | null): void {
@@ -84,13 +84,14 @@ function markTable(mark: CurseMark, v: PlayerView | null): void {
     host.insertAdjacentHTML('beforeend', `<em class="curse-tag ${cls}">${curseIcon(mark)}${text}</em>`);
   };
   // V35 · el Contraataque lo da siempre el enemigo activo: la marca va en su ⚔
-  if (mark === 'contraataque') tag(document.querySelector('.tower.activa .threat'), `×${MON.doble.contraataques}`, 'mini');
-  if (mark === 'ataque') for (const t of document.querySelectorAll('.tower:not(.fallen) .threat')) tag(t, `+${MON.furia.ataque}`, 'mini');
+  // V40 1c · el Rey de Oros suma un dado a su Contraataque
+  if (mark === 'contraataque') tag(document.querySelector('.tower.activa .threat'), `+1–${MON.oros.dado}`, 'mini');
   // el Inquisidor: ningún trono queda Aturdido; cada trono en pie lo dice con «Aturdido» tachado
   if (mark === 'guardias') for (const t of document.querySelectorAll('.tower:not([hidden]):not(.fallen) .tower-fx')) tag(t, `<s>${fxN('sobrecarga')}</s>`, 'sin-fx');
-  if (mark === 'escudo') tag(document.getElementById('wall-num')?.closest('.stat') ?? null, 'Tope');
+  if (mark === 'escudo') tag(document.getElementById('wall-num')?.closest('.stat') ?? null, `−${MON.espadas.perfora}`);
   // V38 · la marca del Relojero dice la palabra («+1 Furia»); en el móvil, donde no cabe, queda «+1» (guia.css)
-  if (mark === 'asedio') tag(document.querySelector('.tower.activa .threat'), `<span class="ct-largo">${L('ui.mesa.furia.mas', { n: MON.inestable.furia })}</span><span class="ct-corto">+${MON.inestable.furia}</span>`, 'mini furia-mas');
+  // el Rey de Copas se cura cada turno que sigue al frente
+  if (mark === 'asedio') tag(document.querySelector('.tower.activa .threat'), `<span class="ct-largo">${L('ui.mesa.rey.cura', { n: MON.copas.cura })}</span><span class="ct-corto">+${MON.copas.cura}</span>`, 'mini furia-mas');
   if (mark === 'mano') {
     const hand = document.getElementById('hand');
     if (hand && !hand.querySelector(':scope > .curse-ghost')) hand.insertAdjacentHTML('beforeend', `<div class="curse-ghost" aria-hidden="true">${curseIcon('mano')}</div>`);

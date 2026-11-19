@@ -173,13 +173,10 @@ const ACH_GLYPH: Record<string, string> = {
   coleccion: 'puntales', // mazo de naipes atado
   ferretero: 'hucha', // bolsa de monedas del Tratante
   jefes: 'jefe', // corona
-  'j-doble': 'contrapeso', // máscara (el de dos caras)
-  'j-escasez': 'nivel', // balanza del Usurero
-  'j-sequia': 'paleta', // cáliz
-  'j-intemperie': 'carambano', // carámbanos
-  'j-blindaje': 'plano_maestro', // llave grande
-  'j-furia': 'saboteador', // capucha negra
-  'j-inestable': 'ultimo', // reloj de arena
+  'j-espadas': 'saboteador', // V40 1c · el Rey de Espadas: capucha negra
+  'j-bastos': 'plano_maestro', // el Rey de Bastos: llave grande
+  'j-oros': 'nivel', // el Rey de Oros: balanza
+  'j-copas': 'paleta', // el Rey de Copas: cáliz
 };
 
 /** V10: el archivo guarda el monarca por su nombre español; aquí se busca su clave para nombrarlo en el idioma de la mesa. */

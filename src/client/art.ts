@@ -3,6 +3,7 @@
 // La sala del trono de una corte de naipes, vista por los conjurados.
 import type { Suit } from '../rules/engine';
 import { pipPath } from './card';
+import { arteDe } from './arte-rey';
 
 const SUITS: Suit[] = ['S', 'D', 'H', 'C'];
 const crow = (x: number, y: number, s = 1) => `<path class="cut" transform="translate(${x} ${y}) scale(${s})" d="M-12,2 q6,-9 12,0 q6,-9 12,0"/>`;
@@ -213,6 +214,7 @@ export const strip = (s: Suit) => `<svg class="strip" width="100%" height="12" a
 
 export type MonarchMood = 'calma' | 'vencido';
 export const MONARCH_IDS = ['doble', 'escasez', 'sequia', 'intemperie', 'blindaje', 'furia', 'inestable'] as const;
+export { ARTE_REY, arteDe } from './arte-rey';
 
 /** Ojos: almendra de tinta en calma, aspa en la derrota. */
 const eyes = (pts: [number, number][], down: boolean) =>
@@ -327,7 +329,8 @@ const BUSTS: Record<string, Bust> = {
 };
 
 /** El busto de un monarca (`id` de BOSSES) en calma o vencido. Clases: .monarca, .m-<id>, .calma / .vencido. */
-export function monarchSvg(id: string, mood: MonarchMood = 'calma', cls = ''): string {
+export function monarchSvg(rid: string, mood: MonarchMood = 'calma', cls = ''): string {
+  const id = arteDe(rid);
   const b = BUSTS[id];
   if (!b) return '';
   const down = mood === 'vencido';

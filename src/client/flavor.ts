@@ -88,6 +88,11 @@ const SPECIAL_FLAVOR: Record<string, string> = {
 };
 
 const BOSS_FLAVOR: Record<string, string> = {
+  // V40 1c · los 4 Reyes jefe
+  espadas: 'Corta primero y pregunta después, si queda a quién.',
+  bastos: 'No se mueve. Espera a que te canses de pegarle.',
+  oros: 'Todo lo cobra, hasta la suerte que te dio.',
+  copas: 'Te sirve la copa y se bebe tu Vida.',
   doble: 'Nadie sabe cuál de sus dos caras dio la orden.',
   escasez: 'Lleva la cuenta de cada carta que les falta.',
   sequia: 'Brinda siempre a tu salud. Nunca bebe primero.',
@@ -218,6 +223,10 @@ const SPECIAL_FLAVOR_EN: Record<string, string> = {
 };
 
 const BOSS_FLAVOR_EN: Record<string, string> = {
+  espadas: 'Cuts first and asks later, if anyone is left.',
+  bastos: 'He does not move. He waits for you to tire of hitting him.',
+  oros: 'He collects on everything, even the luck he gave you.',
+  copas: 'He pours you a cup and drinks your Health.',
   doble: 'Nobody knows which of the two faces gave the order.',
   escasez: 'Keeps count of every card you are missing.',
   sequia: 'Always toasts your health. Never drinks first.',

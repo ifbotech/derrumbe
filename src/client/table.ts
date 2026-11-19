@@ -4,7 +4,6 @@ import { CABALLO, Card, FORMATION_NAME, GameEvent, MATERIAL, RANK_LABEL, REY, SO
 import { autopsy } from '../rules/autopsy';
 import { BALANCE } from '../rules/balance-config';
 import { BOSS, CONTRACT, FURIA, LAST_STAGE, stageDef } from '../rules/run';
-import { RASGOS, UMBRALES, nivelRasgo, rasgosDe } from '../rules/tools';
 import { SPECIAL } from '../rules/specials';
 import type { ClientMsg } from '../shared/protocol';
 import { bunkerArt, rubble, skyline } from './art';
@@ -35,7 +34,7 @@ import { MejorJugada, cartasConExacto, mejorJugada } from '../rules/mejor-jugada
 import type { GameState } from '../rules/engine';
 import { t } from '../shared/i18n';
 import { noteAction, noteTurn } from './telemetry';
-import { RASGO_ICO } from './rasgos-ui';
+import { reyesPills } from './reyes-ui';
 
 /** Cartas de la mano y del andamio que están pintadas. */
 const cardEls = new Map<string, HTMLDivElement>();
@@ -915,31 +914,22 @@ export function refreshSpeed(): void {
 }
 
 /**
- * V35 · Los rasgos de build de tu tira de Reliquias: una píldora por rasgo que llevás, con cuántas tenés y el
- * siguiente umbral (2, 4 o 6), encendida si ya da bono. Con el Tahúr activo, el dado de este turno.
+ * V40 1c · Los Reyes de tus Bendiciones: una píldora por Rey del que llevás algo («Espadas 2/4», encendida si ya da
+ * bono) y una por Bendición con cargas («Espadas +6»). Con el dado del turno, su cara.
  */
 let rasgosAntes = '';
 export function renderRasgos(): void {
   const el = $('#rasgos');
   const v = S.shown;
   if (!el || !v) return;
-  const n = rasgosDe(v.tools);
-  const mios = RASGOS.filter((r) => n[r.id] > 0);
-  el.hidden = mios.length === 0;
+  const html = reyesPills(v.bendiciones) + (v.dado ? `<span class="rasgo dado on" data-tip="${L('ui.mesa.dado.tip', { n: v.dado })}"><i class="cara" data-cara="${v.dado}">${v.dado}</i></span>` : '');
+  el.hidden = !html;
   if (el.hidden) return;
-  el.innerHTML =
-    mios
-      .map((r) => {
-        const nivel = nivelRasgo(n[r.id]);
-        const meta = UMBRALES.find((u) => u > n[r.id]) ?? UMBRALES[2];
-        const bonos = UMBRALES.map((u, i) => L('ui.mesa.rasgo.bono', { u, texto: t(`rasgo.${r.id}.bono.${i + 1}`) })).join('');
-        return `<span class="rasgo r-${r.id}${nivel ? ' on' : ''}" data-rasgo="${r.id}" data-nivel="${nivel}" data-tip="${L('ui.mesa.rasgo.tip', { nombre: t(`rasgo.${r.id}.nombre`), lema: t(`rasgo.${r.id}.lema`), n: n[r.id] })}${bonos}"><i class="ico" aria-hidden="true">${RASGO_ICO[r.id]}</i><b>${t(`rasgo.${r.id}.nombre`)}</b><em>${n[r.id]}/${meta}</em></span>`;
-      })
-      .join('') + (v.dado ? `<span class="rasgo dado on" data-tip="${L('ui.mesa.dado.tip', { n: v.dado })}"><i class="cara" data-cara="${v.dado}">${v.dado}</i></span>` : '');
-  // un rasgo que sube de nivel da un salto (una vez)
-  const ahora = mios.map((r) => `${r.id}:${nivelRasgo(n[r.id])}`).join(',');
+  el.innerHTML = html;
+  // un Rey que sube de nivel da un salto (una vez)
+  const ahora = [...el.querySelectorAll<HTMLElement>('[data-rasgo]')].map((p) => `${p.dataset.rasgo}:${p.dataset.nivel}`).join(',');
   if (rasgosAntes && ahora !== rasgosAntes)
-    for (const r of mios) if (!rasgosAntes.includes(`${r.id}:${nivelRasgo(n[r.id])}`) && nivelRasgo(n[r.id]) > 0) el.querySelector(`[data-rasgo="${r.id}"]`)?.classList.add('sube');
+    for (const p of el.querySelectorAll<HTMLElement>('[data-rasgo]')) if (!rasgosAntes.includes(`${p.dataset.rasgo}:${p.dataset.nivel}`) && p.dataset.nivel !== '0') p.classList.add('sube');
   rasgosAntes = ahora;
 }
 

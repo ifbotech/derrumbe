@@ -25,7 +25,8 @@ import { renderPings } from './pings';
 import { L, Ln, acabD, acabN, asaltoN, atajoD, atajoN, barN, cartaN, espD, espN, formN, getLang, juraD, juraN, juraP, marca, mejN, monD, monDec, monN, numL, paloN, rarN, relD, relN, secN, secO, secT, selloD, selloN, tiranoN } from './lengua';
 import { beltEl, bindFeedback, choice, deckModal, feedbackHtml, spCard, toolTile } from './widgets';
 import { ritualDelBotin } from './ritual';
-import { rasgoChip, rasgoCon } from './rasgos-ui';
+import { opcionTexto, reyesPills } from './reyes-ui';
+import { fraseBufonOferta } from '../rules/reyes';
 import { t } from '../shared/i18n';
 
 const isPlain = (c: Card) => !c.sp && c.suit !== 'X';
@@ -93,6 +94,7 @@ export function renderRun(): void {
   setScene(over ? 'menu' : run.phase === 'map' ? 'map' : 'shop', run.stage); // juice-ux V8: el Mapa tiene su música
   document.querySelectorAll('.pending-modal, .sobre-modal').forEach((m) => m.remove());
   if (run.phase === 'pack') packScreen(run);
+  else if (run.phase === 'bendicion') bendicionScreen(run);
   else if (run.phase === 'map') mapScreen(run);
   else if (run.phase === 'reward') rewardScreen(run);
   else if (run.phase === 'shop') shopScreen(run);
@@ -107,6 +109,7 @@ export function renderRun(): void {
   // lo que la conjura puede señalar con señas en sala
   const tag = (sel: string, name: string) => $$(sel).forEach((el, i) => (el.dataset.ping = el.classList.contains('skip') ? 'skip:0' : `${name}:${i}`));
   tag('#routes > .choice', 'route');
+  tag('#bends > .choice', 'bend');
   tag('#picks > .choice', 'pick');
   tag('#loot > .choice', 'loot');
   tag('#offers > .choice', 'offer');
@@ -202,6 +205,32 @@ function packScreen(run: Run): void {
   });
   marca();
   $('#go').onclick = () => runDo(dones.length ? { t: 'begin', don: elegido } : { t: 'begin' });
+}
+
+// ───────────────────────── La oferta de Bendiciones (V40 1c) ─────────────────────────
+
+/**
+ * Los Reyes ofrecen: una tarjeta por Bendición con su Rey, su efecto, su condición de carga y el nivel que deja. Se
+ * elige con el ratón, con Enter/Espacio sobre la que tiene el foco o con el mando (A); las flechas y la cruceta
+ * mueven el foco (nav.ts, que conoce `.choice.pick`).
+ */
+function bendicionScreen(run: Run): void {
+  const op = run.oferta ?? [];
+  const mias = reyesPills(run.bendiciones);
+  app.innerHTML = `<div class="run">${head(run, L('ui.run.bend.titulo'), `${L('ui.run.bend.sub')} · ${asaltoN(run.stage)}`)}
+    <div class="run-body"><p class="lead">${L('ui.run.bend.texto')}</p>
+    <p class="bufon-dice"><i>${t(fraseBufonOferta(run.id, run.stage))}</i></p>
+    <div class="choices" id="bends"></div>
+    ${mias ? `<section class="bend-mias"><h3 class="sec">${L('ui.run.bend.llevas')}</h3><div class="rasgos">${mias}</div></section>` : ''}${waitNote()}
+    <div class="row end-row"><button id="deck-view">${L('ui.run.ver.mazo', { n: run.deck.length })}</button></div></div></div>`;
+  op.forEach((o, i) => {
+    const tx = opcionTexto(run.bendiciones, o);
+    const box = choice(tileEl('jefe', tx.titulo, 'service'), tx.titulo, tx.desc, L('ui.run.bend.tomar'), host() ? () => runDo({ t: 'bendicion', i }) : null, `bend r-${o.rey}${tx.info.dual ? ' dual' : ''}`);
+    box.dataset.bend = o.id;
+    box.dataset.i = String(i);
+    box.style.setProperty('--i', String(i));
+    $('#bends').appendChild(box);
+  });
 }
 
 // ───────────────────────── Mapa del castillo ─────────────────────────
@@ -306,8 +335,7 @@ function rewardScreen(run: Run): void {
     const full = run.tools.length >= TOOL_SLOTS;
     loot.classList.add('cofre');
     run.loot.forEach((id, i) => {
-      const box = choice(toolTile(id), relN(id), `${rasgoChip(run.tools, id)}${relD(id)}`, full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null);
-      if (rasgoCon(run.tools, id)?.enciende) box.classList.add('rasgo-enciende');
+      const box = choice(toolTile(id), relN(id), relD(id), full ? L('ui.run.llenas') : L('ui.run.llevar'), host() && !full ? () => runDo({ t: 'loot', id }) : null);
       box.style.setProperty('--i', String(i));
       loot.appendChild(box);
     });
@@ -330,7 +358,7 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
   if (o.kind === 'tool') {
     el = toolTile(o.id!);
     title = relN(o.id!);
-    desc = `${rasgoChip(run.tools, o.id!)}${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>`;
+    desc = `${relD(o.id!)} <small>${rarN(TOOL[o.id!].rarity)}</small>`;
   } else if (o.kind === 'sobre') {
     el = tileEl('sobre', L('ui.run.sobre'), 'service');
     title = L('ui.run.sobre');
@@ -352,7 +380,6 @@ function offerChoice(run: Run, o: Offer, i: number): HTMLElement {
     desc = L('ui.run.pergamino.desc', { f: now.f, f2: now.f + FORM[f].lf, r: now.r });
   }
   const box = choice(el, title, desc, null, buy, o.sold ? 'sold hang' : 'hang');
-  if (o.kind === 'tool' && !o.sold && rasgoCon(run.tools, o.id!)?.enciende) box.classList.add('rasgo-enciende');
   box.insertAdjacentHTML('afterbegin', `<span class="price-tag ${cost === 0 && !o.sold ? 'free' : ''} ${!o.sold && run.gold < cost ? 'dear' : ''}">${o.sold ? L('ui.run.vendido') : cost === 0 ? L('ui.run.gratis') : `<b>${cost}</b> ${L('ui.run.de.oro')}`}</span>`);
   if (o.sold) stampOn(box, L('ui.run.vendido'), 's-skip');
   return box;
@@ -508,12 +535,12 @@ function eventScreen(run: Run): void {
 function suerteCartel(run: Run): void {
   const s = run.suerte!;
   const k = `suerte.${s.clave}`;
-  const vals = { ...s.datos, x: s.reliquia ? relN(s.reliquia) : '', r: s.rasgo ? t(`rasgo.${s.rasgo}.nombre`) : '' };
+  const vals = { ...s.datos, x: s.bendicion ? t(`bendicion.${s.bendicion}.nombre`) : s.reliquia ? relN(s.reliquia) : '', r: s.rey ? t(`rey.${s.rey}.nombre`) : '' };
   const el = modal(
     `<div class="reveal-box suerte ${s.buena ? 'buena' : 'mala'}"><small>${L('ui.run.suerte')}</small><h2>${t(`${k}.titulo`, vals)}</h2><p class="lead">${t(`${k}.texto`, vals)}</p>${s.reliquia ? '<div class="choices"></div>' : ''}<button class="primary x">${L('ui.run.suerte.ok')}</button></div>`,
     { cls: 'reveal suerte-modal' },
   );
-  if (s.reliquia) $('.choices', el).appendChild(choice(toolTile(s.reliquia), relN(s.reliquia), `${rasgoChip(run.tools.filter((x) => x.id !== s.reliquia), s.reliquia)}${relD(s.reliquia)}`, null, null));
+  if (s.reliquia) $('.choices', el).appendChild(choice(toolTile(s.reliquia), relN(s.reliquia), relD(s.reliquia), null, null));
   if (s.buena) sfx.coins(12);
   else sfx.hiss();
 }

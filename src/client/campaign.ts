@@ -2,7 +2,7 @@
 // y se guarda en el navegador; en sala online la lleva el servidor y aquí solo se pinta lo que llega.
 import { Action, Card, RuleError, applyAction, viewFor } from '../rules/engine';
 import { deckUnlocked, noteEvents, unlockedPool } from '../rules/achievements';
-import { ESQUIRLAS_POR_CORONA, RUN_40, abonoCampanaVieja, abonoFrancesa, campanaFrancesa, mazoDe } from '../rules/migracion';
+import { ESQUIRLAS_POR_CORONA, RUN_40, abonoCampanaVieja, abonoFrancesa, campanaFrancesa, campanaSinReyes, mazoDe } from '../rules/migracion';
 import { MAZO_INICIAL } from '../rules/mazos';
 import { BOSS, RUN_VERSION, Run, RunAction, RunOpts, cargaRun, finishBattle, newRun, runAction, stageDef, startStage, trackEvents } from '../rules/run';
 import { errorFor } from '../rules/textos';
@@ -58,6 +58,16 @@ export function retireOldSave(): void {
   const old = loadJson<{ run?: { stage?: number; phase?: string; v?: number } }>(RUN_KEY);
   if (!old?.run || savedCampaign()) return;
   platform.remove(RUN_KEY);
+  // V40 1c · una campaña de los tramos 1a o 1b (con rasgos y monarcas viejos) no sigue: se cobra lo juntado
+  if (campanaSinReyes(old.run)) {
+    const abono = abonoFrancesa(old.run);
+    if (abono > 0) {
+      meta.renown += abono;
+      saveMeta();
+    }
+    setTimeout(() => toast(abono > 0 ? L('ui.camp.sinreyes.abono', { n: abono }) : L('ui.camp.sinreyes')), 600);
+    return;
+  }
   if (campanaFrancesa(old.run, RUN_40) && (old.run.v ?? 0) > 3) {
     const abono = abonoFrancesa(old.run);
     if (abono > 0) {

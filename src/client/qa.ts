@@ -5,14 +5,15 @@ import { ACHIEVEMENTS } from '../rules/achievements';
 import type { Autopsy } from '../rules/autopsy';
 import { chooseAction } from '../rules/bot';
 import { CABALLO, Card, GameState, MAX_NUM, REY, SOTA, SUITS, Seal, Suit, TREATMENT, Treatment, applyAction, fatigueAt, ordenDe, previewStrike, viewFor } from '../rules/engine';
-import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage } from '../rules/run';
+import { BOSSES, EVENTS, Run, bossIdentity, finishBattle, newRun, runAction, startStage, tomaBendicion } from '../rules/run';
+import { BENDICION, PALO_DE_REY, REY_IDS, type ReyId, bendicionesDe, esRey, fraseRey, ofertaBendiciones, reyesEnOferta } from '../rules/reyes';
 import { TOOLS, placeTool } from '../rules/tools';
 import { hero } from './art';
 import { prefs } from './campaign';
 import { cardEl } from './card';
 import { FULL_TITLE } from '../shared/brand';
 import { RUN_PLAYER, S, app, applySettings, settings } from './core';
-import { getLang, isLang, setLang } from '../shared/i18n';
+import { getLang, isLang, setLang, t } from '../shared/i18n';
 import { L, acabN } from './lengua';
 import { brandLockup, renderHome } from './home';
 import { archive, meta, openGuild, qaCobro } from './guild';
@@ -92,6 +93,8 @@ function clean(): void {
 function baseRun(stage = 1): Run {
   const run = newRun({ seedText: 'QA-CORONA', deck: 'escoba', ascension: 2, up: { tienda: 1, rutas: 1 } }, 7);
   runAction(run, { t: 'begin' });
+  // V40 1c · la campaña empieza con la oferta de los Reyes: la QA se queda con la primera
+  if (run.phase === 'bendicion') runAction(run, { t: 'bendicion', i: 0 });
   run.stage = stage;
   run.tools = TOOLKIT.map((id) => ({ id, n: id === 'calibre' ? 4 : 0 }));
   run.gold = 64;
@@ -174,7 +177,45 @@ function apunta(s: Suit): void {
 async function mesaMonarca(boss: string): Promise<void> {
   await mesa(false, 'pointer', 6, boss);
   const id = bossIdentity(boss);
-  if (id) showBark(id.barks.entrada);
+  if (id) showBark(esRey(boss) ? t(fraseRey(S.campaign?.run.bendiciones, boss)) : id.barks.entrada);
+}
+
+/**
+ * V40 1c · un Rey jefe al frente: las otras Casas ya cayeron, el Rey va tocado, su Furia lleva dos turnos subiendo y
+ * su frase de entrada (según las Bendiciones que llevás) a la vista.
+ */
+async function mesaRey(rey: ReyId): Promise<void> {
+  await mesa(false, 'pointer', 6, rey);
+  const st = S.campaign?.state;
+  if (!st) return;
+  const palo = PALO_DE_REY[rey];
+  for (const s of SUITS) if (s !== palo) st.towers[s].floors = [];
+  const tr = st.towers[palo];
+  tr.floors = [REY];
+  tr.damage = Math.floor(st.config.floorHp[REY] * 0.3);
+  tr.fx = {};
+  st.furiaRey = 2 * (st.config.jefe?.furia ?? 0);
+  if (rey === 'oros') st.dado = 4;
+  S.queue.push({ view: viewFor(st, RUN_PLAYER), events: [] });
+  await pump();
+  S.selected.length = 0;
+  renderInteractive();
+  showBark(t(fraseRey(S.campaign?.run.bendiciones, rey)));
+}
+
+/** V40 1c · la oferta de los Reyes antes del asalto 3: ya llevás una de Espadas y una de Oros (puede salir su Dual). */
+function bendicion(): void {
+  const run = baseRun(3);
+  for (const rey of ['espadas', 'oros'] as ReyId[]) {
+    const b = bendicionesDe(rey).find((d) => !run.bendiciones.some((x) => x.id === d.id));
+    if (b && !run.bendiciones.some((x) => BENDICION[x.id]?.rey === rey)) tomaBendicion(run, b.id);
+  }
+  run.bendiciones[0].n = 3;
+  run.phase = 'bendicion';
+  run.ofertaDe = run.stage;
+  run.oferta = ofertaBendiciones(run.id, run.stage, run.bendiciones, reyesEnOferta(false));
+  show(run);
+  setScreen('run');
 }
 
 /** V40 · la mesa de la primera campaña con la frase n del Bufón (palo, cuenta o Golpe exacto) a la vista. */
@@ -467,7 +508,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
     clean();
     meta.seen.tools = TOOLS.slice(0, 30).map((t) => t.id);
     meta.seen.specials = ['barreno', 'martillo', 'palanca', 'grua', 'mordaza', 'bola', 'nitro', 'gemelo'];
-    meta.seen.bosses = ['doble', 'blindaje', 'furia'];
+    meta.seen.bosses = ['espadas', 'bastos', 'oros'];
     meta.mastery = { tools: { piqueta: 2, gemelos: 5, dinamita: 8, calibre: 1, resonador: 4 }, decks: { escoba: 3, truco: 7 } };
     openGuild('col');
   },
@@ -567,8 +608,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
       death,
     });
     archive.push(
-      sample(0, true, 5, 'El Verdugo', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'escoba', 2),
-      sample(1, false, 4, 'El Inquisidor', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'chinchon', 1, {
+      sample(0, true, 5, 'El Rey de Espadas', ['piqueta', 'gemelos', 'calibre', 'ariete', 'bastion', 'resonador'], 'ALBA-7', 'escoba', 2),
+      sample(1, false, 4, 'El Rey de Bastos', ['maza', 'sacos', 'contragolpe', 'encofrado'], 'K3QX91', 'chinchon', 1, {
         kind: 'sirena',
         title: 'Contraataque de BASTOS: ⚔ 18 contra Escudo 4 → entran 14',
         detail: 'Te quedaban 11 de Vida. Faltaron 3 de Escudo (Bastos); un Golpe exacto también lo paraba.',
@@ -578,7 +619,7 @@ const STATES: Record<string, () => void | Promise<void>> = {
         taken: 14,
         tower: 'C',
       }),
-      sample(2, false, 5, 'La Reina Helada', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'truco', 3, {
+      sample(2, false, 5, 'El Rey de Copas', ['cincel', 'plomada', 'nivel', 'tiralineas', 'cizalla'], 'PLOMO', 'truco', 3, {
         kind: 'colapso',
         title: 'Mazo agotado: te quitó 4 de Vida y el Escudo no lo frena',
         detail: 'Te quedaba 3 de Vida. Cada vez que se agota el Mazo quita 1 más: cuenta el Mazo antes de robar.',
@@ -587,8 +628,8 @@ const STATES: Record<string, () => void | Promise<void>> = {
         blocked: 0,
         taken: 4,
       }),
-      sample(3, true, 5, 'El Relojero', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'mentiroso', 1),
-      sample(4, false, 7, 'El Usurero', ['hucha', 'cinta'], '4HH2PA', 'chancho', 1, null, undefined),
+      sample(3, true, 5, 'El Rey de Oros', ['paleta', 'botiquin', 'rebosadero', 'casco', 'prensa', 'trituradora'], 'Z81MM0', 'mentiroso', 1),
+      sample(4, false, 7, 'El Rey de Oros', ['hucha', 'cinta'], '4HH2PA', 'chancho', 1, null, undefined),
     );
     openGuild('arc');
   },
@@ -641,8 +682,12 @@ const STATES: Record<string, () => void | Promise<void>> = {
   'bufon-cuenta': () => bufonEn('cuenta'),
   'bufon-exacto': () => bufonEn('exacto'),
   // un asalto con La Dama del Cáliz: su retrato, la placa «Tus ♥ no curan», el cáliz tachado en cada ♥ y su bocadillo
-  'mesa-monarca': () => mesaMonarca('sequia'),
-  // el mismo asalto con cada monarca (mesa-monarca-doble, …-escasez…): la QA los corre a demanda
+  // V40 1c · la oferta de Bendiciones y un Rey jefe al frente (con su Furia y su frase)
+  bendicion: () => bendicion(),
+  'mesa-rey': () => mesaRey('espadas'),
+  ...Object.fromEntries(REY_IDS.map((r) => [`mesa-rey-${r}`, () => mesaRey(r)])),
+  'mesa-monarca': () => mesaMonarca('copas'),
+  // el mismo asalto con cada Rey (mesa-monarca-espadas, …-oros…): la QA los corre a demanda
   ...Object.fromEntries(BOSSES.map((b) => [`mesa-monarca-${b.id}`, () => mesaMonarca(b.id)])),
   // ── arte-ui V8: las piezas de la caída, congeladas a mano (sin fx.ts) ──
   // el trono de Diamantes caído con la corona hecha esquirlas, y el guardia de Picas cortado por el tajo

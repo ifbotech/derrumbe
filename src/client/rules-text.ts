@@ -4,7 +4,9 @@ import { CABALLO, Config, DIFFICULTY, FORM, FORMATIONS, FORMATION_NAME, Formatio
 import { KEYWORDS } from '../rules/keywords';
 import { BALANCE } from '../rules/balance-config';
 import { ASCENSIONS, FURIA, LAST_STAGE, STAGES } from '../rules/run';
-import { RASGOS, TOOL_SLOTS, UMBRALES } from '../rules/tools';
+import { TOOL_SLOTS } from '../rules/tools';
+import { BALANCE as B } from '../rules/balance-config';
+import { REY_IDS, UMBRALES_REY } from '../rules/reyes';
 import { SUBTITLE, TITLE } from '../shared/brand';
 import { tFor } from '../shared/i18n';
 import { RAMAS } from '../rules/arbol';
@@ -51,10 +53,10 @@ const n = (x: number) => String(x).replace('.', ',');
 const RACHA = BALANCE.golpe.racha;
 const RACHA_TOPE = BALANCE.golpe.racha * BALANCE.golpe.rachaTope;
 const MONARCAS = STAGES.filter((s) => s.boss).length;
-/** V35 · la tabla de los cinco rasgos, con sus bonos de 2, 4 y 6 Reliquias. */
-const rasgosTabla = (l: 'es' | 'en') =>
-  `<table><tr><th>${l === 'es' ? 'Rasgo' : 'Trait'}</th>${UMBRALES.map((u) => `<th>${u}</th>`).join('')}</tr>${RASGOS.map(
-    (r) => `<tr><td><b>${tFor(l, `rasgo.${r.id}.nombre`)}</b><br>${tFor(l, `rasgo.${r.id}.lema`)}</td>${[1, 2, 3].map((i) => `<td>${tFor(l, `rasgo.${r.id}.bono.${i}`)}</td>`).join('')}</tr>`,
+/** V40 1c · la tabla de los 4 Reyes, con sus bonos de nivel con 2 y 4 piezas. */
+const reyesTabla = (l: 'es' | 'en') =>
+  `<table><tr><th>${l === 'es' ? 'Rey' : 'King'}</th>${UMBRALES_REY.map((u) => `<th>${u}</th>`).join('')}</tr>${REY_IDS.map(
+    (r) => `<tr><td><b>${tFor(l, `rey.${r}.nombre`)}</b></td>${[1, 2].map((i) => `<td>${tFor(l, `rey.${r}.bono.${i}`)}</td>`).join('')}</tr>`,
   ).join('')}</table>`;
 
 function rulesEs(cfg: Config): string {
@@ -143,10 +145,10 @@ function rulesEs(cfg: Config): string {
   <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro; ${MONARCAS} con <b>monarca</b>, y el último, en el Salón del Trono, con el <b>Rey Tirano</b>. Empezás con un <b>Sobre lacrado</b> de cartas especiales y con un <b>Don de la Conjura</b> que elegís entre tres (una Reliquia, un sello de lacre o una bolsa de oro) y, entre asalto y asalto, mejoras el mazo y tus Reliquias.</p>
   <ul>
     <li><b>El Mapa del castillo</b> enseña desde el principio qué monarca espera en cada asalto y su <b>decreto</b>. En los asaltos sin monarca elegís <b>ruta</b>: cada una trae un <b>Juramento</b> (una condición con premio; los de riesgo endurecen el asalto y pagan siempre). En el asalto ${STAGES.findIndex((s) => s.atajo) + 1} también podés tomar el <b>Atajo</b>: te saltas el asalto (sin Botín ni Pulpería) a cambio de un <b>Atajo de conspirador</b>.</li>
-    <li><b>En el Botín</b> elegís una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasás por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: elegís una de tres Reliquias, y una es de tu rasgo principal.</li>
-    <li><b>Monarcas</b>: el monarca es el último guardia del asalto. Llega con retrato y decreto, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tenés delante, su <b>Furia del Rey</b> sube ${FURIA.rey} cada turno: hay que tumbarlo deprisa.</li>
+    <li><b>En el Botín</b> elegís una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasás por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: elegís una de tres Reliquias, Raras o mejores.</li>
+    <li><b>Monarcas</b>: el monarca es uno de los <b>4 Reyes</b>, el último guardia de la Casa de su palo. Llega con retrato y rasgo propio, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tenés delante, su <b>Furia del Rey</b> sube cada turno: hay que tumbarlo deprisa. Te habla según las Bendiciones que llevás.</li>
     <li><b>La Pulpería</b> del Tratante vende reliquias, Sobres lacrados (abrís uno y elegís 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
-    <li>Tras cada monarca intermedio hay un <b>Santuario de la cripta</b>: una apuesta (la Rueda del destino, doble o nada de esquirlas, un dado bendito o maldito, el altar de sangre que cambia Vida por un rasgo) o un dilema con premio y precio.</li>
+    <li>Tras cada monarca intermedio hay un <b>Santuario de la cripta</b>: una apuesta (la Rueda del destino, doble o nada de esquirlas, un dado bendito o maldito, el altar de sangre que cambia Vida por una Bendición) o un dilema con premio y precio.</li>
     <li>Después del último asalto podés seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
     <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña.</li>
     <li><b>Reinicio rápido</b>: mantené <b>R</b> 0,7 segundos para empezar de nuevo con la misma baraja y el mismo Reinado. No cuenta como derrota.</li>
@@ -165,9 +167,9 @@ function rulesEs(cfg: Config): string {
   <p>Llevás hasta <b>${TOOL_SLOTS} reliquias</b>. <b>No se ordenan</b>: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica.
   Cada una dice lo que hace: <b>+D</b> suma Daño, <b>+M</b> suma Multi, <b>×M</b> multiplica el Multi acumulado, <b>⇉</b> copia a otra y <b>•</b> es pasiva. Regla de oro: primero lo que suma, al final lo que multiplica.</p>
 
-  <h3>Rasgos de build</h3>
-  <p>Cada Reliquia es de uno de <b>cinco rasgos</b>. Con <b>2, 4 y 6</b> Reliquias del mismo rasgo se encienden sus bonos, que se suman a los de las Reliquias. La píldora de arriba de la mesa lleva la cuenta y La Pulpería marca lo que te acerca al siguiente.</p>
-  ${rasgosTabla('es')}
+  <h3>Los 4 Reyes y sus Bendiciones</h3>
+  <p>Al empezar la campaña ofrecen ${B.oferta.inicio} Reyes y, antes de cada asalto, ${B.oferta.entre}: cada uno pone una <b>Bendición</b> suya y te quedás con una. Cada Bendición tiene un efecto y una <b>condición de carga</b>: cada vez que se cumple suma una carga para toda la campaña (la mesa lo enseña como «Espadas +6»). Con <b>${UMBRALES_REY.join(' y ')}</b> piezas de un mismo Rey se encienden sus bonos. Las <b>Duales</b> son de dos Reyes y solo salen si ya llevás una de cada uno.</p>
+  ${reyesTabla('es')}
 
   <h3>Sellos de lacre y acabados</h3>
   <table>
@@ -191,7 +193,7 @@ function rulesEs(cfg: Config): string {
   <h3>Consejos de la conjura</h3>
   <ul>
     <li>Abatir a la Sota deja paso a un Caballo con más Ataque: mira la fila antes de gastar la mano.</li>
-    <li>Elegí un rasgo pronto y buscá su bono de 4: es lo que gana las campañas.</li>
+    <li>Seguí a un Rey y buscá su bono de 4: es lo que gana las campañas.</li>
     <li>Jugar muchas cartas acelera el asalto, pero vacía el Mazo y acerca el Mazo agotado.</li>
     <li>Contra el monarca, la Furia del Rey no espera: guarda tu mejor mano para él.</li>
   </ul>`;
@@ -301,10 +303,10 @@ function rulesEn(cfg: Config): string {
   <p>A deck-building roguelike: <b>${LAST_STAGE} assaults</b>, each one a hall of the castle and each harder than the last; ${MONARCAS} of them with a <b>monarch</b>, and the last one, in the Throne Room, with the <b>Tyrant King</b>. You start with a <b>Sealed Pack</b> of special cards and a <b>Conspiracy’s Gift</b> you choose from three (a Relic, a wax seal or a purse of gold) and, between assaults, you improve your deck and your Relics.</p>
   <ul>
     <li><b>The Castle Map</b> shows from the start which monarch awaits in each assault and their <b>decree</b>. In assaults without a monarch you pick a <b>route</b>: each one brings an <b>Oath</b> (a condition with a reward; risky ones make the assault harder and always pay). In assault ${STAGES.findIndex((s) => s.atajo) + 1} you can also take the <b>Shortcut</b>: you skip the assault (no Spoils or General Store) in exchange for a <b>conspirator Shortcut</b>.</li>
-    <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. When a monarch falls it opens its <b>Chest</b>: you pick one of three Relics, and one is of your main trait.</li>
-    <li><b>Monarchs</b>: the monarch is the last guard of the assault. It arrives with a portrait and a decree, has ×${FURIA.jefeVida} Health and, while it is in front of you, its <b>King’s Fury</b> rises ${FURIA.rey} every turn: bring it down fast.</li>
+    <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. When a monarch falls it opens its <b>Chest</b>: you pick one of three Relics, Rare or better.</li>
+    <li><b>Monarchs</b>: the monarch is one of the <b>4 Kings</b>, the last guard of the House of his suit. He arrives with a portrait and his own trait, has ×${FURIA.jefeVida} Health and, while he is in front of you, his <b>King’s Fury</b> rises every turn: bring him down fast. He speaks to you according to the Blessings you carry.</li>
     <li>In <b>The General Store</b>, the Storekeeper sells relics, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
-    <li>After each middle monarch there is a <b>Crypt Shrine</b>: a gamble (the Wheel of Fate, double or nothing on shards, a blessed or cursed die, the Altar of Blood that trades Health for a trait) or a dilemma with a reward and a price.</li>
+    <li>After each middle monarch there is a <b>Crypt Shrine</b>: a gamble (the Wheel of Fate, double or nothing on shards, a blessed or cursed die, the Altar of Blood that trades Health for a Blessing) or a dilemma with a reward and a price.</li>
     <li>After the last assault you can go on to the <b>Endless Throne</b>: assaults without end, each one harder.</li>
     <li><b>Seed</b>: the same seed and the same choices give the same campaign.</li>
     <li><b>Quick restart</b>: hold <b>R</b> for ${x(0.7)} seconds to start again with the same deck and the same Reign. It does not count as a defeat.</li>
@@ -323,9 +325,9 @@ function rulesEn(cfg: Config): string {
   <p>You carry up to <b>${TOOL_SLOTS} relics</b>. <b>You never sort them</b>: each new one goes to the end of the row and none depends on its slot. In the count everything is added first and multiplied at the end.
   Each one says what it does: <b>+D</b> adds Damage, <b>+M</b> adds Mult, <b>×M</b> multiplies the Mult so far, <b>⇉</b> copies another and <b>•</b> is passive. Golden rule: what adds first, what multiplies at the end.</p>
 
-  <h3>Build traits</h3>
-  <p>Each Relic belongs to one of <b>five traits</b>. With <b>2, 4 and 6</b> Relics of the same trait its bonuses light up, on top of the Relics’ own. The pill at the top of the table keeps count and The General Store marks what brings you closer to the next one.</p>
-  ${rasgosTabla('en')}
+  <h3>The 4 Kings and their Blessings</h3>
+  <p>At the start of the campaign ${B.oferta.inicio} Kings make an offer and, before each assault, ${B.oferta.entre}: each one puts forward a <b>Blessing</b> of his and you keep one. Each Blessing has an effect and a <b>charge condition</b>: every time it is met it adds a charge for the whole campaign (the table shows it as “Swords +6”). With <b>${UMBRALES_REY.join(' and ')}</b> pieces of the same King his bonuses light up. <b>Dual</b> Blessings belong to two Kings and only appear once you carry one of each.</p>
+  ${reyesTabla('en')}
 
   <h3>Wax Seals and Finishes</h3>
   <table>
@@ -349,7 +351,7 @@ function rulesEn(cfg: Config): string {
   <h3>Crew tips</h3>
   <ul>
     <li>Defeating the Knave lets through a Knight with more Attack: check the queue before you spend your hand.</li>
-    <li>Pick a trait early and go for its 4 bonus: that is what wins campaigns.</li>
+    <li>Follow one King and go for his 4 bonus: that is what wins campaigns.</li>
     <li>Playing many cards speeds up the assault, but empties the Deck and brings it closer to running out.</li>
     <li>Against the monarch, King’s Fury does not wait: save your best hand for it.</li>
   </ul>`;

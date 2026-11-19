@@ -3,6 +3,7 @@
 // V11: las numeradas (A a 10) van de cara limpia: marfil liso, índice grande y un solo emblema macizo
 // del palo con contorno de tinta. Las figuras, los especiales y el comodín conservan el grabado.
 // Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
+import { ARTE_REY } from './arte-rey';
 import { CABALLO, Card, CardSuit, RANK_LABEL, REY, Seal, Suit, Treatment, esFigura } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
 import { L, acabD, acabN, espD, espN, palo, selloD, selloN } from './lengua';
@@ -476,7 +477,9 @@ const PORTRAIT: Record<string, Portrait> = {
 };
 
 /** Cuerpo de un retrato para incrustarlo donde haga falta (250 × 312, sin la banda del nombre). */
-function portraitBody(id: string): string {
+function portraitBody(rid: string): string {
+  // V40 1c · el retrato de un Rey jefe ('j-espadas'…) es, de momento, el del monarca viejo de su palo
+  const id = rid.startsWith('j-') && ARTE_REY[rid.slice(2)] ? `j-${ARTE_REY[rid.slice(2)]}` : rid;
   const p = PORTRAIT[id];
   return `<g filter="url(#rough)"><rect class="${p.bg}" x="10" y="10" width="230" height="330"/>${p.rays ? `<g transform="translate(125 150)" class="${p.bg === 'rd' ? 'ink' : 'pp'} port-rays">${RAYS}${RAYS.replace(/rotate\\((\\d+\\.?\\d*)\\)/g, (_, a) => `rotate(${Number(a) + 11.25}) scale(1.45)`)}</g>` : ''}${p.still}${shade('M240,312 H128 L240,170 Z', 'tone-ink', 0.3)}${shade('M10,10 H104 L10,126 Z', 'hatch-fine', 0.42)}</g>${p.live}`;
 }

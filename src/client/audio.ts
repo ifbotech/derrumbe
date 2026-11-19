@@ -15,6 +15,7 @@
 // dos toques de madera hacia abajo, la sirena que el muro frena entera es piedra contra piedra con un
 // respiro que sube, y la que entra es hierro, un cuerno que se desploma y cascotes. Lo que se repite
 // (elegir carta, mover el foco) nunca suena dos veces igual: cambia unos cents, el ataque y la nota.
+import { arteDe } from './arte-rey';
 import { PAN, campana, compas, flujo, mezcla, notaRecogida, variacion, type Escena, type Evento, type Voz } from './audio-frases';
 import { loadJson, platform, saveJson } from './platform';
 
@@ -670,7 +671,7 @@ export const sfx = logged({
     heard.push(`monarch:${id}:${mood}`);
     fx((_, o, t) => {
       const fall = mood === 'caida';
-      const m = MOTIF[id] ?? MOTIF.doble;
+      const m = MOTIF[arteDe(id)] ?? MOTIF.doble;
       const k = (fall ? 0.84 : 1) * drift(8);
       const notes = fall ? [...m.notes].reverse() : m.notes;
       notes.forEach(([n, d], i) => {
