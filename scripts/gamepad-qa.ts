@@ -968,7 +968,12 @@ export async function gamepadSuite(browser: Browser, url: string, check: Check, 
       await A();
       await page.waitForTimeout(400);
     }
-    check((await run(page))?.phase === 'shop', 'por el Mapa, con la cruceta y A, se llega a La Pulpería');
+    {
+      const fase = (await run(page))?.phase;
+      const nodos = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('#routes .choice.pick')].map((b) => b.dataset.tipo).join(' '));
+      const foco = await page.evaluate(() => { const a = document.activeElement as HTMLElement | null; return a ? `${a.tagName.toLowerCase()}${a.id ? `#${a.id}` : ''}.${[...a.classList].join('.')}` : 'nada'; });
+      check(fase === 'shop', `por el Mapa, con la cruceta y A, se llega a La Pulpería${fase === 'shop' ? '' : ` (fase ${fase}; nodos ${nodos || 'ninguno'}; foco ${foco})`}`);
+    }
   }
 
   // ── La Taberna: las reliquias (no se ordenan) y sellar una carta en la Mesa de lacre ──
