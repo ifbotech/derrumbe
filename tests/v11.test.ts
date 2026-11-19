@@ -124,7 +124,7 @@ describe('V11 · la campaña de cinco asaltos', () => {
       expect(ES[`asalto.${i + 1}.nombre`]).toBe(s.name);
       expect(EN[`asalto.${i + 1}.nombre`]).toBeTruthy();
     });
-    expect([ES['asalto.tirano.m'], ES['asalto.tirano.f'], EN['asalto.tirano.m'], EN['asalto.tirano.f']]).toEqual(['Rey Tirano', 'Reina Tirana', 'Tyrant King', 'Tyrant Queen']);
+    expect([ES['asalto.tirano.m'], ES['asalto.tirano.f'], EN['asalto.tirano.m'], EN['asalto.tirano.f']]).toEqual(['el último Rey jefe', 'el último Rey jefe', 'the last boss King', 'the last boss King']);
     // V40 1c · los 4 Reyes jefe son Reyes: siempre «Rey Tirano»
     expect(BOSSES.filter((b) => b.fem).map((b) => b.id)).toEqual([]);
     for (const b of BOSSES) expect(tiranoKey(b.id)).toBe('asalto.tirano.m');
@@ -236,7 +236,7 @@ describe('V11 · los 36 logros de la 10.0, con los mismos id', () => {
     expect(done(of('media'), meta)).toBe(false);
     meta.stats.reach = 3;
     expect(done(of('media'), meta)).toBe(true);
-    expect([ES['logro.capataz.desc'], ES['logro.media.desc']]).toEqual(['Supera el asalto 2.', 'Supera el asalto 3.']);
+    expect([ES['logro.capataz.desc'], ES['logro.media.desc']]).toEqual(['Superá el asalto 2.', 'Superá el asalto 3.']);
     expect([EN['logro.capataz.desc'], EN['logro.media.desc']]).toEqual(['Clear assault 2.', 'Clear assault 3.']);
   });
 });

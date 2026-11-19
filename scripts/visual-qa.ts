@@ -1057,7 +1057,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     const en = document.documentElement.lang === 'en';
     const FB = en
       ? { boton: 'Send Chronicle / Playtest Feedback', aviso: 'Open report', linea: /Nothing leaves this device|sends your last campaign|^(Copied|Downloaded|Shared|Sent)/, copiado: /^Copied: paste the summary wherever you like/, cuenta: (n: string) => new RegExp(`^${n} campaigns? · \\d+\\.\\d kB, saved on this device$`), llana: /^(Nothing leaves this device: the button copies or downloads\.|Pressing Send sends your last campaign, and nothing else\.)$/ }
-      : { boton: 'Enviar Crónica / Feedback de Prueba', aviso: 'Abrir aviso', linea: /Nada sale de este equipo|se manda tu última campaña|^(Copiado|Descargado|Compartido|Enviado)/, copiado: /^Copiado: pega el resumen donde quieras/, cuenta: (n: string) => new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`), llana: /^(Nada sale de este equipo: el botón copia o descarga\.|Al pulsar Enviar se manda tu última campaña, y nada más\.)$/ };
+      : { boton: 'Enviar Crónica / Feedback de Prueba', aviso: 'Abrir aviso', linea: /Nada sale de este equipo|se manda tu última campaña|^(Copiado|Descargado|Compartido|Enviado)/, copiado: /^Copiado: pegá el resumen donde quieras/, cuenta: (n: string) => new RegExp(`^${n} campañas? · \\d+,\\d kB, guardadas en este equipo$`), llana: /^(Nada sale de este equipo: el botón copia o descarga\.|Al pulsar Enviar se manda tu última campaña, y nada más\.)$/ };
     const send = scope.querySelector<HTMLButtonElement>('#fb-send');
     const out = scope.querySelector<HTMLElement>('.fb .fb-estado');
     if (!send || !visible(send)) fail('feedback', 'falta el botón «Enviar Crónica / Feedback de Prueba»');
@@ -1072,7 +1072,7 @@ async function audit(opts: { state: string; mobile: boolean; noScroll: boolean; 
     if (issue && issue.textContent?.trim() !== FB.aviso) fail('feedback', `el botón del aviso dice «${issue.textContent?.trim()}»`, issue);
     if (opts.state === 'acta-feedback') {
       const box = scope.querySelector<HTMLElement>('.fb');
-      if (box?.dataset.hecho !== 'copiado' || !FB.copiado.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pega el resumen donde quieras»');
+      if (box?.dataset.hecho !== 'copiado' || !FB.copiado.test(out?.textContent?.trim() ?? '')) fail('feedback', 'en acta-feedback no se ve la confirmación «Copiado: pegá el resumen donde quieras»');
     }
     if (opts.state.startsWith('ajustes')) {
       // ajustes-prueba lleva exactamente dos; ajustes, las que haya dejado la pasada (al menos una)

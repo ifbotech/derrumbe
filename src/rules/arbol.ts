@@ -88,7 +88,7 @@ const BOLSA: Def[] = [
   { id: 'esq_golpe', rama: 'bolsa', padre: null, rangos: 5, name: 'Astillas de corona', glyph: 'corona_rota', pos: { x: 1, y: 0 }, plantilla: '+{n} esquirlas por cada golpe.' },
   { id: 'esq_guardia', rama: 'bolsa', padre: 'esq_golpe', rangos: 5, name: 'Diezmo del guardia', glyph: 'coronas', pos: { x: 2, y: 0 }, plantilla: '+{n} esquirlas por cada guardia abatido.' },
   { id: 'esq_exacto', rama: 'bolsa', padre: 'esq_guardia', rangos: 5, name: 'Corte limpio', glyph: 'rayo', pos: { x: 3, y: 0.5 }, plantilla: '+{n} esquirlas por cada Golpe exacto.' },
-  { id: 'esq_monarca', rama: 'bolsa', padre: 'esq_guardia', rangos: 5, name: 'Rescate real', glyph: 'jefe', pos: { x: 3, y: -0.5 }, plantilla: '+{n} esquirlas por cada monarca vencido.' },
+  { id: 'esq_monarca', rama: 'bolsa', padre: 'esq_guardia', rangos: 5, name: 'Rescate real', glyph: 'jefe', pos: { x: 3, y: -0.5 }, plantilla: '+{n} esquirlas por cada Rey jefe vencido.' },
   { id: 'esq_derrota', rama: 'bolsa', padre: 'esq_golpe', rangos: 5, name: 'Ceniza del caído', glyph: 'luna', pos: { x: 2, y: -1 }, plantilla: 'Al perder, +{n} esquirlas por cada guardia que abatiste.' },
   { id: 'esq_formacion', rama: 'bolsa', padre: 'esq_golpe', rangos: 5, name: 'Mano llena', glyph: 'abanico', pos: { x: 2, y: 1 }, plantilla: '+{n} esquirlas por cada golpe de 3 cartas o más.' },
   { id: 'esq_racha', rama: 'bolsa', padre: 'esq_exacto', rangos: 5, name: 'Racha de sangre', glyph: 'cometa', pos: { x: 4, y: 0.5 }, plantilla: '+{n} esquirlas por cada eslabón de Racha al golpear.' },

@@ -50,7 +50,7 @@ export const ASCENSIONS: Ascension[] = [
   { name: 'Reinado de paz', desc: 'Las reglas de siempre.' },
   { name: 'Corazas finas', desc: 'Todos los guardias tienen un {pct} % más de Vida.' },
   { name: 'Corte airada', desc: 'Cada asalto empieza con {furia} de Furia.' },
-  { name: 'Reyes acorazados', desc: 'En los asaltos con monarca, los Reyes tienen un {reyes} % más de Vida.' },
+  { name: 'Reyes acorazados', desc: 'En los asaltos de Rey jefe, los Reyes tienen un {reyes} % más de Vida.' },
   { name: 'Rey colérico', desc: 'El Ataque de los Reyes sube {rey}.' },
   { name: 'Heridas viejas', desc: 'Tu Vida máxima baja {heridas}.' },
   { name: 'Guardia de noche', desc: 'El Ataque de las Sotas y los Caballos sube {noche}.' },
@@ -96,8 +96,8 @@ export function stageDef(n: number): StageDef {
   return { name: `Trono infinito ${depth}`, floors: [...FIGURAS], thrones: 4, hp: Math.round(STAGES[LAST_STAGE - 1].hp * BALANCE.tronoInfinito.hpCrece ** depth * 10) / 10, threat: STAGES[LAST_STAGE - 1].threat + Math.ceil(depth / 2), boss: true };
 }
 
-/** El título del monarca del Salón del Trono, según su género (claves `asalto.tirano.m` y `asalto.tirano.f`). */
-export const TIRANO: Record<'m' | 'f', string> = { m: 'Rey Tirano', f: 'Reina Tirana' };
+/** Cómo se nombra al jefe del Salón del Trono (claves `asalto.tirano.m` y `asalto.tirano.f`; V40: los 4 Reyes, sin Reina). */
+export const TIRANO: Record<'m' | 'f', string> = { m: 'el último Rey jefe', f: 'el último Rey jefe' };
 /** La clave del título de Tirano que lleva un monarca (`asalto.tirano.f` si es una reina). */
 export const tiranoKey = (bossId: string): 'asalto.tirano.m' | 'asalto.tirano.f' => (BOSS[bossId]?.fem ? 'asalto.tirano.f' : 'asalto.tirano.m');
 

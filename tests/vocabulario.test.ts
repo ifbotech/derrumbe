@@ -90,7 +90,24 @@ const PROHIBIDAS: [string, RegExp][] = [
   ['Reliquia (hoy Amuleto)', /\breliquias?\b/],
   ['Relic (hoy Amulet)', /\brelics?\b/],
   ['relicario (hoy la faja)', /\brelicario|\breliquary\b/],
+  // V40 (fase 4): los monarcas sueltos y el Tirano del Salón del Trono pasaron a ser los Reyes jefe; no hay Reina en la
+  // baraja española; el Don de la Conjura es el Don del Bufón. Los identificadores internos (`monarca.<id>`, `tirano`,
+  // `.monarch`) no se leen y no cuentan.
+  ['monarca (hoy Rey jefe)', /\bmonarcas?\b/],
+  ['monarch (hoy boss King)', /\bmonarchs?\b/],
+  ['Rey Tirano / Reina Tirana (hoy el último Rey jefe)', /\btiran[oa]s?\b/],
+  ['Tyrant King / Queen (hoy the last boss King)', /\btyrants?\b/],
+  ['Reina (la baraja española no tiene Reina)', /\breinas?\b/],
+  ['Queen (the Spanish deck has no Queen)', /\bqueens?\b/],
+  ['Don de la Conjura (hoy el Don del Bufón)', /\bdon de la conjura\b/],
+  ['Conspiracy’s Gift (hoy the Jester’s Gift)', /\bconspiracy.?s gift\b/],
 ];
+
+/**
+ * V40 (fase 4): voseo rioplatense en todo lo que se lee en español. Va aparte porque se mira con las tildes puestas
+ * (sin ellas, «llevás» sería «llevas»): solo cuenta la forma de tú.
+ */
+const TUTEO: [string, RegExp] = ['tuteo (hoy voseo: podés, tenés, elegís, empezás…)', /(?<!\p{L})(?:puedes|tienes|eliges|empiezas|quieres|juegas|llevas|consigues|pierdes)(?!\p{L})/u];
 
 /**
  * Excepciones justificadas: [archivo (sufijo de ruta), trozo exacto del texto]. Cada una dice por qué.
@@ -106,13 +123,19 @@ const EXCEPCIONES: [string, string, string][] = [
   ['src/shared/i18n/es.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
   ['src/client/fx.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
   ['src/client/lengua.ts', 'reliquia. ·', 'clave de diccionario, no se lee'],
+  // V40 fase 4: lo mismo con las claves de los Reyes jefe (`monarca.<id>.nombre`, `.desc`, `.bark.*`)
+  ['src/shared/i18n/en.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
+  ['src/shared/i18n/es.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
+  ['src/client/lengua.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
+  ['src/client/voces.ts', 'monarca. ·', 'clave de diccionario, no se lee'],
 ];
 
 const llano = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 function prohibidasEn(texto: string): string[] {
   const t = llano(texto);
-  return PROHIBIDAS.filter(([, re]) => re.test(t)).map(([w]) => w);
+  const tuteo = TUTEO[1].test(texto.toLowerCase()) ? [TUTEO[0]] : [];
+  return [...PROHIBIDAS.filter(([, re]) => re.test(t)).map(([w]) => w), ...tuteo];
 }
 
 const excepcion = (archivo: string, texto: string) => EXCEPCIONES.some(([f, trozo]) => archivo.replace(/\\/g, '/').endsWith(f) && texto.includes(trozo));
@@ -291,13 +314,17 @@ describe('vocabulario del juego: nada de jerga vieja en lo que se lee', () => {
     expect(prohibidasEn('Contraataque de PICAS')).toEqual(['Picas (hoy Espadas)']);
     expect(prohibidasEn('+3 de Daño por cada ♥')).toEqual(['signo de palo francés']);
     expect(prohibidasEn('Corazón de piedra')).toEqual([]);
-    expect(prohibidasEn('Mazo agotado: pierdes 5 de Vida; el Escudo no lo frena')).toEqual([]);
+    expect(prohibidasEn('Mazo agotado: perdés 5 de Vida; el Escudo no lo frena')).toEqual([]);
     // palabra entera: «obrar», «pisotón» o «torreón» no son el piso ni la torre de antes
     expect(prohibidasEn('Maniobra, pisotón y refuerzas')).toEqual([]);
     expect(prohibidasEn('CORONA ROTA · La conjura')).toEqual(['Corona rota (título viejo)']);
     expect(prohibidasEn('Todo en el Mercado clandestino')).toEqual(['Mercado clandestino (hoy La Pulpería)']);
     expect(prohibidasEn('Las Coronas de la Orden; en la Pulpería, el Tratante')).toEqual([]);
     expect(prohibidasEn('en la Taberna, el Tratante')).toEqual(['Taberna (hoy La Pulpería)']);
+    // V40 fase 4: el Rey jefe y el voseo; «Reinado» no es una Reina
+    expect(prohibidasEn('Con monarca: el Rey Tirano')).toEqual(['monarca (hoy Rey jefe)', 'Rey Tirano / Reina Tirana (hoy el último Rey jefe)']);
+    expect(prohibidasEn('Reinado 4: con Rey jefe, si podés')).toEqual([]);
+    expect(prohibidasEn('Si puedes, empiezas otra')).toEqual(['tuteo (hoy voseo: podés, tenés, elegís, empezás…)']);
     expect(literales("const a = 'hola mundo'; // 'comentario con torre'\nconst b = `x ${'dentro de plantilla'} y`; const r = /'no'/g;")).toEqual(['hola mundo', 'dentro de plantilla', 'x  ·  y']);
   });
 

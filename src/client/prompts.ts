@@ -71,7 +71,6 @@ export function controlRows(lang: Lang, kbd = false): [string, string, string][]
     [T('ui.ctl.rebobinar'), key('undo'), T('ui.ctl.rebobinar.p', { p: pad('undo') })],
     [T('ui.ctl.descartar'), key('discard'), T('ui.ctl.descartar.p', { p: pad('discard') })],
     [T('ui.ctl.atras'), key('back'), pad('back')],
-    [T('ui.ctl.saltar'), key('back'), pad('back')],
     [T('ui.ctl.mazo'), key('deck'), pad('deck')],
     [T('ui.ctl.lupa'), T('ui.ctl.lupa.k', { k: key('lupa') }), pad('lupa')],
     [T('ui.ctl.velocidad'), T('ui.ctl.barra'), pad('speed')],

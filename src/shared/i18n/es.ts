@@ -103,7 +103,7 @@ export function reglasEs(): Record<string, string> {
     o[`rama.${r.id}.desc`] = r.desc;
   }
   o['arbol.nombre'] = 'El Altar';
-  o['arbol.desc'] = 'Gasta esquirlas aquí para mejorar para siempre.';
+  o['arbol.desc'] = 'Gastá esquirlas acá para mejorar para siempre.';
   o['arbol.raiz.nombre'] = RAIZ.name;
   o['arbol.raiz.desc'] = RAIZ.desc;
   for (const a of ACHIEVEMENTS) {
@@ -143,7 +143,7 @@ export function reglasEs(): Record<string, string> {
   o['cuenta.interes'] = fill('Interés (1 por cada {n} de oro)', { n: C.interesCada });
   // V12: la regla de Mejor jugada (src/rules/mejor-jugada.ts)
   o['regla.mejor'] = REGLA_MEJOR;
-  o['mejor.nada'] = 'Ninguna jugada hace Daño: descarta o guarda en La Manga.';
+  o['mejor.nada'] = 'Ninguna jugada hace Daño: descartá o guardá en La Manga.';
   // V12: monedas, esquirlas, gotas, dados de hueso, tirada, imán, cobro y AUTO (anexo A de SPECS/V12.md)
   o['pieza.moneda.nombre'] = 'Monedas';
   o['pieza.moneda.desc'] = 'Oro para La Pulpería.';
@@ -167,11 +167,11 @@ export function reglasEs(): Record<string, string> {
   o['auto.saquear.desc'] = 'El bot elige tu Botín.';
   o['auto.taberna.nombre'] = 'Auto-pulpería';
   o['auto.taberna.desc'] = 'El bot compra en La Pulpería y elige ruta.';
-  o['auto.pausa.botin'] = 'AUTO espera: elige tu Botín.';
+  o['auto.pausa.botin'] = 'AUTO espera: elegí tu Botín.';
   o['auto.pausa.bendicion'] = 'AUTO espera: elegí tu Bendición.';
-  o['auto.pausa.taberna'] = 'AUTO espera: compra en La Pulpería o sigue.';
-  o['auto.pausa.mapa'] = 'AUTO espera: elige tu ruta en el Mapa.';
-  o['auto.pausa.secreto'] = 'AUTO espera: elige en el Secreto.';
+  o['auto.pausa.taberna'] = 'AUTO espera: comprá en La Pulpería o seguí.';
+  o['auto.pausa.mapa'] = 'AUTO espera: elegí tu ruta en el Mapa.';
+  o['auto.pausa.secreto'] = 'AUTO espera: elegí en el Secreto.';
   o['auto.pausa.fin'] = 'La campaña terminó: AUTO se apaga.';
   o['auto.pausa.coop'] = 'En cooperativo se juega a mano.';
   // V40 · lo que dice el Bufón en los tres primeros golpes de la primera campaña (src/rules/bufon.ts)

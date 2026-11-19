@@ -27,7 +27,7 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'causa.sirena.detalle.asedio': '{queda}. {n} del Ataque eran de Furia. {falta} o un Golpe exacto.',
   'causa.herida.propia': 'Herida propia',
   'causa.herida.titulo': '{quien}: tu propio golpe te costó {n} de Vida',
-  'causa.herida.detalle': '{queda}. El Escudo no frena lo que cuesta tu golpe: cura (Copas) antes de arriesgar.',
+  'causa.herida.detalle': '{queda}. El Escudo no frena lo que cuesta tu golpe: curate (Copas) antes de arriesgar.',
   'causa.sin_cartas.titulo': 'Sin cartas: ni mano, ni Mazo, ni Descarte para seguir',
   'causa.sin_cartas.detalle': '{queda}, pero no hay con qué golpear: lo agotado y lo destruido no vuelve.',
   // aviso de último turno (autopsy.ts, omen)

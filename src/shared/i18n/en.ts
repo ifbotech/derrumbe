@@ -128,7 +128,7 @@ const REINADOS: [string, string][] = [
   ['Reign of Peace', 'The usual rules.'],
   ['Fine Armor', 'Every guard has {pct} % more Health.'],
   ['Wrathful Court', 'Each assault starts with {furia} Fury.'],
-  ['Armored Kings', 'In assaults with a monarch, Kings have {reyes} % more Health.'],
+  ['Armored Kings', 'In boss King assaults, Kings have {reyes} % more Health.'],
   ['Wrathful King', "Kings' Attack rises by {rey}."],
   ['Old Wounds', 'Your max Health drops by {heridas}.'],
   ['Night Watch', "Knaves' and Knights' Attack rises by {noche}."],
@@ -350,7 +350,7 @@ const MEJORAS: Record<string, [string, string?]> = {
   esq_golpe: ['Crown Splinters', '+{n} shards for each strike.'],
   esq_guardia: ["Guard's Tithe", '+{n} shards for each guard defeated.'],
   esq_exacto: ['Clean Cut', '+{n} shards for each Exact Hit.'],
-  esq_monarca: ["King's Ransom", '+{n} shards for each monarch defeated.'],
+  esq_monarca: ["King's Ransom", '+{n} shards for each boss King defeated.'],
   esq_derrota: ['Ashes of the Fallen', 'When you lose, +{n} shards for each guard you defeated.'],
   esq_formacion: ['Full Hand', '+{n} shards for each strike of 3 cards or more.'],
   esq_racha: ['Blood Streak', '+{n} shards for each Streak link when you strike.'],
@@ -664,8 +664,8 @@ export function reglasEn(): Record<string, string> {
     o[`monarca.${b.id}.bark.caida`] = m.caida;
   }
   STAGES.forEach((_, i) => ASALTOS[i] && (o[`asalto.${i + 1}.nombre`] = ASALTOS[i]));
-  o['asalto.tirano.m'] = 'Tyrant King';
-  o['asalto.tirano.f'] = 'Tyrant Queen';
+  o['asalto.tirano.m'] = 'the last boss King';
+  o['asalto.tirano.f'] = 'the last boss King';
   const nr = cifrasReinado();
   ASCENSIONS.forEach((_, i) => {
     const r = REINADOS[i];

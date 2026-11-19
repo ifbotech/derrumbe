@@ -53,6 +53,11 @@ const n = (x: number) => String(x).replace('.', ',');
 const RACHA = BALANCE.golpe.racha;
 const RACHA_TOPE = BALANCE.golpe.racha * BALANCE.golpe.rachaTope;
 const MONARCAS = STAGES.filter((s) => s.boss).length;
+/** V40 · los asaltos con Rey jefe («2, 4 y 5» / «2, 4 and 5») y la Furia del Rey por turno, de los datos. */
+const conJefe = STAGES.flatMap((s, i) => (s.boss ? [String(i + 1)] : []));
+const asaltosJefe = (y: string) => (conJefe.length > 1 ? `${conJefe.slice(0, -1).join(', ')} ${y} ${conJefe[conJefe.length - 1]}` : conJefe.join(''));
+const furiasRey = REY_IDS.map((r) => B.reyes[r].furia);
+const furiaRey = (a: string) => (Math.min(...furiasRey) === Math.max(...furiasRey) ? `${furiasRey[0]}` : `${Math.min(...furiasRey)} ${a} ${Math.max(...furiasRey)}`);
 /** V40 1c · la tabla de los 4 Reyes, con sus bonos de nivel con 2 y 4 piezas. */
 const reyesTabla = (l: 'es' | 'en') =>
   `<table><tr><th>${l === 'es' ? 'Rey' : 'King'}</th>${UMBRALES_REY.map((u) => `<th>${u}</th>`).join('')}</tr>${REY_IDS.map(
@@ -66,8 +71,8 @@ function rulesEs(cfg: Config): string {
   const C = suitSvg('C');
   const hand = Object.values(cfg.handSize);
   return `
-  <p><b>${TITLE}</b> · ${SUBTITLE}. Un juego cooperativo de 1 a 4 jugadores con baraja española. Sois una <b>conjura</b>:
-  tienen que hacer caer los <b>tronos</b> de la corte antes de quedarse sin <b>Vida</b>. Se gana o se pierde en equipo.</p>
+  <p><b>${TITLE}</b> · ${SUBTITLE}. Un roguelike de naipes de 1 a 4 jugadores con baraja española. Ustedes son una <b>conjura</b>:
+  tienen que hacer caer las <b>Casas</b> de la corte antes de quedarse sin <b>Vida</b>. Se gana o se pierde en equipo.</p>
   <p><b>Un enemigo a la vez</b>: las Casas se asaltan de una en una. En el centro de la mesa está el <b>enemigo activo</b> (el guardia que tenés delante) y, a su lado, la <b>fila</b> con los que vienen después.</p>
 
   <h3>La mesa</h3>
@@ -85,10 +90,10 @@ function rulesEs(cfg: Config): string {
 
   <h3>Tu turno</h3>
   <ul>
-    <li><b>1 · Golpea</b> al enemigo activo con una <b>formación</b>. Antes de golpear, la mesa te enseña la cuenta.</li>
+    <li><b>1 · Golpeá</b> al enemigo activo con una <b>formación</b>. Antes de golpear, la mesa te muestra la cuenta.</li>
     <li>En vez de golpear podés <b>descartar</b> las cartas que quieras, o jugar un <b>Comodín</b>.</li>
-    <li><b>2 · Contraataque</b> ⚔: si no lo has abatido, el enemigo activo te pega con su Ataque (más su <b>Furia</b>). Primero gasta tu Escudo; lo que sobra te quita Vida.</li>
-    <li><b>3 · Roba</b> hasta completar tu mano. Turno del siguiente.</li>
+    <li><b>2 · Contraataque</b> ⚔: si no lo abatiste, el enemigo activo te pega con su Ataque (más su <b>Furia</b>). Primero gasta tu Escudo; lo que sobra te quita Vida.</li>
+    <li><b>3 · Robá</b> hasta completar tu mano. Turno del siguiente.</li>
   </ul>
 
   <h3>Daño × Multi = Golpe</h3>
@@ -131,33 +136,33 @@ function rulesEs(cfg: Config): string {
   <h3>Más reglas</h3>
   <ul>
     <li><b>Comodín · Motín</b>: se juega solo sobre un trono. Ese trono queda <b>Aturdido</b> (se salta su próximo Contraataque) y este turno no hay Contraataque. El Comodín sale del asalto.</li>
-    <li><b>Furia</b>: cada punto de Furia es <b>+1 de Ataque</b> en todos los Contraataques; se ve junto al ⚔ del enemigo. Sube con cada <b>Mazo agotado</b> y, contra un monarca, cada turno (<b>Furia del Rey</b>).${cfg.fatigueStart === undefined ? '' : ` En el Asalto único sube además desde el turno ${cfg.fatigueStart + 1}, cada ${cfg.fatigueEvery} turnos.`}</li>
+    <li><b>Furia</b>: cada punto de Furia es <b>+1 de Ataque</b> en todos los Contraataques; se ve junto al ⚔ del enemigo. Sube con cada <b>Mazo agotado</b> y, contra un Rey jefe, de ${furiaRey('a')} cada turno según el Rey (<b>Furia del Rey</b>).${cfg.fatigueStart === undefined ? '' : ` En el Asalto único sube además desde el turno ${cfg.fatigueStart + 1}, cada ${cfg.fatigueEvery} turnos.`}</li>
     <li><b>Mazo agotado</b>: el Descarte se baraja y vuelve a ser el Mazo. <b>Barajar no te quita Vida</b>, pero la <b>Furia</b> sube ${cfg.collapseSiege ? cfg.collapseSiege : FURIA.mazo} (en campaña, ${FURIA.mazo}).</li>
     <li><b>As cómplice</b>: un As forma jugada con <b>cualquier otra carta</b> (×${n(FORM.compania.r)}) y aporta el poder de su palo.</li>
     <li><b>La Manga</b>: una vez por turno, sin gastarlo, te guardás una carta de la mano en la manga. No cuenta para el tamaño de la mano y se juega desde ahí. Si la manga está llena, la carta guardada vuelve a la mano.</li>
-    <li><b>Rebobinar</b> ↩ (campaña en solitario): una vez por asalto deshaces tu última jugada. El Mazo se baraja de nuevo. En sala toda jugada es definitiva.</li>
+    <li><b>Rebobinar</b> ↩ (campaña en solitario): una vez por asalto deshacés tu última jugada. El Mazo se baraja de nuevo. En sala toda jugada es definitiva.</li>
     <li>Solo se puede <b>pasar</b> con la mano vacía.</li>
     <li><b>Victoria</b>: caen todos los tronos (<b>Corte vencida</b>). <b>Derrota</b>: tu Vida llega a 0 (<b>Conjura deshecha</b>).</li>
     <li>Modo <b>BRUTAL</b> (Asalto único): ${DIFFICULTY.brutal.maxIntegrity} de Vida y cada Mazo agotado sube la Furia ${DIFFICULTY.brutal.collapseSiege}.</li>
   </ul>
 
   <h3>Campaña</h3>
-  <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro; ${MONARCAS} con <b>monarca</b>, y el último, en el Salón del Trono, con el <b>Rey Tirano</b>. Empezás con un <b>Sobre lacrado</b> de cartas especiales y con un <b>Don de la Conjura</b> que elegís entre tres (un Amuleto, un sello de lacre o una bolsa de oro) y, entre asalto y asalto, mejorás el mazo y tus Amuletos.</p>
+  <p>Un roguelike de mazo: <b>${LAST_STAGE} asaltos</b>, cada uno una sala del castillo y cada vez más duro, Casa por Casa. ${MONARCAS} acaban en un <b>Rey jefe</b> (los asaltos ${asaltosJefe('y')}). Elegís tu <b>Mazo</b>, que trae su Vida y sus reglas; el <b>Sobre lacrado</b> mete ${B.inicio.sobre} Trampas del Bufón en él; el <b>Don del Bufón</b> te deja elegir uno de tres regalos (un Amuleto, un sello de lacre o una bolsa de oro) y ${B.oferta.inicio} Reyes te ofrecen tu primera <b>Bendición</b>. Entre asalto y asalto mejorás el Mazo, tus Amuletos y tus Bendiciones.</p>
   <ul>
-    <li><b>El Mapa</b>: antes de cada asalto (desde el 2) elegís un camino. <b>Guardia Bravo</b>: un guardia solo y más duro que paga con oro, un Amuleto y una Bendición. <b>Santuario del Bufón</b>: un trato. <b>Fogón</b>: Curar o Purgar gratis. <b>La Pulpería</b>, siempre al alcance: comprar, Purgar y Curar con oro. Tras cada combate, el <b>Botín</b>: cada parte se cobra o se salta, y la «Elegí una» ofrece tres.</li>
-    <li><b>En el Botín</b> elegís una de tres opciones a la vista (dos cartas especiales y una carta de baraja ya marcada), o pasás por 3 de oro. Al caer, cada monarca abre su <b>Cofre</b>: elegís uno de tres Amuletos, Raros o mejores.</li>
-    <li><b>Monarcas</b>: el monarca es uno de los <b>4 Reyes</b>, el último guardia de la Casa de su palo. Llega con retrato y rasgo propio, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tenés delante, su <b>Furia del Rey</b> sube cada turno: hay que tumbarlo deprisa. Te habla según las Bendiciones que llevás.</li>
-    <li><b>La Pulpería</b> del Tratante vende Amuletos, Sobres lacrados (abrís uno y elegís 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También cura, quema cartas en <b>la hoguera</b> y, pagando, <b>renueva la mesa</b>.</li>
-    <li>Tras cada monarca intermedio hay un <b>Santuario de la cripta</b>: una apuesta (la Rueda del destino, doble o nada de esquirlas, un dado bendito o maldito, el altar de sangre que cambia Vida por una Bendición) o un dilema con premio y precio.</li>
+    <li><b>El Mapa</b>: antes de cada asalto (desde el 2) elegís un camino. <b>Guardia Bravo</b>: un guardia solo y más duro que paga con oro y una «Elegí una» de Amuletos. <b>Santuario del Bufón</b>: un trato. <b>Fogón</b>: Curar o Purgar gratis. <b>La Pulpería</b>, siempre al alcance: comprar, Purgar y Curar con oro. Tras cada combate, el <b>Botín</b>: cada parte se cobra o se salta, y la «Elegí una» ofrece tres.</li>
+    <li><b>En el Botín</b> elegís una de tres opciones a la vista (dos Trampas del Bufón y una carta de baraja ya marcada), o pasás por ${B.cobro.sinSeleccion} de oro. Al caer, cada Rey jefe abre su <b>Cofre</b>: elegís uno de tres Amuletos, Raros o mejores.</li>
+    <li><b>Reyes jefe</b>: el jefe es uno de los <b>4 Reyes</b>, el último guardia de la Casa de su palo. Llega con retrato y rasgo propio, tiene más Vida que un Rey de su asalto y, mientras lo tenés delante, su <b>Furia del Rey</b> sube cada turno: hay que tumbarlo deprisa. Te habla según las Bendiciones que llevás.</li>
+    <li><b>La Pulpería</b> del Tratante vende Amuletos, Sobres lacrados (abrís uno y elegís 1 de 3), un <b>Sobre a ciegas</b> más barato, <b>Pergaminos</b> que suben de nivel una formación y la <b>Mesa de lacre</b>, que pone un sello de lacre o un acabado en la carta que elijas. También <b>Cura</b>, <b>Purga</b> cartas y, pagando, <b>renueva la mesa</b>.</li>
+    <li>Cada <b>Santuario del Bufón</b> del Mapa es una apuesta (la Rueda del destino, doble o nada de esquirlas, un dado bendito o maldito, el altar de sangre que cambia Vida por una Bendición) o un dilema con premio y precio.</li>
     <li>Después del último asalto podés seguir al <b>Trono infinito</b>: asaltos sin final, cada uno más duro.</li>
     <li><b>Semilla</b>: la misma semilla y las mismas decisiones dan la misma campaña.</li>
-    <li><b>Reinicio rápido</b>: mantené <b>R</b> 0,7 segundos para empezar de nuevo con la misma baraja y el mismo Reinado. No cuenta como derrota.</li>
+    <li><b>Reinicio rápido</b>: mantené <b>R</b> 0,7 segundos para empezar de nuevo con el mismo Mazo y el mismo Reinado. No cuenta como derrota.</li>
   </ul>
 
   ${caeEs()}
 
   <h3>Reinados</h3>
-  <p>Ganar una campaña abre el Reinado siguiente. Cada uno añade un giro a todos los anteriores y da un 25 % más de <b>esquirlas</b> ✦. Al ganar, la baraja y tus Amuletos reciben su <b>sello de maestría</b> (bronce, hierro u oro) en la colección.</p>
+  <p>Ganar una campaña abre el Reinado siguiente. Cada uno añade un giro a todos los anteriores y da un 25 % más de <b>esquirlas</b> ✦. Al ganar, el Mazo y tus Amuletos reciben su <b>sello de maestría</b> (bronce, hierro u oro) en la colección.</p>
   <table>
     <tr><th>Reinado</th><th>Nombre</th><th>Giro</th></tr>
     ${ASCENSIONS.map((a, i) => `<tr><td>${i + 1}</td><td>${a.name}</td><td>${a.desc}</td></tr>`).join('')}
@@ -188,14 +193,14 @@ function rulesEs(cfg: Config): string {
 
   <h3>Controles</h3>
   <p><b>1–9</b> eligen carta · <b>flechas</b> mueven el foco · <b>Enter</b> elige · <b>Espacio</b> golpea al enemigo activo · <b>Y</b> guarda en la manga · <b>Z</b> rebobina · <b>Q</b> Mejor jugada · <b>A</b> AUTO · <b>Supr</b> descarta · <b>Esc</b> suelta o vuelve atrás · <b>Tab</b> abre el mazo · <b>F</b> pantalla completa.</p>
-  <p><b>Lupa</b>: clic derecho, pulsación larga o <b>L</b> sobre cualquier carta, Amuleto, guardia o monarca. Con mando: cruceta o palanca, A elegir, X golpear, Y manga, B atrás, LB mazo, RB lupa, LT rebobinar, RT velocidad, Start ajustes. Los botones de la mesa enseñan su atajo según juegues con teclado o con mando. La tabla completa está en Ajustes.</p>
+  <p><b>Lupa</b>: clic derecho, pulsación larga o <b>L</b> sobre cualquier carta, Amuleto, guardia o Rey. Con mando: cruceta o palanca, A elegir, X golpear, Y manga, B atrás, LB mazo, RB lupa, LT Mejor jugada, R3 rebobinar, RT velocidad, Select AUTO, Start ajustes. Los botones de la mesa enseñan su atajo según juegues con teclado o con mando. La tabla completa está en Ajustes.</p>
 
   <h3>Consejos de la conjura</h3>
   <ul>
-    <li>Abatir a la Sota deja paso a un Caballo con más Ataque: mira la fila antes de gastar la mano.</li>
+    <li>Abatir a la Sota deja paso a un Caballo con más Ataque: mirá la fila antes de gastar la mano.</li>
     <li>Seguí a un Rey y buscá su bono de 4: es lo que gana las campañas.</li>
     <li>Jugar muchas cartas acelera el asalto, pero vacía el Mazo y acerca el Mazo agotado.</li>
-    <li>Contra el monarca, la Furia del Rey no espera: guarda tu mejor mano para él.</li>
+    <li>Contra el Rey jefe, la Furia del Rey no espera: guardá tu mejor mano para él.</li>
   </ul>`;
 }
 
@@ -224,8 +229,8 @@ function rulesEn(cfg: Config): string {
   const b = marca();
   const x = (v: number) => numL(v);
   return `
-  <p><b>${b.title}</b> · ${b.subtitle}. A co-op game for 1 to 4 players with a Spanish deck of cards. You are a <b>conspiracy</b>:
-  you must bring down the <b>thrones</b> of the court before you run out of <b>Health</b>. You win or lose as a team.</p>
+  <p><b>${b.title}</b> · ${b.subtitle}. A card roguelike for 1 to 4 players with a Spanish deck. You are a <b>conspiracy</b>:
+  you must bring down the <b>Houses</b> of the court before you run out of <b>Health</b>. You win or lose as a team.</p>
   <p><b>One enemy at a time</b>: the Houses are stormed one by one. In the middle of the table is the <b>active enemy</b> (the guard in front of you) and, beside it, the <b>queue</b> with those coming next.</p>
 
   <h3>The table</h3>
@@ -289,7 +294,7 @@ function rulesEn(cfg: Config): string {
   <h3>More rules</h3>
   <ul>
     <li><b>Joker · Mutiny</b>: played alone on a throne. That throne is <b>Stunned</b> (it skips its next Counterattack) and there is no Counterattack this turn. The Joker leaves the assault.</li>
-    <li><b>Fury</b>: each point of Fury is <b>+1 Attack</b> on every Counterattack; it shows next to the enemy’s ⚔. It rises each time the <b>Deck runs out</b> and, against a monarch, every turn (<b>King’s Fury</b>).${cfg.fatigueStart === undefined ? '' : ` In the Single Assault it also rises from turn ${cfg.fatigueStart + 1}, every ${cfg.fatigueEvery} turns.`}</li>
+    <li><b>Fury</b>: each point of Fury is <b>+1 Attack</b> on every Counterattack; it shows next to the enemy’s ⚔. It rises each time the <b>Deck runs out</b> and, against a boss King, by ${furiaRey('to')} every turn depending on the King (<b>King’s Fury</b>).${cfg.fatigueStart === undefined ? '' : ` In the Single Assault it also rises from turn ${cfg.fatigueStart + 1}, every ${cfg.fatigueEvery} turns.`}</li>
     <li><b>Deck run out</b>: the Discard is shuffled and becomes the Deck again. <b>Shuffling costs no Health</b>, but <b>Fury</b> rises ${cfg.collapseSiege ? cfg.collapseSiege : FURIA.mazo} (in a campaign, ${FURIA.mazo}).</li>
     <li><b>Accomplice Ace</b>: an Ace makes a play with <b>any other card</b> (×${x(FORM.compania.r)}) and brings the power of its suit.</li>
     <li><b>Up the Sleeve</b>: once per turn, without spending it, you keep a card from your hand Up the Sleeve. It does not count towards hand size and is played from there. If the sleeve is full, the stored card goes back to your hand.</li>
@@ -300,22 +305,22 @@ function rulesEn(cfg: Config): string {
   </ul>
 
   <h3>Campaign</h3>
-  <p>A deck-building roguelike: <b>${LAST_STAGE} assaults</b>, each one a hall of the castle and each harder than the last; ${MONARCAS} of them with a <b>monarch</b>, and the last one, in the Throne Room, with the <b>Tyrant King</b>. You start with a <b>Sealed Pack</b> of special cards and a <b>Conspiracy’s Gift</b> you choose from three (an Amulet, a wax seal or a purse of gold) and, between assaults, you improve your deck and your Amulets.</p>
+  <p>A deck-building roguelike: <b>${LAST_STAGE} assaults</b>, each one a hall of the castle and each harder than the last, House by House. ${MONARCAS} of them end with a <b>boss King</b> (assaults ${asaltosJefe('and')}). You choose your <b>Deck</b>, which brings its own Health and rules; the <b>Sealed Pack</b> puts ${B.inicio.sobre} Jester’s Tricks in it; the <b>Jester’s Gift</b> lets you pick one of three presents (an Amulet, a wax seal or a purse of gold) and ${B.oferta.inicio} Kings offer your first <b>Blessing</b>. Between assaults you improve your Deck, your Amulets and your Blessings.</p>
   <ul>
-    <li><b>The Map</b>: before each assault (from the 2nd on) you choose a path. <b>Elite Guard</b>: a lone, tougher guard that pays with gold, an amulet and a Blessing. <b>Jester's Shrine</b>: a deal. <b>Campfire</b>: Heal or Purge for free. <b>The General Store</b>, always within reach: buy, Purge and Heal with gold. After each fight, the <b>Spoils</b>: each part is collected or skipped, and “Choose one” offers three.</li>
-    <li><b>In the Spoils</b> you pick one of three options in view (two special cards and one already marked deck card), or pass for 3 gold. When a monarch falls it opens its <b>Chest</b>: you pick one of three Amulets, Rare or better.</li>
-    <li><b>Monarchs</b>: the monarch is one of the <b>4 Kings</b>, the last guard of the House of his suit. He arrives with a portrait and his own trait, has ×${FURIA.jefeVida} Health and, while he is in front of you, his <b>King’s Fury</b> rises every turn: bring him down fast. He speaks to you according to the Blessings you carry.</li>
-    <li>In <b>The General Store</b>, the Storekeeper sells amulets, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also heals, burns cards in <b>the Bonfire</b> and, for a price, <b>refreshes the table</b>.</li>
-    <li>After each middle monarch there is a <b>Crypt Shrine</b>: a gamble (the Wheel of Fate, double or nothing on shards, a blessed or cursed die, the Altar of Blood that trades Health for a Blessing) or a dilemma with a reward and a price.</li>
+    <li><b>The Map</b>: before each assault (from the 2nd on) you choose a path. <b>Elite Guard</b>: a lone, tougher guard that pays with gold and a “Choose one” of amulets. <b>Jester's Shrine</b>: a deal. <b>Campfire</b>: Heal or Purge for free. <b>The General Store</b>, always within reach: buy, Purge and Heal with gold. After each fight, the <b>Spoils</b>: each part is collected or skipped, and “Choose one” offers three.</li>
+    <li><b>In the Spoils</b> you pick one of three options in view (two Jester’s Tricks and one already marked deck card), or pass for ${B.cobro.sinSeleccion} gold. When a boss King falls he opens his <b>Chest</b>: you pick one of three Amulets, Rare or better.</li>
+    <li><b>Boss Kings</b>: the boss is one of the <b>4 Kings</b>, the last guard of the House of his suit. He arrives with a portrait and his own trait, has more Health than a King of his assault and, while he is in front of you, his <b>King’s Fury</b> rises every turn: bring him down fast. He speaks to you according to the Blessings you carry.</li>
+    <li>In <b>The General Store</b>, the Storekeeper sells amulets, Sealed Packs (you open one and pick 1 of 3), a cheaper <b>Blind Pack</b>, <b>Scrolls</b> that level up a formation and the <b>Wax Table</b>, which puts a wax seal or a finish on the card you choose. It also <b>Heals</b>, <b>Purges</b> cards and, for a price, <b>refreshes the table</b>.</li>
+    <li>Each <b>Jester’s Shrine</b> on the Map is a gamble (the Wheel of Fate, double or nothing on shards, a blessed or cursed die, the Altar of Blood that trades Health for a Blessing) or a dilemma with a reward and a price.</li>
     <li>After the last assault you can go on to the <b>Endless Throne</b>: assaults without end, each one harder.</li>
     <li><b>Seed</b>: the same seed and the same choices give the same campaign.</li>
-    <li><b>Quick restart</b>: hold <b>R</b> for ${x(0.7)} seconds to start again with the same deck and the same Reign. It does not count as a defeat.</li>
+    <li><b>Quick restart</b>: hold <b>R</b> for ${x(0.7)} seconds to start again with the same Deck and the same Reign. It does not count as a defeat.</li>
   </ul>
 
   ${caeEn()}
 
   <h3>Reigns</h3>
-  <p>Winning a campaign opens the next Reign. Each one adds a twist to all the previous ones and gives 25 % more <b>shards</b> ✦. When you win, the deck and your Amulets get their <b>mastery seal</b> (bronze, iron or gold) in the collection.</p>
+  <p>Winning a campaign opens the next Reign. Each one adds a twist to all the previous ones and gives 25 % more <b>shards</b> ✦. When you win, the Deck and your Amulets get their <b>mastery seal</b> (bronze, iron or gold) in the collection.</p>
   <table>
     <tr><th>Reign</th><th>Name</th><th>Twist</th></tr>
     ${ASCENSIONS.map((_, i) => `<tr><td>${i + 1}</td><td>${reinN(i)}</td><td>${reinD(i)}</td></tr>`).join('')}
@@ -346,14 +351,14 @@ function rulesEn(cfg: Config): string {
 
   <h3>Controls</h3>
   <p><b>1–9</b> pick a card · <b>arrows</b> move the focus · <b>Enter</b> picks · <b>Space</b> hits the active enemy · the Y key keeps a card Up the Sleeve · <b>Z</b> rewinds · <b>Q</b> Best Play · the A key turns AUTO on or off · <b>Delete</b> discards · <b>Esc</b> drops or goes back · <b>Tab</b> opens the deck · <b>F</b> full screen.</p>
-  <p><b>Loupe</b>: right click, long press or <b>L</b> on any card, amulet, guard or monarch. With a controller: d-pad or stick, A picks, X hits, the Y button keeps Up the Sleeve, B back, LB deck, RB loupe, LT rewind, RT speed, Start settings. The table buttons show their shortcut for keyboard or controller. The full table is in Settings.</p>
+  <p><b>Loupe</b>: right click, long press or <b>L</b> on any card, amulet, guard or King. With a controller: d-pad or stick, A picks, X hits, the Y button keeps Up the Sleeve, B back, LB deck, RB loupe, LT Best Play, R3 rewind, RT speed, Select AUTO, Start settings. The table buttons show their shortcut for keyboard or controller. The full table is in Settings.</p>
 
   <h3>Crew tips</h3>
   <ul>
     <li>Defeating the Knave lets through a Knight with more Attack: check the queue before you spend your hand.</li>
     <li>Follow one King and go for his 4 bonus: that is what wins campaigns.</li>
     <li>Playing many cards speeds up the assault, but empties the Deck and brings it closer to running out.</li>
-    <li>Against the monarch, King’s Fury does not wait: save your best hand for it.</li>
+    <li>Against the boss King, King’s Fury does not wait: save your best hand for him.</li>
   </ul>`;
 }
 

@@ -57,12 +57,12 @@ export const UI_JUICE = {
 
   // ── Susurros (whispers.ts): una línea cada uno ──
   'ui.w.inmune': ['<b>Inmune:</b> tus {glyph} no le hacen Daño a un enemigo de su mismo palo (su poder sí cuenta). Guárdalas para la Casa siguiente.', '<b>Immune:</b> your {glyph} deal no Damage to an enemy of their own suit (their power does count). Save them for the next House.'],
-  'ui.w.andamio': ['<b>Viene un Contraataque fuerte:</b> guarda en La Manga{kh} la carta que no quieras gastar; al reponer robás una más.', '<b>A strong Counterattack is coming:</b> keep the card you want to save Up the Sleeve{kh}; when you refill, you draw one more.'],
+  'ui.w.andamio': ['<b>Viene un Contraataque fuerte:</b> guardá en La Manga{kh} la carta que no quieras gastar; al reponer robás una más.', '<b>A strong Counterattack is coming:</b> keep the card you want to save Up the Sleeve{kh}; when you refill, you draw one more.'],
   'ui.w.limpio': ['<b>Golpe exacto:</b> si golpeás ahora no hay Contraataque, cobrás 1 de oro y robás una carta más.', '<b>Exact Hit:</b> strike now and there is no Counterattack: you collect 1 gold and draw one more card.'],
   'ui.w.forja': ['<b>Mesa de lacre:</b> la carta que elijas queda sellada para siempre. Cancelar no gasta nada.', '<b>Wax Table:</b> the card you pick stays sealed forever. Cancel spends nothing.'],
   'ui.w.atajo': ['<b>El Mapa:</b> elegí el camino. El Guardia Bravo da una Bendición; el Fogón y La Pulpería curan y purgan.', '<b>The Map:</b> choose your path. The Elite Guard gives a Blessing; the Campfire and the General Store heal and purge.'],
-  'ui.w.jefe': ['<b>Monarca:</b> {who} impone un decreto en este asalto. Su placa, junto a tu Vida, te lo recuerda. Es el último guardia: cada turno que sigue en pie, su Furia sube.', '<b>Monarch:</b> {who} imposes a decree on this assault. The plate beside your Health reminds you. It is the last guard: each turn it stays standing, its Fury rises.'],
-  'ui.w.fatiga': ["<b>Furia:</b> el Ataque de los enemigos ha subido. Sube con cada Mazo agotado y, contra el monarca, cada turno.", "<b>Fury:</b> enemy Attack has gone up. It rises each time the Deck runs out and, against the monarch, every turn."],
+  'ui.w.jefe': ['<b>Rey jefe:</b> {who} impone un decreto en este asalto. Su placa, junto a tu Vida, te lo recuerda. Es el último guardia: cada turno que sigue en pie, su Furia sube.', '<b>Boss King:</b> {who} imposes a decree on this assault. The plate beside your Health reminds you. It is the last guard: each turn it stays standing, its Fury rises.'],
+  'ui.w.fatiga': ["<b>Furia:</b> el Ataque de los enemigos ha subido. Sube con cada Mazo agotado y, contra el Rey jefe, cada turno.", "<b>Fury:</b> enemy Attack has gone up. It rises each time the Deck runs out and, against the boss King, every turn."],
   'ui.w.cantera': ['<b>Mazo bajo ({n}):</b> cuando se acabe, se baraja el Descarte. No perdés Vida: {efecto}.', '<b>Low Deck ({n}):</b> when it runs out, the Discard is shuffled back in. You lose no Health: {efecto}.'],
   'ui.w.cantera.sube': ["la Furia sube {n} (⚔ +{n} en cada enemigo)", "the Fury rises {n} (⚔ +{n} on every enemy)"],
   'ui.w.cantera.gratis': ['esta vez no pasa nada más', 'nothing else happens this time'],
@@ -80,7 +80,7 @@ export const UI_JUICE = {
   'ui.w.gotas': ['<b>{n} gotas de lacre:</b> la próxima Mesa de lacre te sella gratis.', '<b>{n} Wax Drops:</b> the next Wax Table seals for free.'],
   'ui.w.off': ['No mostrar más', 'Do not show again'],
   'ui.w.ajuste': ['Susurros', 'Whispers'],
-  'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encuentras algo (trono Inmune, La Manga, Mesa de lacre, Furia…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Fury…).'],
+  'ui.w.ajuste.texto': ['Una línea de ayuda la primera vez que te encontrás algo (trono Inmune, La Manga, Mesa de lacre, Furia…).', 'A line of help the first time you meet something (Immune throne, Up the Sleeve, Wax Table, Fury…).'],
 
   // ── V40 · el Bufón: sus consejos de la primera campaña (whispers.ts) y su fila de Ajustes ──
   'ui.bufon.ajuste': ['Consejos del Bufón', 'Jester tips'],
@@ -174,7 +174,7 @@ export const UI_JUICE = {
 
   // ── la red (net.ts): conexión y avisos ──
   'ui.red.sin': ['Sin conexión con el servidor', 'No connection to the server'],
-  'ui.red.sin.servidor': ['Esta instalación no tiene servidor de salas: escribe uno en Ajustes', 'This install has no room server: type one in Settings'],
+  'ui.red.sin.servidor': ['Esta instalación no tiene servidor de salas: escribí uno en Ajustes', 'This install has no room server: type one in Settings'],
   'ui.red.otra': ['Sesión abierta en otra pestaña', 'Session open in another tab'],
   'ui.red.resync': ['Mesa puesta al día con el servidor', 'Table brought up to date with the server'],
   'ui.red.local': ['○ sin servidor de salas: campaña en local', '○ no room server: local campaign'],
