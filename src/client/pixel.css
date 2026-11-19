@@ -1,0 +1,152 @@
+/* SANGRE Y PALO V40 · fase 2 — el naipe y las piezas en pixel-art (src/client/pixel/).
+   Va la última (main.ts): manda sobre deck.css en lo que toca al naipe. Nada de reglas de juego ni de maquetación de
+   pantallas: tinta, píxel nítido y la animación del Bufón (solo transform y opacity, sin filtros; quieto con
+   «Reducir movimiento»). */
+
+/* ── la paleta de palo: deck.css (V38) reafirmaba el verde botella de Bastos; la de la baraja española manda ── */
+:root {
+  --suit-C: #34481a;
+  --suitd-C: #b9cd6e;
+}
+:root.contraste {
+  --suit-C: #26340e;
+  --suitd-C: #d3e29a;
+}
+
+/* ── el píxel es píxel: sin trazos heredados (el contorno ya va dibujado) ni suavizado al escalar ── */
+svg.px,
+svg.px-cara,
+svg.px-dorso {
+  stroke: none !important;
+  paint-order: normal !important;
+  shape-rendering: crispEdges;
+  image-rendering: pixelated;
+}
+svg.px *,
+svg.px-cara *,
+svg.px-dorso * {
+  stroke: none !important;
+}
+
+/* ── la pinta del índice: alta y estrecha como su silueta, a la altura que ya tenía el palo de la esquina ── */
+.card .corner svg.glyph.px-pinta,
+:is(.hand, .reserve, .qa-limpias) .card .corner svg.glyph.px-pinta {
+  width: auto;
+  overflow: visible;
+}
+
+/* ── la cara del naipe ocupa su lienzo entero; el marfil es el de .ly.paper ── */
+svg.ly.art.px-cara {
+  width: 100%;
+  height: 100%;
+}
+/* la tirada de una sola pinta (carta diminuta del móvil) no se ve de serie */
+svg.px-numero .px-solo {
+  display: none;
+}
+/* en la carta de 44 px del móvil el índice llena la mitad de arriba: las pintas se retiran y queda una sola, grande,
+   en la mitad libre de abajo (el mismo gesto que la cara limpia de la 11.0, sin mover la capa) */
+@media (max-aspect-ratio: 1/1), (max-width: 640px) {
+  :is(.hand, .reserve, .qa-limpias) .card svg.px-numero .px-pintas {
+    display: none;
+  }
+  :is(.hand, .reserve, .qa-limpias) .card svg.px-numero .px-solo {
+    display: inline;
+  }
+}
+
+/* ── los dorsos de cada Mazo: a sangre dentro de la carta ── */
+.card-back svg.px-dorso {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── iconos de Amuletos, Trampas y Bendiciones: la caja manda, el dibujo conserva su proporción ── */
+svg.px.icono {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ── los Reyes jefe en la mesa: vencido, el busto se hunde una celda y pierde color ── */
+.monarca.px.vencido .m-bust {
+  transform: translateY(2px);
+}
+.monarca.px.vencido {
+  filter: saturate(0.5);
+}
+
+/* ═════════════ el Bufón (bufonSvg) ═════════════
+   Reposo: respira (el cuerpo baja y sube una celda) y los cascabeles se mecen de a un píxel. Risa: rebota rápido y
+   los cascabeles tintinean. Burla: se ladea de un lado a otro. Brillo: los destellos parpadean. Sombría: respira
+   lento y hondo. Todo con pasos (steps): el píxel nunca queda a medias. */
+.bufon {
+  display: block;
+  overflow: visible;
+}
+.bufon .bf-cuerpo,
+.bufon .bf-cascabel,
+.bufon .bf-brillo {
+  transform-box: view-box;
+  will-change: transform;
+}
+.bufon.bf-reposo .bf-cuerpo {
+  animation: bf-respira 2.6s steps(1, end) infinite;
+}
+.bufon.bf-reposo .bf-cascabel {
+  animation: bf-mece 1.3s steps(1, end) infinite;
+  animation-delay: calc(var(--i, 0) * -0.43s);
+}
+.bufon.bf-risa .bf-cuerpo {
+  animation: bf-rebota 0.36s steps(1, end) infinite;
+}
+.bufon.bf-risa .bf-cascabel {
+  animation: bf-mece 0.24s steps(1, end) infinite;
+  animation-delay: calc(var(--i, 0) * -0.08s);
+}
+.bufon.bf-burla .bf-cuerpo {
+  animation: bf-ladea 0.9s steps(1, end) infinite;
+}
+.bufon.bf-burla .bf-cascabel {
+  animation: bf-mece 0.45s steps(1, end) infinite;
+}
+.bufon.bf-brillo .bf-cuerpo {
+  animation: bf-respira 2s steps(1, end) infinite;
+}
+.bufon.bf-brillo .bf-brillo {
+  animation: bf-destello 0.8s steps(1, end) infinite;
+}
+.bufon.bf-sombria .bf-cuerpo {
+  animation: bf-respira 4.2s steps(1, end) infinite;
+}
+@keyframes bf-respira {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(1px); }
+}
+@keyframes bf-rebota {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+@keyframes bf-ladea {
+  0%, 100% { transform: translateX(-1px); }
+  50% { transform: translateX(1px); }
+}
+@keyframes bf-mece {
+  0%, 100% { transform: translateX(0); }
+  33% { transform: translateX(-1px); }
+  66% { transform: translateX(1px); }
+}
+@keyframes bf-destello {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+/* «Reducir movimiento» (Ajustes o el sistema): el Bufón queda en su cuadro fijo */
+:root.calm .bufon *,
+.calm .bufon * {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bufon * {
+    animation: none !important;
+  }
+}

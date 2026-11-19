@@ -4,6 +4,7 @@
 import type { Suit } from '../rules/engine';
 import { pipPath } from './card';
 import { arteDe } from './arte-rey';
+import { esReyPx, reySvg } from './pixel/reyes';
 
 const SUITS: Suit[] = ['S', 'D', 'H', 'C'];
 const crow = (x: number, y: number, s = 1) => `<path class="cut" transform="translate(${x} ${y}) scale(${s})" d="M-12,2 q6,-9 12,0 q6,-9 12,0"/>`;
@@ -330,6 +331,8 @@ const BUSTS: Record<string, Bust> = {
 
 /** El busto de un monarca (`id` de BOSSES) en calma o vencido. Clases: .monarca, .m-<id>, .calma / .vencido. */
 export function monarchSvg(rid: string, mood: MonarchMood = 'calma', cls = ''): string {
+  // V40 · fase 2: los 4 Reyes jefe tienen su busto pixel-art
+  if (esReyPx(rid)) return reySvg(rid, mood, cls);
   const id = arteDe(rid);
   const b = BUSTS[id];
   if (!b) return '';

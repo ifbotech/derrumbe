@@ -1,9 +1,13 @@
-// Baraja del juego — ilustrada en SVG a mano, estilo linograbado: masas de tinta,
-// líneas talladas en color papel, tintas planas por palo y textura de imprenta.
-// V11: las numeradas (A a 10) van de cara limpia: marfil liso, índice grande y un solo emblema macizo
-// del palo con contorno de tinta. Las figuras, los especiales y el comodín conservan el grabado.
-// Lienzo de cada carta: 250 × 350. Las figuras son de doble cabeza, unidas por una costura diagonal.
+// Baraja del juego. V40 · fase 2: la baraja española en pixel-art (src/client/pixel/): del 1 al 9 con sus pintas en
+// la disposición tradicional, el 1 ornamentado, la Corte de cuerpo entero (Sota, Caballo y Rey), el Comodín (el
+// Bufón), las pintas del marco (cortes del filete: 1 Oros, 2 Copas, 3 Espadas, 4 Bastos) y los dorsos de cada Mazo.
+// Los retratos viejos (el Tratante y los monarcas de la 38.0) siguen en grabado hasta que la fase 3 los retire.
+// Lienzo de cada carta: 250 × 350.
 import { ARTE_REY } from './arte-rey';
+import { caraComodin, caraPalo, dorsoSvg } from './pixel/naipes';
+import { pintaHalo, pintaSimbolos } from './pixel/pintas';
+import { amuletoSvg, trampaSvg } from './pixel/iconos';
+import { esReyPx, reyRects } from './pixel/reyes';
 import { CABALLO, Card, CardSuit, RANK_LABEL, REY, Seal, Suit, Treatment, esFigura } from '../rules/engine';
 import { SPECIAL } from '../rules/specials';
 import { L, acabD, acabN, espD, espN, palo, selloD, selloN } from './lengua';
@@ -23,13 +27,12 @@ const PIP: Record<Suit, string> = {
 /** El trazo de una pinta, centrado en (0,0), para incrustarlo en otro dibujo. */
 export const pipPath = (suit: Suit) => PIP[suit];
 
+/** V40 · la pinta pixel-art del palo, con su halo de marfil (se lee sobre el papel y sobre la mesa oscura). */
 export function suitSvg(suit: Suit, cls = ''): string {
-  return `<svg class="glyph s-${suit} ${cls}" viewBox="-11 -11.5 22 23" aria-hidden="true">${PIP[suit]}</svg>`;
+  return pintaHalo(suit, cls);
 }
 
 const FILL: Record<Suit, string> = { S: 'kS', C: 'kC', H: 'kH', D: 'kD' };
-/** La pinta maciza, sin las tallas de papel: la silueta sola (el emblema de la cara limpia). */
-const pipSolid = (suit: Suit) => PIP[suit].replace(/<path class="pcut"[^>]*\/>/g, '');
 const pipAt = (suit: Suit, x: number, y: number, scale: number, cls = FILL[suit], rot = 0) =>
   `<g transform="translate(${x} ${y})${rot ? ` rotate(${rot})` : ''} scale(${scale})" class="${cls}">${PIP[suit]}</g>`;
 
@@ -56,6 +59,7 @@ export function ensureDefs(): void {
     </filter>
     ${suitWeaves()}
     ${engravingDefs()}
+    ${pintaSimbolos()}
     <pattern id="pat-back" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${PAPER}" stroke-width="1" opacity="0.5"/><rect x="8" y="8" width="4" height="4" fill="${PAPER}"/></pattern>
     <pattern id="pat-back-ink" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0,20 L20,0 M0,0 L20,20" stroke="${INK}" stroke-width="1" opacity="0.45"/><rect x="8" y="8" width="4" height="4" fill="${INK}"/></pattern>
     <pattern id="pat-haz" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="20" height="20" fill="#e0a43a"/><rect width="10" height="20" fill="${INK}"/></pattern>
@@ -67,44 +71,12 @@ export function ensureDefs(): void {
 
 const FIST = '<rect class="fist" x="-14" y="-12" width="28" height="24" rx="6"/><path class="cut" d="M-7,-10 V-1 M0,-10 V-1 M7,-10 V-1 M-12,4 H3"/>';
 
-/** Arma larga (rey y sota). Coordenadas locales: el puño está en (0,0). */
-function longArm(suit: Suit): string {
-  const staff = '<rect class="ink" x="-3" y="-70" width="6" height="100"/><rect class="gd ol" x="-8" y="-72" width="16" height="7"/>';
-  switch (suit) {
-    case 'S':
-      return '<path class="pp ol" d="M0,-106 L8.5,-90 L7.5,-21 H-7.5 L-8.5,-90 Z"/><path class="thin" d="M0,-93 V-25"/><rect class="gd ol" x="-18" y="-23" width="36" height="8"/><rect class="ink" x="-4" y="-15" width="8" height="38"/><circle class="gd ol" cy="27" r="5.5"/>';
-    case 'H':
-      return `${staff}<g transform="translate(0 -91) scale(2.15)" class="rd pst">${PIP.H}</g>`;
-    case 'D':
-      return '<rect class="ink" x="-3" y="-40" width="6" height="70"/><path class="gl ol" d="M0,-110 L13.5,-73 L0,-34 L-13.5,-73 Z"/><path class="thin" d="M0,-108 V-36 M-12.5,-73 H12.5"/><rect class="gd ol" x="-7" y="-38" width="14" height="6"/>';
-    case 'C':
-      return `${staff}<g transform="translate(0 -92) scale(2.3)" class="ink pst">${PIP.C}</g>`;
-  }
-}
-
-/** Atributo corto (reina): daga, rosa, espejo o brote. */
-function shortArm(suit: Suit): string {
-  const stem = '<rect class="ink" x="-2.5" y="-36" width="5" height="62"/>';
-  switch (suit) {
-    case 'S':
-      return '<path class="pp ol" d="M0,-66 L7.5,-15 H-7.5 Z"/><path class="thin" d="M0,-56 V-18"/><rect class="gd ol" x="-13" y="-16" width="26" height="6"/><rect class="ink" x="-3.5" y="-10" width="7" height="32"/>';
-    case 'H':
-      return `${stem}<path class="ink" d="M0,-22 C-10,-28 -16,-22 -18,-14 C-10,-12 -4,-14 0,-22 Z M0,-28 C8,-36 16,-32 19,-24 C11,-20 4,-22 0,-28 Z"/><g transform="translate(0 -50) scale(1.75)" class="rd pst">${PIP.H}</g>`;
-    case 'D':
-      return `${stem}<path class="gl ol" d="M0,-74 L13,-50 L0,-26 L-13,-50 Z"/><path class="thin" d="M-5,-52 L3,-66"/><rect class="gd ol" x="-6" y="-28" width="12" height="5"/>`;
-    case 'C':
-      return `${stem}<path class="ink" d="M0,-20 C-9,-26 -15,-20 -17,-13 C-10,-11 -4,-13 0,-20 Z"/><g transform="translate(0 -50) scale(1.8)" class="ink pst">${PIP.C}</g>`;
-  }
-}
-
 const eye = (x: number, y: number, rx = 10, ry = 7.5) =>
   `<g transform="translate(${x} ${y})"><g class="lid"><ellipse class="pp" rx="${rx}" ry="${ry}"/><g class="iris"><circle class="rd" r="4.9"/><circle class="ink" r="2.2"/><circle class="pp" cx="1.6" cy="-1.6" r="0.9"/></g></g></g>`;
 
 const ROBE = 'M40,236 L60,146 C84,134 166,130 192,138 L214,236 Z';
 
-// ───────────────────────── Bustos ─────────────────────────
-// Cada busto devuelve [capa estática, capa viva]. La estática lleva el filtro de borde irregular;
-// la viva (ojos, joyas, arma) se anima sin obligar a repintar el filtro.
+// ───────────────────────── Busto viejo (retrato del Rey de Dos Caras) ─────────────────────────
 
 function king(s: Suit): [string, string] {
   const still = `
@@ -122,165 +94,19 @@ function king(s: Suit): [string, string] {
     <path class="cut heavy" d="M93,88 L120,82"/>
     <path class="gd ol" d="M88,72 L81,34 L100,52 L112,24 L125,48 L138,24 L150,52 L171,34 L164,72 Z"/><circle class="gd ol" cx="112" cy="24" r="4"/><circle class="gd ol" cx="138" cy="24" r="4"/>
     <path class="thin" d="M85,60 H167"/>`;
-  const live = `
-    ${eye(106, 98)}
-    <circle class="gem" style="--i:0" cx="100" cy="66" r="3.2"/><circle class="gem" style="--i:1" cx="126" cy="66" r="3.2"/><circle class="gem" style="--i:2" cx="152" cy="66" r="3.2"/>
-    <g transform="translate(206 124)"><g class="weapon">${longArm(s)}${FIST}</g></g>`;
-  return [still, live];
+  // V40: el busto viejo solo queda para el retrato del Rey de Dos Caras (sin brazo ni arma)
+  return [still, ''];
 }
 
-function queen(s: Suit): [string, string] {
-  const still = `
-    <path d="${ROBE}" fill="url(#pat-${s})" class="ol"/>
-    <path class="ink" d="M150,60 C176,72 186,116 180,156 C178,176 184,194 192,206 L138,206 C150,182 150,150 146,120 Z"/>
-    <path class="cut" d="M160,80 C174,106 174,140 168,170 C166,182 170,194 175,202 M152,88 C163,112 163,146 157,176 C155,186 157,196 161,203"/>
-    <path class="ink" d="M60,146 C84,134 166,130 192,138 L197,157 C170,148 84,152 56,165 Z"/>
-    <path class="pearl" d="M59,155 C84,143 168,139 194,147"/>
-    <path d="M168,196 L190,152 L226,158 L226,210 Z" fill="url(#pat-${s})" class="ol"/>
-    <path class="ink" d="M189,153 L226,159 L226,173 L184,165 Z"/>
-    <path class="ink" d="M96,70 L91,96 L80,111 L90,116 L88,123 L93,127 L90,134 C92,142 100,148 112,150 L118,172 L150,172 L156,140 L160,100 L156,68 Z"/>
-    <path class="rd" d="M86.5,121.5 L96,120 L93.5,127 L97,133 L89,135.5 L91.5,128 Z"/>
-    <path class="cut" d="M112,116 C118,119 121,125 119,131"/>
-    <path class="cut" d="M95,87 C104,80 115,80 123,85 M98,77 C118,66 144,70 157,94 M150,72 C158,86 160,102 158,120 M84,111 l5,-1 M100,90 l-3,-5 M107,88 l-1,-6 M114,89 l2,-5"/>
-    <path class="pearl" d="M119,160 C128,166 142,166 151,158"/>
-    <circle class="gd" cx="147" cy="120" r="6" stroke="#eae0ce" stroke-width="2"/>
-    <path class="gd ol" d="M92,60 L101,34 L110,60 Z M114,60 L125,23 L136,60 Z M140,60 L149,34 L158,60 Z"/>
-    <path class="gd ol" d="M90,73 L87,59 H163 L160,73 Z"/>`;
-  const live = `
-    ${eye(107, 99, 10, 7)}
-    <circle class="gem" style="--i:0" cx="101" cy="32" r="4"/><circle class="gem" style="--i:1" cx="125" cy="21" r="4.4"/><circle class="gem" style="--i:2" cx="149" cy="32" r="4"/>
-    <g transform="translate(207 168)"><g class="weapon">${shortArm(s)}${FIST}</g></g>`;
-  return [still, live];
-}
+// ── dorsos: V40 · un dorso pixel-art por Mazo (rombos en dos tintas y las cuatro pintas al centro) ──
 
-function jack(s: Suit): [string, string] {
-  const still = `
-    <path d="${ROBE}" fill="url(#pat-${s})" class="ol"/>
-    <path class="pp ol" d="M60,146 L74,172 L90,143 L105,174 L121,140 L137,173 L153,139 L169,168 L185,139 L192,138 C166,130 84,134 60,146 Z"/>
-    <path d="M172,156 L188,112 L224,118 L226,166 Z" fill="url(#pat-${s})" class="ol"/>
-    <path class="ink" d="M187,113 L225,119 L225,133 L183,126 Z"/>
-    <path class="ink" d="M138,66 L168,72 C177,96 179,120 173,140 C167,151 152,151 146,142 Z"/>
-    <path class="ink" d="M96,74 L92,98 L82,111 L91,116 L89,123 L94,127 L92,135 C94,142 102,147 114,149 L120,168 L150,168 L152,74 Z"/>
-    <path class="cut" d="M150,86 C160,102 164,120 160,138 M159,80 C168,98 172,118 168,136 M150,141 c4,6 12,6 16,0 M95,90 L119,88 M90,129 l10,1.5 M116,106 C121,111 122,117 120,122 M85,111 l5,-1"/>
-    <path class="gd ol" d="M82,77 C79,52 112,39 146,43 C167,47 175,61 171,77 Z"/>
-    <path class="ink" d="M79,72 H173 V81 H79 Z"/>
-    <path class="thin" d="M98,54 C118,45 144,46 160,57"/>
-    <path class="pp ol" d="M112,50 C106,27 86,15 62,19 C77,28 90,40 98,55 Z"/>
-    <path class="thin" d="M68,21 C85,29 98,41 106,52 M80,24 l-2,7 M88,29 l-3,7 M96,36 l-4,6"/>`;
-  const live = `
-    ${eye(106, 100, 9.5, 7.5)}
-    <circle class="gem" style="--i:0" cx="112" cy="52" r="4.4"/>
-    <g transform="translate(206 126) rotate(7)"><g class="weapon">${longArm(s)}${FIST}</g></g>`;
-  return [still, live];
-}
-
-// V10: el rótulo de la figura y el palo, en el idioma de la mesa
-// V40: la corte española, 10 Sota, 11 Caballo y 12 Rey (el Caballo usa por ahora el grabado de la figura del medio)
-const TITLE = { 10: 'ui.carta.sota', 11: 'ui.carta.caballo', 12: 'ui.carta.rey' } as const;
-const MATERIAL = (s: Suit) => palo(s);
-
-function figure(suit: Suit, rank: number): string {
-  const [still, live] = rank === REY ? king(suit) : rank === CABALLO ? queen(suit) : jack(suit);
-  const zoom = 'translate(125 40) scale(1.13) translate(-125 -40)';
-  const mirror = rank === CABALLO ? ` transform="translate(250 0) scale(-1 1) ${zoom}"` : ` transform="${zoom}"`;
-  const sx = rank === CABALLO ? -1 : 1;
-  const cap = `<text class="cap" transform="translate(23 188) rotate(-90)">${L(TITLE[rank as 10 | 11 | 12])} · ${MATERIAL(suit)}</text>`;
-  // capas de estampación: el sangrado de la tinta detrás del busto y la sombra tallada sobre el ropaje
-  const bleed = '<circle cx="128" cy="104" r="96" fill="url(#tone-ink)" opacity="0.32"/><path d="M10,10 H96 L10,118 Z" fill="url(#hatch-fine)" opacity="0.5"/>';
-  const carve = shade('M150,146 C170,138 184,136 192,138 L214,236 H150 Z', 'hatch-paper', 0.55) + shade('M40,236 L48,200 H98 L96,236 Z', 'hatch-cross', 0.5);
-  const halves = (body: string, extra = '') => `
-    <g clip-path="url(#half)" data-sx="${sx}" data-sy="1"><g${mirror}${extra}>${body}</g></g>
-    <g transform="rotate(180 125 175)"><g clip-path="url(#half)" data-sx="${-sx}" data-sy="-1"><g${mirror}${extra}>${body}</g></g></g>`;
-  return `
-    <svg class="ly art still" viewBox="0 0 250 350" aria-hidden="true">
-      <g filter="url(#rough)">
-        <g clip-path="url(#inframe)">${halves(bleed + still + carve)}</g>
-        <path class="belt" d="M-6,199.1 L256,150.9"/><path class="stitch" d="M-6,199.1 L256,150.9"/>
-      </g>
-      ${cap}<g transform="rotate(180 125 175)">${cap}</g>
-    </svg>
-    <svg class="ly art live" viewBox="0 0 250 350" aria-hidden="true"><g clip-path="url(#inframe)">${halves(live)}</g></svg>`;
-}
-
-// ───────────────────────── Numerales, ases y comodín ─────────────────────────
-
-/**
- * V11 · cara limpia (A a 10): un solo emblema del palo, macizo y con contorno de tinta, en el centro
- * del marfil. Cada palo con su escala, para que los cuatro midan lo mismo de ancho: 102 de 250 (41 %, más
- * el contorno); el rombo, que es estrecho, sube más. El contorno se dibuja debajo, con la misma silueta engordada, para que el trébol no enseñe las
- * costuras de sus tres círculos. Nada de trama, ruido ni marcas de registro dentro.
- */
-/** Escala del emblema por palo: ancho de la pinta (20 / 20 / 16,4 / 20,6 unidades) × k = 102. */
-const EMB_K: Record<Suit, number> = { S: 5.1, H: 5.1, D: 6.22, C: 4.95 };
-function numberArt(suit: Suit): string {
-  const k = EMB_K[suit];
-  const shape = pipSolid(suit);
-  return `<svg class="ly art face" viewBox="0 0 250 350" aria-hidden="true"><g transform="translate(125 175)"><g class="stamp" style="--i:0"><g class="pip" style="--i:0"><g transform="scale(${k})"><g class="emb-ink">${shape}</g><g class="${FILL[suit]}">${shape}</g></g></g></g></g></svg>`;
-}
-
-function jokerArt(): string {
-  const body = `
-    <path class="ink" d="M98,236 L104,128 L150,124 L158,236 Z"/>
-    <path class="rd" d="M103,140 L151,136 L152,150 L102,154 Z"/>
-    <path class="ink" d="M92,58 H156 a9,9 0 0 1 9,9 V112 a9,9 0 0 1 -9,9 H92 a9,9 0 0 1 -9,-9 V67 a9,9 0 0 1 9,-9 Z"/>
-    <path class="cut" d="M104,60 V92 M124,60 V92 M144,60 V92 M84,96 H138 a9,9 0 0 1 0,18 H92"/>
-    <path class="cut" d="M94,70 h4 M112,70 h4 M132,70 h4 M152,70 h4"/>`;
-  const rays = Array.from({ length: 9 }, (_, i) => `<path d="M0,-74 L5,-112 L-5,-112 Z" transform="rotate(${-80 + i * 20})"/>`).join('');
-  const half = `<g clip-path="url(#half)">${body}<g transform="translate(124 96)" class="ink">${rays}</g></g>`;
-  return `
-    <svg class="ly art still" viewBox="0 0 250 350" aria-hidden="true">
-      <path class="haz" d="M54,10 H240 V254 H196 V340 H10 V96 H54 Z"/>
-      <g filter="url(#rough)"><g clip-path="url(#inframe)">${half}<g transform="rotate(180 125 175)">${half}</g></g>
-        <path class="belt" d="M-6,199.1 L256,150.9"/><path class="stitch" d="M-6,199.1 L256,150.9"/>
-      </g>
-      <text class="cap" transform="translate(23 188) rotate(-90)">${L('ui.carta.motin')}</text><g transform="rotate(180 125 175)"><text class="cap" transform="translate(23 188) rotate(-90)">${L('ui.carta.motin')}</text></g>
-    </svg>
-    <svg class="ly art live" viewBox="0 0 250 350" aria-hidden="true">
-      <g transform="translate(206 60)"><path class="star" d="M0,-20 L5.5,-6.5 L20,-6.5 L8.5,2.5 L12.5,17 L0,8.5 L-12.5,17 L-8.5,2.5 L-20,-6.5 L-5.5,-6.5 Z"/></g>
-      <g transform="rotate(180 125 175)"><g transform="translate(206 60)"><path class="star" d="M0,-20 L5.5,-6.5 L20,-6.5 L8.5,2.5 L12.5,17 L0,8.5 L-12.5,17 L-8.5,2.5 L-20,-6.5 L-5.5,-6.5 Z"/></g></g>
-    </svg>`;
-}
-
-// ── dorsos: cada baraja inicial tiene el suyo ──
-
-interface BackDef {
-  field: string;
-  /** Celosía clara (sobre fondo oscuro) u oscura. */
-  dark: boolean;
-  diamond: string;
-  emblem: string;
-}
-/** Emblema de la conjura: una daga que atraviesa una corona. */
-const CONJURA = `<path d="M92,204 L88,164 L105,182 L125,152 L145,182 L162,164 L158,204 Z" fill="${PAPER}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><path d="M92,192 H158" stroke="${INK}" stroke-width="3"/>
-  <g transform="translate(125 178) rotate(35)"><path d="M-6,-64 L0,-80 L6,-64 V24 H-6 Z" fill="${PAPER}" stroke="${INK}" stroke-width="3"/><path d="M-20,24 H20 V32 H-20 Z" fill="${INK}" stroke="${PAPER}" stroke-width="1.5"/><rect x="-4" y="32" width="8" height="22" fill="${INK}"/><circle cy="60" r="7" fill="${PAPER}" stroke="${INK}" stroke-width="3"/></g>`;
-// V40 · un dorso por Mazo (de momento, los de las barajas viejas; el arte de cada Mazo llega en la fase 3)
-const BACKS: Record<string, BackDef> = {
-  escoba: { field: INK, dark: true, diamond: '#ae2d24', emblem: CONJURA },
-  truco: { field: 'url(#pat-S)', dark: true, diamond: INK, emblem: `<g transform="translate(125 158) scale(2.5)" fill="${PAPER}">${PIP.S}</g><g transform="translate(125 206) scale(1.7)" fill="${PAPER}">${PIP.C}</g>` },
-  chinchon: { field: '#f0b415', dark: false, diamond: INK, emblem: `<path d="M110,142 C100,132 104,124 112,128 L125,136 L138,128 C146,124 150,132 140,142 C168,154 172,214 125,216 C78,214 82,154 110,142 Z" fill="#f0b415" stroke="${PAPER}" stroke-width="3.5" stroke-linejoin="round"/><path d="M108,146 H142" stroke="${INK}" stroke-width="5"/><circle cx="125" cy="184" r="14" fill="none" stroke="${INK}" stroke-width="4"/><path d="M125,176 V192" stroke="${INK}" stroke-width="4"/>` },
-  mentiroso: { field: '#ae2d24', dark: true, diamond: PAPER, emblem: `<path d="M100,134 L97,112 L110,124 L125,104 L140,124 L153,112 L150,134 Z" fill="#ae2d24" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><text x="125" y="212" text-anchor="middle" font-family="'Archivo Black', sans-serif" font-size="96" fill="${INK}">A</text><g transform="translate(125 232) scale(1.3)" fill="#ae2d24">${PIP.S}</g>` },
-  chancho: { field: PAPER, dark: false, diamond: '#f0b415', emblem: `<g stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"><path d="M96,132 H124 L118,152 L128,170 L114,218 H96 Z" fill="${PAPER}" transform="rotate(-8 110 175)"/><path d="M130,132 H154 V218 H122 L136,170 L126,152 Z" fill="${PAPER}" transform="rotate(8 140 175)"/></g><g transform="translate(108 150) scale(0.9)" fill="#ae2d24">${PIP.H}</g>` },
-};
 let currentBack = 'escoba';
-/** Dorso con el que se dibujan las cartas a partir de ahora (la baraja de la campaña en curso). */
+/** Dorso con el que se dibujan las cartas a partir de ahora (el Mazo de la campaña en curso). */
 export function setDeckBack(id: string): void {
-  currentBack = BACKS[id] ? id : 'escoba';
+  currentBack = id || 'escoba';
 }
 export function backSvg(id = currentBack): string {
-  const b = BACKS[id] ?? BACKS.escoba;
-  const line = b.dark ? PAPER : INK;
-  return `
-  <svg class="art" viewBox="0 0 250 350" aria-hidden="true">
-    <rect width="250" height="350" fill="${INK}"/>
-    <rect x="10" y="10" width="230" height="330" fill="${b.field}"/>
-    <rect x="16" y="16" width="218" height="318" fill="url(#pat-back${b.dark ? '' : '-ink'})"/>
-    <rect x="16" y="16" width="218" height="20" fill="#7d1d17"/><rect x="16" y="314" width="218" height="20" fill="#7d1d17"/><path d="M16,26 H234 M16,324 H234" stroke="#e0a43a" stroke-width="2.5" stroke-dasharray="10 5"/>
-    <g filter="url(#rough)">
-      <rect x="10" y="10" width="230" height="330" fill="none" stroke="${line}" stroke-width="3"/>
-      <path d="M125,84 L196,175 L125,266 L54,175 Z" fill="${b.diamond}" stroke="${b.diamond === PAPER || b.diamond === '#f0b415' ? INK : PAPER}" stroke-width="4"/>
-      ${b.emblem}
-    </g>
-  </svg>`;
+  return dorsoSvg(id);
 }
 
 // ───────────────────────── Cartas especiales, herramientas y el Ferretero ─────────────────────────
@@ -290,20 +116,36 @@ const RAYS = Array.from({ length: 16 }, (_, i) => `<path d="M0,-70 L5,-112 L-5,-
 const nameText = (name: string, cls: string) =>
   `<text class="banner-txt ${cls}" x="124" y="270" text-anchor="middle" transform="rotate(-2.7 124 262)"${name.length > 9 ? ' textLength="192" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text>`;
 
-/** Carta especial: campo de tinta, emblema en un sol de papel y su nombre en una banda. */
+/** V40 · el nombre en una banda recta (pixel-art: sin giro). Mismo cuerpo de letra que la banda vieja. */
+const nameFlat = (name: string, cls: string, y = 266) =>
+  `<text class="banner-txt ${cls}" x="125" y="${y}" text-anchor="middle"${name.length > 9 ? ' textLength="196" lengthAdjust="spacingAndGlyphs"' : ''}>${name.toUpperCase()}</text>`;
+
+/** V40 · el filete de arlequín de las Trampas del Bufón: tramos rojos y azules alternos, sin cortes de palo. */
+const ARLEQUIN = (() => {
+  let rojo = '';
+  let azul = '';
+  const tramo = (x: number, y: number, w: number, h: number, i: number) => {
+    const d = `M${x},${y}h${w}v${h}h${-w}z`;
+    if (i % 2) azul += d;
+    else rojo += d;
+  };
+  for (let i = 0; i < 23; i++) tramo(10 + i * 10, 10, 10, 5, i), tramo(10 + i * 10, 335, 10, 5, i + 1);
+  for (let i = 0; i < 32; i++) tramo(10, 15 + i * 10, 5, 10, i + 1), tramo(235, 15 + i * 10, 5, 10, i);
+  return `<path fill="#b51f30" d="${rojo}"/><path fill="#2f5fb0" d="${azul}"/>`;
+})();
+
+/** Carta especial (Trampa del Bufón): marfil con filete de arlequín, el icono pixel-art grande y su nombre en una banda de oro. */
 function specialArt(card: Card): string {
   const s = SPECIAL[card.sp!];
-  return `<svg class="ly art" viewBox="0 0 250 350" aria-hidden="true">
-    <g filter="url(#rough)">
-      <rect class="ink" x="10" y="10" width="230" height="330"/>
-      <rect x="10" y="10" width="230" height="330" fill="url(#tone-paper)" opacity="0.13"/>
-      <path d="M10,10 H74 L10,74 Z M240,340 H176 L240,276 Z" fill="url(#hatch-paper)" opacity="0.55"/>
-      ${PORTRAIT[s.id] ? '<rect class="pp" x="44" y="22" width="162" height="212"/>' : `<g transform="translate(125 142)"><g class="pp burst">${RAYS}</g><circle class="pp" r="70"/><circle class="sp-ring" r="62"/></g>`}
-      ${PORTRAIT[s.id] ? '' : `<svg x="67" y="84" width="116" height="116" viewBox="0 0 100 100">${GLYPH[s.id] ?? ''}</svg>`}
-    </g>
-    ${PORTRAIT[s.id] ? `<svg x="50" y="28" width="150" height="200" viewBox="10 10 230 302" preserveAspectRatio="xMidYMid slice">${portraitBody(s.id)}</svg>` : ''}
-    <g filter="url(#rough)"><path class="${s.locked ? 'rd' : 'gd'}" d="M24,246 L226,236 L223,273 L21,283 Z"/></g>
-    ${nameText(espN(card.sp!), s.locked ? 'on-red' : 'on-gold')}
+  const icono = trampaSvg(s.id);
+  const dibujo = icono
+    ? icono.replace('<svg ', '<svg x="47" y="34" width="156" height="156" ')
+    : `<svg x="67" y="84" width="116" height="116" viewBox="0 0 100 100">${GLYPH[s.id] ?? ''}</svg>`;
+  return `<svg class="ly art px-cara px-trampa" viewBox="0 0 250 350" shape-rendering="crispEdges" aria-hidden="true">
+    ${ARLEQUIN}
+    ${dibujo}
+    <path fill="#1d1a17" d="M20,236h210v40h-210z"/><path fill="${s.locked ? '#8e1424' : '#e3b23c'}" d="M24,240h202v32h-202z"/>
+    ${nameFlat(espN(card.sp!), s.locked ? 'on-red' : 'on-gold')}
   </svg><div class="ly sp-desc">${espD(card.sp!)}</div>`;
 }
 
@@ -314,6 +156,22 @@ export function tileEl(glyph: string, name: string, kind: 'relic' | 'service', r
   const tone = kind === 'service' ? 'service' : rarity;
   el.className = `card k-tile t-${kind} r-${tone}`;
   const ground = kind === 'service' ? '<rect class="gd" x="10" y="10" width="230" height="330"/><rect x="10" y="10" width="230" height="330" fill="url(#hatch-fine)" opacity="0.28"/>' : plateFrame(rarity);
+  // V40 · un Amuleto con icono pixel-art: marfil, el icono grande y su nombre en una banda de tinta
+  const icono = kind === 'relic' ? amuletoSvg(glyph) : '';
+  if (icono) {
+    el.innerHTML = `
+    <div class="card-in"><div class="card-front">
+      <div class="ly paper"></div>
+      <svg class="ly art px-cara px-amuleto" viewBox="0 0 250 350" shape-rendering="crispEdges" aria-hidden="true">
+        ${icono.replace('<svg ', '<svg x="37" y="30" width="176" height="176" ')}
+        <path fill="#1d1a17" d="M20,236h210v40h-210z"/>
+        ${nameFlat(name, 'on-ink')}
+      </svg>
+      <div class="ly glare"></div>
+    </div><div class="card-back">${backSvg()}</div></div>`;
+    attachTilt(el);
+    return el;
+  }
   el.innerHTML = `
     <div class="card-in"><div class="card-front">
       <div class="ly paper"></div>
@@ -478,7 +336,10 @@ const PORTRAIT: Record<string, Portrait> = {
 
 /** Cuerpo de un retrato para incrustarlo donde haga falta (250 × 312, sin la banda del nombre). */
 function portraitBody(rid: string): string {
-  // V40 1c · el retrato de un Rey jefe ('j-espadas'…) es, de momento, el del monarca viejo de su palo
+  // V40 · fase 2: el Rey jefe ('j-espadas'…) tiene su busto pixel-art, sobre el marfil y con el filete de su palo
+  const rey = rid.startsWith('j-') ? rid.slice(2) : '';
+  if (esReyPx(rey)) return `<rect x="10" y="10" width="230" height="302" fill="#efe6d5"/><g shape-rendering="crispEdges">${reyRects(rey, 10, 82, 5.75)}</g>`;
+  // V40 1c · el resto de retratos (el Tratante) sigue en grabado
   const id = rid.startsWith('j-') && ARTE_REY[rid.slice(2)] ? `j-${ARTE_REY[rid.slice(2)]}` : rid;
   const p = PORTRAIT[id];
   return `<g filter="url(#rough)"><rect class="${p.bg}" x="10" y="10" width="230" height="330"/>${p.rays ? `<g transform="translate(125 150)" class="${p.bg === 'rd' ? 'ink' : 'pp'} port-rays">${RAYS}${RAYS.replace(/rotate\\((\\d+\\.?\\d*)\\)/g, (_, a) => `rotate(${Number(a) + 11.25}) scale(1.45)`)}</g>` : ''}${p.still}${shade('M240,312 H128 L240,170 Z', 'tone-ink', 0.3)}${shade('M10,10 H104 L10,126 Z', 'hatch-fine', 0.42)}</g>${p.live}`;
@@ -562,10 +423,6 @@ export function cardTip(card: Card): string {
 
 // ───────────────────────── Carta ─────────────────────────
 
-/** Marco de la carta con la trama de su palo: el palo se reconoce en gris por el borde. Las esquinas llevan placa encima. */
-const weaveFrame = (suit: Suit) =>
-  `<svg class="ly weave" viewBox="0 0 250 350" preserveAspectRatio="none" aria-hidden="true"><path fill-rule="evenodd" d="M7,7 H243 V343 H7 Z M21,21 V329 H229 V21 Z" fill="url(#trama-${suit})"/></svg>`;
-
 function corner(suit: CardSuit, rank: number, cls: string): string {
   const glyph = suit === 'X' ? '<span class="star-mini">★</span>' : suitSvg(suit);
   return `<div class="corner ${cls}${rank >= 10 ? ' wide' : ''}"><b>${RANK_LABEL[rank]}</b>${glyph}</div>`;
@@ -580,19 +437,17 @@ export function cardEl(card: Card, opts: { faceDown?: boolean; tilt?: boolean } 
   cardOf.set(el, card);
   const tip = cardTip(card);
   if (tip) el.dataset.tip = tip;
-  const art = card.sp ? specialArt(card) : card.suit === 'X' ? jokerArt() : esFigura(card.rank) ? figure(card.suit, card.rank) : numberArt(card.suit);
-  // las numeradas, de cara limpia: sin el marco de trama ni el grano del papel, y un solo índice (arriba a la
-  // izquierda): el emblema del centro ya dice el palo y la cara queda en marfil
+  // V40 · fase 2: cara pixel-art (pintas del 1 al 9, la Corte de cuerpo entero, el Bufón en el Comodín)
+  const art = card.sp ? specialArt(card) : card.suit === 'X' ? caraComodin() : caraPalo(card.suit, card.rank);
+  // las numeradas llevan un solo índice (arriba a la izquierda): sus pintas ya dicen el palo
   const limpia = kind === 'number' || kind === 'ace';
   el.innerHTML = `
     <div class="card-in">
       <div class="card-front">
         <div class="ly paper"></div>
-        ${card.sp || card.suit === 'X' || limpia ? '' : weaveFrame(card.suit)}
         ${art}
         <div class="ly idx">${card.sp ? '' : corner(card.suit, card.rank, 'tl') + (limpia ? '' : corner(card.suit, card.rank, 'br'))}</div>
         ${card.tr ? treatLayer(card.tr) + foilLayer(card.tr) : ''}${card.seal ? sealLayer(card.seal) : ''}
-        ${limpia ? '' : '<div class="ly grain"></div>'}
         <div class="ly glare"></div>
       </div>
       <div class="card-back">${backSvg()}</div>

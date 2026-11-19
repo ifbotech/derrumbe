@@ -7,11 +7,13 @@
      transform y opacity; ningún filtro vuelve a calcularse mientras algo se anima. */
 
 :root {
-  --table: #151412;
-  --table-2: #1d1b18;
-  --table-3: #26231f;
-  --table-4: #37322b;
-  --pit: #0d0c0b;
+  /* V40 · fase 2: mesa de paño verde pizarra, serena y lisa (misma luminancia que la pizarra de la 38.0: los
+     contrastes sobre la mesa no cambian) */
+  --table: #111614;
+  --table-2: #161d1a;
+  --table-3: #1c2421;
+  --table-4: #2b3530;
+  --pit: #0b0e0c;
   --card-paper: #efe6d5;
   --paper: #efe6d5;
   --paper-2: #dfd3bc;
@@ -41,9 +43,11 @@ body {
   color: var(--card-paper);
   font-variant-numeric: tabular-nums;
   background-color: var(--table);
-  /* la lámpara de dibujo: un cerco cálido en el centro que se apaga hacia los bordes */
-  background-image: var(--grain-table, none), radial-gradient(115% 85% at 50% 32%, #2d2822 0%, #1f1c18 44%, #151412 100%);
-  background-size: 256px 256px, cover;
+  /* V40 · fase 2: el paño de la mesa, sereno: rombos pixel-art apenas marcados (engraving.ts los hornea en
+     --grain-table) y una luz pareja que se apaga un poco hacia los bordes; nada de grabado ni de polvo */
+  background-image: var(--grain-table, none), radial-gradient(120% 90% at 50% 30%, #1d2723 0%, #151c19 50%, #111614 100%);
+  background-size: 24px 24px, cover;
+  image-rendering: pixelated;
   background-attachment: fixed;
 }
 body::after { content: none; }
@@ -1368,15 +1372,17 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
    Alto contraste (≥ 7:1 sobre el papel). El palo se distingue siempre también por su forma: ♠ ♥ ♦ ♣ van con
    su silueta en la esquina, en el emblema, en la cabecera del trono, en el poder y en la cuenta. */
 :root {
-  /* cuatro colores, sobre el marfil #efe6d5: ♠ 15:1 · ♥ 4,5:1 · ♦ 5,4:1 · ♣ 7,2:1 (desde la 38.0; emblema e índice grandes y con contorno) */
-  --suit-S: #161514;
-  --suit-H: #c8232c;
-  --suit-D: #1b5e9e;
-  --suit-C: #005442;
-  --suitd-S: #d9cfbb;
-  --suitd-H: #ef6a6e;
-  --suitd-D: #72aae2;
-  --suitd-C: #52b685;
+  /* V40 · fase 2 · cuatro colores de la baraja española pixel-art, sobre el marfil #efe6d5 (todo ≥ 7:1, índices y
+     contorno de las pintas): Espadas acero azul 9,2:1 · Copas carmesí 7,5:1 · Oros bronce 7,6:1 · Bastos verde oliva
+     8,1:1. Sobre la mesa (--suitd-*, ≥ 7:1 sobre --table-3): acero claro, rosa de copa, oro y oliva claro */
+  --suit-S: #1d3a66;
+  --suit-H: #8e1424;
+  --suit-D: #633f06;
+  --suit-C: #34481a;
+  --suitd-S: #9cc0ea;
+  --suitd-H: #f4a09c;
+  --suitd-D: #f0c75a;
+  --suitd-C: #b9cd6e;
 }
 /* la clásica: la que se imprimía en la 10.0 (tintas de 7:1 sobre el papel; el ocre de Diamantes, tostado) */
 :root.paleta-clasica {
@@ -1400,16 +1406,16 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
   --suitd-D: #ef6a6e;
   --suitd-C: #d9cfbb;
 }
-/* Alto contraste: el mismo tono, más oscuro, hasta ≥ 7:1 sobre el papel; la variante clara, más clara */
+/* Alto contraste: el mismo tono, más oscuro, hasta ≥ 10:1 sobre el papel; la variante clara, más clara */
 :root.contraste {
-  --suit-S: #161514;
-  --suit-H: #8e1219;
-  --suit-D: #154a7e;
-  --suit-C: #12523a;
-  --suitd-S: #efe6d5;
-  --suitd-H: #ffa3a3;
-  --suitd-D: #a9cdf2;
-  --suitd-C: #95dcb6;
+  --suit-S: #102a50;
+  --suit-H: #700e1b;
+  --suit-D: #4c3004;
+  --suit-C: #26340e;
+  --suitd-S: #c4dbf5;
+  --suitd-H: #ffb7b2;
+  --suitd-D: #f7d98a;
+  --suitd-C: #d3e29a;
 }
 :root.contraste.paleta-clasica {
   --suit-H: #7d1a13;

@@ -55,6 +55,9 @@ function tile(size: number, rgb: [number, number, number], density: number, stre
   return canvas.toDataURL('image/png');
 }
 
+/** V40 · el paño de la mesa: un rombo pixel-art de 12 × 12 celdas, apenas más claro que el verde pizarra. */
+const PANO_ROMBOS = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" shape-rendering="crispEdges"><path fill="#e8f0ea" fill-opacity="0.04" d="M5,2h2v1h1v1h1v1h1v2h-1v1h-1v1h-1v1h-2v-1h-1v-1h-1v-1h-1v-2h1v-1h1v-1h1z"/></svg>')}`;
+
 let baked = false;
 /** Hornea las teselas de grano y las deja en variables CSS (--grain-paper, --grain-ink, --grain-table). */
 export function bakeGrain(): void {
@@ -62,9 +65,9 @@ export function bakeGrain(): void {
   baked = true;
   const root = document.documentElement.style;
   const set = (name: string, url: string) => url && root.setProperty(name, `url(${url})`);
-  set('--grain-paper', tile(192, [60, 44, 26], 0.13, 0.2, 11)); // motas sepia sobre el papel
+  // V40 · fase 2: el pixel-art va en tinta plana. Sin motas sobre el papel; sobre la mesa, el paño de rombos
   set('--grain-ink', tile(192, [234, 224, 206], 0.1, 0.22, 23)); // calvas de papel sobre la tinta
-  set('--grain-table', tile(256, [255, 236, 200], 0.06, 0.07, 37)); // polvo claro sobre la mesa oscura
+  set('--grain-table', PANO_ROMBOS);
   // las cifras de los títulos góticos salen de su propia fuente (theme.css): se carga ya, antes del primer título
   void document.fonts?.load("800 16px 'Corona Cifras'", '0123456789').catch(() => undefined);
 }
