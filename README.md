@@ -1,39 +1,36 @@
 # SANGRE Y PALO · BLOOD & SUITS
 
-*La conjura de los naipes.* Roguelike de construcción de mazo con baraja española y estética de grabado brutalista. Diseño original:
-sois una conjura contra una corte de naipes, con hasta cuatro tronos por asalto, sus guardias que abatir y tu Vida en juego en cada Contraataque. Para 1 a 4 jugadores.
+*La conjura de los naipes.* Roguelike de construcción de mazo con baraja española, en pixel-art oscuro y tramado. Diseño original:
+ustedes son una conjura contra la corte de los naipes, Casa por Casa, con un enemigo a la vez delante, un Bufón que hace de anfitrión y tu Vida en juego en cada Contraataque. Para 1 a 4 jugadores.
 
-**Dos nombres, un juego.** En un navegador en español se llama **SANGRE Y PALO** y lleva, en una cinta de lacre, el sello **BLOOD & SUITS**. En cualquier otro idioma es al revés: **BLOOD & SUITS**, con el sello de origen **SANGRE Y PALO**. Así toda captura enseña los dos nombres. Desde la 10.0 el juego entero se juega en español o en inglés (ver [Idiomas](#idiomas)), y el nombre sigue al idioma que elijas. Hasta la 6.0 se llamó `CORONA ROTA` y, antes, `DERRUMBE`.
+**Dos nombres, un juego.** En un navegador en español se llama **SANGRE Y PALO** y lleva, en una cinta de lacre, el sello **BLOOD & SUITS**. En cualquier otro idioma es al revés: **BLOOD & SUITS**, con el sello de origen **SANGRE Y PALO**. Así toda captura enseña los dos nombres. Desde la 10.0 el juego entero se juega en español o en inglés (ver [Idiomas](#idiomas)), y el nombre sigue al idioma que elijas. Hasta la 6.0 se llamó `CORONA ROTA` y, antes, `DERRUMBE`. La 40.0 refundó el tema: la baraja francesa de la 38.0 sigue entera en la rama `legado/baraja-francesa-v38`.
 
 **Jugar en el navegador:** https://ifbotech.github.io/derrumbe/ (se publica sola en cada cambio; ver [Publicar](#publicar)). La dirección y el repositorio (`ifbotech/derrumbe`) conservan el nombre de antes.
 
-- **Campaña roguelike** en solitario o en conjura: **5 asaltos** que se juegan en unos 20 minutos, cada uno una sala del castillo. El primero tiene 2 tronos, el segundo 3 y los tres últimos 4; tres de ellos traen **monarca**, y el del Salón del Trono se sienta como **Rey Tirano** (o Reina Tirana). El **Mapa del castillo** los anuncia desde el principio, con rutas con **Juramento**, **La Pulpería**, **Secretos de la cripta** y un **Trono infinito** sin final.
-- **Daño × Multi = Golpe**, con el **Multi siempre entero** (de ×1 a ×4 según la formación): «25 × 4 = 100» se lee de un vistazo. Cada golpe se resuelve paso a paso, de izquierda a derecha. Antes de darlo, la mesa enseña el **Golpe en grande** con sus avisos (¡Exacto!, cae el guardia, Inmune) y, si lo pides, el **recibo** con lo que suma cada carta, acabado, sello y Amuleto.
-- **La baraja manda**: cartas solas, formaciones de póker y el **As cómplice**. Una sola regla de palos: **cada trono es Inmune a su propio palo** (esas cartas no le hacen Daño) y los demás palos valen su número; la placa «Inmune» del trono lo dice. La baraja es la española: del 1 al 9 de cada palo, dos Comodines y la corte enemiga (10 Sota, 11 Caballo y 12 Rey). Los cuatro palos —**Espadas, Oros, Copas y Bastos**— tienen su poder, y cada carta del palo da lo mismo: Bastos +2 de Escudo, Copas cura 2, Oros salpica 2 a los otros tronos y Espadas perfora.
-- **Golpe exacto**: abatir a un guardia con el Golpe justo anula el Contraataque, paga, roba y deja **Impulso** contra el guardia siguiente.
-- **Dos estados**: un golpe de un solo palo deja al trono **Expuesto** (el siguiente golpe hace ×2 de Daño); uno de tres palos lo deja **Aturdido** (se salta su próximo Contraataque).
-- **Asedio final**: ningún asalto se eterniza. Desde el turno 10, tus golpes llevan más Daño y los Contraataques pegan más: todo acaba en un crescendo.
-- **Amuletos** (22, en 4 rarezas —Común, Raro, Noble y Regio— y en 4 familias, una por Rey): cada uno cuenta como pieza de su Rey para los niveles [2/4], lleva su sello de nivel **S · A · B** (lo mide el laboratorio) y una **★** cuando encaja con tu Mazo o con un nivel. Caben 4, y 6 con la **Faja ancha** del Altar. Las **8 Trampas del Bufón** son las cartas especiales.
-- **La Manga** (te guardas una carta), **Rebobinar** (deshacer una jugada por asalto en solitario) y **reinicio rápido** manteniendo R.
+- **Campaña roguelike** en solitario o en conjura: **5 asaltos** que se juegan en unos 20 minutos, cada uno una sala del castillo, con 2, 3, 4, 4 y 4 Casas. Al cierre de los asaltos 2, 4 y 5 espera un **Rey jefe**. Entre asalto y asalto se elige camino en el **Mapa**; después del quinto sigue, si quedan ganas, el **Trono infinito**.
+- **La baraja española**: del 1 al 9 de cada palo y dos Comodines; los enemigos son la Corte, **10 Sota, 11 Caballo y 12 Rey**. Una sola regla de palos: **cada Casa es Inmune a su propio palo**. Cada carta de palo trae su poder: **Bastos** +2 de Escudo, **Copas** cura 2, **Oros** salpica 2 a las Casas que esperan y **Espadas** perfora.
+- **Daño × Multi = Golpe**, con el **Multi siempre entero** (de ×1 a ×4 según la formación): «25 × 4 = 100» se lee de un vistazo. Antes de golpear, la mesa enseña la cuenta en una sola barra y, si la abrís, el recibo de lo que suma cada carta y cada pieza.
+- **Golpe exacto**: abatir a un guardia con el Golpe justo anula el Contraataque, paga, roba y deja **Impulso** contra el siguiente. **Dos estados**: un golpe de un solo palo deja **Expuesto** (el siguiente golpe hace ×2 de Daño); uno de tres palos deja **Aturdido** (se salta su próximo Contraataque). La **Furia** sube el Ataque si estirás el asalto.
+- **5 Mazos** con reglas propias de naipes rioplatenses: **Escoba** (sumá 15), **Truco** (Envido y los bravos), **Chinchón** (pierna y escalera), **El Mentiroso** (Comodines y un Engaño por asalto) y **Chancho Va** (pasar una carta y el póker que aturde).
+- **4 Reyes y sus Bendiciones**: el de Espadas, el de Bastos, el de Oros y el de Copas te ofrecen Bendiciones que **cargan** cada vez que se cumple su condición («Espadas +6»), encienden **niveles [2/4]** y, de a pares, **Bendiciones Duales**. Como jefes, te hablan según a quién elegiste.
+- **22 Amuletos** en 4 familias, una por Rey, y **8 Trampas del Bufón** (las cartas especiales). Cada pieza lleva su **sello de nivel S · A · B**, que sale del laboratorio, y una **★** cuando encaja con tu Mazo o con un nivel de su Rey.
+- **El Mapa de caminos**: Guardia, **Guardia Bravo**, **Santuario del Bufón**, **Fogón** (Curar o Purgar gratis) y **La Pulpería** (Amuletos, sobres, Mesa de lacre, Pergaminos, **Purgar** y **Curar** con oro). Tras cada combate, el **Botín** se cobra por partes y cada **«Elegí una»** pone tres opciones a la vista.
+- **El Bufón**, anfitrión: guía con una frase los tres primeros golpes de la primera campaña (sin ventanas ni pausas; se apaga en Ajustes), se ríe de un Golpe exacto o de una Escoba, se burla de un Contraataque y tienta en los Santuarios.
+- **Mesa mínima**: el enemigo activo y la fila de los que esperan, una barra de la cuenta, la mano y dos botones, **Golpear** y **Descartar**. Deshacer, AUTO y Mejor jugada van discretos en la barra de arriba.
+- **Pixel-art oscuro y tramado**: naipes de papel hueso con su recuadro tradicional, la Corte de cuerpo entero, el Bufón y los Reyes en claroscuro, y la mesa, el Mapa y La Pulpería sobre una penumbra de vela. Todo texto ≥ 14 px e índices de palo a 7:1.
+- **La Manga** (te guardás una carta), **Rebobinar** (una jugada por asalto en solitario) y **reinicio rápido** manteniendo R.
 - **8 Reinados**, cada uno con un giro, y **sellos de maestría** en la colección.
-- **Lupa**: clic derecho o pulsación larga sobre cualquier carta, Amuleto, guardia o monarca.
+- **Lupa**: clic derecho o pulsación larga sobre cualquier carta, Amuleto, guardia o Rey.
 - **Causa de la derrota**: al perder, la Crónica dice en dos líneas qué se llevó tu Vida y por qué el Escudo no lo evitó; un aviso de último turno lo anticipa en la mesa.
-- **Archivo de crónicas**: las 25 últimas campañas, con su semilla para rejugarlas. Cada Crónica se descarga o se copia como **Lámina** de grabado, con un enlace (`?seed=…`) que carga esa misma campaña. Y **copia de seguridad** del progreso en un archivo.
+- **Archivo de crónicas**: las 25 últimas campañas, con su semilla para rejugarlas, y **copia de seguridad** del progreso en un archivo.
 - **Cooperativo online** con salas por código, servidor autoritativo y **señas** para proponer sin hablar.
-- **Teclado y mando** de principio a fin, sin acciones huérfanas (descartar, reordenar los Amuletos y pantalla completa también con mando), con un marco de foco de papel y tinta que se ve a distancia (la carta enfocada se levanta) y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una **barra al alcance del pulgar**.
-- **Cartas de cara limpia**: del As al 10, papel marfil con un índice grande y un solo palo grande y macizo en el centro. Las figuras, los monarcas y los Amuletos conservan el grabado.
-- **Baraja de cuatro colores** de serie: Espadas negro, Copas carmesí, Oros azul cobalto y Bastos verde. En **Ajustes → Colores de la baraja** se elige también la Clásica (con ocre para los Oros) o Dos tintas (rojo y negro). La forma del palo va siempre con su color, para distinguirlos sin él.
-- **Imprenta legible**: ningún texto por debajo de 13 px, ninguna cifra en letra de título, Vida y Ataque de los tronos en grande (el trono apuntado crece) y la **trama de grabado** de cada palo en los tronos, las figuras y los poderes.
-- **Español e inglés**, con el conmutador **ES | EN** en la Portada y en Ajustes: cambia al instante, sin recargar, y se recuerda.
-- **«Alto contraste»** en Ajustes: tinta negra sobre papel claro, bordes y tramas más gruesos y la mesa sin textura, sin mover nada de sitio. Se enciende solo si el sistema pide más contraste.
-- **Golpes que se sienten**: el naipe del guardia se parte de un tajo, la corona del trono estalla en esquirlas, el sello de lacre cae caliente sobre la carta y las monedas vuelan al contador, también en La Pulpería. Todo a 60 fotogramas por segundo y con **«Reducir movimiento»**, que lo deja en fundidos.
-- **Siete monarcas tiranos**, cada uno con su retrato de grabado, su maldición marcada sobre la mesa y su voz de mesa brava al entrar, al contraatacar y al caer.
-- **«Enviar Crónica / Feedback de Prueba»**: un botón en la Crónica y en Ajustes para mandar tu última campaña a quien te pasó el juego. Nada sale del equipo si no lo pulsas (ver [Datos de prueba y privacidad](#datos-de-prueba-y-privacidad)).
-- **Semilla personalizada** y **el Bufón**, que en los tres primeros golpes de la primera campaña suelta un consejo de una línea junto a la mano, sin ventanas y sin parar el juego (se apaga en Ajustes). Once **Susurros** saltan la primera vez que te encuentras cada cosa (trono Inmune, La Manga, Golpe exacto, Mesa de lacre, Atajo, monarca, Asedio final, Mazo bajo, trono ausente, Expuesto y Aturdido), con «No mostrar más» a un clic.
+- **Teclado y mando** de principio a fin, con un marco de foco que se ve a distancia y las indicaciones de cada botón en pantalla. En móvil, las acciones de combate van en una barra al alcance del pulgar.
+- **Español e inglés**, con el conmutador **ES | EN** en la Portada y en Ajustes: cambia al instante, sin recargar, y se recuerda. **«Alto contraste»** y **«Reducir movimiento»** en Ajustes.
+- **«Enviar Crónica / Feedback de Prueba»**: un botón en la Crónica y en Ajustes para mandar tu última campaña a quien te pasó el juego. Nada sale del equipo si no lo pulsás (ver [Datos de prueba y privacidad](#datos-de-prueba-y-privacidad)).
 
 Reglas completas en [REGLAS.md](REGLAS.md) (también dentro del juego, botón **Reglas**). Solo cinco palabras tienen significado propio —Daño, Multi, Golpe exacto, Expuesto y Aturdido—; todo lo demás se dice con palabras de baraja: Vida, Escudo, Mazo, Descarte, Contraataque.
 
-> SANGRE Y PALO comparte género con los cooperativos de naipes contra figuras, y como en ellos un trono no recibe daño de su propio palo. Lo demás es propio: los poderes de palo por carta, Expuesto y Aturdido, la cuenta Daño × Multi = Golpe, los Amuletos y la campaña no vienen de ningún otro juego.
+> SANGRE Y PALO comparte género con los cooperativos de naipes contra figuras, y como en ellos una Casa no recibe daño de su propio palo. Lo demás es propio: los poderes de palo por carta, Expuesto y Aturdido, la cuenta Daño × Multi = Golpe, los Mazos, los Reyes, el Bufón y la campaña no vienen de ningún otro juego.
 
 ## Uso
 
@@ -69,18 +66,18 @@ El resultado queda en `dist/web`, con rutas relativas, `manifest.webmanifest`, i
 
 | Comando | Qué hace |
 |---|---|
-| `npm test` | Pruebas del motor, la campaña, el Asedio final, el Bufón, las palabras clave, la imprenta, el vocabulario, la marca, la paridad de los dos idiomas y el puente de escritorio (Vitest), con 500 partidas de fuzz con semilla. Va en dos pasadas: todo menos cooperativo y, después, cooperativo aparte (ver [Pruebas en Windows](#pruebas-en-windows)) |
+| `npm test` | Pruebas del motor, la campaña, la Furia, los Mazos, los Reyes y sus Bendiciones, el Bufón, las palabras clave, la imprenta, el vocabulario, la marca, la paridad de los dos idiomas y el puente de escritorio (Vitest), con 500 partidas de fuzz con semilla. Va en dos pasadas: todo menos cooperativo y, después, cooperativo aparte (ver [Pruebas en Windows](#pruebas-en-windows)) |
 | `npm run typecheck` | Comprobación de tipos de todo el proyecto |
 | `npm run analyze:meta` | Laboratorio de balance: ~55.000 campañas con semilla (unos 25 minutos) → consola y `scripts/meta-report.json`. Con `-- foco`, `-- niveles`, `-- barajas` o `-- clasica` mide solo eso |
 | `npm run balance:tune` | Afinador: busca, campo a campo y dentro de ±15 %, cambios de los números de `src/rules/balance-config.json` que acerquen el laboratorio a sus objetivos. **Solo propone** (`artifacts/balance-tune/propuesta.json` y `.md`); con `-- --aplicar` escribe en el JSON lo ya confirmado con 1.500 campañas. `-- --minutos=30` fija el presupuesto (por defecto 45); `-- --probar=ruta=valor` mide una hipótesis sin aplicarla |
 | `npm run simulate` · `npm run simulate:run` | Simulaciones sueltas del Asalto único y de la campaña |
-| `npm run qa:visual` | Capturas sin ventana (Playwright) de 49 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM y de la imagen: texto ≥ 13 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste (y 7:1 con «Alto contraste»), cara limpia de las cartas numeradas, las tres paletas de la baraja, daltonismo, placa Inmune, los dos estados, mesas de 2, 3 y 4 tronos, jerga vieja y animaciones que solo mueven `transform` y `opacity` → `artifacts/visual-qa/` y su `report.json` |
+| `npm run qa:visual` | Capturas sin ventana (Playwright) de 49 estados en 4 tamaños (con ratón, con teclado y con mando), con auditoría del DOM y de la imagen: texto ≥ 14 px, cifras con placa, cero recortes, texto pisado, dianas ≥ 44 px, contraste (y 7:1 con «Alto contraste»), cara limpia de las cartas numeradas, las tres paletas de la baraja, daltonismo, placa Inmune, los dos estados, mesas de 2, 3 y 4 Casas, jerga vieja y animaciones que solo mueven `transform` y `opacity` → `artifacts/visual-qa/` y su `report.json` |
 | `npm run qa:visual -- --lang=en` | Lo mismo con el juego en inglés → `artifacts/visual-qa-en/`. Añade la regla «fuga»: ningún resto de español a la vista |
-| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón, una campaña de cinco asaltos jugada por el bot con el ratón (mide el tiempo de cada jugada), el cierre de una campaña a medias de la 10.0 y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Pulpería, Mesa de lacre y Secreto de la cripta; descartar con L3, reordenar los Amuletos con LB/RB también en combate, pantalla completa con R3, foco, Susurros e insignias), el conmutador ES \| EN y «Alto contraste» con teclado y con mando, una segunda pasada con «Reducir movimiento» y los datos de prueba con la red cortada: cuenta las peticiones al pulsar «Enviar Crónica / Feedback de Prueba» en una compilación normal y en otra con `VITE_TELEMETRY_URL` |
+| `npm run qa:smoke` | Juega de verdad en el navegador: teclado, ratón, una campaña de cinco asaltos jugada por el bot con el ratón (mide el tiempo de cada jugada), el cierre de una campaña a medias de la 10.0 y una campaña entera con un **mando virtual** (menú, asalto, reglas, ajustes, Botín, la Pulpería, Mesa de lacre, Mapa y Santuario del Bufón; descartar con L3, pantalla completa, foco, Susurros e insignias), el conmutador ES \| EN y «Alto contraste» con teclado y con mando, una segunda pasada con «Reducir movimiento» y los datos de prueba con la red cortada: cuenta las peticiones al pulsar «Enviar Crónica / Feedback de Prueba» en una compilación normal y en otra con `VITE_TELEMETRY_URL` |
 | `npm run qa:smoke -- --lang=en` | La misma prueba de humo con el navegador en inglés |
 | `npm run qa:fps` | Mide los fotogramas de cinco efectos (tajo, caída de un trono, lacre, monedas y barrido del foco) en 3 tamaños, con aceleración gráfica real, también la primera vez de cada uno en frío: falla si el renderizador es por software, si el p95 pasa del refresco de la pantalla o si un fotograma pasa de 50 ms → `artifacts/mision/v8/fps.json` |
 | `npm run qa:audio` | Escucha sin altavoces: genera unas 3 h de música y efectos con 3 semillas y falla si un tramo de más de 30 s se repite, si un efecto suena igual más de 8 veces seguidas o si una nota sale de re menor |
-| `npm run forja` | Banco de grabado: renderiza cada pieza del arte suelta (palos, tramas, cartas, Amuletos, Trampas, servicios, monarcas) a 24 y 300 px, mide su tinta y su silueta, y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
+| `npm run forja` | Banco del pixel-art: renderiza cada pieza suelta (palos, pintas, tramas, naipes, Amuletos, Trampas, Bendiciones, servicios, Reyes y el Bufón) a 24 y 300 px, mide su tinta y su silueta, y comprueba que los cuatro palos se distinguen sin color → `artifacts/svg-forge/` |
 | `npm run og` | Regenera las tarjetas para compartir (1200 × 630): `public/og-card-es.png`, `public/og-card-en.png` y `public/og-card.png`, que es la española |
 | `npm run docs` | Regenera `REGLAS.md` y las tablas de balance y controles de este archivo |
 
@@ -98,7 +95,7 @@ Para pasar un archivo suelto, los argumentos van a Vitest tal cual: `npm test --
 
 ### Idiomas
 
-El juego entero está en español y en inglés: reglas, cartas, Amuletos, monarcas, el Bufón, avisos, Susurros y pantallas. El conmutador **ES | EN** está en la Portada, junto al candado, y en Ajustes («Idioma · Language»). Cambia al instante y se guarda en este equipo. La primera vez manda el idioma del navegador: español si empieza por «es», inglés en los demás.
+El juego entero está en español y en inglés: reglas, cartas, Amuletos, Reyes, el Bufón, avisos, Susurros y pantallas. El conmutador **ES | EN** está en la Portada, junto al candado, y en Ajustes («Idioma · Language»). Cambia al instante y se guarda en este equipo. La primera vez manda el idioma del navegador: español si empieza por «es», inglés en los demás.
 
 Qué nombre ve quién: en español, **SANGRE Y PALO** con la cinta **BLOOD & SUITS**; en inglés, **BLOOD & SUITS** con la cinta **SANGRE Y PALO**. Una prueba de paridad (`tests/i18n.test.ts`) exige las mismas claves, las mismas variables y las mismas cifras en los dos idiomas. En inglés la coma decimal pasa a punto.
 
@@ -114,25 +111,24 @@ Lo que **no** está hecho: la envoltura no se ha compilado nunca, el lado Rust d
 
 El flujo [`.github/workflows/ci-deploy.yml`](.github/workflows/ci-deploy.yml) comprueba tipos y pruebas en cada cambio y, en `main`, publica `dist/web` en GitHub Pages. Solo hay que activarlo una vez en el repositorio: **Settings → Pages → Source: GitHub Actions**. La página queda en https://ifbotech.github.io/derrumbe/.
 
-Al compartir el enlace sale la tarjeta de `public/og-card.png` (la española; la inglesa, `public/og-card-en.png`, queda lista para quien la quiera). Si publicas el juego en otra dirección, cambia las tres direcciones completas de las etiquetas `og:` de [index.html](index.html).
+Al compartir el enlace sale la tarjeta de `public/og-card.png` (la española; la inglesa, `public/og-card-en.png`, queda lista para quien la quiera). Si publicás el juego en otra dirección, cambiá las tres direcciones completas de las etiquetas `og:` de [index.html](index.html).
 
 Variables al construir: `VITE_SERVER` (servidor de salas fijo para el cooperativo), `VITE_COMMUNITY_URL` (a dónde lleva «Comunidad y comentarios» en Ajustes; por defecto, los avisos de este repositorio; si apunta a los avisos de un repositorio de GitHub, aparece también «Abrir aviso») y `VITE_TELEMETRY_URL` (recolector de los datos de prueba; ver la sección siguiente).
 
 ## Cómo se juega una campaña
 
-1. **El Sobre lacrado.** Empiezas con una baraja inicial y tres cartas especiales.
-2. **El Mapa del castillo.** Enseña los cinco asaltos y, desde el principio, qué monarca espera en el 2, el 4 y el 5, y qué palos defienden los dos primeros. En los asaltos sin monarca (el 1 y el 3) eliges **ruta**, cada una con un **Juramento**; antes del 3 también puedes tomar el **Atajo** y saltártelo a cambio de un **Atajo de conspirador**.
-3. **El asalto.** Eliges cartas y la mesa te enseña **Daño × Multi = Golpe** contra cada trono, con sus avisos (Golpe exacto, Escudo, Contraataque, si la jugada se puede rebobinar). Al golpear, cada carta, sello de lacre, acabado y Amuleto se activa en orden. Si el asalto se alarga, el **Asedio final** sube las apuestas para los dos lados.
-4. **El Botín.** Oro con interés, el resultado del Juramento y **una de tres opciones a la vista** para el Mazo. Los monarcas dejan un Amuleto.
-5. **La Pulpería.** El Tratante vende Amuletos en su placa (según la rareza), Sobres lacrados, Pergaminos, la **Mesa de lacre**, **La hoguera** y «Renovar mesa».
-6. **Secretos de la cripta** tras los asaltos 2 y 4: dilemas con premio y precio.
-7. Tras el quinto asalto, el del Rey Tirano, la **Crónica** se puede copiar como texto o llevarse como Lámina, y queda en el archivo. Y si quedan ganas, el **Trono infinito**.
+1. **El Mazo.** Elegís uno de los 5 (la Escoba está desde el principio; los demás se ganan con logros). Cada uno trae su Vida, su mano y sus reglas.
+2. **La salida.** El Sobre lacrado mete tres Trampas del Bufón en tu Mazo, el **Don del Bufón** te da a elegir uno de tres regalos y dos Reyes te ofrecen tu primera Bendición.
+3. **El asalto.** Las Casas se pelean de a una, con el enemigo activo delante. Elegís cartas y la mesa te muestra **Daño × Multi = Golpe** con sus avisos (Golpe exacto, cae el guardia, Inmune, Contraataque). En los asaltos 2, 4 y 5, el último guardia es un **Rey jefe** con su rasgo y su Furia.
+4. **El Botín.** Oro, una **«Elegí una»** (Trampas o una carta sellada, una Bendición tras los asaltos de Rey) y, tras un Rey, su **Cofre**. Cada parte se cobra o se salta.
+5. **El Mapa.** Antes de cada asalto, un camino de dos nodos entre Guardia, Guardia Bravo, Santuario del Bufón, Fogón y La Pulpería, que siempre queda al alcance; y otra Bendición.
+6. Tras el quinto asalto, la **Crónica** se puede copiar como texto o llevarse como Lámina, y queda en el archivo. Y si quedan ganas, el **Trono infinito**.
 
 ### El Altar
 
-Ganes o pierdas, cada campaña deja **Esquirlas de Corona**: las que caen a la mesa con cada golpe, las que multiplica la tirada de huesos y el cobro del final. Con ellas se compran nodos del **Altar**, que tiene cuatro ramas. En **El Arsenal** no se compra poder bruto: se **abren arcones**. El surtido base es corto a propósito; cuatro arcones, uno por Rey, abren el resto de los Amuletos de su familia, y la **Faja ancha** da 2 huecos más. **La Bolsa**, **Los Huesos** y **La Corona de hierro** dan más esquirlas, mejores dados y poder en el Trono infinito: no hacen la campaña más fácil. Los **logros** desbloquean barajas iniciales y cartas legendarias, y ganar una campaña estampa un **sello de maestría** (bronce, hierro u oro, según el Reinado) en la baraja y en cada Amuleto que llevabas.
+Ganes o pierdas, cada campaña deja **Esquirlas de Corona**: las que caen a la mesa con cada golpe, las que multiplica la tirada de huesos y el cobro del final. Con ellas se compran nodos del **Altar**, que tiene cuatro ramas. En **El Arsenal** no se compra poder bruto: se **abren arcones**. El surtido base es corto a propósito; cuatro arcones, uno por Rey, abren el resto de los Amuletos de su familia, y la **Faja ancha** da 2 huecos más. **La Bolsa**, **Los Huesos** y **La Corona de hierro** dan más esquirlas, mejores dados y poder en el Trono infinito: no hacen la campaña más fácil. Los **logros** desbloquean los Mazos, y ganar una campaña estampa un **sello de maestría** (bronce, hierro u oro, según el Reinado) en el Mazo y en cada Amuleto que llevabas.
 
-El **Archivo de crónicas** guarda las 25 últimas campañas: resultado, asalto y monarca, turnos, mayor Golpe, Amuletos y semilla, con un botón para **rejugar la semilla** y otro para copiar la Crónica.
+El **Archivo de crónicas** guarda las 25 últimas campañas: resultado, asalto y Rey, turnos, mayor Golpe, Amuletos y semilla, con un botón para **rejugar la semilla** y otro para copiar la Crónica.
 
 En solitario, la campaña y el Altar se guardan en el dispositivo; las claves del guardado siguen siendo `derrumbe:*`, así que el progreso de antes se conserva. Desde **Ajustes** se puede **exportar el progreso** a un archivo .json e **importarlo** en otro navegador u otro equipo. Todo lo que el juego le pide a la máquina (guardar, archivos, pantalla completa, vibración, logros del sistema, enlaces, dirección del servidor) pasa por `PlatformBridge` (`src/client/platform.ts`). Dentro de la envoltura de escritorio, el juego cambia solo al puente de Tauri (ver [Escritorio y Steam](#escritorio-y-steam)).
 
@@ -154,11 +150,11 @@ docker build -t sangre-y-palo .
 docker run -p 3000:3000 sangre-y-palo
 ```
 
-Detrás de un proxy inverso, recuerda permitir la actualización a WebSocket en la ruta `/ws`.
+Detrás de un proxy inverso, recordá permitir la actualización a WebSocket en la ruta `/ws`.
 
 ### Controles
 
-Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el botón del mando si lo último que tocaste fue un mando.
+Los botones de la mesa enseñan su atajo: la tecla si jugás con teclado, el botón del mando si lo último que tocaste fue un mando.
 
 <!-- controles:inicio -->
 | Acción | Teclado y ratón | Mando |
@@ -171,7 +167,6 @@ Los botones de la mesa enseñan su atajo: la tecla si juegas con teclado, el bot
 | Rebobinar (deshacer) | Z | R3 (pulsar la palanca derecha) |
 | Descartar lo elegido | Supr | L3 (pulsar la palanca izquierda) |
 | Atrás / soltar la selección | Esc | B |
-| ui.ctl.saltar | Esc | B |
 | Ver el Mazo y el Descarte | Tab | LB |
 | Lupa | L · clic derecho · pulsación larga | RB |
 | Cambiar la velocidad (1× → 2× → 4× → 8×) | botón de la barra | RT |
@@ -200,17 +195,17 @@ Para quien prueba el juego con amigos y familia. Lo hace `src/client/telemetry.t
 - la causa de la derrota (la misma que enseña la Crónica);
 - con qué jugaste (ratón, táctil, teclado o mando) y el tamaño de la ventana, redondeado a 10 px.
 
-**Qué no se guarda nunca**: tu nombre ni el de nadie, el código de la sala, texto escrito por ti, la hora, ni ningún identificador que te reconozca de una partida a otra.
+**Qué no se guarda nunca**: tu nombre ni el de nadie, el código de la sala, texto escrito por vos, la hora, ni ningún identificador que te reconozca de una partida a otra.
 
 **Cómo verlo y borrarlo.** En **Ajustes → Datos de prueba** se lee cuántas campañas hay y cuánto ocupan. «Ver» enseña el JSON tal cual, sin retocar. «Borrar» elimina la clave entera. Borrar los datos del sitio en el navegador también lo borra.
 
-**Qué sale del equipo.** Nada, salvo que se cumplan **las dos** cosas: la versión se construyó con `VITE_TELEMETRY_URL` **y** pulsas «Enviar Crónica / Feedback de Prueba». No hay envío en segundo plano, ni al cerrar, ni con temporizadores. La línea de Ajustes dice qué hace tu versión:
+**Qué sale del equipo.** Nada, salvo que se cumplan **las dos** cosas: la versión se construyó con `VITE_TELEMETRY_URL` **y** pulsás «Enviar Crónica / Feedback de Prueba». No hay envío en segundo plano, ni al cerrar, ni con temporizadores. La línea de Ajustes dice qué hace tu versión:
 
-- **Sin `VITE_TELEMETRY_URL`** (la versión publicada): «Nada sale de este equipo: el botón copia o descarga». Al pulsar, copia al portapapeles un resumen de 6 líneas como mucho (marca y versión, resultado, asalto, causa, La Manga y Rebobinar, y un enlace con la semilla) y descarga `sangre-y-palo-feedback-AAAA-MM-DD.json` con el registro de tu última campaña. En un móvil que lo permita, abre la hoja de compartir y eliges tú a quién. Lo mandas tú, por donde quieras.
+- **Sin `VITE_TELEMETRY_URL`** (la versión publicada): «Nada sale de este equipo: el botón copia o descarga». Al pulsar, copia al portapapeles un resumen de 6 líneas como mucho (marca y versión, resultado, asalto, causa, La Manga y Rebobinar, y un enlace con la semilla) y descarga `sangre-y-palo-feedback-AAAA-MM-DD.json` con el registro de tu última campaña. En un móvil que lo permita, abre la hoja de compartir y elegís vos a quién. Lo mandás vos, por donde quieras.
 - **Con `VITE_TELEMETRY_URL`**: cada pulsación hace **una** petición POST a esa dirección con el registro de tu última campaña, y nada más. Si falla, el botón hace lo mismo que sin la variable. Como en cualquier petición web, el recolector ve la dirección IP de quien la manda: el juego no la añade ni la guarda.
-- **«Abrir aviso»** (si `VITE_COMMUNITY_URL` apunta a los avisos de un repositorio de GitHub) abre la página de aviso nuevo con el resumen ya escrito. No se manda nada hasta que lo publicas tú allí.
+- **«Abrir aviso»** (si `VITE_COMMUNITY_URL` apunta a los avisos de un repositorio de GitHub) abre la página de aviso nuevo con el resumen ya escrito. No se manda nada hasta que lo publicás vos allí.
 
-**Para quien despliega un recolector.** Construye con la variable:
+**Para quien despliega un recolector.** Construí con la variable:
 
 ```bash
 VITE_TELEMETRY_URL=https://tu-recolector.example/recoger npm run build:web
@@ -253,9 +248,9 @@ Por Mazo (Reinado 1, 1500 campañas por celda). Objetivo: todas entre el 28–34
 | El Mentiroso | 30 % | 47 % | +17 |
 | Chancho Va | 31,7 % | 48,4 % | +16,7 |
 
-Monarcas: de cada vez que una campaña llega a uno, cuántas acaban ahí (media 18,3 %). Objetivo: todos entre 0,8× y 1,25× de la media.
+Reyes jefe: de cada vez que una campaña llega a uno, cuántas acaban ahí (media 18,3 %). Objetivo: todos entre 0,8× y 1,25× de la media.
 
-| Monarca | Letalidad | Frente a la media |
+| Rey jefe | Letalidad | Frente a la media |
 |---|---|---|
 | El Rey de Espadas | 18,1 % | ×0,99 |
 | El Rey de Bastos | 20,7 % | ×1,13 |
@@ -291,12 +286,12 @@ Desde la 5.0 el juego se hace con un pequeño estudio de agentes de Claude Code,
 |---|---|
 | `director` | `ROADMAP_V5_V10.md`, `ROADMAP_V11.md`, `SPECS/`, `CHANGELOG.md`, `STEAM_BUILD.md`, la prosa de este archivo y la decisión de publicar o apartar una versión |
 | `reglas-balance` | `src/rules/`, la marca (`src/shared/brand.ts`), el laboratorio (`scripts/analyze-meta.ts`), el reglamento y `tests/`; vigila la constitución anticomplejidad |
-| `arte-ui` | estilos, maquetación, grabado SVG (tronos, Amuletos, monarcas, naipes), textos de pantalla, la QA visual y el banco de grabado |
-| `juice-ux` | mando y teclado, Susurros, el Bufón, la voz de los monarcas, efectos, sonido, la red del cooperativo y la prueba de humo |
+| `arte-ui` | estilos, maquetación, pixel-art en SVG (naipes, pintas, la Corte, Reyes, Amuletos y el Bufón), textos de pantalla, la QA visual y el banco del pixel-art |
+| `juice-ux` | mando y teclado, Susurros, el Bufón vivo, la voz de los Reyes, efectos, sonido, la red del cooperativo y la prueba de humo |
 
 Cinco habilidades (`.claude/skills/`) recogen el oficio que se repite: `brutalist-print-ui` (reglas de imprenta), `engraving-svg-forge` (dibujar y comprobar el arte), `playwright-deck-qa` (QA en las cuatro ventanas y con mando virtual), `regicide-synergy-math` (laboratorio e invariantes) y `autonomous-sprint-loop` (el bucle de versiones).
 
-**Constitución anticomplejidad** (desde la 11.0), comprobada por `npm test`: como mucho 5 palabras clave, de 20 a 24 Amuletos en 4 familias y 8 Trampas, ninguna descripción de más de 115 caracteres en español ni en inglés, el Multi siempre entero y ningún asalto con un percentil 95 por encima de 15 turnos.
+**Constitución anticomplejidad** (desde la 11.0), comprobada por `npm test`: como mucho 5 palabras clave, de 20 a 24 Amuletos en 4 familias y 8 Trampas, ninguna descripción de más de 115 caracteres en español ni en inglés, el Multi siempre entero y ningún asalto con su percentil 95 de turnos por encima de los topes de `scripts/objetivos.ts`.
 
 La hoja de ruta de la 6.1 a la 10.0 está en [ROADMAP_V5_V10.md](ROADMAP_V5_V10.md) y la de la 11.0, con lo que queda después, en [ROADMAP_V11.md](ROADMAP_V11.md); hay una especificación por versión en [SPECS/](SPECS/). Desde la 6.1 cada versión se hace por celdas, de una en una y en el orden que fija su especificación, sobre la rama `release/v{n}`; cada celda deja su señal de fin en `artifacts/mision/v{n}/`. El panel simulado audita con 60 personas la 6.1, la 7.0, la 8.0 y la 9.0, con las 240 la V10, y con las 60 la 11.0, en español y en inglés. Qué cambió de la 4.0 a la 10.0, con las cifras del panel y del laboratorio y una guía para probar el juego con amigos y familia: [EVOLUCION_V4_V10.md](EVOLUCION_V4_V10.md); de la 10.0 a la 11.0: [EVOLUCION_V11.md](EVOLUCION_V11.md). El guion por lotes de la 5.0 sigue disponible; para ver su plan sin tocar nada:
 
@@ -315,14 +310,17 @@ Por cada versión abre una rama, lanza una sesión por celda de la especificaci�
 ```
 src/
   rules/        Motor de reglas puro, determinista y sin dependencias
-    balance-config.json · balance-config.ts   los 244 números que se afinan (asaltos, Reinados, monarcas, precios, Amuletos…), con tipos
-    engine.ts     estado, acciones, golpe (Daño × Multi), Asedio final, La Manga, Rebobinar, eventos, vista por jugador
+    balance-config.json · balance-config.ts   los 244 números que se afinan (asaltos, Reinados, Reyes, Mazos, precios, Amuletos…), con tipos
+    engine.ts     estado, acciones, golpe (Daño × Multi), Furia, La Manga, Rebobinar, eventos, vista por jugador
     state-hash.ts resumen determinista de una vista, para que el cooperativo detecte una mesa desincronizada
     tools.ts      los 22 Amuletos
-    specials.ts   cartas especiales y legendarias
+    specials.ts   las 8 Trampas del Bufón (cartas especiales)
+    mazos.ts      los 5 Mazos y sus reglas
+    reyes.ts      los 4 Reyes, sus Bendiciones, cargas, niveles [2/4] y Duales
+    mapa.ts       el Mapa de caminos (Guardia, Bravo, Santuario, Fogón, Pulpería)
     keywords.ts   las cinco palabras clave y cómo se marcan en los textos
     autopsy.ts    causa de la derrota (qué se llevó tu Vida) y aviso de último turno
-    run.ts        campaña (reductor): los cinco asaltos, Mapa del castillo, Juramentos, Botín, la Pulpería, Secretos de la cripta, Reinados, el Altar
+    run.ts        campaña (reductor): los cinco asaltos, Mapa, Botín y «Elegí una», la Pulpería, el Fogón, Santuarios del Bufón, Reinados, el Altar
     migracion.ts  lo que hereda un guardado de la 10.0: abono de la campaña a medias, récords sobre 5 y actas «de 8»
     achievements.ts  logros, colección y lo que desbloquean
     bot.ts        bot de asalto y de campaña (simulación y sustituto de desconectados)
@@ -336,20 +334,20 @@ src/
     core.ts · platform.ts · net.ts · router.ts   estado, puente con la plataforma, conexión
     home.ts · lobby.ts · guild.ts                portada, vestíbulo, Altar, colección y Archivo de crónicas
     campaign.ts · runscreens.ts                  motor de campaña del cliente y sus pantallas (mapa, Botín, la Pulpería, Mesa de lacre)
-    table.ts                                     mesa de combate (de dos a cuatro tronos, placa Inmune, Asedio final)
-    guia.ts · voces.ts                           monarca y maldición en la mesa, y su voz
+    table.ts                                     mesa de combate (el enemigo activo y la fila, placa Inmune, Furia)
+    guia.ts · voces.ts                           el Rey jefe y su rasgo en la mesa, y su voz
     cuenta.ts · causa.ts · lamina.ts             cuenta central y su recibo, causa de la derrota, Lámina de la Crónica y enlace con semilla
     whispers.ts                                  Susurros contextuales
     nav.ts · prompts.ts                          foco para teclado y mando, e indicaciones de cada botón
     lupa.ts · flavor.ts · pings.ts               Lupa, epígrafes, señas
     widgets.ts · backup.ts · fx.ts               Amuletos, visor de Mazo y Descarte, ajustes, copia de seguridad, efectos
-    card.ts · art.ts · glyphs.ts · engraving.ts  grabado en SVG: naipes, tronos, retratos, iconos, tramas de palo y grano
+    card.ts · art.ts · glyphs.ts · engraving.ts  dibujo en SVG (el pixel-art vive en `pixel/`): naipes, retratos, iconos y tramas
     tinta.ts                                     aviso de tinta desvanecida en las cajas con desplazamiento
     audio.ts · audio-frases.ts                   efectos y música sintetizados, con mezcla y máster; el generador de frases con semilla
     telemetry.ts                                 datos de prueba locales y el botón «Enviar Crónica / Feedback de Prueba»
-    qa.ts · forja-qa.ts                          estados fijos para las capturas y banco de grabado (solo con ?qa)
-tests/          Vitest: motor, campaña, Asedio final y Escudo, autopsia, el Bufón, palabras clave, invariantes anticomplejidad, imprenta, vocabulario, marca, balance-config, afinador, datos de prueba y cooperativo con WebSocket de verdad
-scripts/        Laboratorio de balance y afinador, control de calidad (capturas, humo, mando virtual), banco de grabado, tarjeta social y reglamento
+    qa.ts · forja-qa.ts                          estados fijos para las capturas y el banco del pixel-art (solo con ?qa)
+tests/          Vitest: motor, campaña, Furia y Escudo, Mazos, Reyes, golpe único, autopsia, el Bufón, palabras clave, invariantes anticomplejidad, imprenta, vocabulario, marca, balance-config, afinador, datos de prueba y cooperativo con WebSocket de verdad
+scripts/        Laboratorio de balance y afinador, control de calidad (capturas, humo, mando virtual), el banco del pixel-art, tarjeta social y reglamento
 tauri/          Envoltura de escritorio (Tauri v2): configuración, sin compilar (ver STEAM_BUILD.md)
 ```
 
@@ -360,8 +358,8 @@ tauri/          Envoltura de escritorio (Tauri v2): configuración, sin compilar
 - **Animación por eventos.** Cada golpe produce una lista de eventos que el cliente encola y anima; las reglas no saben nada de lo visual.
 - **Marca en un solo sitio.** Las dos caras de la marca (título, sello y lema de cada idioma) salen de `src/shared/brand.ts`, que elige la cara por el idioma del navegador; `index.html` y el manifest, que son estáticos, lo llevan escrito, y `tests/marca.test.ts` falla si no casan. Los identificadores internos (`id` de datos, clases CSS, protocolo, claves `derrumbe:*`) no cambiaron con el tema.
 - **Mando.** `nav.ts` lee el mando estándar del W3C (cruceta, palanca con zona muerta de 0,28, repetición a los 320 ms y cada 110 ms) y lo traduce a las mismas acciones que el teclado. La prueba de humo inyecta un mando virtual y juega una campaña entera con él.
-- **Grabado.** Todo el arte es SVG dibujado a mano: figuras de corte de doble cabeza, cartas numeradas de cara limpia, tronos con su estandarte, monarcas reconocibles por su objeto, sombras de buril y la baraja de cuatro colores (negro, carmesí, azul cobalto y verde), con la clásica y las dos tintas en Ajustes. El grano del papel se hornea una vez en un lienzo; lo que se mueve solo cambia `transform` y `opacity`.
-- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta. Un generador puro con semilla (`audio-frases.ts`) escribe la partitura compás a compás, en re menor, con motivos propios en cada asalto y en el Mapa, La Pulpería y la portada; el WebAudio solo la toca. La música gana tambores y metales ante un monarca o cuando tu Vida está en apuros, y la campana del Golpe exacto sube un semitono por cada exacto seguido.
+- **Pixel-art.** Todo el arte es SVG a celda entera (`shape-rendering="crispEdges"`, sin degradados ni alfa), con tramado Bayer, punteado y rayado, paleta híper-saturada con sombras al violeta y una sola luz de arriba a la izquierda (`src/client/pixel/`). Los naipes llevan papel hueso, el recuadro tradicional de cada palo y las pintas en su disposición de siempre; la Corte va de cuerpo entero. Lo que se mueve solo cambia `transform` y `opacity`.
+- **Sonido.** Sin archivos de audio: efectos y música se sintetizan con WebAudio, con buses separados, compresor y reverberación corta. Un generador puro con semilla (`audio-frases.ts`) escribe la partitura compás a compás, en re menor, con motivos propios en cada asalto y en el Mapa, La Pulpería y la portada; el WebAudio solo la toca. La música gana tambores y metales ante un Rey jefe o cuando tu Vida está en apuros, y la campana del Golpe exacto sube un semitono por cada exacto seguido.
 
 Todo el stack es open source: TypeScript, Vite, ws, Vitest, esbuild, Playwright y las tipografías Cinzel (los títulos), UnifrakturCook, Grenze Gotisch, Archivo, Archivo Black y Space Mono (OFL).
 

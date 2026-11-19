@@ -1,8 +1,8 @@
 {
   "name": "sangre-y-palo",
-  "version": "38.0.0",
+  "version": "40.0.0",
   "private": true,
-  "description": "SANGRE Y PALO · BLOOD & SUITS — roguelike de conjura con baraja francesa: Daño × Multi = Golpe, seis reliquias, La Manga, ocho Reinados y campaña cooperativa online (1-4 jugadores)",
+  "description": "SANGRE Y PALO · BLOOD & SUITS — roguelike de conjura con baraja española en pixel-art: Daño × Multi = Golpe, 5 Mazos, 4 Reyes y sus Bendiciones, el Bufón, ocho Reinados y campaña cooperativa online (1-4 jugadores)",
   "type": "module",
   "license": "MIT",
   "scripts": {

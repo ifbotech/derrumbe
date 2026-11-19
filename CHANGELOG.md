@@ -2,6 +2,34 @@
 
 Todas las versiones notables de SANGRE Y PALO · BLOOD & SUITS (la 6.0 se llamó CORONA ROTA; hasta la 5.0, DERRUMBE). Las cifras de balance salen del laboratorio (`npm run analyze:meta`). Las del panel salen de una simulación: con n = 240 tienen unos ±6 puntos de ruido; con la auditoría rápida de 60 personas, unos ±12.
 
+## 40.0.0 · Refundación rioplatense — 2026-11-19
+
+El juego cambia de baraja, de anfitrión y de cara. Lo pidió el usuario tras probar la 38.0: la baraja francesa queda entera en la rama `legado/baraja-francesa-v38` (etiqueta `v38.0.0`) y esta versión empieza de nuevo con naipes españoles, un Bufón que hace de anfitrión y una mesa con lo justo. No pasó por el panel simulado: la línea base se mide después de publicar.
+
+### La baraja y la mesa
+- **Baraja española en pixel-art oscuro y tramado**: Espadas, Bastos, Oros y Copas (Swords, Clubs, Coins y Cups), del 1 al 9 de cada palo y dos Comodines. Los enemigos son la Corte: **10 Sota, 11 Caballo y 12 Rey**. Papel hueso con el recuadro tradicional de cada palo, pintas en su disposición de siempre, la Corte de cuerpo entero y una sola luz de vela; nada de ♠ ♥ ♦ ♣.
+- **Mesa mínima, HUD único**: el enemigo activo y la fila de los que esperan arriba, una sola barra de la cuenta **Daño × Multi = Golpe**, la mano grande y dos botones, **Golpear** y **Descartar**. Deshacer, AUTO y Mejor jugada van discretos en la barra de arriba. Todo texto a 14 px o más.
+- **El Bufón**, anfitrión: máscara de marfil y capucha de cascabeles. Guía con una frase los tres primeros golpes de la primera campaña, se ríe de un Golpe exacto, una Escoba o un Envido, se burla cuando te contraatacan, te tienta en los Santuarios y se pone sombrío cuando queda poca Vida. Sus frases no se repiten ni tapan la mano.
+- **Sin Asalto diario ni Partida guiada**: el juego es la Campaña (y el Asalto único para la mesa con naipes de verdad). Portada mínima: Jugar · Altar · Colección · Ajustes.
+
+### La campaña
+- **5 Mazos** con reglas de naipes rioplatenses: **Escoba** (si el golpe suma 15, ¡Escoba!), **Truco** (del 1 al 7, los bravos y el Envido), **Chinchón** (pierna y escalera del palo), **El Mentiroso** (Comodines de más y un Engaño por asalto) y **Chancho Va** (pasar una carta y el póker que aturde en cadena). La Escoba está desde el principio; los demás se ganan con logros.
+- **4 Reyes y sus Bendiciones**: Espadas, Bastos, Oros y Copas te ofrecen Bendiciones al empezar y antes de cada asalto. Cada una **carga** cuando se cumple su condición («Espadas +6») y con 2 y 4 piezas de un Rey se encienden sus **niveles**; las **Duales** son de dos Reyes. Al cierre de los asaltos 2, 4 y 5 espera un **Rey jefe** con retrato, rasgo, Furia propia y frases según a quién elegiste.
+- **22 Amuletos** en 4 familias (una por Rey) y **8 Trampas del Bufón** en lugar de las 52 Reliquias y las 25 especiales. Cada pieza lleva su **sello de nivel S · A · B**, medido por el laboratorio, y una **★** cuando encaja con tu Mazo o con un nivel de su Rey.
+- **Mapa de caminos**: dos nodos entre asalto y asalto, entre Guardia, Guardia Bravo, Santuario del Bufón, Fogón (Curar o Purgar gratis, y una Bendición al dejarlo) y **La Pulpería**, que siempre queda al alcance.
+- **Botín por partes y «Elegí una»**: oro, una elección de tres a la vista (Trampas, una carta sellada, una Bendición o el Cofre del Rey) y cada parte se cobra o se salta.
+- **La Pulpería** (antes la Taberna): Amuletos, sobres, Mesa de lacre, Pergaminos, **Purgar** y **Curar** con oro.
+- **Escala de Vida nueva**: se empieza con 59 a 76 de Vida según el Mazo y los guardias van a 25, 35 y 45 de base; ningún guardia ni ningún Rey jefe en sus tres primeros turnos te mata de un golpe con la Vida llena (lo vigila `tests/golpe-unico.test.ts`).
+
+### Laboratorio (47.680 campañas, 1.500 por celda; sin avisos)
+- Reinado 1 (Escoba): **29,3 %** con el Altar vacío y **48,4 %** lleno; Reinado 8: 8,5 % y 16,9 %, y cada Reinado más difícil que el anterior.
+- Los 5 Mazos entre el 29,3 y el 31,7 % con el Altar vacío (2,4 puntos de punta a punta) y entre el 44,7 y el 48,4 % lleno.
+- Reyes jefe entre ×0,92 y ×1,13 de la letalidad media (18,3 %). Turnos por asalto: medianas 5, 9, 9, 10 y 10 con P95 7, 13, 13, 14 y 15; **19,2 minutos** de campaña estimada. Nadie muere en el asalto 1.
+- Asalto único: 61,1 · 64,2 · 62,5 · 61,5 % con 1 a 4 jugadores.
+
+### Textos
+- Todo en voseo rioplatense en español («Elegí una», «empezás», «podés»). Ni monarcas ni Rey Tirano: **Rey jefe** (*boss King*); el Don de la Conjura es el **Don del Bufón**. La prueba de vocabulario lo vigila, junto con la Taberna, las Reliquias, el Árbol y los palos franceses.
+
 ## 38.0.0 — 2026-11-18
 
 Se lee de lejos. Toda la versión es de legibilidad para el Steam Deck (1280×800) y el portátil (1366×768): letra, contraste y aire. No cambia ninguna regla.
