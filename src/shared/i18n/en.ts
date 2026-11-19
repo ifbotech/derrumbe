@@ -161,7 +161,7 @@ const MONARCAS: Record<string, MonarcaEn> = {
     nombre: 'The King of Coins',
     decreto: 'Tithe',
     desc: 'While he leads, he rolls a die each turn: his Counterattack adds +1 to +{dado}.',
-    badge: 'Adds a die of +1 to +{dado}',
+    badge: 'A die of +1 to +{dado}',
     entrada: 'Everything has a price at my table, even your luck. Bet?',
     contraataque: 'The house always collects, dear. Tonight I am the house.',
     caida: 'You emptied my chest... take the trump card, it is over.',

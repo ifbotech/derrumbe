@@ -169,7 +169,7 @@ export const BOSSES: Boss[] = [
     name: 'Diezmo',
     desc: 'Mientras está al frente, cada turno tira un dado: su Contraataque suma de +1 a +{dado}.',
     barks: { entrada: 'Todo tiene precio en mi mesa, hasta tu suerte. ¿Apostamos?', contraataque: 'La casa siempre cobra, querido. Y hoy la casa soy yo.', caida: 'Me vaciaste el arcón... llevate el naipe bravo, ya fue.' },
-    curse: { mark: 'contraataque', badge: 'Suma un dado de +1 a +{dado}' },
+    curse: { mark: 'contraataque', badge: 'Dado de +1 a +{dado}' },
     apply: (c) => void (c.jefe && (c.jefe.dado = RY.oros.dado)),
   },
   {
