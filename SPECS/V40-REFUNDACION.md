@@ -56,8 +56,9 @@ Alto contraste, más hondos (≥ 10:1).
 
 ## 3. El Bufón, anfitrión
 
-- Personaje central original: **marotte** (cetro de bufón) con máscara pálida, capucha roja de puntas con cascabeles de
-  oro y cintas azules. Pixel-art limpio.
+- Personaje central original: **marotte** (cetro de bufón) con máscara de marfil afilada (cuencas hondas, sonrisa
+  torcida de muñeco de madera antiguo), capucha carmesí y púrpura de puntas con cascabeles de oro y cintas. Pixel-art
+  oscuro y tramado (§8): inquietante, nunca tierno; que no se sepa si es aliado o demonio burlón.
 - Vivo a 60 fps con `transform`/`opacity` o cuadros pixel-art: reposo respirando, risa (Golpe exacto, Escoba, Envido,
   Chancho), burla (te contraatacan), ojos que brillan (apuestas y santuarios), cara sombría (último turno o poca Vida).
   Respeta «Reducir movimiento» (cuadro fijo).
