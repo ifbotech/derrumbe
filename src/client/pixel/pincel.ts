@@ -6,7 +6,7 @@
 // Ideas adaptadas de pxl (https://github.com/uilianks/pxl, licencia MIT, © 2026 crsolver y uilianks): dibujar con
 // primitivas en vez de rejillas grandes, la mitad de lo simétrico más su espejo, rampas de tono por material y la luz de
 // un solo lado. El código es nuestro.
-import type { Mapa } from './rejilla';
+import { heredar, marcarTrama, tramaDe, type Mapa } from './rejilla';
 
 const VACIO = '.';
 
@@ -15,11 +15,24 @@ export class Lienzo {
   readonly w: number;
   readonly h: number;
   private c: string[][];
+  /** Celdas puestas por el tramado (pixel/dither.ts): el linter no las cuenta como ruido. */
+  private t: Uint8Array;
 
   constructor(w: number, h: number) {
     this.w = w;
     this.h = h;
     this.c = Array.from({ length: h }, () => Array.from({ length: w }, () => VACIO));
+    this.t = new Uint8Array(w * h);
+  }
+
+  /** Marca una celda como tramada (la pone el tramado; cualquier otra pincelada la desmarca). */
+  marcar(x: number, y: number): this {
+    if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.t[y * this.w + x] = 1;
+    return this;
+  }
+  /** ¿La celda la puso el tramado? */
+  tramada(x: number, y: number): boolean {
+    return x >= 0 && y >= 0 && x < this.w && y < this.h && this.t[y * this.w + x] === 1;
   }
 
   /** Un lienzo a partir de un mapa ya hecho. */
@@ -27,6 +40,8 @@ export class Lienzo {
     const w = Math.max(0, ...m.map((r) => r.length));
     const l = new Lienzo(w, m.length);
     m.forEach((r, y) => [...r].forEach((k, x) => l.set(x, y, k === ' ' ? VACIO : k)));
+    const t = tramaDe(m);
+    if (t && t.length === l.t.length) l.t.set(t);
     return l;
   }
 
@@ -35,7 +50,10 @@ export class Lienzo {
   }
 
   set(x: number, y: number, k: string): this {
-    if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.c[y][x] = k;
+    if (x >= 0 && y >= 0 && x < this.w && y < this.h) {
+      this.c[y][x] = k;
+      this.t[y * this.w + x] = 0;
+    }
     return this;
   }
 
@@ -50,7 +68,10 @@ export class Lienzo {
     for (let y = 0; y < this.h; y++)
       for (let x = 0; x < this.w; x++) {
         if (solo !== undefined && !solo.includes(this.c[y][x])) continue;
-        if (dentro(x + 0.5, y + 0.5)) this.c[y][x] = k;
+        if (dentro(x + 0.5, y + 0.5)) {
+          this.c[y][x] = k;
+          this.t[y * this.w + x] = 0;
+        }
       }
     return this;
   }
@@ -140,26 +161,63 @@ export class Lienzo {
             break;
           }
       }
-    for (const [x, y] of marca) this.c[y][x] = k;
+    for (const [x, y] of marca) {
+      this.c[y][x] = k;
+      this.t[y * this.w + x] = 0;
+    }
+    return this;
+  }
+
+  /**
+   * El canto de una masa: las celdas de `claros` que tocan el papel (vecindad de 4) toman la tinta `k`. Así un tono
+   * claro de la rampa (brillo, lima, oro solar) no queda en el borde y la silueta llega a 3:1 sobre el papel.
+   */
+  canto(claros: string, k: string, masa?: string): this {
+    const marca: [number, number][] = [];
+    for (let y = 0; y < this.h; y++)
+      for (let x = 0; x < this.w; x++) {
+        if (!claros.includes(this.c[y][x])) continue;
+        const fuera = (dx: number, dy: number) => (masa ? !this.lleno(x + dx, y + dy, masa) : !this.lleno(x + dx, y + dy));
+        if (fuera(1, 0) || fuera(-1, 0) || fuera(0, 1) || fuera(0, -1)) marca.push([x, y]);
+      }
+    for (const [x, y] of marca) {
+      this.c[y][x] = k;
+      this.t[y * this.w + x] = 0;
+    }
     return this;
   }
 
   /** Copia la mitad izquierda sobre la derecha, en espejo (eje entre columnas: ancho par). */
   espejoX(): this {
-    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w >> 1; x++) this.c[y][this.w - 1 - x] = this.c[y][x];
+    for (let y = 0; y < this.h; y++)
+      for (let x = 0; x < this.w >> 1; x++) {
+        this.c[y][this.w - 1 - x] = this.c[y][x];
+        this.t[y * this.w + this.w - 1 - x] = this.t[y * this.w + x];
+      }
     return this;
   }
 
   /** Pega un mapa con su esquina en (x, y); el papel del mapa no tapa. */
   pegar(m: Mapa | Lienzo, x: number, y: number): this {
     const filas = m instanceof Lienzo ? m.mapa() : m;
-    filas.forEach((r, dy) => [...r].forEach((k, dx) => k !== VACIO && k !== ' ' && this.set(x + dx, y + dy, k)));
+    const t = tramaDe(filas);
+    const [w] = [Math.max(0, ...filas.map((r) => r.length))];
+    filas.forEach((r, dy) =>
+      [...r].forEach((k, dx) => {
+        if (k === VACIO || k === ' ') return;
+        this.set(x + dx, y + dy, k);
+        if (t?.[dy * w + dx]) this.marcar(x + dx, y + dy);
+      }),
+    );
     return this;
   }
 
   /** El dibujo como mapa de caracteres. */
   mapa(): string[] {
-    return this.c.map((r) => r.join(''));
+    return marcarTrama(
+      this.c.map((r) => r.join('')),
+      this.t.slice(),
+    );
   }
 }
 
@@ -167,7 +225,11 @@ export class Lienzo {
 export function girar(m: Mapa): string[] {
   const h = m.length;
   const w = Math.max(0, ...m.map((r) => r.length));
-  return Array.from({ length: w }, (_, x) => Array.from({ length: h }, (_, y) => m[h - 1 - y][x] ?? VACIO).join(''));
+  return heredar(
+    Array.from({ length: w }, (_, x) => Array.from({ length: h }, (_, y) => m[h - 1 - y][x] ?? VACIO).join('')),
+    m,
+    (x, y) => [y, h - 1 - x],
+  );
 }
 
 /** Recorta un mapa a la caja de lo pintado. */
@@ -186,7 +248,11 @@ export function recortar(m: Mapa): string[] {
     }),
   );
   if (x1 < 0) return [VACIO];
-  return m.slice(y0, y1 + 1).map((r) => r.padEnd(x1 + 1, VACIO).slice(x0, x1 + 1));
+  return heredar(
+    m.slice(y0, y1 + 1).map((r) => r.padEnd(x1 + 1, VACIO).slice(x0, x1 + 1)),
+    m,
+    (x, y) => [x + x0, y + y0],
+  );
 }
 
 /**

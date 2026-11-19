@@ -1,5 +1,7 @@
-// V40 · fase 2b · Las cuatro pintas de la baraja española en pixel-art «sin línea»: espada, basto, oro y copa. Sin
-// contorno negro: cada masa lleva su tono propio y su lado de sombra abajo a la derecha (luz de arriba a la izquierda).
+// V40 · fase 2c · Las cuatro pintas de la baraja española en pixel-art «Dark Dithered & Textured»: espada, basto, oro y
+// copa. Sin contorno negro: cada masa lleva su rampa saturada con su lado de sombra abajo a la derecha (luz de arriba a
+// la izquierda), y el paso entre tonos es una trama de Bayer contenida dentro del metal, la corteza o el oro. El canto de
+// cada masa queda en un tono que llega a 3:1 sobre el papel hueso (la silueta se lee a 70 px sin contorno).
 //
 // Tres tamaños por palo, todos de la misma rejilla del naipe (96 × 140 celdas):
 //   · chica (4 a 9): espada 13 × 37, basto 14 × 36, oro 26 × 26, copa 26 × 27. El 8 y el 9 usan la misma que el 4.
@@ -7,7 +9,8 @@
 //   · el glifo de la interfaz (índice, poderes, la cuenta): compacto, en las tintas hondas del palo (≥ 7:1) y con un
 //     halo de marfil de una celda para leerse también sobre la mesa oscura.
 import type { Suit } from '../../rules/engine';
-import { tintas, trocar, type Material } from './paleta';
+import { rayado, sombrear } from './dither';
+import { tintas, type Material } from './paleta';
 import { Lienzo } from './pincel';
 import { contorno, medida, rects, type Mapa } from './rejilla';
 
@@ -24,52 +27,60 @@ function espada(w: number, hoja: number, puño: number, ancho: number, ornada: b
   const cx = (w - 1) / 2;
   const x0 = cx - (ancho - 1) / 2;
   const punta = Math.max(2, ancho);
-  // hoja: canto de acero, vaceo claro y filo en sombra a la derecha
+  // hoja: de cobalto a cian filo, con la trama de luz a lo ancho (luz de la izquierda)
   for (let y = 0; y < hoja; y++) {
     const t = y < punta ? Math.floor(((punta - y) * ancho) / (2 * punta)) : 0;
-    for (let x = x0 + t; x <= x0 + ancho - 1 - t; x++) l.set(x, y, 'c');
+    for (let x = x0 + t; x <= x0 + ancho - 1 - t; x++) l.set(x, y, '¤');
   }
-  l.sombra('c', 'b', 1, 0, ancho >= 5 ? 2 : 1);
-  if (ancho >= 3) l.rect(x0 + 1, punta, ornada ? 2 : 1, hoja - punta - 1, 'C');
-  if (ornada) l.rect(cx, punta + 2, 1, hoja - punta - 6, 'b');
+  sombrear(l, '¤', 'BbcCA', { luz: [-1, 0], base: 0.5, pendiente: 1.15, borde: 0, brillo: 0, ancho: 0.8 });
+  // el filo que corre hasta la punta y, en la ornada, el vaceo central
+  if (ornada) l.rect(cx, punta + 1, 1, hoja - punta - 4, 'A');
+  l.canto('CA', 'c');
   // guarda: gavilanes de oro con las puntas vueltas hacia arriba
   const gy = hoja;
-  l.rect(1, gy, w - 2, guarda - 1, 'y');
-  l.rect(1, gy + guarda - 1, w - 2, 1, 'o');
-  l.set(0, gy - 1, 'y').set(0, gy, 'o').set(w - 1, gy - 1, 'y').set(w - 1, gy, 'o');
+  l.rect(1, gy, w - 2, guarda, '¤');
+  l.set(0, gy - 1, '¤').set(0, gy, '¤').set(w - 1, gy - 1, '¤').set(w - 1, gy, '¤');
   if (ornada) {
-    l.rect(2, gy, w - 4, 1, 'Y');
-    l.rect(cx - 2, gy - 2, 5, 2, 'y').set(cx - 2, gy - 2, 'Y');
-    l.set(1, gy - 2, 'y').set(w - 2, gy - 2, 'y');
+    l.rect(cx - 2, gy - 2, 5, 2, '¤');
+    l.set(1, gy - 2, '¤').set(w - 2, gy - 2, '¤');
     // el guardamano en D, de la guarda al pomo, a la derecha
     const py = gy + guarda + puño;
-    l.rect(w - 3, gy + guarda, 2, puño, 'o').rect(w - 3, gy + guarda, 1, puño, 'y');
-    l.rect(cx + 2, py, w - 3 - cx - 2 + 2, 2, 'o');
+    l.rect(w - 3, gy + guarda, 2, puño, '¤');
+    l.rect(cx + 2, py, w - 3 - cx - 2 + 2, 2, '¤');
   }
-  // empuñadura trenzada de carmesí y oro
+  sombrear(l, '¤', '9zoOyY', { base: 0.62, pendiente: 1, borde: 1, fuerzaBorde: 0.35, brillo: 1, fuerzaBrillo: 0.3 });
+  l.canto('yYO', 'o');
+  if (!ornada) l.set(1, gy, 'O');
+  else l.set(2, gy, 'Y').set(cx - 1, gy - 1, 'Y');
+  // empuñadura trenzada de carmesí sangre y oro
   const py0 = gy + guarda;
   const pw = ornada ? 5 : 3;
   const px0 = cx - (pw - 1) / 2;
   for (let y = py0; y < py0 + puño; y++)
-    for (let x = px0; x < px0 + pw; x++) l.set(x, y, (x - px0 + y) % 3 === 0 ? 'y' : x === px0 + pw - 1 ? 'R' : 'r');
+    for (let x = px0; x < px0 + pw; x++) l.set(x, y, (x - px0 + y) % 3 === 0 ? 'O' : x === px0 + pw - 1 ? 'v' : x === px0 ? 'r' : 'R');
   // pomo de oro con su brillo
   const qy = py0 + puño;
   if (ornada) {
-    l.elipse(cx + 0.5, qy + 4.5, 4.6, 4.6, 'y');
-    l.sombra('y', 'o', 1, 1, 2);
-    l.set(cx - 2, qy + 2, 'Y').set(cx - 1, qy + 2, 'Y').set(cx - 2, qy + 3, 'Y');
+    l.elipse(cx + 0.5, qy + 4.5, 4.6, 4.6, '¤');
+    sombrear(l, '¤', '9zoOyY', { base: 0.62, pendiente: 1, borde: 2, fuerzaBorde: 0.4, brillo: 1, fuerzaBrillo: 0.35 });
+    l.canto('yYO', 'o');
+    l.set(cx - 2, qy + 2, 'Y').set(cx - 1, qy + 2, 'Y');
   } else {
-    l.rect(cx - 1, qy, 3, 1, 'y').rect(cx - 2, qy + 1, 5, 1, 'y').rect(cx - 1, qy + 2, 3, 1, 'o');
-    l.set(cx + 2, qy + 1, 'o').set(cx - 1, qy, 'Y');
+    l.rect(cx - 1, qy, 3, 1, 'o').rect(cx - 2, qy + 1, 5, 1, 'o').rect(cx - 1, qy + 2, 3, 1, 'z');
+    l.set(cx - 1, qy + 1, 'Y').set(cx, qy + 1, 'y').set(cx + 2, qy + 1, 'z');
   }
   return l.mapa();
 }
 
 // ───────────── basto ─────────────
 
+/** El color de la guía que envuelve cada variante de basto: ámbar, sangre u oro (la corteza es siempre esmeralda). */
+const GUIA: Record<Material, [string, string]> = { oliva: ['O', 'o'], rojo: ['r', 'R'], oro: ['y', 'o'], acero: ['c', 'b'], cinta: ['t', 'T'], madera: ['d', 'n'], gris: ['J', 'j'], piel: ['p', 's'], purpura: ['q', 'F'] };
+
 /**
- * Basto: garrote nudoso, ancho arriba y afinado hacia el puño, con nudos de rama cortada, un brote y una guía que lo
- * envuelve. `mat` es su madera pintada (oliva, carmesí u oro, alternando como en la baraja).
+ * Basto: garrote de corteza esmeralda, nudoso, ancho arriba y afinado hacia el puño, con muñones de rama cortada (la
+ * cara del corte, rojo sangre con su corazón de ámbar), estrías de corteza del lado de la sombra, un brote de lima y una
+ * guía que lo envuelve. `mat` elige el color de la guía (ámbar, sangre u oro), alternando como en la baraja.
  */
 function basto(w: number, h: number, mat: Material, grande: boolean): string[] {
   const l = new Lienzo(w, h);
@@ -82,10 +93,10 @@ function basto(w: number, h: number, mat: Material, grande: boolean): string[] {
     const t = (y - top) / (h - 1 - top);
     const r = rTop + (rBot - rTop) * t ** 0.8;
     const ox = Math.sin(t * Math.PI * 1.6) * (grande ? 1.2 : 0.6);
-    l.elipse(cx + ox, y + 0.5, r, 1.2, 'r');
+    l.elipse(cx + ox, y + 0.5, r, 1.2, '¤');
   }
-  l.elipse(cx, top + 1, rTop, top + 0.5, 'r');
-  // nudos: muñones de rama a los lados, con la cara del corte clara
+  l.elipse(cx, top + 1, rTop, top + 0.5, '¤');
+  // nudos: muñones de rama a los lados
   const nudos: [number, number][] = grande
     ? [[0, 0.24], [1, 0.42], [0, 0.6], [1, 0.76]]
     : [[0, 0.32], [1, 0.62]];
@@ -93,126 +104,134 @@ function basto(w: number, h: number, mat: Material, grande: boolean): string[] {
     const y = Math.round(top + t * (h - top));
     const r = rTop + (rBot - rTop) * t ** 0.8;
     const x = lado ? Math.round(cx + r) : Math.round(cx - r) - (grande ? 2 : 1);
-    l.rect(x, y, grande ? 3 : 2, grande ? 3 : 2, 'r');
+    l.rect(x, y, grande ? 3 : 2, grande ? 3 : 2, '¤');
   }
-  // volumen: sombra a la derecha, brillo fino a la izquierda arriba
-  l.sombra('r', 'R', 1, 0, grande ? (mat === 'oro' ? 7 : 4) : 3);
-  l.sombra('r', 'e', -1, 0, 1, 'rR');
-  l.cambiar('e', 'r', [0, Math.round(h * 0.55), w, h]);
-  // el oro se lee poco sobre el marfil: su lado de sombra baja también por el canto de abajo a la izquierda
-  if (mat === 'oro') {
-    l.sombra('r', 'R', 1, 1, 2, 'rRe');
-    l.sombra('r', 'R', -1, 0, 1, 'rRe');
-    l.cambiar('R', 'r', [0, 0, Math.round(w / 2), Math.round(h * 0.4)]);
-    l.sombra('r', 'R', 1, 0, 7, 'rRe');
-  }
-  // cara del corte de los nudos y del pie
-  for (const [lado, t] of nudos) {
-    const y = Math.round(top + t * (h - top));
-    const r = rTop + (rBot - rTop) * t ** 0.8;
-    const x = lado ? Math.round(cx + r) + (grande ? 2 : 1) : Math.round(cx - r) - (grande ? 2 : 1);
-    l.rect(x, y, 1, grande ? 2 : 1, 'Y');
-  }
-  // la guía que lo envuelve en espiral (oro sobre oliva y carmesí; oliva sobre oro)
+  // volumen tramado de esmeralda a lima, y el canto en el verde que llega a 3:1
+  sombrear(l, '¤', '9GglL', { base: 0.42, pendiente: 1.1, borde: grande ? 4 : 2, fuerzaBorde: 0.4, brillo: 1, fuerzaBrillo: 0.18, ancho: 0.8 });
+  l.canto('LK', 'l');
+  // estrías de la corteza, del lado de la sombra
+  rayado(l, 'gl', 'G', { angulo: '|', paso: grande ? 3 : 4, hasta: 0.45, caja: [0, top + 2, w - 1, h - 2] });
+  // la guía que lo envuelve en espiral
+  const [g1, g2] = GUIA[mat];
   const paso = grande ? 14 : 10;
   for (let y0 = top + 4; y0 < h - 4; y0 += paso)
     for (let x = 0; x < w; x++) {
       const y = y0 + Math.round((x - cx) * 0.45);
-      if (l.lleno(x, y, 'rRe')) l.set(x, y, l.get(x, y) === 'R' ? 'o' : 'y');
-      if (grande && l.lleno(x, y + 1, 'rRe')) l.set(x, y + 1, l.get(x, y + 1) === 'R' ? 'o' : 'y');
+      if (l.lleno(x, y, 'GglLK9')) l.set(x, y, x > cx + rTop * 0.3 ? g2 : g1);
+      if (grande && l.lleno(x, y + 1, 'GglLK9')) l.set(x, y + 1, g2);
     }
-  // brote de dos hojas arriba
+  // la cara del corte de los nudos: rojo sangre con su corazón de ámbar
+  for (const [lado, t] of nudos) {
+    const y = Math.round(top + t * (h - top));
+    const r = rTop + (rBot - rTop) * t ** 0.8;
+    const x = lado ? Math.round(cx + r) + (grande ? 2 : 1) : Math.round(cx - r) - (grande ? 2 : 1);
+    l.rect(x, y, 1, grande ? 3 : 2, 'r');
+    if (grande) l.set(x, y + 1, 'O');
+  }
+  // el pie cortado
+  for (let x = 0; x < w; x++) if (l.lleno(x, h - 2)) l.set(x, h - 2, x < cx ? 'r' : 'R');
+  // brote de lima arriba
   const b = Math.round(cx - rTop * 0.4);
-  l.set(b, 1, 'l').set(b - 1, 0, 'l').set(b, 0, 'L').set(b + 1, 2, 'g').set(b + 2, 1, 'l').set(b + 3, 0, 'L').set(b, 2, 'g').set(b, 3, 'g');
+  l.set(b, 1, 'l').set(b - 1, 0, 'l').set(b, 0, 'K').set(b + 1, 2, 'g').set(b + 2, 1, 'l').set(b + 3, 0, 'L').set(b, 2, 'g').set(b, 3, 'g');
   if (grande) l.set(b - 2, 0, 'l').set(b + 3, 1, 'l').set(b + 4, 0, 'l');
-  // el pie: corte claro
-  let m = l.mapa();
-  if (mat === 'oro') m = trocar(trocar(m, 'oro', 'oliva'), 'rojo', 'oro');
-  else if (mat === 'oliva') m = trocar(m, 'rojo', 'oliva');
-  return m;
+  return l.mapa();
 }
 
 // ───────────── oro ─────────────
 
-/** Oro: moneda de borde festoneado, cerco de bronce y la efigie de perfil en relieve, con su busto rojo. */
+/** Oro: moneda de borde festoneado en ámbar fuego, campo de oro solar tramado y la efigie de perfil grabada en carmesí. */
 function oro(d: number): string[] {
   const l = new Lienzo(d, d);
   const c = d / 2;
   const R = d / 2;
-  // festón: el disco y doce lóbulos en el canto
-  l.elipse(c, c, R - 1, R - 1, 'o');
+  // festón: el disco y los lóbulos del canto
+  l.elipse(c, c, R - 1, R - 1, '¤');
   const lobulos = d >= 30 ? 16 : 12;
   for (let i = 0; i < lobulos; i++) {
     const a = (i / lobulos) * Math.PI * 2;
-    l.elipse(c + Math.cos(a) * (R - 1.6), c + Math.sin(a) * (R - 1.6), d >= 30 ? 2.2 : 1.6, d >= 30 ? 2.2 : 1.6, 'o');
+    l.elipse(c + Math.cos(a) * (R - 1.6), c + Math.sin(a) * (R - 1.6), d >= 30 ? 2.2 : 1.6, d >= 30 ? 2.2 : 1.6, '¤');
   }
-  // campo de oro con luz arriba a la izquierda y el canto en bronce abajo a la derecha
-  l.elipse(c, c, R - (d >= 30 ? 3.2 : 2.4), R - (d >= 30 ? 3.2 : 2.4), 'y');
-  l.sombra('o', 'z', 1, 1, 1, 'oyYz');
-  l.sombra('y', 'Y', -1, -1, 1, 'y');
-  // la efigie: cabeza de perfil mirando a la izquierda, en relieve de oro hondo, con cinta roja y busto rojo
+  sombrear(l, '¤', 'zoO', { base: 0.62, pendiente: 1, borde: 2, fuerzaBorde: 0.45, brillo: 0 });
+  l.canto('O', 'o');
+  // campo de oro: luz arriba a la izquierda, trama de sol a fuego
+  const rc = R - (d >= 30 ? 3.2 : 2.4);
+  l.elipse(c, c, rc, rc, '§');
+  sombrear(l, '§', 'oOyY', { base: 0.66, pendiente: 1.1, borde: 2, fuerzaBorde: 0.35, brillo: 1, fuerzaBrillo: 0.2, ancho: 0.8 });
+  // la efigie: cabeza de perfil mirando a la izquierda, grabada en carmesí: la cara iluminada, la nuca y el pelo en
+  // sombra, la corona de laurel en tinta honda
   const k = d / 24;
-  const ex = c + 0.6 * k;
-  const ey = c - 1.6 * k;
-  l.elipse(ex, ey, 3.6 * k, 4 * k, 'o', 'yY');
-  l.elipse(ex - 3.1 * k, ey + 0.6 * k, 1.1 * k, 1.3 * k, 'o', 'yY'); // nariz
-  l.rect(Math.round(ex - 1.5 * k), Math.round(ey + 3 * k), Math.max(2, Math.round(3 * k)), Math.max(2, Math.round(2 * k)), 'o'); // cuello
-  l.poli([[ex - 5 * k, c + 5.6 * k], [ex + 5.4 * k, c + 5.6 * k], [ex + 3.4 * k, c + 2.8 * k], [ex - 2.6 * k, c + 2.8 * k]], 'r'); // busto
-  l.sombra('r', 'R', 1, 0, Math.max(1, Math.round(k)));
-  l.trazo(ex + 0.8 * k, ey - 3.6 * k, ex + 2 * k, ey + 2.4 * k, Math.max(0.5, 0.55 * k), 'r', 'oyY'); // cinta del pelo
-  l.set(Math.round(ex - 1.6 * k), Math.round(ey - 0.6 * k), 'z'); // el ojo
+  const ex = c + 0.8 * k;
+  const ey = c - 1.8 * k;
+  const F = 'oOyY';
+  l.elipse(ex, ey, 3.4 * k, 3.9 * k, 'R', F);
+  l.poli([[ex - 3 * k, ey - 1 * k], [ex - 5 * k, ey + 1.4 * k], [ex - 3 * k, ey + 1.8 * k]], 'R', F); // nariz
+  l.poli([[ex - 3 * k, ey + 1.8 * k], [ex - 3.4 * k, ey + 3.4 * k], [ex - 1 * k, ey + 4.2 * k]], 'R', F); // mentón
+  l.rect(Math.round(ex - 1.2 * k), Math.round(ey + 3 * k), Math.max(2, Math.round(3 * k)), Math.max(2, Math.round(2.2 * k)), 'R'); // cuello
+  l.poli([[ex - 6 * k, c + 6 * k], [ex + 5.8 * k, c + 6 * k], [ex + 4 * k, c + 3 * k], [ex + 1 * k, c + 2.4 * k], [ex - 3 * k, c + 3 * k]], 'R'); // busto
+  // la cara, de frente a la luz: el perfil en carmesí vivo
+  l.pintar((x, y) => x < ex - 0.4 * k && y < ey + 3.8 * k, 'r', 'R');
+  // pelo y nuca en sombra, con la corona de laurel
+  l.elipse(ex + 1.2 * k, ey - 1.2 * k, 2.8 * k, 3 * k, 'v', 'Rr');
+  l.trazo(ex - 2.6 * k, ey - 2.6 * k, ex + 3 * k, ey - 1.2 * k, Math.max(0.5, 0.6 * k), 'z', 'Rrv');
+  l.sombra('R', 'v', 1, 0, Math.max(1, Math.round(k)));
+  if (d >= 30) rayado(l, 'R', 'v', { angulo: '/', paso: 2, hasta: 0.6 });
+  l.set(Math.round(ex - 2 * k), Math.round(ey - 0.4 * k), 'k'); // el ojo
   return l.mapa();
 }
 
 // ───────────── copa ─────────────
 
-/** Copa: cáliz de carmesí con tapa azul de botón de oro, cerco de oro, cuentas de oro, nudo y pie de oro. */
+/**
+ * Copa: cáliz abierto de carmesí —boca de oro con el vino en sombra adentro, cuenco que se angosta al tallo, una piedra
+ * turquesa al frente—, nudo de oro con su piedra y pie de oro. Sin tapa: la tapa de cúpula la volvía trompo de juguete.
+ */
 function copa(w: number, h: number): string[] {
   const l = new Lienzo(w, h);
   const cx = w / 2;
   const k = Math.min(w / 22, h / 26);
-  const yTapa = Math.round(4.5 * k);
-  const yBorde = Math.round(8.5 * k);
-  const yCopa = 17 * k; // cuenco más corto y tallo largo: cáliz, no sopera
-  // tapa: cúpula azul con el botón
-  l.elipse(cx, yBorde, w / 2 - 4 * k, yBorde - yTapa + 0.5, 'c');
-  l.rect(0, yBorde, w, h, '.');
-  l.elipse(cx, yTapa - 1.4 * k, 1.6 * k, 1.6 * k, 'y');
-  l.sombra('c', 'b', 1, 0, Math.max(2, Math.round(2.5 * k)));
-  l.sombra('c', 'C', -1, -1, 1, 'cb');
-  l.sombra('y', 'o', 1, 1, 1);
-  // cerco de oro
-  l.rect(Math.round(2.5 * k), yBorde, w - 2 * Math.round(2.5 * k), Math.max(2, Math.round(2 * k)), 'y');
-  l.rect(Math.round(2.5 * k), yBorde + Math.max(2, Math.round(2 * k)) - 1, w - 2 * Math.round(2.5 * k), 1, 'o');
-  // cuenco
-  const y0 = yBorde + Math.max(2, Math.round(2 * k));
+  const R = w / 2 - 1.5 * k; // radio de la boca
+  const yBoca = Math.round(3.2 * k);
+  const yCopa = 15.5 * k; // fondo del cuenco
+  // cuenco: ancho arriba, se cierra en curva hacia el tallo
   l.pintar((x, y) => {
-    if (y < y0 || y > yCopa) return false;
-    const t = (y - y0) / (yCopa - y0);
-    const r = (w / 2 - 3 * k) * Math.sqrt(1 - t * t * 0.93);
+    if (y < yBoca || y > yCopa) return false;
+    const t = (y - yBoca) / (yCopa - yBoca);
+    const r = R * Math.sqrt(1 - t * t * 0.9) * (1 - 0.12 * t);
     return Math.abs(x - cx) <= r;
-  }, 'r');
-  l.sombra('r', 'R', 1, 0, Math.max(2, Math.round(3 * k)));
-  l.sombra('r', 'e', -1, 0, 1, 'rR');
-  // tallo, nudo y pie
+  }, '¤');
+  sombrear(l, '¤', '9vRre', { base: 0.5, pendiente: 1.15, borde: Math.max(2, Math.round(3 * k)), fuerzaBorde: 0.45, brillo: 1, fuerzaBrillo: 0.15, ancho: 0.8 });
+  l.canto('e', 'r');
+  // la boca: aro de oro con el vino en sombra adentro
+  const ry = Math.max(1.6, 2 * k);
+  l.elipse(cx, yBoca, R + 0.4, ry + 0.4, '§');
+  sombrear(l, '§', 'zoyY', { base: 0.6, borde: 1, fuerzaBorde: 0.4, brillo: 1, fuerzaBrillo: 0.3 });
+  l.canto('yY', 'o');
+  l.elipse(cx, yBoca, R - 1.6 * k, Math.max(0.6, ry - 1.1 * k), '9');
+  l.elipse(cx + 0.6 * k, yBoca, R - 3.4 * k, Math.max(0.5, ry - 1.4 * k), 'v');
+  // una banda de oro bajo la boca y la piedra turquesa al frente
+  const yb = Math.round(yBoca + ry + 1.2 * k);
+  l.pintar((_x, y) => Math.floor(y) === yb, 'o', '9vRre');
+  const yg = Math.round((yBoca + yCopa) / 2 + 0.5 * k);
+  const g = Math.max(1, Math.round(1.6 * k));
+  l.poli([[cx, yg - g - 0.5], [cx + g + 0.5, yg], [cx, yg + g + 0.5], [cx - g - 0.5, yg]], 'T');
+  l.set(Math.round(cx - 1), yg - 1, 'C');
+  // tallo, nudo con su piedra y pie de oro
   const ys = Math.floor(yCopa - 0.5) + 1;
   const tallo = Math.max(1, Math.round(1.2 * k));
-  l.rect(Math.round(cx - tallo), ys, 2 * tallo, h - ys - Math.round(3 * k), 'y');
-  l.elipse(cx, ys + 3.2 * k, 2.8 * k, 1.4 * k, 'y');
-  l.poli([[cx - 2.2 * k, h - 3.2 * k], [cx + 2.2 * k, h - 3.2 * k], [cx + 7 * k, h - 0.6], [cx - 7 * k, h - 0.6]], 'y');
-  l.rect(Math.round(cx - 7.5 * k), h - 2, Math.round(15 * k), 2, 'o');
-  l.sombra('y', 'o', 1, 0, Math.max(1, Math.round(1.2 * k)), 'yoY');
-  l.sombra('y', 'Y', -1, 0, 1, 'yoY');
-  // una fila de cuentas de oro en el cuenco
-  const yc = Math.round(y0 + (yCopa - y0) * 0.38);
-  for (let x = Math.round(cx - 7 * k); x <= cx + 7 * k; x += Math.max(3, Math.round(3 * k))) if (l.lleno(x, yc, 'rRe')) l.set(x, yc, 'y').set(x + 1, yc, l.get(x + 1, yc) === 'R' ? 'o' : 'y');
+  l.rect(Math.round(cx - tallo), ys, 2 * tallo, h - ys - Math.round(3 * k), '¤');
+  l.elipse(cx, ys + 3.4 * k, 3 * k, 1.6 * k, '¤');
+  l.poli([[cx - 2.2 * k, h - 3.2 * k], [cx + 2.2 * k, h - 3.2 * k], [cx + 7.5 * k, h - 0.6], [cx - 7.5 * k, h - 0.6]], '¤');
+  l.rect(Math.round(cx - 8 * k), h - 2, Math.round(16 * k), 2, '¤');
+  sombrear(l, '¤', '9zoOyY', { base: 0.62, pendiente: 1, borde: 1, fuerzaBorde: 0.35, brillo: 1, fuerzaBrillo: 0.3 });
+  l.canto('yYO', 'o');
+  if (k >= 1.2) l.set(Math.round(cx - 0.5), Math.round(ys + 3.4 * k), 'T');
   return l.mapa();
 }
 
 // ───────────── tamaños ─────────────
 
 export type Talla = 'chica' | 'grande';
-/** Los bastos alternan su madera: oliva, carmesí y oro (el oro solo en los grandes, que lo sostienen con su sombra). */
+/** Las variantes de basto alternan el color de su guía (ámbar, sangre, oro) sobre la misma corteza esmeralda. */
 export const MADERAS: Material[] = ['oliva', 'rojo', 'oro'];
 
 const CHICA: Record<Suit, (v: number) => string[]> = {

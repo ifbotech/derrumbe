@@ -1,3 +1,7 @@
+// V40 · fase 2c · El marco va en claroscuro tramado (Bayer, de la sombra abismal del canto de abajo a la derecha a la
+// luz de arriba a la izquierda), el campo de marfil lleva una penumbra tramada contra la banda y el motivo, su filo de
+// luz y su sombra tramada: el mismo grabado oscuro de los Reyes y el Bufón, contenido para que se lea a 24 px.
+//
 // V40 · fase 2b · Iconos pixel-art «sin línea» de las piezas: los 22 Amuletos (4 familias, una por Rey y palo), las 8
 // Trampas del Bufón y las 26 Bendiciones de los Reyes. Cada icono es un marco de su familia (forma y tono) con un motivo
 // dentro, en 40 × 40 celdas (las Bendiciones, 40 × 46 con la corona de su Rey encima). Sin contorno negro: el marco
@@ -8,6 +12,7 @@
 //   Amuletos de Espadas: octógono de acero · de Bastos: cuadro de oliva con brotes · de Oros: moneda · de Copas: arco.
 //   Trampas del Bufón: rombo de arlequín, mitad carmesí y mitad azul, con un cascabel.
 //   Bendiciones: medallón redondo con la corona de su Rey encima (las Duales, con el medallón partido en dos tonos).
+import { sombrear, umbral } from './dither';
 import { tintas } from './paleta';
 import { Lienzo } from './pincel';
 import { medida, rects, type Mapa } from './rejilla';
@@ -41,7 +46,10 @@ const BANDA: Record<Familia, [string, string, string]> = {
 };
 const FORMA_FAM: Record<Familia, string> = { espadas: 'octogono', bastos: 'cuadro', oros: 'circulo', copas: 'arco' };
 
-/** Un marco: banda de cuatro celdas con bisel (luz arriba a la izquierda, sombra abajo a la derecha) y campo de marfil. */
+/**
+ * Un marco: banda de cuatro celdas en claroscuro tramado (la luz arriba a la izquierda, el canto de abajo a la derecha
+ * hundido hasta la sombra abismal) y campo de marfil con su penumbra tramada contra la banda de arriba a la izquierda.
+ */
 function marco(l: Lienzo, forma: string, izq: [string, string, string], der: [string, string, string] = izq, oy = 0): void {
   const f = FORMA[forma];
   for (let y = 0; y < N; y++)
@@ -49,40 +57,57 @@ function marco(l: Lienzo, forma: string, izq: [string, string, string], der: [st
       const dx = x - C;
       const dy = y - C;
       if (!f(dx, dy, 0)) continue;
-      const t = x < C ? izq : der;
-      l.set(x, y + oy, f(dx, dy, 4) ? 'w' : t[1]);
+      l.set(x, y + oy, f(dx, dy, 4) ? 'w' : x < C ? '¤' : '§');
     }
-  // bisel: la banda se aclara arriba a la izquierda y se ahonda abajo a la derecha
-  const banda = izq[1] + der[1];
-  for (const t of [izq, der]) {
-    l.sombra(t[1], t[0], 1, 1, 1, banda + 'w');
-    l.sombra(t[1], t[2], -1, -1, 1, banda + 'w' + izq[0] + der[0]);
-  }
-  // el campo, con su sombra interior arriba a la izquierda (la banda le hace sombra)
-  l.sombra('w', 'm', -1, -1, 1, 'w');
+  const caja: [number, number, number, number] = [0, oy, N - 1, oy + N - 1];
+  for (const [k, t] of [['¤', izq], ['§', der]] as [string, [string, string, string]][])
+    sombrear(l, k, t.join(''), { caja, base: 0.5, pendiente: 1.3, borde: 1, fuerzaBorde: 0.4, brillo: 1, fuerzaBrillo: 0.3, ancho: 0.7, masa: '¤§9' + izq.join('') + der.join('') });
+  // el campo: penumbra contra la banda de arriba a la izquierda, lisa en la primera celda y tramada en la segunda
+  const banda = (x: number, y: number) => !l.lleno(x, y, 'wmh') && l.lleno(x, y);
+  for (let y = 0; y < l.h; y++)
+    for (let x = 0; x < N; x++) {
+      if (l.get(x, y) !== 'w') continue;
+      if (banda(x - 1, y - 1) || banda(x, y - 1) || banda(x - 1, y)) l.set(x, y, 'm');
+      else if ((banda(x - 2, y - 2) || banda(x, y - 2) || banda(x - 2, y)) && umbral(x, y, 2) < 0.5) {
+        l.set(x, y, 'm');
+        l.marcar(x, y);
+      }
+    }
 }
 
 /** El tono de sombra de cada letra (un paso abajo en su rampa). */
 const SOMBRA: Record<string, string> = {
-  Y: 'y', y: 'o', o: 'z', e: 'r', r: 'R', R: 'v', C: 'c', c: 'b', b: 'B', L: 'l', l: 'g', g: 'G', t: 'T', x: 'd', d: 'n', n: 'N', P: 'p', p: 's', w: 'h', u: 'J', J: 'j', j: 'i', h: 'J',
+  Y: 'y', y: 'o', o: 'z', e: 'r', r: 'R', R: 'v', C: 'c', c: 'b', b: 'B', L: 'l', l: 'g', g: 'G', t: 'T', x: 'd', d: 'n', n: 'N', P: 'p', p: 's', w: 'h', u: 'J', J: 'j', j: 'i', h: 'J', T: '9', v: '9', B: '9', G: '9', N: '9', z: 'N',
+};
+/** El tono de luz de cada letra (un paso arriba). */
+const LUZ: Record<string, string> = {
+  y: 'Y', o: 'y', z: 'o', r: 'e', R: 'r', v: 'R', C: 'A', c: 'C', b: 'c', B: 'b', l: 'L', g: 'l', G: 'g', T: 't', t: 'c', d: 'x', n: 'd', N: 'n', p: 'P', s: 'p', J: 'u', j: 'J', i: 'j', h: 'm',
 };
 
-/** Coloca un motivo al doble en el centro del campo, con su lado de sombra y su sombra arrojada sobre el marfil. */
+/**
+ * Coloca un motivo al doble en el centro del campo: filo de luz arriba a la izquierda de cada masa, sombra abajo a la
+ * derecha con su paso tramado hacia adentro, y la sombra arrojada sobre el marfil.
+ */
 function conMotivo(l: Lienzo, motivo: Mapa, oy = 0): void {
   const [w, h] = medida(motivo);
   const x0 = Math.round((N - 2 * w) / 2);
   const y0 = Math.round((l.h - 2 * h) / 2) + oy;
   const m = new Lienzo(N, l.h);
   motivo.forEach((f, y) => [...f].forEach((k, x) => k !== '.' && k !== ' ' && m.rect(x0 + 2 * x, y0 + 2 * y, 2, 2, k)));
-  // cada masa de color, con su sombra abajo a la derecha (contra lo que no es ella)
-  // (solo las celdas que no son el canto de arriba a la izquierda: un trazo de dos celdas queda mitad luz, mitad sombra)
   const base = m.mapa();
   const es = (x: number, y: number, k: string) => base[y]?.[x] === k;
   for (let y = 0; y < l.h; y++)
     for (let x = 0; x < N; x++) {
       const k = base[y][x];
-      if (k === '.' || !SOMBRA[k]) continue;
-      if (!es(x + 1, y + 1, k) && es(x - 1, y - 1, k)) m.set(x, y, SOMBRA[k]);
+      if (k === '.') continue;
+      const finDer = !es(x + 1, y + 1, k);
+      const finIzq = !es(x - 1, y - 1, k);
+      if (finDer && !finIzq && SOMBRA[k]) m.set(x, y, SOMBRA[k]);
+      else if (finIzq && !finDer && LUZ[k]) m.set(x, y, LUZ[k]);
+      else if (!finDer && !finIzq && !es(x + 2, y + 2, k) && SOMBRA[k] && umbral(x, y, 2) < 0.5) {
+        m.set(x, y, SOMBRA[k]);
+        m.marcar(x, y);
+      }
     }
   // sombra arrojada sobre el campo de marfil
   const lleno = m.mapa();
@@ -103,10 +128,11 @@ function brotes(l: Lienzo): void {
 /** Coronas de los Reyes, encima de su medallón. */
 function corona(l: Lienzo, f: Familia, cx: number): void {
   const [o, b, c] = f === 'espadas' ? ['b', 'c', 'C'] : f === 'bastos' ? ['g', 'l', 'L'] : ['o', 'y', 'Y'];
-  l.rect(cx - 7, 4, 15, 4, 'y').rect(cx - 7, 7, 15, 1, 'o');
+  l.rect(cx - 7, 4, 15, 4, '¤');
+  sombrear(l, '¤', '9zoyY', { base: 0.6, pendiente: 1.2, borde: 1, fuerzaBorde: 0.4, brillo: 1, fuerzaBrillo: 0.3 });
   for (const dx of [-7, -1, 5]) {
-    l.rect(cx + dx, 0, 3, 4, b);
-    l.set(cx + dx, 0, c).set(cx + dx + 2, 3, o);
+    l.poli([[cx + dx - 0.2, 4], [cx + dx + 1.5, -0.4], [cx + dx + 3.2, 4]], b);
+    l.set(cx + dx + 1, 0, c).set(cx + dx + 2, 3, o);
   }
   l.rect(cx - 1, 5, 2, 2, f === 'oros' ? 't' : 'r');
 }
@@ -231,9 +257,9 @@ export function trampaMapa(id: string): string[] | null {
   marco(l, 'rombo', ['v', 'R', 'r'], ['T', 't', 'c']);
   conMotivo(l, m, -1);
   // el cascabel en la punta de abajo
-  l.elipse(C + 0.5, N - 3.5, 2.6, 2.6, 'y');
-  l.sombra('y', 'o', 1, 1, 1, 'yo');
-  l.set(Math.round(C), N - 5, 'Y');
+  l.elipse(C + 0.5, N - 3.5, 2.6, 2.6, '¤');
+  sombrear(l, '¤', 'zoyY', { base: 0.6, borde: 1, fuerzaBorde: 0.4, brillo: 1, fuerzaBrillo: 0.3 });
+  l.set(Math.round(C), N - 3, '9');
   return l.mapa();
 }
 /** El mapa de una Bendición (40 × 46: el medallón y la corona de su Rey), o null. */

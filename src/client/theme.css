@@ -1372,17 +1372,18 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
    Alto contraste (≥ 7:1 sobre el papel). El palo se distingue siempre también por su forma: ♠ ♥ ♦ ♣ van con
    su silueta en la esquina, en el emblema, en la cabecera del trono, en el poder y en la cuenta. */
 :root {
-  /* V40 · fase 2 · cuatro colores de la baraja española pixel-art, sobre el marfil #efe6d5 (todo ≥ 7:1, índices y
-     contorno de las pintas): Espadas acero azul 9,2:1 · Copas carmesí 7,5:1 · Oros bronce 7,6:1 · Bastos verde oliva
-     8,1:1. Sobre la mesa (--suitd-*, ≥ 7:1 sobre --table-3): acero claro, rosa de copa, oro y oliva claro */
-  --suit-S: #1d3a66;
-  --suit-H: #8e1424;
-  --suit-D: #633f06;
-  --suit-C: #34481a;
-  --suitd-S: #9cc0ea;
-  --suitd-H: #f4a09c;
-  --suitd-D: #f0c75a;
-  --suitd-C: #b9cd6e;
+  /* V40 · fase 2c («Dark Dithered»): el tono hondo de cada rampa híper-saturada, sobre el papel #f4efe2 (índices y
+     pintas del marco, todo ≥ 7:1): Espadas cobalto #1238a8 8,5:1 · Copas carmesí #930030 8,0:1 · Oros ámbar quemado
+     #7a3300 8,0:1 · Bastos esmeralda #0a5424 7,9:1. Sobre la mesa en penumbra (--suitd-*, ≥ 8:1 sobre #2a1533 y sobre
+     --table-3): cian, magenta claro, oro solar y lima */
+  --suit-S: #1238a8;
+  --suit-H: #930030;
+  --suit-D: #7a3300;
+  --suit-C: #0a5424;
+  --suitd-S: #7fd8ff;
+  --suitd-H: #ff9ab0;
+  --suitd-D: #ffd54a;
+  --suitd-C: #5ceb86;
 }
 /* la clásica: la que se imprimía en la 10.0 (tintas de 7:1 sobre el papel; el ocre de Diamantes, tostado) */
 :root.paleta-clasica {
@@ -1406,16 +1407,17 @@ body:has(.table-screen) .toast { top: clamp(52px, 8vh, 72px); bottom: auto; padd
   --suitd-D: #ef6a6e;
   --suitd-C: #d9cfbb;
 }
-/* Alto contraste: el mismo tono, más oscuro, hasta ≥ 10:1 sobre el papel; la variante clara, más clara */
+/* Alto contraste: el mismo tono, más oscuro, hasta ≥ 10:1 sobre el papel (Espadas 12,4 · Copas 11,7 · Oros 10,8 ·
+   Bastos 10,8); la variante clara, más clara (≥ 11:1 sobre #2a1533) */
 :root.contraste {
-  --suit-S: #102a50;
-  --suit-H: #700e1b;
-  --suit-D: #4c3004;
-  --suit-C: #26340e;
-  --suitd-S: #c4dbf5;
-  --suitd-H: #ffb7b2;
-  --suitd-D: #f7d98a;
-  --suitd-C: #d3e29a;
+  --suit-S: #0c2270;
+  --suit-H: #64001e;
+  --suit-D: #5a2400;
+  --suit-C: #063d1a;
+  --suitd-S: #b5ecff;
+  --suitd-H: #ffc2d0;
+  --suitd-D: #ffe68a;
+  --suitd-C: #9cf5b4;
 }
 :root.contraste.paleta-clasica {
   --suit-H: #7d1a13;

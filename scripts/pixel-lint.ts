@@ -6,12 +6,21 @@
 // las reglas de huérfanos, dientes de sierra (jaggies), sombreado de almohada y colores casi repetidos siguen su lógica.
 // Son nuestras las de bandas concéntricas, contorno negro pesado, tamaño de paleta por pieza y rejilla entera.
 //
+// V40 · fase 2c («Dark Dithered & Textured»): el tramado intencional (Bayer, punteado y rayado de pixel/dither.ts) deja
+// sus celdas marcadas en la máscara de trama del mapa (rejilla.ts, tramaDe). Esas celdas, y las que las tocan, no cuentan
+// como huérfanos ni como dientes de sierra: son zona de trama declarada. Un píxel suelto fuera de esas zonas sigue siendo
+// ruido. El contorno pesado ahora también caza la tinta abismal violácea (#0B0711, #120A24), no solo el negro neutro.
+//
 // Reglas:
-//   huérfano      celda sin vecina de su color dentro de una masa, y casi del mismo brillo que lo de alrededor (ruido)
-//   jaggy         esquina en L que engorda una línea de un píxel (la línea debe escalonar en diagonal)
+//   huérfano      celda sin vecina de su color dentro de una masa, y casi del mismo brillo que lo de alrededor (ruido);
+//                 no cuenta en la zona de trama declarada
+//   jaggy         esquina en L que engorda una línea de un píxel (la línea debe escalonar en diagonal); no cuenta en la
+//                 zona de trama declarada
 //   almohada      el brillo sube hacia el centro por todos lados (luz sin dirección)
 //   bandas        anillos concéntricos de tono que siguen la silueta, cada uno de un solo tono (bandas)
-//   contorno      más de un 35 % del borde de la silueta en tinta oscura neutra (el contorno negro «de Paint»)
+//   contorno      más de un 35 % del borde de la silueta del lado de la luz (arriba y a la izquierda) en tinta casi negra
+//                 (neutra o abismal: el contorno «de Paint»); el canto de sombra puede caer al abismo, y las piezas a
+//                 sangre (retratos, dorsos) no se miden
 //   paleta        demasiados colores para la pieza, o dos casi iguales
 //   rejilla       filas de distinto largo o celdas de letra sin tinta
 //   silueta       (pintas y caras del naipe) menos del 60 % del borde de la silueta a 3:1 sobre el papel del naipe: sin
@@ -19,6 +28,7 @@
 import { pathToFileURL } from 'node:url';
 import { catalogo, type Pieza } from '../src/client/pixel/catalogo';
 import { PX, tintas } from '../src/client/pixel/paleta';
+import { tramaDe } from '../src/client/pixel/rejilla';
 
 export interface Hallazgo {
   regla: 'huérfano' | 'jaggy' | 'almohada' | 'bandas' | 'contorno' | 'paleta' | 'rejilla' | 'silueta';
@@ -72,14 +82,37 @@ export const SILUETA = { contraste: 3, fraccion: 0.6, papel: PX.papel };
 
 const N8: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
 const N4: [number, number][] = [[0, -1], [-1, 0], [1, 0], [0, 1]];
+/** Las dos vecinas del lado de la luz (arriba y a la izquierda). */
+const LUZ2: [number, number][] = [[0, -1], [-1, 0]];
 
 /** Tope de colores por grupo (las piezas grandes llevan más materiales). */
 const TOPE_PALETA: Record<string, number> = { glifos: 12, pintas: 14, naipes: 18, figuras: 26, dorsos: 22, bufon: 24, reyes: 26, amuletos: 20, trampas: 20, bendiciones: 22, nodos: 20 };
 
-export function lintMapa(m: readonly string[], grupo = 'pintas'): Hallazgo[] {
+/** ¿El color es tinta casi negra? Neutra (poco saturada) u honda de cualquier matiz (la tinta abismal violácea). */
+export function casiNegro(c: string): boolean {
+  const [, sa, li] = hsl(c);
+  return li < 0.12 || (li < 0.2 && sa < 0.3);
+}
+
+/**
+ * Pasa las reglas por un mapa. `trama` es la máscara de trama declarada (de serie, la que el mapa trae de
+ * pixel/dither.ts): sus celdas y sus vecinas no cuentan como huérfanos ni como dientes de sierra.
+ */
+export function lintMapa(m: readonly string[], grupo = 'pintas', trama: Uint8Array | null = tramaDe(m)): Hallazgo[] {
   const out: Hallazgo[] = [];
   const h = m.length;
   const w = Math.max(0, ...m.map((r) => r.length));
+  /** ¿La celda está en zona de trama declarada (tramada ella o alguna vecina)? */
+  const enTrama = (x: number, y: number): boolean => {
+    if (!trama) return false;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < w && ny < h && trama[ny * w + nx]) return true;
+      }
+    return false;
+  };
   // rejilla: filas iguales y letras conocidas
   if (m.some((r) => r.length !== w)) out.push({ regla: 'rejilla', grave: true, msg: 'filas de distinto largo' });
   const raras = new Set([...m.join('')].filter((k) => k !== '.' && k !== ' ' && !hex(k)));
@@ -95,7 +128,7 @@ export function lintMapa(m: readonly string[], grupo = 'pintas'): Hallazgo[] {
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
       const c = col(x, y);
-      if (!c) continue;
+      if (!c || enTrama(x, y)) continue;
       if (N8.some(([dx, dy]) => col(x + dx, y + dy) === c)) continue;
       if (N4.some(([dx, dy]) => !col(x + dx, y + dy))) continue;
       const vecinas = N8.map(([dx, dy]) => col(x + dx, y + dy)).filter((v): v is string => !!v);
@@ -137,7 +170,7 @@ export function lintMapa(m: readonly string[], grupo = 'pintas'): Hallazgo[] {
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
       const c = col(x, y);
-      if (!c) continue;
+      if (!c || enTrama(x, y)) continue;
       const igual = (dx: number, dy: number) => col(x + dx, y + dy) === c;
       const id = comp[y * w + x];
       if (N8.filter(([dx, dy]) => igual(dx, dy)).length !== 2 || tam[id] < 6 || !fina[id]) continue;
@@ -215,17 +248,22 @@ export function lintMapa(m: readonly string[], grupo = 'pintas'): Hallazgo[] {
     if (a0 && a1 && a2 && a0 !== a1 && a1 !== a2) bandas++;
   }
 
-  // contorno negro pesado: el borde de la silueta (celdas pintadas junto al papel) en tinta oscura neutra
+  // contorno negro pesado: el borde de la silueta del lado de la luz (celdas pintadas con el papel arriba o a la
+  // izquierda) en tinta casi negra. El canto de sombra de abajo a la derecha puede caer al abismo (claroscuro); un
+  // contorno «de Paint» rodea también el lado iluminado. Una pieza a sangre (sin celdas vacías: retrato, dorso) no tiene
+  // silueta: su orilla es el corte del lienzo y no se mide.
   let borde = 0;
   let negro = 0;
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      const c = col(x, y);
-      if (!c || !N4.some(([dx, dy]) => !col(x + dx, y + dy))) continue;
-      borde++;
-      const [, sa, li] = hsl(c);
-      if (li < 0.2 && sa < 0.3) negro++;
-    }
+  let aSangre = true;
+  for (let y = 0; y < h && aSangre; y++) for (let x = 0; x < w; x++) if (!col(x, y)) { aSangre = false; break; }
+  if (!aSangre)
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const c = col(x, y);
+        if (!c || !LUZ2.some(([dx, dy]) => !col(x + dx, y + dy))) continue;
+        borde++;
+        if (casiNegro(c)) negro++;
+      }
 
   // silueta (pintas y caras del naipe): el borde, a 3:1 sobre el papel
   let bordeOk = 0;
@@ -256,7 +294,7 @@ export function lintMapa(m: readonly string[], grupo = 'pintas'): Hallazgo[] {
   if (jag.length) out.push({ regla: 'jaggy', grave: jag.length / pintadas > 0.01, msg: `${jag.length} esquinas en L que engordan líneas de un píxel`, at: jag.slice(0, 12) });
   if (almohada) out.push({ regla: 'almohada', grave: true, msg: `sombreado de almohada en ${almohada} masa(s): la luz no tiene dirección` });
   if (bandas) out.push({ regla: 'bandas', grave: true, msg: `bandas concéntricas en ${bandas} masa(s): anillos de un solo tono que siguen la silueta` });
-  if (borde && negro / borde > 0.35) out.push({ regla: 'contorno', grave: true, msg: `contorno negro pesado: ${Math.round((100 * negro) / borde)} % del borde de la silueta en tinta oscura` });
+  if (borde && negro / borde > 0.35) out.push({ regla: 'contorno', grave: true, msg: `contorno negro pesado: ${Math.round((100 * negro) / borde)} % del borde de la silueta en tinta casi negra` });
   if ((grupo === 'pintas' || grupo === 'naipes') && silueta < SILUETA.fraccion)
     out.push({ regla: 'silueta', grave: true, msg: `solo el ${Math.round(silueta * 100)} % del borde llega a ${SILUETA.contraste}:1 sobre el papel (mínimo ${Math.round(SILUETA.fraccion * 100)} %)` });
   const tope = TOPE_PALETA[grupo] ?? 24;

@@ -45,20 +45,20 @@ Sustituyen a las 52 Reliquias en el tramo 1d: **20 a 24** en **4 familias** de 5
 
 ## Los cuatro palos sin color
 
-Los palos se distinguen **sin color**: cada uno tiene su silueta y su pinta del marco (cortes en los bordes superior e inferior del naipe, como en la baraja española tradicional). Los códigos internos de palo no cambian.
+Los palos se distinguen **sin color**: cada uno tiene su silueta y el recuadro tradicional de tinta, cortado arriba y abajo según el palo (fase 2c). Los códigos internos de palo no cambian.
 
-| Código | Palo | Silueta | Pinta del marco | Color de la constitución (fase 2) | Tinta de hoy (`theme.css`, la de la 38.0) |
+| Código | Palo | Silueta | Recuadro | Rampa (fase 2c) | Índice (`--suit-*`, sobre `#f4efe2`) |
 |---|---|---|---|---|---|
-| `S` | Espadas | espada | 3 cortes | acero azul y empuñadura de oro | `#161514` |
-| `C` | Bastos | garrote con brotes | 4 cortes | verde oliva, lacre y oro | `#005442` |
-| `D` | Oros | moneda con efigie | 1 corte | oro con efigie roja | `#1B5E9E` |
-| `H` | Copas | cáliz | 2 cortes | carmesí, azul y oro | `#C8232C` |
+| `S` | Espadas | espada | 2 cortes | cobalto → cian → brillo, empuñadura de oro y carmesí | `#1238A8` 8,5:1 |
+| `C` | Bastos | garrote nudoso | 3 cortes | esmeralda → lima, cortes rojo sangre y ámbar | `#0A5424` 7,9:1 |
+| `D` | Oros | moneda con efigie | corrido | ámbar → fuego → oro solar, efigie carmesí | `#7A3300` 8,0:1 |
+| `H` | Copas | cáliz | 1 corte | vino → carmesí → magenta, oro y turquesa | `#930030` 8,0:1 |
 
 Reglas:
 
 1. Nada va por debajo del índice ni de la pinta de la esquina: ahí va la placa de respaldo.
 2. Sin contorno negro (fase 2b): la pinta se separa del papel por sus propios tonos oscuros; al menos el 60 % de su borde llega a 3:1 sobre el marfil (`SILUETA` de `scripts/pixel-lint.ts`) y el índice y su glifo, a 7:1.
-3. Prueba de daltonismo: la hoja de contacto en escala de grises (`hoja-gris.png`) tiene que dejar los cuatro palos inconfundibles por la silueta y las pintas del marco.
+3. Prueba de daltonismo: la hoja de contacto en escala de grises (`hoja-gris.png`) tiene que dejar los cuatro palos inconfundibles por la silueta y el recuadro cortado.
 4. Hasta que la fase 2 las retire, las tramas de palo viven en los patrones `pat-S`, `pat-D`, `pat-H` y `pat-C` (enemigos y poderes) y se miden dos a dos; si cambian de id, cambia también `retal()` en `forja-qa.ts`.
 
 ## Los naipes y el Bufón

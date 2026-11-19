@@ -22,17 +22,20 @@ El motor conserva sus códigos internos de palo, que coinciden con la correspond
 
 | Código | Palo | Poder (sin cambios de motor) | Color de serie |
 |---|---|---|---|
-| `S` | **Espadas** | Perforar: el golpe ignora parte de la defensa / tajo directo | acero azul y empuñadura de oro |
-| `C` | **Bastos** | Aguante: Escudo | verde oliva, lacre y oro, con brotes |
-| `D` | **Oros** | Salpicadura y moneda | oro con efigie roja |
-| `H` | **Copas** | Brindis: Curación | carmesí, azul y oro |
+| `S` | **Espadas** | Perforar: el golpe ignora parte de la defensa / tajo directo | cobalto → cian de filo → brillo, empuñadura de oro y carmesí; índice `#1238A8` |
+| `C` | **Bastos** | Aguante: Escudo | esmeralda → lima, corteza nudosa, cortes rojo sangre y ámbar; índice `#0A5424` |
+| `D` | **Oros** | Salpicadura y moneda | ámbar quemado → fuego → oro solar, efigie carmesí grabada; índice `#7A3300` |
+| `H` | **Copas** | Brindis: Curación | vino → carmesí → magenta, con oro y turquesa intensa; índice `#930030` |
+
+Los índices son el tono hondo de cada rampa y pasan de 7:1 sobre el papel hueso `#F4EFE2` (8,5 · 7,9 · 8,0 · 8,0); en
+Alto contraste, más hondos (≥ 10:1).
 
 - En pantalla, en textos y en el inglés no queda ningún ♠ ♥ ♦ ♣ ni «Picas, Corazones, Diamantes, Tréboles». El palo se
   dice con su nombre o con su **pinta** (icono pixel-art del palo).
 - Inglés: Swords, Clubs, Coins, Cups (glosario de «Spanish deck»).
-- El color nunca va solo: cada palo tiene silueta propia (espada, garrote, moneda, cáliz) y las **pintas del marco**
-  (cortes en los bordes superior e inferior del naipe: 1 Oros, 2 Copas, 3 Espadas, 4 Bastos), como en la baraja
-  española tradicional.
+- El color nunca va solo: cada palo tiene silueta propia (espada, garrote, moneda, cáliz) y el **recuadro tradicional**:
+  un rectángulo fino de tinta dentro del naipe, interrumpido arriba y abajo según el palo: **Oros, corrido (sin
+  cortes); Copas, 1 corte; Espadas, 2; Bastos, 3** (fase 2c; reemplaza a las «pintas del marco» 1/2/3/4 de la 2b).
 
 ### 1.2 Rangos
 
@@ -118,12 +121,20 @@ Los 5 se certifican en el laboratorio (`analyze:meta`): cada uno con su ritmo, n
 
 ## 8. Estética
 
-- **Pixel-art geométrico y limpio sobre naipe marfil** (`shape-rendering="crispEdges"`, píxeles nítidos, sin desenfoque),
-  paleta plana: acero azul, oro, carmesí, verde oliva, azul de cinta, sobre marfil y un fondo de mesa sereno.
+- **«Dark Dithered & Textured Pixel Art»** (fase 2c, pedido del usuario: la 2b quedó «cutie»): pixel-art nítido
+  (`shape-rendering="crispEdges"`, celda entera, sin degradados, sin alfa, sin desenfoque) con **tramado** Bayer 2 × 2 /
+  4 × 4, punteado y rayado a celda entera (`src/client/pixel/dither.ts`), **paleta híper-saturada** con corrimiento de
+  matiz agresivo (las sombras caen al violeta e índigo, hasta el abismo `#0B0711` / `#120A24`) y claroscuro de una luz
+  de arriba a la izquierda.
+- Tramado **pesado** en el Bufón (máscara de marfil afilada, cuencas hondas, mueca de teatro, capucha carmesí y púrpura),
+  los Reyes y la Corte (severos, coronas y barbas afiladas; el vencido, roto y espectral), los dorsos (grabado simétrico
+  de colección) y los cuatro ases monumentales. Tramado **contenido** en el naipe chico: papel hueso `#F4EFE2`, canto
+  tramado `#D9CEB4` solo en las orillas, pintas del 2 al 9 con volumen tramado dentro de su silueta; se lee a 70 px.
+- La mesa, el Mapa y La Pulpería van sobre una penumbra tramada de luz de vela (`fondoTramado`), no sobre un liso.
 - Dibujos originales en el lenguaje de las referencias del usuario (baraja española pixel-art y el Bufón): pintas
   repetidas en su disposición tradicional en el 1 a 9, figuras de cuerpo entero en 10 (de pie), 11 (a caballo) y 12
   (Rey con corona), el 1 de cada palo ornamentado.
-- Se retira el grabado oscuro como estilo dominante.
+- Se retira el grabado oscuro vectorial de las versiones viejas: lo oscuro vuelve, pero como pixel-art tramado.
 
 ## 9. Lo que no cambia
 

@@ -1,3 +1,6 @@
+// V40 · fase 2c — el tramado intencional (pixel/dither.ts) es zona declarada para el linter, el recuadro del naipe se
+// corta por palo (Oros 0, Copas 1, Espadas 2, Bastos 3) y la penumbra de fondo es pixel-art sin degradados.
+//
 // V40 · fase 2b — la forja pixel-art «sin línea» en código (src/client/pixel/): cada mapa es una rejilla entera, cada
 // pieza del motor tiene su dibujo, el naipe guarda las reglas de la baraja española (pintas del marco, índice libre,
 // pintas grandes y del mismo tamaño sin pisarse, figuras de cuerpo entero) y el linter del pixel-art (adaptado de pxl)
@@ -6,11 +9,13 @@ import { describe, expect, it } from 'vitest';
 import { lintCatalogo, lintMapa, siluetaDe, contraste, SILUETA } from '../scripts/pixel-lint';
 import { EXPRESIONES, bufonMapa, bufonSvg } from '../src/client/pixel/bufon';
 import { caraMapa } from '../src/client/pixel/catalogo';
+import { BAYER4, fondoTramado, sombrear } from '../src/client/pixel/dither';
 import { MAZOS, dorsoMapa, dorsoSvg } from '../src/client/pixel/dorsos';
 import { figuraLienzo, figuraMapa } from '../src/client/pixel/figuras';
 import { MOTIVO_AMULETO, MOTIVO_BENDICION, amuletoMapa, amuletoSvg, bendicionMapa, bendicionSvg, trampaMapa, trampaSvg } from '../src/client/pixel/iconos';
-import { CORTES, NAIPE_H, NAIPE_W, ZONA_INDICE, caraComodin, caraPalo, disposicion, pintasColocadas } from '../src/client/pixel/naipes';
-import { PX } from '../src/client/pixel/paleta';
+import { CORTES, NAIPE_H, NAIPE_W, ZONA_INDICE, caraComodin, caraPalo, disposicion, pintasColocadas, recuadroTramos } from '../src/client/pixel/naipes';
+import { OSC_HEX, PX } from '../src/client/pixel/paleta';
+import { Lienzo } from '../src/client/pixel/pincel';
 import { pintaMapa, pintaNaipe, pintaSvg } from '../src/client/pixel/pintas';
 import { celdas, cuadra, medida } from '../src/client/pixel/rejilla';
 import { REYES_PX, esReyPx, reyMapa, reySvg } from '../src/client/pixel/reyes';
@@ -75,14 +80,20 @@ describe('V40 fase 2b · pintas', () => {
   });
 
   it('las tintas de palo del índice y de las pintas del marco pasan de 7:1 sobre el papel del naipe', () => {
-    for (const c of ['#1d3a66', '#34481a', '#633f06', '#8e1424']) expect(contraste(c, PX.papel), c).toBeGreaterThanOrEqual(7);
+    for (const s of PALOS) expect(contraste(OSC_HEX[s], PX.papel), s).toBeGreaterThanOrEqual(7);
   });
 });
 
 describe('V40 fase 2b · naipes', () => {
-  it('pintas del marco de la baraja española: 1 Oros, 2 Copas, 3 Espadas, 4 Bastos', () => {
-    expect(CORTES).toEqual({ D: 1, H: 2, S: 3, C: 4 });
-    for (const s of PALOS) expect((caraPalo(s, 5).match(/class="px-marco"[^>]*d="([^"]+)"/)?.[1].match(/M/g) ?? []).length, s).toBe(2 * CORTES[s]);
+  it('el recuadro de la baraja española se corta por palo: Oros corrido, Copas 1 corte, Espadas 2, Bastos 3', () => {
+    expect(CORTES).toEqual({ D: 0, H: 1, S: 2, C: 3 });
+    for (const s of PALOS) {
+      const t = recuadroTramos(s, 5);
+      expect(t.arriba.length, s).toBe(CORTES[s] + 1);
+      expect(t.abajo.length, s).toBe(CORTES[s] + 1);
+      // un tramo por segmento en el SVG: arriba, abajo y los dos lados
+      expect((caraPalo(s, 5).match(/class="px-marco"[^>]*d="([^"]+)"/)?.[1].match(/M/g) ?? []).length, s).toBe(2 * (CORTES[s] + 1) + 2);
+    }
   });
 
   it('del 1 al 12 de cada palo hay cara pixel-art en la rejilla de 96 × 140', () => {
@@ -227,9 +238,43 @@ describe('V40 fase 2b · el linter del pixel-art', () => {
     expect(malas.map((i) => `${i.pieza.grupo}/${i.pieza.id}: ${i.hallazgos.filter((h) => h.grave).map((h) => h.msg).join('; ')}`)).toEqual([]);
   });
 
-  it('caza el contorno negro «de Paint»', () => {
-    const m = ['kkkkkkkk', 'kyyyyyyk', 'kyyyyyyk', 'kyyyyyyk', 'kyyyyyyk', 'kkkkkkkk'];
-    expect(lintMapa(m).map((h) => h.regla)).toContain('contorno');
+  it('caza el contorno negro «de Paint», también en tinta abismal violácea', () => {
+    for (const k of ['k', '0', '9']) {
+      const m = ['..........', `.${k.repeat(8)}.`, ...Array(4).fill(`.${k}yyyyyy${k}.`), `.${k.repeat(8)}.`, '..........'];
+      expect(lintMapa(m).map((h) => h.regla), k).toContain('contorno');
+    }
+  });
+
+  it('el canto de sombra que cae al abismo abajo a la derecha no es contorno', () => {
+    const m = ['..........', '.yyyyyyyy.', ...Array(4).fill('.yyyyyyy9.'), '.99999999.', '..........'];
+    expect(lintMapa(m).map((h) => h.regla)).not.toContain('contorno');
+  });
+
+  it('el tramado declarado (Bayer) no es ruido; un píxel suelto fuera de la trama, sí', () => {
+    const l = new Lienzo(24, 24);
+    l.rect(0, 0, 24, 24, '¤');
+    sombrear(l, '¤', 'vRre', { base: 0.5, pendiente: 1.2, borde: 0, brillo: 0, ancho: 1 });
+    const tramado = l.mapa();
+    expect(lintMapa(tramado).filter((h) => h.regla === 'huérfano' || h.regla === 'jaggy')).toEqual([]);
+    // la misma trama sin declarar sí se cuenta como huérfanos
+    expect(lintMapa(tramado.map((f) => f), 'pintas', null).map((h) => h.regla)).toContain('huérfano');
+  });
+});
+
+describe('V40 fase 2c · el motor de tramado', () => {
+  it('Bayer 4 × 4: los dieciséis umbrales, una vez cada uno', () => {
+    expect([...BAYER4.flat()].sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i));
+  });
+
+  it('la penumbra de fondo (mesa, Mapa, Pulpería) es pixel-art: crispEdges, patrones Bayer, sin degradados ni filtros', () => {
+    for (const v of ['mesa', 'mapa', 'pulperia'] as const) {
+      const f = fondoTramado(v);
+      expect(f.svg, v).toContain('crispEdges');
+      expect(f.svg, v).toContain('<pattern');
+      expect(f.svg, v).not.toMatch(/Gradient|<filter|blur|opacity/);
+      expect(f.url.startsWith(`url("data:image/svg+xml,`), v).toBe(true);
+      expect(f.url.length, v).toBeLessThan(40_000);
+    }
   });
 
   it('caza el sombreado de almohada y las bandas concéntricas', () => {

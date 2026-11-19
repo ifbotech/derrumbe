@@ -1,3 +1,6 @@
+// V40 · fase 2c · Las vestimentas van en claroscuro tramado (Bayer, de la sombra abismal a la luz), las caras son
+// severas —cejas que bajan hacia la nariz, la boca recta, sin arrebol— y el caballo es gris frío tramado.
+//
 // V40 · fase 2b · La Corte de la baraja española en pixel-art «sin línea», de cuerpo entero sobre la rejilla del naipe
 // (96 × 140): 10 Sota (paje de pie), 11 Caballo (jinete sobre un caballo gris con gualdrapa) y 12 Rey (corona, barba,
 // esclavina y manto con armiño). Figuras altas y estilizadas, con masa: mangas abullonadas con franjas, faldón
@@ -8,8 +11,10 @@
 // El dibujo deja libres las zonas del índice de dos cifras: arriba a la izquierda (x ≤ 27, y ≤ 32) y abajo a la
 // derecha (x ≥ 69, y ≥ 107).
 import type { Suit } from '../../rules/engine';
+import { rayado, sombrear } from './dither';
 import { RAMPA, type Material } from './paleta';
 import { Lienzo, recortar } from './pincel';
+import { heredar } from './rejilla';
 import { pintaNaipe } from './pintas';
 
 export const FIG_W = 96;
@@ -27,10 +32,12 @@ export const ROPA: Record<Suit, { tunica: Material; capa: Material; adorno: Mate
 const TUN = '1234';
 const CAP = '5678';
 
-/** Una masa en volumen: sombra a la derecha (n celdas) y brillo de una celda a la izquierda, dentro de su rampa. */
-function volumen(l: Lienzo, prov: string, n: number, brillo = true): void {
-  l.sombra(prov[2], prov[1], 1, 0, n, prov);
-  if (brillo) l.sombra(prov[2], prov[3], -1, 0, 1, prov);
+/**
+ * Una masa de tela en volumen tramado: las celdas del tono base de `prov` se sombrean entre la sombra abismal y la luz
+ * (rampa '9' + prov), con el canto de sombra de `n` celdas abajo a la derecha y un filo de luz arriba a la izquierda.
+ */
+function volumen(l: Lienzo, prov: string, n: number, brillo = true, base = 0.5): void {
+  sombrear(l, prov[2], '9' + prov, { base, pendiente: 1.15, borde: n, fuerzaBorde: 0.45, brillo: brillo ? 1 : 0, fuerzaBrillo: 0.2, ancho: 0.85, masa: prov + '9' });
 }
 
 /**
@@ -38,29 +45,30 @@ function volumen(l: Lienzo, prov: string, n: number, brillo = true): void {
  * nariz que asoma, boca y mejilla. `pelo` y su sombra enmarcan la cara.
  */
 function cabeza(l: Lienzo, cx: number, cy: number, pelo: [string, string], opts: { barba?: boolean; boca?: string } = {}): void {
-  // pelo de atrás (melena hasta la nuca)
-  l.elipse(cx + 1.5, cy - 1, 8, 9, pelo[0]);
-  l.rect(cx + 2, cy, 7, 8, pelo[0]);
-  l.sombra(pelo[0], pelo[1], 1, 1, 2, pelo[0] + pelo[1]);
-  // cara
-  l.elipse(cx - 0.5, cy + 0.5, 6.5, 8, 'p');
-  l.rect(cx - 7, cy + 1, 1, 2, 'p'); // la nariz asoma por el perfil
-  l.sombra('p', 's', 1, 0, 2);
+  // pelo de atrás (melena hasta la nuca), tramado
+  l.elipse(cx + 1.5, cy - 1, 8, 9, '¤');
+  l.rect(cx + 2, cy, 7, 8, '¤');
+  sombrear(l, '¤', '9' + pelo[1] + pelo[0], { base: 0.45, pendiente: 1, borde: 2, fuerzaBorde: 0.4, brillo: 0 });
+  // cara en claroscuro: la mitad de la sombra cae a la piel violácea
+  l.elipse(cx - 0.5, cy + 0.5, 6.5, 8, '§');
+  l.rect(cx - 7, cy + 1, 1, 2, '§'); // la nariz asoma por el perfil
+  sombrear(l, '§', '9spP', { base: 0.56, pendiente: 1.15, borde: 2, fuerzaBorde: 0.45, brillo: 1, fuerzaBrillo: 0.2, ancho: 0.8 });
   l.rect(cx + 4, cy, 2, 3, 's'); // oreja
   // flequillo
   l.poli([[cx - 7, cy - 4], [cx - 5, cy - 8], [cx + 2, cy - 9], [cx + 7, cy - 6], [cx + 6, cy - 2], [cx + 1, cy - 5], [cx - 4, cy - 4]], pelo[0]);
   l.sombra(pelo[0], pelo[1], 1, 1, 1, pelo[0] + pelo[1]);
-  // ojos, cejas, nariz y boca
+  // ojos hundidos y cejas que bajan hacia la nariz (la mirada severa), nariz con su sombra y la boca recta
   l.rect(cx - 5, cy - 1, 1, 2, 'k').rect(cx - 1, cy - 1, 1, 2, 'k');
-  l.rect(cx - 6, cy - 3, 2, 1, pelo[1]).rect(cx - 1, cy - 3, 3, 1, pelo[1]);
-  l.rect(cx - 4, cy + 2, 1, 2, 's');
-  l.rect(cx - 3, cy + 5, 3, 1, opts.boca ?? 'R');
-  l.rect(cx - 6, cy + 3, 2, 1, 'e');
+  l.set(cx - 5, cy - 2, 's').set(cx - 1, cy - 2, 's');
+  l.linea(cx - 7, cy - 4, cx - 4, cy - 3, 'k').linea(cx - 2, cy - 3, cx + 1, cy - 4, 'k');
+  l.rect(cx - 4, cy + 2, 1, 2, 's').set(cx - 3, cy + 3, '9');
+  l.rect(cx - 4, cy + 5, 4, 1, opts.boca ?? 'v');
   if (opts.barba) {
-    l.poli([[cx - 7, cy + 4], [cx + 5, cy + 2], [cx + 5, cy + 9], [cx + 1, cy + 15], [cx - 4, cy + 14], [cx - 7, cy + 9]], 'w');
+    l.poli([[cx - 7, cy + 4], [cx + 5, cy + 2], [cx + 5, cy + 9], [cx + 1, cy + 16], [cx - 4, cy + 14], [cx - 7, cy + 9]], '¤');
+    sombrear(l, '¤', '9shw', { base: 0.6, pendiente: 1, borde: 2, fuerzaBorde: 0.45, brillo: 0, ancho: 0.8 });
+    rayado(l, 'hw', 's', { angulo: '|', paso: 2, caja: [cx - 6, cy + 8, cx + 4, cy + 15], hasta: 0.6 });
     l.rect(cx - 6, cy + 4, 8, 1, 'h'); // bigote
-    l.rect(cx - 3, cy + 6, 3, 1, 'R');
-    l.sombra('w', 'h', 1, 1, 2, 'wh');
+    l.rect(cx - 3, cy + 6, 4, 1, 'v');
   }
 }
 
@@ -74,7 +82,7 @@ function vestir(m: string[], s: Suit): string[] {
     mapa[TUN[i]] = tun[i];
     mapa[CAP[i]] = cap[i];
   }
-  return m.map((f) => [...f].map((k) => mapa[k] ?? k).join(''));
+  return heredar(m.map((f) => [...f].map((k) => mapa[k] ?? k).join('')), m);
 }
 
 /** Pega la pinta del palo con su centro en (x, y). */
@@ -82,10 +90,10 @@ function empuñar(l: Lienzo, s: Suit, x: number, y: number, v = 0): void {
   const p = pintaNaipe(s, 'chica', v);
   l.pegar(p, Math.round(x - p[0].length / 2), Math.round(y - p.length / 2));
 }
-/** Una mano pálida. */
+/** Una mano en claroscuro. */
 const mano = (l: Lienzo, x: number, y: number) => {
-  l.elipse(x, y, 2.8, 2.6, 'p');
-  l.sombra('p', 's', 1, 1, 1, 'ps');
+  l.elipse(x, y, 2.8, 2.6, '§');
+  sombrear(l, '§', '9spP', { base: 0.55, borde: 1, fuerzaBorde: 0.4, brillo: 0 });
 };
 
 /** Manga abullonada de (x0, y0) a (x1, y1), con franjas de oro. */
@@ -108,7 +116,8 @@ function sota(s: Suit): string[] {
   // calzas partidas y zapatos
   l.poli([[cx - 9, 86], [cx - 1, 86], [cx - 2, 126], [cx - 8, 126]], '7');
   l.poli([[cx + 1, 86], [cx + 9, 86], [cx + 8, 126], [cx + 2, 126]], '3');
-  l.sombra('7', '6', 1, 0, 2, '76').sombra('3', '2', 1, 0, 2, '32');
+  volumen(l, CAP, 2, false, 0.45);
+  volumen(l, TUN, 2, false, 0.45);
   l.rect(cx - 2, 96, 1, 22, '6');
   l.poli([[cx - 12, 126], [cx - 2, 125], [cx - 2, 130], [cx - 12, 130]], 'N').poli([[cx + 1, 125], [cx + 10, 125], [cx + 10, 130], [cx + 1, 130]], 'N');
   l.rect(cx - 11, 126, 4, 1, 'n').rect(cx + 2, 126, 3, 1, 'n');
@@ -122,8 +131,8 @@ function sota(s: Suit): string[] {
   for (let y = 46; y < 63; y += 4) l.rect(cx - 1, y, 2, 2, 'y');
   l.rect(cx - 12, 64, 24, 3, 'n').rect(cx - 2, 64, 4, 3, 'y').set(cx - 1, 65, 'o');
   // cuello de lechuguilla
-  l.elipse(cx, 41, 8, 2.5, 'w');
-  l.sombra('w', 'h', 1, 1, 1);
+  l.elipse(cx, 41, 8, 2.5, '¤');
+  sombrear(l, '¤', '9hw', { base: 0.62, borde: 1, fuerzaBorde: 0.45, brillo: 0 });
   // brazo derecho (el del fondo) caído, con la mano sobre el cinto
   manga(l, cx + 13, 45, cx + 15, 62, 3.6, '2');
   mano(l, cx + 14, 66);
@@ -133,7 +142,7 @@ function sota(s: Suit): string[] {
   // cabeza con bonete de pluma
   cabeza(l, cx - 1, 29, ['y', 'o']);
   l.poli([[cx - 10, 22], [cx - 7, 15], [cx + 6, 14], [cx + 10, 21]], '7');
-  l.sombra('7', '6', 1, 0, 3, CAP);
+  volumen(l, CAP, 2);
   l.rect(cx - 10, 21, 21, 2, 'y').rect(cx - 10, 22, 21, 1, 'o');
   l.trazo(cx + 6, 16, cx + 16, 8, 1.5, 'w');
   l.trazo(cx + 8, 15, cx + 17, 10, 0.6, 'h', 'w');
@@ -171,8 +180,7 @@ function caballo(s: Suit): string[] {
   l.poli([[24, 84], [36, 82], [32, 66], [26, 56], [18, 58], [20, 70]], 'J');
   l.poli([[18, 56], [26, 54], [28, 62], [20, 72], [12, 76], [8, 74], [9, 68]], 'J');
   l.poli([[20, 54], [22, 48], [25, 54]], 'J'); // oreja
-  l.sombra('J', 'j', 1, 1, 3, 'Jju');
-  l.sombra('J', 'u', -1, -1, 1, 'Jju');
+  sombrear(l, 'J', '9ijJu', { base: 0.5, pendiente: 1.15, borde: 4, fuerzaBorde: 0.45, brillo: 1, fuerzaBrillo: 0.25, ancho: 0.85, masa: 'Jjiu9' });
   // crin, ojo, ollar y riendas
   for (let i = 0; i < 6; i++) l.trazo(26 + i * 1.2, 56 + i * 4, 31 + i * 1.2, 58 + i * 4, 1.2, 'i');
   l.rect(17, 62, 2, 2, 'k').set(17, 62, 'u');
@@ -180,9 +188,8 @@ function caballo(s: Suit): string[] {
   l.trazo(12, 68, 20, 66, 0.6, 'v');
   l.trazo(20, 66, 39, 68, 0.6, 'v');
   // gualdrapa del palo, con su ribete y sus flecos de oro
-  l.poli([[34, 78], [66, 80], [70, 100], [52, 104], [30, 100]], '6');
-  l.sombra('6', '5', 1, 1, 3, CAP);
-  l.sombra('6', '7', -1, -1, 1, CAP);
+  l.poli([[34, 78], [66, 80], [70, 100], [52, 104], [30, 100]], '7');
+  volumen(l, CAP, 3, true, 0.42);
   l.trazo(30, 100, 52, 104, 0.8, 'y').trazo(52, 104, 70, 100, 0.8, 'y');
   for (let x = 31; x < 69; x += 3) l.rect(x, x < 52 ? 101 + Math.round((x - 30) * 0.2) : 104 - Math.round((x - 52) * 0.24), 1, 3, 'o');
   for (let x = 38; x < 64; x += 8) l.rect(x, 90, 3, 3, 'y');
@@ -197,15 +204,15 @@ function caballo(s: Suit): string[] {
   l.poli([[41, 50], [59, 50], [57, 76], [43, 76]], '3');
   volumen(l, TUN, 4);
   l.rect(43, 72, 14, 3, 'y').rect(43, 74, 14, 1, 'o');
-  l.elipse(50, 50, 7, 2.2, 'w');
-  l.sombra('w', 'h', 1, 1, 1);
+  l.elipse(50, 50, 7, 2.2, '¤');
+  sombrear(l, '¤', '9hw', { base: 0.62, borde: 1, fuerzaBorde: 0.45, brillo: 0 });
   // el brazo del fondo, en alto con la pinta; el de delante lleva las riendas
   manga(l, 57, 54, 62, 40, 3.2, '2');
   manga(l, 43, 53, 39, 65, 3.4, '3');
   l.sombra('3', '4', -1, -1, 1, TUN);
   cabeza(l, 49, 38, ['n', 'N']);
   l.poli([[38, 31], [41, 25], [56, 24], [60, 30]], '7');
-  l.sombra('7', '6', 1, 0, 3, CAP);
+  volumen(l, CAP, 2);
   l.rect(36, 30, 26, 2, 'y').rect(36, 31, 26, 1, 'o');
   l.trazo(40, 28, 31, 22, 1.6, 'Y');
   l.trazo(39, 27, 32, 23, 0.7, 'y', 'Y');
@@ -243,17 +250,16 @@ function rey(s: Suit): string[] {
   for (let x = cx - 22; x < cx + 20; x += 6) l.rect(x, 130, 1, 2, 'k');
   l.rect(cx - 10, 132, 8, 3, 'N').rect(cx + 2, 132, 8, 3, 'N');
   // esclavina (la capa corta de los hombros) con su cadena de oro
-  l.poli([[cx - 17, 41], [cx + 17, 41], [cx + 21, 56], [cx, 62], [cx - 21, 56]], '6');
-  l.sombra('6', '5', 1, 1, 3, CAP);
-  l.sombra('6', '7', -1, -1, 1, CAP);
+  l.poli([[cx - 17, 41], [cx + 17, 41], [cx + 21, 56], [cx, 62], [cx - 21, 56]], '7');
+  volumen(l, CAP, 3, true, 0.42);
   for (let x = cx - 15; x <= cx + 15; x += 4) l.rect(x, 50 + Math.round((15 - Math.abs(x - cx)) * 0.38), 2, 2, 'y');
   // cuello de armiño
-  l.elipse(cx, 41, 10, 3, 'w');
-  l.sombra('w', 'h', 1, 1, 1);
+  l.elipse(cx, 41, 10, 3, '¤');
+  sombrear(l, '¤', '9hw', { base: 0.62, borde: 1, fuerzaBorde: 0.45, brillo: 0 });
   l.set(cx - 5, 41, 'k').set(cx + 1, 42, 'k').set(cx + 6, 41, 'k');
   // brazos: el de la pinta, hacia afuera; el otro, con la mano en el cinto
-  manga(l, cx - 17, 46, cx - 23, 62, 4, '6');
-  l.sombra('6', '7', -1, -1, 1, CAP);
+  manga(l, cx - 17, 46, cx - 23, 62, 4, '7');
+  volumen(l, CAP, 2, true, 0.4);
   mano(l, cx + 11, 72);
   // cabeza con barba y corona
   cabeza(l, cx, 30, ['w', 'h'], { barba: true });

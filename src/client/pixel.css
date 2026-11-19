@@ -1,22 +1,23 @@
-/* SANGRE Y PALO V40 · fase 2b — el naipe y las piezas en pixel-art «sin línea» (src/client/pixel/).
+/* SANGRE Y PALO V40 · fase 2c — papel hueso #f4efe2 y tintas de palo del tono hondo de cada rampa saturada.
+   V40 · fase 2b — el naipe y las piezas en pixel-art «sin línea» (src/client/pixel/).
    Va la última (main.ts): manda sobre deck.css en lo que toca al naipe. Nada de reglas de juego ni de maquetación de
    pantallas: tinta, píxel nítido y la animación del Bufón (solo transform y opacity, sin filtros; quieto con
    «Reducir movimiento»). */
 
 /* ── la paleta de palo: deck.css (V38) reafirmaba el verde botella de Bastos; la de la baraja española manda ── */
 :root {
-  --suit-C: #34481a;
-  --suitd-C: #b9cd6e;
+  --suit-C: #0a5424;
+  --suitd-C: #5ceb86;
 }
 :root.contraste {
-  --suit-C: #26340e;
-  --suitd-C: #d3e29a;
+  --suit-C: #063d1a;
+  --suitd-C: #9cf5b4;
 }
 
 /* ── el naipe: marfil luminoso, esquinas redondeadas, un filo fino y una sombra suave (fuera el doble marco negro).
    El papel va por variable local: los tratamientos (forjado, agrietado) y las selecciones conservan lo suyo. ── */
 :root {
-  --naipe-papel: #f8f3e9;
+  --naipe-papel: #f4efe2;
 }
 .card {
   --card-paper: var(--naipe-papel);
@@ -97,12 +98,9 @@ svg.px.icono {
   vertical-align: middle;
 }
 
-/* ── los Reyes jefe en la mesa: vencido, el busto se hunde una celda y pierde color ── */
+/* ── los Reyes jefe en la mesa: vencido, el busto se hunde una celda (el color ya lo pierde el dibujo: fase 2c) ── */
 .monarca.px.vencido .m-bust {
   transform: translateY(2px);
-}
-.monarca.px.vencido {
-  filter: saturate(0.5);
 }
 
 /* ═════════════ el Bufón (bufonSvg) ═════════════

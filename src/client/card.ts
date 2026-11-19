@@ -339,7 +339,7 @@ const PORTRAIT: Record<string, Portrait> = {
 function portraitBody(rid: string): string {
   // V40 · fase 2: el Rey jefe ('j-espadas'…) tiene su busto pixel-art, sobre el marfil y con el filete de su palo
   const rey = rid.startsWith('j-') ? rid.slice(2) : '';
-  if (esReyPx(rey)) return `<rect x="10" y="10" width="230" height="302" fill="#f8f3e9"/><g shape-rendering="crispEdges">${reyRects(rey, 13, 88, 3.5)}</g>`;
+  if (esReyPx(rey)) return `<rect x="10" y="10" width="230" height="302" fill="#f4efe2"/><g shape-rendering="crispEdges">${reyRects(rey, 13, 88, 3.5)}</g>`;
   // V40 1c · el resto de retratos (el Tratante) sigue en grabado
   const id = rid.startsWith('j-') && ARTE_REY[rid.slice(2)] ? `j-${ARTE_REY[rid.slice(2)]}` : rid;
   const p = PORTRAIT[id];

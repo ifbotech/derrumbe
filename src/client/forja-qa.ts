@@ -22,7 +22,7 @@ export interface Pieza {
 }
 
 /** El papel sobre el que se mide todo: el del naipe (V40 · fase 2b: marfil luminoso). */
-const PAPEL = '#f8f3e9';
+const PAPEL = '#f4efe2';
 /** V40 · todos los naipes: del 1 al 9 y la Corte (10 Sota, 11 Caballo, 12 Rey) de cada palo, el Comodín y los dorsos. */
 const RANGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const DORSOS = ['escoba', 'truco', 'chinchon', 'mentiroso', 'chancho'];

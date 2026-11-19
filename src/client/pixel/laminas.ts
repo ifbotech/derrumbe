@@ -7,11 +7,12 @@ import { EXPRESIONES, bufonSvg } from './bufon';
 import { MAZOS, dorsoSvg } from './dorsos';
 import { MOTIVO_AMULETO, MOTIVO_BENDICION, MOTIVO_TRAMPA, amuletoSvg, bendicionSvg, trampaSvg } from './iconos';
 import { caraComodin, caraPalo } from './naipes';
+import { OSC_HEX, PX } from './paleta';
 import { pintaHalo, pintaNaipeSvg, tallaDe } from './pintas';
 import { REYES_PX, reySvg } from './reyes';
 
 const PALOS: Suit[] = ['S', 'C', 'D', 'H'];
-const TINTA: Record<Suit, string> = { S: '#1d3a66', C: '#34481a', D: '#633f06', H: '#8e1424' };
+const TINTA: Record<Suit, string> = OSC_HEX;
 const NOMBRE: Record<number, string> = { 10: '10', 11: '11', 12: '12' };
 
 /** El índice, como lo pone card.ts: el número en su placa y el glifo del palo debajo (abajo a la derecha, girado). */
@@ -19,14 +20,14 @@ function indice(s: Suit | 'X', r: number, w: number, abajo: boolean): string {
   const fs = Math.max(14, Math.round(w * 0.22));
   const glifo = s === 'X' ? '<span style="font-size:0.6em">★</span>' : pintaHalo(s).replace('<svg ', `<svg style="height:${Math.max(12, Math.round(w * 0.12))}px;width:auto;display:block" `);
   const pos = abajo ? 'right:3.4%;bottom:2.6%;transform:rotate(180deg)' : 'left:3.4%;top:2.6%';
-  const num = s === 'X' ? '' : `<b style="background:#f8f3e9;padding:0 .05em;letter-spacing:${r >= 10 ? '-0.08em' : '-0.04em'}">${NOMBRE[r] ?? r}</b>`;
-  return `<div style="position:absolute;${pos};display:flex;flex-direction:column;align-items:center;gap:${Math.round(w * 0.012)}px;font:400 ${fs}px/0.92 'Corona Cifras','Arial Black',sans-serif;color:${s === 'X' ? '#2a2220' : TINTA[s]}">${num}${glifo}</div>`;
+  const num = s === 'X' ? '' : `<b style="background:${PX.papel};padding:0 .05em;letter-spacing:${r >= 10 ? '-0.08em' : '-0.04em'}">${NOMBRE[r] ?? r}</b>`;
+  return `<div style="position:absolute;${pos};display:flex;flex-direction:column;align-items:center;gap:${Math.round(w * 0.012)}px;font:400 ${fs}px/0.92 'Corona Cifras','Arial Black',sans-serif;color:${s === 'X' ? PX.tinta : TINTA[s]}">${num}${glifo}</div>`;
 }
 
 /** Un naipe como en la mesa: marfil luminoso, esquinas redondeadas, filo fino, sombra suave y su índice. */
 export function naipe(cara: string, w: number, s: Suit | 'X' = 'X', r = 0): string {
   const h = Math.round(w * 1.4);
-  return `<div class="nh" style="position:relative;width:${w}px;height:${h}px;background:#f8f3e9;border:1px solid rgba(42,34,32,.3);border-radius:${Math.round(w * 0.07)}px;box-shadow:0 2px 0 rgba(10,9,8,.32),0 5px 12px rgba(10,9,8,.26);overflow:hidden;flex:none">${cara.replace('<svg ', '<svg style="position:absolute;inset:0;width:100%;height:100%" ')}${r ? indice(s, r, w, false) + indice(s, r, w, true) : s === 'X' ? indice('X', 0, w, false) + indice('X', 0, w, true) : ''}</div>`;
+  return `<div class="nh" style="position:relative;width:${w}px;height:${h}px;background:${PX.papel};border:1px solid rgba(28,16,36,.45);border-radius:${Math.round(w * 0.07)}px;box-shadow:0 2px 0 rgba(10,9,8,.32),0 5px 12px rgba(10,9,8,.26);overflow:hidden;flex:none">${cara.replace('<svg ', '<svg style="position:absolute;inset:0;width:100%;height:100%" ')}${r ? indice(s, r, w, false) + indice(s, r, w, true) : s === 'X' ? indice('X', 0, w, false) + indice('X', 0, w, true) : ''}</div>`;
 }
 const dorso = (m: string, w: number) =>
   `<div style="position:relative;width:${w}px;height:${Math.round(w * 1.4)}px;border-radius:${Math.round(w * 0.07)}px;overflow:hidden;border:1px solid rgba(42,34,32,.45);box-shadow:0 2px 0 rgba(10,9,8,.32),0 5px 12px rgba(10,9,8,.26);flex:none">${dorsoSvg(m).replace('<svg ', '<svg style="position:absolute;inset:0;width:100%;height:100%" ')}</div>`;
@@ -53,6 +54,8 @@ export const LAMINAS: Record<string, () => string> = {
     titulo('Amuletos, Trampas y Bendiciones (56 px)') +
     `<div class="fila">${Object.keys(MOTIVO_AMULETO).map((id) => tam(amuletoSvg(id), 56)).join('')}</div>` +
     `<div class="fila">${Object.keys(MOTIVO_TRAMPA).map((id) => tam(trampaSvg(id), 56)).join('')}${Object.keys(MOTIVO_BENDICION).map((id) => tam(bendicionSvg(id), 56, 64)).join('')}</div>`,
+  /** La misma hoja de contacto, sobre la penumbra tramada de la mesa (scripts/lamina-pixel.ts le pone el fondo). */
+  'contact-sheet-oscura': () => LAMINAS['contact-sheet'](),
   /** Las pintas sueltas a escala entera (×4 y ×2) y los glifos. */
   pintas: () =>
     `<div class="fila">${PALOS.flatMap((s) => (s === 'C' ? [0, 1] : [0]).map((v) => {
@@ -71,7 +74,7 @@ export const LAMINAS: Record<string, () => string> = {
   /** Los naipes del 2 al 9 a 192 px (escala ×2). */
   numeros: () => PALOS.map((s) => `<div class="fila">${[2, 3, 4, 5, 6, 7, 8, 9].map((r) => naipe(caraPalo(s, r), 192, s, r)).join('')}</div>`).join(''),
   bufon: () =>
-    `<div class="fila">${EXPRESIONES.map((e) => pie(tam(bufonSvg(e), 240, 300), e)).join('')}</div>` +
+    `<div class="fila">${EXPRESIONES.map((e) => pie(tam(bufonSvg(e), 288, 360), e)).join('')}</div>` +
     `<div class="fila mesa">${EXPRESIONES.map((e) => pie(tam(bufonSvg(e), 96, 120), e)).join('')}</div>`,
   reyes: () =>
     [256, 64, 24].map((lado) => `<div class="fila">${REYES_PX.flatMap((r) => (['calma', 'vencido'] as const).map((a) => tam(reySvg(r, a), lado))).join('')}</div>`).join(''),
