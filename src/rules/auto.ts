@@ -18,12 +18,12 @@ export interface AutoCtx {
   coop: boolean;
 }
 export interface AutoOpts {
-  /** Auto-saquear: elige el Botín (reliquia del monarca) y la Selección. */
+  /** Auto-saquear: elige el Botín (reliquia del monarca), la Selección y la Bendición (V40 1c). */
   saquear: boolean;
   /** Auto-taberna: compra en La Taberna, elige ruta en el Mapa y opción en los Secretos. */
   taberna: boolean;
 }
-export type MotivoPausa = 'botin' | 'taberna' | 'mapa' | 'secreto' | 'fin' | 'coop';
+export type MotivoPausa = 'botin' | 'bendicion' | 'taberna' | 'mapa' | 'secreto' | 'fin' | 'coop';
 export type PasoAuto = { t: 'mesa'; action: Action } | { t: 'campana'; action: RunAction } | { t: 'pausa'; motivo: MotivoPausa };
 
 /** Clave del aviso de una línea de cada pausa (`auto.pausa.<motivo>`, en los dos idiomas). */
@@ -55,6 +55,9 @@ export function pasoAuto(ctx: AutoCtx, opts: AutoOpts): PasoAuto | null {
       return decide('mapa', stageDef(run.stage).boss || opts.taberna);
     case 'reward':
       return decide('botin', opts.saquear);
+    // V40 1c · la Bendición se elige como el Botín: con Auto-saquear
+    case 'bendicion':
+      return decide('bendicion', opts.saquear);
     case 'shop':
       return decide('taberna', opts.taberna);
     case 'event':

@@ -117,7 +117,6 @@ export const TERMS: string[] = [
   'Motín',
   'Manga',
   'Furia',
-  'Tahúr',
   'Reliquia',
   'Reliquias',
   'Ases',

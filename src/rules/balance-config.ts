@@ -56,18 +56,29 @@ export interface BalanceConfig {
   clausura: { stages: number[]; threat: number };
   /** Anillo de sello: cartas que sella al empezar cada asalto. */
   timbre: { stamps: number };
-  /** Cifras de los decretos de los monarcas. */
-  monarcas: {
-    doble: { contraataques: number; ataque: number };
-    escasez: { cartas: number; ataque: number };
-    intemperie: { escudoTope: number };
-    furia: { ataque: number };
-    inestable: { furia: number; vida: number };
-    /** V35 · lo que quita cada ♥ jugada contra la Dama del Cáliz. */
-    sequia: { veneno: number };
-    /** V35 · cuánto Ataque de menos tienen los guardias del Inquisidor (sin Aturdido el duelo se le hace largo). */
-    blindaje: { ataque: number };
+  /**
+   * V40 1c · Los 4 Reyes jefe: su Vida (× la Vida del monarca, `furia.jefeVida`), la Furia que sube cada turno que
+   * siguen al frente y la cifra de su rasgo. `asalto2`: en el asalto 2 el Rey ocupa el sitio del Caballo, con esta
+   * Vida (×) y este Ataque (+) de más sobre el de un Rey.
+   */
+  reyes: {
+    espadas: { vida: number; furia: number; perfora: number };
+    bastos: { vida: number; furia: number };
+    oros: { vida: number; furia: number; dado: number };
+    copas: { vida: number; furia: number; cura: number };
+    asalto2: { vida: number; ataque: number };
   };
+  /** V40 1c · La oferta de Bendiciones: Reyes que ofrecen al empezar y entre asaltos, y la probabilidad de una Dual. */
+  oferta: { inicio: number; entre: number; dual: number };
+  /** V40 1c · Cifras de los bonos de nivel [2/4] de cada Rey. */
+  niveles: {
+    espadas: { multi: number; x: number };
+    bastos: { escudo: number; dano: number; tope: number };
+    oros: { oro: number; caras: number };
+    copas: { vida: number; cartas: number; cura: number };
+  };
+  /** V40 1c · Cifras de cada Bendición (`carga`: lo que da cada carga), por `id`. */
+  bendiciones: Record<string, Record<string, number>>;
   /** Precios de La Taberna. */
   taberna: {
     rarezas: Record<'comun' | 'oficio' | 'capataz' | 'reliquia', { cost: number; weight: number }>;
@@ -112,14 +123,6 @@ export interface BalanceConfig {
   golpe: { racha: number; rachaTope: number; expuesto: number; onda: number; oroExacto: number };
   acabados: { forjado: number; templado: number; policromado: number; agrietado: number; agrietadoRompe: number };
   sellos: { jornal: number };
-  /** V35 · Cifras de los bonos de cada rasgo de build (con 2, 4 y 6 Reliquias). */
-  rasgos: {
-    sangre: { vida: number; cada: number; multi: number; x: number };
-    tahur: { oro: number; x: number };
-    verdugo: { pct: number; pct2: number; dano: number };
-    bastion: { escudo: number; dano: number; dano2: number; tope: number };
-    horda: { multi: number; cartas: number };
-  };
   /** Asalto único (partida clásica): lo que cambia sobre la mesa por defecto. */
   clasica: {
     obra: { floorHp: PorClave; floorThreat: PorClave; handSize: PorClave; collapseSiege: number; cuadrilla: number[]; fatigueStart: number; fatigueEvery: number };

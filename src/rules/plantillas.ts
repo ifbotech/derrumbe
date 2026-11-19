@@ -10,6 +10,7 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'asalto.infinito.nombre': 'Trono infinito {n}',
   // logros que se arman con un monarca (achievements.ts)
   'logro.desbloquea.carta': 'Carta legendaria: {nombre}',
+  'logro.desbloquea.cartas': 'Cartas legendarias: {a} y {b}',
   // causa de la derrota (autopsy.ts)
   'causa.quedaba.1': 'Te quedaba {n} de Vida',
   'causa.quedaba.n': 'Te quedaban {n} de Vida',
@@ -71,6 +72,8 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'paso.cadena': 'los {n} Contraataques siguientes no llegan',
   'paso.cadena.quedan': 'quedan {n}',
   'paso.carga_mazo': 'carga {n}',
+  // V40 1c · el Rey de Copas jefe se cura cada turno que sigue al frente
+  'paso.se_cura': 'se cura {n}',
   // errores que devuelven las reglas (engine.ts, run.ts)
   'error.jugadores': 'Se juega de 1 a 4 jugadores.',
   'error.repetidas': 'Cartas repetidas.',
@@ -113,6 +116,8 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'error.no_vender': 'En pleno asalto no se vende.',
   'error.no_llevas': 'No llevás esa reliquia.',
   'error.no_seguir': 'Aún no podés seguir.',
+  'error.sin_bendicion': 'No hay Bendiciones que elegir.',
+  'error.no_en_bendicion': 'Esa Bendición no está en la oferta.',
   'error.sin_secreto': 'No hay ningún Secreto de la cripta.',
   'error.opcion': 'Esa opción no existe.',
   'error.no_ahora': 'No podés elegir eso ahora.',
@@ -139,9 +144,9 @@ export const ES_PLANTILLAS: Record<string, string> = {
   'suerte.doble.no.titulo': 'Nada',
   'suerte.doble.no.texto': 'Perdés las {a} ✦ de esta campaña.',
   'suerte.altar.si.titulo': 'El altar responde',
-  'suerte.altar.si.texto': 'Te llevás «{x}»: ya tenés {n} de {r}.',
+  'suerte.altar.si.texto': 'El {r} te da «{x}»: ya llevás {n} de las suyas.',
   'suerte.altar.no.titulo': 'El altar calla',
-  'suerte.altar.no.texto': 'No quedaba ninguna Reliquia de {r}: +{n} de oro.',
+  'suerte.altar.no.texto': 'El {r} ya no tenía Bendiciones que darte: +{n} de oro.',
   'suerte.dado.blanca.titulo': 'Cara blanca',
   'suerte.dado.blanca.texto': 'Dos formaciones suben 1 nivel.',
   'suerte.dado.negra.titulo': 'Cara negra',

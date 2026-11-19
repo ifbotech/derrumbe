@@ -15,7 +15,9 @@ import type { Formation, Seal, Suit, Treatment, TowerFx } from '../../rules/engi
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, UPGRADES } from '../../rules/run';
 import { cifraDe } from '../../rules/arbol';
 import { BASE_POOL, SPECIALS } from '../../rules/specials';
-import { RASGOS, TOOL_SLOTS, TOOLS } from '../../rules/tools';
+import { TOOL_SLOTS, TOOLS } from '../../rules/tools';
+import { BENDICIONES, REY_IDS } from '../../rules/reyes';
+import type { Relacion, ReyId } from '../../rules/reyes';
 import { CIFRAS_REGLA, REGLAS } from '../../rules/mazos';
 import type { Arch, Rarity } from '../../rules/tools';
 import { ES_UI, type ClaveUi } from './es';
@@ -114,13 +116,13 @@ const ESPECIALES: Record<string, [string, string]> = {
   embestida: ['Onslaught', '+{flat} Damage, and +{wallForce} more for each point of Shield standing.'],
   sierra: ['Secret Passage', 'This hit ignores Immune: your cards deal their Damage against any throne.'],
   ferretero: ['The Storekeeper', '+{gold} gold and you draw {draw} extra card.'],
-  'j-doble': ['The Two-Faced King', 'No Counterattack and you draw {draw} extra card.'],
-  'j-escasez': ['The Usurer', '+{gold} gold.'],
-  'j-sequia': ['The Chalice Lady', '+{heal} Health.'],
-  'j-intemperie': ['The Frost Queen', '+{wall} Shield and no Counterattack.'],
-  'j-blindaje': ['The Inquisitor', '×{strikeMult} Mult.'],
-  'j-furia': ['The Executioner', '+{flat} Damage and the hit Pierces.'],
-  'j-inestable': ['The Clockmaker', '{splash} points to each of the other thrones.'],
+  'j-doble': ["The King's Jug", 'No Counterattack and you draw {draw} extra card.'],
+  'j-escasez': ["The King's Purse", '+{gold} gold.'],
+  'j-sequia': ["The King's Cup", '+{heal} Health.'],
+  'j-intemperie': ["The King's Club", '+{wall} Shield and no Counterattack.'],
+  'j-blindaje': ['The Crown of Swords', '×{strikeMult} Mult.'],
+  'j-furia': ["The King's Sword", '+{flat} Damage and the hit Pierces.'],
+  'j-inestable': ['Rain of Coins', '{splash} points to each of the other thrones.'],
 };
 
 interface MonarcaEn {
@@ -133,72 +135,45 @@ interface MonarcaEn {
   caida: string;
 }
 /**
- * The seven monarchs. Their table talk keeps the Spanish card-duel swagger (envido, truco, retruco) through
- * the betting of a card table: bet, call, raise, all in, bluff. No figures and no rule words.
+ * V40 1c · The 4 Kings as bosses. Their table talk keeps the Spanish card-duel swagger (envido, truco, retruco)
+ * through the betting of a card table: bet, call, raise, all in, bluff. No figures and no rule words.
  */
 const MONARCAS: Record<string, MonarcaEn> = {
-  doble: {
-    nombre: 'The Two-Faced King',
-    decreto: 'Double Counterattack',
-    desc: 'There are {contraataques} Counterattacks each turn, but each one attacks {pct} % weaker.',
-    badge: '{contraataques} Counterattacks per turn',
-    entrada: 'Care to bet? I have two faces, and both of them are bluffing.',
-    contraataque: 'I raise! And the moment you turn around, I raise again.',
-    caida: 'My card flipped over... and on both sides at once.',
+  espadas: {
+    nombre: 'The King of Swords',
+    decreto: "King's Edge",
+    desc: 'While he leads, his Counterattack goes through {perfora} of your Shield.',
+    badge: 'Goes through {perfora} Shield',
+    entrada: 'Draw, if your hand is steady. I call truco with my sword.',
+    contraataque: 'I raise! And I sign it with the point of my blade.',
+    caida: 'You won the hand... keep that edge, it used to be mine.',
   },
-  escasez: {
-    nombre: 'The Usurer',
-    decreto: 'Scarcity',
-    desc: 'Everyone plays with {cartas} fewer card in hand and his guards hit +{ataque}.',
-    badge: '{cartas} fewer card in hand',
-    entrada: 'No credit at this table, dear. Play with what you have.',
-    contraataque: 'I came to collect the interest. Call? I always call.',
-    caida: 'Not a copper left to my name... put it on my tab, friend.',
+  bastos: {
+    nombre: 'The King of Clubs',
+    decreto: 'Oak Bark',
+    desc: 'While he leads, he is never Exposed nor Stunned.',
+    badge: 'Never Exposed nor Stunned',
+    entrada: 'I am hardwood, kid. Not even a bluff gets in here.',
+    contraataque: 'An old-school clubbing. Shall we raise to four?',
+    caida: 'You split my club... I never knew it was all splinters.',
   },
-  sequia: {
-    nombre: 'The Chalice Lady',
-    decreto: 'Poisoned Chalice',
-    desc: 'Your Cups do not heal: each hit with Cups costs you {veneno} Health.',
-    badge: 'Your Cups cost you {veneno}',
-    entrada: 'A toast, darling. My cup has never mended a single heart.',
-    contraataque: 'One more little sip... no? I will pour it for you anyway.',
-    caida: 'I spilled my chalice all over the felt. How very untidy.',
+  oros: {
+    nombre: 'The King of Coins',
+    decreto: 'Tithe',
+    desc: 'While he leads, he rolls a die each turn: his Counterattack adds +1 to +{dado}.',
+    badge: 'Adds a die of +1 to +{dado}',
+    entrada: 'Everything has a price at my table, even your luck. Bet?',
+    contraataque: 'The house always collects, dear. Tonight I am the house.',
+    caida: 'You emptied my chest... take the trump card, it is over.',
   },
-  intemperie: {
-    nombre: 'The Frost Queen',
-    decreto: 'Frost',
-    desc: 'Shield cannot go above {escudoTope}.',
-    badge: 'Shield max {escudoTope}',
-    entrada: 'Bundle up, little card. At my table no blanket covers you.',
-    contraataque: 'I call and I raise, with frost on every word.',
-    caida: 'I am melting... and your hands are barely warm. How unfair.',
-  },
-  blindaje: {
-    nombre: 'The Inquisitor',
-    decreto: 'Iron Guard',
-    desc: 'No guard is ever Stunned, but they hit {ataque} less.',
-    badge: 'Never Stunned',
-    entrada: 'My guards pray with their eyes open. No one surprises them.',
-    contraataque: 'Confess your hand, heretic. A fierce card never lies.',
-    caida: 'Heresy! They beat me with marked cards.',
-  },
-  furia: {
-    nombre: 'The Butcher',
-    decreto: 'Sharpened Axe',
-    desc: 'The Attack of every guard rises by {ataque}.',
-    badge: '+{ataque} Attack on every guard',
-    entrada: 'I sharpened my axe all night. All in, and no mercy!',
-    contraataque: 'I raise! And this time my hand does not shake.',
-    caida: 'My hood slipped off. A bad hand, that one of mine.',
-  },
-  inestable: {
-    nombre: 'The Clockmaker',
-    decreto: 'Quicksand',
-    desc: 'The assault starts with {furia} Fury, and each guard defeated without an Exact Hit costs {vida} Health.',
-    badge: 'Starts with {furia} Fury',
-    entrada: 'Tick, tock. Every grain of sand is playing on my side.',
-    contraataque: 'Your sand is running out, partner. I never rush: I wait.',
-    caida: 'My clock stopped... right on your hour.',
+  copas: {
+    nombre: 'The King of Cups',
+    decreto: "King's Toast",
+    desc: 'Each turn he stays in the lead, he heals {cura} Health.',
+    badge: 'Heals {cura} per turn',
+    entrada: 'Come in, sit down. The first round is always on me.',
+    contraataque: 'Not toasting with me? Then take this, to your health.',
+    caida: 'My cup spilled all over the felt... what a dry ending.',
   },
 };
 
@@ -328,9 +303,9 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
   },
   altar: {
     nombre: 'The Altar of Blood',
-    texto: 'An altar with five banners. The bowl in the middle asks for something of yours before giving anything.',
+    texto: 'An altar with four crowns. The bowl in the middle asks for something of yours before giving anything.',
     opciones: [
-      { etiqueta: 'Offer your blood', gana: 'Relic of your trait', cuesta: '−3 Max Health', desc: 'You lose 3 Max Health for good. You take a relic of the trait you carry the most of.' },
+      { etiqueta: 'Offer your blood', gana: 'Blessing of your King', cuesta: '−3 Max Health', desc: 'You lose 3 Max Health for good. The King you carry the most Blessings of gives you another.' },
       { etiqueta: 'Pray and move on', gana: '+3 Health', desc: '+3 Health.' },
     ],
   },
@@ -344,14 +319,88 @@ const SECRETOS: Record<string, { nombre: string; texto: string; opciones: Opcion
   },
 };
 
-/** V35 · The five build traits: name, motto and what they give with 2, 4 and 6 relics (figures from `rasgos` in balance-config.json). */
-const RASGOS_EN: Record<string, { nombre: string; lema: string; bonos: [string, string, string] }> = {
-  sangre: { nombre: 'Blood', lema: 'Blood pact', bonos: ['Each guard defeated heals you {vida} Health.', '+{multi} Mult for every {cada} Health you are missing.', '×{x} Mult at half Health or less.'] },
-  tahur: { nombre: 'Gambler', lema: 'Luck and dice', bonos: ["Gambler's die: each turn it gives +1 to +3 Mult.", 'The die gives +1 to +6 Mult. On a 6, +{oro} gold when you hit.', 'On a 5 or a 6, the die also gives ×{x} Mult.'] },
-  verdugo: { nombre: 'Executioner', lema: 'Execution', bonos: ['Execute: an enemy left at {pct} % Health or less falls.', 'Execute at {pct2} % or less. After an execution, +{dano} Damage on your next hit.', 'Every execution counts as an Exact Hit.'] },
-  bastion: { nombre: 'Bastion', lema: 'Iron wall', bonos: ['You start every assault with {escudo} Shield.', '+{dano} Damage for each point of Shield.', '+{dano2} Damage for each point of Shield, and its cap rises by {tope}.'] },
-  horda: { nombre: 'Horde', lema: 'Card cascade', bonos: ['+{multi} Mult if you play {cartas} cards or more.', 'The first card of the hit triggers again.', 'Every card of the hit triggers again.'] },
+/** V40 1c · The 4 Kings: name, suit, level bonuses with 2 and 4 pieces (figures from `niveles`) and boss lines. */
+const REYES_EN: Record<ReyId, { nombre: string; palo: string; bonos: [string, string]; frases: Record<Relacion, string> }> = {
+  espadas: {
+    nombre: 'King of Swords',
+    palo: 'Swords',
+    bonos: ['+{multi} Mult on your hits with Swords.', '×{x} Mult on your hits with 2 Swords cards or more.'],
+    frases: {
+      aliado: 'You carry my edge and still dare to cross it with mine. I like that.',
+      rival: 'You chose other kings? My sword never forgets a snub.',
+      neutral: 'Blessed by no one. Brave or foolish: the first cut will tell.',
+    },
+  },
+  bastos: {
+    nombre: 'King of Clubs',
+    palo: 'Clubs',
+    bonos: ['You start each assault with {escudo} Shield.', '+{dano} Damage for each point of Shield standing, and its cap rises by {tope}.'],
+    frases: {
+      aliado: 'My club covered you all the way. Now see if it holds against me.',
+      rival: 'You scorned my club for jewels and cups. You will feel the wood.',
+      neutral: 'You arrive with nothing to shelter you. The woods spare no one.',
+    },
+  },
+  oros: {
+    nombre: 'King of Coins',
+    palo: 'Coins',
+    bonos: ['+{oro} gold at the close of each assault won.', 'Each turn a die is rolled: your hit adds +1 to +{caras} Mult.'],
+    frases: {
+      aliado: 'I lent you my luck; now I have come to collect, with interest.',
+      rival: 'You turned your back on my gold. A miser at heart, that is you.',
+      neutral: 'Not a coin from anyone. Such poverty, dear. I pity you.',
+    },
+  },
+  copas: {
+    nombre: 'King of Cups',
+    palo: 'Cups',
+    bonos: ['Each guard defeated heals you {vida}.', '+{cartas} card in hand, and each Cups card heals +{cura} more.'],
+    frases: {
+      aliado: 'We toasted together, remember? This last drink is on me.',
+      rival: 'You refused my cup and drank from others. Such a snub, such thirst.',
+      neutral: 'No one poured you a drink. Sit down, this round is on me.',
+    },
+  },
 };
+
+/** V40 1c · The Blessings: [name, effect, charge condition] (figures from `bendiciones`). */
+const BENDICIONES_EN: Record<string, [string, string, string]> = {
+  filo: ['Tempered Edge', '+{dano} Damage for each Swords card in the hit.', 'Each Exact Hit: +{carga} Damage on all your hits.'],
+  estocada: ['Thrust', 'A hit with a single card: +{dano} Damage.', 'Each guard you defeat with a single card: +{carga} Damage on those hits.'],
+  tajo: ['Deep Cut', 'All your hits pierce, with or without Swords.', 'Each hit that defeats 2 guards or more: +{carga} Damage on all your hits.'],
+  duelo: ['First Blood', '+{dano} Damage on the first hit against each guard.', 'Each guard that falls to a single hit: +{carga} Damage on those first hits.'],
+  remate: ['Finishing Blow', 'A guard left at {pct} % of its Health or less falls.', 'Each guard finished off this way: +{carga} Damage on all your hits.'],
+  garrote: ['Cudgel', 'Your hits with Clubs give +{escudo} Shield.', 'Each Counterattack your Shield fully stops: +{carga} Shield at the start of each assault.'],
+  empalizada: ['Palisade', 'The Shield cap rises by {tope}.', 'Each hit that gives you {n} Shield or more: +{carga} Shield at the start of each assault.'],
+  replica: ['Riposte', 'If your Shield fully stops a Counterattack, that guard takes {dano}.', 'Each riposte: +{carga} Damage on the riposte.'],
+  porra: ['Blow for Blow', '+{dano} Damage for each point of Shield standing.', 'Each Counterattack your Shield fully stops: +{carga} Damage on all your hits.'],
+  aguante: ['Endurance', 'You start each assault with {escudo} Shield.', 'Each guard you defeat with Shield standing: +{carga} Damage on your hits with Clubs.'],
+  moneda: ['Gold Coin', 'Each guard defeated: +{oro} gold.', 'Each hit with {cartas} Coins cards or more: +{carga} gold at the close of each assault.'],
+  lluvia: ['Golden Rain', 'Each Coins card splashes +{dano} more to the other thrones.', 'Each guard that falls to a splash: +{carga} splash on all your hits.'],
+  taba: ['Loaded Knucklebone', 'Each turn a die is rolled: your hit adds {x} × the die in Damage.', 'Each 6 on the die in a hit: +{carga} Damage on all your hits.'],
+  arcon: ["King's Coffer", 'Now, +{oro} gold, and the interest cap rises by {interes}.', 'Each Exact Hit: +{carga} gold at the close of each assault.'],
+  envite: ['Raise', '+{multi} Mult if the hit mixes 3 suits or more.', 'Each guard you defeat with 3 suits or more: +{carga} Damage on those hits.'],
+  brindis: ['Toast', 'Your hits with Cups heal +{vida} more.', 'Each hit that heals you {n} or more: +{carga} Health at the close of each assault.'],
+  porron: ['Wine Jug', 'Now, +{vida} Max Health (and Health).', 'Each guard you defeat with Cups: +{carga} Damage on your hits with Cups.'],
+  ronda: ['Another Round', 'Each guard you defeat with Cups: you draw {cartas} card.', 'Each hit with {n} cards or more: +{carga} Health at the close of each assault.'],
+  caliz: ['Brimming Chalice', 'Healing that does not fit: +{dano} Damage per point on your next hit.', 'Each hit that overheals: +{carga} Damage on all your hits.'],
+  sobremesa: ['After Dinner', 'At the close of each assault won, you heal {vida} Health.', 'Each guard you defeat at full Health: +{carga} Damage on all your hits.'],
+  hoja: ['Blade and Buckler', 'Each Exact Hit: +{escudo} Shield.', 'Each Counterattack your Shield fully stops: +{carga} Damage on all your hits.'],
+  filodorado: ['Gilded Edge', 'Each Exact Hit: the other thrones take {dano}.', 'Each guard that falls to a splash: +{carga} Damage on all your hits.'],
+  sangria: ['Bloodletting', 'Each Exact Hit heals you {vida}.', 'Each Exact Hit at full Health: +{carga} Damage on all your hits.'],
+  peaje: ['Toll', 'Each Counterattack your Shield fully stops: +{oro} gold.', 'Each guard you defeat with Clubs and Coins: +{carga} Shield at the start of each assault.'],
+  fogon: ['Hearth', 'Shield that does not fit heals you: every {escudo} extra, 1 Health.', 'Each guard you defeat with Clubs and Cups: +{carga} Health at the close of each assault.'],
+  convite: ['Banquet', 'Each hit with Coins and Cups: +{oro} gold and you heal {vida}.', 'Each guard you defeat with Coins and Cups: +{carga} Damage on all your hits.'],
+};
+
+/** V40 1c · What the Jester says when a Blessing offer opens: tempting, never clear whether it helps. */
+const BUFON_BENDICION_EN: string[] = [
+  'The crowns are smiling at you. Pick one... the ones you leave never forget.',
+  "A king's gift is never free, but I am not the one who will charge you.",
+  'That one? Good hand. Or not. You will know when the King looks at you.',
+  'Accept, accept. The court remembers whoever says no to a King.',
+  'The more of one King you carry, the more he loves you. And the more it hurts if you switch.',
+];
 
 /** Upgrades of the Order. The chests list the relics they add (with their English names). */
 /**
@@ -369,7 +418,7 @@ const MEJORAS: Record<string, [string, string?]> = {
   tampones: ['New Seals', 'The Wax Table also offers the powder and sleeve seals.'],
   bronce: ['Crown Jeweler', 'The Wax Table also offers Prismatic Wax and Cursed Glass.'],
   vale: ["Keeper's Favor", 'One free Refresh Table at each General Store, per level.'],
-  tienda: ['Black Market', 'Per level: +1 relic at the General Store, and 2 of those offered are of your main trait.'],
+  tienda: ['Black Market', 'Per level: +1 relic at the General Store, and 2 of those offered are Rare or better.'],
   caja: ['Conspiracy Purse', '+{oro} starting gold per rank.'],
   rutas: ['Cartographer', 'Each assault without a monarch offers 3 routes with an Oath instead of 2.'],
   tasador: ["Appraiser's Eye", 'Relics at the General Store cost {n} gold less (minimum 1).'],
@@ -428,7 +477,7 @@ const LOGROS: Record<string, [string, string]> = {
   atajo: ['Through the Back Door', 'Skip 3 assaults.'],
   coleccion: ['Collector', 'Get the {n} common special cards, across all your campaigns.'],
   ferretero: ["The Keeper's Regular", 'Carry {n} different relics, across all your campaigns.'],
-  jefes: ['No King Left Standing', 'Defeat all {n} monarchs.'],
+  jefes: ['No King Left Standing', 'Defeat all {n} Kings.'],
 };
 /** Figures of the achievements whose Spanish text is built in achievements.ts. */
 const CIFRAS_LOGRO: Record<string, Record<string, number>> = {
@@ -510,15 +559,16 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'suerte.doble.no.titulo': 'Nothing',
   'suerte.doble.no.texto': 'You lose the {a} ✦ of this campaign.',
   'suerte.altar.si.titulo': 'The altar answers',
-  'suerte.altar.si.texto': 'You take “{x}”: you now carry {n} {r}.',
+  'suerte.altar.si.texto': 'The {r} gives you “{x}”: you now carry {n} of his.',
   'suerte.altar.no.titulo': 'The altar is silent',
-  'suerte.altar.no.texto': 'There was no {r} relic left: +{n} gold.',
+  'suerte.altar.no.texto': 'The {r} had no Blessings left to give: +{n} gold.',
   'suerte.dado.blanca.titulo': 'White face',
   'suerte.dado.blanca.texto': 'Two formations go up 1 level.',
   'suerte.dado.negra.titulo': 'Black face',
   'suerte.dado.negra.texto': '+{n} gold. In the next assault, the Attack of the guards rises by 1.',
   'arbol.aviso': 'Your {coronas} Crowns are now {esquirlas} Crown Shards. Your {rangos} upgrades remain in the Armory.',
   'logro.desbloquea.carta': 'Legendary card: {nombre}',
+  'logro.desbloquea.cartas': 'Legendary cards: {a} and {b}',
   'causa.quedaba.1': 'You had {n} Health left',
   'causa.quedaba.n': 'You had {n} Health left',
   'causa.lista.2': '{a} and {b}',
@@ -577,6 +627,7 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'paso.cadena': 'the next {n} Counterattacks miss',
   'paso.cadena.quedan': '{n} left',
   'paso.carga_mazo': 'charge {n}',
+  'paso.se_cura': 'heals {n}',
   'error.jugadores': 'From 1 to 4 players.',
   'error.repetidas': 'Repeated cards.',
   'error.no_en_mano': 'That card is not in your hand.',
@@ -618,6 +669,8 @@ export const EN_PLANTILLAS: Record<string, string> = {
   'error.no_vender': 'No selling in the middle of an assault.',
   'error.no_llevas': 'You do not carry that relic.',
   'error.no_seguir': 'You cannot move on yet.',
+  'error.sin_bendicion': 'There are no Blessings to choose.',
+  'error.no_en_bendicion': 'That Blessing is not in the offer.',
   'error.sin_secreto': 'There is no Crypt Secret.',
   'error.opcion': 'That option does not exist.',
   'error.no_ahora': 'You cannot choose that right now.',
@@ -644,13 +697,22 @@ export function reglasEn(): Record<string, string> {
     o[`reliquia.${t.id}.nombre`] = r[0];
     o[`reliquia.${t.id}.desc`] = f(r[1], cifrasReliquia(t.id));
   }
-  for (const r of RASGOS) {
-    const e = RASGOS_EN[r.id];
-    if (!e) continue;
-    o[`rasgo.${r.id}.nombre`] = e.nombre;
-    o[`rasgo.${r.id}.lema`] = e.lema;
-    e.bonos.forEach((b, i) => (o[`rasgo.${r.id}.bono.${i + 1}`] = f(b, BALANCE.rasgos[r.id])));
+  for (const r of REY_IDS) {
+    const e = REYES_EN[r];
+    o[`rey.${r}.nombre`] = e.nombre;
+    o[`rey.${r}.palo`] = e.palo;
+    e.bonos.forEach((b, i) => (o[`rey.${r}.bono.${i + 1}`] = f(b, BALANCE.niveles[r])));
+    for (const [rel, t] of Object.entries(e.frases)) o[`rey.${r}.frase.${rel}`] = t;
   }
+  for (const b of BENDICIONES) {
+    const e = BENDICIONES_EN[b.id];
+    if (!e) continue;
+    const n = (BALANCE.bendiciones as Record<string, Record<string, number>>)[b.id];
+    o[`bendicion.${b.id}.nombre`] = e[0];
+    o[`bendicion.${b.id}.desc`] = f(e[1], n);
+    o[`bendicion.${b.id}.carga`] = f(e[2], n);
+  }
+  BUFON_BENDICION_EN.forEach((t, i) => (o[`bufon.bendicion.${i + 1}`] = t));
   for (const [r, v] of Object.entries(RAREZAS)) o[`rareza.${r}`] = v;
   for (const [a, v] of Object.entries(ARQUETIPOS)) o[`arquetipo.${a}`] = v;
   for (const s of SPECIALS) {
@@ -750,9 +812,10 @@ export function reglasEn(): Record<string, string> {
     }
     // lo que desbloquea: una baraja o una carta legendaria
     const deck = DECKS.find((d) => d.unlock === a.id);
-    const card = SPECIALS.find((s) => s.locked === a.id);
+    const cards = SPECIALS.filter((s) => s.locked === a.id && ESPECIALES[s.id]);
     if (deck && BARAJAS[deck.id]) o[`logro.${a.id}.desbloquea`] = BARAJAS[deck.id][0];
-    else if (card && ESPECIALES[card.id]) o[`logro.${a.id}.desbloquea`] = f(EN_PLANTILLAS['logro.desbloquea.carta'], { nombre: ESPECIALES[card.id][0] });
+    else if (cards.length === 2) o[`logro.${a.id}.desbloquea`] = f(EN_PLANTILLAS['logro.desbloquea.cartas'], { a: ESPECIALES[cards[0].id][0], b: ESPECIALES[cards[1].id][0] });
+    else if (cards.length) o[`logro.${a.id}.desbloquea`] = f(EN_PLANTILLAS['logro.desbloquea.carta'], { nombre: ESPECIALES[cards[0].id][0] });
   }
   for (const [id, [nombre, desc]] of Object.entries(PALABRAS)) {
     o[`palabra.${id}.nombre`] = nombre;
@@ -807,6 +870,7 @@ export function reglasEn(): Record<string, string> {
   o['auto.taberna.nombre'] = 'Auto-Store';
   o['auto.taberna.desc'] = 'The bot shops at the General Store and picks a route.';
   o['auto.pausa.botin'] = 'AUTO is waiting: pick your Loot.';
+  o['auto.pausa.bendicion'] = 'AUTO is waiting: pick your Blessing.';
   o['auto.pausa.taberna'] = 'AUTO is waiting: shop at the General Store or move on.';
   o['auto.pausa.mapa'] = 'AUTO is waiting: pick your route on the Map.';
   o['auto.pausa.secreto'] = 'AUTO is waiting: choose in the Secret.';

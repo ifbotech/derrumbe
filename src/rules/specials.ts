@@ -69,13 +69,14 @@ const DEFS: SpecialDef[] = [
   { id: 'sierra', name: 'Pasadizo', desc: 'Este golpe no respeta Inmune: tus cartas hacen su Daño contra cualquier trono.' },
   // ── legendarias ──
   { id: 'ferretero', name: 'El Tratante', desc: '+{gold} de oro y robás {draw} carta extra.', locked: 'ferretero' },
-  { id: 'j-doble', name: 'El Rey de Dos Caras', desc: 'No hay Contraataque y robás {draw} carta extra.', locked: 'j-doble' },
-  { id: 'j-escasez', name: 'El Usurero', desc: '+{gold} de oro.', locked: 'j-escasez' },
-  { id: 'j-sequia', name: 'La Dama del Cáliz', desc: '+{heal} de Vida.', locked: 'j-sequia' },
-  { id: 'j-intemperie', name: 'La Reina Helada', desc: '+{wall} de Escudo y no hay Contraataque.', locked: 'j-intemperie' },
-  { id: 'j-blindaje', name: 'El Inquisidor', desc: '×{strikeMult} de Multi.', locked: 'j-blindaje' },
-  { id: 'j-furia', name: 'El Verdugo', desc: '+{flat} de Daño y el golpe Perfora.', locked: 'j-furia' },
-  { id: 'j-inestable', name: 'El Relojero', desc: '{splash} puntos a cada uno de los otros tronos.', locked: 'j-inestable' },
+  // V40 1c · las legendarias de los monarcas viejos guardan su `id`; ahora las abre el trofeo de un Rey
+  { id: 'j-doble', name: 'La Jarra del Rey', desc: 'No hay Contraataque y robás {draw} carta extra.', locked: 'j-copas' },
+  { id: 'j-escasez', name: 'La Bolsa del Rey', desc: '+{gold} de oro.', locked: 'j-oros' },
+  { id: 'j-sequia', name: 'La Copa del Rey', desc: '+{heal} de Vida.', locked: 'j-copas' },
+  { id: 'j-intemperie', name: 'El Garrote del Rey', desc: '+{wall} de Escudo y no hay Contraataque.', locked: 'j-bastos' },
+  { id: 'j-blindaje', name: 'La Corona de Espadas', desc: '×{strikeMult} de Multi.', locked: 'j-espadas' },
+  { id: 'j-furia', name: 'La Espada del Rey', desc: '+{flat} de Daño y el golpe Perfora.', locked: 'j-espadas' },
+  { id: 'j-inestable', name: 'La Lluvia de Oros', desc: '{splash} puntos a cada uno de los otros tronos.', locked: 'j-oros' },
 ];
 /** Las cartas especiales con su efecto de balance-config.json (`especiales.<id>`) y su texto ya con las cifras. */
 export const SPECIALS: Special[] = DEFS.map((s) => {

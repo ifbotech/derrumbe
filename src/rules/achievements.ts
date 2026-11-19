@@ -56,7 +56,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   ...BOSSES.map(
     (b): Achievement => ({ id: `j-${b.id}`, name: `Trofeo: ${b.who}`, desc: `Vence ${toWho(b.who)} (${b.name.toLowerCase()}).`, renown: 2, progress: flag((m) => has(m.seen.bosses, b.id)) }),
   ),
-  { id: 'jefes', name: 'Ningún rey en pie', desc: `Vence a los ${BOSSES.length} monarcas.`, renown: 8, progress: count((m) => m.seen.bosses.length, BOSSES.length) },
+  { id: 'jefes', name: 'Ningún rey en pie', desc: `Vence a los ${BOSSES.length} Reyes.`, renown: 8, progress: count((m) => m.seen.bosses.length, BOSSES.length) },
 ];
 // V12: una sola moneda permanente. Cada logro da sus Coronas de siempre en Esquirlas de Corona (× 100).
 for (const a of ACHIEVEMENTS) a.renown *= ESQUIRLAS_POR_CORONA;
@@ -65,8 +65,10 @@ for (const a of ACHIEVEMENTS) a.renown *= ESQUIRLAS_POR_CORONA;
 export function unlocksOf(id: string): string | null {
   const deck = DECKS.find((d) => d.unlock === id);
   if (deck) return deck.name;
-  const card = SPECIALS.find((s) => s.locked === id);
-  return card ? `Carta legendaria: ${card.name}` : null;
+  const cards = SPECIALS.filter((s) => s.locked === id);
+  // V40 1c · el trofeo de un Rey abre las dos legendarias de su palo
+  if (cards.length === 2) return `Cartas legendarias: ${cards[0].name} y ${cards[1].name}`;
+  return cards.length ? `Carta legendaria: ${cards[0].name}` : null;
 }
 
 /** Cartas legendarias que este jugador ya puede sortear. */

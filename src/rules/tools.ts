@@ -42,26 +42,12 @@ export interface SirenInfo {
   taken: number;
 }
 
-/** V35 · Los cinco rasgos de build. Cada Reliquia lleva uno; con 2, 4 y 6 del mismo rasgo se activan sus bonos. */
-export type Rasgo = 'sangre' | 'tahur' | 'verdugo' | 'bastion' | 'horda';
-export const UMBRALES = [2, 4, 6] as const;
-export interface RasgoDef {
-  id: Rasgo;
-  name: string;
-  /** Su lema, bajo el nombre. */
-  lema: string;
-  /** Lo que da con 2, con 4 y con 6 Reliquias del rasgo (plantillas: las cifras salen de `rasgos` en balance-config.json). */
-  bonos: [string, string, string];
-}
-
 export interface ToolDef {
   id: string;
   name: string;
   desc: string;
   rarity: Rarity;
   arch: Arch;
-  /** V35 · Su rasgo de build (se rellena al final del archivo, de `RASGO_DE`). */
-  rasgo: Rasgo;
   /** Caja del gremio que la añade al surtido. Sin caja: disponible desde la primera campaña. */
   box?: Arch;
   /** Qué hace en un golpe: f suma Fuerza, r suma Resonancia, x multiplica, copy copia, p es pasiva. */
@@ -257,7 +243,7 @@ export const TOOLS: ToolDef[] = ([
     cfg: (c) => void ((c.overhealCharge = (c.overhealCharge ?? 0) + V.rebosadero.dano), (c.overwallRepair = V.rebosadero.escudo)),
   },
   { id: 'bastion', name: 'Baluarte', desc: '+{multi} de Multi si tu Escudo está a la mitad de su tope o por encima.', rarity: 'capataz', arch: 'aguante', box: 'aguante', kind: 'r', strike: (x) => x.env.wall > 0 && x.env.wall * 2 >= x.cfg.wallCap && x.R(V.bastion.multi) },
-] as Omit<ToolDef, 'rasgo'>[]).map((t) => ({ ...t, rasgo: 'horda' as Rasgo }));
+] as ToolDef[]);
 /** Cifras derivadas que algunas plantillas enseñan (ejemplos ya calculados). */
 const DERIVED: Record<string, Record<string, number>> = {
   timbre: { sellos: BALANCE.timbre.stamps },
@@ -267,99 +253,6 @@ const DERIVED: Record<string, Record<string, number>> = {
 for (const t of TOOLS) t.desc = fill(t.desc, { ...relic(t.id), ...DERIVED[t.id] });
 export const TOOL: Record<string, ToolDef> = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
 
-// ───────────────────────── V35 · Rasgos de build ─────────────────────────
-/** El rasgo de cada Reliquia. Sangre: Vida y riesgo. Tahúr: oro, azar y mezcla de palos. Verdugo: precisión y Golpe exacto.
- *  Bastión: Escudo y aguante. Horda: muchas cartas, repeticiones y fuego. */
-export const RASGO_DE: Record<string, Rasgo> = {
-  // Sangre
-  paleta: 'sangre', botiquin: 'sangre', casco: 'sangre', sismografo: 'sangre', megafono: 'sangre', piquete: 'sangre', ultimo: 'sangre', corazon: 'sangre', plomada: 'sangre', acido: 'sangre',
-  // Tahúr
-  cortavidrios: 'tahur', dados: 'tahur', hucha: 'tahur', tiralineas: 'tahur', horno: 'tahur', prisma: 'tahur', mosaico: 'tahur', crisol: 'tahur', catalizador: 'tahur', diapason: 'tahur', contrapeso: 'tahur',
-  // Verdugo
-  piqueta: 'verdugo', cincel: 'verdugo', taladro: 'verdugo', plano_maestro: 'verdugo', nivel: 'verdugo', calibre: 'verdugo', cizalla: 'verdugo', montacargas: 'verdugo', prensa: 'verdugo', trituradora: 'verdugo',
-  // Bastión
-  maza: 'bastion', sacos: 'bastion', encofrado: 'bastion', puntales: 'bastion', sordina: 'bastion', ariete: 'bastion', contragolpe: 'bastion', rebosadero: 'bastion', bastion: 'bastion', pasarela: 'bastion',
-  // Horda
-  gemelos: 'horda', cinta: 'horda', estandarte: 'horda', dinamita: 'horda', andamio: 'horda', metralla: 'horda', percutor: 'horda', resonador: 'horda', vibrador: 'horda', timbre: 'horda', contenedor: 'horda',
-};
-for (const t of TOOLS) {
-  if (!RASGO_DE[t.id]) throw new Error(`la Reliquia «${t.id}» no tiene rasgo`);
-  t.rasgo = RASGO_DE[t.id];
-}
-
-const RG = BALANCE.rasgos;
-export const RASGOS: RasgoDef[] = [
-  { id: 'sangre', name: 'Sangre', lema: 'Pacto de sangre', bonos: ['Cada guardia abatido te cura {vida} de Vida.', '+{multi} de Multi por cada {cada} de Vida que te falten.', '×{x} de Multi con la Vida a la mitad o menos.'] },
-  { id: 'tahur', name: 'Tahúr', lema: 'Azar y dados', bonos: ['Dado del Tahúr: cada turno da de +1 a +3 de Multi.', 'El dado da de +1 a +6 de Multi. Con un 6, +{oro} de oro al golpear.', 'Con un 5 o un 6, el dado da además ×{x} de Multi.'] },
-  { id: 'verdugo', name: 'Verdugo', lema: 'Ejecución', bonos: ['Ejecuta: el enemigo que quede con {pct} % de Vida o menos, cae.', 'Ejecuta con {pct2} % o menos. Tras ejecutar, +{dano} de Daño al próximo golpe.', 'Toda ejecución cuenta como Golpe exacto.'] },
-  { id: 'bastion', name: 'Bastión', lema: 'Muralla de hierro', bonos: ['Empezás cada asalto con {escudo} de Escudo.', '+{dano} de Daño por cada punto de Escudo.', '+{dano2} de Daño por cada punto de Escudo, y su tope sube {tope}.'] },
-  { id: 'horda', name: 'Horda', lema: 'Cascada de naipes', bonos: ['+{multi} de Multi si jugás {cartas} cartas o más.', 'La primera carta del golpe se activa otra vez.', 'Todas las cartas del golpe se activan otra vez.'] },
-];
-for (const r of RASGOS) r.bonos = r.bonos.map((b) => fill(b, RG[r.id])) as [string, string, string];
-export const RASGO: Record<Rasgo, RasgoDef> = Object.fromEntries(RASGOS.map((r) => [r.id, r])) as Record<Rasgo, RasgoDef>;
-
-/** Cuántas Reliquias de cada rasgo hay en la tira. */
-export function rasgosDe(tools: ToolInst[]): Record<Rasgo, number> {
-  const n: Record<Rasgo, number> = { sangre: 0, tahur: 0, verdugo: 0, bastion: 0, horda: 0 };
-  for (const t of tools) if (TOOL[t.id]) n[TOOL[t.id].rasgo] += 1;
-  return n;
-}
-/** Nivel de un rasgo con n Reliquias: 0 (sin bono), 1 (con 2), 2 (con 4) o 3 (con 6). */
-export const nivelRasgo = (n: number): 0 | 1 | 2 | 3 => (n >= UMBRALES[2] ? 3 : n >= UMBRALES[1] ? 2 : n >= UMBRALES[0] ? 1 : 0);
-/** El nivel de cada rasgo en una tira de Reliquias. */
-export function nivelesDe(tools: ToolInst[]): Record<Rasgo, 0 | 1 | 2 | 3> {
-  const n = rasgosDe(tools);
-  return { sangre: nivelRasgo(n.sangre), tahur: nivelRasgo(n.tahur), verdugo: nivelRasgo(n.verdugo), bastion: nivelRasgo(n.bastion), horda: nivelRasgo(n.horda) };
-}
-/** Las reglas fijas del asalto que ponen los rasgos (antes del decreto del monarca, que puede recortarlas). */
-export function rasgosCfg(c: Config, tools: ToolInst[]): void {
-  const n = nivelesDe(tools);
-  if (n.verdugo >= 1) c.ejecuta = (n.verdugo >= 2 ? RG.verdugo.pct2 : RG.verdugo.pct) / 100;
-  if (n.verdugo >= 3) c.ejecutaExacta = true;
-  if (n.bastion >= 1) c.wallStart = (c.wallStart ?? 0) + RG.bastion.escudo;
-  if (n.bastion >= 3) c.wallCap += RG.bastion.tope;
-}
-type Marca = (r: RasgoDef, nivel: number) => void;
-/** Lo que los rasgos suman a un golpe (tras las Reliquias y antes de multiplicar). */
-export function rasgosStrike(x: Strike, marca: Marca): void {
-  const n = nivelesDe(x.env.tools);
-  if (n.sangre >= 2) {
-    marca(RASGO.sangre, n.sangre);
-    x.R(RG.sangre.multi * Math.floor(Math.max(0, x.cfg.maxIntegrity - x.env.integrity) / RG.sangre.cada));
-    if (n.sangre >= 3 && x.env.integrity * 2 <= x.cfg.maxIntegrity) x.X(RG.sangre.x);
-  }
-  if (n.tahur >= 1 && x.env.dado) {
-    marca(RASGO.tahur, n.tahur);
-    const cara = x.env.dado;
-    x.R(n.tahur >= 2 ? cara : Math.ceil(cara / 2));
-    if (n.tahur >= 2 && cara === 6) x.gold += RG.tahur.oro;
-    if (n.tahur >= 3 && cara >= 5) x.X(RG.tahur.x);
-  }
-  if (n.bastion >= 2 && x.env.wall > 0) {
-    marca(RASGO.bastion, n.bastion);
-    x.F((n.bastion >= 3 ? RG.bastion.dano2 : RG.bastion.dano) * x.env.wall);
-  }
-  if (n.horda >= 1) {
-    marca(RASGO.horda, n.horda);
-    if (x.cards.length >= RG.horda.cartas) x.R(RG.horda.multi);
-    if (n.horda >= 3) x.F(x.impacts.reduce((a, b) => a + b, 0));
-    else if (n.horda >= 2) x.F(x.impacts[0] ?? 0);
-  }
-}
-/** Lo que los rasgos hacen según cómo quedó el golpe. */
-export function rasgosAfter(x: Strike, r: Outcome, marca: Marca): void {
-  const n = nivelesDe(x.env.tools);
-  if (n.sangre >= 1 && r.fallen > 0) {
-    marca(RASGO.sangre, n.sangre);
-    x.heal += RG.sangre.vida * r.fallen;
-    x.note(`+${RG.sangre.vida * r.fallen} de Vida`);
-  }
-  if (n.verdugo >= 2 && r.fell.some((f) => f.exec)) {
-    marca(RASGO.verdugo, n.verdugo);
-    x.env.charge += RG.verdugo.dano;
-    x.note(`+${RG.verdugo.dano} de Daño cargado`);
-  }
-}
 export const BOXES: Arch[] = ['precision', 'sismo', 'alquimia', 'limite', 'trituradora', 'aguante'];
 export const TOOL_SLOTS = 6;
 

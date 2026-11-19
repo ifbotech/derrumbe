@@ -18,8 +18,13 @@ export const OBJETIVOS = {
   mazos: { lleno: [40, 50], llenoObjetivo: '42–50', vacio: [28, 34], vacioObjetivo: '28–34', dispersion: 5, sumaMinima: 6 },
   /** Reliquias y especiales dados de salida: trampa por debajo, victoria regalada por encima. */
   regalo: { trampa: 35, maximo: 68, eleccionMinima: 5, ofertasMinimas: 40 },
-  /** Letalidad de cada monarca respecto a la media (con al menos `enfrentados` encuentros). */
-  monarcas: { ratio: [0.8, 1.3], enfrentados: 150 },
+  /** Letalidad de cada Rey jefe respecto a la media (con al menos `enfrentados` encuentros). V40 1c: 0,8×–1,25×. */
+  monarcas: { ratio: [0.8, 1.25], enfrentados: 150 },
+  /**
+   * V40 1c · Bendiciones: ninguna elegida por el bot más de `sobreMedia` veces la media de elección (con al menos
+   * `ofertasMinimas` ofertas), y ninguna que empeore el resultado si se da de salida (más allá del ruido).
+   */
+  bendiciones: { sobreMedia: 2, ofertasMinimas: 40 },
   /** Turnos por asalto: hasta qué asalto vale cada tramo, rango de la mediana y tope del percentil 95. */
   ritmo: [
     // V35 · duelo Casa por Casa: los enemigos van en fila (2, 6, 8, 12 y 12) y el monarca cierra los asaltos 2, 4 y 5
@@ -69,6 +74,7 @@ export interface InformeMeta {
   winrate: { levels: { level: number; vacio: number; lleno: number; n: number }[]; decks: { deck: string; name: string; vacio: number; lleno: number; n: number }[] };
   tools: Pieza[];
   specials: Pieza[];
+  bendiciones?: Pieza[];
   bosses: { id: string; who: string; faced: number; deaths: number; lethality: number }[];
   avgLethality: number;
   /** `j50`: mediana de jugadas del asalto (los turnos más las jugadas que abaten o no gastan el turno; V40 1b). */
@@ -173,11 +179,21 @@ export function revisar(r: InformeMeta): Comprobacion[] {
     if (won !== null) out.push({ id: `especial.${sp.id}.regalada`, completo: true, texto: `Especial ${sp.name}: ${won} % ganadas si se da de salida en ${n} campañas (> ${G.maximo})`, ok: !(won > G.maximo), partes: [{ valor: won, hi: G.maximo }] });
     worse('Especial', sp);
   }
-  // monarcas: todos entre 0,8× y 1,3× de la letalidad media
+  // V40 1c · Bendiciones: ninguna se elige más del doble de la media, y ninguna empeora el resultado dada de salida
+  const bend = r.bendiciones ?? [];
+  const ofrecidas = bend.filter((b) => b.offered >= O.bendiciones.ofertasMinimas);
+  const mediaPick = ofrecidas.length ? ofrecidas.reduce((a, b) => a + b.pick, 0) / ofrecidas.length : 0;
+  for (const b of ofrecidas) {
+    const tope = Math.round(mediaPick * O.bendiciones.sobreMedia * 10) / 10;
+    out.push({ id: `bendicion.${b.id}.eleccion`, texto: `Bendición ${b.name}: el bot la elige el ${b.pick} % de las veces (más de ${O.bendiciones.sobreMedia}× la media: ${tope} %)`, ok: b.pick <= tope, partes: [{ valor: b.pick, hi: tope }] });
+  }
+  for (const b of bend) worse('Bendición', b);
+  // Reyes jefe: todos entre 0,8× y 1,25× de la letalidad media
+  const fr = (x: number) => String(x).replace('.', ',');
   for (const b of r.bosses) {
     if (b.faced < O.monarcas.enfrentados) continue;
     const ratio = r.avgLethality ? b.lethality / r.avgLethality : 1;
-    out.push({ id: `monarca.${b.id}`, texto: `Monarca ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo 0,8×–1,3×)`, ok: !(ratio < O.monarcas.ratio[0] || ratio > O.monarcas.ratio[1]), partes: [{ valor: ratio, lo: O.monarcas.ratio[0], hi: O.monarcas.ratio[1] }] });
+    out.push({ id: `monarca.${b.id}`, texto: `Rey jefe ${b.who}: letalidad ${b.lethality} % (×${ratio.toFixed(2)} de la media; objetivo ${fr(O.monarcas.ratio[0])}×–${fr(O.monarcas.ratio[1])}×)`, ok: !(ratio < O.monarcas.ratio[0] || ratio > O.monarcas.ratio[1]), partes: [{ valor: ratio, lo: O.monarcas.ratio[0], hi: O.monarcas.ratio[1] }] });
   }
   // ritmo: asalto 1 de 4 a 6 turnos (P95 ≤ 9), asaltos 2 y 3 de 7 a 10 (P95 ≤ 13), asaltos 4 y 5 de 9 a 12 (P95 ≤ 15)
   for (const p of r.pacing) {

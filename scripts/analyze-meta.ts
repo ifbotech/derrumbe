@@ -39,6 +39,7 @@ import { SPECIALS } from '../src/rules/specials';
 import { TOOLS } from '../src/rules/tools';
 import { TITLE } from '../src/shared/brand';
 import { Log, Spec, fingerprint, playCampaign } from './lab';
+import { BENDICION, BENDICIONES, REY_NOMBRE } from '../src/rules/reyes';
 import { OBJETIVOS, avisos, noise, revisarClasica } from './objetivos';
 
 const args = process.argv.slice(2);
@@ -89,7 +90,7 @@ function plan(): Spec[] {
     const count = N || 600;
     const salt = Number(arg('sal') ?? 31); // --sal=29 repite las semillas que usa el informe completo para las especiales (23 para las herramientas)
     for (const seed of seeds(count, salt)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'special' });
-    for (const id of onlyPieces) for (const seed of seeds(count, salt)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, ...(TOOLS.some((t) => t.id === id) ? { giveTool: id } : { giveSpecial: id }) });
+    for (const id of onlyPieces) for (const seed of seeds(count, salt)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, ...(TOOLS.some((t) => t.id === id) ? { giveTool: id } : BENDICION[id] ? { giveBendicion: id } : { giveSpecial: id }) });
     return specs;
   }
   if (mode === 'foco') return levels([0, 7], N || 1200), specs;
@@ -103,6 +104,8 @@ function plan(): Spec[] {
   // y, de control, las mismas semillas sin regalo: se suman a la referencia (nivel 1, Árbol lleno)
   for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'tool' });
   for (const t of TOOLS) for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveTool: t.id });
+  // V40 1c · cada Bendición de regalo al empezar (con las semillas de control de las Reliquias)
+  for (const b of BENDICIONES) for (const seed of seeds(GIFT_N, 23)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveBendicion: b.id });
   for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, control: 'special' });
   for (const s of SPECIALS) for (const seed of seeds(GIFT_N, 29)) specs.push({ seed, deck: MAZO_INICIAL, ascension: 0, full: true, giveSpecial: s.id });
   return specs;
@@ -169,7 +172,7 @@ const quantile = (xs: number[], q: number) => (xs.length ? [...xs].sort((a, b) =
 const sum = (logs: Log[], pick: (l: Log) => number) => logs.reduce((a, l) => a + pick(l), 0);
 
 function report(logs: Log[], confirm: Log[] = []) {
-  const plain = logs.filter((l) => !l.spec.giveTool && !l.spec.giveSpecial && !l.spec.control);
+  const plain = logs.filter((l) => !l.spec.giveTool && !l.spec.giveSpecial && !l.spec.giveBendicion && !l.spec.control);
   const group = (deck: string, a: number, full: boolean) => plain.filter((l) => l.spec.deck === deck && l.spec.ascension === a && l.spec.full === full);
 
   const winrate = {
@@ -234,6 +237,19 @@ function report(logs: Log[], confirm: Log[] = []) {
     ),
     ...second(confirm.filter((l) => l.spec.giveSpecial === s.id)),
   }));
+  // V40 1c · las Bendiciones: cuánto las elige el bot cuando se ofrecen, cuánto valen de regalo y sus cargas al acabar
+  const bendiciones = BENDICIONES.map((b) => {
+    const owners = plain.filter((l) => l.spec.full && l.bendEnd?.some((x) => x.id === b.id));
+    return {
+      id: b.id,
+      name: b.name,
+      rey: b.duo ? `${REY_NOMBRE[b.rey]} y ${REY_NOMBRE[b.duo]}` : REY_NOMBRE[b.rey],
+      dual: !!b.duo,
+      ...item(`bend:${b.id}`, logs.filter((l) => l.spec.giveBendicion === b.id), () => false),
+      ...second(confirm.filter((l) => l.spec.giveBendicion === b.id)),
+      cargas: owners.length ? Math.round((sum(owners, (l) => l.bendEnd.find((x) => x.id === b.id)!.n) / owners.length) * 10) / 10 : null,
+    };
+  });
   const marks = [
     ...SEALS.map((s) => ({ id: s, name: SEAL[s].name, ...item(`mark:${s}`, [], (l) => l.mid!.seals.includes(s)) })),
     ...TREATMENTS.map((t) => ({ id: t, name: TREATMENT[t].name, ...item(`mark:${t}`, [], (l) => l.mid!.treats.includes(t)) })),
@@ -269,10 +285,10 @@ function report(logs: Log[], confirm: Log[] = []) {
    */
   const suspect = (x: { givenN: number; given: number | null; delta: number | null }) =>
     x.givenN > 0 && ((x.delta ?? 0) <= -noise(x.givenN, noGift.length, giftRef) || (x.given ?? 50) < TRAP || (x.given ?? 50) > GIFT_MAX);
-  const pieces = [...tools, ...specials];
+  const pieces = [...tools, ...specials, ...bendiciones];
   const suspects = pieces.filter(suspect).map((x) => x.id);
   const confirmations = pieces.filter((x) => x.confirmN).map((x) => ({ id: x.id, name: x.name, first: x.delta, n: x.confirmN, winrate: x.confirm, delta: x.confirmDelta }));
-  const body = { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, marks, bosses, avgLethality, pacing, pacingByDeck };
+  const body = { campaigns: logs.length + confirm.length, suspects, confirmations, baseline: baseWr, giftBaseline: giftRef, giftBaselineN: noGift.length, giftNoise: noise(mode === 'regalos' ? N || 600 : GIFT_N, noGift.length, giftRef), winrate, deaths, tools, specials, bendiciones, marks, bosses, avgLethality, pacing, pacingByDeck };
   return { ...body, flags: avisos(body) };
 }
 
@@ -295,9 +311,12 @@ function print(r: ReturnType<typeof report>): void {
   if (gifts) console.log('\nCartas especiales (misma referencia)');
   for (const s of !gifts ? [] : shown([...r.specials]).sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0))) console.log(`  ${pad(s.name, 22)} ${pad(s.legendary ? 'legend.' : 'común', 9)} ${num(s.pick)} ${num(s.given, 8)} ${num(s.delta, 6)} ${num(s.withMid, 8)} ${num(s.withoutMid, 6)}`);
   if (r.confirmations.length) console.log(`\nSegunda vuelta (${r.confirmations[0].n} campañas por pieza, semillas nuevas): ${r.confirmations.map((c) => `${c.name} ${c.winrate} % (${(c.delta ?? 0) > 0 ? '+' : ''}${c.delta}; antes ${c.first})`).join(' · ')}`);
+  const conBend = r.bendiciones.filter((b) => b.offered || b.givenN);
+  if (conBend.length) console.log('\nBendiciones (elige%: cuando se ofrece; salida% y Δ: de regalo al empezar; cargas: media al acabar)');
+  for (const b of [...conBend].sort((a, b) => b.pick - a.pick)) console.log(`  ${pad(b.name, 20)} ${pad(b.rey, 34)} ${num(b.pick)} ${num(b.given, 8)} ${num(b.delta, 6)}   cargas ${num(b.cargas, 5)}`);
   if (!quick) console.log('\nSellos de lacre y acabados (llevándolos a media campaña)');
   for (const m of quick ? [] : r.marks) console.log(`  ${pad(m.name, 22)} elige ${num(m.pick)} %   con ${num(m.withMid)} %   sin ${num(m.withoutMid)} %`);
-  if (r.bosses.some((b) => b.faced)) console.log(`\nMonarcas (letalidad media ${r.avgLethality} %)`);
+  if (r.bosses.some((b) => b.faced)) console.log(`\nReyes jefe (letalidad media ${r.avgLethality} %)`);
   for (const b of r.bosses) if (b.faced) console.log(`  ${pad(b.who, 14)} ${num(b.lethality)} %  (${b.deaths}/${b.faced})  ×${(b.lethality / (r.avgLethality || 1)).toFixed(2)}`);
   if (r.pacing.some((p) => p.n)) console.log('\nTurnos por asalto (mediana · percentil 95)');
   for (const p of r.pacing) if (p.n) console.log(`  ${p.stage} ${pad(p.name, 20)} ${num(p.p50, 3)} · ${num(p.p95, 3)}${p.j50 !== undefined ? `   jugadas ${num(p.j50, 3)}` : ''}`);

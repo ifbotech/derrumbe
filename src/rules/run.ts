@@ -12,22 +12,25 @@ import { BALANCE, fill } from './balance-config';
 import { ARBOL, Nodo, cifraDe, cleanUp as limpiaArbol, comprarNodo, rangoDe } from './arbol';
 import { Caida, Pieza, caidaDe, caidaVacia, sumaPiezas } from './caida';
 import { Tirada, multiplicadores, tirarHuesos } from './huesos';
-import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, META_38, META_40, RUN_11, RUN_40, mazoDe, migraMeta11, migraMeta38, migraMeta40, migraRun11, migraRun40, recortaMeta10 } from './migracion';
+import { AvisoArbol, ESQUIRLAS_POR_CORONA, META_11, META_38, META_40, META_40B, RUN_11, mazoDe, migraMeta11, migraMeta38, migraMeta40, migraMeta40c, migraRun11, recortaMeta10 } from './migracion';
 import { CIFRAS_MAZO, MANO_BASE, MAZO_INICIAL, MZ, TRUCO_MAX, esMazo } from './mazos';
 import type { Cargas, MazoId, ReglaId } from './mazos';
 import { CABALLO, Card, Config, DEFAULT_CONFIG, FIGURAS, FORM, FORMATIONS, Formation, GameEvent, GameState, MAX_NUM, REY, SEALS, SOTA, Seal, SUITS, Suit, TREATMENTS, Treatment, cardValue, newTowers, nextRandom, seedFrom, shuffle, standardDeck, tiraDado } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { BASE_POOL, SPECIAL } from './specials';
-import { Arch, BOXES, RARITY, RASGOS, Rarity, Rasgo, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool, rasgosCfg, rasgosDe } from './tools';
+import { Arch, BOXES, RARITY, Rarity, TOOL, TOOL_SLOTS, ToolInst, toolPool, placeTool } from './tools';
+import { BENDICION, PALO_DE_REY, REY_IDS, REY_NOMBRE, bendicionesDe, cierreBendiciones, escudoInicial, esDe, nivelesCfg, nivelesReyes, ofertaBendiciones, reyesEnOferta } from './reyes';
+import type { BendInst, OpcionBend, ReyId } from './reyes';
 
 export const MIN_DECK = 12;
 export const LAST_STAGE = 5;
 /**
- * Versión del formato de campaña guardada. 7 desde la V40 con los 5 Mazos (`cargas`, y `deckId` es un Mazo); 6 en el
- * tramo 1a (baraja española con las barajas viejas: se migra con `migraRun40`). Una campaña de antes (5, o la 4 de la
- * 11.0) se jugaba con la baraja francesa: no se puede continuar y se descarta con un aviso (`campanaFrancesa`).
+ * Versión del formato de campaña guardada. 8 desde el tramo 1c de la V40 (los 4 Reyes: `bendiciones`, `oferta`, y los
+ * monarcas son Reyes). Una de la 6 o la 7 (tramos 1a y 1b, con rasgos y monarcas viejos) no se puede seguir: se
+ * descarta con un aviso (`campanaSinReyes`). Una de antes (5, o la 4 de la 11.0) se jugaba con la baraja francesa: se
+ * descarta igual (`campanaFrancesa`).
  */
-export const RUN_VERSION = 7;
+export const RUN_VERSION = 8;
 
 /**
  * Niveles de obra (ascensos). El nivel 1 es la obra limpia; cada nivel siguiente añade un giro
@@ -102,7 +105,10 @@ export const tiranoKey = (bossId: string): 'asalto.tirano.m' | 'asalto.tirano.f'
 export const roundHp = (hp: number): number => Math.max(5, Math.round(hp / 5) * 5);
 
 export interface Boss {
-  id: string;
+  /** V40 1c · El id del Rey (`espadas`, `bastos`, `oros`, `copas`): también su clave `monarca.<id>.*` y `rey.<id>.*`. */
+  id: ReyId;
+  /** El palo de su Casa: en su asalto, esa Casa va la última y él es su último guardia. */
+  palo: Suit;
   /** El personaje. */
   who: string;
   /** Es una reina: en el Salón del Trono se la llama «Reina Tirana». */
@@ -129,78 +135,58 @@ export interface BossCurse {
 }
 const eachHand = (c: Config, n: number) => void (c.handSize = Object.fromEntries(Object.entries(c.handSize).map(([k, v]) => [k, Math.max(3, v + n)])));
 const eachThreat = (c: Config, n: number) => void FIGURAS.forEach((r) => (c.floorThreat[r] = Math.max(1, c.floorThreat[r] + n)));
-/** Cifras de los decretos (`monarcas` de balance-config.json). */
-const MON = BALANCE.monarcas;
+/** Cifras de los Reyes (`reyes` de balance-config.json). */
+const RY = BALANCE.reyes;
+/**
+ * V40 1c · Los 4 Reyes jefe (src/rules/reyes.ts). Cada uno cierra su Casa en los asaltos 2, 4 y 5, con la Furia que
+ * sube cada turno que sigue al frente (`reyes.<id>.furia`) y un rasgo de combate propio, a la vista en su placa.
+ */
 export const BOSSES: Boss[] = [
   {
-    id: 'doble',
-    who: 'El Rey de Dos Caras',
-    name: 'Doble Contraataque',
-    desc: 'Hay {contraataques} Contraataques cada turno, pero cada uno ataca un {pct} % menos.',
-    barks: { entrada: '¿Envido? Tengo dos caras y canto con las dos.', contraataque: '¡Retruco! Y cuando te des vuelta, retruco otra vez.', caida: 'Se me dio vuelta el naipe... y por los dos lados.' },
-    curse: { mark: 'contraataque', badge: '{contraataques} Contraataques por turno' },
-    apply: (c) => void ((c.sirenCount = MON.doble.contraataques), FIGURAS.forEach((r) => (c.floorThreat[r] = Math.max(1, Math.ceil(c.floorThreat[r] * MON.doble.ataque))))),
+    id: 'espadas',
+    palo: 'S',
+    who: 'El Rey de Espadas',
+    name: 'Filo del Rey',
+    desc: 'Mientras está al frente, su Contraataque atraviesa {perfora} de tu Escudo.',
+    barks: { entrada: 'Desenvainá, si te da el pulso. Yo canto truco con la espada.', contraataque: '¡Quiero retruco! Y te lo firmo con la punta.', caida: 'Me ganaste de mano... guardá ese filo, que era el mío.' },
+    curse: { mark: 'escudo', badge: 'Atraviesa {perfora} de Escudo' },
+    apply: (c) => void (c.jefe && (c.jefe.perfora = RY.espadas.perfora)),
   },
   {
-    id: 'escasez',
-    who: 'El Usurero',
-    name: 'Escasez',
-    desc: 'Juegan con {cartas} carta menos en la mano y sus guardias pegan +{ataque}.',
-    barks: { entrada: 'Acá no se fía, querido. Jugá con lo justo y gracias.', contraataque: 'Vengo a cobrar los intereses. ¿Quiero? Siempre quiero.', caida: 'Me dejaron sin un cobre... anotá la deuda, che.' },
-    curse: { mark: 'mano', badge: '{cartas} carta menos en la mano' },
-    apply: (c) => (eachHand(c, -MON.escasez.cartas), eachThreat(c, MON.escasez.ataque)),
+    id: 'bastos',
+    palo: 'C',
+    who: 'El Rey de Bastos',
+    name: 'Corteza de roble',
+    desc: 'Mientras está al frente, no queda Expuesto ni Aturdido.',
+    barks: { entrada: 'Soy de madera dura, pibe. Acá no entra ni el envido.', contraataque: 'Un garrotazo de los de antes. ¿Quiero vale cuatro?', caida: 'Me partiste el palo... nunca supe que era de astillas.' },
+    curse: { mark: 'guardias', badge: 'Ni Expuesto ni Aturdido' },
+    apply: (c) => void (c.jefe && (c.jefe.sinFx = true)),
   },
   {
-    id: 'sequia',
-    who: 'La Dama del Cáliz',
-    fem: true,
-    name: 'Cáliz envenenado',
-    desc: 'Tus Copas no curan: cada golpe con Copas te quita {veneno} de Vida.',
-    barks: { entrada: 'Brindemos, tesoro. Mi copa no le sana el pecho a nadie.', contraataque: 'Un sorbito más... ¿no querés? Igual te lo sirvo.', caida: 'Se me volcó el cáliz sobre el paño. Qué desprolijo.' },
-    curse: { mark: 'corazones', badge: 'Tus Copas te quitan {veneno}' },
-    // se aplica después de las reliquias: con el Bálsamo, tampoco curan
-    apply: (c) => void ((c.curaPorCarta = 0), (c.veneno = MON.sequia.veneno)),
+    id: 'oros',
+    palo: 'D',
+    who: 'El Rey de Oros',
+    name: 'Diezmo',
+    desc: 'Mientras está al frente, cada turno tira un dado: su Contraataque suma de +1 a +{dado}.',
+    barks: { entrada: 'Todo tiene precio en mi mesa, hasta tu suerte. ¿Apostamos?', contraataque: 'La casa siempre cobra, querido. Y hoy la casa soy yo.', caida: 'Me vaciaste el arcón... llevate el naipe bravo, ya fue.' },
+    curse: { mark: 'contraataque', badge: 'Suma un dado de +1 a +{dado}' },
+    apply: (c) => void (c.jefe && (c.jefe.dado = RY.oros.dado)),
   },
   {
-    id: 'intemperie',
-    who: 'La Reina Helada',
-    fem: true,
-    name: 'Escarcha',
-    desc: 'El Escudo no puede pasar de {escudoTope}.',
-    barks: { entrada: 'Abrigate, naipe. En mi mesa ni la manta te tapa entero.', contraataque: 'Quiero retruco, y te lo canto con escarcha en la boca.', caida: 'Me derrito... y vos con las manos tibias. Qué injusto.' },
-    curse: { mark: 'escudo', badge: 'Escudo máx. {escudoTope}' },
-    apply: (c) => void (c.wallCap = Math.min(c.wallCap, MON.intemperie.escudoTope)),
-  },
-  {
-    id: 'blindaje',
-    who: 'El Inquisidor',
-    name: 'Guardia de hierro',
-    desc: 'Ningún guardia queda Aturdido, pero pegan {ataque} menos.',
-    barks: { entrada: 'Mis guardias rezan con los ojos abiertos. Nadie los sorprende.', contraataque: 'Confesá tu jugada, hereje. El naipe bravo nunca miente.', caida: '¡Herejía! Me ganaron con las cartas marcadas.' },
-    curse: { mark: 'guardias', badge: 'Sin Aturdido' },
-    apply: (c) => void ((c.noFx = 'sobrecarga'), eachThreat(c, -MON.blindaje.ataque)),
-  },
-  {
-    id: 'furia',
-    who: 'El Carnicero',
-    name: 'Hacha afilada',
-    desc: 'El Ataque de todos los guardias sube {ataque}.',
-    barks: { entrada: 'Afilé el hacha toda la noche. ¡Vale cuatro, y sin piedad!', contraataque: '¡Truco! Y esta vez no me tiembla el pulso.', caida: 'Se me cayó la capucha. Mala mano, la mía.' },
-    curse: { mark: 'ataque', badge: '+{ataque} de Ataque en cada guardia' },
-    apply: (c) => eachThreat(c, MON.furia.ataque),
-  },
-  {
-    id: 'inestable',
-    who: 'El Relojero',
-    name: 'Arena rápida',
-    desc: 'El asalto empieza con {furia} de Furia, y cada guardia abatido sin Golpe exacto te quita {vida} de Vida.',
-    barks: { entrada: 'Tic, tac. Cada grano de arena juega de mi lado.', contraataque: 'Se te acaba la arena, compadre. Yo no apuro: espero.', caida: 'Se me paró el reloj... justo a tu hora.' },
-    curse: { mark: 'asedio', badge: 'Empieza con {furia} de Furia' },
-    apply: (c) => void ((c.crumbleHurt = MON.inestable.vida), (c.furiaInicial = (c.furiaInicial ?? 0) + MON.inestable.furia)),
+    id: 'copas',
+    palo: 'H',
+    who: 'El Rey de Copas',
+    name: 'Brindis del Rey',
+    desc: 'Cada turno que sigue al frente, se cura {cura} de Vida.',
+    barks: { entrada: 'Pasá, sentate. La primera copa siempre la invito yo.', contraataque: '¿No brindás conmigo? Entonces tomá esto, a tu salud.', caida: 'Se me volcó la copa en el paño... qué final tan seco.' },
+    curse: { mark: 'asedio', badge: 'Se cura {cura} por turno' },
+    apply: (c) => void (c.jefe && (c.jefe.cura = RY.copas.cura)),
   },
 ];
+/** V40 1c · Los siete monarcas sueltos de antes (ya no existen): sus ids, para migrar trofeos y Colección. */
+export const MONARCAS_VIEJOS: Record<string, ReyId> = { doble: 'espadas', furia: 'espadas', blindaje: 'bastos', intemperie: 'bastos', escasez: 'oros', inestable: 'oros', sequia: 'copas' };
 /** Cifras de cada decreto para su texto y su placa. */
-const BOSS_NUMS: Record<string, Record<string, number>> = { ...MON, doble: { ...MON.doble, pct: Math.round((1 - MON.doble.ataque) * 100) } };
+const BOSS_NUMS: Record<string, Record<string, number>> = RY as unknown as Record<string, Record<string, number>>;
 for (const b of BOSSES) {
   b.desc = fill(b.desc, BOSS_NUMS[b.id] ?? {});
   b.curse.badge = fill(b.curse.badge, BOSS_NUMS[b.id] ?? {});
@@ -347,7 +333,7 @@ export const EVENTS: EventDef[] = [
   },
 ];
 /** V35 · Apunta lo que salió en un santuario, para enseñarlo. */
-const sale = (run: Run, clave: string, buena: boolean, datos: Record<string, number> = {}, mas: { reliquia?: string; rasgo?: Rasgo } = {}) => void (run.suerte = { clave, datos, buena, ...mas });
+const sale = (run: Run, clave: string, buena: boolean, datos: Record<string, number> = {}, mas: { reliquia?: string; rey?: ReyId; bendicion?: string } = {}) => void (run.suerte = { clave, datos, buena, ...mas });
 EVENTS.push(
   {
     id: 'rueda',
@@ -393,20 +379,23 @@ EVENTS.push(
   {
     id: 'altar',
     name: 'El altar de sangre',
-    text: 'Un altar con cinco estandartes. El cuenco del centro pide algo tuyo antes de dar nada.',
+    text: 'Un altar con cuatro coronas. El cuenco del centro pide algo tuyo antes de dar nada.',
     options: [
       {
         label: 'Ofrecer tu sangre',
-        read: { gain: 'Reliquia de tu rasgo', cost: '−3 de Vida máxima', glyph: 'corazon' },
-        desc: 'Perdés 3 de Vida máxima para siempre. Te llevás una Reliquia del rasgo del que llevás más.',
-        can: (run) => run.maxIntegrity > 8 && run.tools.length < TOOL_SLOTS && !!rasgoMayor(run),
+        read: { gain: 'Bendición de tu Rey', cost: '−3 de Vida máxima', glyph: 'corazon' },
+        desc: 'Perdés 3 de Vida máxima para siempre. El Rey del que más Bendiciones llevás te da otra.',
+        can: (run) => run.maxIntegrity > 8 && !!reyMayor(run),
         apply: (run) => {
-          const rasgo = rasgoMayor(run)!;
-          const id = rollToolRasgo(run, rasgo);
+          const rey = reyMayor(run)!;
+          const libres = bendicionesDe(rey).filter((b) => !run.bendiciones.some((x) => x.id === b.id));
           run.maxIntegrity -= 3;
           run.integrity = Math.min(run.integrity, run.maxIntegrity);
-          if (id) placeTool(run.tools, { id, n: 0 }), sale(run, 'altar.si', true, { n: rasgosDe(run.tools)[rasgo] }, { reliquia: id, rasgo });
-          else (run.gold += 10), sale(run, 'altar.no', true, { n: 10 }, { rasgo });
+          if (libres.length) {
+            const id = libres[Math.floor(nextRandom(run) * libres.length)].id;
+            tomaBendicion(run, id);
+            sale(run, 'altar.si', true, { n: nivelesReyes({ bendiciones: run.bendiciones })[rey].n }, { rey, bendicion: id });
+          } else (run.gold += 10), sale(run, 'altar.no', true, { n: 10 }, { rey });
         },
       },
       { label: 'Rezar y seguir', read: { gain: '+3 de Vida', cost: '', glyph: 'reparacion' }, desc: '+3 de Vida.', apply: (run) => void (run.integrity = Math.min(run.maxIntegrity, run.integrity + 3)) },
@@ -472,10 +461,10 @@ export interface Meta {
   aviso?: AvisoArbol;
 }
 /**
- * 6 desde los 5 Mazos de la V40 (la maestría va por Mazo); 5 desde la V40 (sin Asalto diario: se van `daily` y `stats.dailies`); 4 desde la V12 (Árbol de la Conjura, `renown`
+ * 7 desde los 4 Reyes de la V40 (los trofeos y la Colección de monarcas pasan a los Reyes); 6 desde los 5 Mazos de la V40 (la maestría va por Mazo); 5 desde la V40 (sin Asalto diario: se van `daily` y `stats.dailies`); 4 desde la V12 (Árbol de la Conjura, `renown`
  * en Esquirlas de Corona). Ver `loadMeta` y src/rules/migracion.ts.
  */
-export const META_VERSION = 6;
+export const META_VERSION = 7;
 export const newMeta = (): Meta => ({
   v: META_VERSION,
   renown: 0,
@@ -513,6 +502,8 @@ export function loadMeta(saved: unknown): Meta {
   if (v <= META_38) migraMeta38(meta);
   // perfiles del tramo 1a de la V40: la maestría de cada baraja de inicio pasa a su Mazo
   if (v <= META_40) migraMeta40(meta);
+  // perfiles del tramo 1b de la V40: los trofeos y los monarcas vistos pasan a los 4 Reyes
+  if (v <= META_40B) migraMeta40c(meta, MONARCAS_VIEJOS);
   meta.v = META_VERSION;
   delete (meta.seen as { relics?: unknown }).relics;
   return meta;
@@ -579,6 +570,8 @@ export type RunAction =
   | { t: 'reroll' }
   | { t: 'next' }
   | { t: 'event'; i: number }
+  /** V40 1c · Oferta de Bendiciones: tomar la opción i. */
+  | { t: 'bendicion'; i: number }
   /** Cinturón: nuevo orden de las herramientas (permutación de índices). */
   /** Tras el asalto 5: seguir en el Trono infinito. */
   | { t: 'endless' };
@@ -607,6 +600,12 @@ export interface Run {
   deckId: string;
   /** V40 · Cargas permanentes de su Mazo (Escoba, Mano larga): crecen en los golpes y duran toda la campaña. */
   cargas: Cargas;
+  /** V40 1c · Las Bendiciones tomadas, con sus cargas (`n`), en el orden en que llegaron. */
+  bendiciones: BendInst[];
+  /** V40 1c · La oferta en curso (en la fase `bendicion`), o null. */
+  oferta: OpcionBend[] | null;
+  /** V40 1c · El asalto de la última oferta (cada asalto ofrece una vez). */
+  ofertaDe: number;
   up: Record<string, number>;
   /** Surtidos de esta campaña. */
   pool: string[];
@@ -614,7 +613,8 @@ export interface Run {
   seals: Seal[];
   treats: Treatment[];
   stage: number;
-  phase: 'pack' | 'map' | 'battle' | 'reward' | 'shop' | 'event' | 'won' | 'lost';
+  /** `bendicion` (V40 1c): la oferta de Bendiciones, al empezar la campaña y antes de cada asalto 2 a 5. */
+  phase: 'pack' | 'bendicion' | 'map' | 'battle' | 'reward' | 'shop' | 'event' | 'won' | 'lost';
   gold: number;
   integrity: number;
   maxIntegrity: number;
@@ -654,9 +654,10 @@ export interface Run {
   events: string[];
   /**
    * V35 · Lo que salió en el último santuario de azar (la pantalla siguiente lo enseña una vez): la clave de sus textos
-   * (`suerte.<clave>.titulo` y `.texto` de plantillas.ts), sus cifras y, si los hay, la Reliquia y el rasgo que nombra.
+   * (`suerte.<clave>.titulo` y `.texto` de plantillas.ts), sus cifras y, si los hay, la Reliquia, el Rey y la
+   * Bendición que nombra.
    */
-  suerte?: { clave: string; datos: Record<string, number>; reliquia?: string; rasgo?: Rasgo; buena: boolean } | null;
+  suerte?: { clave: string; datos: Record<string, number>; reliquia?: string; rey?: ReyId; bendicion?: string; buena: boolean } | null;
   rerolls: number;
   vouchers: number;
   removals: number;
@@ -723,33 +724,30 @@ function rollTool(run: Run, rarities: Rarity[], exclude: string[] = []): string 
 }
 const ALL_RARITIES: Rarity[] = ['comun', 'oficio', 'capataz', 'reliquia'];
 
-/** V35 · El rasgo con más Reliquias en la tira (a igualdad, el de la Reliquia más reciente); null si no llevás ninguna. */
-export function rasgoMayor(run: Pick<Run, 'tools'>): Rasgo | null {
-  const n = rasgosDe(run.tools);
-  let mejor: Rasgo | null = null;
-  for (const t of [...run.tools].reverse()) {
-    const r = TOOL[t.id]?.rasgo;
-    if (r && (!mejor || n[r] > n[mejor])) mejor = r;
+/**
+ * V40 1c · El Rey del que más piezas llevás (a igualdad, el de la Bendición más reciente); null si no llevás ninguna.
+ */
+export function reyMayor(run: Pick<Run, 'bendiciones'>): ReyId | null {
+  const nv = nivelesReyes({ bendiciones: run.bendiciones });
+  let mejor: ReyId | null = null;
+  for (const b of [...(run.bendiciones ?? [])].reverse()) {
+    const r = BENDICION[b.id]?.rey;
+    if (r && (!mejor || nv[r].n > nv[mejor].n)) mejor = r;
   }
   return mejor;
 }
 
-/** Una Reliquia al azar de un rasgo (de cualquier rareza); null si no queda ninguna en el surtido. */
-function rollToolRasgo(run: Run, rasgo: Rasgo, exclude: string[] = []): string | null {
-  const owned = run.tools.map((t) => t.id);
-  const pool = run.toolPool.filter((id) => !owned.includes(id) && !exclude.includes(id) && TOOL[id].rasgo === rasgo);
-  return pool.length ? pool[Math.floor(nextRandom(run) * pool.length)] : null;
+/** V40 1c · Toma una Bendición: entra con sus cargas a cero y hace su efecto inmediato (oro, Vida máxima…). */
+export function tomaBendicion(run: Run, id: string): void {
+  const d = BENDICION[id];
+  if (!d || run.bendiciones.some((b) => b.id === id)) return;
+  run.bendiciones.push({ id, n: 0 });
+  d.toma?.(run);
 }
 
-/**
- * V35 · El Cofre del monarca: tres Reliquias a elegir una. La primera es de tu rasgo con más Reliquias (si llevás
- * alguna); las otras, Raras, Nobles o Regias al azar.
- */
+/** El Cofre del monarca: tres Reliquias a elegir una, Raras, Nobles o Regias al azar. */
 function cofreDelMonarca(run: Run): string[] {
   const out: string[] = [];
-  const mayor = rasgoMayor(run);
-  const propia = mayor ? rollToolRasgo(run, mayor) : null;
-  if (propia) out.push(propia);
   while (out.length < 3) {
     const id = rollTool(run, ['oficio', 'capataz', 'reliquia'], out) ?? rollTool(run, ALL_RARITIES, out);
     if (!id) break;
@@ -929,6 +927,9 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
     tools: [],
     deck: standardDeck(),
     cargas: {},
+    bendiciones: [],
+    oferta: null,
+    ofertaDe: 0,
     levels: Object.fromEntries(FORMATIONS.map((f) => [f, 0])) as Record<Formation, number>,
     handBonus: 0,
     interestCap: BALANCE.inicio.interesTope,
@@ -976,12 +977,14 @@ export function newRun(opts: RunOpts, fallbackSeed = 1): Run {
   if (run.ascension >= 5) run.maxIntegrity -= REIN.heridasViejas;
   run.integrity = Math.min(run.integrity, run.maxIntegrity);
   DECK[run.deckId].build(run);
-  // los monarcas (tres distintos) y los palos de los asaltos cortos se sortean ya: el Mapa los enseña desde el principio
+  // los Reyes jefe (tres distintos) y los palos de los asaltos cortos se sortean ya: el Mapa los enseña desde el
+  // principio. V40 1c: en un asalto corto con Rey, su palo siempre está (su Casa va la última)
   const bosses = pick(run, BOSSES, STAGES.filter((s) => s.boss).length).map((b) => b.id);
   STAGES.forEach((s, i) => s.boss && (run.bosses[i + 1] = bosses.shift()!));
   STAGES.forEach((s, i) => {
     if (s.thrones >= SUITS.length) return;
-    const chosen = pick(run, SUITS, s.thrones);
+    const rey = run.bosses[i + 1] ? BOSS[run.bosses[i + 1]].palo : null;
+    const chosen = rey ? [rey, ...pick(run, SUITS.filter((x) => x !== rey), s.thrones - 1)] : pick(run, SUITS, s.thrones);
     run.palos[i + 1] = SUITS.filter((x) => chosen.includes(x));
   });
   run.events = pick(run, EVENTS, EVENT_AFTER.length).map((e) => e.id);
@@ -995,12 +998,15 @@ export const FURIA: { mazo: number; rey: number; jefeVida: number } = BALANCE.fu
 
 /**
  * V35 · El orden en que se asaltan las Casas de un asalto: los tronos presentes, empezando por uno que depende de la
- * campaña y del asalto (así no se abre siempre por Espadas). El monarca, si lo hay, es el último guardia de la última.
+ * campaña y del asalto (así no se abre siempre por Espadas). V40 1c: en un asalto con Rey jefe, la Casa de su palo va
+ * la última, y él es su último guardia.
  */
-export function ordenCasas(run: Pick<Run, 'id' | 'stage' | 'palos'>): Suit[] {
+export function ordenCasas(run: Pick<Run, 'id' | 'stage' | 'palos'> & { bosses?: Record<number, string> }): Suit[] {
   const presentes = run.palos?.[run.stage] ?? [...SUITS];
   const k = Math.abs((run.id | 0) + run.stage * 7) % presentes.length;
-  return [...presentes.slice(k), ...presentes.slice(0, k)];
+  const orden = [...presentes.slice(k), ...presentes.slice(0, k)];
+  const palo = stageDef(run.stage).boss ? BOSS[run.bosses?.[run.stage] ?? '']?.palo : undefined;
+  return palo && orden.includes(palo) ? [...orden.filter((s) => s !== palo), palo] : orden;
 }
 
 /** Timbre del gremio: cartas del mazo que sella al empezar cada obra (además de activar dos veces todos los sellos). */
@@ -1032,7 +1038,19 @@ export function stageConfig(run: Run, players = 1): Config {
   // Corte airada (Reinado 3+): cada Mazo agotado sube la Furia un poco más
   cfg.collapseSiege = FURIA.mazo + (a >= 2 ? REIN.furia : 0);
   cfg.orden = ordenCasas(run);
-  if (st.boss) cfg.jefe = { suit: cfg.orden[cfg.orden.length - 1], vida: FURIA.jefeVida, furia: FURIA.rey };
+  // V40 1c · el Rey jefe: su Vida (× la del monarca) y su Furia propia; en el asalto 2 ocupa el sitio del Caballo
+  const rey = st.boss ? BOSS[run.bosses[run.stage]] : undefined;
+  if (st.boss) {
+    const r = rey ? RY[rey.id] : { vida: 1, furia: FURIA.rey };
+    const corto = !st.floors.includes(REY);
+    cfg.jefe = {
+      suit: cfg.orden[cfg.orden.length - 1],
+      vida: Math.round(FURIA.jefeVida * r.vida * (corto ? RY.asalto2.vida : 1) * 100) / 100,
+      furia: r.furia,
+      ...(rey ? { rey: rey.id } : {}),
+      ...(corto ? { ataque: RY.asalto2.ataque } : {}),
+    };
+  }
   cfg.formLevel = { ...run.levels };
   // V40 · las reglas del Mazo de la campaña
   if (esMazo(run.deckId)) cfg.mazo = run.deckId;
@@ -1041,7 +1059,12 @@ export function stageConfig(run: Run, players = 1): Config {
   if (run.endless && rangoDe(run.up, 'manga') > 0) cfg.reserveSize = 2;
   if (run.endless && rangoDe(run.up, 'gracia') > 0) cfg.cleanOver = cifraDe('gracia', rangoDe(run.up, 'gracia')).n;
   for (const t of run.tools) TOOL[t.id]?.cfg?.(cfg);
-  rasgosCfg(cfg, run.tools);
+  // V40 1c · las Bendiciones, los niveles de los Reyes y el Escudo con que se empieza
+  const bend = run.bendiciones ?? [];
+  for (const b of bend) BENDICION[b.id]?.cfg?.(cfg, b);
+  nivelesCfg(cfg, nivelesReyes({ bendiciones: bend }));
+  const escudo = escudoInicial(bend);
+  if (escudo) cfg.wallStart = (cfg.wallStart ?? 0) + escudo;
   if (run.boss) BOSS[run.boss]?.apply(cfg);
   if (run.contract) CONTRACT[run.contract]?.cfg?.(cfg);
   if (run.curse) eachThreat(cfg, 1);
@@ -1058,15 +1081,21 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
   run.death = null;
   run.caida = caidaVacia();
   run.ritual = null;
+  const towers = newTowers(stageDef(run.stage).floors, config, run.palos?.[run.stage]);
+  // V40 1c · el último guardia de la Casa del jefe es su Rey (en el asalto 2, en el sitio del Caballo)
+  if (config.jefe) {
+    const t = towers[config.jefe.suit];
+    if (t.floors.length) t.floors[t.floors.length - 1] = REY;
+  }
   const state: GameState = {
     config,
     rng: (run.rng ^ 0x5bd1e995) | 0,
     players: players.map((p) => ({ id: p.id, name: p.name, hand: deck.splice(0, size), reserve: [] })),
     deck,
     discard: [],
-    towers: newTowers(stageDef(run.stage).floors, config, run.palos?.[run.stage]),
+    towers,
     integrity: Math.min(run.integrity, config.maxIntegrity),
-    // V35 · rasgo Bastión: el asalto empieza con Escudo
+    // el asalto puede empezar con Escudo (Bendiciones de Bastos y su nivel)
     wall: Math.min(config.wallCap, config.wallStart ?? 0),
     turn: 0,
     turnCount: 0,
@@ -1085,6 +1114,8 @@ export function startStage(run: Run, players: { id: string; name: string }[]): G
     fatigue: config.furiaInicial ?? 0,
     // V40 · las cargas del Mazo vienen de la campaña; el Engaño de El Mentiroso, uno por asalto
     cargas: { ...run.cargas },
+    // V40 1c · las Bendiciones con sus cargas: crecen en la mesa y vuelven a la campaña al acabar
+    bendiciones: (run.bendiciones ?? []).map((b) => ({ ...b })),
     ...(config.mazo === 'mentiroso' ? { engano: { usado: false } } : {}),
   };
   tiraDado(state);
@@ -1146,10 +1177,9 @@ function generateShop(run: Run): Offer[] {
 function stock(run: Run): Offer[] {
   const offers: Offer[] = [];
   const seen: string[] = [];
-  // V35 · el Puesto grande (Árbol): por nivel, una Reliquia más y dos de las ofrecidas son de tu rasgo principal
-  const mayor = rasgoMayor(run);
+  // el Puesto grande (Árbol): por nivel, una Reliquia más, y dos de las ofrecidas son Raras o mejores
   for (let i = 0; i < BALANCE.taberna.reliquias + lvl(run, 'tienda'); i++) {
-    const id = (i < 2 * lvl(run, 'tienda') && mayor ? rollToolRasgo(run, mayor, seen) : null) ?? rollTool(run, ALL_RARITIES, seen);
+    const id = (i < 2 * lvl(run, 'tienda') ? rollTool(run, ['oficio', 'capataz', 'reliquia'], seen) : null) ?? rollTool(run, ALL_RARITIES, seen);
     if (!id) break;
     seen.push(id);
     // Ojo del tasador (Árbol): las reliquias cuestan menos, nunca menos de 1
@@ -1188,13 +1218,30 @@ function toMap(run: Run): void {
   run.node = { routes: [safe.id, ...others.map((c) => c.id)], tag: st.atajo ? pick(run, TAGS, 1)[0].id : null };
 }
 
+/**
+ * V40 1c · Entra al asalto en curso: antes, si toca, la oferta de Bendiciones (al empezar la campaña, de `oferta.inicio`
+ * Reyes; antes de los asaltos 2 a 5, de `oferta.entre`); si no, el Mapa. Cada asalto ofrece una sola vez.
+ */
+function entra(run: Run): void {
+  if (!run.endless && run.stage <= LAST_STAGE && run.ofertaDe !== run.stage) {
+    run.ofertaDe = run.stage;
+    const op = ofertaBendiciones(run.id, run.stage, run.bendiciones, reyesEnOferta(run.stage === 1));
+    if (op.length) {
+      run.phase = 'bendicion';
+      run.oferta = op;
+      return;
+    }
+  }
+  toMap(run);
+}
+
 function advance(run: Run): void {
   run.stage++;
   run.curse = run.curse && run.phase === 'event'; // el contrato maldito pesa sobre la obra que viene
   run.shop = [];
   run.event = null;
   run.freeShop = false;
-  toMap(run);
+  entra(run);
 }
 
 function draftOptions(run: Run): DraftOpt[] {
@@ -1211,6 +1258,7 @@ export function finishBattle(run: Run, state: GameState): void {
   if (run.phase !== 'battle' || state.phase === 'playing') return;
   run.tools = state.tools.map((t) => ({ ...t }));
   run.cargas = { ...state.cargas };
+  if (state.bendiciones) run.bendiciones = state.bendiciones.map((b) => ({ ...b }));
   run.deck = run.deck.filter((c) => !state.burned.includes(c.id));
   run.scrap = state.scrap;
   run.stats.turns += state.turnCount;
@@ -1229,6 +1277,10 @@ export function finishBattle(run: Run, state: GameState): void {
     [fill('Interés (1 por cada {n} de oro)', { n: C.interesCada }), Math.min(run.interestCap, Math.floor(run.gold / C.interesCada))],
   ];
   if (run.tools.some((t) => t.id === 'hucha')) lines.push([TOOL.hucha?.name ?? 'Hucha', BALANCE.reliquias.hucha.oro]);
+  // V40 1c · lo que cobran las Bendiciones (y el nivel de Oros): el oro, a la cuenta; la Vida, tras curar
+  const cierre = cierreBendiciones(run.bendiciones ?? []);
+  for (const c of cierre) if (c.oro > 0) lines.push([c.label, c.oro]);
+  const vidaBend = cierre.reduce((a, c) => a + c.vida, 0);
   // la tirada de huesos (azar propio: no toca run.rng): el Dado de oro multiplica las monedas que cayeron en el
   // asalto y el de la Corona, sus esquirlas; lo extra se abona en el acto
   run.ritual = tirarHuesos(run);
@@ -1242,7 +1294,7 @@ export function finishBattle(run: Run, state: GameState): void {
   run.stats.gold += total;
   if (state.integrity >= run.maxIntegrity) run.intact++;
   if (run.boss) run.beaten.includes(run.boss) || run.beaten.push(run.boss);
-  run.integrity = Math.min(run.maxIntegrity, state.integrity + BALANCE.cobro.curaTrasAsalto);
+  run.integrity = Math.min(run.maxIntegrity, state.integrity + BALANCE.cobro.curaTrasAsalto + vidaBend);
   const contract = run.contract ? CONTRACT[run.contract] : null;
   if (contract) {
     run.contractDone = contract.risk ? true : !!contract.done?.(run.battle, state, run);
@@ -1272,8 +1324,17 @@ export function runAction(run: Run, a: RunAction): string | null {
     case 'begin':
       if (run.phase !== 'pack') return 'La campaña ya empezó.';
       if (a.don !== undefined) takeDon(run, a.don);
+      entra(run);
+      return null;
+    case 'bendicion': {
+      if (run.phase !== 'bendicion' || !run.oferta) return 'No hay Bendiciones que elegir.';
+      const o = run.oferta[a.i];
+      if (!o) return 'Esa Bendición no está en la oferta.';
+      tomaBendicion(run, o.id);
+      run.oferta = null;
       toMap(run);
       return null;
+    }
     case 'route': {
       if (run.phase !== 'map') return 'No estás en el Mapa del castillo.';
       const boss = stageDef(run.stage).boss;
@@ -1293,7 +1354,7 @@ export function runAction(run: Run, a: RunAction): string | null {
       run.skipped.push(run.stage);
       tag.apply(run);
       run.stage++;
-      toMap(run);
+      entra(run);
       return null;
     }
     case 'draft': {
@@ -1472,7 +1533,7 @@ function resolvePending(run: Run, ids: string[]): string | null {
 }
 
 /** Obras superadas (las saltadas no cuentan como demolidas, pero sí como camino recorrido). */
-export const stagesCleared = (run: Run) => (run.phase === 'battle' || run.phase === 'map' || run.phase === 'pack' || run.phase === 'lost' ? run.stage - 1 : run.stage);
+export const stagesCleared = (run: Run) => (run.phase === 'battle' || run.phase === 'map' || run.phase === 'pack' || run.phase === 'bendicion' || run.phase === 'lost' ? run.stage - 1 : run.stage);
 export const depthOf = (run: Run) => Math.max(0, stagesCleared(run) - LAST_STAGE);
 
 export function renownFor(run: Run): number {
@@ -1512,14 +1573,13 @@ export function cobroAbismo(meta: Meta, run: Run): number {
 
 /**
  * Una campaña guardada lista para seguir: la de esta versión tal cual; si no, null. Las de antes de la V40 (la 11.0
- * y la 12.0 a la 38.0) eran de la baraja francesa: no se continúan (el cliente las retira con `campanaFrancesa`).
+ * y la 12.0 a la 38.0) eran de la baraja francesa, y las de los tramos 1a y 1b (6 y 7) tenían rasgos y monarcas
+ * viejos: no se continúan (el cliente las retira con `campanaFrancesa` y `campanaSinReyes`).
  */
 export function cargaRun(raw: unknown): Run | null {
   const r = raw as Run | null;
   if (!r || typeof r !== 'object' || !r.stats) return null;
-  // la del tramo 1a de la V40 (baraja española con las barajas viejas) sigue, con su Mazo
-  if (r.v === RUN_40) migraRun40(r, RUN_VERSION);
-  return r.v === RUN_VERSION ? r : null;
+  return r.v === RUN_VERSION && Array.isArray(r.bendiciones) ? r : null;
 }
 
 /**

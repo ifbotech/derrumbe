@@ -2,25 +2,58 @@
   "inicio": { "vida": 22, "oro": 4, "interesTope": 3, "sobre": 3, "donOro": 5 },
   "asaltos": [
     { "hp": 5.6, "threat": 1 },
-    { "hp": 5.0, "threat": 1 },
-    { "hp": 7.2, "threat": 2 },
-    { "hp": 5.8, "threat": 3 },
-    { "hp": 6.3, "threat": 4 }
+    { "hp": 5.0, "threat": 2 },
+    { "hp": 8.64, "threat": 4 },
+    { "hp": 8.12, "threat": 7 },
+    { "hp": 11.34, "threat": 7 }
   ],
   "tronoInfinito": { "hpCrece": 1.45 },
   "cuadrilla": [1, 1.3, 1.4, 1.48],
-  "reinados": { "corazas": 1.15, "furia": 1, "reyesAcorazados": 1.28, "reyColerico": 1, "heridasViejas": 2, "guardiaNoche": 1 },
+  "reinados": { "corazas": 1.45, "furia": 2, "reyesAcorazados": 1.4, "reyColerico": 2, "heridasViejas": 3, "guardiaNoche": 1 },
   "furia": { "mazo": 2, "rey": 1, "jefeVida": 2 },
   "clausura": { "stages": [5], "threat": 1 },
   "timbre": { "stamps": 1 },
-  "monarcas": {
-    "doble": { "contraataques": 2, "ataque": 0.5 },
-    "escasez": { "cartas": 1, "ataque": 1 },
-    "intemperie": { "escudoTope": 1 },
-    "furia": { "ataque": 3 },
-    "inestable": { "furia": 1, "vida": 1 },
-    "sequia": { "veneno": 1 },
-    "blindaje": { "ataque": 1 }
+  "reyes": {
+    "espadas": { "vida": 1.4, "furia": 3, "perfora": 4 },
+    "bastos": { "vida": 0.7, "furia": 1 },
+    "oros": { "vida": 1, "furia": 1, "dado": 6 },
+    "copas": { "vida": 1.3, "furia": 3, "cura": 12 },
+    "asalto2": { "vida": 0.8, "ataque": -2 }
+  },
+  "oferta": { "inicio": 2, "entre": 3, "dual": 0.5 },
+  "niveles": {
+    "espadas": { "multi": 1, "x": 2 },
+    "bastos": { "escudo": 4, "dano": 2, "tope": 4 },
+    "oros": { "oro": 3, "caras": 6 },
+    "copas": { "vida": 1, "cartas": 1, "cura": 1 }
+  },
+  "bendiciones": {
+    "filo": { "dano": 2, "carga": 1 },
+    "estocada": { "dano": 8, "carga": 2 },
+    "tajo": { "carga": 3 },
+    "duelo": { "dano": 10, "carga": 2 },
+    "remate": { "pct": 10, "carga": 2 },
+    "garrote": { "escudo": 1, "carga": 1 },
+    "empalizada": { "tope": 2, "n": 4, "carga": 1 },
+    "replica": { "dano": 6, "carga": 2 },
+    "porra": { "dano": 1, "carga": 1 },
+    "aguante": { "escudo": 3, "carga": 1 },
+    "moneda": { "oro": 1, "cartas": 3, "carga": 1 },
+    "lluvia": { "dano": 1, "carga": 1 },
+    "taba": { "x": 2, "carga": 2 },
+    "arcon": { "oro": 8, "interes": 2, "carga": 1 },
+    "envite": { "multi": 1, "carga": 2 },
+    "brindis": { "vida": 1, "n": 4, "carga": 1 },
+    "porron": { "vida": 4, "carga": 2 },
+    "ronda": { "cartas": 1, "n": 4, "carga": 1 },
+    "caliz": { "dano": 2, "carga": 1 },
+    "sobremesa": { "vida": 3, "carga": 1 },
+    "hoja": { "escudo": 2, "carga": 1 },
+    "filodorado": { "dano": 6, "carga": 1 },
+    "sangria": { "vida": 2, "carga": 2 },
+    "peaje": { "oro": 1, "carga": 1 },
+    "fogon": { "escudo": 2, "carga": 1 },
+    "convite": { "oro": 1, "vida": 1, "carga": 1 }
   },
   "taberna": {
     "rarezas": {
@@ -104,11 +137,11 @@
       "parpalo": { "f": 0, "r": 1, "lf": 3 },
       "quince": { "f": 6, "r": 1, "lf": 3 }
     },
-    "truco": { "vida": -9, "mano": 1, "bravo": { "S1": 10, "C1": 8, "S7": 6, "D7": 4 }, "envido": 5 },
+    "truco": { "vida": -6, "mano": 0, "bravo": { "S1": 10, "C1": 8, "S7": 6, "D7": 4 }, "envido": 5 },
     "escoba": { "vida": -1, "mano": -1, "multi": 1, "carga": 2 },
-    "chinchon": { "vida": -5, "mano": 0, "pierna": 1, "escalera": 8, "cartas": 4, "carga": 1, "alivio": 1 },
-    "mentiroso": { "vida": -8, "mano": 1, "comodines": 1, "dano": 15, "furia": 2 },
-    "chancho": { "vida": -7, "mano": 0, "cadena": 2, "turnos": 4, "dano": 30 }
+    "chinchon": { "vida": -6, "mano": 0, "pierna": 1, "escalera": 8, "cartas": 4, "carga": 1, "alivio": 1 },
+    "mentiroso": { "vida": -11, "mano": 1, "comodines": 1, "dano": 15, "furia": 2 },
+    "chancho": { "vida": -9, "mano": 0, "cadena": 2, "turnos": 4, "dano": 30 }
   },
   "formaciones": {
     "solo": { "f": 0, "r": 1, "lf": 4 },
@@ -135,13 +168,6 @@
   "golpe": { "racha": 1, "rachaTope": 3, "expuesto": 2, "onda": 0.25, "oroExacto": 1 },
   "acabados": { "forjado": 6, "templado": 1, "policromado": 2, "agrietado": 3, "agrietadoRompe": 0.25 },
   "sellos": { "jornal": 2 },
-  "rasgos": {
-    "sangre": { "vida": 1, "cada": 4, "multi": 1, "x": 2 },
-    "tahur": { "oro": 3, "x": 2 },
-    "verdugo": { "pct": 15, "pct2": 25, "dano": 20 },
-    "bastion": { "escudo": 4, "dano": 3, "dano2": 6, "tope": 4 },
-    "horda": { "multi": 1, "cartas": 3 }
-  },
   "clasica": {
     "obra": {
       "floorHp": { "10": 155, "11": 220, "12": 285 },

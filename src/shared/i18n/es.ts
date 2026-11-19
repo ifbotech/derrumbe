@@ -14,7 +14,8 @@ import { KEYWORDS } from '../../rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECKS, EVENTS, STAGES, TAGS, TIRANO, UPGRADES } from '../../rules/run';
 import { RAIZ, RAMAS } from '../../rules/arbol';
 import { SPECIALS } from '../../rules/specials';
-import { ARCH, RARITY, RASGOS, TOOLS } from '../../rules/tools';
+import { ARCH, RARITY, TOOLS } from '../../rules/tools';
+import { BENDICIONES, BONOS_REY, BUFON_BENDICION, FRASES_REY, REY_IDS, REY_NOMBRE, REY_PALO } from '../../rules/reyes';
 import { FRASES_BUFON } from '../../rules/bufon';
 import { REGLAS } from '../../rules/mazos';
 import { ES_PLANTILLAS } from '../../rules/plantillas';
@@ -35,12 +36,19 @@ export function reglasEs(): Record<string, string> {
     o[`reliquia.${t.id}.nombre`] = t.name;
     o[`reliquia.${t.id}.desc`] = t.desc;
   }
-  // V35 · los cinco rasgos de build y sus bonos con 2, 4 y 6 Reliquias
-  for (const r of RASGOS) {
-    o[`rasgo.${r.id}.nombre`] = r.name;
-    o[`rasgo.${r.id}.lema`] = r.lema;
-    r.bonos.forEach((b, i) => (o[`rasgo.${r.id}.bono.${i + 1}`] = b));
+  // V40 1c · los 4 Reyes (sus bonos de nivel con 2 y 4 piezas y sus frases de jefe) y sus Bendiciones
+  for (const r of REY_IDS) {
+    o[`rey.${r}.nombre`] = REY_NOMBRE[r];
+    o[`rey.${r}.palo`] = REY_PALO[r];
+    BONOS_REY[r].forEach((b, i) => (o[`rey.${r}.bono.${i + 1}`] = b));
+    for (const [rel, t] of Object.entries(FRASES_REY[r])) o[`rey.${r}.frase.${rel}`] = t;
   }
+  for (const b of BENDICIONES) {
+    o[`bendicion.${b.id}.nombre`] = b.name;
+    o[`bendicion.${b.id}.desc`] = b.desc;
+    o[`bendicion.${b.id}.carga`] = b.carga;
+  }
+  BUFON_BENDICION.forEach((t, i) => (o[`bufon.bendicion.${i + 1}`] = t));
   for (const [r, v] of Object.entries(RARITY)) o[`rareza.${r}`] = v.name;
   for (const [a, v] of Object.entries(ARCH)) o[`arquetipo.${a}`] = v;
   for (const s of SPECIALS) {
@@ -168,6 +176,7 @@ export function reglasEs(): Record<string, string> {
   o['auto.taberna.nombre'] = 'Auto-pulpería';
   o['auto.taberna.desc'] = 'El bot compra en La Pulpería y elige ruta.';
   o['auto.pausa.botin'] = 'AUTO espera: elige tu Botín.';
+  o['auto.pausa.bendicion'] = 'AUTO espera: elegí tu Bendición.';
   o['auto.pausa.taberna'] = 'AUTO espera: compra en La Pulpería o sigue.';
   o['auto.pausa.mapa'] = 'AUTO espera: elige tu ruta en el Mapa.';
   o['auto.pausa.secreto'] = 'AUTO espera: elige en el Secreto.';

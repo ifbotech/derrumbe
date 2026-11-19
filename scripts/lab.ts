@@ -20,8 +20,10 @@ export interface Spec {
   /** Herramienta o carta especial de regalo al empezar (para medir cuánto vale por sí sola). */
   giveTool?: string;
   giveSpecial?: string;
+  /** V40 1c · Bendición de regalo al empezar (con 0 cargas), para medir cuánto vale por sí sola. */
+  giveBendicion?: string;
   /** Campaña de control: las mismas semillas que las de regalo, pero sin regalo. */
-  control?: 'tool' | 'special';
+  control?: 'tool' | 'special' | 'bendicion';
   /** Con gremio lleno, solo estas mejoras (y «legendarias»). */
   only?: string[];
   policy?: RunPolicy;
@@ -53,6 +55,8 @@ export interface Log {
   gold: number;
   /** Golpes del jugador en la campaña (eventos `impact`). */
   golpes: number;
+  /** V40 1c · las Bendiciones al acabar, con sus cargas. */
+  bendEnd: { id: string; n: number }[];
 }
 
 // Mandos de ajuste (variables de entorno): valen para el laboratorio entero, también en sus procesos hijos.
@@ -98,7 +102,7 @@ const bump = (rec: Record<string, number>, key: string) => void (rec[key] = (rec
 
 /** Archivos cuyas reglas decide el laboratorio: si cambian, el informe publicado deja de valer. */
 // V12: también el Árbol, lo que cae y los huesos (mueven el oro y los nodos de combate de la campaña).
-const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos', 'mazos'];
+const RULE_FILES = ['engine', 'run', 'tools', 'specials', 'bot', 'arbol', 'caida', 'huesos', 'mazos', 'reyes'];
 /** Y los números con que juegan: balance-config.json (sin espacios: solo cuentan sus valores). */
 const RULE_DATA = 'balance-config.json';
 /**
@@ -135,7 +139,8 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   const run = newRun(optsFor(spec), spec.seed);
   if (spec.giveTool) run.tools.push({ id: spec.giveTool, n: 0 });
   if (spec.giveSpecial) addSpecial(run, spec.giveSpecial);
-  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0 };
+  if (spec.giveBendicion) run.bendiciones.push({ id: spec.giveBendicion, n: 0 });
+  const log: Log = { spec, won: false, cleared: 0, diedAt: null, diedBoss: null, faced: [], stageTurns: [], stageJugadas: [], mid: null, toolsEnd: [], toolUse: {}, offered: {}, taken: {}, maxHit: 0, gold: 0, golpes: 0, bendEnd: [] };
   let shop: unknown = null;
   let rewardFor = 0;
   for (let guard = 0; guard < 6000; guard++) {
@@ -179,8 +184,13 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
       for (const id of run.loot) bump(log.offered, `tool:${id}`);
       for (const o of run.draft) bump(log.offered, o.kind === 'special' ? `special:${o.id}` : `mark:${o.card.seal ?? o.card.tr}`);
     }
+    if (run.phase === 'bendicion') for (const o of run.oferta ?? []) bump(log.offered, `bend:${o.id}`);
     const action = chooseRunAction(run, spec.policy);
     if (!action) throw new Error(`el bot no sabe qué hacer en la fase ${run.phase}`);
+    if (action.t === 'bendicion') {
+      const o = run.oferta?.[action.i];
+      if (o) bump(log.taken, `bend:${o.id}`);
+    }
     if (action.t === 'buy') {
       const o = run.shop[action.i];
       if (o) bump(log.taken, o.kind === 'tool' ? `tool:${o.id}` : o.kind === 'forja' ? `mark:${o.seal ?? o.tr}` : `shop:${o.kind}`);
@@ -196,6 +206,7 @@ export function playCampaign(spec: Spec): { run: Run; log: Log } {
   log.cleared = Math.min(LAST_STAGE, stagesCleared(run));
   log.stageTurns = run.stats.stageTurns;
   log.toolsEnd = run.tools.map((t) => t.id);
+  log.bendEnd = run.bendiciones.map((b) => ({ ...b }));
   log.toolUse = run.stats.toolUse;
   log.maxHit = run.stats.maxHit;
   log.gold = run.stats.gold;

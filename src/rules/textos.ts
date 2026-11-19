@@ -17,7 +17,7 @@ import { ES_PLANTILLAS } from './plantillas';
 type Paso = Extract<GameEvent, { e: 'step' }>;
 
 /** Prefijos de clave cuyo valor español es un nombre propio que puede ir en la cabecera de un paso. */
-const NOMBRES = /^(?:reliquia\.[^.]+\.nombre|especial\.[^.]+\.nombre|formacion\.[^.]+|sello\.[^.]+\.nombre|acabado\.[^.]+\.nombre|estado\.[^.]+\.nombre|monarca\.[^.]+\.decreto|rasgo\.[^.]+\.nombre|regla\.[^.]+\.nombre|paso\.(?:racha|carga))$/;
+const NOMBRES = /^(?:reliquia\.[^.]+\.nombre|especial\.[^.]+\.nombre|formacion\.[^.]+|sello\.[^.]+\.nombre|acabado\.[^.]+\.nombre|estado\.[^.]+\.nombre|monarca\.[^.]+\.decreto|bendicion\.[^.]+\.nombre|rey\.[^.]+\.nombre|regla\.[^.]+\.nombre|paso\.(?:racha|carga))$/;
 
 let nombresEs: Map<string, string> | null = null;
 /** Nombre español → clave («Broquel» → «reliquia.encofrado.nombre»). */
@@ -130,7 +130,6 @@ function textosAutopsia(lang: Lang): TextosAutopsia {
     especial: (id) => tFor(lang, `especial.${id}.nombre`),
     reliquia: (id) => tFor(lang, `reliquia.${id}.nombre`),
     palo: (s) => tFor(lang, `palo.${s}`),
-    arena: () => tFor(lang, 'monarca.inestable.decreto'),
   };
 }
 

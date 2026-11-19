@@ -6,7 +6,8 @@ import { AS_ALTO, Action, CABALLO, Card, Config, GameState, MAX_NUM, SOTA, SUITS
 import { ESCOBA_SUMA, MZ } from './mazos';
 import { DraftOpt, EVENT, MIN_DECK, Run, RunAction, CONTRACT, healCost, offerCost, removeCost, rerollCost, stageDef } from './run';
 import { SPECIAL } from './specials';
-import { RARITY, TOOL, TOOL_SLOTS, rasgosDe } from './tools';
+import { RARITY, TOOL, TOOL_SLOTS } from './tools';
+import { BENDICION, OpcionBend, PALO_DE_REY, ReyId, UMBRALES_REY, nivelesReyes, reyesDe } from './reyes';
 
 // ───────────────────────── La obra ─────────────────────────
 
@@ -87,7 +88,7 @@ const WALL_PAYOFF = ['ariete', 'contragolpe', 'bastion'];
 /** Cuánto vale una jugada: demolición útil, pisos caídos, defensa del búnker y lo que cuesta. */
 function evaluate(state: GameState, cards: Card[], target: Suit): number {
   const cfg = state.config;
-  const env: StrikeEnv = { ...state, towers: structuredClone(state.towers), tools: state.tools.map((t) => ({ ...t })) };
+  const env: StrikeEnv = { ...state, towers: structuredClone(state.towers), tools: state.tools.map((t) => ({ ...t })), ...(state.bendiciones ? { bendiciones: state.bendiciones.map((b) => ({ ...b })) } : {}) };
   const before = remaining(state.towers, cfg);
   const risk = danger(state, state.towers) * (cfg.sirenCount ?? 1);
   const has = (id: string) => state.tools.some((t) => t.id === id);
@@ -191,6 +192,8 @@ export interface RunPolicy {
   skip?: string[];
   /** Acepta contratos de riesgo si el búnker está sano. */
   risk?: boolean;
+  /** V40 1c · Toma esta Bendición siempre que se ofrezca (para medir cuánto vale). */
+  bendicion?: string;
 }
 
 const SPECIAL_VALUE: Record<string, number> = { bola: 8, nitro: 6, martillo: 7, sierra: 7, gemelo: 6, barreno: 6, palanca: 6, mordaza: 5, botica: 5, hormigonera: 5, cemento: 4, clavos: 4, grua: 4, saboteador: 4, pico: 4, chatarrero: 3 };
@@ -211,7 +214,7 @@ export function toolValue(id: string, run: Run): number {
   if (def.arch === 'precision' && id !== 'nivel') v += has('nivel') ? 2.5 : 0;
   if (id === 'nivel') v += 1 + run.tools.filter((t) => TOOL[t.id]?.arch === 'precision').length;
   if (id === 'montacargas' || id === 'prensa') v += Math.min(4, run.scrap * 0.5) + (has('trituradora') ? 2 : 0) - 1.5;
-  if (id === 'horno') v += has('trituradora') ? 2 : -0.5; // V35: cuenta para el Tahúr aunque no haya Trituradora
+  if (id === 'horno') v += has('trituradora') ? 2 : -0.5;
   if (id === 'trituradora') v += has('montacargas') || has('prensa') ? 2 : -1;
   if (id === 'contenedor') v -= 1;
   if (id === 'catalizador') v += has('crisol') ? 2 : 0;
@@ -237,9 +240,36 @@ export function toolValue(id: string, run: Run): number {
   if (suit) v += share(suit) < 0.08 ? -20 : (share(suit) - 0.25) * 10;
   if (id === 'mosaico' && SUITS.filter((s) => share(s) >= 0.08).length < 3) v -= 20;
   if (id === 'hucha') v += run.stage <= 3 ? 1.5 : -1;
-  // V35 · rasgos: vale más la Reliquia que completa un bono de 2, 4 o 6, y algo más la que se acerca a uno
-  const mios = rasgosDe(run.tools)[def.rasgo];
-  v += [2, 4, 6].includes(mios + 1) ? 3.5 : mios >= 1 ? 1.2 : 0;
+  return v;
+}
+
+// ───────────────────────── Las Bendiciones ─────────────────────────
+
+/**
+ * V40 1c · Lo que vale una Bendición para el bot: un valor propio (lo que da desde ya y lo fácil que es cargarla), el
+ * peso en el mazo del palo de su Rey, y un plus si enciende un nivel [2/4] o sigue al Rey que ya lleva. Sin azar.
+ */
+const BEND_VALUE: Record<string, number> = {
+  filo: 5, estocada: 3.5, tajo: 4.5, duelo: 4, remate: 4,
+  garrote: 4, empalizada: 3.5, replica: 3.5, porra: 4, aguante: 4.5,
+  moneda: 4, lluvia: 4, taba: 4.5, arcon: 3.5, envite: 4,
+  brindis: 4, porron: 4.5, ronda: 4, caliz: 3.5, sobremesa: 4,
+  hoja: 3, filodorado: 3, sangria: 3, peaje: 3, fogon: 3, convite: 3,
+};
+
+export function bendicionValue(o: OpcionBend, run: Run): number {
+  const def = BENDICION[o.id];
+  if (!def) return -99;
+  let v = BEND_VALUE[o.id] ?? 4;
+  const plain = run.deck.filter((c) => !c.sp && c.suit !== 'X');
+  const nv = nivelesReyes({ bendiciones: run.bendiciones });
+  // una Dual reparte su peso entre sus dos Reyes: cuenta la media, no la suma
+  const reyes = reyesDe(def) as ReyId[];
+  for (const rey of reyes) {
+    const share = plain.filter((c) => c.suit === PALO_DE_REY[rey]).length / Math.max(1, plain.length);
+    const n = nv[rey].n;
+    v += ((share - 0.25) * 6 + ((UMBRALES_REY as readonly number[]).includes(n + 1) ? 3 : n >= 1 ? 1 : 0)) / reyes.length;
+  }
   return v;
 }
 
@@ -319,6 +349,12 @@ export function chooseRunAction(run: Run, policy: RunPolicy = {}): RunAction | n
   switch (run.phase) {
     case 'pack':
       return { t: 'begin', don: 0 }; // V29: el bot se queda con la Reliquia del Don de la Conjura
+    case 'bendicion': {
+      const op = run.oferta ?? [];
+      const pref = policy.bendicion ? op.findIndex((o) => o.id === policy.bendicion) : -1;
+      if (pref >= 0) return { t: 'bendicion', i: pref };
+      return { t: 'bendicion', i: op.reduce((b, o, i) => (bendicionValue(o, run) > bendicionValue(op[b], run) ? i : b), 0) };
+    }
     case 'map': {
       if (stageDef(run.stage).boss) return { t: 'route', i: 0 };
       if (run.node.tag && policy.skip?.includes(run.node.tag)) return { t: 'skip' };

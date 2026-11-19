@@ -21,10 +21,9 @@ export function cifrasEspecial(id: string): Record<string, number> {
   return Object.fromEntries(Object.entries(fx).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
 }
 
-/** Cifras del decreto de un monarca, para su descripción y su placa (como `BOSS_NUMS` de run.ts). */
+/** Cifras del rasgo de combate de un Rey jefe, para su descripción y su placa (como `BOSS_NUMS` de run.ts). */
 export function cifrasMonarca(id: string): Record<string, number> {
-  const M = BALANCE.monarcas as unknown as Record<string, Record<string, number>>;
-  if (id === 'doble') return { ...M.doble, pct: Math.round((1 - BALANCE.monarcas.doble.ataque) * 100) };
+  const M = BALANCE.reyes as unknown as Record<string, Record<string, number>>;
   return M[id] ?? {};
 }
 

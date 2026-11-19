@@ -12,7 +12,8 @@ import { fraccion } from '../src/rules/cifras';
 import { KEYWORDS } from '../src/rules/keywords';
 import { ASCENSIONS, BOSSES, CONTRACTS, DECK, DECKS, EVENTS, EVENT_AFTER, FURIA, LAST_STAGE, MIN_DECK, STAGES, TAGS, TIRANO, UPGRADES, stageDef } from '../src/rules/run';
 import { MAX_SPECIALS, SPECIALS } from '../src/rules/specials';
-import { RARITY, RASGOS, TOOL, TOOLS, TOOL_SLOTS, UMBRALES } from '../src/rules/tools';
+import { RARITY, TOOL, TOOLS, TOOL_SLOTS } from '../src/rules/tools';
+import { BENDICIONES, BONOS_REY, DUALES, REY_IDS, REY_NOMBRE, UMBRALES_REY, bendicionesDe } from '../src/rules/reyes';
 import { TITLE, SUBTITLE } from '../src/shared/brand';
 import { ARBOL, RAIZ, RAMAS } from '../src/rules/arbol';
 import { ESQUIRLAS_POR_CORONA } from '../src/rules/migracion';
@@ -157,9 +158,9 @@ ${table(['Juramento', 'Condición', 'Premio', 'Tipo'], CONTRACTS.map((c) => [c.n
 
 ${table(['Atajo', 'Efecto'], TAGS.map((t) => [t.name, t.desc]))}
 
-**Monarcas** (${BOSSES.length}; cada campaña sortea ${STAGES.filter((s) => s.boss).length}). El monarca es el **último guardia** del asalto: llega con retrato, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tienes delante, su **Furia del Rey** sube ${FURIA.rey} cada turno. Cada uno impone además un **decreto**. Al caer abre su **Cofre**: una de tres Reliquias, una de ellas de tu rasgo principal.
+**Reyes jefe** (${BOSSES.length}; cada campaña sortea ${STAGES.filter((s) => s.boss).length}). El monarca de cada asalto con jefe es uno de los 4 Reyes: es el **último guardia** de la Casa de su palo (que va la última), llega con retrato, tiene ×${FURIA.jefeVida} de Vida y, mientras lo tienes delante, su **Furia del Rey** sube cada turno. Cada uno tiene además su **rasgo de combate**, y te habla según cómo lo trataste: como aliado si llevas alguna Bendición suya, como rival si solo llevas de otros. En el asalto ${STAGES.findIndex((s) => s.boss) + 1} el Rey ocupa el sitio del Caballo, con ×${n(BALANCE.reyes.asalto2.vida)} de su Vida y ${BALANCE.reyes.asalto2.ataque} de Ataque. Al caer abre su **Cofre**: una de tres Reliquias, Raras o mejores.
 
-${table(['Monarca', 'Decreto', 'Efecto'], BOSSES.map((b) => [b.who, b.name, b.desc]))}
+${table(['Rey jefe', 'Rasgo', 'Efecto', 'Furia por turno'], BOSSES.map((b) => [b.who, b.name, b.desc, String(BALANCE.reyes[b.id].furia)]))}
 
 ### El Botín
 
@@ -197,15 +198,19 @@ ${table(['Reinado', 'Nombre', 'Giro'], ASCENSIONS.map((a, i) => [String(i + 1), 
 
 Llevas hasta **${TOOL_SLOTS} reliquias**. **No se ordenan**: cada una nueva va al final de la tira y ninguna depende de su hueco. En la cuenta primero se suma todo y al final se multiplica. Hay ${TOOLS.length}: ${TOOLS.filter((t) => !t.box).length} en el surtido de salida y ${TOOLS.filter((t) => t.box).length} más en los arcones del Altar.
 
-### Rasgos de build
+${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Altar' : 'de salida']))}
 
-Cada Reliquia es de uno de **cinco rasgos**. Con **${UMBRALES.join(', ').replace(/, (\d+)$/, ' y $1')}** Reliquias del mismo rasgo se encienden sus bonos (se suman a los de las Reliquias). La píldora de la mesa lleva la cuenta y La Pulpería marca lo que te acerca al siguiente.
+## Los 4 Reyes y sus Bendiciones
 
-${table(['Rasgo', 'Lema', ...UMBRALES.map((u) => `Con ${u}`)], RASGOS.map((r) => [`**${r.name}**`, r.lema, ...r.bonos]))}
+Cada palo tiene su **Rey**: el de Espadas (el filo: perforar, rematar, Golpe exacto), el de Bastos (el aguante: Escudo y frenar el Contraataque), el de Oros (la fortuna: oro, salpicadura y el dado) y el de Copas (el brindis: curación, Vida y robar). Hay ${BENDICIONES.length} **Bendiciones**: ${bendicionesDe('espadas').length} de cada Rey y ${DUALES.length} **Duales**, de dos Reyes a la vez.
 
-${RASGOS
-  .map((r) => `### ${r.name}\n\n${table(['Reliquia', 'Rareza', 'Tipo', 'Efecto', 'Surtido'], TOOLS.filter((t) => t.rasgo === r.id).map((t) => [t.name, RARITY[t.rarity].name, KIND[t.kind], t.desc, t.box ? 'arcón del Altar' : 'de salida']))}`)
-  .join('\n\n')}
+- **La oferta.** Al empezar la campaña ofrecen ${BALANCE.oferta.inicio} Reyes distintos, y antes de cada asalto siguiente ofrecen ${BALANCE.oferta.entre}: cada uno pone una Bendición suya y te quedas con una. Una **Dual** solo se ofrece si ya llevas al menos una Bendición de cada uno de sus dos Reyes.
+- **Las cargas.** Cada Bendición tiene un efecto que vale desde que la tomas y una **condición de carga**: cada vez que se cumple suma una carga para el resto de la campaña, y cada carga da lo que dice su texto. La mesa lo enseña como «Espadas +6».
+- **Los niveles.** Con **${UMBRALES_REY.join(' y ')}** piezas de un mismo Rey (las Duales cuentan para los dos) se encienden sus bonos:
+
+${table(['Rey', `Con ${UMBRALES_REY[0]}`, `Con ${UMBRALES_REY[1]}`], REY_IDS.map((r) => [`**${REY_NOMBRE[r]}**`, ...BONOS_REY[r]]))}
+
+${table(['Bendición', 'Rey', 'Efecto', 'Carga'], BENDICIONES.map((b) => [b.name, b.duo ? `${REY_NOMBRE[b.rey]} y ${REY_NOMBRE[b.duo]}` : REY_NOMBRE[b.rey], b.desc, b.carga]))}
 
 ## Sellos de lacre y acabados
 

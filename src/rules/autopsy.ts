@@ -9,7 +9,7 @@
 //                         src/rules/textos.ts. Las plantillas españolas son las de src/rules/plantillas.ts
 //                         (`causa.*`, `aviso.*`), letra por letra los textos de siempre.
 import { fill } from './balance-config';
-import { CRUMBLE_LABEL, Card, Config, GameEvent, MATERIAL, PlayerView, Suit, activo, nextCollapse, threatOf } from './engine';
+import { Card, Config, GameEvent, MATERIAL, PlayerView, Suit, activo, nextCollapse, threatOf } from './engine';
 import { ES_PLANTILLAS } from './plantillas';
 import { SPECIAL } from './specials';
 import { TOOL } from './tools';
@@ -22,8 +22,6 @@ export interface TextosAutopsia {
   reliquia(id: string): string;
   /** Nombre del palo en mayúsculas, como en la mesa: «PICAS». */
   palo(s: Suit): string;
-  /** El decreto del Relojero («Arena rápida»). */
-  arena(): string;
 }
 
 /** Los textos españoles: plantillas puras y nombres de los datos. */
@@ -32,7 +30,6 @@ export const TEXTOS_ES: TextosAutopsia = {
   especial: (id) => SPECIAL[id]?.name ?? id,
   reliquia: (id) => TOOL[id]?.name ?? id,
   palo: (s) => MATERIAL[s],
-  arena: () => CRUMBLE_LABEL,
 };
 
 /** 'colapso' queda solo para las Crónicas guardadas antes de la 27.0: desde entonces el Mazo agotado no quita Vida. */
@@ -61,14 +58,13 @@ const left = (tx: TextosAutopsia, n: number) => tx.t(n === 1 ? 'causa.quedaba.1'
 const list = (tx: TextosAutopsia, names: string[]) =>
   names.length <= 1 ? (names[0] ?? '') : tx.t(names.length === 2 ? 'causa.lista.2' : 'causa.lista.mas', { a: names[0], b: names[1] });
 
-/** De dónde vino la herida que se hizo el propio golpe: especiales que cuestan Vida, el decreto «inestable» y reliquias que cobran. */
+/** De dónde vino la herida que se hizo el propio golpe: especiales que cuestan Vida y reliquias que cobran. */
 function hurtSources(tx: TextosAutopsia, batch: GameEvent[]): string[] {
   const names: string[] = [];
   for (const ev of batch) {
     if (ev.e === 'play') for (const c of ev.cards) if (c.sp && SPECIAL[c.sp]?.fx.hurt) names.push(tx.especial(c.sp));
     if (ev.e !== 'step') continue;
-    if (ev.src === 'state' && ev.id === 'inestable') names.push(tx.arena());
-    else if (ev.src === 'tool' && ev.df === undefined && ev.dr === undefined && ev.mr === undefined && /perdés \d+ de Vida/.test(ev.label)) names.push(tx.reliquia(ev.id));
+    if (ev.src === 'tool' && ev.df === undefined && ev.dr === undefined && ev.mr === undefined && /perdés \d+ de Vida/.test(ev.label)) names.push(tx.reliquia(ev.id));
   }
   return [...new Set(names)];
 }

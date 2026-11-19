@@ -13,7 +13,9 @@ import { BALANCE, fill } from './balance-config';
 import { MAX_SPECIALS, SPECIAL } from './specials';
 import { ENGANO_MODOS, MZ, REGLA, bravoDe, enganoCambia, enganoCartas, esEnvido, esEscoba, formacionMazo } from './mazos';
 import type { Cargas, EnganoEstado, EnganoModo, MazoId } from './mazos';
-import { TOOL, espejada, nivelesDe, rasgosAfter, rasgosStrike } from './tools';
+import { TOOL, espejada } from './tools';
+import { BENDICION, REY_NOMBRE, nivelesAfter, nivelesReyes, nivelesStrike, usaDado } from './reyes';
+import type { BendInst, ReyId } from './reyes';
 import type { ToolInst } from './tools';
 
 // ───────────────────────── Cartas ─────────────────────────
@@ -168,14 +170,28 @@ export interface Config {
    * V35 · El monarca del asalto: el último guardia de la Casa `suit`. Su Vida se multiplica por `vida` y, mientras es
    * el enemigo activo, la Furia sube `furia` al acabar cada turno (la «Furia del Rey»).
    */
-  jefe?: { suit: Suit; vida: number; furia: number };
+  jefe?: {
+    suit: Suit;
+    vida: number;
+    furia: number;
+    /** V40 1c · El Rey jefe (src/rules/reyes.ts) y su rasgo de combate: lo que su Contraataque atraviesa del Escudo
+     *  (Espadas), que no queda Expuesto ni Aturdido (Bastos), las caras del dado que suma a su Contraataque (Oros), lo
+     *  que se cura cada turno al frente (Copas). */
+    rey?: ReyId;
+    perfora?: number;
+    sinFx?: true;
+    dado?: number;
+    cura?: number;
+    /** Ataque de más (o de menos) del jefe sobre el de su rango (el Rey del asalto 2 ocupa el sitio del Caballo). */
+    ataque?: number;
+  };
   /** V35 · Furia con la que empieza el asalto (decreto del Relojero). */
   furiaInicial?: number;
-  /** V35 · Rasgo Verdugo: el enemigo que quede con esta fracción de su Vida o menos, cae (0,15 = 15 %). */
+  /** El enemigo que quede con esta fracción de su Vida o menos, cae (0,1 = 10 %; Remate del Rey de Espadas). */
   ejecuta?: number;
-  /** V35 · Rasgo Verdugo (6): toda ejecución cuenta como Golpe exacto. */
+  /** Toda ejecución cuenta como Golpe exacto. */
   ejecutaExacta?: boolean;
-  /** V35 · Rasgo Bastión: Escudo con el que empieza el asalto. */
+  /** Escudo con el que empieza el asalto (Bendiciones y nivel de Bastos). */
   wallStart?: number;
   /** Poderes de palo, por carta (sea cual sea su rango): Escudo por cada Basto, Cura por cada Copa y Salpica por cada Oro. */
   escudoPorCarta: number;
@@ -214,12 +230,8 @@ export interface Config {
    */
   fatigueStart?: number;
   fatigueEvery?: number;
-  /** Lo que le cuesta al búnker cada piso que cae sin golpe limpio. */
-  crumbleHurt?: number;
   /** V35 · Asalto único: la Vida de los guardias ×cuadrilla[jugadores − 1] (redondeada a 5: el Golpe exacto vive de esas cifras). */
   cuadrilla?: number[];
-  /** V35 · Cáliz envenenado: lo que te quita cada Copa del golpe. */
-  veneno?: number;
   /** Fuerza que se guarda para el próximo golpe por cada punto reparado de más con el búnker lleno. */
   overhealCharge?: number;
   /** Puntos de muro sobrante (por encima del tope) que hacen falta para reparar 1 de integridad. */
@@ -293,7 +305,7 @@ export interface GameState {
   collapses: number;
   /** V35 · Furia del Rey: lo que ha subido la Furia por los turnos que el monarca lleva de enemigo activo. */
   furiaRey?: number;
-  /** V35 · Rasgo Tahúr: la cara del dado de este turno (1 a 6), a la vista antes de golpear. Sin el rasgo no hay dado. */
+  /** La cara del dado de este turno (1 a 6), a la vista antes de golpear: solo con la Taba cargada o con Oros [4]. */
   dado?: number;
   phase: Phase;
   /** Cinturón de herramientas, de izquierda a derecha (campaña). */
@@ -318,6 +330,8 @@ export interface GameState {
   fatigue: number;
   /** V40 · Cargas permanentes del Mazo (Escoba, Mano larga): llegan de la campaña y vuelven a ella al acabar el asalto. */
   cargas?: Cargas;
+  /** V40 1c · Las Bendiciones de la campaña con sus cargas (`n`): llegan de la campaña y vuelven a ella al acabar. */
+  bendiciones?: BendInst[];
   /** V40 · El Mentiroso: el Engaño de este asalto (disponible o usado, y cómo). */
   engano?: EnganoEstado;
   /** V40 · Chancho Va: ya se pasó una carta este turno. */
@@ -341,7 +355,7 @@ export type Action =
   /** Gasta una tiza de replanteo: deshace la última jugada y vuelve a barajar la cantera. */
   | { type: 'undo' };
 
-export type StepSrc = 'form' | 'chain' | 'state' | 'card' | 'treat' | 'seal' | 'special' | 'tool' | 'mazo';
+export type StepSrc = 'form' | 'chain' | 'state' | 'card' | 'treat' | 'seal' | 'special' | 'tool' | 'mazo' | 'bendicion' | 'rey';
 /**
  * Aviso de herramienta que dispara: qué hizo (sumó Fuerza al golpe, pegó a una torre, reparó el búnker
  * o cargó Fuerza para el golpe siguiente) y cuánto. Lo llevan los `step` de las herramientas cuya cuenta
@@ -501,9 +515,6 @@ export const floorHp = (t: Tower, cfg: Config): number => {
   return esJefe(cfg, t) ? Math.max(5, Math.round((hp * cfg.jefe!.vida) / 5) * 5) : hp;
 };
 
-/** Etiqueta en mesa del decreto «inestable» (cada guardia abatido sin Golpe exacto te cuesta Vida). */
-export const CRUMBLE_LABEL = 'Arena rápida';
-export const VENENO_LABEL = 'Cáliz envenenado';
 
 /** Lo que un golpe necesita saber del estado. Lo cumplen tanto GameState como PlayerView. */
 export interface StrikeEnv {
@@ -516,8 +527,10 @@ export interface StrikeEnv {
   integrity: number;
   wall: number;
   fatigue?: number;
-  /** V35 · La cara del dado del Tahúr este turno. */
+  /** La cara del dado este turno (Taba cargada, Oros [4]). */
   dado?: number;
+  /** V40 1c · Las Bendiciones con sus cargas. */
+  bendiciones?: BendInst[];
   /** V40 · Cargas permanentes del Mazo y Engaño del asalto (solo los leen las reglas de Mazo). */
   cargas?: Cargas;
   engano?: EnganoEstado;
@@ -530,9 +543,20 @@ export function vidaTotal(t: Tower, cfg: Config): number {
 }
 
 /** Ataque de un trono ahora mismo: el de su guardia más la Furia del asalto. */
-export function threatOf(env: { config: Config; fatigue?: number }, t: Tower): number {
+export function threatOf(env: { config: Config; fatigue?: number; dado?: number }, t: Tower): number {
   if (!t.floors.length) return 0;
-  return env.config.floorThreat[t.floors[0]] + (env.fatigue ?? 0);
+  const j = esJefe(env.config, t) ? env.config.jefe! : null;
+  // V40 1c · el Rey de Oros suma el dado del turno, a escala de sus caras (de +1 a +caras)
+  const dado = j?.dado && env.dado ? Math.ceil((env.dado * j.dado) / 6) : 0;
+  // el Ataque de más o de menos del jefe nunca lo deja por debajo de 1 (un guardia sin Ataque sigue sin él)
+  const base = env.config.floorThreat[t.floors[0]];
+  return (j?.ataque ? Math.max(1, base + j.ataque) : base) + dado + (env.fatigue ?? 0);
+}
+
+/** El dado que suma el Rey de Oros jefe a su Contraataque este turno (0 si no es él o no hay dado). */
+export function dadoDelRey(env: { config: Config; dado?: number }, t: Tower): number {
+  const j = esJefe(env.config, t) ? env.config.jefe! : null;
+  return j?.dado && env.dado ? Math.ceil((env.dado * j.dado) / 6) : 0;
 }
 
 /** El golpe en curso, tal como lo ven las cartas especiales y las herramientas. */
@@ -544,6 +568,8 @@ export interface Strike {
   specials: Card[];
   formation: Formation;
   target: Suit;
+  /** V40 1c · El Daño que ya llevaba el guardia golpeado antes de este golpe (0: es el primero contra él). */
+  previo: number;
   fuerza: number;
   res: number;
   /** 2+ cartas, todas del mismo palo. */
@@ -584,7 +610,7 @@ export interface Outcome {
   /** Pisos derribados (en cualquier torre). */
   fallen: number;
   clean: boolean;
-  /** `exec`: cayó por ejecución (rasgo Verdugo), sin que el Daño llegara a su Vida. */
+  /** `exec`: cayó por ejecución (Remate), sin que el Daño llegara a su Vida. */
   fell: { tower: Suit; rank: number; clean: boolean; exec?: true }[];
 }
 
@@ -631,6 +657,8 @@ interface Tally {
 /** Deja un estado en un trono en pie (si no lo tiene ya y la mesa lo permite) y lo anuncia. */
 function setFx(t: Tower, fx: keyof TowerFx, events: GameEvent[], cfg?: Config): void {
   if (!standing(t) || t.fx[fx] || cfg?.noFx === true || cfg?.noFx === fx) return;
+  // V40 1c · el Rey de Bastos, mientras está al frente, no queda Expuesto ni Aturdido
+  if (cfg?.jefe?.sinFx && esJefe(cfg, t)) return;
   t.fx[fx] = true;
   events.push({ e: 'state', tower: t.suit, fx, on: true });
 }
@@ -641,12 +669,12 @@ function applyDamage(t: Tower, amount: number, pierce: boolean, splash: boolean,
   out.dealt[t.suit] = (out.dealt[t.suit] ?? 0) + amount;
   t.damage += amount;
   out.events.push({ e: 'hit', tower: t.suit, amount, splash, damage: t.damage, hp: floorHp(t, cfg) });
-  // V35 · ejecución (rasgo Verdugo): también cae el que queda con `ejecuta` de su Vida o menos
+  // ejecución (Remate): también cae el que queda con `ejecuta` de su Vida o menos
   const rematable = (hp: number) => !!cfg.ejecuta && hp - t.damage <= Math.floor(hp * cfg.ejecuta);
   while (standing(t) && (t.damage >= floorHp(t, cfg) - tol || rematable(floorHp(t, cfg)))) {
     const hp = floorHp(t, cfg);
     const exec = t.damage < hp - tol;
-    // exacto a ±cleanTol; por arriba, también hasta cleanTol + cleanOver (Buen ojo). Una ejecución lo es si el rasgo lo dice
+    // exacto a ±cleanTol; por arriba, también hasta cleanTol + cleanOver (Buen ojo). Una ejecución lo es si la mesa lo dice
     const clean = exec ? !!cfg.ejecutaExacta : t.damage - hp >= -tol && t.damage - hp <= tol + (cfg.cleanOver ?? 0);
     const excess = clean || exec ? 0 : t.damage - hp;
     const rank = t.floors.shift()!;
@@ -705,6 +733,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     specials,
     formation,
     target,
+    previo: tower.damage,
     fuerza: 0,
     res: 1,
     mono: cards.length >= 2 && (suits.length === 1 || engano === 'palo'),
@@ -901,9 +930,17 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     def.strike?.(x, t);
   });
 
-  // 5 bis · V35: los rasgos de build (bonos de 2, 4 y 6 Reliquias del mismo rasgo)
-  const marca = (r: { id: string; name: string }) => void (cur = { src: 'state', id: `rasgo-${r.id}`, label: r.name });
-  rasgosStrike(x, marca);
+  // 5 bis · V40 1c: las Bendiciones (con sus cargas) y los niveles de los Reyes [2/4]
+  const bend = env.bendiciones ?? [];
+  bend.forEach((b) => {
+    const def = BENDICION[b.id];
+    if (!def?.strike) return;
+    cur = { src: 'bendicion', id: b.id, label: def.name };
+    def.strike(x, b);
+  });
+  const nv = nivelesReyes({ bendiciones: bend });
+  const marca = (rey: ReyId) => void (cur = { src: 'rey', id: rey, label: REY_NOMBRE[rey] });
+  nivelesStrike(x, nv, marca);
 
   // 5 ter · V31: ahora sí, los multiplicadores de Multi, sobre todo el Multi ya sumado
   for (const m of porMultiplicar) {
@@ -954,26 +991,24 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
     cur = { src: 'tool', id: t.id, slot, label: def.name };
     def.after(x, t, seen);
   });
-  rasgosAfter(x, seen, marca);
+  // V40 1c · las Bendiciones reaccionan y suman sus cargas (para siempre); luego, los niveles
+  bend.forEach((b) => {
+    const def = BENDICION[b.id];
+    if (!def?.after) return;
+    cur = { src: 'bendicion', id: b.id, label: def.name };
+    const k = def.after(x, b, seen);
+    if (k > 0) {
+      b.n += k;
+      x.note(`carga ${b.n}`);
+    }
+  });
+  nivelesAfter(x, seen, nv, marca);
   for (const e of x.extra) {
     const t = env.towers[e.tower];
     if (standing(t)) applyDamage(t, Math.ceil(floorHp(t, cfg) * e.pct), false, true, cfg, tally);
   }
   for (const b of x.burst) applyDamage(env.towers[b.tower], b.n, false, true, cfg, tally);
   if (tally.fell.length > 0) x.gold += goldOnKill + BALANCE.sellos.jornal * jornal;
-  // suelo inestable: cada piso que cae sin golpe limpio se lleva algo del búnker
-  const rough = tally.fell.filter((f) => !f.clean).length;
-  if (cfg.crumbleHurt && rough) {
-    cur = { src: 'state', id: 'inestable', label: CRUMBLE_LABEL };
-    x.hurt += cfg.crumbleHurt * rough;
-    x.note(`perdés ${cfg.crumbleHurt * rough} de Vida`);
-  }
-  // V35 · Cáliz envenenado: el golpe con Copas te quita Vida (V40: una vez por golpe, no por cada Copa)
-  if (cfg.veneno && power.H) {
-    cur = { src: 'state', id: 'veneno', label: VENENO_LABEL };
-    x.hurt += cfg.veneno;
-    x.note(`perdés ${cfg.veneno} de Vida`);
-  }
 
   // 10 · los estados que deja la mezcla de palos: un solo palo deja Expuesto; tres palos (o El Espía), Aturdido
   if (standing(tower)) {
@@ -1001,7 +1036,7 @@ export function strike(env: StrikeEnv, all: Card[], target: Suit, rng?: { rng: n
 
 /** Lo mismo que `strike`, sin tocar el estado: para previsualizar y para que el bot compare jugadas. */
 export function previewStrike(env: StrikeEnv, cards: Card[], target: Suit, opts: { engano?: EnganoModo } = {}): StrikeResult {
-  return strike({ ...env, towers: structuredClone(env.towers), tools: env.tools.map((t) => ({ ...t })) }, cards, target, undefined, opts);
+  return strike({ ...env, towers: structuredClone(env.towers), tools: env.tools.map((t) => ({ ...t })), ...(env.bendiciones ? { bendiciones: env.bendiciones.map((b) => ({ ...b })) } : {}) }, cards, target, undefined, opts);
 }
 
 /** ¿El golpe abate al guardia del trono apuntado? */
@@ -1046,9 +1081,18 @@ interface Turn {
 }
 
 function hookFor(turn: Turn, slot: number): Hook {
+  const t = turn.state.tools[slot];
+  return hookCon(turn, (label, proc) => turn.events.push({ e: 'step', src: 'tool', id: t.id, slot, label: `${TOOL[t.id]?.name ?? t.id}: ${label}`, fuerza: 0, res: 0, ...(proc ? { proc } : {}) }));
+}
+
+/** V40 1c · El gancho de la Bendición i (como el de una Reliquia, con sus pasos a nombre de la Bendición). */
+function hookBend(turn: Turn, i: number): Hook {
+  const b = turn.state.bendiciones![i];
+  return hookCon(turn, (label, proc) => turn.events.push({ e: 'step', src: 'bendicion', id: b.id, label: `${BENDICION[b.id]?.name ?? b.id}: ${label}`, fuerza: 0, res: 0, ...(proc ? { proc } : {}) }));
+}
+
+function hookCon(turn: Turn, mark: (label: string, proc?: Proc) => void): Hook {
   const { state, events } = turn;
-  const t = state.tools[slot];
-  const mark = (label: string, proc?: Proc) => events.push({ e: 'step', src: 'tool', id: t.id, slot, label: `${TOOL[t.id]?.name ?? t.id}: ${label}`, fuerza: 0, res: 0, ...(proc ? { proc } : {}) });
   return {
     state,
     gold(n) {
@@ -1176,13 +1220,25 @@ function siren(turn: Turn, skip: 'clean' | 'huelga' | null): void {
   }
   // V40 · Mano larga (Chinchón): el Contraataque de este turno llega más flojo
   const threat = Math.max(0, threatOf(state, t) - (turn.alivio ?? 0));
-  const blocked = Math.min(state.wall, threat);
+  // V40 1c · el Rey de Espadas: su Contraataque atraviesa parte del Escudo
+  const atraviesa = state.config.jefe?.perfora && esJefe(state.config, t) ? Math.min(threat, state.config.jefe.perfora) : 0;
+  const blocked = Math.min(state.wall, threat - atraviesa);
   state.wall -= blocked;
   const taken = threat - blocked;
   state.integrity -= taken;
   const furia = Math.min(threat, state.fatigue ?? 0);
   events.push({ e: 'siren', tower: t.suit, threat, blocked, taken, integrity: Math.max(0, state.integrity), wall: state.wall, reason: 'strike', ...(furia > 0 ? { asedio: furia } : {}) });
   state.tools.forEach((tool, slot) => TOOL[tool.id]?.siren?.(hookFor(turn, slot), tool, { tower: t.suit, threat, blocked, taken }));
+  // V40 1c · las Bendiciones que reaccionan al Contraataque (y suman sus cargas)
+  (state.bendiciones ?? []).forEach((b, i) => {
+    const def = BENDICION[b.id];
+    if (!def?.siren) return;
+    const k = def.siren(hookBend(turn, i), b, { tower: t.suit, threat, blocked, taken });
+    if (k > 0) {
+      b.n += k;
+      events.push({ e: 'step', src: 'bendicion', id: b.id, label: `${def.name}: carga ${b.n}`, fuerza: 0, res: 0 });
+    }
+  });
 }
 
 function refill(state: GameState, p: Player, events: GameEvent[], extra = 0): void {
@@ -1384,7 +1440,16 @@ export function applyAction(prev: GameState, playerId: string, action: Action): 
   state.stashed = false;
   if (state.pasado) state.pasado = false;
   // V35 · Furia del Rey: cada turno que el monarca sigue de enemigo activo (ya lo era al empezar el turno), la Furia sube
-  if (state.config.jefe && esJefe(prev.config, activo(prev)) && esJefe(state.config, activo(state))) state.furiaRey = (state.furiaRey ?? 0) + state.config.jefe.furia;
+  if (state.config.jefe && esJefe(prev.config, activo(prev)) && esJefe(state.config, activo(state))) {
+    state.furiaRey = (state.furiaRey ?? 0) + state.config.jefe.furia;
+    // V40 1c · el Rey de Copas se cura al final de cada turno que sigue al frente
+    const rey = activo(state)!;
+    const cura = Math.min(rey.damage, state.config.jefe.cura ?? 0);
+    if (cura > 0) {
+      rey.damage -= cura;
+      events.push({ e: 'step', src: 'rey', id: state.config.jefe.rey ?? 'copas', label: `${REY_NOMBRE[state.config.jefe.rey ?? 'copas']}: se cura ${cura}`, fuerza: 0, res: 0 });
+    }
+  }
   const fatigue = siegeLevel(state);
   if (fatigue !== (state.fatigue ?? 0)) {
     state.fatigue = fatigue;
@@ -1425,9 +1490,9 @@ function mazoTrasGolpe(turn: Turn, res: StrikeResult, target: Suit, engano: Enga
   }
 }
 
-/** V35 · Tira el dado del Tahúr para el turno que empieza (solo con el rasgo activo: sin él no se gasta azar). */
+/** Tira el dado para el turno que empieza (solo con la Taba cargada o con Oros [4]: sin ellos no se gasta azar). */
 export function tiraDado(state: GameState): void {
-  if (nivelesDe(state.tools).tahur > 0) state.dado = 1 + Math.floor(nextRandom(state) * 6);
+  if (usaDado(state.bendiciones) || state.config.jefe?.dado) state.dado = 1 + Math.floor(nextRandom(state) * 6);
   else delete state.dado;
 }
 
@@ -1508,6 +1573,7 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     collapses: state.collapses,
     furiaRey: state.furiaRey ?? 0,
     ...(state.dado ? { dado: state.dado } : {}),
+    ...(state.bendiciones ? { bendiciones: state.bendiciones } : {}),
     // V40 · lo del Mazo (cargas, Engaño, Pasar, Chancho), para que la interfaz lo enseñe
     ...(state.cargas ? { cargas: state.cargas } : {}),
     ...(state.engano ? { engano: state.engano } : {}),

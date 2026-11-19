@@ -186,6 +186,36 @@ export function migraMeta40<M extends { mastery?: { decks?: Record<string, numbe
   return meta;
 }
 
+// ───────────────────────── V40 (tramo 1c): de los siete monarcas a los 4 Reyes ─────────────────────────
+// Los siete monarcas sueltos se van y los Reyes ocupan su sitio: cada trofeo (`j-<monarca>`) y cada monarca visto en
+// la Colección pasan al Rey de su palo (el mismo reparto que `MONARCAS_VIEJOS` de run.ts, que se pasa como argumento:
+// este módulo no importa run.ts). Las campañas de los tramos 1a y 1b (con rasgos y monarcas viejos) no se siguen.
+
+/** Versión de Meta y de campaña guardada del tramo 1b de la V40 (los 5 Mazos, aún con rasgos y monarcas viejos). */
+export const META_40B = 6;
+export const RUN_40B = 7;
+
+/** ¿Es una campaña de los tramos 1a o 1b de la V40 (baraja española, con rasgos y monarcas viejos)? */
+export function campanaSinReyes(raw: unknown): boolean {
+  const v = (raw as { v?: unknown } | null)?.v;
+  return v === RUN_40 || v === RUN_40B;
+}
+
+/**
+ * Una Meta del tramo 1b (o anterior) con los 4 Reyes: el trofeo de cada monarca viejo pasa al de su Rey, y los
+ * monarcas vistos, a sus Reyes. Las cartas legendarias guardan su `id` (solo cambia el logro que las abre). Muta y devuelve.
+ */
+export function migraMeta40c<M extends { ach?: Record<string, boolean>; seen?: { bosses?: string[] } }>(meta: M, viejos: Record<string, string>): M {
+  if (meta.ach)
+    for (const [id, rey] of Object.entries(viejos))
+      if (meta.ach[`j-${id}`]) {
+        meta.ach[`j-${rey}`] = true;
+        delete meta.ach[`j-${id}`];
+      }
+  if (meta.seen?.bosses) meta.seen.bosses = [...new Set(meta.seen.bosses.map((b) => viejos[b] ?? b))];
+  return meta;
+}
+
 /** Una campaña del tramo 1a (`v` = RUN_40) con los 5 Mazos: su baraja pasa a su Mazo y las cargas nacen a cero. Muta y devuelve. */
 export function migraRun40<R extends { v: number; deckId?: string; cargas?: unknown }>(run: R, version: number): R {
   run.deckId = mazoDe(run.deckId);
