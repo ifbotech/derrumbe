@@ -74,7 +74,7 @@ const N8: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1
 const N4: [number, number][] = [[0, -1], [-1, 0], [1, 0], [0, 1]];
 
 /** Tope de colores por grupo (las piezas grandes llevan más materiales). */
-const TOPE_PALETA: Record<string, number> = { glifos: 12, pintas: 14, naipes: 18, figuras: 26, dorsos: 22, bufon: 24, reyes: 26, amuletos: 20, trampas: 20, bendiciones: 22 };
+const TOPE_PALETA: Record<string, number> = { glifos: 12, pintas: 14, naipes: 18, figuras: 26, dorsos: 22, bufon: 24, reyes: 26, amuletos: 20, trampas: 20, bendiciones: 22, nodos: 20 };
 
 export function lintMapa(m: readonly string[], grupo = 'pintas'): Hallazgo[] {
   const out: Hallazgo[] = [];

@@ -8,12 +8,13 @@ import { dorsoMapa, MAZOS } from './dorsos';
 import { figuraLienzo } from './figuras';
 import { MOTIVO_AMULETO, MOTIVO_BENDICION, MOTIVO_TRAMPA, amuletoMapa, bendicionMapa, trampaMapa } from './iconos';
 import { pintasColocadas } from './naipes';
+import { HUD_ICONO, TIPOS_NODO, nodoMapa } from './nodos';
 import { Lienzo } from './pincel';
 import { pintaMapa, pintaNaipe } from './pintas';
 import { REYES_PX, reyMapa } from './reyes';
 
 export interface Pieza {
-  grupo: 'pintas' | 'glifos' | 'naipes' | 'figuras' | 'dorsos' | 'bufon' | 'reyes' | 'amuletos' | 'trampas' | 'bendiciones';
+  grupo: 'pintas' | 'glifos' | 'naipes' | 'figuras' | 'dorsos' | 'bufon' | 'reyes' | 'amuletos' | 'trampas' | 'bendiciones' | 'nodos';
   id: string;
   mapa: string[];
 }
@@ -46,5 +47,7 @@ export function catalogo(): Pieza[] {
   for (const id of Object.keys(MOTIVO_AMULETO)) out.push({ grupo: 'amuletos', id, mapa: amuletoMapa(id)! });
   for (const id of Object.keys(MOTIVO_TRAMPA)) out.push({ grupo: 'trampas', id, mapa: trampaMapa(id)! });
   for (const id of Object.keys(MOTIVO_BENDICION)) out.push({ grupo: 'bendiciones', id, mapa: bendicionMapa(id)! });
+  for (const t of TIPOS_NODO) out.push({ grupo: 'nodos', id: t, mapa: nodoMapa(t) });
+  for (const [id, m] of Object.entries(HUD_ICONO)) out.push({ grupo: 'nodos', id: `hud-${id}`, mapa: [...m] });
   return out;
 }

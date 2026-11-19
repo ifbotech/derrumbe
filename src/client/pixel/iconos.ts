@@ -248,6 +248,21 @@ export function bendicionMapa(id: string): string[] | null {
   return l.mapa();
 }
 
+/** Bandas de marco que pueden pedir otras piezas (los nodos del Mapa, V40 fase 3). */
+export const BANDAS = { ...BANDA, madera: ['N', 'n', 'd'], cinta: ['T', 't', 'c'] } as const satisfies Record<string, readonly [string, string, string]>;
+export type FormaMarco = 'octogono' | 'cuadro' | 'circulo' | 'arco' | 'rombo';
+
+/**
+ * Un medallón de 40 × 40 con el mismo marco y la misma luz que los Amuletos, y un motivo (≤ 12 × 12) al doble. Lo usan
+ * los nodos del Mapa (pixel/nodos.ts). `der` parte el marco en dos tonos (izquierda y derecha).
+ */
+export function medallon(forma: FormaMarco, izq: readonly [string, string, string], motivo: Mapa, der: readonly [string, string, string] = izq): string[] {
+  const l = new Lienzo(N, N);
+  marco(l, forma, [...izq], [...der]);
+  conMotivo(l, motivo);
+  return l.mapa();
+}
+
 const svg = (m: string[] | null, cls: string) => {
   if (!m) return '';
   const [w, h] = medida(m);
