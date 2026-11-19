@@ -12,6 +12,7 @@ import { HUD_ICONO, TIPOS_NODO, nodoMapa } from './nodos';
 import { Lienzo } from './pincel';
 import { pintaMapa, pintaNaipe } from './pintas';
 import { REYES_PX, reyMapa } from './reyes';
+import { UI_ICONOS } from './ui-iconos';
 
 export interface Pieza {
   grupo: 'pintas' | 'glifos' | 'naipes' | 'figuras' | 'dorsos' | 'bufon' | 'reyes' | 'amuletos' | 'trampas' | 'bendiciones' | 'nodos';
@@ -49,5 +50,7 @@ export function catalogo(): Pieza[] {
   for (const id of Object.keys(MOTIVO_BENDICION)) out.push({ grupo: 'bendiciones', id, mapa: bendicionMapa(id)! });
   for (const t of TIPOS_NODO) out.push({ grupo: 'nodos', id: t, mapa: nodoMapa(t) });
   for (const [id, m] of Object.entries(HUD_ICONO)) out.push({ grupo: 'nodos', id: `hud-${id}`, mapa: [...m] });
+  // V40 3b · los iconos de los botones discretos (Ajustes, AUTO, Mejor jugada, Deshacer)
+  for (const [id, m] of Object.entries(UI_ICONOS)) out.push({ grupo: 'nodos', id: `ui-${id}`, mapa: [...m] });
   return out;
 }

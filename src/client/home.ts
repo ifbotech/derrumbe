@@ -18,6 +18,7 @@ import { setScreen } from './router';
 import { bindLangSwitch, langSwitch, showRules, showSettings } from './widgets';
 import { platform } from './platform';
 import { bufonSvg } from './pixel/bufon';
+import { uiIconoSvg } from './pixel/ui-iconos';
 import { dorsoSvg } from './pixel/dorsos';
 import { nodoSvg } from './pixel/nodos';
 
@@ -80,7 +81,7 @@ export function renderHome(face: Locale = getLang()): void {
         ${stamp40('m-camp', nodoSvg('rey'), L('ui.home.camp'), L('ui.home.camp.sub'), 'primary')}
         ${stamp40('m-guild', nodoSvg('santuario'), L('ui.home.orden'), L('ui.home.orden.sub', { coronas: cifra(meta.renown), hechos: done, total: ACHIEVEMENTS.length }), '', `${cifra(meta.renown)} ✦`)}
         ${stamp40('m-col', `<span class="dorso40">${dorsoSvg(prefs.deck)}</span>`, L('ui.home.coleccion'), L('ui.home.coleccion.sub'))}
-        ${stamp40('m-set', glyphSvg('engranaje', 'stamp-ico'), L('ui.ajustes'), L('ui.home.ajustes.sub'))}
+        ${stamp40('m-set', uiIconoSvg('engranaje'), L('ui.ajustes'), L('ui.home.ajustes.sub'))}
       </nav>
       <div class="row foot"><button class="ghost" id="m-coop">${L('ui.home40.coop')}</button><button class="ghost" id="m-rules">${L('ui.reglas')}</button><p class="conn"></p></div>
     </section>
